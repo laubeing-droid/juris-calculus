@@ -1,0 +1,14 @@
+# juris-calculus: Chinese Civil Law domain configuration (demo)
+# Copy this file to ignite_config.yaml and fill in your calibrated parameters.
+
+jurisdiction: "zh_CN"
+core_alpha: 1.0           # DEMO placeholder. Run calibrate_theilsen() with your real timesheet data.
+taint_threshold: 0.0      # Taint score threshold (set after blind-test calibration)
+hard_audit: 0.0           # Mandatory human review threshold
+critical_score: 0.3       # CRITICAL_CLARITY_FAILURE trigger
+streak_limit: 3           # Consecutive low-score meltdown limit
+
+factors:
+  b_location: 1.3         # Cross-province travel premium
+  gamma_stage: 1.25       # Appeal / retrial stage complexity multiplier
+  t_overhead: 8.0         # Fixed travel overhead (hours) for cross-province cases

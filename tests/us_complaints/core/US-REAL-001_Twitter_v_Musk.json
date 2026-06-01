@@ -1,0 +1,35 @@
+{
+  "case_id": "US-REAL-001",
+  "cause_of_action": "Breach of Contract / Specific Performance",
+  "complexity": "high",
+  "governing_law": {
+    "statute": "Delaware General Corporation Law",
+    "court": "Delaware Court of Chancery",
+    "docket": "C.A. No. 2022-0613-KSJM"
+  },
+  "facts": {
+    "ContractFormed": "已成立",
+    "ContractType": "Merger Agreement (April 25, 2022, 4B, 4.20/share)",
+    "SpecificPerformanceClause": "协议明确包含具体履行条款",
+    "BreachAlleged": "被告于2022年7月8日以垃圾账户问题为虚伪借口终止合并协议",
+    "BreachDetail_1": "违反第6.3条合理最大努力义务——未努力获取债务融资",
+    "BreachDetail_2": "违反第6.11条公开声明义务——发布贬损性推文",
+    "BreachDetail_3": "违反第5.4条信息获取限制——超范围信息要求用于构建退出借口",
+    "DefendantActions": "Musk 2022年5月13日发推称交易\"暂时搁置\"",
+    "MarketContext": "特斯拉股价下跌，Musk不再想要该交易",
+    "PlaintiffPosition": "5%垃圾账户数字是公开估计值，附有免责声明，不构成MAE",
+    "TerminationDate": "2022年7月8日",
+    "ContractSigned": "2022年4月25日",
+    "DamagesClaimed": "已主张",
+    "RemedySought": "Specific Performance (强制履行)——命令Musk按4.20/股完成收购",
+    "IrreparableHarm": "金钱赔偿不足以弥补Twitter及股东损失"
+  },
+  "notes": "REAL CASE. Twitter v. Musk, C.A. No. 2022-0613-KSJM, Delaware Court of Chancery. This is NOT mock data — actual complaint allegations from the most famous specific performance case in recent corporate law history. Tests whether FixpointEvaluator can handle: (1) multi-breach allegation topology, (2) specific performance as remedy (not just damages), (3) pretextual termination defense chain.",
+  "expected": "BreachEstablished + DamagesCalculable. Specific performance is a unique remedy concept not in current US_CONTRACT_RULES.",
+  "missing_concepts": [
+    "SpecificPerformanceClause",
+    "IrreparableHarm",
+    "MaterialAdverseEffect",
+    "PretextualTermination"
+  ]
+}

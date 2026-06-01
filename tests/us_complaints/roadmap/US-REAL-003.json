@@ -1,0 +1,24 @@
+{
+  "case_id": "US-REAL-003",
+  "cause_of_action": "Employment Discrimination (Title VII)",
+  "complexity": "high",
+  "governing_law": {
+    "statute": "Title VII of Civil Rights Act of 1964, 42 USC 2000e"
+  },
+  "facts": {
+    "AdverseAction": "因性别原因被解雇",
+    "ProtectedClass": "性别歧视",
+    "QualifiedEmployee": "原告具备岗位要求的资历",
+    "DisparateTreatment": "同等情况下其他性别员工未被解雇",
+    "PretextAlleged": "雇主声称绩效原因但评估记录显示此前绩效良好",
+    "DamagesClaimed": "工资损失+精神损害赔偿+惩罚性赔偿"
+  },
+  "notes": "REAL PATTERN: McDonnell Douglas burden-shifting framework. Title VII employment discrimination.",
+  "expected": "HONEST_REFUSAL — discrimination concepts not in registry",
+  "missing_concepts": [
+    "AdverseAction",
+    "ProtectedClass",
+    "DisparateTreatment",
+    "PretextAlleged"
+  ]
+}

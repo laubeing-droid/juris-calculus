@@ -1,0 +1,21 @@
+{
+  "case_id": "US-REAL-008",
+  "cause_of_action": "RICO / Fraud (Judgment Fraud)",
+  "complexity": "high",
+  "governing_law": {
+    "statute": "RICO Act, 18 USC 1961-1968"
+  },
+  "facts": {
+    "FraudulentScheme": "被告律师通过贿赂欺诈手段获取不利判决",
+    "PatternOfRacketeering": "多起相关欺诈行为构成敲诈勒索模式",
+    "Enterprise": "被告与其法律团队构成RICO意义上的企业",
+    "DamagesClaimed": "判决金额返还+三倍赔偿+律师费"
+  },
+  "notes": "REAL CASE: Chevron v. Donziger (S.D.N.Y.). Ecuadorian judgment fraud under RICO.",
+  "expected": "HONEST_REFUSAL — RICO concepts absent",
+  "missing_concepts": [
+    "FraudulentScheme",
+    "PatternOfRacketeering",
+    "Enterprise"
+  ]
+}
