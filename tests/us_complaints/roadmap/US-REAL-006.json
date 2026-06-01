@@ -1,0 +1,21 @@
+{
+  "case_id": "US-REAL-006",
+  "cause_of_action": "Trade Secret Misappropriation",
+  "complexity": "high",
+  "governing_law": {
+    "statute": "Defend Trade Secrets Act (DTSA) + CUTSA"
+  },
+  "facts": {
+    "TradeSecretExists": "电池技术和制造工艺构成商业秘密",
+    "ConfidentialityObligation": "被告雇员签署保密协议",
+    "Misappropriation": "被告通过挖角原告工程师获取商业秘密",
+    "DamagesClaimed": "禁令救济+赔偿研发成本"
+  },
+  "notes": "REAL PATTERN: Tesla v. Rivian (California Superior Court). Trade secret misappropriation.",
+  "expected": "HONEST_REFUSAL — trade secret concepts absent",
+  "missing_concepts": [
+    "TradeSecretExists",
+    "ConfidentialityObligation",
+    "Misappropriation"
+  ]
+}

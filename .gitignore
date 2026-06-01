@@ -1,0 +1,32 @@
+# LegalOS-Core .gitignore
+# Blocks all local R&D, test, and blind-run artifacts.
+# Only pure open-source source code reaches GitHub.
+
+# Data artifacts (facts, timesheets, reports)
+*.json
+*.csv
+*.xlsx
+*.log
+
+# Exception: US benchmark complaint templates (core + roadmap)
+!tests/us_complaints/core/*.json
+!tests/us_complaints/roadmap/*.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Private configs (only .example.yaml is allowed in)
+*config.yaml
+!*config.example.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
