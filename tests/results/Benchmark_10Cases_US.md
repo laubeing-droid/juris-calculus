@@ -1,6 +1,6 @@
 # juris-calculus US Common Law Benchmark — 10 Complaint Cases
 
-Generated: 2026-06-02 01:20
+Generated: 2026-06-02 10:39
 Rules: US_CONTRACT_RULES (8 rules)
 Evaluator: FixpointEvaluator (juris-calculus v1.0.0)
 

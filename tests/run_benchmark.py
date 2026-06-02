@@ -16,32 +16,13 @@ from typing import List, Dict, Any
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from compiler_core.types import LegalRule, LegalFact, IRState, LegalDomain
-from compiler_core.evaluator import FixpointEvaluator, CriticalClarityFailure
+from compiler_core.evaluator import FixpointEvaluator, CriticalClarityFailure, load_rules_from_yaml
 from compiler_core.domain_config import DomainConfig, get_domain_config
 
-# ═══════════ US Common Law Demo Rule Set ═══════════
-# Minimal US contract rules for benchmark testing.
-# Expand this as missing concepts are discovered.
-
-US_CONTRACT_RULES = [
-    LegalRule("R_ContractFormed", ["ContractFormed"], "ContractExists",
-              concepts=["Contract", "Offer", "Acceptance", "Consideration"]),
-    LegalRule("R_PerformanceDue", ["ContractExists", "GoodsDelivered"], "PerformanceObligationActive",
-              concepts=["Contract", "Delivery"]),
-    LegalRule("R_PaymentObligation", ["PerformanceObligationActive", "PaymentDue"], "PaymentObligationTriggered",
-              concepts=["Payment"]),
-    LegalRule("R_BreachByNonpayment", ["PaymentObligationTriggered", "BreachAlleged"], "BreachEstablished",
-              exception_chain=["R_ForceMajeure", "R_Impossibility"],
-              concepts=["Breach", "Payment"]),
-    LegalRule("R_ForceMajeure", ["ActOfGod", "CausalLink"], "PerformanceExcused",
-              concepts=["ForceMajeure"], mechanical_exception=False),
-    LegalRule("R_Impossibility", ["ImpossibilityClaimed", "NoAlternativePerformance"], "PerformanceExcused",
-              concepts=["Impossibility"], mechanical_exception=False, head_type="NON_HORN"),
-    LegalRule("R_DamagesOwed", ["BreachEstablished", "DamagesClaimed"], "DamagesCalculable",
-              concepts=["Damages", "Breach"]),
-    LegalRule("R_RemediesAvailable", ["DamagesCalculable"], "RemediesOrdered",
-              concepts=["Damages", "Remedies"]),
-]
+# Load US contract rules from YAML (configurable, not hardcoded)
+US_CONTRACT_RULES = load_rules_from_yaml(
+    os.path.join(os.path.dirname(__file__), '..', 'configs', 'en_US', 'rules.yaml')
+)
 
 US_CONFIG = DomainConfig(
     domain=LegalDomain.CIVIL,

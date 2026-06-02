@@ -268,10 +268,16 @@ class WeightedNodeCounter:
         subtype = facts.get('subtype', '')
         chi = self.CHI_DOMAIN.get(subtype, self.CHI_DOMAIN.get(domain, 1.0))
         
-        # 基础节点数
+        # 输入校验
         core = facts.get('core_elements', {})
         rigid = facts.get('rigid_clauses', {})
         parties = facts.get('party_names', [])
+        has_any_content = any(
+            (v and str(v).strip() and len(str(v)) > 3) 
+            for v in list(core.values()) + list(rigid.values())
+        )
+        if not has_any_content and len(parties) < 2:
+            return (0.0, {"error": "empty_facts", "message": "No valid core elements, rigid clauses, or parties found", "base_nodes": 0})
         
         base_nodes = 0
         node_details = {}
