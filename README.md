@@ -26,9 +26,10 @@ A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal 
 
 ```bash
 cp configs/ignite_config.example.yaml ./configs/ignite_config.yaml
-python ignite.py
 ```
 
+> **Note**: `ignite.py` is the private production orchestrator and is not included in this open-source repository. This kernel is designed to be embedded into your own pipeline.
+>
 > Sensitive legal data is never committed. Manage your data in `./data/` (gitignored by default).
 
 ---
