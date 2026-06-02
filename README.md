@@ -29,10 +29,18 @@ cp configs/ignite_config.example.yaml ./configs/ignite_config.yaml
 ```
 
 > **Note**: `ignite.py` is the private production orchestrator and is not included in this open-source repository. This kernel is designed to be embedded into your own pipeline.
->
-> Sensitive legal data is never committed. Manage your data in `./data/` (gitignored by default).
 
 ---
+
+## Environment
+
+```bash
+git clone https://github.com/laubeing-droid/juris-calculus.git
+cd juris-calculus
+pip install -r requirements.txt
+```
+
+> Sensitive legal data is never committed. Manage your data in `./data/` (gitignored by default).
 
 ## Architecture
 
@@ -75,6 +83,15 @@ Most legal AI tools are RAG wrappers around LLMs. juris-calculus takes the oppos
 | **Pricing** | Guesswork | Theil-Sen Calibration |
 | **Hallucination** | High | Low (Honest Refusal) |
 | **Paradigm** | Chatbot | Symbolic AI / Computational Law |
+
+### Supported Jurisdictions
+
+| Jurisdiction | Status | Config |
+|---|---|---|
+| China (Civil Code — Contract) | ✅ v1.0.0 | `configs/zh_CN/` |
+| US (UCC Article 2 + Equitable Remedies) | ✅ v1.0.0 | `configs/en_US/` |
+| US (Tort / Securities / Antitrust / Constitutional) | 🚧 Roadmap | See `concept-roadmap.md` |
+| EU / HK / Others | 🔮 Community | PRs welcome |
 
 ## Cross-Jurisdictional Generalization
 
@@ -168,6 +185,22 @@ Theil-Sen median regression strips out associate padding and extreme case travel
   ]
 }
 ```
+
+---
+
+## FAQ
+
+**Q: Importing `peripheral_models` fails?**
+Upgrade to the latest version; the class name was updated from `LegalIREvaluator` to `FixpointEvaluator`.
+
+**Q: Where is `ignite.py`?**
+It is not included. `ignite.py` is the private production orchestrator. This kernel is designed to be embedded into your own pipeline using `FixpointEvaluator` and `LegalOSPricingEngine` directly.
+
+**Q: The default alpha gives inaccurate pricing?**
+Yes. `alpha=1.0` is a demo placeholder. Run `calibrate_theilsen()` with your firm's historical timesheet data to derive your own constant.
+
+**Q: Can I use this for torts / securities / antitrust?**
+Not yet. See [`concept-roadmap.md`](concept-roadmap.md). Contributions welcome.
 
 ---
 
