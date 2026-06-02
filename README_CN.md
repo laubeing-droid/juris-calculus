@@ -117,7 +117,7 @@ pip install -r requirements.txt
   author = {Laupinco},
   title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
   year = {2026},
-  version = {1.0.0},
+  version = {1.0.2},
   url = {https://github.com/laubeing-droid/juris-calculus}
 }
 ```

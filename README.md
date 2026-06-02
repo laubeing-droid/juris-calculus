@@ -215,7 +215,7 @@ If you use juris-calculus in academic research, please cite:
   author = {Laupinco},
   title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
   year = {2026},
-  version = {1.0.1},
+  version = {1.0.2},
   url = {https://github.com/laubeing-droid/juris-calculus}
 }
 ```
