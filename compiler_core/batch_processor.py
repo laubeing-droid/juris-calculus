@@ -5,7 +5,7 @@ from typing import List,Dict
 from dataclasses import dataclass,asdict
 
 from compiler_core.types import LegalRule,LegalFact,IRState
-from compiler_core.evaluator import LegalIREvaluator,CriticalClarityFailure
+from compiler_core.evaluator import FixpointEvaluator,CriticalClarityFailure
 
 @dataclass
 class ContractReviewResult:
@@ -15,7 +15,7 @@ class ContractReviewResult:
         if self.claims_detail is None: self.claims_detail=[]
 
 class BatchProcessor:
-    def __init__(self,ev:LegalIREvaluator): self.ev=ev; self.results:List[ContractReviewResult]=[]
+    def __init__(self,ev:FixpointEvaluator): self.ev=ev; self.results:List[ContractReviewResult]=[]
     def process(self,contracts:Dict[str,Dict[str,str]], label:str="")->List[ContractReviewResult]:
         if not contracts:
             return []

@@ -6,12 +6,12 @@ from dataclasses import dataclass,field
 from collections import defaultdict
 
 from compiler_core.types import LegalRule,LegalFact,LegalClaim,IRState
-from compiler_core.evaluator import LegalIREvaluator,compute_formalizable
+from compiler_core.evaluator import FixpointEvaluator,compute_formalizable
 from compiler_core.domain_config import DomainConfig,get_domain_config
 
 # M10
 class BackwardGapScanner:
-    def __init__(self,ev:LegalIREvaluator): self.ev=ev; self.km=ev.config.k_max
+    def __init__(self,ev:FixpointEvaluator): self.ev=ev; self.km=ev.config.k_max
     def scan(self,t:str,f:Set[str])->Dict:
         g=set(); v=set(); tr=[]
         def dfs(n:str,d:int,p:List[str]):
@@ -44,7 +44,7 @@ class EvidenceReliabilityScorer:
 # M12
 class ContradictionEngine:
     MUTEX=[("ContractValid","ContractVoid"),("DamagesOwed","ForceMajeureExempt"),("SpecificPerformance","TerminationRight"),("FullOwnership","ExclusiveRightThirdParty"),("PerformanceDue","PerformanceWaived")]
-    def __init__(self,ev:LegalIREvaluator): self.ev=ev; self._bdm()
+    def __init__(self,ev:FixpointEvaluator): self.ev=ev; self._bdm()
     def _bdm(self):
         h={}
         for r in self.ev.rules.values():
@@ -77,7 +77,7 @@ class ContradictionEngine:
 @dataclass
 class ArgumentNode: id:str; claim:str; premises:Set[str]=field(default_factory=set)
 class AdversarialBlindspotScanner:
-    def __init__(self,ev:LegalIREvaluator):
+    def __init__(self,ev:FixpointEvaluator):
         self.ev=ev; self._ce:Dict[str,Set[str]]={}
         for r in ev.rules.values():
             for e in r.exception_chain: self._ce.setdefault(r.head_claim,set()).add(e)
@@ -224,7 +224,7 @@ class CognitiveDeviationScorer:
 # ═══════════ DEMO ═══════════
 if __name__=="__main__":
     from compiler_core.types import LegalRule
-    ev=LegalIREvaluator([LegalRule("R1",["A"],"C1",concepts=["C1"]),LegalRule("R2",["C1","B"],"C2",exception_chain=["R3"],concepts=["C2"]),LegalRule("R3",["F"],"C3",concepts=["C3"],mechanical_exception=False)])
+    ev=FixpointEvaluator([LegalRule("R1",["A"],"C1",concepts=["C1"]),LegalRule("R2",["C1","B"],"C2",exception_chain=["R3"],concepts=["C2"]),LegalRule("R3",["F"],"C3",concepts=["C3"],mechanical_exception=False)])
     print("LegalOS M10-M17")
     print(f"M10: gaps={BackwardGapScanner(ev).scan('C2',{'A'})['gaps']}")
     es=EvidenceReliabilityScorer()
