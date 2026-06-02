@@ -12,8 +12,12 @@ Production-grade monotonic fixpoint iterator with:
 """
 
 from typing import List, Dict, Set, Tuple, Optional
+import logging
+
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
 from compiler_core.domain_config import DomainConfig, get_domain_config
+
+logger = logging.getLogger(__name__)
 
 
 class CriticalClarityFailure(Exception):
@@ -200,7 +204,7 @@ class FixpointEvaluator:
 
         if self.implicit_dependencies:
             for dep in self.implicit_dependencies[:5]:
-                print(f"  [IMPLICIT] {dep['rule']} → {dep['exception']}: {dep['pattern']}")
+                logger.info(f"[IMPLICIT] {dep['rule']} → {dep['exception']}: {dep['pattern']}")
 
         while state.iteration_count < state.max_iterations:
             state.iteration_count += 1
