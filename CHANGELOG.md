@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.0.1 (2026-06-02)
+
+### Bug Fixes
+
+- Fix `LegalIREvaluator` → `FixpointEvaluator` import error in `peripheral_models.py` and `batch_processor.py` (M10-M17 models were unusable)
+- Add missing `requirements.txt`
+- Replace production `print()` with `logging` in evaluator
+- Add README disclaimer: `ignite.py` is private and not included
+
+### Features
+
+- Add `BatchProcessor.process_parallel()` with ThreadPoolExecutor
+- Add `load_rules_from_yaml()` for rule configuration
+- Add 5 unit tests for FixpointEvaluator
+
+### Documentation
+
+- Add Environment / Supported Jurisdictions / FAQ sections to README (EN + CN)
+- Add important notes and contribution paths to concept-roadmap.md
+- Fix README cp path consistency
+
 ## v1.0.0 (2026-06-02)
 
 ### Initial Open-Source Release
