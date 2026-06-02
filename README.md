@@ -1,4 +1,4 @@
-# juris-calculus v1.0.0
+# juris-calculus v1.0.1
 
 A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal practice.
 
@@ -213,7 +213,7 @@ If you use juris-calculus in academic research, please cite:
   author = {Laupinco},
   title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
   year = {2026},
-  version = {1.0.0},
+  version = {1.0.1},
   url = {https://github.com/laubeing-droid/juris-calculus}
 }
 ```
