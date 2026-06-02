@@ -252,3 +252,34 @@ class FixpointEvaluator:
     def validate_transition(self, from_state: str, to_state: str) -> bool:
         """Validate procedural state transition against domain config."""
         return to_state in self.config.valid_transitions.get(from_state, [])
+
+
+def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
+    """
+    Load legal rules from a YAML configuration file.
+
+    YAML format:
+        rules:
+          - id: R1
+            premise_atoms: [A, B]
+            head_claim: C1
+            concepts: [Contract, Payment]
+            exception_chain: []
+            head_type: HORN
+            mechanical_exception: true
+    """
+    import yaml
+    with open(filepath, 'r', encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    rules = []
+    for r in data.get('rules', []):
+        rules.append(LegalRule(
+            id=r['id'],
+            premise_atoms=r.get('premise_atoms', []),
+            head_claim=r.get('head_claim', ''),
+            concepts=r.get('concepts', []),
+            exception_chain=r.get('exception_chain', []),
+            head_type=r.get('head_type', 'HORN'),
+            mechanical_exception=r.get('mechanical_exception', True),
+        ))
+    return rules
