@@ -66,3 +66,30 @@ Concepts not yet formalized in the rule registry. Ordered by priority for commun
 4. Submit a PR with the benchmark result diff
 
 **Rule**: Do NOT modify `compiler_core/evaluator.py`. All rule expansion happens via configuration files.
+
+---
+
+## Important Notes
+
+1. **Rule set limits**: v1.0.0 supports only UCC Article 2 contract disputes + equitable remedies. Do not use for torts, securities, antitrust, or other legal domains without adding the corresponding rule set.
+2. **Alpha calibration**: `alpha=1.0` is a demo placeholder. Production use requires recalibration with your own historical cases via `calibrate_theilsen()`.
+3. **EN extractor**: The US Common Law IRAC extractor is a placeholder skeleton. It requires LLM pipeline integration to function. Community PRs welcome.
+4. **Data privacy**: Sensitive case data should be processed locally. Differential privacy is designed for public cloud synchronization scenarios — do not rely on it as the sole privacy safeguard.
+
+---
+
+## Contribution Paths (Beyond Concepts)
+
+| Area | Effort | Description |
+|------|--------|-------------|
+| Jurisdiction expansion | High | Implement extractors + rule sets for EU, Hong Kong, or other jurisdictions |
+| Domain expansion | High | Add rule sets for torts, securities, antitrust, constitutional law |
+| EN extractor | Medium | Integrate LLM pipeline for IRAC-structured extraction from US complaints |
+| Frontend UI | Medium | Develop a web interface for file upload, reasoning visualization, case management |
+| HTTP/gRPC service | Low | Wrap the kernel as an API service for multi-user access |
+| LLM-assisted rule generation | Research | Use LLMs to auto-generate rule sets from statutory text |
+| Async batch processing | Low | Replace ThreadPoolExecutor with async for large-scale processing |
+| DB integration | Low | Persist cases, rule sets, and calibration parameters |
+| Document generation | Medium | Auto-generate legal documents from reasoning results |
+| Team collaboration | Medium | Shared rule sets, calibration params, collaborative case processing |
+
