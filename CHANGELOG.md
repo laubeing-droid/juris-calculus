@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.2 (2026-06-02)
+
+### Bug Fixes
+
+- Add input validation to `WeightedNodeCounter.compute_weights()` — returns clear error on empty facts
+- US contract rules de-hardcoded: moved from `run_benchmark.py` to `configs/en_US/rules.yaml`
+
 ## v1.0.1 (2026-06-02)
 
 ### Bug Fixes

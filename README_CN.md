@@ -1,4 +1,4 @@
-# juris-calculus v1.0.1 — 中文说明
+# juris-calculus v1.0.2 — 中文说明
 
 > 一个跨法域通用的法律符号化推理与精密精算引擎。
 >

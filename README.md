@@ -1,4 +1,4 @@
-# juris-calculus v1.0.1
+# juris-calculus v1.0.2
 
 A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal practice.
 
@@ -63,7 +63,9 @@ juris-calculus/
 │
 ├── configs/
 │   ├── zh_CN/domain_config.example.yaml
-│   └── en_US/domain_config.example.yaml
+│   └── en_US/
+│       ├── domain_config.example.yaml
+│       └── rules.yaml          #   US contract rules (YAML-configurable)
 │
 └── tests/
     ├── run_benchmark.py    #   10-case US Common Law benchmark
