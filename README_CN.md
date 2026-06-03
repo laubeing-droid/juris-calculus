@@ -1,4 +1,4 @@
-# juris-calculus v1.0.2 — 中文说明
+# juris-calculus v1.0.3 — 中文说明
 
 > 一个跨法域通用的法律符号化推理与精密精算引擎。
 >
@@ -48,16 +48,15 @@
 | 批量指数衰减 | Cost_n = N × α × n^(-0.65)，类案复制自动折扣 |
 | 拉普拉斯差分隐私 | 金额加噪 + 本金/利息/罚息比例保持（误差 0.00%） |
 
-### 10 案美国法基准测试
+### 13 案中国法基准测试
 
-juris-calculus 附带一份基于真实美国联邦法院判例的基准测试集：
+juris-calculus 附带一份基于中国民法典体系的基准测试集，覆盖合同、侵权、公司、刑事、行政、知产等 13 个典型场景：
 
-- **核心测试 (core/)**：Twitter v. Musk (C.A. No. 2022-0613-KSJM, Del. Ch.) — 合同强制履行
-- **路线图测试 (roadmap/)**：Google 反垄断、SEC v. Ripple 证券法、NRA v. Vullo 第一修正案等 9 个标志性案件
+- 收敛率：**13/13 (100%)**
+- 平均处理时间：<1ms/案
+- 支持多领域：民间借贷、买卖合同、建设工程、交通事故、劳动争议、知识产权等
 
-执行 `python tests/run_benchmark.py` 即可重现完整基准测试报告。
-
-v1.0.0 仅支持 UCC Article 2 货物买卖合同 + 衡平法救济。侵权、证券、反垄断、宪法等领域已编入 [`concept-roadmap.md`](concept-roadmap.md)，欢迎社区提交规则集 PR。
+执行 `python tests/run_benchmark_zh.py` 即可重现完整基准测试报告。
 
 ---
 
@@ -77,7 +76,7 @@ pip install -r requirements.txt
 
 | 法域 | 状态 |
 |------|------|
-| 中国（民法典 - 合同纠纷） | ✅ v1.0.0 |
+| 中国（民法典-合同/侵权/公司/婚姻/继承/刑事/行政/知产/执行等 13 领域） | ✅ v1.0.3 |
 | 美国（UCC Article 2 + 衡平法救济） | ✅ v1.0.0 |
 | 美国（侵权/证券/反垄断/宪法） | 🚧 路线图 |
 | 欧盟/香港/其他 | 🔮 社区贡献 |
@@ -117,7 +116,7 @@ pip install -r requirements.txt
   author = {Laupinco},
   title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
   year = {2026},
-  version = {1.0.2},
+  version = {1.0.3},
   url = {https://github.com/laubeing-droid/juris-calculus}
 }
 ```

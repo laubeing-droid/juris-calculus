@@ -1,4 +1,4 @@
-# juris-calculus v1.0.2
+# juris-calculus v1.0.3
 
 A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal practice.
 
@@ -12,11 +12,11 @@ A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal 
 
 ---
 
-## Scope (v1.0.0)
+## Scope (v1.0.3)
 
-**Supported**: UCC Article 2 (Sales) contract disputes + Equitable Remedies (Specific Performance).
+**Supported**: China Civil Code (Contract/Tort/Corporate/Family/Criminal/Admin/IP) — 2,117 Horn rules across 13 legal domains.
 
-**Roadmap**: Tort, Securities, Antitrust, Constitutional law. See [`concept-roadmap.md`](concept-roadmap.md) for the 39-concept expansion plan with community PR guides.
+**Roadmap**: See [`concept-roadmap.md`](concept-roadmap.md) for the community expansion plan.
 
 `HONEST_REFUSAL` on unsupported domains is a feature, not a bug.
 
@@ -50,26 +50,46 @@ juris-calculus/
 │   ├── types.py            #   LegalRule / LegalFact / LegalClaim / TaintNode
 │   ├── evaluator.py        #   FixpointEvaluator with exception chain + CRITICAL_CLARITY_FAILURE
 │   ├── domain_config.py    #   Civil / Criminal dual-domain routing
+│   ├── classifier.py       #   EvidenceClassifier (A/B/C carrier levels)
+│   ├── provider.py         #   BaseDomainProvider abstract base
+│   ├── transformer.py      #   Compile-time AST rewriter
 │   └── batch_processor.py  #   Bulk case processor + JSON audit export
 │
 ├── legalos_services/       # Mathematical models
 │   ├── peripheral_models.py   # M10-M17 + calibrate_theilsen()
 │   ├── legalos_pricing.py     # DAG-weighted nodes + multi-factor matrix + batch decay
+│   ├── inspectors.py          # 4-case pre-inspectors (LPR/Statute/Default/Deposit)
+│   ├── external_context.py    # LPR data + FinancialContext
 │   └── differential_privacy.py # Laplace DP with ratio-preserving geometry
+│
+├── pipeline/               # End-to-end reasoning pipeline
+│   ├── pipeline.py         #   Text → facts → inference → report
+│   ├── prc_us_alignment.py #   Cross-jurisdiction semantic alignment watchdog
+│   ├── extract_concepts.py #   OCR concept extraction from legal textbooks
+│   ├── build_ocr_index.py  #   OCR semantic search index builder
+│   └── fix_single_premise.py #   AND-logic enhancement for single-premise rules
 │
 ├── extractors/             # Structured extraction pipeline
 │   ├── zh_CN/              #   Chinese Civil Law Parser 3.0
 │   └── en_US/              #   US Common Law IRAC skeleton (community PRs welcome)
 │
 ├── configs/
-│   ├── zh_CN/domain_config.example.yaml
-│   └── en_US/
-│       ├── domain_config.example.yaml
-│       └── rules.yaml          #   US contract rules (YAML-configurable)
+│   ├── zh_CN/              #   China rule set (2,117 rules), domain config, concept registries
+│   │   ├── rules.yaml
+│   │   ├── domain_config.yaml
+│   │   ├── concept_registry.yaml
+│   │   └── classifier_rules.yaml
+│   └── en_US/              #   US contract rules (YAML-configurable)
+│       ├── rules.yaml
+│       └── domain_config.example.yaml
 │
-└── tests/
-    ├── run_benchmark.py    #   10-case US Common Law benchmark
-    └── us_complaints/      #   core/ + roadmap/ dual-layer test data
+├── tests/
+│   ├── run_benchmark_zh.py #   13-case China law benchmark (all converged)
+│   ├── unit/               #   Unit tests
+│   └── results/            #   Benchmark reports
+│
+├── mcp_server.py           # FastMCP server for WorkBuddy integration
+└── chroma_db_ocr/          # OCR semantic index (gitignored, build locally)
 ```
 
 ---
@@ -90,7 +110,8 @@ Most legal AI tools are RAG wrappers around LLMs. juris-calculus takes the oppos
 
 | Jurisdiction | Status | Config |
 |---|---|---|
-| China (Civil Code — Contract) | ✅ v1.0.0 | `configs/zh_CN/` |
+| China (Civil Code — Contract/Tort/Corporate/Family) | ✅ v1.0.3 | `configs/zh_CN/` |
+| China (Criminal/Admin/IP/Procedure/Enforcement) | ✅ v1.0.3 | `configs/zh_CN/` |
 | US (UCC Article 2 + Equitable Remedies) | ✅ v1.0.0 | `configs/en_US/` |
 | US (Tort / Securities / Antitrust / Constitutional) | 🚧 Roadmap | See `concept-roadmap.md` |
 | EU / HK / Others | 🔮 Community | PRs welcome |
@@ -215,7 +236,7 @@ If you use juris-calculus in academic research, please cite:
   author = {Laupinco},
   title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
   year = {2026},
-  version = {1.0.2},
+  version = {1.0.3},
   url = {https://github.com/laubeing-droid/juris-calculus}
 }
 ```

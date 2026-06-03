@@ -59,14 +59,33 @@ class PricingCase:
 class LegalOSPricingEngine:
     """juris-calculus 工业级精算引擎"""
     
-    # 硬编码常数
+    # 硬编码常数（默认值，可由 load_alpha_from_config() 覆盖）
     ALPHA = 1.0            # α: 纯法理脑力常数 (开源演示值，生产环境需按团队数据重新校准)
     LAMBDA = 0.65          # λ: 经验复用学习率
     SIMILARITY_THRESHOLD = 0.85  # 类案判定阈值
     
-    def __init__(self):
+    def __init__(self, alpha: float = None):
         # 案例库：存储已有案卷的图特征向量
-        self.case_graphs: Dict[str, Tuple[int, int, set]] = {}  # id → (|V|, |E|, feature_set)
+        self.case_graphs: Dict[str, Tuple[int, int, set]] = {}
+        # alpha 优先级：参数 > YAML domain_config > 默认1.0
+        self.ALPHA = alpha if alpha is not None else self._load_alpha()
+
+    @staticmethod
+    def _load_alpha() -> float:
+        """从 domain_config.yaml 加载校准后的 α 常数"""
+        import os, yaml
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'configs', 'zh_CN', 'domain_config.yaml')
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            alpha = config.get('alpha_calibrated', 1.0)
+            if isinstance(alpha, (int, float)) and alpha > 0:
+                print(f"[LegalOSPricing] α={alpha} (calibrated from {config_path})")
+                return alpha
+        except Exception:
+            pass
+        print(f"[LegalOSPricing] α=1.0 (default, no calibration found)")
+        return 1.0
     
     # ═══════ 模型二核心公式 ═══════
     

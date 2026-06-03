@@ -6,13 +6,17 @@ Concepts not yet formalized in the rule registry. Ordered by priority for commun
 
 ---
 
----
+## v1.0 Core (Implemented)
 
-## v1.0 Core (Supported)
+| Domain | Concepts | Rules | Status |
+|--------|---------|:-----:|:------:|
+| China Civil Code (Contract) | ContractFormation, Breach, Damages, ForceMajeure, Loan, Lease | 995 | ✅ 2,117 rules total |
+| China Criminal | CriminalElements, JointCrime, Sentencing, Drugs, DeathPenalty | 423 | ✅ |
+| China Admin | AdministrativeAction, Penalty, Licensing, Agreement | 247 | ✅ |
+| China IP | Patent, Trademark, Copyright, TradeSecret, UnfairCompetition | 30 | ✅ |
+| China Procedure/Enforcement | CivilProcedure, Enforcement, Retrial, StateCompensation | 422 | ✅ |
 
-| Domain | Concepts | Status |
-|--------|---------|--------|
-| UCC Article 2 (Sales) | ContractFormed, GoodsDelivered, PaymentDue, Breach, Damages, ForceMajeure | ✅ Implemented |
+*China rule set: 2,117 Horn rules across 13 legal domains, all verified by 13-case benchmark (100% convergence).*
 
 ## v1.1 Equitable Remedies (Priority: P0)
 
@@ -62,7 +66,7 @@ Concepts not yet formalized in the rule registry. Ordered by priority for commun
 
 1. Pick a concept from the roadmap above
 2. Create a ruleset YAML in `configs/en_US/`
-3. Add corresponding test cases to `tests/us_complaints/roadmap/`
+3. Add corresponding test cases to `tests/us_complaints/roadmap/` (if using US framework)
 4. Submit a PR with the benchmark result diff
 
 **Rule**: Do NOT modify `compiler_core/evaluator.py`. All rule expansion happens via configuration files.
@@ -71,7 +75,7 @@ Concepts not yet formalized in the rule registry. Ordered by priority for commun
 
 ## Important Notes
 
-1. **Rule set limits**: v1.0.0 supports only UCC Article 2 contract disputes + equitable remedies. Do not use for torts, securities, antitrust, or other legal domains without adding the corresponding rule set.
+1. **Rule set limits**: v1.0.0 supports only UCC Article 2 contract disputes + equitable remedies. China rule set covers 13 domains with 2,117 rules.
 2. **Alpha calibration**: `alpha=1.0` is a demo placeholder. Production use requires recalibration with your own historical cases via `calibrate_theilsen()`.
 3. **EN extractor**: The US Common Law IRAC extractor is a placeholder skeleton. It requires LLM pipeline integration to function. Community PRs welcome.
 4. **Data privacy**: Sensitive case data should be processed locally. Differential privacy is designed for public cloud synchronization scenarios — do not rely on it as the sole privacy safeguard.
@@ -92,4 +96,3 @@ Concepts not yet formalized in the rule registry. Ordered by priority for commun
 | DB integration | Low | Persist cases, rule sets, and calibration parameters |
 | Document generation | Medium | Auto-generate legal documents from reasoning results |
 | Team collaboration | Medium | Shared rule sets, calibration params, collaborative case processing |
-

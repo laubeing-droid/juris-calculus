@@ -1,3 +1,0 @@
-- Add input validation to WeightedNodeCounter.compute_weights() — returns clear error on empty facts
-- US contract rules de-hardcoded: moved to configs/en_US/rules.yaml via load_rules_from_yaml()
-- Docs: bump version to v1.0.2 across all READMEs and BibTeX citations

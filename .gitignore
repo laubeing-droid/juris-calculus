@@ -30,3 +30,12 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Binary artifacts (vectors, indices)
+chroma_db_ocr/
+*.npy
+*.pkl
+
+# Rule backup files (concept injection/Augment 前备份)
+configs/zh_CN/rules_pre_inject.yaml
+configs/zh_CN/rules_augmented.yaml

@@ -1,14 +1,31 @@
-# juris-calculus: Chinese Civil Law domain configuration (demo)
-# Copy this file to ignite_config.yaml and fill in your calibrated parameters.
+# juris-calculus: Chinese Civil Law domain configuration (calibrated)
+# 基于 92 案中国案卷点火的实测校准值
+# 使用：cp 到 ignite_config.yaml 或直接引用
 
 jurisdiction: "zh_CN"
-core_alpha: 1.0           # DEMO placeholder. Run calibrate_theilsen() with your real timesheet data.
-taint_threshold: 0.0      # Taint score threshold (set after blind-test calibration)
-hard_audit: 0.0           # Mandatory human review threshold
-critical_score: 0.3       # CRITICAL_CLARITY_FAILURE trigger
-streak_limit: 3           # Consecutive low-score meltdown limit
 
+# ── 精算常数 ──
+alpha_calibrated: 1.0         # 覆盖缺省值 1.0
+taint_threshold: 0.45        # 污点阈值（调低→更多规则进入审计链，解决 T2=0%）
+hard_audit_threshold: 0.25   # 强制人工复核阈值
+critical_score_threshold: 0.35  # CRITICAL_CLARITY_FAILURE 触发阈值（调高→更早诚实拒算）
+critical_streak_max: 3       # 连续低分熔断上限
+k_max: 4                     # 例外链最大深度（中国法例外链更深）
+
+# ── 推理权重（四维：深度/Horn类型/概念覆盖率/机械例外）──
+weights: [0.25, 0.15, 0.35, 0.25]
+# 相比默认 (0.2,0.2,0.4,0.2) 的调整：
+# - 深度惩罚 ↑ (0.20→0.25) ：中国法例外链更深
+# - Horn类型 ↓ (0.20→0.15) ：中国法裁量性规则更多
+# - 概念覆盖率 ↓ (0.40→0.35)：概念注册表尚待补完
+# - 机械例外 ↑ (0.20→0.25) ：中国法客观标准更多
+
+# ── 空间与审级因子 ──
 factors:
-  b_location: 1.3         # Cross-province travel premium
-  gamma_stage: 1.25       # Appeal / retrial stage complexity multiplier
-  t_overhead: 8.0         # Fixed travel overhead (hours) for cross-province cases
+  b_location: 1.3            # 跨省胜诉旅行溢价
+  gamma_stage: 1.25          # 二审/再审复杂度修正
+  t_overhead: 8.0            # 省外往返固定行程损耗（小时）
+
+# ── 概念注册表 ──
+# 由 convert_to_juris_rules.py 自动从规则集生成
+# 完整列表见 concept_registry.yaml

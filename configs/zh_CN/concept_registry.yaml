@@ -1,0 +1,354 @@
+_meta:
+  total: 117
+concepts:
+  不动产:
+    alias: 不动产
+    frequency: 2
+  专利:
+    alias: 专利
+    frequency: 21
+  专利侵权:
+    alias: 专利侵权
+    frequency: 10
+  举证:
+    alias: 举证
+    frequency: 28
+  举证责任:
+    alias: 举证责任
+    frequency: 40
+  买卖:
+    alias: 买卖
+    frequency: 2
+  从宽:
+    alias: 从宽
+    frequency: 2
+  仲裁:
+    alias: 仲裁
+    frequency: 8
+  仲裁协议:
+    alias: 仲裁协议
+    frequency: 2
+  仲裁协议效力:
+    alias: 仲裁协议效力
+    frequency: 6
+  优先受偿:
+    alias: 优先受偿
+    frequency: 2
+  优先购买权:
+    alias: 优先购买权
+    frequency: 3
+  侵权:
+    alias: 侵权
+    frequency: 32
+  侵权判定:
+    alias: 侵权判定
+    frequency: 3
+  保险:
+    alias: 保险
+    frequency: 2
+  公司:
+    alias: 公司
+    frequency: 24
+  公司决议:
+    alias: 公司决议
+    frequency: 2
+  共同犯罪:
+    alias: 共同犯罪
+    frequency: 10
+  再审:
+    alias: 再审
+    frequency: 18
+  出资:
+    alias: 出资
+    frequency: 15
+  区分:
+    alias: 区分
+    frequency: 9
+  反不正当竞争法:
+    alias: 反不正当竞争法
+    frequency: 10
+  司法协助:
+    alias: 司法协助
+    frequency: 10
+  合同:
+    alias: 合同
+    frequency: 40
+  合同成立:
+    alias: 合同成立
+    frequency: 4
+  合同效力:
+    alias: 合同效力
+    frequency: 36
+  合法性:
+    alias: 合法性
+    frequency: 4
+  合法性审查:
+    alias: 合法性审查
+    frequency: 6
+  合理使用:
+    alias: 合理使用
+    frequency: 2
+  商业秘密:
+    alias: 商业秘密
+    frequency: 14
+  善意取得:
+    alias: 善意取得
+    frequency: 11
+  因果关系:
+    alias: 因果关系
+    frequency: 12
+  国家赔偿:
+    alias: 国家赔偿
+    frequency: 81
+  外国判决:
+    alias: 外国判决
+    frequency: 3
+  夫妻共同财产:
+    alias: 夫妻共同财产
+    frequency: 5
+  子女:
+    alias: 子女
+    frequency: 10
+  审判监督:
+    alias: 审判监督
+    frequency: 18
+  审查:
+    alias: 审查
+    frequency: 3
+  年龄认定:
+    alias: 年龄认定
+    frequency: 2
+  异议:
+    alias: 异议
+    frequency: 2
+  执行:
+    alias: 执行
+    frequency: 59
+  执行异议之诉:
+    alias: 执行异议之诉
+    frequency: 2
+  担保合同效力:
+    alias: 担保合同效力
+    frequency: 3
+  损害:
+    alias: 损害
+    frequency: 21
+  损害赔偿:
+    alias: 损害赔偿
+    frequency: 14
+  排除:
+    alias: 排除
+    frequency: 4
+  效力:
+    alias: 效力
+    frequency: 4
+  教育感化:
+    alias: 教育感化
+    frequency: 2
+  数罪并罚:
+    alias: 数罪并罚
+    frequency: 10
+  数量认定:
+    alias: 数量认定
+    frequency: 2
+  未成年人:
+    alias: 未成年人
+    frequency: 11
+  构成要件:
+    alias: 构成要件
+    frequency: 5
+  正当防卫:
+    alias: 正当防卫
+    frequency: 6
+  死刑适用:
+    alias: 死刑适用
+    frequency: 6
+  比例原则:
+    alias: 比例原则
+    frequency: 2
+  民事:
+    alias: 民事
+    frequency: 58
+  民间借贷:
+    alias: 民间借贷
+    frequency: 2
+  法人人格否认:
+    alias: 法人人格否认
+    frequency: 3
+  法律适用:
+    alias: 法律适用
+    frequency: 19
+  海事:
+    alias: 海事
+    frequency: 2
+  涉外:
+    alias: 涉外
+    frequency: 4
+  涉外民事关系法律适用法第10条:
+    alias: 涉外民事关系法律适用法第10条
+    frequency: 2
+  涉外民事关系法律适用法第37条:
+    alias: 涉外民事关系法律适用法第37条
+    frequency: 2
+  涉外民事关系法律适用法第38条:
+    alias: 涉外民事关系法律适用法第38条
+    frequency: 2
+  涉外民事关系法律适用法第41条:
+    alias: 涉外民事关系法律适用法第41条
+    frequency: 2
+  涉外民事关系法律适用法第44条:
+    alias: 涉外民事关系法律适用法第44条
+    frequency: 2
+  涉外民事关系法律适用法第47条:
+    alias: 涉外民事关系法律适用法第47条
+    frequency: 2
+  涉外民事关系法律适用法解释(二):
+    alias: 涉外民事关系法律适用法解释(二)
+    frequency: 4
+  混淆可能性:
+    alias: 混淆可能性
+    frequency: 3
+  物权:
+    alias: 物权
+    frequency: 2
+  物权变动:
+    alias: 物权变动
+    frequency: 5
+  犯罪:
+    alias: 犯罪
+    frequency: 68
+  申请确认仲裁协议效力:
+    alias: 申请确认仲裁协议效力
+    frequency: 7
+  登记:
+    alias: 登记
+    frequency: 5
+  知识产权:
+    alias: 知识产权
+    frequency: 6
+  破产:
+    alias: 破产
+    frequency: 6
+  程序:
+    alias: 程序
+    frequency: 10
+  立功:
+    alias: 立功
+    frequency: 7
+  管辖:
+    alias: 管辖
+    frequency: 51
+  管辖权:
+    alias: 管辖权
+    frequency: 3
+  精神损害:
+    alias: 精神损害
+    frequency: 3
+  精神损害赔偿:
+    alias: 精神损害赔偿
+    frequency: 5
+  累犯:
+    alias: 累犯
+    frequency: 5
+  继承:
+    alias: 继承
+    frequency: 4
+  缓刑:
+    alias: 缓刑
+    frequency: 9
+  股东:
+    alias: 股东
+    frequency: 16
+  股权:
+    alias: 股权
+    frequency: 14
+  股权转让:
+    alias: 股权转让
+    frequency: 14
+  自首:
+    alias: 自首
+    frequency: 12
+  著作权:
+    alias: 著作权
+    frequency: 5
+  行政:
+    alias: 行政
+    frequency: 119
+  行政协议:
+    alias: 行政协议
+    frequency: 17
+  行政行为:
+    alias: 行政行为
+    frequency: 4
+  行政赔偿:
+    alias: 行政赔偿
+    frequency: 6
+  计算:
+    alias: 计算
+    frequency: 3
+  计算标准:
+    alias: 计算标准
+    frequency: 3
+  认定:
+    alias: 认定
+    frequency: 15
+  认定标准:
+    alias: 认定标准
+    frequency: 21
+  认罪认罚:
+    alias: 认罪认罚
+    frequency: 12
+  证据:
+    alias: 证据
+    frequency: 55
+  证据排除:
+    alias: 证据排除
+    frequency: 3
+  诉讼:
+    alias: 诉讼
+    frequency: 71
+  诉讼时效:
+    alias: 诉讼时效
+    frequency: 11
+  调整:
+    alias: 调整
+    frequency: 2
+  责任限制:
+    alias: 责任限制
+    frequency: 2
+  赔偿:
+    alias: 赔偿
+    frequency: 34
+  赔偿义务机关:
+    alias: 赔偿义务机关
+    frequency: 12
+  赔偿范围:
+    alias: 赔偿范围
+    frequency: 8
+  赔偿责任:
+    alias: 赔偿责任
+    frequency: 21
+  转让:
+    alias: 转让
+    frequency: 2
+  过错:
+    alias: 过错
+    frequency: 26
+  违约责任:
+    alias: 违约责任
+    frequency: 10
+  违约金:
+    alias: 违约金
+    frequency: 4
+  适用条件:
+    alias: 适用条件
+    frequency: 3
+  遗嘱效力:
+    alias: 遗嘱效力
+    frequency: 4
+  非法证据排除:
+    alias: 非法证据排除
+    frequency: 15
+  顺序:
+    alias: 顺序
+    frequency: 2

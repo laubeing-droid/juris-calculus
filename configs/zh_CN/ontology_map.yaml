@@ -1,0 +1,459 @@
+# juris-calculus 多租户本体映射表 v4.0
+# 覆盖 13 大门类 + 30+ 子领域
+# 每个域独立：registry_path + 原子前缀 + regex 触发器 + 概念白名单
+
+version: "4.0.0"
+schema: "multi_namespace_isolated"
+total_domains: 13
+total_atoms: 140
+
+# ═══════════════════════════════════════════
+# 1. 刑事（2册，最高频207次）
+# ═══════════════════════════════════════════
+criminal:
+  domain_id: "CRIMINAL"
+  registry_path: "domains.criminal"
+  # 刑事案件特有高频排他性法律术语（强特征）
+  regex_triggers: 
+    - "刑事判决书"
+    - "公诉机关"
+    - "检察院"
+    - "犯有"
+    - "触犯"
+    - "刑法"
+    - "有期徒刑"
+    - "拘役"
+    - "故意伤害"
+    - "盗窃"
+    - "抢劫"
+    - "诈骗"
+    - "强奸"
+    - "毒品"
+    - "贪污"
+    - "受贿"
+    - "非法经营"
+    - "故意杀人"
+    - "绑架"
+    - "敲诈勒索"
+    - "寻衅滋事"
+    - "交通肇事"
+    - "危险驾驶"
+    - "非法吸收"
+    - "集资诈骗"
+    - "职务侵占"
+    - "挪用资金"
+    - "挪用公款"
+    - "刑讯逼供"
+    - "徇私枉法"
+    - "渎职"
+    - "玩忽职守"
+    - "滥用职权"
+    - "犯罪"
+    - "刑事"
+    - "罪名"
+    - "量刑"
+    - "羁押"
+    - "逮捕"
+    - "侦查"
+    - "提起公诉"
+
+  fact_atoms:
+    # 客观要件 (Actus Reus)
+    "致人重伤": "Crim.Objective.SEVERE_INJURY"
+    "致人死亡": "Crim.Objective.DEATH"
+    "秘密窃取": "Crim.Objective.SECRET_STEALING"
+    "暴力胁迫": "Crim.Objective.FORCE_INTIMIDATION"
+    "数额巨大": "Crim.Objective.LARGE_AMOUNT"
+    "数额特别巨大": "Crim.Objective.EXCEPTIONALLY_LARGE"
+    "利用职务便利": "Crim.Objective.ABUSE_OF_OFFICE"
+    "贩卖毒品": "Crim.Objective.DRUG_TRAFFICKING"
+    "容留卖淫": "Crim.Objective.HARBORING_PROSTITUTION"
+    # 主观要件 (Mens Rea)
+    "直接故意": "Crim.Subjective.DIRECT_INTENT"
+    "间接故意": "Crim.Subjective.INDIRECT_INTENT"
+    "过于自信过失": "Crim.Subjective.CONSCIOUS_NEGLIGENCE"
+    "疏忽大意过失": "Crim.Subjective.CARELESS_NEGLIGENCE"
+    "共同故意": "Crim.Subjective.JOINT_INTENT"
+    # 违法阻却
+    "正当防卫": "Crim.Justification.SELF_DEFENSE"
+    "防卫过当": "Crim.Justification.EXCESSIVE_DEFENSE"
+    "紧急避险": "Crim.Justification.NECESSITY"
+    # 量刑情节
+    "自首": "Crim.Mitigation.SURRENDER"
+    "立功": "Crim.Mitigation.MERITORIOUS"
+    "认罪认罚": "Crim.Mitigation.GUILTY_PLEA"
+    "退赃退赔": "Crim.Mitigation.RESTITUTION"
+    "累犯": "Crim.Aggravation.RECIDIVISM"
+    "主犯": "Crim.Role.PRINCIPAL"
+    "从犯": "Crim.Role.ACCESSORY"
+    "胁从犯": "Crim.Role.COERCED"
+    # 程序
+    "非法证据排除": "Crim.Exclusion.ILLEGAL_EVIDENCE"
+    "刑讯逼供": "Crim.Exclusion.TORTURE"
+    "程序违法": "Crim.Exclusion.PROCEDURAL_VIOLATION"
+
+  concepts:
+    - "犯罪构成要件"
+    - "自首认定"
+    - "立功认定"
+    - "共同犯罪区分"
+    - "正当防卫界限"
+    - "非法证据排除"
+    - "认罪认罚从宽"
+    - "数罪并罚规则"
+    - "缓刑适用条件"
+    - "死刑适用限制"
+    - "毒品数量认定"
+    - "累犯认定标准"
+
+# ═══════════════════════════════════════════
+# 2. 行政（127次）
+# ═══════════════════════════════════════════
+administrative:
+  domain_id: "ADMIN"
+  registry_path: "domains.admin"
+  regex_triggers: ["行政处罚", "行政许可", "行政强制", "行政征收", "行政征用",
+                   "行政复议", "行政协议", "行政赔偿", "行政补偿", "行政确认",
+                   "撤销决定", "确认违法", "履行法定职责", "怠于履职",
+                   "政府信息公开", "行政不作为"]
+
+  fact_atoms:
+    "超越职权": "Admin.Legality.BEYOND_AUTHORITY"
+    "无职权依据": "Admin.Legality.NO_AUTHORITY"
+    "程序违法": "Admin.Legality.PROCEDURAL_VIOLATION"
+    "未听证": "Admin.Legality.NO_HEARING"
+    "证据不足": "Admin.Legality.INSUFFICIENT_EVIDENCE"
+    "认定事实错误": "Admin.Legality.FACTUAL_ERROR"
+    "适用法律错误": "Admin.Legality.LEGAL_ERROR"
+    "明显不当": "Admin.Legality.MANIFESTLY_IMPROPER"
+    "行政处罚": "Admin.Action.PENALTY"
+    "行政许可": "Admin.Action.LICENSE"
+    "行政协议": "Admin.Action.CONTRACT"
+
+  concepts:
+    - "行政行为合法性审查"
+    - "程序正当原则"
+    - "比例原则"
+    - "信赖保护"
+    - "行政协议效力"
+    - "行政赔偿范围"
+
+# ═══════════════════════════════════════════
+# 3. 合同纠纷（借贷/买卖/租赁/建设工程/委托等）
+# ═══════════════════════════════════════════
+contract:
+  domain_id: "CONTRACT"
+  registry_path: "domains.civil.contract"
+  regex_triggers: ["借贷", "借款", "民间借贷", "买卖合同", "购销", "出卖",
+                   "租赁", "出租", "承租", "建设工程", "施工", "工程款",
+                   "发包", "承包", "委托合同", "委托", "承揽", "保管",
+                   "仓储", "运输合同", "技术合同", "担保", "保证",
+                   "定金", "违约金", "违约", "逾期", "合同解除",
+                   "物业", "服务合同", "保险合同", "劳动合同"]
+
+  fact_atoms:
+    "合同成立": "Contract.Status.FORMED"
+    "合同有效": "Contract.Status.VALID"
+    "合同无效": "Contract.Status.INVALID"
+    "合同解除": "Contract.Status.TERMINATED"
+    "逾期付款": "Contract.Performance.PAYMENT_OVERDUE"
+    "未交付": "Contract.Performance.NON_DELIVERY"
+    "已履行": "Contract.Performance.FULFILLED"
+    "根本违约": "Contract.Breach.FUNDAMENTAL"
+    "违约": "Contract.Breach.OCCURRED"
+    "约定利息": "Contract.Finance.AGREED_INTEREST"
+    "违约金": "Contract.Relief.LIQUIDATED_DAMAGES"
+    "实际损失": "Contract.Finance.ACTUAL_LOSS"
+    "定金": "Contract.Finance.DEPOSIT"
+    "LPR": "Contract.Finance.LPR_REFERENCE"
+    "建设工程优先受偿权": "Contract.Security.CONSTRUCTION_LIEN"
+    "抵押": "Contract.Security.MORTGAGE"
+    "连带责任": "Contract.Liability.JOINT_SEVERAL"
+    "保证责任": "Contract.Liability.GUARANTOR"
+    "不可抗力": "Contract.Defense.FORCE_MAJEURE"
+    "情势变更": "Contract.Defense.CHANGED_CIRCUMSTANCES"
+    "显失公平": "Contract.Defense.UNCONSCIONABLE"
+
+  concepts:
+    - "合同成立"
+    - "合同效力"
+    - "违约责任"
+    - "违约金调整"
+    - "损害赔偿计算"
+    - "民间借贷利率"
+    - "买卖合同风险转移"
+    - "租赁优先购买权"
+    - "建设工程优先受偿权"
+    - "定金罚则"
+
+# ═══════════════════════════════════════════
+# 4. 侵权责任
+# ═══════════════════════════════════════════
+tort:
+  domain_id: "TORT"
+  registry_path: "domains.civil.tort"
+  regex_triggers: ["侵权", "损害", "人身损害", "财产损害", "精神损害",
+                   "交通事故", "车祸", "肇事", "医疗损害", "医疗事故",
+                   "产品责任", "产品缺陷", "环境污染", "生态损害",
+                   "高度危险", "饲养动物", "物件损害", "网络侵权",
+                   "安全保障义务", "行为人", "受害人", "过错"]
+
+  fact_atoms:
+    "交通事故": "Tort.Type.TRAFFIC_ACCIDENT"
+    "医疗损害": "Tort.Type.MEDICAL_MALPRACTICE"
+    "产品缺陷": "Tort.Type.PRODUCT_DEFECT"
+    "环境污染": "Tort.Type.ENVIRONMENTAL"
+    "故意侵权": "Tort.Fault.INTENTIONAL"
+    "过失侵权": "Tort.Fault.NEGLIGENT"
+    "无过错责任": "Tort.Fault.STRICT_LIABILITY"
+    "人身损害": "Tort.Damage.PERSONAL_INJURY"
+    "财产损失": "Tort.Damage.PROPERTY_LOSS"
+    "精神损害": "Tort.Damage.EMOTIONAL_DISTRESS"
+    "共同侵权": "Tort.Multi.JOINT_TORTFEASORS"
+
+  concepts:
+    - "侵权构成要件"
+    - "过错认定"
+    - "因果关系"
+    - "损害赔偿范围"
+    - "精神损害赔偿"
+    - "安全保障义务"
+
+# ═══════════════════════════════════════════
+# 5. 公司/破产/保险/证券/票据/信托
+# ═══════════════════════════════════════════
+corporate:
+  domain_id: "CORPORATE"
+  registry_path: "domains.civil.corporate"
+  regex_triggers: ["股东", "股权", "公司", "董事会", "股东会", "决议",
+                   "法人人格", "破产", "清算", "管理人", "重整",
+                   "保险", "投保", "理赔", "被保险人",
+                   "证券", "虚假陈述", "内幕交易", "操纵市场",
+                   "票据", "背书", "追索", "信托"]
+
+  fact_atoms:
+    "股东出资": "Corp.Capital.CONTRIBUTION"
+    "股权转让": "Corp.Equity.TRANSFER"
+    "公司决议": "Corp.Governance.RESOLUTION"
+    "法人人格否认": "Corp.Liability.PIERCING_VEIL"
+    "破产原因": "Corp.Bankruptcy.CAUSE"
+    "重整申请": "Corp.Bankruptcy.REORGANIZATION"
+    "清算": "Corp.Liquidation.WINDING_UP"
+    "保险事故": "Corp.Insurance.INSURED_EVENT"
+    "虚假陈述": "Corp.Securities.MISREPRESENTATION"
+
+  concepts:
+    - "股东出资义务"
+    - "股权转让效力"
+    - "公司决议效力"
+    - "法人人格否认"
+    - "破产原因认定"
+    - "重整可行性"
+    - "保险代位求偿"
+
+# ═══════════════════════════════════════════
+# 6. 知识产权（专利/商标/著作权/商业秘密/不正当竞争/植物新品种）
+# ═══════════════════════════════════════════
+intellectual_property:
+  domain_id: "IP"
+  registry_path: "domains.ip"
+  regex_triggers: ["专利", "发明", "实用新型", "外观设计", "商标",
+                   "著作权", "版权", "作品", "商业秘密", "技术秘密",
+                   "反不正当竞争", "植物新品种", "集成电路",
+                   "域名", "驰名商标"]
+
+  fact_atoms:
+    "全面覆盖": "IP.Patent.ALL_ELEMENTS"
+    "等同特征": "IP.Patent.EQUIVALENT"
+    "现有技术": "IP.Defense.PRIOR_ART"
+    "在先使用": "IP.Defense.PRIOR_USE"
+    "合理使用": "IP.Defense.FAIR_USE"
+    "实质性相似": "IP.Copyright.SUBSTANTIAL_SIMILARITY"
+    "混淆可能性": "IP.Trademark.LIKELIHOOD_CONFUSION"
+    "商标近似": "IP.Trademark.SIMILARITY"
+    "驰名商标": "IP.Trademark.WELL_KNOWN"
+    "鉴定确认侵权": "IP.Evidence.EXPERT_CONFIRMED"
+
+  concepts:
+    - "专利侵权判定"
+    - "商标混淆可能性"
+    - "著作权合理使用"
+    - "商业秘密构成"
+    - "反不正当竞争"
+    - "知识产权损害赔偿"
+
+# ═══════════════════════════════════════════
+# 7. 婚姻家庭/继承
+# ═══════════════════════════════════════════
+family:
+  domain_id: "FAMILY"
+  registry_path: "domains.family"
+  regex_triggers: ["离婚", "婚姻", "继承", "抚养", "夫妻", "子女", "遗产",
+                   "遗嘱", "家暴", "感情破裂", "婚外", "财产分割", "探视"]
+
+  fact_atoms:
+    "感情破裂": "Family.Divorce.IRRETRIEVABLE_BREAKDOWN"
+    "家暴": "Family.Divorce.DOMESTIC_VIOLENCE"
+    "夫妻共同财产": "Family.Property.JOINT"
+    "婚前财产": "Family.Property.PREMARITAL"
+    "抚养权": "Family.Custody.CUSTODY"
+    "抚养费": "Family.Custody.SUPPORT"
+    "法定继承": "Family.Estate.INTESTATE"
+    "遗嘱继承": "Family.Estate.TESTATE"
+
+  concepts:
+    - "离婚法定条件"
+    - "夫妻共同财产"
+    - "子女抚养权"
+    - "继承顺序"
+    - "遗嘱效力"
+
+# ═══════════════════════════════════════════
+# 8. 物权
+# ═══════════════════════════════════════════
+property:
+  domain_id: "PROPERTY"
+  registry_path: "domains.civil.property"
+  regex_triggers: ["物权", "所有权", "不动产", "房产", "房屋", "土地",
+                   "抵押权", "质押权", "留置权", "用益物权", "建设用地",
+                   "宅基地", "地役权", "居住权", "相邻", "共有"]
+
+  fact_atoms:
+    "善意取得": "Property.Acquisition.BONA_FIDE"
+    "不动产登记": "Property.Registration.REAL_ESTATE"
+    "建设用地使用权": "Property.Right.CONSTRUCTION_LAND"
+    "抵押权": "Property.Security.MORTGAGE"
+    "相邻关系": "Property.Neighbor.DISPUTE"
+    "共有物分割": "Property.CoOwnership.PARTITION"
+
+  concepts:
+    - "物权变动规则"
+    - "善意取得"
+    - "不动产登记效力"
+    - "抵押权实现"
+    - "相邻关系处理"
+
+# ═══════════════════════════════════════════
+# 9. 国家赔偿
+# ═══════════════════════════════════════════
+state_compensation:
+  domain_id: "STATE_COMP"
+  registry_path: "domains.state_compensation"
+  regex_triggers: ["国家赔偿", "行政赔偿", "刑事赔偿", "赔偿义务机关",
+                   "违法拘留", "超期羁押", "错误执行", "再审改判无罪"]
+
+  fact_atoms:
+    "国家赔偿申请": "StateComp.Claim.FILED"
+    "刑事赔偿": "StateComp.Type.CRIMINAL"
+    "行政赔偿": "StateComp.Type.ADMIN"
+    "违法拘留": "StateComp.Ground.ILLEGAL_DETENTION"
+    "超期羁押": "StateComp.Ground.OVER_DETENTION"
+    "精神损害赔偿": "StateComp.Damage.EMOTIONAL"
+
+  concepts:
+    - "国家赔偿范围"
+    - "赔偿义务机关"
+    - "赔偿计算标准"
+    - "精神抚慰金"
+
+# ═══════════════════════════════════════════
+# 10. 执行
+# ═══════════════════════════════════════════
+enforcement:
+  domain_id: "ENFORCEMENT"
+  registry_path: "domains.enforcement"
+  regex_triggers: ["执行", "查封", "冻结", "扣押", "拍卖", "变卖",
+                   "执行异议", "参与分配", "失信", "限高", "限制消费"]
+
+  fact_atoms:
+    "财产保全": "Enforce.FREEZE.ASSET"
+    "强制执行": "Enforce.Action.FORCED"
+    "执行异议": "Enforce.Objection.FILED"
+    "失信被执行人": "Enforce.Sanction.DISHONESTY"
+    "执行分配": "Enforce.Distribution.PARTICIPATION"
+
+  concepts:
+    - "执行措施种类"
+    - "执行异议"
+    - "参与分配"
+    - "失信惩戒"
+
+# ═══════════════════════════════════════════
+# 11. 程序/证据/管辖/时效
+# ═══════════════════════════════════════════
+procedure:
+  domain_id: "PROCEDURE"
+  registry_path: "domains.procedure"
+  regex_triggers: ["管辖", "时效", "除斥期间", "证据", "举证",
+                   "再审", "上诉", "抗诉", "审判监督", "立案",
+                   "回重审", "发回", "改判", "二审"]
+
+  fact_atoms:
+    "诉讼时效届满": "Proc.Limitation.EXPIRED"
+    "时效中断": "Proc.Limitation.INTERRUPTED"
+    "地域管辖": "Proc.Jurisdiction.TERRITORIAL"
+    "级别管辖": "Proc.Jurisdiction.LEVEL"
+    "专属管辖": "Proc.Jurisdiction.EXCLUSIVE"
+    "举证责任倒置": "Proc.Evidence.BURDEN_REVERSAL"
+    "再审事由": "Proc.Retrial.GROUNDS"
+
+  concepts:
+    - "诉讼时效"
+    - "管辖权确定"
+    - "举证责任分配"
+    - "再审事由"
+    - "审判监督程序"
+
+# ═══════════════════════════════════════════
+# 12. 未成年人
+# ═══════════════════════════════════════════
+juvenile:
+  domain_id: "JUVENILE"
+  registry_path: "domains.juvenile"
+  regex_triggers: ["未成年人", "少年", "儿童", "合适成年人", "社会调查",
+                   "不公开审理", "犯罪记录封存", "教育感化"]
+
+  fact_atoms:
+    "未满十八周岁": "Juv.Age.UNDER_18"
+    "犯罪记录封存": "Juv.Record.SEALED"
+    "合适成年人到场": "Juv.Procedure.APPROPRIATE_ADULT"
+    "社会调查报告": "Juv.Procedure.SOCIAL_INVESTIGATION"
+
+  concepts:
+    - "未成年人年龄认定"
+    - "特殊保护原则"
+    - "教育感化方针"
+    - "犯罪记录封存"
+
+# ═══════════════════════════════════════════
+# 13. 涉外商事海事及港澳台
+# ═══════════════════════════════════════════
+international:
+  domain_id: "INTL"
+  registry_path: "domains.international"
+  regex_triggers: ["涉外", "海事", "外国", "仲裁裁决", "国际司法协助",
+                   "跨境", "域外送达", "涉港", "涉澳", "台湾",
+                   "英国法", "美国法", "纽约公约", "公共秩序保留"]
+
+  fact_atoms:
+    "涉外因素": "Intl.Factor.FOREIGN"
+    "仲裁协议": "Intl.Arbitration.AGREEMENT"
+    "仲裁裁决承认": "Intl.Arbitration.RECOGNITION"
+    "外国判决执行": "Intl.Judgment.ENFORCEMENT"
+    "海事优先权": "Intl.Maritime.LIEN"
+    "公共秩序保留": "Intl.Defense.PUBLIC_POLICY"
+
+  concepts:
+    - "涉外民事关系法律适用"
+    - "仲裁协议效力"
+    - "外国判决承认与执行"
+    - "海事赔偿责任限制"
+    - "区际司法协助"
+
+# ═══════════════════════════════════════════
+# 全局：精算参数
+# ═══════════════════════════════════════════
+pricing:
+  alpha: 1.0
+  lpr_source: "external_runtime_context"
+  lpr_period: "1Y"

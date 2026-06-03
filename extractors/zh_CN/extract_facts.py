@@ -205,23 +205,55 @@ def generate_dp_shadow(text: str, domain: str) -> dict:
     保持本金/利息/罚息比例关系，
     写入 _dp_shadow 节点供公网同步使用。
     """
-    # 提取所有金额
-    amount_matches = re.findall(r'(\d+(?:,\d{3})*(?:\.\d{1,2})?)\s*(万)?\s*(元|美元|人民币)?', text)
+    # 提取所有金额（支持阿拉伯数字 + 中文大写）
+    amount_pattern = r'(\d+(?:,\d{3})*(?:\.\d{1,2})?)\s*(万)?\s*(元|美元|人民币|美金|港币)?'
+    # 中文大写金额：壹贰叁肆伍陆柒捌玖拾佰仟万亿元角分整
+    cn_amount_pattern = r'([壹贰叁肆伍陆柒捌玖零拾佰仟万亿]+[万亿元角分整]+)'
+    
+    amount_matches = re.findall(amount_pattern, text) + \
+                     [(m.group(0), '', '') for m in re.finditer(cn_amount_pattern, text)]
     
     if not amount_matches:
         return None
     
     # 解析为浮点数
     amounts = []
-    for num_str, wan, unit in amount_matches:
-        try:
-            val = float(num_str.replace(',', ''))
-            if wan:
-                val *= 10000  # 万 → 元
-            if val > 100:  # 过滤太小的数字
-                amounts.append(val)
-        except:
-            pass
+    CN_DIGITS = {'零':0,'壹':1,'贰':2,'叁':3,'肆':4,'伍':5,'陆':6,'柒':7,'捌':8,'玖':9,'拾':10,'佰':100,'仟':1000,'万':10000,'亿':100000000}
+    
+    for match in amount_matches:
+        if isinstance(match, tuple):
+            num_str, wan, unit = match
+            try:
+                val = float(num_str.replace(',', ''))
+                if wan:
+                    val *= 10000  # 万 → 元
+                if val > 100:
+                    amounts.append(val)
+            except:
+                pass
+        elif isinstance(match, str):
+            # 中文大写金额解析
+            try:
+                val = 0.0
+                temp = 0
+                for ch in match:
+                    if ch in CN_DIGITS:
+                        temp = CN_DIGITS[ch]
+                    elif ch in '万亿元':
+                        if temp > 0:
+                            val += temp * CN_DIGITS.get(ch, 1)
+                            temp = 0
+                        else:
+                            val += CN_DIGITS.get(ch, 0)
+                    elif ch in '角分':
+                        val += temp * (0.1 if ch == '角' else 0.01)
+                        temp = 0
+                if temp > 0:
+                    val += temp
+                if val > 100:
+                    amounts.append(val)
+            except:
+                pass
     
     if len(amounts) < 2:
         return None

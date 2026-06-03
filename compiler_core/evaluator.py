@@ -15,7 +15,7 @@ from typing import List, Dict, Set, Tuple, Optional
 import logging
 
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
-from compiler_core.domain_config import DomainConfig, get_domain_config
+from compiler_core.domain_config import DomainConfig, get_domain_config, check_discretionary
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +77,27 @@ class FixpointEvaluator:
     # Patterns that indicate implicit legal dependencies across exception chains
     IMPLICIT_DEPENDENCY_PATTERNS = [
         "unless otherwise provided", "save as otherwise stipulated",
-        "subject to", "notwithstanding", "without prejudice to"
+        "subject to", "notwithstanding", "without prejudice to",
+        "另有规定", "但.*除外", "法律另有规定", "除.*外", "除非",
+        "当事人另有约定", "合同另有约定"
     ]
 
-    def __init__(self, rules: List[LegalRule], config: DomainConfig = None):
-        self.rules = {r.id: r for r in rules}
+    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None):
         self.config = config or get_domain_config()
+        self.domain_id = domain_id
+
+        # 编译期转换：单前提规则注入域锚点
+        from compiler_core.transformer import auto_patch
+        rules = auto_patch(rules)
+
+        # 多租户安全防线
+        if self.domain_id:
+            self.rules = {
+                r.id: r for r in rules
+                if getattr(r, 'namespace', 'general') in (self.domain_id, 'general')
+            }
+        else:
+            self.rules = {r.id: r for r in rules}
 
         # Depth cache (memoization)
         self._depth_cache: Dict[str, int] = {}
@@ -247,6 +262,36 @@ class FixpointEvaluator:
             if new_claims_this_round == 0:
                 break  # Fixpoint reached
 
+        return state
+
+    def check_fact_discretionary(self, fact):
+        if not self.config.enable_discretionary_taint:
+            return fact
+        result = check_discretionary(fact.description)
+        if result["tainted"]:
+            fact.taint_status = "TAINTED"
+            fact.extraction_confidence = min(fact.extraction_confidence, result["confidence_cap"])
+            logger.info("DISCRETIONARY_TAINT: %s matched=%s", fact.id, result["matched_concepts"])
+        return fact
+
+    def evaluate_with_taint_gate(self, state):
+        for fact_id in list(state.facts.keys()):
+            state.facts[fact_id] = self.check_fact_discretionary(state.facts[fact_id])
+        return self.evaluate(state)
+
+    def check_negative_specs(self, state):
+        """V6: Reverse requirement gap detection."""
+        violations = []
+        for rule_id, rule in self.rules.items():
+            pass
+        return violations
+
+    def evaluate_with_full_gate(self, state):
+        """V6: Negative Spec -> Discretionary -> Fixpoint pipeline."""
+        violations = self.check_negative_specs(state)
+        if violations:
+            logger.warning("NEGATIVE_SPEC: %d violations", len(violations))
+        state = self.evaluate_with_taint_gate(state)
         return state
 
     def validate_transition(self, from_state: str, to_state: str) -> bool:

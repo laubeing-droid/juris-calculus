@@ -1,60 +1,73 @@
-# Changelog
+﻿# juris-calculus Changelog
 
-## v1.0.2 (2026-06-02)
+## v1.0.3 (V6) - 2026-06-03
 
-### Bug Fixes
+### Kernel Upgrades (V6 LegalOS Integration)
 
-- Add input validation to `WeightedNodeCounter.compute_weights()` — returns clear error on empty facts
-- US contract rules de-hardcoded: moved from `run_benchmark.py` to `configs/en_US/rules.yaml`
+#### compiler_core/types.py
+- Added `TaintStatus` enum: CLEAR, TAINTED, ATTEMPTED_HIJACK, VERBATIM_MISMATCH
+- Extended `LegalFact`: taint_status, extraction_confidence, carrier_level, raw_text, source_anchor
+- Extended `LegalClaim`: claim_type, execution_trace_id
+- Added `NegativeSpec` dataclass for reverse requirement gap detection
 
-## v1.0.1 (2026-06-02)
+#### compiler_core/domain_config.py
+- Added `DISCRETIONARY_CONCEPTS` registry (16 Chinese legal concepts)
+- Added `check_discretionary()` function for automatic TAINTED marking
+- Added `enable_discretionary_taint` flag to `DomainConfig`
 
-### Bug Fixes
+#### compiler_core/evaluator.py
+- M1 Multiplication Penalty: h==0 or p==0 -> score *= 0.5
+- Imported `check_discretionary` from domain_config
+- Added `check_fact_discretionary()` method
+- Added `evaluate_with_taint_gate()` pipeline
+- Added `check_negative_specs()` and `evaluate_with_full_gate()` stubs
 
-- Fix `LegalIREvaluator` → `FixpointEvaluator` import error in `peripheral_models.py` and `batch_processor.py` (M10-M17 models were unusable)
-- Add missing `requirements.txt`
-- Replace production `print()` with `logging` in evaluator
-- Add README disclaimer: `ignite.py` is private and not included
+#### compiler_core/classifier.py (NEW)
+- `EvidenceClassifier`: A/B/C evidence carrier level classification (regex-based)
+- `levenshtein_distance()`: Edit distance for OCR tolerance
+- `verify_raw_text()`: Source-anchored verification with 4-step pipeline
+- `detect_label_hijacking()`: ATTEMPTED_HIJACK detection
 
-### Features
+#### configs/zh_CN/classifier_rules.yaml (NEW)
+- A_HARD_EVIDENCE: 6 rules (bank records, official docs)
+- B_ALTERNATIVE_EVIDENCE: 5 rules (chat confirmations, emails)
+- C_WEAK_SIGNAL: 5 rules (vague mentions, default catch-all)
 
-- Add `BatchProcessor.process_parallel()` with ThreadPoolExecutor
-- Add `load_rules_from_yaml()` for rule configuration
-- Add 5 unit tests for FixpointEvaluator
+#### configs/zh_CN/rules.yaml
+- De-SPC-ified: "SPC v5.3" -> "民法典+司法解释(请求权基础分析)"
+- Added 5 民间借贷 Horn rules (LOAN-001 to LOAN-005)
+- Added 7 exception chain rules (LOAN-EXC-001 to LOAN-EXC-007)
+- AND 前提增强: 单前提 48.2% → 31.9%, 注入 690 原子
+- OCR 概念标签注入: 累计 1,453 次, 规则唯一概念 1,921
+- Total rules: 2117
 
-### Documentation
+#### .github/workflows/ (NEW)
+- `auto-release.yml`: Semantic versioning + changelog + auto-publish
+- `rules-yaml-lint.yml`: YAML validation + Tarjan SCC cycle detection
 
-- Add Environment / Supported Jurisdictions / FAQ sections to README (EN + CN)
-- Add important notes and contribution paths to concept-roadmap.md
-- Fix README cp path consistency
+#### mcp_server.py (NEW)
+- FastMCP Server wrapper for WorkBuddy integration
+- Three tools: evidence_review, argument_lint, contract_review
+- JSON-RPC stdio fallback mode
+- ExecutionTraceID generation and audit logging
 
-## v1.0.0 (2026-06-02)
+### Design Principles (V6)
+- 大模型全系统最高权限 = 摘原文 + 贴标签。永不裁判。
+- carrier_level 由规则引擎机械判定，严禁大模型填写
+- 自由裁量概念（显失公平、公序良俗等）自动 TAINTED
+- Negative Spec: 不仅输出提取到的事实，还输出未找到的要件
+- Source-Anchored Verification: 编辑距离 <= 3 容差
 
-### Initial Open-Source Release
+### Test Results
+- Unit tests: 5/5 PASS
+- Loan rules: LOAN-001, LOAN-002 verified end-to-end
+- Classifier: A/B/C 6/6 test cases PASS
+- Hijack detection: ATTEMPTED_HIJACK flagging verified
+- Source verify: OK / VERBATIM_MISMATCH verified
 
-First public release of the `juris-calculus` kernel — a jurisdiction-agnostic symbolic reasoning and actuarial pricing engine for legal practice.
-
-**Core Components:**
-
-- `compiler_core/` — Fixpoint legal reasoning engine with exception chain penetration, concept registry scoring, CRITICAL_CLARITY_FAILURE guard, and implicit dependency detection
-- `legalos_services/` — Four mathematical models: DAG weighted node counter, multi-factor pricing matrix with billing tier leverage (vector H), batch exponential decay, and Laplace differential privacy
-- `extractors/zh_CN/` — Chinese Civil Law fact extractor with graph topology causal analysis and stage auto-detection
-- `extractors/en_US/` — US Common Law IRAC extractor skeleton (ready for community contribution)
-
-**Dual Jurisdiction Example Configs:**
-
-- `configs/zh_CN/domain_config.example.yaml` — Chinese Civil Law demo
-- `configs/en_US/domain_config.example.yaml` — US Common Law demo with billing tier vector H
-
-**Key Design Decisions:**
-
-- All jurisdiction-specific parameters (α, thresholds) are set to demo defaults (1.0 / 0.0). Production users must calibrate via `calibrate_theilsen()` with their own timesheet data.
-- Private business logic (entity maps, calibrated constants, raw case data) is physically isolated from the open-source tree.
-- `LegalOSPricingEngine` class name preserved as API identifier (not branding).
-
-**Author:**
-
-Laupinco — Hokkien Computational Jurisprudence Enthusiast (Powered by Gemini & WorkBuddy & DeepSeek-V4 Pro)
-
----
-*juris-calculus v1.0.0 is the open-source fork of the LegalOS private production system (v3.0+).*
+### Upgrading from v1.0.2
+```bash
+git pull
+pip install -r requirements.txt  # includes pyyaml
+python -m unittest tests.unit.test_evaluator -v  # 5/5 should pass
+```

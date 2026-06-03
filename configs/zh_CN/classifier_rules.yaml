@@ -1,0 +1,53 @@
+version: '2.1'
+description: Evidence carrier level classifier for LegalOS V6
+evidence_classifiers:
+  A_HARD_EVIDENCE:
+    label: 硬证据（机构化记录）
+    priority: 1
+    rules:
+    - pattern: (银行.*转账|转账.*银行|网银|电子回单|Bank.Transfer)
+      match_type: regex
+    - pattern: (银行流水|对账单|存款凭证|汇款单|SWIFT)
+      match_type: regex
+    - pattern: (微信.*电子回单|支付宝.*电子回单|微信转账.*截图.*单号|支付.*交易单号)
+      match_type: regex
+    - pattern: (不动产登记|房产证|行驶证|营业执照|备案登记|公证)
+      match_type: regex
+    - pattern: (判决书|裁定书|仲裁裁决|调解书|法院.*文书)
+      match_type: regex
+    - pattern: (?=.*(?:[0-9.,]{4,}|[0-9]+万|[0-9]+千|[0-9]+亿))(?=.*(?:银行|支行|分行|信用社|支付宝|微信支付)).*
+      match_type: regex
+    confidence_boost: 0.3
+    description: 金融机构或官方机构出具的格式化记录
+  B_ALTERNATIVE_EVIDENCE:
+    label: 替代证据（电子确认）
+    priority: 2
+    rules:
+    - pattern: (?=.*(?:[0-9.,]{4,}|[0-9]+万|[0-9]+千|[0-9]+亿))(?=.*(?:收到|已到账|确认|OK|好的|没问题)).*
+      match_type: regex
+    - pattern: (邮件.*确认|email.*confirm|书面确认)
+      match_type: regex
+    - pattern: (录音.*确认|视频.*承认|电话.*确认).*[0-9.,]{4,}
+      match_type: regex
+    - pattern: (借条.*照片|欠条.*图片|借据.*截图)
+      match_type: regex
+    - pattern: (被告.*自认|对方.*承认|当事人.*认可)
+      match_type: regex
+    confidence_boost: 0.1
+    description: 非机构化但包含金额+确认语的电子/书面记录
+  C_WEAK_SIGNAL:
+    label: 弱信号（需人工核验）
+    priority: 3
+    rules:
+    - pattern: (那个.*钱|这笔.*款|上次.*数|之前.*转账)
+      match_type: regex
+    - pattern: ^[^0-9]*$
+      match_type: regex
+    - pattern: (?=.*[0-9])(?!.*[0-9]{4,}).*
+      match_type: regex
+    - pattern: (原告.*称|申请人.*主张|我方.*认为)
+      match_type: regex
+    - pattern: .*
+      match_type: catch_all
+    confidence_boost: -0.2
+    description: 不符合A/B形式特征的所有文本，强制人工复核
