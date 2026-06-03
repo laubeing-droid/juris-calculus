@@ -85,8 +85,7 @@ juris-calculus/
 │
 ├── tests/
 │   ├── run_benchmark_zh.py #   13-case China law benchmark (all converged)
-│   ├── unit/               #   Unit tests
-│   └── results/            #   Benchmark reports
+│   └── unit/               #   Unit tests
 │
 ├── mcp_server.py           # FastMCP server for WorkBuddy integration
 └── chroma_db_ocr/          # OCR semantic index (gitignored, build locally)
