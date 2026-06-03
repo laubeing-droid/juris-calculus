@@ -39,3 +39,6 @@ chroma_db_ocr/
 # Rule backup files (concept injection/Augment 前备份)
 configs/zh_CN/rules_pre_inject.yaml
 configs/zh_CN/rules_augmented.yaml
+
+# Regenerated benchmark reports
+tests/results/
