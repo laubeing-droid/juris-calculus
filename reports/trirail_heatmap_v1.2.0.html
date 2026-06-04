@@ -36,9 +36,9 @@ h1 { color:#f8fafc; font-size:24px; margin-bottom:4px; }
 </head>
 <body>
 <h1>juris-calculus v1.2.0 — Tri-Rail Cross-Jurisdictional Collision Matrix</h1>
-<div class="subtitle">HK Engine x US Engine x PRC-First Alignment Engine | 11 Scenarios</div>
+<div class="subtitle">HK Engine x US Engine x PRC-First Alignment Engine | 12 Scenarios</div>
 <div class="stats">
-  <div class="stat"><div class="n" style="color:#ef4444">9</div><div class="l">COLLISION</div></div><div class="stat"><div class="n" style="color:#f59e0b">2</div><div class="l">ASYMMETRY</div></div><div class="stat"><div class="n" style="color:#22c55e">0</div><div class="l">RESONANCE</div></div><div class="stat"><div class="n" style="color:#3b82f6">0</div><div class="l">PARALLAX</div></div>
+  <div class="stat"><div class="n" style="color:#ef4444">9</div><div class="l">COLLISION</div></div><div class="stat"><div class="n" style="color:#f59e0b">2</div><div class="l">ASYMMETRY</div></div><div class="stat"><div class="n" style="color:#22c55e">1</div><div class="l">RESONANCE</div></div><div class="stat"><div class="n" style="color:#3b82f6">0</div><div class="l">PARALLAX</div></div>
 </div>
 <div class="grid">
   
@@ -50,7 +50,7 @@ h1 { color:#f8fafc; font-size:24px; margin-bottom:4px; }
                 <div class="rail-box hk">
                     <div class="rail-label">HK</div>
                     <div class="rail-state">SUPPRESSED</div>
-                    <div class="rail-claims">Contract_Validity</div>
+                    <div class="rail-claims">Parties_Duties_Defined</div>
                 </div>
                 <div class="rail-box us">
                     <div class="rail-label">US</div>
@@ -94,7 +94,7 @@ h1 { color:#f8fafc; font-size:24px; margin-bottom:4px; }
                 <div class="rail-box hk">
                     <div class="rail-label">HK</div>
                     <div class="rail-state">VALID</div>
-                    <div class="rail-claims">Contract_Validity, Parties_Duties_Defined</div>
+                    <div class="rail-claims">Parties_Duties_Defined, Contract_Validity</div>
                 </div>
                 <div class="rail-box us">
                     <div class="rail-label">US</div>
@@ -138,12 +138,12 @@ h1 { color:#f8fafc; font-size:24px; margin-bottom:4px; }
                 <div class="rail-box hk">
                     <div class="rail-label">HK</div>
                     <div class="rail-state">SUPPRESSED</div>
-                    <div class="rail-claims">Contract_Validity</div>
+                    <div class="rail-claims">Parties_Duties_Defined</div>
                 </div>
                 <div class="rail-box us">
                     <div class="rail-label">US</div>
                     <div class="rail-state">VALID</div>
-                    <div class="rail-claims">DIP_Status → Business_Operations_Continue</div>
+                    <div class="rail-claims">AutomaticStay_InEffect → CreditorPower(Collect)=0</div>
                 </div>
                 <div class="rail-box prc">
                     <div class="rail-label">PRC</div>
@@ -284,7 +284,29 @@ h1 { color:#f8fafc; font-size:24px; margin-bottom:4px; }
                 </div>
             </div>
         </div>
+        <div class="card" style="border-left:5px solid #22c55e">
+            <span class="tag tag-RESONANCE">TRI_RESONANCE</span>
+            <div class="case-id">TRI_012_CN_Bridge_Verification</div>
+            <div class="desc">跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证</div>
+            <div class="grid-3">
+                <div class="rail-box hk">
+                    <div class="rail-label">HK</div>
+                    <div class="rail-state">VALID</div>
+                    <div class="rail-claims">Parties_Duties_Defined, Contract_Validity</div>
+                </div>
+                <div class="rail-box us">
+                    <div class="rail-label">US</div>
+                    <div class="rail-state">VALID</div>
+                    <div class="rail-claims">silent</div>
+                </div>
+                <div class="rail-box prc">
+                    <div class="rail-label">PRC</div>
+                    <div class="rail-state">0 ov</div>
+                    <div class="rail-claims">none</div>
+                </div>
+            </div>
+        </div>
 </div>
-<div class="footer">juris-calculus v1.2.0-TriRail | Laupinco & WorkBuddy | 2026-06-04 16:51</div>
+<div class="footer">juris-calculus v1.2.0-TriRail | Laupinco & WorkBuddy | 2026-06-04 18:23</div>
 </body>
 </html>

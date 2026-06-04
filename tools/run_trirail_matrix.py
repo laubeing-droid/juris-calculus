@@ -152,6 +152,20 @@ TRI_SCENARIOS = {
             # 注意: 不注入 Cross_Border_Context
         }
     },
+    # ── CN 桥接验收: 港美事实 → 中国法规则触发 ──
+    "TRI_012_CN_Bridge_Verification": {
+        "description": "跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证",
+        "context": "cross_border",
+        "facts": {
+            "ContractOfSale_Exists": 0.95,
+            "Breach_Established": 0.92,
+            "Buyer_FailsToPay": 0.90,
+            "Damages_Awarded": 0.88,
+            "Loss_Occurred": 0.85,
+            "Goods_Defective": 0.80,
+            "Cross_Border_Context": 1.0,
+        }
+    },
 }
 
 
@@ -184,17 +198,18 @@ def classify_tri_state(
     us_is_active = len(us_claims_set) > 0
     hk_is_suppressed = "SUPPRESSED" in hk_tracker_vals
 
-    # PRC 覆写提取
+    # PRC 覆写提取 — v1.2.0: 消费三轨格式 {blocking_overrides, spc, cn}
+    blocking = prc_state.get("blocking_overrides", {})
     has_prc_force_void = any(
-        v.get("type") == "FORCE_VOID" for v in prc_state.values()
+        v.get("type") == "FORCE_VOID" for v in blocking.values()
     )
     has_prc_force_suppress = any(
-        v.get("type") == "FORCE_SUPPRESS" for v in prc_state.values()
+        v.get("type") == "FORCE_SUPPRESS" for v in blocking.values()
     )
     has_prc_override = any(
-        v.get("type") == "MAPPING_OVERRIDE" for v in prc_state.values()
+        v.get("type") == "MAPPING_OVERRIDE" for v in blocking.values()
     )
-    has_prc_any = len(prc_state) > 0
+    has_prc_any = len(blocking) > 0
 
     # 🎯 CHINA_US_COLLISION: PRC 强制否决 (不论US是否触发)
     # 关键修正: US引擎无匹配规则不代表"静默"，PRC的FORCE_VOID本身就是
@@ -253,7 +268,7 @@ class TriRailCollider:
         # ── PRC 约束引擎 ──
         self.prc_engine = PRCAdapter()
 
-        print(f"[TriRail] HK={len(hk_rules)} rules | US={len(us_rules)} rules | PRC={len(self.prc_engine.constraint_rules)} constraints")
+        print(f"[TriRail] HK={len(hk_rules)} rules | US={len(us_rules)} rules | PRC CBL={len(self.prc_engine.constraint_rules)} | SPC={22 if self.prc_engine.spc_loaded else 0} | CN={self.prc_engine.cn_rule_count}")
 
     def build_fact_state(self, facts_dict: Dict[str, float]) -> Dict[str, LegalFact]:
         """将 {fact_id: confidence} → {fact_id: LegalFact}"""
@@ -317,19 +332,15 @@ class TriRailCollider:
                 "state_tracker": dict(us_state.state_tracker),
             },
             "prc": {
-                "overrides_count": len(prc_state),
-                "force_void": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "FORCE_VOID"
-                ],
-                "force_suppress": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "FORCE_SUPPRESS"
-                ],
+                "overrides_count": len(prc_state.get("blocking_overrides", {})),
+                "force_void": self.prc_engine.get_force_void_triggers(prc_state),
+                "force_suppress": self.prc_engine.get_force_suppress_triggers(prc_state),
                 "mapping_override": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "MAPPING_OVERRIDE"
+                    m["id"] for m in self.prc_engine.get_mapping_overrides(prc_state)
                 ],
+                "spc_claims_count": prc_state.get("spc_claims_count", 0),
+                "cn_claims_count": prc_state.get("cn_claims_count", 0),
+                "cn_rules_total": prc_state.get("cn_rules_total", 0),
             },
         }
 
@@ -354,7 +365,9 @@ class TriRailCollider:
             hk_c = len(result["hk"]["claims"])
             us_c = len(result["us"]["claims"])
             prc_c = result["prc"]["overrides_count"]
-            print(f"  {tag} {sid}: HK={result['hk']['state']}({hk_c}c) US={result['us']['state']}({us_c}c) PRC={prc_c}ov")
+            cn_c = result["prc"].get("cn_claims_count", 0)
+            spc_c = result["prc"].get("spc_claims_count", 0)
+            print(f"  {tag} {sid}: HK={result['hk']['state']}({hk_c}c) US={result['us']['state']}({us_c}c) PRC={prc_c}ov CN={cn_c}c SPC={spc_c}c")
 
         return results
 
@@ -363,7 +376,7 @@ class TriRailCollider:
         lines = [
             "=" * 70,
             "  Tri-Rail Collider Report — v1.2.0",
-            "  HK x US x PRC Cross-Jurisdictional Collision Matrix",
+            "  HK (64) x US (81) x PRC (CBL=41 + SPC=23 + CN=2117)",
             "=" * 70,
             "",
         ]
@@ -387,6 +400,10 @@ class TriRailCollider:
                 lines.append(f"  PRC FORCE_SUPPRESS: {r['prc']['force_suppress']}")
             if r["prc"]["mapping_override"]:
                 lines.append(f"  PRC MAPPING_OVERRIDE: {r['prc']['mapping_override']}")
+            cn_c = r["prc"].get("cn_claims_count", 0)
+            spc_c = r["prc"].get("spc_claims_count", 0)
+            if cn_c or spc_c:
+                lines.append(f"  PRC CN={cn_c}c SPC={spc_c}c (total={r['prc'].get('cn_rules_total', 0)} rules)")
             lines.append("")
 
         lines.append("=" * 70)
