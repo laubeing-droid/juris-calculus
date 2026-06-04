@@ -1,0 +1,3291 @@
+[
+  {
+    "term": "Administrative law judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Nominated) → Power(Adjudicate_Regulatory_Disputes) → Act(Conduct_Hearing) → Status(Decision_Entered)",
+    "horn_premise_atom": "Regulatory_Agency_Appoints AND Administrative_Proceedings_Initiated → AdministrativeLawJudge_Hearing_Authority",
+    "domains": [
+      "Administrative",
+      "Regulatory"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "META_OVERRIDE → CN_Administrative_Reconsideration_Officer"
+  },
+  {
+    "term": "Administrative Office of the United States Courts (AO)",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Federal_Court_Administrator) → Act(Manage_Court_Operations) → Status(AO_Operational)",
+    "horn_premise_atom": "Congress_Established AND Judicial_Conference_Oversees → AO_Has_Administrative_Authority",
+    "domains": [
+      "Administrative",
+      "Court_Management"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "? → CN_Supreme_Court_Administrative_Bureau"
+  },
+  {
+    "term": "Admissible",
+    "l0_primitive": "Status",
+    "structural_chain": "Act(Offer_Evidence) → Status(Admissible) → Power(Court_Consider)",
+    "horn_premise_atom": "Relevant AND Not_Prejudicial AND Proper_Foundation → Evidence_Admissible",
+    "domains": [
+      "Evidence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_021_Discovery_Fishing → CN_Evidence_Exchange_Art68"
+  },
+  {
+    "term": "Affidavit",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(Deponent) → Act(Swear_Oath) → Act(Written_Statement) → Status(Filed)",
+    "horn_premise_atom": "Oath_Administered AND Statement_Reduced_To_Writing AND Signed → Affidavit_Valid",
+    "domains": [
+      "Procedure",
+      "Evidence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Notarized_Statement → FORCE_SUPPRESS若涉及跨境取证"
+  },
+  {
+    "term": "Alternate juror",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Alternate_Juror) → Status(Seated) → Act(Replace_Regular_Juror) → Status(Deliberating)",
+    "horn_premise_atom": "Jury_Empaneled AND Regular_Juror_Dismissed → Alternate_Juror_Activated",
+    "domains": [
+      "Criminal_Procedure",
+      "Jury"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_010_JuryTrial → CN_Peoples_Assessor → 无等同概念"
+  },
+  {
+    "term": "Alternative dispute resolution (ADR)",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Dispute_Arises) → Act(Parties_Select_ADR) → Act(Mediation_Or_Arbitration) → Status(Settlement)",
+    "horn_premise_atom": "Parties_Consent AND Neutral_Third_Party AND Formal_Litigation_Avoided → ADR_Process_Valid",
+    "domains": [
+      "Alternative_Dispute_Resolution",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Peoples_Mediation OR CN_Arbitration → VALID"
+  },
+  {
+    "term": "Amicus curiae",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Non_Party) → Act(File_Brief) → Power(Court_Accept) → Status(Brief_Considered)",
+    "horn_premise_atom": "Court_Permission OR Party_Consent AND Brief_Relevant → Amicus_Brief_Accepted",
+    "domains": [
+      "Appellate",
+      "Procedure"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "FORCE_SUPPRESS → 若涉及外国政府利益，依据CN_保密法"
+  },
+  {
+    "term": "Answer",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Complaint_Served) → Act(Filing_Answer) → Status(Issue_Joined)",
+    "horn_premise_atom": "Defendant_Served AND Response_Within_Time_Limit → Answer_Deemed_Filed",
+    "domains": [
+      "Civil_Procedure",
+      "Pleading"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Defense_Submission_Art128 → 功能对等"
+  },
+  {
+    "term": "Appeal",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Judgment_Entered) → Power(Appellate_Review) → Act(File_Notice) → Status(Appeal_Pending)",
+    "horn_premise_atom": "Final_Judgment AND Notice_Timely AND Appellant_Aggrieved → Appeal_Properly_Initiated",
+    "domains": [
+      "Appellate",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Second_Instance_Appeal_Art164 → 功能对等"
+  },
+  {
+    "term": "Appellant",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Losing_Party) → Act(File_Appeal) → Status(Appellant)",
+    "horn_premise_atom": "Party_Adversely_Affected_Below AND Appeal_Filed → Appellant_Recognized",
+    "domains": [
+      "Appellate"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Appellant → 完全对应"
+  },
+  {
+    "term": "Appellate",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Judgment_Below) → Power(Review_Jurisdiction) → Status(Case_On_Appeal)",
+    "horn_premise_atom": "Trial_Disposition_Challenged AND Review_Sought → Appellate_Jurisdiction_Attached",
+    "domains": [
+      "Appellate",
+      "Jurisdiction"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Second_Instance → 功能对等"
+  },
+  {
+    "term": "Appellee",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Prevailing_Party_Below) → Status(Appellee) → Power(Defend_Judgment)",
+    "horn_premise_atom": "Prevailed_Below AND Appeal_Filed_Against → Appellee_Status_Assigned",
+    "domains": [
+      "Appellate"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Appellee → 完全对应"
+  },
+  {
+    "term": "Arbitration",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Arbitration_Agreement) → Act(Submit_Dispute) → Power(Arbitrator_Decide) → Status(Award_Rendered)",
+    "horn_premise_atom": "Valid_Agreement AND Dispute_Within_Scope AND Tribunal_Convened → Arbitration_Proceeds",
+    "domains": [
+      "Alternative_Dispute_Resolution",
+      "Commercial"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Arbitration_Law → VALID，NY_Convention跨境承认"
+  },
+  {
+    "term": "Arraignment",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(Defendant) → Status(Charged) → Act(Arraignment) → Status(Plea_Entered)",
+    "horn_premise_atom": "Charges_Filed AND Defendant_Brought AND Rights_Read → Arraignment_Conducted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Criminal_Procedure_Art93 → 批捕后讯问替代"
+  },
+  {
+    "term": "Article III judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Nominated_By_President) → Agent(Confirmed_By_Senate) → Status(Lifetime_Tenure) → Power(Article_III_Jurisdiction)",
+    "horn_premise_atom": "President_Nominated AND Senate_Confirmed → ArticleIII_Judge_Valid",
+    "domains": [
+      "Constitutional",
+      "Judiciary"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无终身制。CN_NPC_Appointment替代"
+  },
+  {
+    "term": "Assume",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Assume_Debt) → Status(Assumption_Effective)",
+    "horn_premise_atom": "Consent_Obtained AND Creditor_Acceptance AND Documentation_Executed → Assumption_Valid",
+    "domains": [
+      "Contract",
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Debt_Assumption_Art551 → 功能对等"
+  },
+  {
+    "term": "Bail",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(Defendant) → Status(Arrested) → Act(Bail_Set) → Status(Released)",
+    "horn_premise_atom": "Charged AND Hearing_Conducted AND Conditions_Met → Bail_Granted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Guarantor_Art66_CriminalProcedure → 范围更窄"
+  },
+  {
+    "term": "Bankruptcy",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Insolvent) → Act(Petition_Filed) → Status(AutomaticStay) → Asset(Estate_Created)",
+    "horn_premise_atom": "Debtor_Insolvent AND Petition_Under_Chapter_7_11_13 → Bankruptcy_Commenced",
+    "domains": [
+      "Bankruptcy",
+      "Insolvency"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "MAPPING_OVERRIDE → CN_Enterprise_Bankruptcy_Law(重整/清算分轨映射)"
+  },
+  {
+    "term": "Bankruptcy administrator",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Administrator) → Power(Oversee_No_Asset_Cases) → Act(Administer_Trust_Fund)",
+    "horn_premise_atom": "Appointed_By_DOJ AND Bankruptcy_Case_Open → Administrator_Authority",
+    "domains": [
+      "Bankruptcy",
+      "Administrative"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Administrator_Manager → 功能对等"
+  },
+  {
+    "term": "Bankruptcy code",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Federal_Statute_11_USC) → Power(Govern_Proceedings) → Status(Applicable)",
+    "horn_premise_atom": "Congress_Enacted AND Case_Filed_Under_Title_11 → Bankruptcy_Code_Governs",
+    "domains": [
+      "Bankruptcy",
+      "Statutory"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "FORCE_SUPPRESS → CN_Enterprise_Bankruptcy_Law优先"
+  },
+  {
+    "term": "Bankruptcy court",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Federal_Bankruptcy_Court) → Power(Jurisdiction_Over_Insolvency) → Act(Adjudicate) → Status(Order_Entered)",
+    "horn_premise_atom": "Article_I_Court_Established AND Referred_By_District_Court → Bankruptcy_Court_Has_Jurisdiction",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Intermediate_Court_Bankruptcy_Division → 功能对等"
+  },
+  {
+    "term": "Bankruptcy estate",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Petition_Filed) → Asset(All_Debtor_Property) → Power(Trustee_Administer)",
+    "horn_premise_atom": "Petition_Filed AND Property_Existing_At_Filing → Bankruptcy_Estate_Created",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Bankruptcy_Estate_Art30 → 功能对等"
+  },
+  {
+    "term": "Bankruptcy judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Appointed_By_Circuit) → Power(Preside_Bankruptcy_Cases) → Act(Enter_Orders)",
+    "horn_premise_atom": "Circuit_Judicial_Council_Appointed AND Bankruptcy_Docket_Assigned → Bankruptcy_Judge_Authorized",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Adjudication_Panel → 功能对等"
+  },
+  {
+    "term": "Bankruptcy petition",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Debtor_Files) OR Act(Creditor_Files) → Status(Petition_Filed) → Status(AutomaticStay)",
+    "horn_premise_atom": "Voluntary_Debtor OR Creditor_With_Claim AND Filing_Fee_Paid → Petition_Properly_Filed",
+    "domains": [
+      "Bankruptcy",
+      "Procedure"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Bankruptcy_Petition_Art7-8 → 功能对等"
+  },
+  {
+    "term": "Bench trial",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Jury_Waived) → Act(Judge_Tries_Case) → Status(Verdict_By_Judge)",
+    "horn_premise_atom": "Jury_Right_Waived AND Partiess_Consent_Or_Required_By_Law → Bench_Trial_Proceeds",
+    "domains": [
+      "Civil_Procedure",
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Court_Trial_Without_Jury → 默认制度"
+  },
+  {
+    "term": "Brief",
+    "l0_primitive": "Asset",
+    "structural_chain": "Agent(Lawyer) → Act(Write_Brief) → Asset(Written_Argument) → Act(File_With_Court)",
+    "horn_premise_atom": "Legal_Argument_Prepared AND Court_Filing_Deadline_Met → Brief_Properly_Submitted",
+    "domains": [
+      "Appellate",
+      "Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Legal_Submission → 功能对等"
+  },
+  {
+    "term": "Burden of proof",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Claim_Asserted) → Power(Party_Bears_Burden) → Act(Produce_Evidence) → Status(Burden_Met_Or_Failed)",
+    "horn_premise_atom": "Party_Asserting AND Element_Required AND Evidence_Sufficient → Burden_Satisfied",
+    "domains": [
+      "Evidence",
+      "Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Civil_Procedure_Art67 → 功能对等(谁主张谁举证)"
+  },
+  {
+    "term": "Business bankruptcy",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Business_Insolvent) → Act(Chapter_7_OR_11_Filed) → Asset(Estate_Liquidated_Or_Reorganized)",
+    "horn_premise_atom": "Debtor_Entity_AND Insolvent AND Petition_Filed → Business_Bankruptcy_Commenced",
+    "domains": [
+      "Bankruptcy",
+      "Commercial"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Enterprise_Bankruptcy_Law → 功能对等"
+  },
+  {
+    "term": "Capital offense",
+    "l0_primitive": "Defect",
+    "structural_chain": "Defect(Defendant_Charged_Capital) → Status(Death_Eligible) → Act(Special_Procedures) → Status(Sentence_Decided)",
+    "horn_premise_atom": "Crime_Punishable_By_Death AND Prosecution_Seeks AND Aggravating_Factors_Found → Capital_Offense_Properly_Charged",
+    "domains": [
+      "Criminal",
+      "Constitutional"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → CN_Death_Penalty_Review_System本质不同"
+  },
+  {
+    "term": "Case file",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Court_Records) → Act(File_Created) → Status(Accessible_To_Parties)",
+    "horn_premise_atom": "Litigation_Commenced AND Documents_Collected AND Clerk_Indexes → Case_File_Established",
+    "domains": [
+      "Procedure",
+      "Court_Administration"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_SPEC_006_DataExportAssessment → 跨境场景触发VOID"
+  },
+  {
+    "term": "Case law",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Judicial_Decisions) → Power(Precedent_Binding) → Act(Cite_And_Apply) → Status(Authority)",
+    "horn_premise_atom": "Court_Decision AND Published AND Ratio_Decidendi_Identified → Case_Law_Applicable",
+    "domains": [
+      "Common_Law",
+      "Jurisprudence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国不成文法。以CN_Guiding_Cases替代"
+  },
+  {
+    "term": "Caseload",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Court_Capacity) → Asset(Pending_Cases) → Status(Workload_Measured)",
+    "horn_premise_atom": "Cases_Filed AND Cases_Resolved AND Time_Period → Caseload_Calculated",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Court_Docket_Statistics → 管理性概念"
+  },
+  {
+    "term": "Cause of action",
+    "l0_primitive": "Power",
+    "structural_chain": "Power(Plaintiff_Sue) → Asset(Legal_Basis) → Act(Assert_Claim) → Status(Cognizable)",
+    "horn_premise_atom": "Legal_Right_Violated AND Remedy_Provided AND Elements_Pled → Cause_Of_Action_States",
+    "domains": [
+      "Civil_Procedure",
+      "Pleading"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Cause_Of_Action_Art122 → 功能对等"
+  },
+  {
+    "term": "Chambers",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Judge_Private_Office) → Status(Non_Public) → Act(Judge_Works_Privately)",
+    "horn_premise_atom": "Judge_Appointed AND Office_Assigned → Chambers_Established",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Judge_Office → 管理性概念"
+  },
+  {
+    "term": "Chapter 11",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Petition_Filed) → Power(Debtor_In_Possession) → Act(Reorganization_Plan) → Status(Plan_Confirmed_Or_Dismissed)",
+    "horn_premise_atom": "Business_Debtor AND Petition_Under_Chapter_11 AND DIP_Operates → Chapter_11_Reorganization_Active",
+    "domains": [
+      "Bankruptcy",
+      "Reorganization"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Restructuring_Art70-95 → ALIGN_003(功能对等但差异大)"
+  },
+  {
+    "term": "Chapter 12",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Family_Farmer) → Act(Chapter_12_Filed) → Status(Plan_Confirmed)",
+    "horn_premise_atom": "Family_Farmer_Debtor AND Petition_Under_Chapter_12 → Chapter_12_Adjustment_Active",
+    "domains": [
+      "Bankruptcy",
+      "Agriculture"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无家庭农场破产制度"
+  },
+  {
+    "term": "Chapter 13",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Individual_Debtor) → Act(Chapter_13_Filed) → Act(Repayment_Plan) → Status(Discharge_After_Completion)",
+    "horn_premise_atom": "Individual_Regular_Income AND Debt_Limits_Met AND Petition_Under_Chapter_13 → Chapter_13_Repayment_Active",
+    "domains": [
+      "Bankruptcy",
+      "Consumer"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无个人破产制度(试点除外)"
+  },
+  {
+    "term": "Chapter 13 trustee",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Trustee_Appointed) → Power(Collect_Payments) → Act(Distribute_To_Creditors)",
+    "horn_premise_atom": "Chapter_13_Case_Filed AND Trustee_Appointed_By_US_Trustee → Chapter13_Trustee_Authorized",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 无对应制度"
+  },
+  {
+    "term": "Chapter 15",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Foreign_Proceeding) → Act(Chapter_15_Filed) → Status(Recognition_Granted) → Power(Comity_Extended)",
+    "horn_premise_atom": "Foreign_Insolvency AND Petition_Under_Chapter_15 AND COMI_In_Foreign_Jurisdiction → Chapter_15_Recognition_Active",
+    "domains": [
+      "Bankruptcy",
+      "Cross_Border_Insolvency"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Cross_Border_Insolvency → MAPPING_OVERRIDE(UNCI-TRAL示范法)"
+  },
+  {
+    "term": "Chapter 7",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Individual_OR_Business) → Act(Chapter_7_Filed) → Asset(Estate_Liquidated) → Status(Debt_Discharged_OR_Closed)",
+    "horn_premise_atom": "Debtor AND Petition_Under_Chapter_7 AND Asset_OR_No_Asset → Chapter_7_Liquidation_Active",
+    "domains": [
+      "Bankruptcy",
+      "Liquidation"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Liquidation_Art113 → ALIGN_003(功能对等但Discharge机制不同)"
+  },
+  {
+    "term": "Chapter 7 trustee",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Trustee_Appointed) → Power(Collect_Asset) → Act(Liquidate) → Act(Distribute_Proceeds)",
+    "horn_premise_atom": "Chapter_7_Case_Filed AND Trustee_Appointed → Chapter7_Trustee_Authorized",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Administrator → 功能对等"
+  },
+  {
+    "term": "Chapter 9",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Municipality_Insolvent) → Act(Chapter_9_Filed) → Status(Plan_Of_Adjustment_Confirmed)",
+    "horn_premise_atom": "Municipality AND Authorized_By_State AND Insolvent AND Petition_Filed → Chapter_9_Municipal_Bankruptcy_Active",
+    "domains": [
+      "Bankruptcy",
+      "Municipal"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国地方政府无破产制度"
+  },
+  {
+    "term": "Chief judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Senior_Active_Judge) → Status(Chief) → Power(Administer_Court) → Act(Assign_Cases)",
+    "horn_premise_atom": "Seniority_Based AND Judicial_Council_Designation → Chief_Judge_Designated",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Presiding_Judge → 功能对等"
+  },
+  {
+    "term": "Circuit Executive",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Circuit_Appointee) → Power(Administer_Circuit_Courts) → Act(Implement_Circuit_Policy)",
+    "horn_premise_atom": "Judicial_Conference_Selects AND Circuit_Assigned → Circuit_Executive_Appointed",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "? → 无精确对应"
+  },
+  {
+    "term": "Claim",
+    "l0_primitive": "Asset",
+    "structural_chain": "Power(Creditor_Right_To_Payment) → Asset(Claim_Property) → Act(Proof_Of_Claim_Filed) → Status(Claim_Allowed_OR_Objected)",
+    "horn_premise_atom": "Debtor_Obligation AND Right_To_Payment AND Claim_Formally_Asserted → Claim_Cognizable",
+    "domains": [
+      "Bankruptcy",
+      "Procedure"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Bankruptcy_Claim_Art44 → 功能对等"
+  },
+  {
+    "term": "Class action",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(Representative_Plaintiff) → Act(File_Class_Complaint) → Status(Class_Certified) → Act(Proceed_On_Behalf_Of_Class)",
+    "horn_premise_atom": "Numerosity AND Commonality AND Typicality AND Adequacy → Class_Certified",
+    "domains": [
+      "Civil_Procedure",
+      "Litigation"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Representative_Action_Art270 → MAPPING_OVERRIDE(范围更窄)"
+  },
+  {
+    "term": "Clerk of court",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Court_Officer) → Power(Manage_Court_Records) → Act(File_And_Docket) → Status(Record_Official)",
+    "horn_premise_atom": "Appointed_By_Court AND Oath_Taken → Clerk_Authorized",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Court_Clerk → 功能对等"
+  },
+  {
+    "term": "Collateral",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Secured_Debt) → Asset(Collateral_Property) → Power(Creditor_Take_OR_Foreclose) → Act(Default) → Power(Liquidation)",
+    "horn_premise_atom": "Security_Interest_Created AND Debt_Outstanding AND Property_Identified → Collateral_Exists",
+    "domains": [
+      "Commercial",
+      "Bankruptcy",
+      "Property"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Security_Interest → 功能对等(民法典担保物权编)"
+  },
+  {
+    "term": "Common law",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Judicial_Precedents) → Power(Binding_Authority) → Act(Follow_OR_Distinguish)",
+    "horn_premise_atom": "Court_Decision_Established AND Stare_Decisis_Applied → Common_Law_Governs",
+    "domains": [
+      "Jurisprudence",
+      "Common_Law"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国成文法。以CN_Statutory_Interpretation替代"
+  },
+  {
+    "term": "Community service",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Criminal_Convicted) → Act(Sentenced_To_Community_Service) → Act(Perform_Unpaid_Work) → Status(Completed)",
+    "horn_premise_atom": "Non_Violent_Offense AND Court_Orders AND Defendant_Consents → Community_Service_Sentence_Valid",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Social_Service_Order → 功能对等(社区矫正)"
+  },
+  {
+    "term": "Felony",
+    "l0_primitive": "Defect",
+    "structural_chain": "Act(Crime_Committed) → Status(Felony_Classified) → Status(Serious_Criminal) → Act(Sentenced)",
+    "horn_premise_atom": "Crime_Punishable_By_More_Than_One_Year AND Conviction_Entered → Felony_Established",
+    "domains": [
+      "Criminal"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Serious_Crime → 功能对等(中国分轻罪/重罪)"
+  },
+  {
+    "term": "File",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Prepare_Document) → Act(Submit_To_Court) → Status(Filed_Of_Record)",
+    "horn_premise_atom": "Document_Prepared AND Court_Receives AND Filing_Fee_Paid → Document_Filed",
+    "domains": [
+      "Procedure"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_SPEC_006_DataExportAssessment → 跨境场景触发VOID"
+  },
+  {
+    "term": "Financial management",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Bankruptcy_Filed) → Act(Financial_Management_Course) → Status(Certificate_Issued) → Status(Discharge_Eligible)",
+    "horn_premise_atom": "Individual_Debtor AND Bankruptcy_Case AND Course_Completed → Financial_Management_Requirement_Satisfied",
+    "domains": [
+      "Bankruptcy",
+      "Consumer"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无此制度"
+  },
+  {
+    "term": "Fraudulent transfer",
+    "l0_primitive": "Defect",
+    "structural_chain": "Act(Transfer_Asset) → Defect(Fraudulent_Intent) → Power(Trustee_Avoid) → Asset(Recovered_For_Estate)",
+    "horn_premise_atom": "Transfer_Made AND Within_Lookback_Period AND Actual_OR_Constructive_Fraud → Transfer_Avoidable",
+    "domains": [
+      "Bankruptcy",
+      "Commercial"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Revocation_Action_Art538-542 → MAPPING_OVERRIDE(功能对等)"
+  },
+  {
+    "term": "Grand jury",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Citizens_Summoned) → Power(Investigate_Crimes) → Act(Hear_Evidence) → Status(Indictment_Returned_OR_No_Bill)",
+    "horn_premise_atom": "Federal_Felony AND Prosecutor_Presents AND Grand_Jury_Impaneled → Grand_Jury_Function_Active",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无大陪审团制度。以CN_Prosecutorial_Approval替代"
+  },
+  {
+    "term": "Habeas corpus",
+    "l0_primitive": "Power",
+    "structural_chain": "Status(Detained) → Power(Challenge_Detention) → Act(File_Writ) → Status(Detention_Reviewed)",
+    "horn_premise_atom": "In_Custody AND Constitutional_Challenge AND Writ_Filed → Habeas_Corpus_Review_Granted",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_012_HabeasCorpus → FORCE_VOID → CN_CustodyNecessityReview_Art97替代"
+  },
+  {
+    "term": "Hearsay",
+    "l0_primitive": "Defect",
+    "structural_chain": "Act(Out_Of_Court_Statement) → Defect(Hearsay) → Status(Inadmissible) → Status(Exception_Applies_OR_Barred)",
+    "horn_premise_atom": "Statement_Made_Out_Of_Court AND Offered_For_Truth AND No_Exception → Hearsay_Barred",
+    "domains": [
+      "Evidence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_009_HearsayRule → FORCE_VOID → CN_Court_Witness_Testimony等替代"
+  },
+  {
+    "term": "Home confinement",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Convicted/Sentenced) → Status(Home_Confinement) → Power(Restricted_Movement) → Status(Completed)",
+    "horn_premise_atom": "Court_Orders AND Electronic_Monitoring AND Terms_Set → Home_Confinement_Effective",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Surveillant_Release → 功能对等(监视居住)"
+  },
+  {
+    "term": "Impeachment",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(House) → Act(Impeach) → Agent(Senate) → Act(Try) → Status(Convicted_OR_Acquitted)",
+    "horn_premise_atom": "High_Crimes_AND_Misdemeanors AND House_Votes_AND_Senate_Tries → Impeachment_Concluded",
+    "domains": [
+      "Constitutional",
+      "Criminal"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无弹劾制度。以CN_Supervision_Law(监察法)替代"
+  },
+  {
+    "term": "In camera",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Court_Proceeding) → Status(In_Camera) → Status(Closed_To_Public) → Act(Judge_Reviews_Privately)",
+    "horn_premise_atom": "Sensitive_Material AND Public_Access_Would_Harm AND Court_Orders_Closure → In_Camera_Review_Justified",
+    "domains": [
+      "Procedure",
+      "Evidence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Closed_Hearing_Art183 → 功能对等"
+  },
+  {
+    "term": "In forma pauperis",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Litigant_Indigent) → Act(Petition_For_IFP) → Status(Filing_Fees_Waived) → Power(Proceed_Without_Payment)",
+    "horn_premise_atom": "Financial_Affidavit AND Court_Finds_Indigence AND No_Abuse → In_Forma_Pauperis_Granted",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Legal_Aid_Fee_Waiver → 功能对等(诉讼费缓减免)"
+  },
+  {
+    "term": "Inculpatory evidence",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Evidence_Tending_To_Prove_Guilt) → Act(Prosecution_Offers) → Status(Admitted) → Status(Jury_Considers)",
+    "horn_premise_atom": "Evidence_Collected AND Tends_To_Show_Guilt AND Admissible → Inculpatory_Evidence_Considerable",
+    "domains": [
+      "Evidence",
+      "Criminal"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Incriminating_Evidence → 功能对等"
+  },
+  {
+    "term": "Indictment",
+    "l0_primitive": "Act",
+    "structural_chain": "Agent(Grand_Jury) → Act(Return_Indictment) → Status(Felony_Charged) → Act(Arraignment)",
+    "horn_premise_atom": "Prosecutor_Presents AND Grand_Jury_Finds_Probable_Cause AND Indictment_Returned → Formal_Charge_Authorized",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Prosecutorial_Approval_Arrest → 功能对等(批准逮捕/起诉)"
+  },
+  {
+    "term": "Information",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Prosecutor_File) → Act(File_Information) → Status(Misdemeanor_Charged)",
+    "horn_premise_atom": "Prosecutor_Files AND No_Grand_Jury AND Sufficient_Evidence → Information_Filed",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Prosecution_Indictment → 功能对等"
+  },
+  {
+    "term": "Injunction",
+    "l0_primitive": "Power",
+    "structural_chain": "Power(Court_Order) → Act(Enjoin_Conduct) → Status(Injunction_Effective) → Defect(Violation) → Act(Contempt)",
+    "horn_premise_atom": "Irreparable_Harm AND No_Adequate_Remedy AND Balance_Of_Hardships_Favors → Injunction_Granted",
+    "domains": [
+      "Civil_Procedure",
+      "Remedies"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Behavioral_Injunction → ALIGN_001(功能对等范围差异大)"
+  },
+  {
+    "term": "Insider (bankruptcy)",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Related_Party) → Status(Close_Relationship_To_Debtor) → Power(Transactions_Scrutinized)",
+    "horn_premise_atom": "Relatives_OR_Affiliates_OR_Directors AND Relationship_Established → Insider_Classification_Applied",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Related_Party → 功能对等"
+  },
+  {
+    "term": "Interrogatories",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Discovery_Phase) → Act(Serve_Interrogatories) → Act(Answer_Under_Oath) → Status(Discovery_Completed)",
+    "horn_premise_atom": "Written_Questions_AND Within_Discovery_Period AND Under_Oath → Interrogatory_Proper",
+    "domains": [
+      "Civil_Procedure",
+      "Discovery"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_021_Discovery_Fishing → CN_Evidence_Exchange → MAPPING_OVERRIDE"
+  },
+  {
+    "term": "Issue",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Dispute_Raised) → Status(Issue_Joined) → Act(Adjudicate)",
+    "horn_premise_atom": "Pleading_Filed AND Defense_Asserted AND Dispute_Exists → Issue_Framed",
+    "domains": [
+      "Civil_Procedure",
+      "Pleading"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Disputed_Issue → 功能对等"
+  },
+  {
+    "term": "Joint administration",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Multiple_Cases) → Act(Court_Orders_Consolidation) → Status(Cases_Administered_Together)",
+    "horn_premise_atom": "Related_Cases AND Same_Debtor_OR_Related AND Court_Orders → Joint_Administration_Ordered",
+    "domains": [
+      "Bankruptcy",
+      "Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Consolidated_Bankruptcy → 功能对等"
+  },
+  {
+    "term": "Joint petition",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Husband_AND_Wife) → Act(Filing_Joint_Petition) → Status(Joint_Bankruptcy_Case)",
+    "horn_premise_atom": "Married AND Both_Debtors AND Single_Petition_Filed → Joint_Petition_Valid",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无夫妻共同破产制度"
+  },
+  {
+    "term": "Judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Appointed_Official) → Power(Adjudicate) → Act(Preside) → Status(Decision_Authoritative)",
+    "horn_premise_atom": "Appointed_AND Commissioned_AND Oath_Taken → Judge_Authorized",
+    "domains": [
+      "Judiciary"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Judge → 完全对应"
+  },
+  {
+    "term": "Judgeship",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Authorized_Position) → Agent(Judge_Fills) → Power(Jurisdiction_Exercised)",
+    "horn_premise_atom": "Congress_Authorizes AND President_Appoints AND Senate_Confirms → Judgeship_Filled",
+    "domains": [
+      "Judiciary",
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Judicial_Post → 管理性概念"
+  },
+  {
+    "term": "Judgment",
+    "l0_primitive": "Status",
+    "structural_chain": "Act(Trial_Concluded) → Status(Judgment_Entered) → Power(Enforcement) → Asset(Debt_Determined)",
+    "horn_premise_atom": "Trial_OR_Hearing_Completed AND Decision_Rendered AND Filed_With_Clerk → Judgment_Entered",
+    "domains": [
+      "Civil_Procedure",
+      "Criminal"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Court_Judgment → 完全对应(跨境承认需依据CN_民诉法)"
+  },
+  {
+    "term": "Judicial Conference of the United States",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Chief_Justice_Chaired) → Power(Policy_For_Federal_Courts) → Act(Recommend_Rules) → Status(Policy_Adopted)",
+    "horn_premise_atom": "Chief_Justice_Convenes AND Circuit_Chief_Judges_Attend AND Quorum_Met → Judicial_Conference_Constituted",
+    "domains": [
+      "Court_Administration"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "? → CN_Supreme_Court_Judicial_Committee"
+  },
+  {
+    "term": "Jurisdiction",
+    "l0_primitive": "Power",
+    "structural_chain": "Power(Court_Authority) → Status(Jurisdiction_Established) → Act(Hear_Case) → Status(Judgment_Valid)",
+    "horn_premise_atom": "Subject_Matter_AND Personal_AND Proper_Venue → Jurisdiction_Proper",
+    "domains": [
+      "Civil_Procedure",
+      "Constitutional"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Jurisdiction_System → 完全对应(但跨境管辖规则差异大)"
+  },
+  {
+    "term": "Jurisprudence",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Legal_Philosophy) → Power(Interpret_Law) → Act(Scholarly_Analysis) → Status(Doctrine_Established)",
+    "horn_premise_atom": "Legal_Theory_Developed AND Academic_Discourse → Jurisprudence_Rendered",
+    "domains": [
+      "Jurisprudence",
+      "Legal_Theory"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Jurisprudence → 完全对应"
+  },
+  {
+    "term": "Jury",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Citizens_Summoned) → Power(Find_Facts) → Act(Deliberate) → Status(Verdict_Rendered)",
+    "horn_premise_atom": "Qualified_Citizens AND Summoned AND Empaneled → Jury_Constituted",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_010_JuryTrial → CN_Peoples_Assessor → FORCE_VOID"
+  },
+  {
+    "term": "Jury instructions",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Trial_Nearing_End) → Act(Judge_Instructs_Jury) → Status(Jury_Informed) → Act(Jury_Deliberates_Under_Law)",
+    "horn_premise_atom": "Evidence_Closed AND Proposed_Instructions AND Judge_Selects → Jury_Instructions_Read",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "BLK_010_JuryTrial → FORCE_VOID"
+  },
+  {
+    "term": "Lawsuit",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Dispute) → Act(Complaint_Filed) → Status(Lawsuit_Pending) → Act(Prosecute_OR_Settle) → Status(Concluded)",
+    "horn_premise_atom": "Legal_Claim AND Court_Filing AND Service → Lawsuit_Commenced",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Lawsuit_Civil → 完全对应"
+  },
+  {
+    "term": "Lien",
+    "l0_primitive": "Power",
+    "structural_chain": "Asset(Secured_Debt) → Power(Lien_Holder_Right) → Act(Enforce_Upon_Default) → Asset(Proceeds_Distributed)",
+    "horn_premise_atom": "Debt_Secured AND Property_Identified AND Interest_Perfected → Lien_Valid_And_Enforceable",
+    "domains": [
+      "Property",
+      "Bankruptcy",
+      "Commercial"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Lien_Right → 功能对等(民法典第447条留置权)"
+  },
+  {
+    "term": "Liquidated claim",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Debt_Amount) → Status(Amount_Fixed) → Status(Claim_Liquidated) → Power(Creditor_Claim_Amount)",
+    "horn_premise_atom": "Debt_Amount_Calculable OR Agreed_Upon AND No_Contest → Claim_Deemed_Liquidated",
+    "domains": [
+      "Bankruptcy",
+      "Commercial"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Determined_Claim → 功能对等"
+  },
+  {
+    "term": "Liquidation",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Entity_Insolvent) → Act(Assets_Sold) → Asset(Cash_Distributed) → Status(Entity_Dissolved)",
+    "horn_premise_atom": "Court_Order OR Shareholder_Resolution AND Assets_Collected AND Creditors_Paid → Liquidation_Completed",
+    "domains": [
+      "Bankruptcy",
+      "Corporate"
+    ],
+    "cross_border_relevant": true,
+    "prc_mapping": "CN_Liquidation → ALIGN_003功能对等(公司法清算+破产清算)"
+  },
+  {
+    "term": "Litigation",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Complaint) → Act(Discovery) → Act(Trial) → Status(Judgment) → Act(Appeal)",
+    "horn_premise_atom": "Court_Has_Jurisdiction AND Claim_Stated AND Defendant_Served → Litigation_Active",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Litigation → 完全对应"
+  },
+  {
+    "term": "Magistrate judge",
+    "l0_primitive": "Agent",
+    "structural_chain": "Agent(Appointed_By_District_Judge) → Power(Handle_Pretrial) → Act(Report_AND_Recommendation) → Status(District_Judge_Reviews)",
+    "horn_premise_atom": "District_Judge_Selects AND Term_Appointed AND Duties_Assigned → Magistrate_Judge_Authorized",
+    "domains": [
+      "Court_Administration",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "? → CN_Assistant_Judge → 无精确对应"
+  },
+  {
+    "term": "Means test",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Bankruptcy_Filed) → Act(Calculate_Income/Expenses) → Status(Means_Test_Result) → Status(Chapter_7_Eligibility_Determined)",
+    "horn_premise_atom": "Individual_Debtor AND Above_Median_Income AND Disposable_Income_Calculated → Means_Test_Triggers_Abuse_Presumption",
+    "domains": [
+      "Bankruptcy",
+      "Consumer"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无破产准入测试制度"
+  },
+  {
+    "term": "Mediation",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Dispute) → Act(Third_Party_Neutral) → Act(Negotiate) → Status(Settlement_OR_Impas)",
+    "horn_premise_atom": "Parties_Agree OR Court_Orders AND Neutral_Selected AND Good_Faith_Negotiation → Mediation_Proceeds",
+    "domains": [
+      "Alternative_Dispute_Resolution"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Peoples_Mediation_Law → MAPPING_OVERRIDE(制度差异大)"
+  },
+  {
+    "term": "Misdemeanor",
+    "l0_primitive": "Defect",
+    "structural_chain": "Act(Crime_Committed) → Defect(Misdemeanor) → Status(Less_Serious) → Act(Punished_Minimally)",
+    "horn_premise_atom": "Crime_Punishable_By_Up_To_One_Year AND Conviction → Misdemeanor_Established",
+    "domains": [
+      "Criminal"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Minor_Offense → 功能对等"
+  },
+  {
+    "term": "Mistrial",
+    "l0_primitive": "Defect",
+    "structural_chain": "Status(Trial_In_Progress) → Defect(Procedural_Error) → Status(Mistrial_Declared) → Status(Trial_Void) → Act(Retrial_OR_Discontinue)",
+    "horn_premise_atom": "Deadlocked_Jury OR Prejudicial_Error OR Misconduct AND Cannot_Continue → Mistrial_Declared",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Retrial_OR_New_Trial → 功能对等"
+  },
+  {
+    "term": "Moot",
+    "l0_primitive": "Status",
+    "structural_chain": "Status(Dispute_Active) → Act(Event_Resolves) → Status(Moot_No_Live_Controversy) → Status(Dismissed)",
+    "horn_premise_atom": "No_Live_Case OR Controversy_Resolved OR Court_Cannot_Grant_Relief → Case_Deemed_Moot",
+    "domains": [
+      "Constitutional",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Lack_Of_Standing → 功能对等"
+  },
+  {
+    "term": "Motion",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Party_Requests) → Act(File_Motion) → Status(Pending_Decision) → Power(Court_Grants_OR_Denies)",
+    "horn_premise_atom": "Written_OR_Oral_Request AND Proper_Notice AND Ground_State → Motion_Properly_Filed",
+    "domains": [
+      "Civil_Procedure",
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Procedural_Application → 功能对等"
+  },
+  {
+    "term": "Motion in Limine",
+    "l0_primitive": "Act",
+    "structural_chain": "Act(Pre_Trial) → Act(Move_To_Exclude_Evidence) → Status(Evidence_Ruled_Admissible_OR_Inadmissible)",
+    "horn_premise_atom": "Evidence_Potentially_Prejudicial AND Timely_Filed AND Specific_Grounds → Motion_In_Limine_Considered",
+    "domains": [
+      "Evidence",
+      "Civil_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "? → CN_Pre_Trial_Evidence_Ruling → 功能近似"
+  },
+  {
+    "term": "No-asset case",
+    "l0_primitive": "Status",
+    "structural_chain": "Act(Bankruptcy_Filed) → Status(No_Assets_Available) → Status(No_Asset_Case) → Status(Discharge_Promptly)",
+    "horn_premise_atom": "Assets_None_OR_Exempt AND Trustee_Reports_No_Distribution → No_Asset_Case_Declared",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_No_Asset_Bankruptcy → 功能对等"
+  },
+  {
+    "term": "Nolo contendere",
+    "l0_primitive": "Act",
+    "structural_chain": "Defect(Criminal_Charge) → Act(Nolo_Contendere_Plea) → Status(Conviction_Entered) → Status(Civil_Not_Admissible)",
+    "horn_premise_atom": "Defendant_Knowingly_AND_Voluntarily AND Court_Accepts → Nolo_Plea_Entered",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "FORCE_VOID → 中国无此制度"
+  },
+  {
+    "term": "Nondischargeable debt",
+    "l0_primitive": "Defect",
+    "structural_chain": "Asset(Debt) → Defect(Non_Dischargeable) → Status(Survives_Bankruptcy) → Power(Creditor_Continue_Collect)",
+    "horn_premise_atom": "Debt_Type_Listed_In_Section_523 AND No_Exception → Debt_Nondischargeable",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Non_Exempt_Bankruptcy_Debt → 功能对等(范围不同)"
+  },
+  {
+    "term": "Nonexempt assets",
+    "l0_primitive": "Asset",
+    "structural_chain": "Asset(Debtor_Property) → Status(Non_Exempt) → Power(Trustee_Liquidate) → Status(Proceeds_Distributed_To_Creditors)",
+    "horn_premise_atom": "Property_Owned AND Not_On_Exemption_List AND Value_Above_Exemption → Nonexempt_Asset_Identified",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Non_Exempt_Bankruptcy_Property → 功能对等"
+  },
+  {
+    "term": "Objection to discharge",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Discharge_Pending) → Act(Creditor_Objects) → Status(Hearing_On_Objection) → Status(Discharge_Granted_OR_Denied)",
+    "horn_premise_atom": "Creditor_OR_Trustee AND Timely_AND Grounds_Exist → Objection_To_Discharge_Filed",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Claim_Objection → 功能对等"
+  },
+  {
+    "term": "Objection to dischargeability",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Claim_Filed) → Act(Challenge_Debt_Type) → Status(Dischargeability_Determined)",
+    "horn_premise_atom": "Debt_Allegedly_Nondischargeable AND Timely_Objection AND Evidence_Submitted → Dischargeability_Objection_Proper",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Exemption_Challenge → 功能对等"
+  },
+  {
+    "term": "Objection to exemptions",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Exemption_Claimed) → Act(Party_Objects) → Status(Court_Determines_Exemption)",
+    "horn_premise_atom": "Exemption_Improper_Under_Law AND Timely_Objection → Exemption_Objection_Considered",
+    "domains": [
+      "Bankruptcy"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Bankruptcy_Property_Scope_Challenge → 功能对等"
+  },
+  {
+    "term": "Opinion",
+    "l0_primitive": "Asset",
+    "structural_chain": "Act(Court_Decides) → Asset(Written_Opinion) → Status(Published_OR_Unpublished) → Power(Precedential_Value)",
+    "horn_premise_atom": "Decision_Rendered AND Reasoning_Explained AND Filed → Opinion_Issued",
+    "domains": [
+      "Appellate",
+      "Jurisprudence"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Court_Opinion → 完全对应"
+  },
+  {
+    "term": "Oral argument",
+    "l0_primitive": "Act",
+    "structural_chain": "Status(Appeal_Briefed) → Act(Oral_Argument) → Status(Court_Hears_Parties) → Act(Decision)",
+    "horn_premise_atom": "Appeal_Pending AND Court_Grants_OR_Rules AND Parties_Present → Oral_Argument_Heard",
+    "domains": [
+      "Appellate",
+      "Procedure"
+    ],
+    "cross_border_relevant": false,
+    "prc_mapping": "CN_Court_Hearing → 功能对等"
+  },
+  {
+    "term": "binding agreement",
+    "l0": "Act",
+    "chain": "Act(Offer+Accept) → Status(Binding)",
+    "horn": "Offer+Acceptance+Consideration → BindingAgreement_Formed",
+    "domains": [
+      "Contract"
+    ],
+    "xb": false,
+    "prc": "CN_Contract_Validity_Art143 → 完全对应"
+  },
+  {
+    "term": "black market",
+    "l0": "Status",
+    "chain": "Act(Illegal_Trade) → Status(Black_Market)",
+    "horn": "Goods_Prohibited+Transaction_Conducted → BlackMarket_Active",
+    "domains": [
+      "Criminal",
+      "Commercial"
+    ],
+    "xb": true,
+    "prc": "FORCE_VOID → CN_Criminal_Law_Art225(非法经营)"
+  },
+  {
+    "term": "blood alcohol",
+    "l0": "Asset",
+    "chain": "Asset(Blood_Sample) → Asset(Alcohol_Level) → Status(Above_Limit_OR_Below)",
+    "horn": "Test_Administered+Result_Obtained → BloodAlcohol_Level_Known",
+    "domains": [
+      "Criminal",
+      "Traffic"
+    ],
+    "xb": false,
+    "prc": "CN_DUI_Standard → 功能对等"
+  },
+  {
+    "term": "blood test",
+    "l0": "Act",
+    "chain": "Act(Draw_Blood) → Act(Test) → Asset(Result) → Status(Admissible)",
+    "horn": "Medical_Procedure+Chain_Of_Custody+Proper_Protocol → BloodTest_Result_Admissible",
+    "domains": [
+      "Evidence",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Forensic_Testing → 功能对等"
+  },
+  {
+    "term": "boating infractions",
+    "l0": "Defect",
+    "chain": "Act(Boat_Operation) → Defect(Violation) → Status(Penalty_Assessed)",
+    "horn": "Watercraft_Operated+Regulation_Violated → Boating_Infraction_Committed",
+    "domains": [
+      "Traffic",
+      "Regulatory"
+    ],
+    "xb": false,
+    "prc": "CN_Maritime_Traffic_Law → 功能对等"
+  },
+  {
+    "term": "body search",
+    "l0": "Act",
+    "chain": "Power(Police_Search) → Act(Search_Person) → Status(Evidence_Found_OR_Not)",
+    "horn": "Reasonable_Suspicion+Search_Warrant_OR_Exigent_Circumstances → Body_Search_Lawful",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Body_Search_Art138_CriminalProcedure → FORCE_SUPPRESS(范围差异大)"
+  },
+  {
+    "term": "book (v",
+    "l0": "Act",
+    "chain": "Act(Arrest) → Act(Book_Suspect) → Status(Booked)",
+    "horn": "Arrest_Made+Suspect_At_Station+Record_Created → Booking_Completed",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Arrest_Registration → 功能对等"
+  },
+  {
+    "term": "bookie /bookmaker",
+    "l0": "Agent",
+    "chain": "Agent(Illegal_Gambling_Operator) → Act(Accept_Bets) → Status(Illegal_Gambling_Enterprise)",
+    "horn": "Bets_Accepted+Regular_Basis+Profit_Motive → Bookmaking_Operation_Active",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Gambling_Crime_Art303 → 功能对等"
+  },
+  {
+    "term": "bounty hunter",
+    "l0": "Agent",
+    "chain": "Agent(Bail_Bondsman_Agent) → Power(Arrest_Fugitive) → Act(Return_To_Custody)",
+    "horn": "Bail_Posted+Defendant_Fled+Licensed_Pursuer → Bounty_Hunter_Action_Authorized",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "FORCE_VOID → 中国无赏金猎人制度"
+  },
+  {
+    "term": "brandish a weapon",
+    "l0": "Act",
+    "chain": "Act(DISPLAY_Weapon) → Status(Threatening) → Defect(Assault_OR_Intimidation)",
+    "horn": "Weapon_Displayed+Intended_To_Intimidate+Victim_Reasonable_Fear → Brandishing_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Weapon_Threat_Crime → 功能对等"
+  },
+  {
+    "term": "breaking and entering",
+    "l0": "Defect",
+    "chain": "Act(Forcible_Entry) → Act(Enter_Property) → Defect(Burglary)",
+    "horn": "Unlawful_Entry+Intent_To_Commit_Crime+Structure → Breaking_And_Entering_Committed",
+    "domains": [
+      "Criminal",
+      "Property"
+    ],
+    "xb": false,
+    "prc": "CN_Burglary_Art264 → 功能对等"
+  },
+  {
+    "term": "bring to justice",
+    "l0": "Act",
+    "chain": "Act(Investigate) → Act(Arrest) → Act(Prosecute) → Status(Justice_Served)",
+    "horn": "Crime_Known+Suspect_Identified+Legal_Process_Initiated → Bring_To_Justice_Underway",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Justice_Process → 完全对应"
+  },
+  {
+    "term": "business license",
+    "l0": "Asset",
+    "chain": "Asset(Government_Permit) → Power(Operate_Business) → Status(Licensed)",
+    "horn": "Application_Made+Requirements_Met+Fee_Paid → Business_License_Granted",
+    "domains": [
+      "Commercial",
+      "Regulatory"
+    ],
+    "xb": false,
+    "prc": "CN_Business_License → 完全对应"
+  },
+  {
+    "term": "campaign contribution",
+    "l0": "Asset",
+    "chain": "Asset(Money/Goods) → Act(Donate_To_Campaign) → Status(Contribution_Regulated)",
+    "horn": "Political_Campaign+Donation_Made+Legal_Limit_Observed → Campaign_Contribution_Valid",
+    "domains": [
+      "Constitutional",
+      "Election"
+    ],
+    "xb": false,
+    "prc": "CN_Campaign_Finance_Law → 功能对等(制度差异大)"
+  },
+  {
+    "term": "capital punishment",
+    "l0": "Act",
+    "chain": "Status(Death_Sentence) → Act(Execution) → Status(Sentence_Carried_Out)",
+    "horn": "Capital_Offense+Death_Sentence+Appeals_Exhausted+Executive_Clemency_Denied → Execution_Proceeds",
+    "domains": [
+      "Criminal",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Death_Penalty → 功能对等(但复核程序本质不同)"
+  },
+  {
+    "term": "carpool lane",
+    "l0": "Asset",
+    "chain": "Asset(Highway_Lane) → Status(Restricted_To_Multiple_Occupants)",
+    "horn": "Lane_Designated+Occupancy_Requirement_Met → Carpool_Lane_Access_Authorized",
+    "domains": [
+      "Traffic"
+    ],
+    "xb": false,
+    "prc": "CN_HOV_Lane → 管理性概念"
+  },
+  {
+    "term": "carrying a concealed weapon",
+    "l0": "Defect",
+    "chain": "Act(Carry_Weapon) → Defect(Concealed) → Status(Illegal_Without_Permit)",
+    "horn": "Weapon_Carried+Hidden+No_Permit → Concealed_Weapon_Violation",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Concealed_Weapon_Crime_Art130 → 功能对等"
+  },
+  {
+    "term": "case in chief",
+    "l0": "Act",
+    "chain": "Act(Trial_Starts) → Act(Present_Primary_Evidence) → Status(Case_In_Chief_Completed)",
+    "horn": "Opening_Statements+Evidence_Presented+Witnesses_Called → Case_In_Chief_Presented",
+    "domains": [
+      "Civil_Procedure",
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Main_Trial_Phase → 功能对等"
+  },
+  {
+    "term": "causing catastrophe",
+    "l0": "Defect",
+    "chain": "Act(Negligent_OR_Intentional) → Defect(Causing_Catastrophe) → Status(Criminal_Liability)",
+    "horn": "Act_Committed+Catastrophic_Result+Foreseeability → Causing_Catastrophe_Established",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Causing_Danger_To_Public_Art114-115 → 功能对等"
+  },
+  {
+    "term": "cease and desist",
+    "l0": "Act",
+    "chain": "Power(Authority) → Act(Order_To_Stop) → Status(Compliance_Required) → Defect(Violation=Penalty)",
+    "horn": "Unlawful_Activity_Identified+Notice_Given+Violation_Continues → Cease_Desist_Violated",
+    "domains": [
+      "Administrative",
+      "Commercial"
+    ],
+    "xb": false,
+    "prc": "CN_Administrative_Order_To_Stop → 功能对等"
+  },
+  {
+    "term": "chain of custody",
+    "l0": "Status",
+    "chain": "Asset(Evidence) → Status(Chain_Of_Custody_Documented) → Status(Admissible)",
+    "horn": "Evidence_Collected+Documented+Transferred+Integrity_Maintained → Chain_Of_Custody_Established",
+    "domains": [
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Evidence_Chain_Of_Custody → 功能对等"
+  },
+  {
+    "term": "a. preemptory challenge",
+    "l0": "Act",
+    "chain": "Act(Jury_Selection) → Act(Strike_Juror_No_Cause) → Status(Juror_Removed)",
+    "horn": "Jury_Selection+Preemptory_Challenge_Exercised → Juror_Stricken",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "FORCE_VOID → 中国无此制度。以CN_Judge_Excusal替代"
+  },
+  {
+    "term": "b. challenge for cause",
+    "l0": "Act",
+    "chain": "Act(Jury_Selection) → Act(Strike_Juror_With_Cause) → Status(Juror_Removed_For_Bias)",
+    "horn": "Bias_OR_Inability_OR_Interest_Shown+Court_Agrees → Challenge_For_Cause_Sustained",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Judge_Recusal_System → 功能对等"
+  },
+  {
+    "term": "challenge (v",
+    "l0": "Act",
+    "chain": "Act(Object_To) → Status(Challenge_Made) → Act(Court_Rules)",
+    "horn": "Objection_Raised+Grounds_Stated → Challenge_Properly_Made",
+    "domains": [
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Objection → 完全对应"
+  },
+  {
+    "term": "change of venue",
+    "l0": "Act",
+    "chain": "Act(Move_Trial) → Status(Venue_Changed) → Act(Trial_In_New_Location)",
+    "horn": "Prejudice_Demonstrated+Fair_Trial_Impossible+Motion_Granted → Venue_Changed",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Jurisdiction_Transfer → 功能对等"
+  },
+  {
+    "term": "character evidence",
+    "l0": "Asset",
+    "chain": "Asset(Reputation_Witness/Acts) → Status(Admissible/Limited) → Defect(Prejudicial)",
+    "horn": "Evidence_Of_Trait+Relevant_To_Issue+Rule_404_Cleared → Character_Evidence_Admissible",
+    "domains": [
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Character_Evidence → 功能对等(范围不同)"
+  },
+  {
+    "term": "charge to the jury",
+    "l0": "Act",
+    "chain": "Act(Trial_Ends) → Act(Judge_Instructs) → Status(Jury_Charged) → Act(Jury_Deliberates)",
+    "horn": "Evidence_Closed+Instructions_Proposed+Jury_Receives_Instructions → Jury_Charged",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "BLK_010_JuryTrial → FORCE_VOID"
+  },
+  {
+    "term": "charitable organization",
+    "l0": "Agent",
+    "chain": "Agent(Non_Profit) → Status(Charitable_Status) → Power(Tax_Exemption)",
+    "horn": "Registered+Non_Profit+Charitable_Purpose → Charitable_Organization_Recognized",
+    "domains": [
+      "Corporate",
+      "Tax"
+    ],
+    "xb": false,
+    "prc": "CN_Charitable_Organization → 完全对应"
+  },
+  {
+    "term": "charity drive",
+    "l0": "Act",
+    "chain": "Act(Fundraising) → Asset(Money_Collected) → Act(Donate_To_Cause)",
+    "horn": "Charitable_Event+Donations_Solicited → Charity_Drive_Active",
+    "domains": [
+      "Commercial",
+      "Corporate"
+    ],
+    "xb": false,
+    "prc": "CN_Charitable_Fundraising → 功能对等"
+  },
+  {
+    "term": "chief justice",
+    "l0": "Agent",
+    "chain": "Agent(Senior_Judge) → Status(Chief) → Power(Lead_Court) → Act(Administer)",
+    "horn": "Appointed+Senior_Justice+Leads_Judicial_Body → Chief_Justice_Designated",
+    "domains": [
+      "Judiciary"
+    ],
+    "xb": false,
+    "prc": "CN_Chief_Justice → 完全对应"
+  },
+  {
+    "term": "child endangerment",
+    "l0": "Defect",
+    "chain": "Act(Parent/Guardian) → Defect(Endanger_Child) → Status(Criminal_Liability)",
+    "horn": "Care_Responsibility+Risk_Created+Child_Harmed_OR_Risked → Child_Endangerment_Established",
+    "domains": [
+      "Criminal",
+      "Family"
+    ],
+    "xb": false,
+    "prc": "CN_Child_Abuse_Crime → 功能对等"
+  },
+  {
+    "term": "child labor law",
+    "l0": "Asset",
+    "chain": "Asset(Legal_Protection) → Power(Restrict_Minor_Employment) → Act(Enforce)",
+    "horn": "Minor_Employed+Work_Hours/Type_Restricted+Violation_Detected → Child_Labor_Violation",
+    "domains": [
+      "Labor",
+      "Employment"
+    ],
+    "xb": false,
+    "prc": "BLK_019_AtWillEmployment → FORCE_VOID + CN_Labor_Law_Art64(童工保护)"
+  },
+  {
+    "term": "child molestation",
+    "l0": "Defect",
+    "chain": "Defect(Sexual_Misconduct_With_Minor) → Status(Criminal_Charge) → Act(Prosecute)",
+    "horn": "Sexual_Act_OR_Contact+Minor+Intent → Child_Molestation_Committed",
+    "domains": [
+      "Criminal",
+      "Family"
+    ],
+    "xb": false,
+    "prc": "CN_Child_Sexual_Crime → 功能对等"
+  },
+  {
+    "term": "child welfare service",
+    "l0": "Agent",
+    "chain": "Agent(Government_Agency) → Power(Protect_Children) → Act(Intervene_If_Needed)",
+    "horn": "Child_At_Risk+Report_Made+Agency_Investigates → Child_Welfare_Service_Active",
+    "domains": [
+      "Family",
+      "Administrative"
+    ],
+    "xb": false,
+    "prc": "CN_Child_Welfare_System → 功能对等"
+  },
+  {
+    "term": "circuit court",
+    "l0": "Agent",
+    "chain": "Agent(Federal_Circuit_Court) → Power(Appeal_Review) → Act(Decide) → Status(Precedent)",
+    "horn": "Case_Filed_OR_Appeal_Brought+Court_Has_Jurisdiction → Circuit_Court_Seized",
+    "domains": [
+      "Appellate"
+    ],
+    "xb": false,
+    "prc": "CN_Intermediate_Court → 功能对等(中国中级法院)"
+  },
+  {
+    "term": "circumstantial evidence",
+    "l0": "Asset",
+    "chain": "Asset(Fact_From_Which_Inference_Drawn) → Status(Direct_Proof_Absent) → Act(Inference_To_Fact)",
+    "horn": "Fact_Proven+Logical_Inference_To_Material_Fact+No_Contradiction → Circumstantial_Evidence_Considerable",
+    "domains": [
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Circumstantial_Evidence → 完全对应"
+  },
+  {
+    "term": "civil code",
+    "l0": "Asset",
+    "chain": "Asset(Statutory_Code) → Power(Govern_Civil_Rights) → Status(Applicable)",
+    "horn": "Legislature_Enacts+Promulgated+In_Effect → Civil_Code_Applicable",
+    "domains": [
+      "Civil_Law"
+    ],
+    "xb": false,
+    "prc": "CN_Civil_Code → 完全对应"
+  },
+  {
+    "term": "civil enforcement",
+    "l0": "Act",
+    "chain": "Status(Judgment_Entered) → Act(Enforcement_Action) → Status(Judgment_Satisfied)",
+    "horn": "Judgment_Final+Enforcement_Begun+Assets_Located → Civil_Enforcement_Underway",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Civil_Enforcement → 完全对应"
+  },
+  {
+    "term": "civil law",
+    "l0": "Asset",
+    "chain": "Asset(Legal_System) → Status(Civil_Law_Tradition) → Act(Codified_Rules_Applied)",
+    "horn": "Code_Based_System+Legislature_Central+Judge_Applies_Law → Civil_Law_System_Operational",
+    "domains": [
+      "Jurisprudence"
+    ],
+    "xb": false,
+    "prc": "CN_Civil_Law_System → 完全对应(中国属大陆法系)"
+  },
+  {
+    "term": "civil liberty",
+    "l0": "Asset",
+    "chain": "Asset(Constitutional_Right) → Power(Individual_Against_State) → Status(Protected)",
+    "horn": "Right_Recognized+State_Action_Restricted+Judicial_Protection → Civil_Liberty_Active",
+    "domains": [
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Constitutional_Rights → 功能对等(体系不同)"
+  },
+  {
+    "term": "civil right",
+    "l0": "Asset",
+    "chain": "Asset(Legal_Protection) → Power(Claim_Against_Discrimination) → Status(Enforceable)",
+    "horn": "Protected_Class+Discrimination_Alleged+Remedy_Sought → Civil_Right_Claim_Cognizable",
+    "domains": [
+      "Constitutional",
+      "Civil_Rights"
+    ],
+    "xb": false,
+    "prc": "CN_Civil_Right_Protection → 功能对等"
+  },
+  {
+    "term": "claim (n",
+    "l0": "Asset",
+    "chain": "Asset(Right_To_Relief) → Act(Assert) → Status(Cognizable)",
+    "horn": "Legal_Basis+Right_Alleged+Party_Asserting → Claim_Properly_Stated",
+    "domains": [
+      "Civil_Procedure",
+      "Bankruptcy"
+    ],
+    "xb": false,
+    "prc": "CN_Claim → 完全对应"
+  },
+  {
+    "term": "claim (v",
+    "l0": "Act",
+    "chain": "Act(Assert_Right) → Status(Claim_Made) → Act(Prove)",
+    "horn": "Right_Asserted+Evidence_Offered → Claim_Vigorously_Made",
+    "domains": [
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Claim_Assertion → 完全对应"
+  },
+  {
+    "term": "claim (damages",
+    "l0": "Act",
+    "chain": "Act(Assert_Damage_Claim) → Asset(Damage_Amount_Sought) → Status(Claim_Pending)",
+    "horn": "Loss_Suffered+Amount_Calculated+Defendant_Liable → Damage_Claim_Stated",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Damage_Claim → 完全对应"
+  },
+  {
+    "term": "class action lawsuit",
+    "l0": "Act",
+    "chain": "Agent(Representative) → Act(File_Class_Action) → Status(Class_Certified) → Status(Proceeds_OR_Settles)",
+    "horn": "Numerosity+Commonality+Typicality+Adequacy → Class_Action_Certified",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Representative_Action_Art270 → MAPPING_OVERRIDE"
+  },
+  {
+    "term": "classified (advertisement",
+    "l0": "Act",
+    "chain": "Act(Place_Ad) → Asset(Classified_Listing) → Status(Published)",
+    "horn": "Ad_Submitted+Fee_Paid+Published → Classified_Ad_Active",
+    "domains": [
+      "Commercial"
+    ],
+    "xb": false,
+    "prc": "CN_Classified_Advertising → 管理性概念"
+  },
+  {
+    "term": "classified (document",
+    "l0": "Status",
+    "chain": "Asset(Document) → Status(Classified) → Power(Restrict_Access) → Defect(Leak=Crime)",
+    "horn": "Government_Document+Security_Classification_Assigned+Access_Controlled → Document_Classified",
+    "domains": [
+      "Administrative",
+      "National_Security"
+    ],
+    "xb": true,
+    "prc": "CN_State_Secret_Law → FORCE_VOID涉外场景"
+  },
+  {
+    "term": "clerk of the court",
+    "l0": "Agent",
+    "chain": "Agent(Court_Officer) → Power(Manage_Records) → Act(File_And_Docket)",
+    "horn": "Appointed+Oath_Taken+Duties_Assigned → Clerk_Authorized",
+    "domains": [
+      "Court_Administration"
+    ],
+    "xb": false,
+    "prc": "CN_Court_Clerk → 功能对等"
+  },
+  {
+    "term": "closing argument",
+    "l0": "Act",
+    "chain": "Act(Trial_Nearly_End) → Act(Summarize_Case) → Status(Closing_Completed) → Act(Jury_Instructed)",
+    "horn": "Evidence_Closed+Parties_Summarize+Jury_Hears → Closing_Argument_Presented",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Final_Argument → 功能对等"
+  },
+  {
+    "term": "commercial drivers license",
+    "l0": "Asset",
+    "chain": "Asset(Driving_Permit) → Status(CDL_Class) → Power(Operate_Commercial_Vehicle)",
+    "horn": "Tests_Passed+Medical_Certified+Endorsements_Earned → CDL_Granted",
+    "domains": [
+      "Traffic",
+      "Commercial"
+    ],
+    "xb": false,
+    "prc": "CN_Commercial_Drivers_License → 完全对应"
+  },
+  {
+    "term": "commit a crime",
+    "l0": "Act",
+    "chain": "Act(Perform_Unlawful_Act) → Defect(Crime) → Status(Criminal_Liability)",
+    "horn": "Act_Committed+Elements_Met+No_Defense → Crime_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Crime_Commission → 完全对应"
+  },
+  {
+    "term": "commitment hearing",
+    "l0": "Act",
+    "chain": "Status(Suspect_Held) → Act(Commitment_Hearing) → Status(Bail_Set_OR_Detention_Continued)",
+    "horn": "Arrest_Made+Probable_Cause_Hearing+Timely → Commitment_Hearing_Conducted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Custody_Review → 功能对等(范围不同)"
+  },
+  {
+    "term": "common law marriage",
+    "l0": "Status",
+    "chain": "Act(Co_Habit+Hold_Out) → Status(Common_Law_Marriage) → Status(Legal_Marriage_Equivalent)",
+    "horn": "Cohabitation+Representation+Intent+No_Formal_Ceremony → Common_Law_Marriage_Valid",
+    "domains": [
+      "Family"
+    ],
+    "xb": false,
+    "prc": "FORCE_VOID → 中国不承认事实婚姻(1994年后)"
+  },
+  {
+    "term": "compelling argument",
+    "l0": "Asset",
+    "chain": "Asset(Persuasive_Reasoning) → Status(Convincing) → Status(Favorable_Ruling)",
+    "horn": "Strong_Reasoning+Evidence_Support+Logic_Valid → Argument_Compelling",
+    "domains": [
+      "Procedure",
+      "Appellate"
+    ],
+    "xb": false,
+    "prc": "CN_Compelling_Argument → 概念性"
+  },
+  {
+    "term": "competent council",
+    "l0": "Agent",
+    "chain": "Agent(Qualified_Lawyer) → Status(Competent) → Power(Effective_Representation)",
+    "horn": "Licensed+Qualified+No_Conflict → Counsel_Competent",
+    "domains": [
+      "Criminal_Procedure",
+      "Ethics"
+    ],
+    "xb": false,
+    "prc": "CN_Qualified_Lawyer → 完全对应"
+  },
+  {
+    "term": "competent court",
+    "l0": "Agent",
+    "chain": "Agent(Court) → Status(Has_Jurisdiction) → Power(Hear_Case) → Act(Adjudicate)",
+    "horn": "Subject_Matter+Personal+Venue_Properly_Established → Court_Competent",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Proper_Jurisdiction → 完全对应"
+  },
+  {
+    "term": "compulsory education",
+    "l0": "Status",
+    "chain": "Status(Child_Of_School_Age) → Act(Attend_School) → Status(Compliant_OR_Violation)",
+    "horn": "Child_Of_School_Age+Not_Enrolled+No_Exception → Compulsory_Education_Violation",
+    "domains": [
+      "Education"
+    ],
+    "xb": false,
+    "prc": "CN_Compulsory_Education_Law → 完全对应"
+  },
+  {
+    "term": "compulsory process",
+    "l0": "Power",
+    "chain": "Power(Court_Issue_Subpoena) → Act(Compel_Witness) → Status(Witness_Appears_OR_Contempt)",
+    "horn": "Witness_Material+Subpoena_Issued+Witness_Fails_To_Appear → Contempt_OR_Attachment_Ordered",
+    "domains": [
+      "Procedure",
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Compulsory_Witness_Process → 功能对等"
+  },
+  {
+    "term": "computer crimes",
+    "l0": "Defect",
+    "chain": "Act(Computer_Related_Act) → Defect(Computer_Crime) → Status(Criminal_Charge)",
+    "horn": "Computer_Accessed+Unauthorized+Intent → Computer_Crime_Committed",
+    "domains": [
+      "Criminal",
+      "Cyber"
+    ],
+    "xb": true,
+    "prc": "CN_Cyber_Crime_Law → 功能对等(中国有独立罪名)"
+  },
+  {
+    "term": "concealed firearm",
+    "l0": "Defect",
+    "chain": "Act(Carry_Firearm) → Defect(Concealed_No_Permit) → Status(Illegal_Possession)",
+    "horn": "Firearm_Carried+Hidden+No_License → Concealed_Firearm_Violation",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Illegal_Firearm_Crime_Art128 → 功能对等"
+  },
+  {
+    "term": "concealed weapon",
+    "l0": "Defect",
+    "chain": "Act(Carry_Weapon) → Defect(Concealed) → Status(Illegal)",
+    "horn": "Weapon+Hidden+No_Permit → Concealed_Weapon_Violation",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Concealed_Weapon_Crime → 功能对等"
+  },
+  {
+    "term": "concurrent sentences",
+    "l0": "Status",
+    "chain": "Status(Multiple_Convictions) → Status(Concurrent_Sentences) → Status(Served_At_Same_Time)",
+    "horn": "Multiple_Offenses+Sentences_Imposed+Court_Orders_Concurrent → Concurrent_Sentences_Effective",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Concurrent_Sentencing → 功能对等"
+  },
+  {
+    "term": "conflict of interest",
+    "l0": "Defect",
+    "chain": "Agent(Fiduciary) → Defect(Conflict_Of_Interest) → Status(Breach_OR_Disqualification)",
+    "horn": "Personal_Interest+Professional_Duty+Divided_Loyalty → Conflict_Of_Interest_Recognized",
+    "domains": [
+      "Ethics",
+      "Corporate",
+      "Legal"
+    ],
+    "xb": false,
+    "prc": "CN_Conflict_Of_Interest → 完全对应"
+  },
+  {
+    "term": "confrontation of witness",
+    "l0": "Power",
+    "chain": "Status(Accused) → Power(Confront_Witnesses) → Act(Cross_Examine) → Status(Testimony_Tested)",
+    "horn": "Witness_Testifies+Accused_Present+Cross_Examination_Opportunity → Confrontation_Right_Exercised",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Witness_Confrontation → 功能对等"
+  },
+  {
+    "term": "consecutive sentences",
+    "l0": "Status",
+    "chain": "Status(Multiple_Convictions) → Status(Consecutive_Sentences) → Status(Served_One_After_Another)",
+    "horn": "Multiple_Offenses+Sentences_Imposed+Court_Orders_Consecutive → Consecutive_Sentences_Effective",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Consecutive_Sentencing → 功能对等"
+  },
+  {
+    "term": "constitutional right",
+    "l0": "Power",
+    "chain": "Asset(Constitution) → Power(Individual_Against_Government) → Status(Protected) → Defect(Violation=Remedy)",
+    "horn": "Constitutional_Provision+Government_Action+Right_Infringed → Constitutional_Right_Violated",
+    "domains": [
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Constitutional_Rights → 功能对等(中国宪法不可直接援引)"
+  },
+  {
+    "term": "contempt of court",
+    "l0": "Defect",
+    "chain": "Act(Disobey_Court) → Defect(Contempt) → Power(Court_Sanction) → Status(Fine_OR_Imprisonment)",
+    "horn": "Court_Order+Knowing_Violation+Intentional → Contempt_Of_Court_Established",
+    "domains": [
+      "Procedure",
+      "Courts"
+    ],
+    "xb": false,
+    "prc": "CN_Contempt_Of_Court → 功能对等"
+  },
+  {
+    "term": "contract law",
+    "l0": "Asset",
+    "chain": "Asset(Body_Of_Law) → Power(Govern_Agreements) → Status(Applicable) → Act(Enforce_Contracts)",
+    "horn": "Offer+Acceptance+Consideration+No_Defense → Contract_Law_Governs",
+    "domains": [
+      "Contract"
+    ],
+    "xb": false,
+    "prc": "CN_Contract_Law → 完全对应"
+  },
+  {
+    "term": "contradict oneself",
+    "l0": "Defect",
+    "chain": "Act(Testify) → Defect(Contradictory) → Status(Credibility_Damaged)",
+    "horn": "Witness_Testifies+Statement_Conflicts+Prior_Statement → Contradiction_Impeaches_Credibility",
+    "domains": [
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Witness_Contradiction → 功能对等"
+  },
+  {
+    "term": "convict (n",
+    "l0": "Agent",
+    "chain": "Agent(Convicted_Person) → Status(Guilty_Finding) → Status(Sentence_Pending_OR_Serving)",
+    "horn": "Trial/Hearing+Guilty_Determination+Judgment_Entered → Convict_Status_Active",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Convicted_Person → 完全对应"
+  },
+  {
+    "term": "convict (v",
+    "l0": "Act",
+    "chain": "Act(Trial) → Act(Find_Guilty) → Status(Conviction_Entered)",
+    "horn": "Evidence+Beyond_Reasonable_Doubt+Jury/Judge_Finds_Guilty → Conviction_Proper",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Conviction → 完全对应"
+  },
+  {
+    "term": "correctional officer",
+    "l0": "Agent",
+    "chain": "Agent(Prison_Guard) → Power(Custody_And_Control) → Act(Supervise_Inmates)",
+    "horn": "Appointed+Trained+Assigned_To_Facility → Correctional_Officer_Authorized",
+    "domains": [
+      "Criminal",
+      "Corrections"
+    ],
+    "xb": false,
+    "prc": "CN_Prison_Guard → 完全对应"
+  },
+  {
+    "term": "costs incurred",
+    "l0": "Asset",
+    "chain": "Asset(Expenses) → Status(Incurred) → Power(Claim_Reimbursement)",
+    "horn": "Expense+Related_To_Action+Reasonable → Costs_Recoverable",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Litigation_Costs → 完全对应"
+  },
+  {
+    "term": "court appointed attorney",
+    "l0": "Agent",
+    "chain": "Agent(Indigent_Defendant) → Agent(Court_Appointed_Lawyer) → Power(Represent_Defendant)",
+    "horn": "Defendant_Indigent+Right_To_Counsel+Appointment_Made → Court_Appointed_Attorney_Active",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Legal_Aid_Lawyer → 功能对等"
+  },
+  {
+    "term": "court interpreter",
+    "l0": "Agent",
+    "chain": "Agent(Interpretor) → Power(Translate_Proceedings) → Act(Interpret) → Status(Record_Accurate)",
+    "horn": "Language_Barrier+Sworn_In+Interpret_dUtring_Proceeding → Court_Interpreter_Appointed",
+    "domains": [
+      "Court_Administration"
+    ],
+    "xb": false,
+    "prc": "CN_Court_Interpreter → 完全对应"
+  },
+  {
+    "term": "court of appeals",
+    "l0": "Agent",
+    "chain": "Agent(Appellate_Court) → Power(Review_Lower_Decisions) → Act(Hear_Appeal) → Status(Decision_Affirmed_OR_Reversed)",
+    "horn": "Appeal_Filed+Jurisdiction_Proper+Panel_Assigned → Court_Of_Appeals_Seized",
+    "domains": [
+      "Appellate"
+    ],
+    "xb": false,
+    "prc": "CN_Higher_Court → 功能对等"
+  },
+  {
+    "term": "court of last resort",
+    "l0": "Agent",
+    "chain": "Agent(Highest_Court) → Power(Final_Review) → Act(Decide) → Status(Binding_On_All)",
+    "horn": "Appeal_Exhausted+FINAL_Petition+Highest_Court_Accepts → Court_Of_Last_Resort_Seized",
+    "domains": [
+      "Appellate",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Supreme_Peoples_Court → 功能对等"
+  },
+  {
+    "term": "court of record",
+    "l0": "Status",
+    "chain": "Status(Court_Type) → Act(Maintain_Official_Record) → Status(Record_Authoritative)",
+    "horn": "Court_Established+Proceedings_Recorded+Records_Permanent → Court_Of_Record_Operational",
+    "domains": [
+      "Procedure",
+      "Appellate"
+    ],
+    "xb": false,
+    "prc": "CN_SPEC_006_DataExportAssessment → 跨境场景触发VOID"
+  },
+  {
+    "term": "crime lab",
+    "l0": "Agent",
+    "chain": "Agent(Forensic_Laboratory) → Power(Analyze_Evidence) → Act(Process_Samples) → Status(Report_Issued)",
+    "horn": "Evidence_Submitted+Chain_Of_Custody+Analysis_Conducted → Crime_Lab_Report_Issued",
+    "domains": [
+      "Evidence",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Forensic_Lab → 完全对应"
+  },
+  {
+    "term": "criminal background information",
+    "l0": "Asset",
+    "chain": "Asset(Criminal_History_Record) → Status(Confidential) → Act(Background_Check) → Status(Disclosed_OR_Sealed)",
+    "horn": "Record_Exists+Check_Authorized+Request_Made → Criminal_Background_Disclosed",
+    "domains": [
+      "Criminal",
+      "Employment"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Record → 完全对应"
+  },
+  {
+    "term": "criminal code",
+    "l0": "Asset",
+    "chain": "Asset(Statutory_Law) → Power(Define_Crimes_And_Sentences) → Status(Applicable)",
+    "horn": "Legislature_Enacts+Crimes_Defined+Penalties_Set → Criminal_Code_Effective",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Law → 完全对应"
+  },
+  {
+    "term": "criminal information",
+    "l0": "Asset",
+    "chain": "Asset(Prosecutor_Charge_Document) → Act(File_Information) → Status(Charge_Made)",
+    "horn": "Prosecutor_Issues+No_Grand_Jury+Sufficient_Evidence → Criminal_Information_Filed",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Prosecution_Indictment → 功能对等"
+  },
+  {
+    "term": "criminal intent",
+    "l0": "Status",
+    "chain": "Status(Mental_State) → Defect(Intent_Required) → Status(Culpability_Level)",
+    "horn": "Act_Committed+Intent_Required_By_Statute+Intent_Proven → Criminal_Intent_Established",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Intent → 完全对应"
+  },
+  {
+    "term": "criminal justice",
+    "l0": "Asset",
+    "chain": "Asset(System_Of_Law) → Power(Prosecute_Crime) → Act(Adjudicate_Punish) → Status(Justice_Served)",
+    "horn": "Crime+Investigation+Prosecution+Trial+Sentencing+Correction → Criminal_Justice_Process_Active",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Justice_System → 完全对应"
+  },
+  {
+    "term": "criminal mischief",
+    "l0": "Defect",
+    "chain": "Act(Damage_Property) → Defect(Criminal_Mischief) → Status(Criminal_Charge)",
+    "horn": "Property_Damaged+Intentional+No_Consent → Criminal_Mischief_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Damage → 功能对等"
+  },
+  {
+    "term": "criminal offense",
+    "l0": "Defect",
+    "chain": "Act(Violate_Criminal_Law) → Defect(Criminal_Offense) → Status(Punishable)",
+    "horn": "Act+Statutory_Prohibition+Mens_Rea+Actus_Reus → Criminal_Offense_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Offense → 完全对应"
+  },
+  {
+    "term": "criminal proceedings",
+    "l0": "Act",
+    "chain": "Act(Charge) → Act(Trial) → Status(Conviction_OR_Acquittal) → Act(Sentencing_OR_Release)",
+    "horn": "Charge_Filed+Docketed+Trial_Held → Criminal_Proceedings_Active",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Proceedings → 完全对应"
+  },
+  {
+    "term": "criminal record",
+    "l0": "Asset",
+    "chain": "Asset(Criminal_History) → Status(Permanent) → Power(Restrict_Opportunities) → Act(Seal_OR_Expunge)",
+    "horn": "Conviction_Entered+Record_Created+Access_Restricted → Criminal_Record_Exists",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_SPEC_006_DataExportAssessment → 跨境场景触发VOID"
+  },
+  {
+    "term": "criminal trespass",
+    "l0": "Defect",
+    "chain": "Act(Enter_Property) → Defect(Trespass_Unlawful) → Status(Criminal_Charge)",
+    "horn": "Entered_Property+No_Right+Knowing → Criminal_Trespass_Committed",
+    "domains": [
+      "Criminal",
+      "Property"
+    ],
+    "xb": false,
+    "prc": "CN_Trespass_Crime → 功能对等"
+  },
+  {
+    "term": "cross examination",
+    "l0": "Act",
+    "chain": "Act(Direct_Exam_Completed) → Act(Opposing_Counsel_Questions) → Status(Witness_Credibility_Tested)",
+    "horn": "Witness_Testifies+Opposing_Counsel+Questions_On_Material_Issues → Cross_Examination_Valid",
+    "domains": [
+      "Evidence",
+      "Trial"
+    ],
+    "xb": false,
+    "prc": "CN_Cross_Examination → 完全对应"
+  },
+  {
+    "term": "custodial interference",
+    "l0": "Defect",
+    "chain": "Act(Interfere_With_Custody) → Defect(Custodial_Interference) → Status(Civil_OR_Criminal)",
+    "horn": "Custody_Order+Knowing_Violation+Child_Taken → Custodial_Interference_Committed",
+    "domains": [
+      "Family",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Custody_Interference → 功能对等"
+  },
+  {
+    "term": "custody (of children",
+    "l0": "Asset",
+    "chain": "Asset(Children) → Power(Parental_Custody) → Status(Court_Ordered)",
+    "horn": "Parents+Best_Interests+Court_Order → Custody_Arrangement_Established",
+    "domains": [
+      "Family"
+    ],
+    "xb": false,
+    "prc": "CN_Child_Custody → 完全对应"
+  },
+  {
+    "term": "DA (District Attorney",
+    "l0": "Agent",
+    "chain": "Agent(Prosecutor) → Power(File_Charges) → Act(Prosecute) → Status(Conviction_OR_Acquittal)",
+    "horn": "Elected_OR_Appointed+Jurisdiction+Criminal_Case → DA_Authorized",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Prosecutor → 功能对等(体系不同)"
+  },
+  {
+    "term": "deadly weapon",
+    "l0": "Asset",
+    "chain": "Asset(Object_Capable_Of_Death) → Status(Deadly_Weapon_Classification) → Defect(Use_In_Crime=Enhanced_Penalty)",
+    "horn": "Object+Capable_Of_Causing_Death+Used_OR_Carried → Deadly_Weapon_Found",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Deadly_Weapon → 完全对应"
+  },
+  {
+    "term": "death sentence",
+    "l0": "Status",
+    "chain": "Status(Convicted_Capital_Offense) → Status(Death_Sentence) → Act(Appeal) → Status(Execution_OR_Commuted)",
+    "horn": "Capital_Finding+Sentencing_Phase+Death_Penalty_Imposed → Death_Sentence_Entered",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Death_Sentence → 功能对等(复核程序不同)"
+  },
+  {
+    "term": "debrief (a witness",
+    "l0": "Act",
+    "chain": "Act(Witness_Interviews) → Act(Formal_Statement) → Status(Statement_Recorded)",
+    "horn": "Witness+Interview+Recording_OR_Summary → Witness_Debriefed",
+    "domains": [
+      "Evidence",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Witness_Interview → 完全对应"
+  },
+  {
+    "term": "defense attorney",
+    "l0": "Agent",
+    "chain": "Agent(Lawyer_Representing_Accused) → Power(Defend_Client) → Act(Object_Cross_Examine_Argue) → Status(Client_Represented)",
+    "horn": "Licensed+Retained_OR_Appointed+Client_Accused → Defense_Attorney_Active",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Defense_Lawyer → 完全对应"
+  },
+  {
+    "term": "defense exhibit A",
+    "l0": "Asset",
+    "chain": "Asset(Evidence_Offered_By_Defense) → Status(Marked+IDentified) → Status(Admitted_OR_Rejected)",
+    "horn": "Defense_Proposes+Evidence_Marked+Judge_Rules → Defense_Exhibit_A_Processed",
+    "domains": [
+      "Evidence",
+      "Trial"
+    ],
+    "xb": false,
+    "prc": "CN_Defense_Exhibit → 完全对应"
+  },
+  {
+    "term": "deferred prosecution",
+    "l0": "Status",
+    "chain": "Status(Charged) → Status(Deferred_Prosecution) → Act(Complete_Program) → Status(Charges_Dismissed)",
+    "horn": "Non_Violent_Offense+Diversion_Program+Completion → Deferred_Prosecution_Completed_Charge_Dismissed",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Prosecutorial_Discretion → 功能对等(酌定不起诉)"
+  },
+  {
+    "term": "paternity suit",
+    "l0": "Act",
+    "chain": "Act(Assert_Fatherhood) → Status(Paternity_Test) → Status(Father_Established) → Power(Child_Support)",
+    "horn": "Child_Born+Father_Unknown+Test_OR_Evidence → Paternity_Established",
+    "domains": [
+      "Family"
+    ],
+    "xb": false,
+    "prc": "CN_Paternity_Lawsuit → 功能对等"
+  },
+  {
+    "term": "patronizing a prostitute",
+    "l0": "Defect",
+    "chain": "Act(Engage_Sex_Worker) → Defect(Patronizing) → Status(Criminal_Charge)",
+    "horn": "Sex_Services+Payment+Knowing_Act → Patronizing_Prostitution_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Prostitution_Crime → 功能对等"
+  },
+  {
+    "term": "PCP (Phencyclidine)",
+    "l0": "Asset",
+    "chain": "Asset(Controlled_Substance) → Defect(Possession_Sale_Use) → Status(Criminal)",
+    "horn": "Drug_Identified+PCP_Schedule_II+Illegal_Act → PCP_Violation",
+    "domains": [
+      "Criminal",
+      "Drug"
+    ],
+    "xb": false,
+    "prc": "CN_Controlled_Drug_Law → 功能对等"
+  },
+  {
+    "term": "per diem",
+    "l0": "Asset",
+    "chain": "Asset(Daily_Allowance) → Status(Allocated) → Act(Reimburse)",
+    "horn": "Travel+Expense+Daily_Rate → Per_Diem_Authorized",
+    "domains": [
+      "Commercial",
+      "Employment"
+    ],
+    "xb": false,
+    "prc": "CN_Per_Diem_Allowance → 完全对应"
+  },
+  {
+    "term": "petition (juvenile court)",
+    "l0": "Act",
+    "chain": "Act(File_Petition) → Status(Juvenile_Court_Involved) → Act(Proceedings_Begin)",
+    "horn": "Minor+Alleged_Delinquency+Petition_Filed → Juvenile_Court_Petition_Active",
+    "domains": [
+      "Juvenile",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Juvenile_Court_Petition → 功能对等"
+  },
+  {
+    "term": "petition the court",
+    "l0": "Act",
+    "chain": "Act(File_Request) → Status(Petition_Pending) → Power(Court_Order)",
+    "horn": "Written_Request+Filing_Fee+Grounds_Stated → Court_Petition_Filed",
+    "domains": [
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Court_Petition → 完全对应"
+  },
+  {
+    "term": "petty theft",
+    "l0": "Defect",
+    "chain": "Act(Take_Property) → Defect(Petty_Theft) → Status(Small_Value) → Status(Misdemeanor)",
+    "horn": "Property_Taken+Low_Value+No_Force → Petty_Theft_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Petty_Theft → 功能对等"
+  },
+  {
+    "term": "picket line",
+    "l0": "Act",
+    "chain": "Act(Labor_Dispute) → Act(Picket) → Status(Picket_Line) → Status(Legal_OR_Illegal)",
+    "horn": "Union+Strike+Peaceful_Assembly → Picket_Line_Lawful",
+    "domains": [
+      "Labor",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Labor_Protest → 功能对等(须审批)"
+  },
+  {
+    "term": "plea bargain",
+    "l0": "Act",
+    "chain": "Agent(Prosecutor+Defendant) → Act(Negotiate_Plea) → Status(Plea_Agreement) → Status(Court_Approves_OR_Rejects)",
+    "horn": "Charge_Negotiated+Guilty_Plea+Sentencing_Recommendation → Plea_Bargain_Reached",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": true,
+    "prc": "OVR_001_Plea_Bargaining_Restruct → MAPPING_OVERRIDE → CN_Leniency_With_Admission_Of_Guilt"
+  },
+  {
+    "term": "plead guilty",
+    "l0": "Act",
+    "chain": "Defect(Charge) → Act(Plead_Guilty) → Status(Conviction_Without_Trial)",
+    "horn": "Defendant+Knowingly+Voluntarily+Factual_Basis → Guilty_Plea_Entered",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Guilty_Plea → 功能对等"
+  },
+  {
+    "term": "plead innocent/not guilty",
+    "l0": "Act",
+    "chain": "Defect(Charge) → Act(Plead_Not_Guilty) → Status(Trial_Required)",
+    "horn": "Defendant+Denies_Charge+Trial_Set → Not_Guilty_Plea_Entered",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Not_Guilty_Plea → 完全对应"
+  },
+  {
+    "term": "plunder (n)",
+    "l0": "Defect",
+    "chain": "Act(Take_By_Force) → Defect(Plunder) → Status(Criminal)",
+    "horn": "Property_Taken+Force/Violence+Unlawful → Plunder_Committed",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Robbery_Crime → 功能对等"
+  },
+  {
+    "term": "plunder (v)",
+    "l0": "Act",
+    "chain": "Act(Commit_Plunder) → Defect(Plundering) → Status(Criminal_Liability)",
+    "horn": "Act+Unlawful_Taking+Intent → Plundering_Act",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Robbery → 功能对等"
+  },
+  {
+    "term": "police detail",
+    "l0": "Agent",
+    "chain": "Agent(Police_Unit) → Power(Special_Assignment) → Act(Provide_Security) → Status(Detail_Complete)",
+    "horn": "Event/Incident+Officers_Assigned+Duty_Performed → Police_Detail_Operational",
+    "domains": [
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Police_Detail → 功能对等"
+  },
+  {
+    "term": "police dispatcher",
+    "l0": "Agent",
+    "chain": "Agent(Communications_Officer) → Act(Receive_Calls) → Act(Dispatch_Units) → Status(Response_Coordinated)",
+    "horn": "Call_Received+Location_Confirmed+Unit_Assigned → Dispatch_Coordinated",
+    "domains": [
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Police_Dispatcher → 完全对应"
+  },
+  {
+    "term": "police dog",
+    "l0": "Agent",
+    "chain": "Agent(K9_Unit) → Power(Track_Suspects_Detect_Drugs) → Act(Search_Suspect_Area)",
+    "horn": "Handler+K9_Trained+Deployment_Authorized → Police_Dog_Deployed",
+    "domains": [
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Police_K9 → 完全对应"
+  },
+  {
+    "term": "police record",
+    "l0": "Asset",
+    "chain": "Asset(Criminal_History) → Status(Official) → Power(Law_Enforcement_Access)",
+    "horn": "Arrest_OR_Incident+Record_Created+Stored → Police_Record_Exists",
+    "domains": [
+      "Police",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Police_Record → 完全对应"
+  },
+  {
+    "term": "pornographic material",
+    "l0": "Asset",
+    "chain": "Asset(Obscene_Material) → Status(Ilegal_Distribution) → Defect(Violation)",
+    "horn": "Material+Obscene+Distributed_OR_Possessed → Pornography_Violation",
+    "domains": [
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Pornography_Crime → 功能对等"
+  },
+  {
+    "term": "possession of narcotics",
+    "l0": "Defect",
+    "chain": "Act(Possess) → Asset(Narcotics) → Defect(Illegal_Possession) → Status(Criminal_Charge)",
+    "horn": "Controlled_Substance+Possess+Knowledge+No_Prescription → Drug_Possession_Committed",
+    "domains": [
+      "Criminal",
+      "Drug"
+    ],
+    "xb": false,
+    "prc": "CN_Drug_Possession_Crime → 功能对等"
+  },
+  {
+    "term": "post bail",
+    "l0": "Act",
+    "chain": "Status(Arrested) → Act(Post_Bail) → Status(Released_Pending_Trial)",
+    "horn": "Bail_Set+Amount_Paid+Conditions_Accepted → Bail_Posted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Bail_Payment → 功能对等"
+  },
+  {
+    "term": "power of attorney",
+    "l0": "Power",
+    "chain": "Power(Agent_Authority) → Act(Represent_Principal) → Status(POA_Effective) → Defect(Exceed_Authority=Ultra_Vires)",
+    "horn": "Written_Document+Principal_Signs+Agent_Accepts → Power_Of_Attorney_Valid",
+    "domains": [
+      "Commercial",
+      "Estate",
+      "Property"
+    ],
+    "xb": false,
+    "prc": "CN_Power_Of_Attorney → 完全对应"
+  },
+  {
+    "term": "prejudice to the case",
+    "l0": "Defect",
+    "chain": "Defect(Bias_OR_Harm) → Status(Case_Prejudiced) → Power(Appeal_OR_Dismissal)",
+    "horn": "Prejudice_Shown+Fair_Trial_Compromised+Remedy_Needed → Prejudice_Found",
+    "domains": [
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Case_Prejudice → 完全对应"
+  },
+  {
+    "term": "preliminary hearing",
+    "l0": "Act",
+    "chain": "Status(Charged) → Act(Preliminary_Hearing) → Status(Probable_Cause_Found_OR_Not) → Status(Case_Proceeds_Dismissed)",
+    "horn": "Felony_Charge+Defendant_Appears+Evidence_Tested → Preliminary_Hearing_Conducted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Preliminary_Examination → 功能对等"
+  },
+  {
+    "term": "preliminary injunction",
+    "l0": "Power",
+    "chain": "Power(Court_Order) → Act(Grant_Preliminary_Injunction) → Status(Injunction_In_Effect) → Act(Trial_On_Merits)",
+    "horn": "Likelihood_Of_Success+Irreparable_Harm+Bond_Posted → Preliminary_Injunction_Granted",
+    "domains": [
+      "Civil_Procedure",
+      "Remedies"
+    ],
+    "xb": false,
+    "prc": "CN_Preliminary_Injunction → 功能对等"
+  },
+  {
+    "term": "preponderance of the evidence",
+    "l0": "Status",
+    "chain": "Status(Burden_Of_Proof_Civil) → Status(More_Likely_Than_Not) → Status(Standard_Met)",
+    "horn": "Evidence_Shows+More_Than_50%+Likelihood → Preponderance_Standard_Satisfied",
+    "domains": [
+      "Evidence",
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Preponderance_Standard → 功能对等(高度盖然性)"
+  },
+  {
+    "term": "prescription drugs",
+    "l0": "Asset",
+    "chain": "Asset(Medication) → Status(Prescription_Required) → Defect(No_Prescription=Illegal)",
+    "horn": "Drug+Prescription_Required+No_Valid_Prescription → Prescription_Drug_Violation",
+    "domains": [
+      "Criminal",
+      "Health"
+    ],
+    "xb": false,
+    "prc": "CN_Prescription_Drug_Control → 完全对应"
+  },
+  {
+    "term": "pre-sentencing investigation",
+    "l0": "Act",
+    "chain": "Status(Convicted) → Act(Investigate_Background) → Act(Prepare_Report) → Status(Sentence_Informed)",
+    "horn": "Conviction_Entered+Probation_Investigates+Report_Prepared → Pre_Sentencing_Report_Completed",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Pre_Sentencing_Investigation → 功能对等"
+  },
+  {
+    "term": "press charges",
+    "l0": "Act",
+    "chain": "Act(File_Complaint) → Status(Charges_Filed) → Act(Prosecution_Begins)",
+    "horn": "Victim_OR_State+Complaint_Filed+Prosecutor_Accepts → Charges_Pressed",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Complaint → 完全对应"
+  },
+  {
+    "term": "presumption of innocence",
+    "l0": "Status",
+    "chain": "Status(Accused) → Status(Presumed_Innocent) → Power(Remain_Untill_Proved_Guilty) → Status(Burden_On_Prosecution)",
+    "horn": "Charge_Filed+Defendant_Status+Pending_Trial → Presumption_Of_Innocence_Active",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Presumption_Of_Innocence_Art12 → 完全对应"
+  },
+  {
+    "term": "pretrial services agency",
+    "l0": "Agent",
+    "chain": "Agent(Government_Agency) → Power(Assess_Defendant_Risk) → Act(Recommend_Release_Conditions)",
+    "horn": "Defendant_Arrested+Agency_Evaluates+Report_To_Court → Pretrial_Services_Active",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "FORCE_VOID → 中国无此制度"
+  },
+  {
+    "term": "pretrial motions",
+    "l0": "Act",
+    "chain": "Status(Case_Filed) → Act(File_Pretrial_Motions) → Status(Motions_Pending) → Status(Court_Rules_Before_Trial)",
+    "horn": "Case_Filed+Motion_Timely+Grounds_Stated → Pretrial_Motion_Properly_Filed",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Pre_Trial_Motions → 功能对等"
+  },
+  {
+    "term": "prima facie evidence",
+    "l0": "Status",
+    "chain": "Act(Offer_Evidence) → Status(Prima_Facie) → Status(Sufficient_For_Inference) → Status(Burden_Shifts_To_Opponent)",
+    "horn": "Evidence+Sufficient+Not_RebuttED → Prima_Facie_Case_Established",
+    "domains": [
+      "Evidence",
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Prima_Facie_Evidence → 功能对等"
+  },
+  {
+    "term": "prior convictions",
+    "l0": "Asset",
+    "chain": "Asset(Criminal_History) → Status(Prior_Convictions) → Power(Enhanced_Sentencing)",
+    "horn": "Previous_Conviction+Final_Judgment+Relevant → Prior_Conviction_Established",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Prior_Conviction → 完全对应"
+  },
+  {
+    "term": "prison clothes",
+    "l0": "Asset",
+    "chain": "Asset(Uniform) → Status(Prison_Issue) → Act(Wear_During_Detention)",
+    "horn": "Incarcerated+Uniform_Issued → Prison_Clothes_Worn",
+    "domains": [
+      "Corrections"
+    ],
+    "xb": false,
+    "prc": "CN_Prison_Uniform → 完全对应"
+  },
+  {
+    "term": "prison guard",
+    "l0": "Agent",
+    "chain": "Agent(Corrections_Officer) → Power(Custody_Control) → Act(Supervise)",
+    "horn": "Employed+Training+Assigned → Prison_Guard_Active",
+    "domains": [
+      "Corrections"
+    ],
+    "xb": false,
+    "prc": "CN_Prison_Guard → 完全对应"
+  },
+  {
+    "term": "prison term",
+    "l0": "Status",
+    "chain": "Status(Sentence_Imposed) → Status(Incarceration) → Status(Sentence_Served)",
+    "horn": "Sentence+Duration+Incarceration_Began → Prison_Term_Active",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Prison_Term → 完全对应"
+  },
+  {
+    "term": "privileged information",
+    "l0": "Asset",
+    "chain": "Asset(Confidential_Info) → Status(Privileged) → Power(Holder_Refuse_Disclose)",
+    "horn": "Relationship+Confidential_Communication+Legal_Protection → Privilege_Attached",
+    "domains": [
+      "Evidence",
+      "Ethics"
+    ],
+    "xb": false,
+    "prc": "CN_Privileged_Information → 功能对等(范围不同)"
+  },
+  {
+    "term": "pro se (pro per)",
+    "l0": "Status",
+    "chain": "Agent(Litigant) → Status(Pro_Se) → Power(Represent_Self) → Act(File_Appear_Argue)",
+    "horn": "Individual+No_Attorney+Self_Representation_Elected → Pro_Se_Status_Active",
+    "domains": [
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Self_Representation → 完全对应"
+  },
+  {
+    "term": "probable cause",
+    "l0": "Status",
+    "chain": "Status(Suspicion) → Status(Probable_Cause) → Power(Arrest_Search_Warrant) → Act(Law_Enforcement_Action)",
+    "horn": "Facts+Circumstances+Reasonable_Belief_Crime → Probable_Cause_Exists",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Probable_Cause → 功能对等"
+  },
+  {
+    "term": "professional organization",
+    "l0": "Agent",
+    "chain": "Agent(Membership_Body) → Power(Regulate_Profession) → Status(Recognized)",
+    "horn": "Profession+Members+Established → Professional_Organization_Active",
+    "domains": [
+      "Corporate",
+      "Administrative"
+    ],
+    "xb": false,
+    "prc": "CN_Professional_Association → 完全对应"
+  },
+  {
+    "term": "protective custody",
+    "l0": "Status",
+    "chain": "Status(Person_In_Danger) → Act(Take_Into_Protective_Custody) → Status(Safe)",
+    "horn": "Threat_Identified+Person_Vulnerable+State_Intervenes → Protective_Custody_Active",
+    "domains": [
+      "Criminal",
+      "Family",
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Protective_Custody → 功能对等"
+  },
+  {
+    "term": "protective order",
+    "l0": "Power",
+    "chain": "Power(Court_Order) → Act(Restrain_Harassment) → Status(Order_Effective) → Defect(Violation=Contempt)",
+    "horn": "Harassment_Threat+Petition_Filed+Emergency_OR_Plenary → Protective_Order_Issued",
+    "domains": [
+      "Family",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Protective_Order → 功能对等"
+  },
+  {
+    "term": "psychotoxic chemicals",
+    "l0": "Asset",
+    "chain": "Asset(Dangerous_Chemical) → Status(Controlled) → Defect(Illegal_Possession)",
+    "horn": "Substance+Psychotoxic+Regulated → Violation_Applicable",
+    "domains": [
+      "Criminal",
+      "Drug"
+    ],
+    "xb": false,
+    "prc": "CN_Dangerous_Chemical_Control → 功能对等"
+  },
+  {
+    "term": "public defender",
+    "l0": "Agent",
+    "chain": "Agent(Government_Lawyer) → Power(Represent_Indigent_Accused) → Act(Defend)",
+    "horn": "Indigent_Defendant+Criminal_Case+Appointed → Public_Defender_Assigned",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Legal_Aid_Counsel → 功能对等"
+  },
+  {
+    "term": "public domain",
+    "l0": "Status",
+    "chain": "Asset(Creative_Work) → Status(Public_Domain) → Power(Free_Use_By_Anyone)",
+    "horn": "Copyright_Expired+Not_Protected+Law_So_Provides → Work_In_Public_Domain",
+    "domains": [
+      "IP",
+      "Copyright"
+    ],
+    "xb": false,
+    "prc": "CN_Public_Domain → 完全对应"
+  },
+  {
+    "term": "public monies",
+    "l0": "Asset",
+    "chain": "Asset(Government_Funds) → Status(Public_Monies) → Power(Restricted_Use) → Defect(Misuse=Crime)",
+    "horn": "Tax_OR_Revenue+Government_Holds+Appropriated → Public_Monies_Available",
+    "domains": [
+      "Administrative",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Public_Funds → 完全对应"
+  },
+  {
+    "term": "punish according to law",
+    "l0": "Act",
+    "chain": "Status(Convicted) → Act(Punish) → Status(Sentence_Imposed_Compliant)",
+    "horn": "Conviction+Statutory_Penalty+Proportionality → Punishment_According_To_Law",
+    "domains": [
+      "Criminal",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Punishment_According_To_Law → 完全对应"
+  },
+  {
+    "term": "punitive damages",
+    "l0": "Asset",
+    "chain": "Defect(Wrongdoing) → Asset(Punitive_Damages) → Asset(Compensation+Punishment)",
+    "horn": "Egregious_Misconduct+Malice_OR_Recklessness+Punishment_Warranted → Punitive_Damages_Awarded",
+    "domains": [
+      "Tort",
+      "Remedies"
+    ],
+    "xb": true,
+    "prc": "CN_Punitive_Damages_Limited → 范围很窄(知产/消费)"
+  },
+  {
+    "term": "quid pro quo",
+    "l0": "Status",
+    "chain": "Status(This_For_That) → Act(Exchange) → Status(Obligation_Created) → Defect(Illegal_Quid_Pro_Quo)",
+    "horn": "Something_Given+Something_Received_OR_Promised → Quid_Pro_Quo_Established",
+    "domains": [
+      "Contract",
+      "Criminal",
+      "Ethics"
+    ],
+    "xb": false,
+    "prc": "CN_Quid_Pro_Quo → 完全对应"
+  },
+  {
+    "term": "racial discrimination",
+    "l0": "Defect",
+    "chain": "Defect(Discrimination_Based_On_Race) → Status(Equal_Protection_Violated) → Status(Legal_Claim)",
+    "horn": "Race_Based+Adverse_Treatment+Protected_Characteristic → Racial_Discrimination_Proved",
+    "domains": [
+      "Civil_Rights",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Racial_Discrimination → 功能对等(宪法人人平等)"
+  },
+  {
+    "term": "racketeering enterprise",
+    "l0": "Agent",
+    "chain": "Agent(Criminal_Organization) → Act(Racketeering_Activity) → Status(RICO_Violation)",
+    "horn": "Enterprise+Pattern_Of_Racketeering_Activity+Predicate_Acts → Racketeering_Enterprise_Established",
+    "domains": [
+      "Criminal",
+      "Commercial"
+    ],
+    "xb": false,
+    "prc": "CN_Organized_Crime_Crackdown → 功能对等"
+  },
+  {
+    "term": "rap sheet",
+    "l0": "Asset",
+    "chain": "Asset(Criminal_Record) → Status(Summarized) → Act(Police_Prepare) → Status(Accessed_By_Law_Enforcement)",
+    "horn": "Arrests+Convictions+Record_Compiled → Rap_Sheet_Exists",
+    "domains": [
+      "Criminal",
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Criminal_Record → 完全对应"
+  },
+  {
+    "term": "real property",
+    "l0": "Asset",
+    "chain": "Asset(Land_OR_Buildings) → Status(Real_Property) → Power(Own_Use_Transfer)",
+    "horn": "Land+Fixtures+Ownership_Rights → Real_Property_Created",
+    "domains": [
+      "Property"
+    ],
+    "xb": false,
+    "prc": "CN_Real_Property → 完全对应"
+  },
+  {
+    "term": "reasonable doubt",
+    "l0": "Status",
+    "chain": "Status(Prosecution_Evidence) → Status(Reasonable_Doubt) → Status(Acquittal)",
+    "horn": "Evidence_Fails_To_Convince+Jury_Not_Certain+Morally_Certain_Test_Fails → Reasonable_Doubt_Exists",
+    "domains": [
+      "Criminal_Procedure",
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Reasonable_Doubt → 功能对等(排除合理怀疑)"
+  },
+  {
+    "term": "recall a witness",
+    "l0": "Act",
+    "chain": "Testimony_Given → Act(Recall_Witness) → Status(Witness_Recalled) → Act(Further_Testimony)",
+    "horn": "Testimony_Needs_Clarification+Court_Permits+Witness_Recalled → Witness_Recalled",
+    "domains": [
+      "Evidence",
+      "Trial"
+    ],
+    "xb": false,
+    "prc": "CN_Witness_Recall → 完全对应"
+  },
+  {
+    "term": "receiving stolen property",
+    "l0": "Defect",
+    "chain": "Act(Receive) → Asset(Stolen_Property) → Defect(Receiving_Stolen) → Status(Criminal_Charge)",
+    "horn": "Property_Stolen+Knowledge+Possession_Received → Receiving_Stolen_Property_Committed",
+    "domains": [
+      "Criminal",
+      "Property"
+    ],
+    "xb": false,
+    "prc": "CN_Receiving_Stolen_Goods_Crime → 功能对等"
+  },
+  {
+    "term": "reckless driving",
+    "l0": "Defect",
+    "chain": "Act(Drive) → Defect(Reckless_Disregard) → Status(Traffic_Criminal_Charge)",
+    "horn": "Vehicle_Operated+Willful_Disregard_For_Safety+Risk_Caused → Reckless_Driving_Committed",
+    "domains": [
+      "Traffic",
+      "Criminal"
+    ],
+    "xb": false,
+    "prc": "CN_Reckless_Driving → 功能对等"
+  },
+  {
+    "term": "registered trademark",
+    "l0": "Asset",
+    "chain": "Asset(Trademark) → Status(Registered) → Power(Exclusive_Use) → Defect(Infringement=Remedy)",
+    "horn": "Trademark_Applied+Examined+Registered → Trademark_Registered",
+    "domains": [
+      "IP",
+      "Trademark"
+    ],
+    "xb": false,
+    "prc": "CN_Registered_Trademark → 完全对应"
+  },
+  {
+    "term": "release pending trial",
+    "l0": "Status",
+    "chain": "Status(Arrested) → Status(Released_Pending_Trial) → Status(Return_For_Court)",
+    "horn": "Bail_Posted_OR_Own_Recognizance+Conditions_Set+Appearance_Assured → Release_Pending_Trial_Granted",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Bail_Pending_Trial → 功能对等"
+  },
+  {
+    "term": "remain silent",
+    "l0": "Act",
+    "chain": "Status(Accused_Custody) → Power(Right_To_Silence) → Act(Remain_Silent) → Status(No_Adverse_Inference_Criminal)",
+    "horn": "Accused+Informed_Of_Right+Choose_Silence → Silence_Exercised",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "BLK_008_MirandaRights → CN_No_Right_To_Silence → FORCE_VOID"
+  },
+  {
+    "term": "removal hearing",
+    "l0": "Act",
+    "chain": "Status(Immigration_Proceeding) → Act(Removal_Hearing) → Status(Removal_Ordered_OR_Relief_Granted)",
+    "horn": "Non_Citizen+Removal_Charged+Hearing_Conducted → Removal_Hearing_Completed",
+    "domains": [
+      "Immigration",
+      "Administrative"
+    ],
+    "xb": true,
+    "prc": "CN_Immigration_Removal → 功能对等"
+  },
+  {
+    "term": "repeat offender",
+    "l0": "Agent",
+    "chain": "Agent(Previously_Convicted) → Status(Repeat_Offender) → Power(Enhanced_Penalty)",
+    "horn": "Prior_Conviction+New_Offense+Statutory_Enhancement → Repeat_Offender_Found",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Repeat_Offender → 完全对应"
+  },
+  {
+    "term": "represent a client",
+    "l0": "Act",
+    "chain": "Agent(Attorney) → Power(Represent_Client) → Act(Advise_Advocate) → Status(Client_Represented)",
+    "horn": "Retained_OR_Appointed+Authority+Action_Taken → Client_Represented",
+    "domains": [
+      "Legal_Ethics"
+    ],
+    "xb": false,
+    "prc": "CN_Legal_Representation → 完全对应"
+  },
+  {
+    "term": "resisting arrest",
+    "l0": "Defect",
+    "chain": "Act(Arrest_Attempted) → Defect(Resist) → Status(Additional_Charge)",
+    "horn": "Arrest_Attempted+Physical_Resistance+Knowledge → Resisting_Arrest_Committed",
+    "domains": [
+      "Criminal",
+      "Police"
+    ],
+    "xb": false,
+    "prc": "CN_Resisting_Arrest → 完全对应"
+  },
+  {
+    "term": "restraining order",
+    "l0": "Power",
+    "chain": "Power(Court_Order) → Act(Restrain_Harassment) → Status(Order_Effective) → Defect(Violation=Arrest)",
+    "horn": "Harassment+Petition+Filing+Hearing → Restraining_Order_Issued",
+    "domains": [
+      "Family",
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Restraining_Order → 功能对等(人身安全保护令)"
+  },
+  {
+    "term": "return a verdict",
+    "l0": "Act",
+    "chain": "Status(Jury_Deliberates) → Act(Return_Verdict) → Status(Verdict_Read) → Status(Trial_Ends)",
+    "horn": "Jury_Reaches_Decision+Court_Convenes+Verdict_Announced → Verdict_Returned",
+    "domains": [
+      "Criminal_Procedure",
+      "Civil_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Verdict → 功能对等"
+  },
+  {
+    "term": "rules of evidence",
+    "l0": "Asset",
+    "chain": "Asset(Procedural_Rules) → Power(Admit_OR_Exclude_Evidence) → Act(Apply_Rules) → Status(Evidence_Admitted_OR_Excluded)",
+    "horn": "Rules_Established+Court_Applies+Parties_Follow → Rules_Of_Evidence_Govern",
+    "domains": [
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Rules_Of_Evidence → 完全对应"
+  },
+  {
+    "term": "search and seizure",
+    "l0": "Act",
+    "chain": "Power(Police_Search) → Act(Search) → Act(Seize_Evidence) → Asset(Evidence_Seized) → Status(Admissible_OR_Excluded)",
+    "horn": "Warrant_OR_Exigency+Search_Conducted+Items_Seized → Search_And_Seizure_Completed",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Search_And_Seizure → 功能对等"
+  },
+  {
+    "term": "search warrant",
+    "l0": "Power",
+    "chain": "Power(Judge_Authorize) → Asset(Warrant) → Power(Police_Execute) → Act(Search) → Asset(Evidence_Seized)",
+    "horn": "Probable_Cause+Affidavit+Warrant_Issued+Executed → Search_Warrant_Valid",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Search_Warrant → 完全对应"
+  },
+  {
+    "term": "security fraud",
+    "l0": "Defect",
+    "chain": "Defect(Fraud_In_Securities) → Act(Misrepresent_OR_Insider_Trade) → Status(Violation_Securities_Law) → Asset(Penalty)",
+    "horn": "Security+False_Statement_OR_Omission+Reliance+Loss → Security_Fraud_Proved",
+    "domains": [
+      "Commercial",
+      "Criminal"
+    ],
+    "xb": true,
+    "prc": "CN_Securities_Fraud → 功能对等"
+  },
+  {
+    "term": "self incrimination",
+    "l0": "Act",
+    "chain": "Status(Accused) → Act(Incriminate_Self) → Power(Fifth_Amendment_Privilege) → Status(Testimony_OR_Silence)",
+    "horn": "Questioning+Accused+Incriminating_Response → Self_Incrimination_Occurred",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_No_Self_Incrimination_Privilege → FORCE_VOID"
+  },
+  {
+    "term": "sequester a jury",
+    "l0": "Act",
+    "chain": "Status(Jury_Impaneled) → Act(Sequester) → Status(Isolated_From_Outside) → Status(Verdict_Reached)",
+    "horn": "High_Profile_Case+Potential_External_Influence+Court_Orders → Jury_Sequestered",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "BLK_010_JuryTrial → FORCE_VOID"
+  },
+  {
+    "term": "serve a subpoena",
+    "l0": "Act",
+    "chain": "Asset(Subpoena) → Act(Deliver_To_Witness) → Status(Service_Completed) → Power(Compel_Testimony)",
+    "horn": "Subpoena_Issued+Delivery_To_Person+Proper_Method → Subpoena_Served",
+    "domains": [
+      "Procedure",
+      "Evidence"
+    ],
+    "xb": false,
+    "prc": "CN_Subpoena_Service → 功能对等"
+  },
+  {
+    "term": "set bail",
+    "l0": "Act",
+    "chain": "Status(Arrested) → Act(Bail_Hearing) → Act(Set_Bail_Amount_Conditions) → Status(Bail_Set)",
+    "horn": "Defendant_Brought+Factors_Considered+Amount_Conditions_Set → Bail_Set",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Bail_Setting → 功能对等"
+  },
+  {
+    "term": "speedy trial",
+    "l0": "Power",
+    "chain": "Status(Accused) → Power(Right_To_Speedy_Trial) → Status(Trial_Within_Reasonable_Time) → Defect(Violation=Dismissal)",
+    "horn": "Charge_Filed+Delay+Prejudice → Speedy_Trial_Violation",
+    "domains": [
+      "Criminal_Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Speedy_Trial → 功能对等"
+  },
+  {
+    "term": "statute of limitation",
+    "l0": "Status",
+    "chain": "Status(Right_To_Sue) → Status(Time_Period_Running) → Status(Expired_OR_Within) → Power(Claim_Barred_OR_Enforceable)",
+    "horn": "Cause_Arises+Time_Passes+Deadline_Met_OR_Missed → Statute_Of_Limitation_Bar_OR_Allows",
+    "domains": [
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Statute_Of_Limitation → 完全对应"
+  },
+  {
+    "term": "statutory law",
+    "l0": "Asset",
+    "chain": "Asset(Legislative_Enactment) → Power(Binding_Legal_Effect) → Status(Applicable)",
+    "horn": "Legislature_Passed+Promulgated+In_Force → Statutory_Law_Applies",
+    "domains": [
+      "Jurisprudence"
+    ],
+    "xb": false,
+    "prc": "CN_Statutory_Law → 完全对应"
+  },
+  {
+    "term": "suppress evidence",
+    "l0": "Act",
+    "chain": "Act(Defendant_Moves) → Status(Evidence_Suppressed) → Status(Excluded_From_Trial)",
+    "horn": "Unconstitutional_OR_Illegal_Collection+Motion+Granted → Evidence_Suppressed",
+    "domains": [
+      "Evidence",
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Evidence_Suppression → 功能对等(非法证据排除)"
+  },
+  {
+    "term": "supreme court",
+    "l0": "Agent",
+    "chain": "Agent(Highest_Court) → Power(Final_Appellate_Jurisdiction) → Act(Decide_Landmark_Cases) → Status(Binding_Precedent)",
+    "horn": "Constitutional_OR_Legal_Issue+Petition_OR_Appeal+Accepted → Supreme_Court_Seized",
+    "domains": [
+      "Appellate",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Supreme_Peoples_Court → 完全对应"
+  },
+  {
+    "term": "tax evasion",
+    "l0": "Defect",
+    "chain": "Act(Fail_To_Pay_Tax) → Defect(Evasion) → Status(Criminal_Tax_Charge)",
+    "horn": "Tax_Due+Willful_Failure_To_Pay+Affirmative_Act_To_Evade → Tax_Evasion_Committed",
+    "domains": [
+      "Tax",
+      "Criminal"
+    ],
+    "xb": true,
+    "prc": "CN_Tax_Evasion_Crime → 功能对等"
+  },
+  {
+    "term": "time served",
+    "l0": "Status",
+    "chain": "Status(Detained_Pre_Trial) → Status(Time_Served) → Status(Sentence_Credit) → Status(Early_Release)",
+    "horn": "Defendant_In_Custody+Period+Court_Credits → Time_Served_Applied",
+    "domains": [
+      "Criminal",
+      "Sentencing"
+    ],
+    "xb": false,
+    "prc": "CN_Pre_Trial_Detention_Credit → 功能对等"
+  },
+  {
+    "term": "unanimous verdict",
+    "l0": "Status",
+    "chain": "Status(Jury_Deliberates) → Status(Unanimous_Decision) → Status(Verdict_Rendered)",
+    "horn": "All_Jurors_Agree+Decision_Reached+Verdict_Read → Unanimous_Verdict_Received",
+    "domains": [
+      "Criminal_Procedure"
+    ],
+    "xb": false,
+    "prc": "BLK_010_JuryTrial → FORCE_VOID"
+  },
+  {
+    "term": "under oath",
+    "l0": "Status",
+    "chain": "Status(Witness) → Act(Take_Oath) → Status(Under_Oath) → Defect(False_Statement=Perjury)",
+    "horn": "Promise_To_Tell_Truth+Sworn+Official_Proceeding → Under_Oath_Status_Active",
+    "domains": [
+      "Evidence",
+      "Procedure"
+    ],
+    "xb": false,
+    "prc": "CN_Under_Oath → 完全对应"
+  },
+  {
+    "term": "vehicular homicide",
+    "l0": "Defect",
+    "chain": "Act(Drive_Vehicle) → Defect(Homicide_By_Vehicle) → Status(Criminal_Liability)",
+    "horn": "Vehicle_Operation+Gross_Negligence_OR_Recklessness+Death_Caused → Vehicular_Homicide_Committed",
+    "domains": [
+      "Criminal",
+      "Traffic"
+    ],
+    "xb": false,
+    "prc": "CN_Traffic_Accident_Death_Crime → 功能对等"
+  },
+  {
+    "term": "waive rights",
+    "l0": "Act",
+    "chain": "Power(Right_Holder) → Act(Knowingly_Voluntarily_Give_Up) → Status(Right_Waived)",
+    "horn": "Right_Exists+Knowledge+Voluntary_Action → Right_Waived",
+    "domains": [
+      "Procedure",
+      "Constitutional"
+    ],
+    "xb": false,
+    "prc": "CN_Waiver_Of_Rights → 完全对应"
+  }
+]
