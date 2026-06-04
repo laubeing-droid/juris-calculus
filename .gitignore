@@ -42,3 +42,21 @@ configs/zh_CN/rules_augmented.yaml
 
 # Regenerated benchmark reports
 tests/results/
+
+# ── Interim build artifacts ──
+configs/en_US/llm_distilled_batch*.json
+configs/en_US/llm_distilled_pilot.json
+configs/en_US/all_glossary_terms.json
+configs/en_US/combined_all_terms.json
+configs/en_US/pdf_glossary_terms.json
+configs/en_US/US_complete.json
+reports/asymmetry_distillation_v1.1.0.json
+reports/parallax_detail_v1.1.0.json
+
+# ── Exception: production JSONs ──
+!configs/en_US/state_combined_terms.json
+!configs/en_US/llm_distilled_full.json
+!configs/en_US/hk_us_divergence_matrix.json
+!configs/prc_us_alignment/long_tail_collision_matrix.json
+!configs/prc_us_alignment/trirail_matrix_report.json
+!mcp_manifest.json
