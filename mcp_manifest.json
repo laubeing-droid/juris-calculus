@@ -1,0 +1,167 @@
+{
+  "name": "juris-calculus",
+  "version": "1.2.0",
+  "description": "Tri-Rail Cross-Jurisdictional Legal Collision Engine — HK × US × PRC",
+  "vendor": "laubeing-droid",
+  "protocol_version": "2024-11-05",
+
+  "resources": {
+    "legal://threat-intel/{state}": {
+      "description": "威胁情报签名库 — WI/NJ 州级程序黑话与对抗策略",
+      "parameters": {
+        "state": "WI | NJ | all"
+      },
+      "mimeType": "application/yaml",
+      "examples": [
+        "legal://threat-intel/NJ",
+        "legal://threat-intel/all"
+      ]
+    },
+    "legal://blocking-rules": {
+      "description": "中华人民共和国成文法强制阻断规则 (41条 CBL + 6条 MAPPING)",
+      "mimeType": "application/yaml"
+    },
+    "legal://spc-rules": {
+      "description": "最高法裁判倾向 Horn 规则 (23条)",
+      "mimeType": "application/yaml"
+    },
+    "legal://term-mappings": {
+      "description": "三法域术语 L0 语义对齐矩阵 (131条)",
+      "mimeType": "application/yaml"
+    },
+    "legal://hk-rules": {
+      "description": "香港特别行政区 Horn 规则 (Cap26/32/622/571/4A, 93条)",
+      "mimeType": "application/yaml"
+    },
+    "legal://us-rules": {
+      "description": "美国联邦法域 Horn 规则 (81条) + L0 约束规则 (86条)",
+      "mimeType": "application/yaml"
+    },
+    "legal://cn-rules": {
+      "description": "中国成文法全量 Horn 规则 (2,117条, 13领域)",
+      "mimeType": "application/yaml"
+    },
+    "legal://glossary/{jurisdiction}": {
+      "description": "合并术语库",
+      "parameters": {
+        "jurisdiction": "us | hk | cn"
+      },
+      "mimeType": "application/json",
+      "examples": [
+        "legal://glossary/us"
+      ]
+    },
+    "legal://state-router": {
+      "description": "美国50州拓扑路由器 — 4大骨干模型",
+      "mimeType": "application/yaml"
+    }
+  },
+
+  "tools": {
+    "trirail_collide": {
+      "description": "执行 HK×US×PRC 三轨并发对撞 — 输入事实流，输出分类+风险矩阵+法条引用",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "description": "场景标识符"
+          },
+          "facts": {
+            "type": "object",
+            "description": "事实流: {fact_id: confidence (0.0-1.0)}",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "context": {
+            "type": "string",
+            "enum": ["cross_border", "domestic"],
+            "description": "跨境/境内上下文"
+          }
+        },
+        "required": ["facts"]
+      },
+      "examples": [
+        {
+          "scenario_id": "custom_case_001",
+          "facts": {
+            "Director_Acted_UltraVires": 0.88,
+            "Cross_Border_Context": 1.0,
+            "ContractOfSale_Exists": 0.9
+          }
+        }
+      ]
+    },
+
+    "check_threat": {
+      "description": "检查事实流是否命中 WI/NJ 威胁签名 — 返回 threat_level + 建议CBL规则",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "facts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "事实ID列表"
+          }
+        },
+        "required": ["facts"]
+      }
+    },
+
+    "generate_memo": {
+      "description": "生成合伙人可签字的涉外商事争议跨境处置备忘录 (Markdown)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "description": "案件编号"
+          },
+          "trirail_result": {
+            "type": "object",
+            "description": "trirail_collide 的输出结果"
+          }
+        },
+        "required": ["case_id", "trirail_result"]
+      }
+    },
+
+    "route_state": {
+      "description": "查询美国州级法律术语的拓扑路由 — 返回骨干模型+触发事实+对接轨道",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "raw_fact": {
+            "type": "string",
+            "description": "州法术语或事实名 (e.g. CA_BP_17200)"
+          },
+          "state_code": {
+            "type": "string",
+            "description": "两字母州代码 (e.g. CA, TX, DE)"
+          }
+        },
+        "required": ["raw_fact"]
+      }
+    },
+
+    "get_citation": {
+      "description": "查询 CBL/SPC 规则ID对应的中国法条全文引用",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "CBL/SPC 规则ID (e.g. PEN_003_Long_Arm_Interdiction)"
+          }
+        },
+        "required": ["rule_id"]
+      }
+    }
+  },
+
+  "icon": "⚖️",
+  "tags": ["legal", "compliance", "cross-border", "sanctions", "bankruptcy"]
+}
