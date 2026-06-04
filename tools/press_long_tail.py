@@ -181,8 +181,11 @@ def term_to_l0_facts(term: str) -> Dict[str, float]:
         facts["At_Will_Employment"] = 0.85
     
     # ── 数据触发 ──
-    if any(kw in term_lower for kw in ["data", "privacy", "disclosure", "record", "file"]):
+    # GEMINI审计修正: data/privacy 仍然映射为数据出境，但 record/file 等通用词不再触发
+    # "record" "file" "case file" 等通用诉讼术语不再自动映射为数据出境
+    if any(kw in term_lower for kw in ["data export", "data transfer", "data privacy", "sensitive data", "state secret", "cross border data"]):
         facts["Cross_Border_Data_Transfer_To_US"] = 0.83
+        facts["Identified_Sensitive_Data_Or_State_Secret"] = 0.90
     
     return facts
 

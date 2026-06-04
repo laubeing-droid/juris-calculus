@@ -239,9 +239,11 @@ class PRCAdapter:
                 spc_claims_count = len(spc_claims)
             except CriticalClarityFailure as e:
                 if hasattr(e, 'partial_state') and e.partial_state is not None:
+                    # GEMINI审计修正: 原子性降级——仅保留 confidence>0.8 的确定性根节点
+                    # 剔除推导链末端的临时悬空断言，防止未反驳的错误主张外泄
                     spc_claims = [
                         cid for cid, c in e.partial_state.claims.items()
-                        if c.confidence > 0
+                        if c.confidence > 0.8
                     ]
                     spc_claims_count = len(spc_claims)
 
@@ -265,9 +267,10 @@ class PRCAdapter:
                 cn_claims_count = len(cn_claims)
             except CriticalClarityFailure as e:
                 if hasattr(e, 'partial_state') and e.partial_state is not None:
+                    # GEMINI审计修正: 仅保留 confidence>0.8 的确定性根节点
                     cn_claims = [
                         cid for cid, c in e.partial_state.claims.items()
-                        if c.confidence > 0
+                        if c.confidence > 0.8
                     ]
                     cn_claims_count = len(cn_claims)
 

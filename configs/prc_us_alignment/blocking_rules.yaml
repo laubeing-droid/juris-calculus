@@ -23,11 +23,12 @@ rules:
     target_primitive: "Power"
     additional_conditions:
       - "Cross_Border_Context"
+      - "Foreign_Connected_Entity"
     action:
       type: "FORCE_SUPPRESS"
       map_to: "CN_State_Asset_Protection"
       status: "VOID"
-    description: "仅涉外场景: 防止英美对价瑕疵算子被滥用于穿透境内涉外主体合法契约权益。纯境内场景(CHN-ONLY)不触发。"
+    description: "GEMINI审计修正: 双重门控(跨境+涉外主体)。防止仅因LLM转译幻觉触发纯境内误封。"
 
   - id: BLK_002_Promissory_Estoppel
     trigger_fact: "Promissory_Estoppel_Bar"
@@ -372,11 +373,13 @@ rules:
   - id: CN_SPEC_006_DataExportAssessment
     trigger_fact: "Cross_Border_Data_Transfer_To_US"
     target_primitive: "Act"
+    additional_conditions:
+      - "Identified_Sensitive_Data_Or_State_Secret"
     action:
       type: "FORCE_VOID"
       map_to: "CN_CAC_DataExport_SecurityAssessment"
       status: "VOID"
-    description: "数据出境安全评估——未通过前Act=0。"
+    description: "GEMINI审计修正: 追加敏感数据门控。仅当transfer涉及敏感数据/国家秘密/核心基础设施时触发FORCE_VOID，通用文书传递不阻断。"
 
   - id: CN_SPEC_007_AdminPublicInterestLitigation
     trigger_fact: "Administrative_PublicInterest_Litigation"

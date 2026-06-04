@@ -22,10 +22,9 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 1,
       "force_void": [
-        "PEN_001_Data_CrossBorder_Security",
-        "CN_SPEC_006_DataExportAssessment"
+        "PEN_001_Data_CrossBorder_Security"
       ],
       "force_suppress": [],
       "mapping_override": [],
@@ -91,10 +90,9 @@
       }
     },
     "prc": {
-      "overrides_count": 3,
+      "overrides_count": 2,
       "force_void": [],
       "force_suppress": [
-        "BLK_001_Consideration_Shield",
         "PEN_002_Secondary_Sanction_Block",
         "PEN_004_OFAC_CounterCollision"
       ],
@@ -107,7 +105,7 @@
   "TRI_004_Plea_Bargaining_CrossBorder": {
     "scenario_id": "TRI_004_Plea_Bargaining_CrossBorder",
     "description": "美国辩诉交易 → PRC认罪认罚从宽映射 + 数据出境",
-    "classification": "CHINA_US_COLLISION",
+    "classification": "HK_CN_ASYMMETRY",
     "hk": {
       "state": "VALID",
       "claims": [],
@@ -125,10 +123,8 @@
       }
     },
     "prc": {
-      "overrides_count": 3,
-      "force_void": [
-        "CN_SPEC_006_DataExportAssessment"
-      ],
+      "overrides_count": 2,
+      "force_void": [],
       "force_suppress": [],
       "mapping_override": [
         "OVR_001_Plea_Bargaining_Restruct",
@@ -142,7 +138,7 @@
   "TRI_005_Chapter11_Director_Conflict": {
     "scenario_id": "TRI_005_Chapter11_Director_Conflict",
     "description": "US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞",
-    "classification": "CHINA_US_COLLISION",
+    "classification": "TRI_RESONANCE",
     "hk": {
       "state": "SUPPRESSED",
       "claims": [
@@ -165,11 +161,9 @@
       }
     },
     "prc": {
-      "overrides_count": 1,
+      "overrides_count": 0,
       "force_void": [],
-      "force_suppress": [
-        "BLK_001_Consideration_Shield"
-      ],
+      "force_suppress": [],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
@@ -179,7 +173,7 @@
   "TRI_006_Factoring_CrossBorder": {
     "scenario_id": "TRI_006_Factoring_CrossBorder",
     "description": "保理合同独立成章 vs US应收账款转让",
-    "classification": "CHINA_US_COLLISION",
+    "classification": "HK_CN_ASYMMETRY",
     "hk": {
       "state": "VALID",
       "claims": [],
@@ -197,11 +191,9 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 1,
       "force_void": [],
-      "force_suppress": [
-        "BLK_001_Consideration_Shield"
-      ],
+      "force_suppress": [],
       "mapping_override": [
         "CN_SPEC_002_Factoring_Chapter"
       ],
@@ -231,13 +223,11 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 1,
       "force_void": [
         "PEN_005_Crypto_Prohibition"
       ],
-      "force_suppress": [
-        "BLK_001_Consideration_Shield"
-      ],
+      "force_suppress": [],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
@@ -265,10 +255,8 @@
       }
     },
     "prc": {
-      "overrides_count": 3,
-      "force_void": [
-        "CN_SPEC_006_DataExportAssessment"
-      ],
+      "overrides_count": 2,
+      "force_void": [],
       "force_suppress": [
         "PEN_003_Long_Arm_Interdiction"
       ],
@@ -301,10 +289,8 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
-      "force_void": [
-        "CN_SPEC_006_DataExportAssessment"
-      ],
+      "overrides_count": 1,
+      "force_void": [],
       "force_suppress": [
         "CN_SPEC_003_Algorithm_Filing"
       ],

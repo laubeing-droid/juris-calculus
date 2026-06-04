@@ -290,9 +290,11 @@ class TriRailCollider:
         try:
             hk_state = self.hk_engine.evaluate(hk_state)
         except CriticalClarityFailure as e:
-            # v1.2.0: 捕获 partial_state，降级消费已收敛的残存 claims
+            # GEMINI审计修正: 原子性降级——仅保留 confidence>0.8 的安全主张
             if hasattr(e, 'partial_state') and e.partial_state is not None:
-                hk_state = e.partial_state
+                ps = e.partial_state
+                ps.claims = {k: v for k, v in ps.claims.items() if v.confidence > 0.8}
+                hk_state = ps
             # 否则保持初始空态
 
         us_state = IRState(facts=facts_us)
@@ -300,7 +302,9 @@ class TriRailCollider:
             us_state = self.us_engine.evaluate(us_state)
         except CriticalClarityFailure as e:
             if hasattr(e, 'partial_state') and e.partial_state is not None:
-                us_state = e.partial_state
+                ps = e.partial_state
+                ps.claims = {k: v for k, v in ps.claims.items() if v.confidence > 0.8}
+                us_state = ps
 
         prc_state = self.prc_engine.execute_prc_first_override(facts_prc)
 
