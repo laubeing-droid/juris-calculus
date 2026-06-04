@@ -1,18 +1,18 @@
 {
   "metadata": {
     "version": "v1.2.0-TriRail-Saturation",
-    "total_terms": 1847,
+    "total_terms": 3259,
     "stats": {
-      "COLLISION": 41,
-      "ASYMMETRY": 45,
-      "TRI_RESONANCE": 1761,
+      "COLLISION": 46,
+      "ASYMMETRY": 67,
+      "TRI_RESONANCE": 3146,
       "COMPLEX_PARALLAX": 0,
       "ERROR": 0
     }
   },
   "collisions": [
     {
-      "term_id": "TAIL_0031",
+      "term_id": "TAIL_0030",
       "term": "Case file",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -29,7 +29,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0081",
+      "term_id": "TAIL_0080",
       "term": "Disclosure statement",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -46,7 +46,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0103",
+      "term_id": "TAIL_0102",
       "term": "File",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -63,7 +63,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0186",
+      "term_id": "TAIL_0183",
       "term": "Record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -80,7 +80,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0232",
+      "term_id": "TAIL_0227",
       "term": "Wage garnishment",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -97,7 +97,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0243",
+      "term_id": "TAIL_0238",
       "term": "Code has been filed",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -114,7 +114,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0342",
+      "term_id": "TAIL_0332",
       "term": "child labor law",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -131,7 +131,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0391",
+      "term_id": "TAIL_0378",
       "term": "court of record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -148,7 +148,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0401",
+      "term_id": "TAIL_0388",
       "term": "criminal record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -165,7 +165,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0437",
+      "term_id": "TAIL_0422",
       "term": "driving record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -182,7 +182,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0464",
+      "term_id": "TAIL_0448",
       "term": "file (n",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -199,7 +199,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0465",
+      "term_id": "TAIL_0449",
       "term": "file (v",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -216,7 +216,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0472",
+      "term_id": "TAIL_0456",
       "term": "for the record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -233,7 +233,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0540",
+      "term_id": "TAIL_0524",
       "term": "labor law",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -250,7 +250,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0581",
+      "term_id": "TAIL_0564",
       "term": "matter of record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -267,7 +267,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0608",
+      "term_id": "TAIL_0589",
       "term": "on the record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -284,7 +284,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0636",
+      "term_id": "TAIL_0617",
       "term": "police record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -301,7 +301,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0741",
+      "term_id": "TAIL_0718",
       "term": "strike from the record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -318,7 +318,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0897",
+      "term_id": "TAIL_0867",
       "term": "attorney of record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -335,7 +335,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0919",
+      "term_id": "TAIL_0887",
       "term": "Case File Number",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -352,7 +352,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0922",
+      "term_id": "TAIL_0890",
       "term": "case worker",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -369,7 +369,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1002",
+      "term_id": "TAIL_0965",
       "term": "court records",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -386,7 +386,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1029",
+      "term_id": "TAIL_0992",
       "term": "data entry",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -403,7 +403,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1098",
+      "term_id": "TAIL_1052",
       "term": "execution against wages",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -420,7 +420,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1121",
+      "term_id": "TAIL_1075",
       "term": "file (verb",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -437,7 +437,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1122",
+      "term_id": "TAIL_1076",
       "term": "file an appeal",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -454,7 +454,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1123",
+      "term_id": "TAIL_1077",
       "term": "file for bankruptcy",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -473,7 +473,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1146",
+      "term_id": "TAIL_1099",
       "term": "gross wages",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -490,24 +490,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1190",
-      "term": "internet posting (of sexual offender’s data",
-      "classification": "CHINA_US_COLLISION",
-      "hk_state": "VALID",
-      "us_state": "VALID",
-      "hk_claims": [],
-      "us_claims": [],
-      "prc_overrides": {
-        "force_void": [
-          "CN_SPEC_006_DataExportAssessment"
-        ],
-        "force_suppress": [],
-        "mapping_override": []
-      },
-      "total_prc_overrides": 1
-    },
-    {
-      "term_id": "TAIL_1216",
+      "term_id": "TAIL_1159",
       "term": "labor union",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -524,7 +507,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1315",
+      "term_id": "TAIL_1254",
       "term": "Open Public Records Act",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -541,7 +524,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1320",
+      "term_id": "TAIL_1256",
       "term": "Order of Wage Execution",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -558,7 +541,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1387",
+      "term_id": "TAIL_1317",
       "term": "record-keeping forms",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -575,7 +558,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1427",
+      "term_id": "TAIL_1349",
       "term": "Sheriff’s Labor Assistance Program (SLAP",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -592,7 +575,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1432",
+      "term_id": "TAIL_1354",
       "term": "sound recording",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -609,7 +592,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1479",
+      "term_id": "TAIL_1397",
       "term": "unemployment compensation",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -626,7 +609,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1488",
+      "term_id": "TAIL_1404",
       "term": "verbatim record",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -643,7 +626,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1506",
+      "term_id": "TAIL_1420",
       "term": "wage execution",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -660,7 +643,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1675",
+      "term_id": "TAIL_1557",
       "term": "UNEMPLOYMENT",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
@@ -677,8 +660,25 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1717",
-      "term": "PLEADINGS (documents filed in a case",
+      "term_id": "TAIL_1628",
+      "term": "attaching wages or money",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "BLK_019_AtWillEmployment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2078",
+      "term": "file charges",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
       "us_state": "VALID",
@@ -694,8 +694,8 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1755",
-      "term": "attaching wages or money",
+      "term_id": "TAIL_2181",
+      "term": "CONFIDENTIAL RECORD",
       "classification": "CHINA_US_COLLISION",
       "hk_state": "VALID",
       "us_state": "VALID",
@@ -703,7 +703,92 @@
       "us_claims": [],
       "prc_overrides": {
         "force_void": [
-          "BLK_019_AtWillEmployment"
+          "CN_SPEC_006_DataExportAssessment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2373",
+      "term": "PRIVACY, RIGHT OF",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "CN_SPEC_006_DataExportAssessment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2894",
+      "term": "records of court proceedings",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "CN_SPEC_006_DataExportAssessment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3059",
+      "term": "permanent records",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "CN_SPEC_006_DataExportAssessment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3067",
+      "term": "ABSTRACT OF RECORD",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "CN_SPEC_006_DataExportAssessment"
+        ],
+        "force_suppress": [],
+        "mapping_override": []
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3201",
+      "term": "with the county recorder",
+      "classification": "CHINA_US_COLLISION",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [
+          "CN_SPEC_006_DataExportAssessment"
         ],
         "force_suppress": [],
         "mapping_override": []
@@ -713,7 +798,7 @@
   ],
   "asymmetries": [
     {
-      "term_id": "TAIL_0078",
+      "term_id": "TAIL_0077",
       "term": "Deposition",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -730,7 +815,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0082",
+      "term_id": "TAIL_0081",
       "term": "Discovery",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -747,7 +832,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0091",
+      "term_id": "TAIL_0090",
       "term": "Evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -764,7 +849,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0094",
+      "term_id": "TAIL_0093",
       "term": "Exculpatory evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -781,7 +866,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0108",
+      "term_id": "TAIL_0107",
       "term": "Hearsay",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -798,7 +883,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0113",
+      "term_id": "TAIL_0112",
       "term": "Inculpatory evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -815,7 +900,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0209",
+      "term_id": "TAIL_0204",
       "term": "Subpoena",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -832,7 +917,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0210",
+      "term_id": "TAIL_0205",
       "term": "Subpoena duces tecum",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -849,7 +934,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0214",
+      "term_id": "TAIL_0209",
       "term": "Testimony",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -866,7 +951,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0234",
+      "term_id": "TAIL_0229",
       "term": "Witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -883,7 +968,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0261",
+      "term_id": "TAIL_0254",
       "term": "admitted into evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -900,7 +985,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0262",
+      "term_id": "TAIL_0255",
       "term": "admissible evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -917,7 +1002,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0336",
+      "term_id": "TAIL_0326",
       "term": "character evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -934,7 +1019,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0346",
+      "term_id": "TAIL_0336",
       "term": "circumstantial evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -951,7 +1036,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0376",
+      "term_id": "TAIL_0364",
       "term": "confrontation of witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -968,7 +1053,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0409",
+      "term_id": "TAIL_0396",
       "term": "debrief (a witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -985,7 +1070,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0421",
+      "term_id": "TAIL_0407",
       "term": "direct evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1002,7 +1087,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0454",
+      "term_id": "TAIL_0438",
       "term": "expert witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1019,7 +1104,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0462",
+      "term_id": "TAIL_0446",
       "term": "falsification of evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1036,7 +1121,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0500",
+      "term_id": "TAIL_0484",
       "term": "hostile witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1053,7 +1138,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0511",
+      "term_id": "TAIL_0495",
       "term": "impeachment of witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1070,7 +1155,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0518",
+      "term_id": "TAIL_0502",
       "term": "indirect evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1087,7 +1172,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0580",
+      "term_id": "TAIL_0563",
       "term": "material witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1104,7 +1189,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0644",
+      "term_id": "TAIL_0625",
       "term": "preponderance of the evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1121,7 +1206,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0655",
+      "term_id": "TAIL_0636",
       "term": "prima facie evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1138,7 +1223,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0684",
+      "term_id": "TAIL_0663",
       "term": "recall a witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1155,7 +1240,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0707",
+      "term_id": "TAIL_0686",
       "term": "rules of evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1172,7 +1257,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0721",
+      "term_id": "TAIL_0700",
       "term": "serve a subpoena",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1189,7 +1274,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0744",
+      "term_id": "TAIL_0721",
       "term": "submit evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1206,7 +1291,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0749",
+      "term_id": "TAIL_0726",
       "term": "suppress evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1223,7 +1308,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0755",
+      "term_id": "TAIL_0731",
       "term": "sworn testimony",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1240,7 +1325,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0759",
+      "term_id": "TAIL_0735",
       "term": "tampering with a witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1257,7 +1342,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0760",
+      "term_id": "TAIL_0736",
       "term": "tampering with evidence",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1274,7 +1359,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0837",
+      "term_id": "TAIL_0812",
       "term": "witness of the defense",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1291,7 +1376,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_0838",
+      "term_id": "TAIL_0813",
       "term": "witness of the prosecution",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1308,7 +1393,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1178",
+      "term_id": "TAIL_1129",
       "term": "Information Subpoena",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1325,43 +1410,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1319",
-      "term": "order for discovery (of debtor’s assets",
-      "classification": "HK_CN_ASYMMETRY",
-      "hk_state": "VALID",
-      "us_state": "VALID",
-      "hk_claims": [],
-      "us_claims": [
-        "AutomaticStay_InEffect → CreditorPower(Collect)=0"
-      ],
-      "prc_overrides": {
-        "force_void": [],
-        "force_suppress": [],
-        "mapping_override": [
-          "BLK_021_Discovery_Fishing"
-        ]
-      },
-      "total_prc_overrides": 1
-    },
-    {
-      "term_id": "TAIL_1421",
-      "term": "service (e.g., of a subpoena",
-      "classification": "HK_CN_ASYMMETRY",
-      "hk_state": "VALID",
-      "us_state": "VALID",
-      "hk_claims": [],
-      "us_claims": [],
-      "prc_overrides": {
-        "force_void": [],
-        "force_suppress": [],
-        "mapping_override": [
-          "BLK_021_Discovery_Fishing"
-        ]
-      },
-      "total_prc_overrides": 1
-    },
-    {
-      "term_id": "TAIL_1554",
+      "term_id": "TAIL_1464",
       "term": "EYEWITNESS",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1378,41 +1427,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1565",
-      "term": "EXHBrT (obiect submitted as evidence",
-      "classification": "HK_CN_ASYMMETRY",
-      "hk_state": "VALID",
-      "us_state": "VALID",
-      "hk_claims": [],
-      "us_claims": [],
-      "prc_overrides": {
-        "force_void": [],
-        "force_suppress": [],
-        "mapping_override": [
-          "BLK_021_Discovery_Fishing"
-        ]
-      },
-      "total_prc_overrides": 1
-    },
-    {
-      "term_id": "TAIL_1605",
-      "term": "PROoF (evidence convincing to the iudge or",
-      "classification": "HK_CN_ASYMMETRY",
-      "hk_state": "VALID",
-      "us_state": "VALID",
-      "hk_claims": [],
-      "us_claims": [],
-      "prc_overrides": {
-        "force_void": [],
-        "force_suppress": [],
-        "mapping_override": [
-          "BLK_021_Discovery_Fishing"
-        ]
-      },
-      "total_prc_overrides": 1
-    },
-    {
-      "term_id": "TAIL_1710",
+      "term_id": "TAIL_1589",
       "term": "WITNESS (n",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1429,7 +1444,7 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1763",
+      "term_id": "TAIL_1635",
       "term": "WEIGHT OF THE EVIDENCE",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
@@ -1446,8 +1461,8 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1799",
-      "term": "pEFENsE (evidence offered bv an accused",
+      "term_id": "TAIL_1695",
+      "term": "WITNESS STAND",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
       "us_state": "VALID",
@@ -1463,8 +1478,450 @@
       "total_prc_overrides": 1
     },
     {
-      "term_id": "TAIL_1836",
-      "term": "WITNESS STAND",
+      "term_id": "TAIL_1712",
+      "term": "PAROLE EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_1723",
+      "term": "evidence that is presented",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_1774",
+      "term": "EYE WITNESS",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_1867",
+      "term": "proof by CLEAR AND CONVINCING EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_1946",
+      "term": "OPINION EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_1977",
+      "term": "EVIDENCE, DIRECT",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2095",
+      "term": "DISCOVERY MOTION",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2111",
+      "term": "SUBPOENA DUCES",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2119",
+      "term": "EXPERT TESTIMONY",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2164",
+      "term": "TURNCOAT WITNESS",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2231",
+      "term": "THE EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2275",
+      "term": "WITNESS, HOSTILE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2424",
+      "term": "initial evidence",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2458",
+      "term": "WITNESS, DEFENSE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2469",
+      "term": "WITNESSES",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2518",
+      "term": "REAL EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2631",
+      "term": "evidence to the contrary",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2695",
+      "term": "PREJUDICIAL EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2703",
+      "term": "STRICKEN EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2712",
+      "term": "ADVERSE WITNESS",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2738",
+      "term": "WITNESS, EXPERT",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2754",
+      "term": "MATERIAL EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_2866",
+      "term": "or discovery",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3025",
+      "term": "BEST EVIDENCE",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3113",
+      "term": "WITNESS, PROSECUTION",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3163",
+      "term": "WITNESS, MATERIAL",
+      "classification": "HK_CN_ASYMMETRY",
+      "hk_state": "VALID",
+      "us_state": "VALID",
+      "hk_claims": [],
+      "us_claims": [],
+      "prc_overrides": {
+        "force_void": [],
+        "force_suppress": [],
+        "mapping_override": [
+          "BLK_021_Discovery_Fishing"
+        ]
+      },
+      "total_prc_overrides": 1
+    },
+    {
+      "term_id": "TAIL_3248",
+      "term": "becomes an adverse witness",
       "classification": "HK_CN_ASYMMETRY",
       "hk_state": "VALID",
       "us_state": "VALID",
