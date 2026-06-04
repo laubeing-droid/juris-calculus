@@ -285,20 +285,14 @@ class LongTailPressEngine:
             "hk_claims": list(hk_state.claims.keys()),
             "us_claims": list(us_state.claims.keys()),
             "prc_overrides": {
-                "force_void": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "FORCE_VOID"
-                ],
-                "force_suppress": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "FORCE_SUPPRESS"
-                ],
+                "force_void": self.prc_engine.get_force_void_triggers(prc_state),
+                "force_suppress": self.prc_engine.get_force_suppress_triggers(prc_state),
                 "mapping_override": [
-                    rid for rid, v in prc_state.items()
-                    if v.get("type") == "MAPPING_OVERRIDE"
+                    m["id"] for m in self.prc_engine.get_mapping_overrides(prc_state)
                 ],
             },
-            "total_prc_overrides": len(prc_state),
+            "cn_claims_count": prc_state.get("cn_claims_count", 0),
+            "total_prc_overrides": len(prc_state.get("blocking_overrides", {})),
         }
 
     def run_saturation(self, terms: List[str] = None):
