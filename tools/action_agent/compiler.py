@@ -32,6 +32,15 @@ from tools.action_agent.state_to_text import (
     render_risk_matrix,
 )
 
+
+def get_source_version() -> str:
+    """获取当前规则集的版本哈希 — 注入备忘录作为法律意见版本标签"""
+    try:
+        from tools.operator_registry import OperatorRegistry
+        return OperatorRegistry.get_source_hash()
+    except Exception:
+        return "UNVERSIONED"
+
 # ── Jinja2 模板加载 ──
 try:
     from jinja2 import Environment, FileSystemLoader
@@ -138,6 +147,8 @@ class MemoCompiler:
             "threat_signature": trirail_result.get("threat_signature", ""),
             "threat_level": trirail_result.get("threat_level", ""),
             "description": trirail_result.get("description", ""),
+            # ── 版本水印 ──
+            "source_hash": get_source_version(),
         }
 
         # ── 渲染 ──
