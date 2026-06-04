@@ -33,6 +33,9 @@ from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, Cri
 from compiler_core.domain_config import DomainConfig, LegalDomain
 from adapter.prc_adapter import PRCAdapter
 
+# ── 威胁拦截器 (Gemini审计: 下沉至TriRailCollider主路径最前端) ──
+from tools.distill_jurisdiction import FastPathInterceptor
+
 
 # ═══════════════════════════════════════════
 # 对撞场景
@@ -274,7 +277,10 @@ class TriRailCollider:
         # ── PRC 约束引擎 ──
         self.prc_engine = PRCAdapter()
 
-        print(f"[TriRail] HK={len(hk_rules)} rules | US={len(us_rules)} rules | PRC CBL={len(self.prc_engine.constraint_rules)} | SPC={22 if self.prc_engine.spc_loaded else 0} | CN={self.prc_engine.cn_rule_count}")
+        # ── 威胁拦截器 (Gemini审计: First Gatekeeper) ──
+        self.threat_interceptor = FastPathInterceptor()
+
+        print(f"[TriRail] HK={len(hk_rules)} rules | US={len(us_rules)} rules | PRC CBL={len(self.prc_engine.constraint_rules)} | SPC={22 if self.prc_engine.spc_loaded else 0} | CN={self.prc_engine.cn_rule_count} | Threats={len(self.threat_interceptor.signatures)} sigs")
 
     def build_fact_state(self, facts_dict: Dict[str, float]) -> Dict[str, LegalFact]:
         """将 {fact_id: confidence} → {fact_id: LegalFact}"""
@@ -285,6 +291,30 @@ class TriRailCollider:
 
     def run_scenario(self, scenario_id: str, scenario: Dict) -> Dict:
         """运行单个三轨场景"""
+
+        # ═══ 哨兵: 威胁签名预检 (Gemini审计: First Gatekeeper) ═══
+        fact_names = list(scenario.get("facts", {}).keys())
+        threat_hit = self.threat_interceptor.intercept(fact_names)
+        if threat_hit:
+            return {
+                "scenario_id": scenario_id,
+                "description": scenario.get("description", ""),
+                "classification": "CHINA_US_COLLISION",
+                "hk": {"state": "?", "claims": [], "claims_count": 0},
+                "us": {"state": "?", "claims": [], "claims_count": 0},
+                "prc": {
+                    "overrides_count": 1,
+                    "force_void": [threat_hit["target_rule"]],
+                    "force_suppress": [],
+                    "mapping_override": [],
+                    "spc_claims_count": 0,
+                    "cn_claims_count": 0,
+                    "cn_rules_total": 0,
+                },
+                "fast_path": True,
+                "threat_signature": threat_hit.get("signature_id", ""),
+                "threat_level": threat_hit.get("threat_level", ""),
+            }
 
         # 防御性深拷贝 — 三轨独立内存空间
         facts_hk = self.build_fact_state(scenario["facts"])

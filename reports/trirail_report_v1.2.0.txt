@@ -4,26 +4,25 @@
 ======================================================================
 
 Total scenarios: 12
-  CHINA_US_COLLISION: 6
-  HK_CN_ASYMMETRY: 4
+  CHINA_US_COLLISION: 7
+  HK_CN_ASYMMETRY: 3
   TRI_RESONANCE: 2
 
 --- TRI_001_UltraVires_DataExport [CHINA_US_COLLISION] ---
   HK董事越权 + 美国Cloud Act数据请求 → PRC数据出境阻断
-  HK: SUPPRESSED claims=['Parties_Duties_Defined']
+  HK: SUPPRESSED claims=['Contract_Validity']
   US: VALID claims=[]
   PRC FORCE_VOID: ['PEN_001_Data_CrossBorder_Security']
 
---- TRI_002_Litigation_Discovery [HK_CN_ASYMMETRY] ---
+--- TRI_002_Litigation_Discovery [CHINA_US_COLLISION] ---
   美国诉前证据开示 + 关联公司资产混同 → 横向否认+数据阻断
-  HK: VALID claims=[]
-  US: VALID claims=[]
-  PRC MAPPING_OVERRIDE: ['BLK_021_Discovery_Fishing', 'CN_SPEC_001_Horizontal_Veil_Piercing']
-  PRC CN=24c SPC=0c (total=2117 rules)
+  HK: ? claims=[]
+  US: ? claims=[]
+  PRC FORCE_VOID: ['BLK_021_Discovery_Fishing']
 
 --- TRI_003_OFAC_Sanction_Deadlock [CHINA_US_COLLISION] ---
   OFAC制裁 vs 反外国制裁法第12条强制对撞
-  HK: VALID claims=['Parties_Duties_Defined', 'Contract_Validity']
+  HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
   US: VALID claims=[]
   PRC FORCE_SUPPRESS: ['PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
   PRC CN=2c SPC=0c (total=2117 rules)
@@ -37,7 +36,7 @@ Total scenarios: 12
 
 --- TRI_005_Chapter11_Director_Conflict [TRI_RESONANCE] ---
   US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞
-  HK: SUPPRESSED claims=['Parties_Duties_Defined']
+  HK: SUPPRESSED claims=['Contract_Validity']
   US: VALID claims=['AutomaticStay_InEffect → CreditorPower(Collect)=0']
 
 --- TRI_006_Factoring_CrossBorder [HK_CN_ASYMMETRY] ---

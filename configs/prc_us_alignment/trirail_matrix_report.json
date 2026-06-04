@@ -6,7 +6,7 @@
     "hk": {
       "state": "SUPPRESSED",
       "claims": [
-        "Parties_Duties_Defined"
+        "Contract_Validity"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -36,35 +36,31 @@
   "TRI_002_Litigation_Discovery": {
     "scenario_id": "TRI_002_Litigation_Discovery",
     "description": "美国诉前证据开示 + 关联公司资产混同 → 横向否认+数据阻断",
-    "classification": "HK_CN_ASYMMETRY",
+    "classification": "CHINA_US_COLLISION",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
-      "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "claims_count": 0
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
-      "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "claims_count": 0
     },
     "prc": {
-      "overrides_count": 2,
-      "force_void": [],
-      "force_suppress": [],
-      "mapping_override": [
-        "BLK_021_Discovery_Fishing",
-        "CN_SPEC_001_Horizontal_Veil_Piercing"
+      "overrides_count": 1,
+      "force_void": [
+        "BLK_021_Discovery_Fishing"
       ],
+      "force_suppress": [],
+      "mapping_override": [],
       "spc_claims_count": 0,
-      "cn_claims_count": 24,
-      "cn_rules_total": 2117
-    }
+      "cn_claims_count": 0,
+      "cn_rules_total": 0
+    },
+    "fast_path": true,
+    "threat_signature": "WI_ENF_005_Discovery_Abuse",
+    "threat_level": "MEDIUM"
   },
   "TRI_003_OFAC_Sanction_Deadlock": {
     "scenario_id": "TRI_003_OFAC_Sanction_Deadlock",
@@ -73,8 +69,8 @@
     "hk": {
       "state": "VALID",
       "claims": [
-        "Parties_Duties_Defined",
-        "Contract_Validity"
+        "Contract_Validity",
+        "Parties_Duties_Defined"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -142,7 +138,7 @@
     "hk": {
       "state": "SUPPRESSED",
       "claims": [
-        "Parties_Duties_Defined"
+        "Contract_Validity"
       ],
       "rebuttals": 0,
       "state_tracker": {

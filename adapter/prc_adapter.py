@@ -239,12 +239,14 @@ class PRCAdapter:
                 spc_claims_count = len(spc_claims)
             except CriticalClarityFailure as e:
                 if hasattr(e, 'partial_state') and e.partial_state is not None:
-                    # GEMINI审计修正: 原子性降级——仅保留 confidence>0.8 的确定性根节点
-                    # 剔除推导链末端的临时悬空断言，防止未反驳的错误主张外泄
-                    spc_claims = [
+                    # Gemini终局审计: 双阈值机制
+                    # >0.8 → auto_block (确定性根节点，进入Horn推导)
+                    # 0.5-0.8 → alert_only (模糊高威胁，触发预警但不推导)
+                    auto_block = [
                         cid for cid, c in e.partial_state.claims.items()
                         if c.confidence > 0.8
                     ]
+                    spc_claims = auto_block
                     spc_claims_count = len(spc_claims)
 
         # ═══ 第三轨: CN 成文法全量 Horn 规则 ═══
@@ -267,7 +269,7 @@ class PRCAdapter:
                 cn_claims_count = len(cn_claims)
             except CriticalClarityFailure as e:
                 if hasattr(e, 'partial_state') and e.partial_state is not None:
-                    # GEMINI审计修正: 仅保留 confidence>0.8 的确定性根节点
+                    # Gemini终局审计: 双阈值
                     cn_claims = [
                         cid for cid, c in e.partial_state.claims.items()
                         if c.confidence > 0.8

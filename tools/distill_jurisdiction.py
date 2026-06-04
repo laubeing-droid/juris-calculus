@@ -403,11 +403,13 @@ def route_state_law_to_backbone(raw_state_fact: str, state_code: str = None, rou
     routing = router.get("routing_table", {})
     engine = router.get("router_engine", {})
 
-    # ═══ 优先级1: 精确州代码匹配 ═══
+    # ═══ 优先级1: 精确州代码匹配 (支持多标签) ═══
     if state_code and state_code.upper() in engine.get("state_to_backbone", {}):
         backbone = engine["state_to_backbone"][state_code.upper()]
+        # Gemini审计: CA multi-label — 同时命中 LONG_ARM + CFA_PUNITIVE
+        multi_labels = state_code.upper() in _MULTI_LABEL_STATES
         model = routing.get(backbone, {})
-        return {
+        result = {
             "backbone": backbone,
             "standard_label": model.get("target_backbone", ""),
             "trigger_facts": [],
@@ -418,6 +420,10 @@ def route_state_law_to_backbone(raw_state_fact: str, state_code: str = None, rou
             "states": model.get("states", []),
             "matched_by": "state_code",
         }
+        if multi_labels:
+            result["multi_label"] = True
+            result["additional_backbones"] = _MULTI_LABEL_STATES[state_code.upper()]
+        return result
 
     # ═══ 优先级2: 事实模式匹配 ═══
     fact_lower = raw_state_fact.lower()
@@ -610,3 +616,14 @@ class FastPathInterceptor:
 
 if __name__ == "__main__":
     main()
+
+
+# ═══════════════════════════════════════
+# Gemini审计: 加州/纽约/华盛顿为多标签路由
+# 同时具有 LONG_ARM + CFA_PUNITIVE 双重身份
+# ═══════════════════════════════════════
+_MULTI_LABEL_STATES = {
+    "CA": ["LONG_ARM", "CFA_PUNITIVE"],
+    "NY": ["LONG_ARM", "CFA_PUNITIVE"],
+    "WA": ["LONG_ARM", "CFA_PUNITIVE"],
+}

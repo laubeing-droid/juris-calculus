@@ -272,6 +272,17 @@ rules:
       status: "VOID"
     description: "填补跨法系映射缺口——中国法视角下不作为不构成独立Defect，但涉及数据安全或国有资产时上升为安全违规或背信。"
 
+  # ── Gemini终局审计: 禁诉令振荡防护 ──
+  - id: PEN_006_Anti_Suit_Secondary
+    trigger_fact: "Anti_Suit_Injunction_Granted"
+    target_primitive: "Power"
+    additional_conditions:
+      - "NOT US_Long_Arm_Jurisdiction_Asserted"
+    action:
+      type: "CONDITIONAL_SECONDARY"
+      status: "ACTIVE_IF_CBL_SILENT"
+    description: "Gemini审计: HK禁诉令仅当PRC CBL轨未触发长臂阻断时才启用。防止禁诉令与反外国制裁法阻断产生双主权振荡。"
+
   # ═══════════════════════════════════════
   # 5项跨境穿透 (Cross-Border Penetration Interdiction)
   # ═══════════════════════════════════════
