@@ -1,0 +1,343 @@
+# spc_rules.yaml — 最高人民法院裁判规则蒸馏
+# 来源: 民法典担保制度解释、公司法解释、证据规定等
+# 第二轨: 裁判倾向 (non-blocking, guidance only)
+# 第一轨 (blocking_rules.yaml): 成文法强制阻断
+
+metadata:
+  source: laubeing-droid/legal-cn-core-codices + 最高法司法解释
+  type: Judicial_Tendency_Rules
+  strategy: SPC-Guidance (Non-Blocking)
+  total_rules: 25
+
+rules:
+  # ── 公司法: 2024修订 + 公司法解释 ──
+  - id: SPC_001_Horizontal_Piercing_Trigger
+    premise_atoms:
+      - Affiliated_Companies_Asset_Confusion
+      - Commingling_Of_Funds_And_Property
+      - No_Independent_Corporate_Identity
+    head_claim: Horizontal_Veil_Piercing_Applicable
+    concepts: ["Horizontal_Piercing", "Affiliate_Liability"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_corporate
+    output_type: Intermediate_Node
+    description: 公司法第23条第3款——关联公司横向人格否认
+
+  - id: SPC_002_FiveYear_Capital_Deadline
+    premise_atoms:
+      - Company_Registered_After_2024_07_01
+      - Capital_Contribution_Period_Exceeds_Five_Years
+    head_claim: Capital_Contribution_Must_Be_Adjusted
+    concepts: ["Capital_Contribution", "Company_Law_2024"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_corporate
+    output_type: Terminal_Output_Node
+    description: 公司法2024第47条——五年认缴期限
+
+  - id: SPC_003_Shadow_Director_Liability
+    premise_atoms:
+      - DeFacto_Director_Control_Exercised
+      - Board_Resolution_Without_Independent_Judgment
+      - Company_Suffered_Loss
+    head_claim: Shadow_Director_Joint_Liability
+    concepts: ["Shadow_Director", "Fiduciary_Duty"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_corporate
+    output_type: Terminal_Output_Node
+    description: 公司法2024——事实董事/影子董事连带责任
+
+  # ── 合同法/担保: 民法典担保制度司法解释 ──
+  - id: SPC_004_Guarantee_Independent_Effect
+    premise_atoms:
+      - Contract_Validity
+      - Guarantee_Clause_Exists
+      - Guarantor_Is_Not_Debtor
+    head_claim: Guarantee_Obligation_Survives_Contract_Invalidity
+    concepts: ["Guarantee", "Independent_Obligation", "Suretyship"]
+    exception_chain:
+      - SPC_004_X1_Guarantee_Causally_Linked_To_Contract
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_contract
+    output_type: Intermediate_Node
+    description: 担保制度解释第2条——担保合同效力独立性
+
+  - id: SPC_004_X1_Guarantee_Causally_Linked_To_Contract
+    premise_atoms:
+      - Guarantee_Conditioned_On_Underlying_Contract
+    head_claim: Guarantee_Independent_Effect_Negatived
+    concepts: ["Guarantee", "Exception"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_contract
+    output_type: Terminal_Output_Node
+
+  - id: SPC_005_Factoring_Fictitious_Receivable
+    premise_atoms:
+      - Factoring_Contract_Concluded
+      - Account_Receivable_Is_Fictitious
+      - Factor_Relied_In_Good_Faith
+    head_claim: Debtor_Cannot_Assert_Fictitiousness_Against_Factor
+    concepts: ["Factoring", "Receivable", "Good_Faith"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_contract
+    output_type: Terminal_Output_Node
+    description: 民法典第763条——虚构应收账款不得对抗善意保理人
+
+  # ── 证券法: 证券虚假陈述司法解释 ──
+  - id: SPC_006_Securities_Special_Representative_Action
+    premise_atoms:
+      - Securities_False_Statement_Established
+      - Investor_Center_Files_Lawsuit
+      - More_Than_Fifty_Investors_Affected
+    head_claim: Special_Representative_Action_Certified
+    concepts: ["Securities", "Class_Action", "Investor_Protection"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_securities
+    output_type: Terminal_Output_Node
+    description: 证券法第95条第3款——特别代表人诉讼
+
+  # ── 数据合规: 数据安全/个人信息保护 ──
+  - id: SPC_007_Data_Export_Trigger_Assessment
+    premise_atoms:
+      - Personal_Information_Exported
+      - Volume_Exceeds_Threshold
+      - OR Important_Data_Involved
+    head_claim: Data_Export_Security_Assessment_Mandatory
+    concepts: ["Data_Export", "Security_Assessment", "CAC_Approval"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_data
+    output_type: Intermediate_Node
+    description: 数据出境安全评估办法——触发评估
+
+  - id: SPC_008_Algorithm_Filing_Block
+    premise_atoms:
+      - Algorithm_Deployed_In_PRC
+      - No_Filing_With_CAC
+      - Algorithm_Has_Public_Opinion_Attributes
+    head_claim: Algorithm_Deployment_Illegal
+    concepts: ["Algorithm", "Filing", "CAC_Regulation"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_data
+    output_type: Terminal_Output_Node
+    description: 算法推荐管理规定——未备案不得部署
+
+  # ── 跨境: 反外国制裁 + 阻断 ──
+  - id: SPC_009_Anti_Foreign_Sanction_Response
+    premise_atoms:
+      - Foreign_Sanction_Imposed_On_PRC_Entity
+      - Entity_Complies_With_Sanction
+      - PRC_Entity_Suffers_Loss
+    head_claim: PRC_Entity_May_Sue_For_Damages_In_PRC_Court
+    concepts: ["Anti_Sanction", "Damage_Claim", "Cross_Border"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_cross_border
+    output_type: Terminal_Output_Node
+    description: 反外国制裁法第12条——被制裁方可起诉索赔
+
+  - id: SPC_010_VIE_Regulatory_Risk
+    premise_atoms:
+      - VIE_Structure_Detected
+      - Industry_On_Negative_List
+      - Foreign_Investor_Exercises_Control
+    head_claim: VIE_Structure_Regulatory_Risk_High
+    concepts: ["VIE", "Negative_List", "Foreign_Investment"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_cross_border
+    output_type: Terminal_Output_Node
+    description: 外商投资法——VIE架构穿透审查风险
+
+  # ── 程序法: 民诉法司法解释 ──
+  - id: SPC_011_Third_Party_Revocation
+    premise_atoms:
+      - Judgment_Has_Been_Entered
+      - Non_Party_Right_Affected
+      - Non_Party_Could_Not_Participate_In_Trial
+      - Filed_Within_Six_Months_Of_Knowledge
+    head_claim: Third_Party_Revocation_Admissible
+    concepts: ["Third_Party", "Revocation", "Civil_Procedure"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_procedure
+    output_type: Terminal_Output_Node
+    description: 民诉法第56条——第三人撤销之诉
+
+  - id: SPC_012_Retrial_Procedure_Trigger
+    premise_atoms:
+      - Final_Judgment_Entered
+      - New_Evidence_Discovered
+      - OR Error_Of_Law_Found
+      - OR Procedural_Violation
+    head_claim: Retrial_May_Be_Initiated
+    concepts: ["Retrial", "Judgment", "Civil_Procedure"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_procedure
+    output_type: Intermediate_Node
+    description: 民诉法第200条——再审事由
+
+  # ── 劳动法司法解释 ──
+  - id: SPC_013_Dismissal_Protection
+    premise_atoms:
+      - Employment_Relationship_Established
+      - Employer_Unilaterally_Terminates
+      - No_Statutory_Ground_For_Dismissal
+    head_claim: Dismissal_Is_Unlawful
+    concepts: ["Dismissal", "Labor_Law", "Employee_Protection"]
+    exception_chain:
+      - SPC_013_X1_Probationary_Period
+      - SPC_013_X2_Major_Fault
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_labor
+    output_type: Intermediate_Node
+    description: 劳动合同法第39-48条——解雇保护
+
+  - id: SPC_013_X1_Probationary_Period
+    premise_atoms:
+      - Employee_Within_Probation
+      - Performance_Does_Not_Meet_Requirements
+    head_claim: Dismissal_Protection_Negatived
+    concepts: ["Probation", "Exception"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_labor
+    output_type: Terminal_Output_Node
+
+  - id: SPC_013_X2_Major_Fault
+    premise_atoms:
+      - Employee_Gross_Misconduct
+      - Criminal_Conviction
+    head_claim: Dismissal_Protection_Negatived
+    concepts: ["Serious_Violation", "Exception"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_labor
+    output_type: Terminal_Output_Node
+
+  # ── 执行程序司法解释 ──
+  - id: SPC_014_Property_Preservation
+    premise_atoms:
+      - Lawsuit_Pending
+      - Risk_Of_Asset_Dissipation
+      - Applicant_Provides_Security
+    head_claim: Property_Preservation_May_Be_Ordered
+    concepts: ["Preservation", "Enforcement", "Security"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_procedure
+    output_type: Terminal_Output_Node
+    description: 民诉法第100条——财产保全
+
+  # ── 知识产权司法解释 ──
+  - id: SPC_015_Punitive_Damages_IP
+    premise_atoms:
+      - IP_Right_Established
+      - Infringement_Is_Intentional
+      - Circumstances_Are_Serious
+    head_claim: Punitive_Damages_Available_For_IP_Infringement
+    concepts: ["IP", "Punitive_Damages", "Intentional"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_ip
+    output_type: Terminal_Output_Node
+    description: 民法典第1185条——知识产权惩罚性赔偿
+
+  # ── 环境公益诉讼司法解释 ──
+  - id: SPC_016_Environmental_NGO_Standing
+    premise_atoms:
+      - Environmental_Damage_Occurred
+      - NGO_Registered_For_Five_Years
+      - NGO_Has_No_Environmental_Violation_Record
+    head_claim: Environmental_NGO_Has_Standing
+    concepts: ["Environmental", "Public_Interest", "NGO_Standing"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_environment
+    output_type: Terminal_Output_Node
+    description: 环境保护法第58条——环境公益诉讼资格
+
+  # ── 最高法指导案例裁判规则 ──
+  - id: SPC_017_Guiding_Case_Reference
+    premise_atoms:
+      - Similar_Facts_To_Guiding_Case
+      - Guiding_Case_Is_In_Effect
+      - Court_Has_Identical_Issue
+    head_claim: Court_Shall_Refer_To_Guiding_Case
+    concepts: ["Guiding_Case", "Precedent", "Judicial_Uniformity"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_procedure
+    output_type: Intermediate_Node
+    description: 最高法关于案例指导工作的规定——应当参照
+
+  - id: SPC_018_Domestic_Violence_Protective_Order
+    premise_atoms:
+      - Domestic_Violence_Alleged
+      - Applicant_Has_Imminent_Danger
+      - Evidence_Of_Violence_Submitted
+    head_claim: Court_Shall_Issue_Protective_Order_Within_72Hours
+    concepts: ["Domestic_Violence", "Protective_Order", "Civil"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: true
+    namespace: prc_spc_family
+    output_type: Terminal_Output_Node
+    description: 反家庭暴力法第23-30条——72小时人身安全保护令
+
+  # ── 税法 ──
+  - id: SPC_019_Tax_Anti_Avoidance
+    premise_atoms:
+      - Transaction_Has_No_Commercial_Substance
+      - Tax_Benefit_Obtained
+      - Tax_Avoidance_Purpose_Established
+    head_claim: Tax_Authority_May_Recharacterize_Transaction
+    concepts: ["Tax", "Anti_Avoidance", "Substance_Over_Form"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_tax
+    output_type: Terminal_Output_Node
+    description: 企业所得税法第47条——一般反避税规则
+
+  # ── 国家赔偿 ──
+  - id: SPC_020_State_Compensation
+    premise_atoms:
+      - Governmental_Action_Is_Unlawful
+      - Citizen_Suffered_Loss
+      - Causation_Established
+    head_claim: State_Compensation_Liability_Triggered
+    concepts: ["State_Compensation", "Government", "Damage"]
+    exception_chain: []
+    head_type: HORN
+    mechanical_exception: false
+    namespace: prc_spc_administrative
+    output_type: Terminal_Output_Node
+    description: 国家赔偿法——行政/刑事赔偿
