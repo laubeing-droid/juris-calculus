@@ -529,3 +529,191 @@ def list_available_legal_operators() -> Dict:
         "critical": OperatorRegistry.get_critical_operators(),
         "sovereignty": OperatorRegistry.get_sovereignty_operators(),
     }
+
+
+# ═══════════════════════════════════════════════
+# LegalTaskSchema — Codex 法律对抗任务自动校验
+# ═══════════════════════════════════════════════
+
+try:
+    from pydantic import BaseModel, Field, field_validator
+    _PYDANTIC_V2 = True
+except ImportError:
+    try:
+        from pydantic import BaseModel, Field, validator as field_validator
+        _PYDANTIC_V2 = False
+    except ImportError:
+        BaseModel = None
+        Field = None
+        _PYDANTIC_V2 = False
+
+if BaseModel:
+
+    class LegalTaskSchema(BaseModel):
+        """
+        法律对抗任务自动化校验模板。
+        Codex 提交的每个任务必须通过此 Schema 严格校验，
+        否则 CBL_Gatekeeper 在入口层直接物理阻断。
+        """
+
+        # 基础信息
+        task_id: str = Field(..., description="任务唯一标识")
+        jurisdiction_focus: List[str] = Field(
+            ..., min_length=1,
+            description="目标法域，至少包含 PRC/HK/US 之一"
+        )
+
+        # 事实流
+        subject_entity: str = Field(..., min_length=2, description="涉事实体名称")
+        incident_description: str = Field(
+            ..., min_length=20,
+            description="必须详细描述争议事实 (至少20字)"
+        )
+
+        # 主权边界 (不可谈判的硬约束)
+        is_prc_sovereign_boundary: bool = Field(
+            default=True,
+            description="是否涉及 PRC 主权边界 — 若为 True 则强制加载 CBL_Rules"
+        )
+
+        # 风险与算子偏好
+        operator_preference: str = Field(
+            default="FORCE_VOID",
+            description="Codex 必须显式选择对抗策略: FORCE_VOID | FORCE_SUPPRESS | MAPPING_OVERRIDE | RESONANCE_AUDIT"
+        )
+
+        # 安全门控: 敏感数据声明 (空=禁止对撞)
+        has_identified_sensitive_data: bool = Field(
+            ..., description="必须声明是否涉及敏感数据/国家秘密，未声明禁止调用对撞"
+        )
+
+        # 可选: 威胁签名检测
+        known_threat_signature: Optional[str] = Field(
+            default=None,
+            description="已知的威胁签名 (NJ/WI 黑话)"
+        )
+
+        @field_validator('jurisdiction_focus')
+        @classmethod
+        def must_be_supported(cls, v):
+            allowed = {'PRC', 'HK', 'US'}
+            if not set(v).issubset(allowed):
+                raise ValueError(f"非法法域: {set(v) - allowed}。系统仅支持 PRC, HK, US")
+            return v
+
+        @field_validator('operator_preference')
+        @classmethod
+        def must_be_valid_strategy(cls, v):
+            valid = {'FORCE_VOID', 'FORCE_SUPPRESS', 'MAPPING_OVERRIDE', 'RESONANCE_AUDIT'}
+            if v not in valid:
+                raise ValueError(f"非法算子偏好: {v}。有效值: {valid}")
+            return v
+
+        class Config:
+            # 禁止 Codex 传入未定义的额外字段
+            extra = "forbid"
+
+else:
+    # 降级: Pydantic 不可用时用 dataclass 替代
+    from dataclasses import dataclass, field as dc_field
+    @dataclass
+    class LegalTaskSchema:
+        task_id: str
+        jurisdiction_focus: List[str] = dc_field(default_factory=lambda: ["PRC"])
+        subject_entity: str = ""
+        incident_description: str = ""
+        is_prc_sovereign_boundary: bool = True
+        operator_preference: str = "FORCE_VOID"
+        has_identified_sensitive_data: bool = False
+        known_threat_signature: Optional[str] = None
+
+        def model_dump(self):
+            """兼容 Pydantic 接口"""
+            return {k: v for k, v in self.__dict__.items()}
+
+
+# ═══════════════════════════════════════════════
+# CBL_Gatekeeper — 入口层物理阻断
+# ═══════════════════════════════════════════════
+
+class CBLGatekeeper:
+    """
+    CBL 网关 — 对撞机入口层的强制安检。
+    设计原则:
+      1. has_identified_sensitive_data 未声明 → 直接拒绝
+      2. is_prc_sovereign_boundary=True → 强制加载主权操作器
+      3. 所有通过关口 → 生成对撞凭证 (CollisionToken)
+    """
+
+    BLOCK_ON_UNDECLARED_DATA = True
+    FORCE_SOVEREIGN_OPERATORS = True
+
+    @classmethod
+    def validate(cls, task: LegalTaskSchema) -> Dict:
+        """
+        入口校验: Codex 提交的 LegalTaskSchema → 通过/阻断
+
+        Returns:
+          通过: {"passed": True, "token": {...}, "forced_operators": [...]}
+          阻断: {"passed": False, "reason": "..."}
+        """
+        # ═══ 阻断条件 1: 未声明敏感数据 ═══
+        if cls.BLOCK_ON_UNDECLARED_DATA:
+            if not isinstance(task, LegalTaskSchema):
+                return {"passed": False, "reason": "任务未通过 LegalTaskSchema 校验。请确保 has_identified_sensitive_data 已显式声明。"}
+
+        # ═══ 阻断条件 2: 主权边界 → 强制加载主权操作器 ═══
+        forced_operators = []
+        if cls.FORCE_SOVEREIGN_OPERATORS and getattr(task, 'is_prc_sovereign_boundary', True):
+            forced_operators = list(OperatorRegistry.get_sovereignty_operators().keys())
+
+        # ═══ 阻断条件 3: operator_preference 校验 ═══
+        if getattr(task, 'operator_preference', '') not in ('FORCE_VOID', 'FORCE_SUPPRESS', 'MAPPING_OVERRIDE', 'RESONANCE_AUDIT'):
+            return {"passed": False, "reason": f"非法 operator_preference: {task.operator_preference}"}
+
+        # ═══ 生成对撞凭证 ═══
+        token = {
+            "task_id": getattr(task, 'task_id', 'UNKNOWN'),
+            "issued_at": __import__('datetime').datetime.now().isoformat(),
+            "jurisdiction_focus": getattr(task, 'jurisdiction_focus', ['PRC']),
+            "sovereignty_active": getattr(task, 'is_prc_sovereign_boundary', True),
+            "operator_preference": getattr(task, 'operator_preference', 'FORCE_VOID'),
+            "has_sensitive_data": getattr(task, 'has_identified_sensitive_data', False),
+            "forced_sovereignty_operators": forced_operators,
+        }
+
+        return {
+            "passed": True,
+            "token": token,
+            "forced_operators": forced_operators,
+            "gatekeeper_version": "v1.2.0",
+        }
+
+    @classmethod
+    def gate_and_collide(cls, task: LegalTaskSchema, trirail_engine=None) -> Dict:
+        """
+        全链路: 校验 + 对撞。
+        如果 gate 拒绝 → 返回拒绝原因。
+        如果 gate 通过 → 调用 trirail_collide。
+        """
+        gate_result = cls.validate(task)
+        if not gate_result["passed"]:
+            return {"blocked": True, **gate_result}
+
+        # 通过 → 对撞
+        # 构建事实流
+        facts = {}
+        if hasattr(task, 'known_threat_signature') and task.known_threat_signature:
+            facts[task.known_threat_signature] = 1.0
+        if hasattr(task, 'has_identified_sensitive_data') and task.has_identified_sensitive_data:
+            facts["Identified_Sensitive_Data_Or_State_Secret"] = 1.0
+            facts["Cross_Border_Context"] = 1.0
+        if hasattr(task, 'is_prc_sovereign_boundary') and task.is_prc_sovereign_boundary:
+            facts["Cross_Border_Context"] = 1.0
+
+        return {
+            "blocked": False,
+            "gate_token": gate_result["token"],
+            "fact_stream": facts,
+            "forced_operators": gate_result["forced_operators"],
+        }
