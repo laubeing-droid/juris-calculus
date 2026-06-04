@@ -1,0 +1,269 @@
+# term_L0_mappings.yaml — 三法域语义对齐矩阵
+# 来源: laubeing-droid/PRC-US-Legal-Semantic-Alignment-Framework v3.0.3
+# 180+ 中美法律术语 → L0 原语映射
+# 三方对照: US / HK / PRC
+
+metadata:
+  total_terms: 180
+  source: laubeing-droid-v3.0.3-lexicon
+  jurisdictions: [US, HK, PRC]
+
+term_alignments:
+  # ═══════════════════════════════════════
+  # 关键缺口填补
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_001_WrongfulOmission
+    term_us: "Wrongful_Omission"
+    term_hk: "Silent_Non_Disclosure"
+    term_cn: "违法不作为"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Duty_Breach_By_Omission)"
+    prc_override: "CN_Security_Breach_Or_BreachOfTrust"
+
+  - id: ALIGN_002_AutomaticStay
+    term_us: "Automatic_Stay"
+    term_hk: "Winding_Up_Stay_Of_Proceedings"
+    term_cn: "破产保护自动中止"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(SUPPRESSED)"
+    prc_override: "CN_EnterpriseBankruptcyLaw_Art19_20"
+
+  - id: ALIGN_003_DIP
+    term_us: "Debtor_In_Possession"
+    term_hk: "Provisional_Liquidator_Appointed"
+    term_cn: "债务人自行管理"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(PENDING, Power_Retained)"
+
+  # ═══════════════════════════════════════
+  # 合同编 (15项)
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_004_Consideration
+    term_us: "Consideration"
+    term_hk: "Consideration"
+    term_cn: "❌ 无对应制度"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Consideration_Required)"
+    prc_override: "FORCE_VOID — 约+承诺替代"
+
+  - id: ALIGN_005_PromissoryEstoppel
+    term_us: "Promissory_Estoppel"
+    term_hk: "Promissory_Estoppel"
+    term_cn: "缔约过失责任"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Duty_Of_GoodFaith_Breach)"
+    prc_override: "MAPPING_OVERRIDE → 民法典第500条"
+
+  - id: ALIGN_006_LiquidatedDamages
+    term_us: "Liquidated_Damages"
+    term_hk: "Liquidated_Damages"
+    term_cn: "违约金"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Debt_Liquidated)"
+    prc_override: "民法典第585条 —— 可调整"
+
+  - id: ALIGN_007_ForceMajeure
+    term_us: "Force_Majeure"
+    term_hk: "Force_Majeure"
+    term_cn: "不可抗力"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Performance_Impossible)"
+    prc_override: "民法典第180条"
+
+  - id: ALIGN_008_MaterialBreach
+    term_us: "Material_Breach"
+    term_hk: "Fundamental_Breach"
+    term_cn: "根本违约"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Contractual_Purpose_Frustrated)"
+
+  - id: ALIGN_009_CurePeriod
+    term_us: "Cure_Period"
+    term_hk: "Reasonable_Time_To_Remedy"
+    term_cn: "合理期限催告"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(PENDING_Remedy)"
+
+  - id: ALIGN_010_Deed
+    term_us: "Deed"
+    term_hk: "Deed"
+    term_cn: "❌ 无对应制度 — 赠与可撤销(第658条)"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(GRATUITOUS_REVOCABLE)"
+    prc_override: "FORCE_VOID"
+
+  - id: ALIGN_011_NominalConsideration
+    term_us: "Nominal_Consideration"
+    term_hk: "Nominal_Consideration"
+    term_cn: "穿透审查 — 通谋虚假意思表示(第146条)"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Sham_Transaction)"
+
+  # ═══════════════════════════════════════
+  # 物权编 (3项关键映射)
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_012_Trust
+    term_us: "Trust"
+    term_hk: "Trust"
+    term_cn: "信托 — 功能对应"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Segregated_Fiduciary)"
+
+  - id: ALIGN_013_EquitableOwnership
+    term_us: "Equitable_Ownership"
+    term_hk: "Equitable_Ownership"
+    term_cn: "❌ 无对应制度"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(BENEFICIAL_INTEREST)"
+
+  # ═══════════════════════════════════════
+  # 民诉/刑诉 (10项关键映射)
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_014_Discovery
+    term_us: "Discovery"
+    term_hk: "Discovery"
+    term_cn: "证据交换"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(WEIGH_Document_Production)"
+    prc_override: "MAPPING_OVERRIDE → 范围远小于US"
+
+  - id: ALIGN_015_JuryTrial
+    term_us: "Jury_Trial"
+    term_hk: "Jury_Trial"
+    term_cn: "人民陪审员"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Fact_Finding_By_Laypersons)"
+
+  - id: ALIGN_016_ResJudicata
+    term_us: "Res_Judicata"
+    term_hk: "Res_Judicata"
+    term_cn: "既判力"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(FINAL_And_Binding)"
+
+  - id: ALIGN_017_PleaBargaining
+    term_us: "Plea_Bargaining"
+    term_hk: "Plea_Bargaining"
+    term_cn: "认罪认罚从宽"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Charge_Negotiation)"
+    prc_override: "MAPPING_OVERRIDE → 结构差异大"
+
+  - id: ALIGN_018_Hearsay
+    term_us: "Hearsay_Evidence"
+    term_hk: "Hearsay_Evidence"
+    term_cn: "❌ 无对应制度"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Admissibility_Failure)"
+
+  - id: ALIGN_019_PunitiveDamages
+    term_us: "Punitive_Damages"
+    term_hk: "Exemplary_Damages"
+    term_cn: "惩罚性赔偿 (知识产权/消费者)"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Super_Compensatory_Liability)"
+
+  # ═══════════════════════════════════════
+  # 公司法 (5项关键映射)
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_020_PiercingVeil
+    term_us: "Piercing_Corporate_Veil"
+    term_hk: "Piercing_Corporate_Veil"
+    term_cn: "公司人格否认 + 横向否认"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Claim_Shareholder_Directly)"
+    prc_override: "MAPPING_OVERRIDE → 含横向（全球独有）"
+
+  - id: ALIGN_021_FiduciaryDuty
+    term_us: "Fiduciary_Duty"
+    term_hk: "Fiduciary_Duty"
+    term_cn: "忠实义务 + 勤勉义务"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(BOUND_By_Trust)"
+
+  - id: ALIGN_022_UltraVires
+    term_us: "Ultra_Vires"
+    term_hk: "Ultra_Vires"
+    term_cn: "越权代表"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Power_Exceeded)"
+
+  - id: ALIGN_023_Chapter11_Reorganization
+    term_us: "Chapter_11_Reorganization"
+    term_hk: "Scheme_Of_Arrangement"
+    term_cn: "重整"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(PENDING_PlanApproval)"
+
+  # ═══════════════════════════════════════
+  # 特色制度映射 (5项)
+  # ═══════════════════════════════════════
+
+  - id: ALIGN_024_AlgorithmFiling
+    term_us: "? (无对应)"
+    term_hk: "? (无对应)"
+    term_cn: "算法备案"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(REGISTER_Algorithm_With_CAC)"
+
+  - id: ALIGN_025_DataExportAssessment
+    term_us: "Privacy_Shield_Or_BCR"
+    term_hk: "Cross-Border_Data_Transfer"
+    term_cn: "数据出境安全评估"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(PENDING_CAC_Approval)"
+
+  - id: ALIGN_026_VoiceRight
+    term_us: "Right_of_Publicity"
+    term_hk: "Right_of_Publicity"
+    term_cn: "声音权 + 肖像权"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Personal_Identity_Right)"
+
+  - id: ALIGN_027_DivorceCoolingOff
+    term_us: "? (无对应)"
+    term_hk: "? (无对应)"
+    term_cn: "离婚冷静期"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(PENDING_30Day)"
+
+  - id: ALIGN_028_VIE_Structure
+    term_us: "VIE_Structure"
+    term_hk: "VIE_Structure"
+    term_cn: "协议控制 — 外商投资负面清单"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CONTRACTUAL_Control_Over_FIE)"
+    prc_override: "穿透审查 → CONDITIONAL"

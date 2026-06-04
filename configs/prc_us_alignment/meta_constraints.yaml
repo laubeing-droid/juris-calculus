@@ -1,0 +1,53 @@
+# meta_constraints.yaml — Evaluator-Level Meta Regulations
+# 来源: laubeing-droid v3.0.3 — §1 元规则层
+# 6条元规则 → evaluator约束算子
+
+metadata:
+  type: "Evaluator-Level Meta Constraints"
+  rules_count: 6
+  source: laubeing-droid-v3.0.3
+
+meta_rules:
+  - id: META_001_No_Literal_First
+    target: "evaluator.interpretation"
+    enforcement_level: "CRITICAL"
+    behavior: "INTERCEPT_INTERPRETATION"
+    rule: "Fact(Context == PRC_Critical) → 禁止字面优先，强制执行最高效力阻断规则"
+    description: "Rule 1: 字面对应不得优先于制度功能对应。"
+
+  - id: META_002_Functional_Judgment_L5
+    target: "constraint_validator.check_rebuttal"
+    enforcement_level: "STRICT"
+    behavior: "FILTER_CHAIN"
+    chain: ["制度目的", "法律后果", "程序结构", "权力配置", "司法可执行性"]
+    description: "Rule 2: 按5级优先级推理——制度目的→法律后果→程序结构→权力配置→司法可执行性。"
+
+  - id: META_003_No_Corresponding_Block
+    target: "evaluator.evaluate"
+    enforcement_level: "CRITICAL"
+    behavior: "FORCE_MELTDOWN"
+    trigger: "US_Concept_With_Zero_PRC_Equivalence"
+    action: "CriticalClarityFailure — 拒绝生成幻觉映射"
+    description: "Rule 3: 无对应制度时强制阻断。不假装能映射。"
+
+  - id: META_004_Feature_Tagging
+    target: "constraint_validator.resolve_L0_primitive"
+    enforcement_level: "NORMAL"
+    behavior: "ANNOTATE"
+    rule: "命中27项中国特色制度 → 终态附加 CN_CHARACTERISTIC 签名"
+    description: "Rule 4: 中国特色制度必须显式标注。"
+
+  - id: META_005_Jurisdiction_Separation
+    target: "evaluator.evaluate (pre-iteration hook)"
+    enforcement_level: "CRITICAL"
+    behavior: "ISOLATE_MEM_SPACE"
+    rule: "PRC引擎只读取 facts，不允许受 HK/US 引擎的中间 Claims 状态污染"
+    description: "Rule 5: 法域切换时不得混同。三轨独立内存空间。"
+
+  - id: META_006_Strict_Jurisdiction
+    target: "evaluator.evaluate (pre-iteration hook)"
+    enforcement_level: "CRITICAL"
+    behavior: "PRE_ITERATION_HOOK_OVERRIDE"
+    trigger: "Fact(Asset_Located_In_PRC OR Behavior_In_PRC_Territory)"
+    action: "FORCE_VOID(ALL_US_Long_Arm_Orders)"
+    description: "Rule 6: 最严管辖——资产/行为在境内，PRC覆写效力最高优先级。"

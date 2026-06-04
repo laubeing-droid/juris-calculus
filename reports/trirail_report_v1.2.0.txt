@@ -1,0 +1,76 @@
+======================================================================
+  Tri-Rail Collider Report — v1.2.0
+  HK x US x PRC Cross-Jurisdictional Collision Matrix
+======================================================================
+
+Total scenarios: 10
+  CHINA_US_COLLISION: 9
+  HK_CN_ASYMMETRY: 1
+
+--- TRI_001_UltraVires_DataExport [CHINA_US_COLLISION] ---
+  HK董事越权 + 美国Cloud Act数据请求 → PRC数据出境阻断
+  HK: SUPPRESSED claims=['Contract_Validity']
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['PEN_001_Data_CrossBorder_Security', 'CN_SPEC_006_DataExportAssessment']
+
+--- TRI_002_Litigation_Discovery [HK_CN_ASYMMETRY] ---
+  美国诉前证据开示 + 关联公司资产混同 → 横向否认+数据阻断
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC MAPPING_OVERRIDE: ['BLK_021_Discovery_Fishing', 'CN_SPEC_001_Horizontal_Veil_Piercing']
+
+--- TRI_003_OFAC_Sanction_Deadlock [CHINA_US_COLLISION] ---
+  OFAC制裁 vs 反外国制裁法第12条强制对撞
+  HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['BLK_001_Consideration']
+  PRC FORCE_SUPPRESS: ['PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
+
+--- TRI_004_Plea_Bargaining_CrossBorder [CHINA_US_COLLISION] ---
+  美国辩诉交易 → PRC认罪认罚从宽映射 + 数据出境
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['CN_SPEC_006_DataExportAssessment']
+  PRC MAPPING_OVERRIDE: ['OVR_001_Plea_Bargaining_Restruct', 'OVR_006_Wrongful_Omission_Fill']
+
+--- TRI_005_Chapter11_Director_Conflict [CHINA_US_COLLISION] ---
+  US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞
+  HK: SUPPRESSED claims=['Contract_Validity']
+  US: VALID claims=['AutomaticStay_InEffect → CreditorPower(Collect)=0']
+  PRC FORCE_VOID: ['BLK_001_Consideration']
+
+--- TRI_006_Factoring_CrossBorder [CHINA_US_COLLISION] ---
+  保理合同独立成章 vs US应收账款转让
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['BLK_001_Consideration']
+  PRC MAPPING_OVERRIDE: ['CN_SPEC_002_Factoring_Chapter']
+
+--- TRI_007_Crypto_Transaction_Conflict [CHINA_US_COLLISION] ---
+  US加密货币交易 vs PRC强制禁止
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['BLK_001_Consideration', 'PEN_005_Crypto_Prohibition']
+
+--- TRI_008_VIE_Structure_Review [CHINA_US_COLLISION] ---
+  VIE架构 vs 外商投资负面清单穿透审查
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['CN_SPEC_006_DataExportAssessment']
+  PRC FORCE_SUPPRESS: ['PEN_003_Long_Arm_Interdiction']
+  PRC MAPPING_OVERRIDE: ['CN_SPEC_001_Horizontal_Veil_Piercing']
+
+--- TRI_009_Algorithm_Filing_Block [CHINA_US_COLLISION] ---
+  算法未备案 + 数据出境 → PRC双阻断
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['CN_SPEC_006_DataExportAssessment']
+  PRC FORCE_SUPPRESS: ['CN_SPEC_003_Algorithm_Filing']
+
+--- TRI_010_AtWill_Employment_Conflict [CHINA_US_COLLISION] ---
+  美国任意雇佣 vs PRC劳动合同法解雇保护
+  HK: SUPPRESSED claims=[]
+  US: VALID claims=[]
+  PRC FORCE_VOID: ['BLK_019_AtWillEmployment']
+
+======================================================================

@@ -1,0 +1,395 @@
+# blocking_rules.yaml — PRC-US Semantic Blocking v3.0.3
+# 来源: laubeing-droid/PRC-US-Legal-Semantic-Alignment-Framework
+# 编译: 79KB Markdown → L0 constraint_rules
+# 格式: trigger_fact + target_primitive + action{nested}
+# 策略: PRC-First Mandatory Interdiction
+
+metadata:
+  framework: laubeing-droid-v3.0.3
+  compiled_at: 2026-06-04
+  strategy: PRC-First-Mandatory-Interdiction
+  total_rules: 60
+  jurisdiction: PRC
+  family: Socialist_Civil_Law
+
+rules:
+  # ═══════════════════════════════════════
+  # 22项绝对阻断
+  # ═══════════════════════════════════════
+
+  # --- 合同编 (4项) ---
+  - id: BLK_001_Consideration
+    trigger_fact: "Consideration_Provided"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Offer_Acceptance_Only"
+      status: "VOID"
+    description: "中国法无对价制度。合同成立仅需要约+承诺。《民法典》第471条。"
+
+  - id: BLK_002_Promissory_Estoppel
+    trigger_fact: "Promissory_Estoppel_Bar"
+    target_primitive: "Status"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Reliance_Interest_CulpaInContrahendo"
+      status: "CONDITIONAL"
+    description: "替换为缔约过失责任（民法典第500条）。"
+
+  - id: BLK_003_StatuteOfFrauds
+    trigger_fact: "Statute_of_Frauds"
+    target_primitive: "Status"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Written_Form_Requirement"
+      status: "VOID"
+    description: "中国无反欺诈法。以《民法典》第469条书面形式要求替代。"
+
+  - id: BLK_004_ParolEvidenceRule
+    trigger_fact: "Parol_Evidence_Rule"
+    target_primitive: "Status"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Intent_Interpretation_142"
+      status: "VOID"
+    description: "以《民法典》第142条意思表示解释替代。"
+
+  # --- 物权编 (3项) ---
+  - id: BLK_005_AdversePossession
+    trigger_fact: "Adverse_Possession_Claim"
+    target_primitive: "Asset"
+    action:
+      type: "FORCE_VOID"
+      status: "VOID"
+    description: "中国无逆权占有。以诉讼时效（民法典第188条）替代。"
+
+  - id: BLK_006_FeeSimpleAbsolute
+    trigger_fact: "Fee_Simple_Absolute"
+    target_primitive: "Asset"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_LandUse_Right_344"
+      status: "VOID"
+    description: "中国土地公有制，无法永久产权。"
+
+  - id: BLK_007_FutureInterest
+    trigger_fact: "Future_Interest_Claim"
+    target_primitive: "Asset"
+    action:
+      type: "FORCE_VOID"
+      status: "VOID"
+    description: "中国物权法无未来利益概念。"
+
+  # --- 刑诉编 (6项) ---
+  - id: BLK_008_MirandaRights
+    trigger_fact: "Miranda_Rights"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_CrimProc_Art120_Notification"
+      status: "VOID"
+    description: "中国无米兰达规则。以《刑事诉讼法》第120条告知义务替代。"
+
+  - id: BLK_009_HearsayRule
+    trigger_fact: "Hearsay_Rule"
+    target_primitive: "Status"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_CrimProc_Art61_Witness"
+      status: "VOID"
+    description: "中国无传闻证据规则。以证人出庭和质证替代。"
+
+  - id: BLK_010_JuryTrial
+    trigger_fact: "Jury_Trial"
+    target_primitive: "Power"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Peoples_Assessor_System"
+      status: "ALTERNATIVE"
+    description: "替换为人民陪审员制度（《人民陪审员法》）。"
+
+  - id: BLK_011_FruitOfPoisonousTree
+    trigger_fact: "Fruit_of_Poisonous_Tree"
+    target_primitive: "Defect"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_IllegalEvidenceExclusion_Art56"
+      status: "VOID"
+    description: "以非法证据排除（刑事诉讼法第56条）替代，范围更窄。"
+
+  - id: BLK_012_HabeasCorpus
+    trigger_fact: "Habeas_Corpus"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_CustodyNecessityReview_Art97"
+      status: "VOID"
+    description: "以羁押必要性审查（刑事诉讼法第97条）替代。"
+
+  - id: BLK_013_PleaBargaining
+    trigger_fact: "Plea_Bargaining"
+    target_primitive: "Power"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Leniency_Confession_Punishment_Art15"
+      status: "ALTERNATIVE"
+    description: "替换为认罪认罚从宽（刑事诉讼法第15条），结构差异巨大。"
+
+  # --- 行政法编 (5项) ---
+  - id: BLK_014_ChevronDeference
+    trigger_fact: "Chevron_Deference"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      status: "VOID"
+    description: "中国无雪佛龙尊重。Loper Bright案(2024)已在美国推翻。"
+
+  - id: BLK_015_SovereignImmunity
+    trigger_fact: "Sovereign_Immunity"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_StateCompensation_Law"
+      status: "VOID"
+    description: "中国实行国家赔偿制度（《国家赔偿法》）。"
+
+  - id: BLK_016_QualifiedImmunity
+    trigger_fact: "Qualified_Immunity"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_VOID"
+      status: "VOID"
+
+  - id: BLK_017_SummaryJudgment
+    trigger_fact: "Summary_Judgment"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_SummaryProcedure_Art157"
+      status: "VOID"
+    description: "中国无即决判决。以简易程序（民诉法第157条）替代。"
+
+  - id: BLK_018_ConsentDecree
+    trigger_fact: "Consent_Decree"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_MediationSettlement_Art97"
+      status: "VOID"
+    description: "以调解书（民诉法第97条）替代。"
+
+  # --- 劳动法 (1项) ---
+  - id: BLK_019_AtWillEmployment
+    trigger_fact: "At_Will_Employment"
+    target_primitive: "Status"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_LaborContractLaw_Art39_48_DismissalProtection"
+      status: "VOID"
+    description: "中国无任意雇佣。以劳动合同法解雇保护制度替代。"
+
+  # --- 继承/税法 (1项) ---
+  - id: BLK_020_EstateGiftTax
+    trigger_fact: "Estate_Tax_Gift_Tax"
+    target_primitive: "Asset"
+    action:
+      type: "FORCE_VOID"
+      status: "VOID"
+    description: "中国目前无遗产税/赠与税。"
+
+  # --- 民诉 (2项) ---
+  - id: BLK_021_Discovery_Fishing
+    trigger_fact: "US_Pre_Trial_Discovery"
+    target_primitive: "Act"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Evidence_Exchange_Art68_CivProc"
+      status: "ALTERNATIVE"
+    description: "依据民诉法第68条，替换为证据交换，范围远小于美式discovery。"
+
+  - id: BLK_022_CollateralEstoppel
+    trigger_fact: "Collateral_Estoppel"
+    target_primitive: "Status"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_ResJudicata_Art247"
+      status: "VOID"
+    description: "以既判力（民诉法第247条）替代，范围不同。"
+
+  # ═══════════════════════════════════════
+  # 6项 MAPPING_OVERRIDE (法理概念本土重构)
+  # ═══════════════════════════════════════
+
+  - id: OVR_001_Plea_Bargaining_Restruct
+    trigger_fact: "US_Plea_Bargaining_Act"
+    target_primitive: "Status"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Leniency_With_Admission_Of_Guilt"
+      status: "VALID"
+
+  - id: OVR_002_Discovery_Exchange
+    trigger_fact: "US_Discovery_Procedure"
+    target_primitive: "Act"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Evidence_Exchange_Under_Court"
+      status: "PENDING"
+
+  - id: OVR_003_Right_Of_Publicity
+    trigger_fact: "US_Right_Of_Publicity_Infringement"
+    target_primitive: "Defect"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Portrait_Name_Rights_Violation"
+      status: "VOIDABLE"
+
+  - id: OVR_004_FalseLight
+    trigger_fact: "False_Light_Privacy"
+    target_primitive: "Defect"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Defamation_Reputation_Art1024"
+      status: "ALTERNATIVE"
+
+  - id: OVR_005_RightOfPublicity
+    trigger_fact: "Right_of_Publicity"
+    target_primitive: "Power"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_PortraitNameRight_Art1018_1019"
+      status: "ALTERNATIVE"
+
+  - id: OVR_006_Wrongful_Omission_Fill
+    trigger_fact: "Wrongful_Omission"
+    target_primitive: "Defect"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Security_Breach_Or_BreachOfTrust"
+      status: "VOID"
+    description: "填补跨法系映射缺口——中国法视角下不作为不构成独立Defect，但涉及数据安全或国有资产时上升为安全违规或背信。"
+
+  # ═══════════════════════════════════════
+  # 5项跨境穿透 (Cross-Border Penetration Interdiction)
+  # ═══════════════════════════════════════
+
+  - id: PEN_001_Data_CrossBorder_Security
+    trigger_fact: "US_Cloud_Act_Data_Request"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Data_Security_Violation_Art36"
+      status: "VOID"
+    description: "依据《数据安全法》第36条，未经批准向外国司法机构提供数据属于绝对无效Act。"
+
+  - id: PEN_002_Secondary_Sanction_Block
+    trigger_fact: "US_Secondary_Sanction_Enforcement"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_AntiForeignSanctionLaw_Art12"
+      status: "SUPPRESSED"
+    description: "阻断反外国制裁法第12条规定的不当域外适用。"
+
+  - id: PEN_003_Long_Arm_Interdiction
+    trigger_fact: "US_Long_Arm_Jurisdiction_Asserted"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_BlockingStatute_Art9"
+      status: "SUPPRESSED"
+    description: "阻断办法第9条——美国长臂管辖在境内事实集中传导被强制抑制。"
+
+  - id: PEN_004_OFAC_CounterCollision
+    trigger_fact: "OFAC_Sanctions_Imposed"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_Anti_Sanction_Countermeasure"
+      status: "SUPPRESSED"
+    description: "中国反外国制裁法第12条——OFAC制裁触发强制反制。"
+
+  - id: PEN_005_Crypto_Prohibition
+    trigger_fact: "Cryptocurrency_Transaction"
+    target_primitive: "Asset"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Crypto_Total_Ban_2021"
+      status: "VOID"
+    description: "中国全面禁止加密货币交易——2021年《通知》。"
+
+  # ═══════════════════════════════════════
+  # 27项中国特色制度 (首批核心8项)
+  # ═══════════════════════════════════════
+
+  - id: CN_SPEC_001_Horizontal_Veil_Piercing
+    trigger_fact: "Affiliated_Companies_Asset_Confusion"
+    target_primitive: "Defect"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_CompanyLaw2024_Art23_Para3_HorizontalPiercing"
+      status: "VOIDABLE"
+    description: "2024年《公司法》第23条第3款——横向公司人格否认。全球独有。"
+
+  - id: CN_SPEC_002_Factoring_Chapter
+    trigger_fact: "Factoring_Account_Receivable_Transfer"
+    target_primitive: "Asset"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_CivilCode_Factoring_Chapter16"
+      status: "VALID"
+    description: "保理合同独立成章——《民法典》合同编第十六章。全球首创。"
+
+  - id: CN_SPEC_003_Algorithm_Filing
+    trigger_fact: "CN_Deployment_Without_Filing"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_AlgorithmFiling_NonCompliant"
+      status: "SUPPRESSED"
+    description: "算法未备案前，相关商业运营Act之Power处于挂起阻断状态。"
+
+  - id: CN_SPEC_004_Divorce_CoolingOff
+    trigger_fact: "Divorce_CoolingOff_Period_Active"
+    target_primitive: "Status"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_CivilCode_Art1077_30Day"
+      status: "PENDING"
+    description: "《民法典》第1077条——30天离婚冷静期。全球独有。"
+
+  - id: CN_SPEC_005_ShadowDirector
+    trigger_fact: "DeFacto_Director_Shadow_Control"
+    target_primitive: "Agent"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_CompanyLaw2024_ShadowDirector_Liability"
+      status: "VOIDABLE"
+    description: "2024年《公司法》——影子董事/事实董事连带责任。"
+
+  - id: CN_SPEC_006_DataExportAssessment
+    trigger_fact: "Cross_Border_Data_Transfer_To_US"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_CAC_DataExport_SecurityAssessment"
+      status: "VOID"
+    description: "数据出境安全评估——未通过前Act=0。"
+
+  - id: CN_SPEC_007_AdminPublicInterestLitigation
+    trigger_fact: "Administrative_PublicInterest_Litigation"
+    target_primitive: "Power"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_AdminLitigationLaw_Art25_Procuratorate"
+      status: "VALID"
+    description: "行政公益诉讼——《行政诉讼法》第25条。中国独有。"
+
+  - id: CN_SPEC_008_VoiceRight
+    trigger_fact: "Voice_Right_Infringement"
+    target_primitive: "Asset"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_CivilCode_Art1023_VoiceProtection"
+      status: "VOIDABLE"
+    description: "《民法典》第1023条——声音权参照肖像权保护。全球独有。"
