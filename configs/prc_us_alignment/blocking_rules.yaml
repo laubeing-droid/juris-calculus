@@ -1,5 +1,5 @@
 # blocking_rules.yaml — PRC-US Semantic Blocking v3.0.3
-# 来源: laubeing-droid/PRC-US-Legal-Semantic-Alignment-Framework
+# 已吸收至 juris-calculus，原框架 repo: laubeing-droid/PRC-US-Legal-Semantic-Alignment-Framework
 # 编译: 79KB Markdown → L0 constraint_rules
 # 格式: trigger_fact + target_primitive + action{nested}
 # 策略: PRC-First Mandatory Interdiction

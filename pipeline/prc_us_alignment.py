@@ -7,10 +7,8 @@ import re, yaml, os
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
-FRAMEWORK_PATH = Path(__file__).resolve().parents[1] / "PRC-US-Legal-Semantic-Alignment-Framework"
-FRAMEWORK_DOC = FRAMEWORK_PATH / "PRC-US-Legal-Semantic-Alignment-Framework.md"
-
 # ═══ 从对齐框架提取的 22 条绝对阻断规则 ═══
+# 注：框架已完全吸收至 configs/prc_us_alignment/，此为管道内联副本
 # 格式: {US概念 → (阻断说明, 中国法替代方案)}
 HARD_BLOCKS = {
     "consideration": ("对价", "中国合同成立不以对价为要件，以意思表示一致为准"),
