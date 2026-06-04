@@ -153,6 +153,16 @@ class MCPServer:
         if path == "state-router":
             return (BASE / "configs" / "en_US" / "state_router.yaml").read_text(encoding="utf-8")
 
+        # legal://operator-schemas (动态生成 — 算子自文档化)
+        if path == "operator-schemas":
+            from tools.operator_registry import get_all_schemas
+            return json.dumps(get_all_schemas(), ensure_ascii=False, indent=2)
+
+        # legal://task-schema (动态生成 — Codex 任务协议)
+        if path == "task-schema":
+            from tools.operator_registry import generate_task_schema
+            return json.dumps(generate_task_schema(), ensure_ascii=False, indent=2)
+
         return None
 
     # ── 工具端点 ──
@@ -170,6 +180,10 @@ class MCPServer:
             return self._tool_route_state(arguments)
         elif tool_name == "get_citation":
             return self._tool_get_citation(arguments)
+        elif tool_name == "get_operator_schemas":
+            return self._tool_get_operator_schemas(arguments)
+        elif tool_name == "generate_task_schema":
+            return self._tool_generate_task_schema(arguments)
         else:
             return {"error": f"Unknown tool: {tool_name}"}
 
@@ -287,6 +301,37 @@ class MCPServer:
         from tools.action_agent.state_to_text import get_prc_citation_full
         full = get_prc_citation_full(short)
         return {"rule_id": rule_id, "citation_short": short, "citation_full": full}
+
+    def _tool_get_operator_schemas(self, args: Dict) -> Dict:
+        """算子 Schema 查询"""
+        from tools.operator_registry import OperatorRegistry, OperatorType
+        filter_type = args.get("filter", "all")
+
+        if filter_type == "critical":
+            schemas = OperatorRegistry.get_critical_operators()
+        elif filter_type == "sovereignty":
+            schemas = OperatorRegistry.get_sovereignty_operators()
+        elif filter_type == "by_type":
+            type_name = args.get("type_filter", "")
+            try:
+                ot = OperatorType(type_name)
+                schemas = OperatorRegistry.get_schemas_by_type(ot)
+            except ValueError:
+                schemas = {}
+        else:
+            schemas = OperatorRegistry.get_all_schemas()
+
+        return {
+            "total": len(schemas),
+            "filter": filter_type,
+            "schemas": schemas,
+        }
+
+    def _tool_generate_task_schema(self, args: Dict) -> Dict:
+        """生成法律任务 Schema"""
+        from tools.operator_registry import generate_task_schema
+        focus = args.get("jurisdiction_focus", ["PRC", "HK", "US"])
+        return generate_task_schema(focus)
 
 
 # ═══════════════════════════════════════════════

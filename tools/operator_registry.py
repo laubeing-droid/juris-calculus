@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+"""
+tools/operator_registry.py — 算子注册表 v1.2.0
+══════════════════════════════════════════════════════════
+算子自文档化 (Operator Self-Documentation):
+  每个算子定义时自动注册其 JSON Schema、入参约束、
+  优先级偏好、以及对应的 CBL/SPC 规则ID。
+
+设计原则:
+  1. 算子即信源 (Operator as Single Source of Truth)
+  2. Schema 动态生成 — 修改算子 = 自动更新对外协议
+  3. Codex 无法发明逻辑 — 只能组合已注册算子
+══════════════════════════════════════════════════════════
+"""
+
+from typing import Dict, Any, Callable, Optional, List
+from dataclasses import dataclass, field
+from enum import Enum
+
+
+class OperatorType(Enum):
+    CBL_FORCE_VOID = "FORCE_VOID"           # 成文法一票否决
+    CBL_FORCE_SUPPRESS = "FORCE_SUPPRESS"    # 成文法权力抑制
+    CBL_MAPPING_OVERRIDE = "MAPPING_OVERRIDE" # 概念替换重构
+    SPC_JUDICIAL_TENDENCY = "SPC_HORN"       # 最高法裁判倾向
+    CN_HORN_FULL = "CN_HORN"                 # 中国成文法全量
+    HK_HORN = "HK_HORN"                      # 香港普通法
+    US_HORN = "US_HORN"                      # 美国联邦法
+    THREAT_INTERCEPT = "THREAT_INTERCEPT"    # 威胁拦截
+    STATE_ROUTER = "STATE_ROUTER"            # 州级路由
+
+
+@dataclass
+class OperatorSchema:
+    """算子自文档化 Schema"""
+    id: str
+    type: OperatorType
+    description: str
+    trigger_facts: List[str] = field(default_factory=list)
+    additional_conditions: List[str] = field(default_factory=list)
+    output_states: List[str] = field(default_factory=list)
+    citations: List[str] = field(default_factory=list)
+    risk_level: str = "MEDIUM"  # CRITICAL | HIGH | MEDIUM | LOW
+
+    # ═══ 对外协议字段 ═══
+    operator_preference: Dict[str, Any] = field(default_factory=dict)
+    sovereignty_anchoring: bool = False   # 是否强制主权锚定
+    allow_settlement: bool = True          # 是否允许和解/折中
+    critical_threshold: float = 0.80       # 置信度门控
+
+    @property
+    def json_schema(self) -> Dict:
+        """导出为 JSON Schema 格式"""
+        return {
+            "operator_id": self.id,
+            "type": self.type.value,
+            "description": self.description,
+            "trigger": {
+                "facts": self.trigger_facts,
+                "conditions": self.additional_conditions,
+            },
+            "output": {
+                "states": self.output_states,
+            },
+            "legal_basis": {
+                "citations": self.citations,
+                "risk_level": self.risk_level,
+            },
+            "operator_preference": self.operator_preference or {
+                "primary": self.type.value,
+                "critical_threshold": self.critical_threshold,
+            },
+            "constraints": {
+                "sovereignty_anchoring": self.sovereignty_anchoring,
+                "allow_settlement": self.allow_settlement,
+            }
+        }
+
+
+class OperatorRegistry:
+    """
+    算子注册表 — 所有法律算子的唯一信源。
+
+    用法:
+      @OperatorRegistry.register(
+          id="CBL_VOID_001",
+          type=OperatorType.CBL_FORCE_VOID,
+          description="中国法域数据出境一票否决",
+          trigger_facts=["Cross_Border_Data_Transfer_To_US"],
+          citations=["《数据安全法》第21条"],
+          risk_level="CRITICAL",
+          sovereignty_anchoring=True,
+          allow_settlement=False,
+      )
+      def force_void_data_export(fact_stream):
+          ...
+    """
+
+    _registry: Dict[str, OperatorSchema] = {}
+    _functions: Dict[str, Callable] = {}
+
+    @classmethod
+    def register(cls, *, id: str, type: OperatorType, description: str,
+                 trigger_facts: List[str] = None,
+                 additional_conditions: List[str] = None,
+                 output_states: List[str] = None,
+                 citations: List[str] = None,
+                 risk_level: str = "MEDIUM",
+                 operator_preference: Dict = None,
+                 sovereignty_anchoring: bool = False,
+                 allow_settlement: bool = True,
+                 critical_threshold: float = 0.80):
+        """注册算子 — 同时注册函数和 Schema"""
+        schema = OperatorSchema(
+            id=id,
+            type=type,
+            description=description,
+            trigger_facts=trigger_facts or [],
+            additional_conditions=additional_conditions or [],
+            output_states=output_states or [],
+            citations=citations or [],
+            risk_level=risk_level,
+            operator_preference=operator_preference or {},
+            sovereignty_anchoring=sovereignty_anchoring,
+            allow_settlement=allow_settlement,
+            critical_threshold=critical_threshold,
+        )
+
+        def decorator(func: Callable):
+            cls._registry[id] = schema
+            cls._functions[id] = func
+            return func
+
+        return decorator
+
+    @classmethod
+    def get_all_schemas(cls) -> Dict[str, Dict]:
+        """导出全部算子 Schema — Codex 消费此接口获取能力边界"""
+        return {op_id: schema.json_schema for op_id, schema in cls._registry.items()}
+
+    @classmethod
+    def get_schemas_by_type(cls, op_type: OperatorType) -> Dict[str, Dict]:
+        """按类型过滤 Schema"""
+        return {
+            op_id: schema.json_schema
+            for op_id, schema in cls._registry.items()
+            if schema.type == op_type
+        }
+
+    @classmethod
+    def get_schemas_by_risk(cls, risk_level: str) -> Dict[str, Dict]:
+        """按风险等级过滤"""
+        return {
+            op_id: schema.json_schema
+            for op_id, schema in cls._registry.items()
+            if schema.risk_level == risk_level
+        }
+
+    @classmethod
+    def get_critical_operators(cls) -> Dict[str, Dict]:
+        """获取所有 CRITICAL 级算子 (Codex 必须优先调用)"""
+        return cls.get_schemas_by_risk("CRITICAL")
+
+    @classmethod
+    def get_sovereignty_operators(cls) -> Dict[str, Dict]:
+        """获取所有强制主权锚定算子"""
+        return {
+            op_id: schema.json_schema
+            for op_id, schema in cls._registry.items()
+            if schema.sovereignty_anchoring
+        }
+
+    @classmethod
+    def invoke(cls, op_id: str, *args, **kwargs):
+        """调用已注册算子"""
+        if op_id not in cls._functions:
+            raise ValueError(f"Operator not found: {op_id}")
+        return cls._functions[op_id](*args, **kwargs)
+
+    @classmethod
+    def generate_legal_task_schema(cls, task_focus: List[str] = None) -> Dict:
+        """
+        动态生成 Codex 可消费的法律对抗任务 Schema。
+        基于当前已注册的全部算子能力。
+        """
+        critical_ops = cls.get_critical_operators()
+        sovereignty_ops = cls.get_sovereignty_operators()
+        all_ops = cls.get_all_schemas()
+
+        prc_focused = task_focus and "PRC" in task_focus
+
+        return {
+            "version": "1.2.0",
+            "kernel": "juris-calculus-trirail",
+            "total_operators": len(all_ops),
+            "critical_operators": len(critical_ops),
+            "sovereignty_anchored": len(sovereignty_ops),
+
+            "task_protocol": {
+                "task_id": "UUID (auto-generated)",
+                "meta": {
+                    "jurisdiction_focus": task_focus or ["PRC", "HK", "US"],
+                    "priority": "CRITICAL | HIGH | MEDIUM",
+                    "threat_level": "RED | YELLOW | GREEN",
+                },
+                "fact_stream": {
+                    "subject": "实体名称",
+                    "incident": "触发纠纷的核心事实",
+                    "data_assets": ["涉及的数据资产清单"],
+                    "jurisdictional_nexus": "事实与各法域连接点",
+                },
+                "confrontation_params": {
+                    "opponent_strategy": "美方律师战术预测",
+                    "red_line_check": [
+                        op_id for op_id in critical_ops.keys()
+                    ] if prc_focused else [],
+                    "expected_outcome": "VOID_REQUEST | SUPPRESS_REQUEST | SETTLEMENT",
+                },
+            },
+
+            "operator_preferences": {
+                op_id: schema["operator_preference"]
+                for op_id, schema in all_ops.items()
+                if schema["operator_preference"]  # 非空
+            },
+
+            "sovereignty_constraints": {
+                op_id: {
+                    "anchoring": schema["constraints"]["sovereignty_anchoring"],
+                    "settlement_allowed": schema["constraints"]["allow_settlement"],
+                }
+                for op_id, schema in sovereignty_ops.items()
+            },
+
+            "available_operators": {
+                op_id: {
+                    "type": schema["type"],
+                    "risk": schema["legal_basis"]["risk_level"],
+                    "citations": schema["legal_basis"]["citations"],
+                }
+                for op_id, schema in all_ops.items()
+            },
+        }
+
+
+# ═══════════════════════════════════════════════
+# 预注册核心算子 (基于 blocking_rules.yaml + spc_rules.yaml)
+# ═══════════════════════════════════════════════
+
+@OperatorRegistry.register(
+    id="PEN_001_Data_CrossBorder_Security",
+    type=OperatorType.CBL_FORCE_VOID,
+    description="数据出境安全评估 — 未经CAC批准的数据出境行为自始无效",
+    trigger_facts=["US_Cloud_Act_Data_Request", "Cross_Border_Data_Transfer_To_US"],
+    additional_conditions=["Identified_Sensitive_Data_Or_State_Secret"],
+    output_states=["VOID"],
+    citations=["《数据安全法》第21条", "《数据出境安全评估办法》"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.85,
+)
+def pen_001_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="PEN_003_Long_Arm_Interdiction",
+    type=OperatorType.CBL_FORCE_SUPPRESS,
+    description="长臂管辖阻断 — 美国域外管辖权在中国法域内效力归零",
+    trigger_facts=["US_Long_Arm_Jurisdiction_Asserted"],
+    additional_conditions=["Entity_Type_PRC_National"],
+    output_states=["SUPPRESSED"],
+    citations=["《反外国制裁法》第12条", "《阻断办法》第9条"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.88,
+    operator_preference={
+        "primary": "FORCE_SUPPRESS",
+        "fallback": "PEN_002_Secondary_Sanction_Block",
+        "critical_threshold": 0.88,
+    },
+)
+def pen_003_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="PEN_004_OFAC_CounterCollision",
+    type=OperatorType.CBL_FORCE_SUPPRESS,
+    description="OFAC制裁反制 — 中国实体在OFAC制裁下自动触发反制",
+    trigger_facts=["OFAC_Sanctions_Imposed"],
+    additional_conditions=["Entity_Type_PRC_National"],
+    output_states=["PRC_ANTI_SANCTION_ACTIVE"],
+    citations=["《反外国制裁法》第12条"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.90,
+)
+def pen_004_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="PEN_005_Crypto_Prohibition",
+    type=OperatorType.CBL_FORCE_VOID,
+    description="加密货币交易全面禁止",
+    trigger_facts=["Cryptocurrency_Transaction"],
+    output_states=["VOID", "PRC_VOID"],
+    citations=["《关于进一步防范和处置虚拟货币交易炒作风险的通知》(2021)"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.90,
+)
+def pen_005_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="CN_SPEC_001_Horizontal_Veil_Piercing",
+    type=OperatorType.CBL_MAPPING_OVERRIDE,
+    description="横向人格否认 — 关联公司资产混同直接穿透",
+    trigger_facts=["Affiliated_Companies_Asset_Confusion"],
+    output_states=["VOIDABLE"],
+    citations=["《公司法》(2024修订)第23条第3款"],
+    risk_level="HIGH",
+    sovereignty_anchoring=False,
+    allow_settlement=False,
+)
+def cn_spec_001_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="BLK_019_AtWillEmployment",
+    type=OperatorType.CBL_FORCE_VOID,
+    description="任意雇佣阻断 — 中国劳动合同法解雇保护",
+    trigger_facts=["At_Will_Employment", "US_Employment_At_Will"],
+    output_states=["VOID"],
+    citations=["《劳动合同法》第39-48条"],
+    risk_level="HIGH",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+)
+def blk_019_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="BLK_021_Discovery_Fishing",
+    type=OperatorType.CBL_MAPPING_OVERRIDE,
+    description="证据开示阻断 — 美式discovery替换为证据交换",
+    trigger_facts=["US_Pre_Trial_Discovery"],
+    output_states=["MAPPING_OVERRIDE"],
+    citations=["《民事诉讼法》第284条", "《民诉解释》第224条"],
+    risk_level="MEDIUM",
+    allow_settlement=True,
+)
+def blk_021_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="SPC_001_Horizontal_Piercing_Judicial",
+    type=OperatorType.SPC_JUDICIAL_TENDENCY,
+    description="最高法: 横向人格否认裁判倾向",
+    trigger_facts=["Affiliated_Companies_Asset_Confusion", "Commingling_Of_Funds"],
+    additional_conditions=["No_Independent_Corporate_Identity"],
+    output_states=["Horizontal_Veil_Piercing_Applicable"],
+    citations=["《公司法》第23条第3款", "最高法相关司法解释"],
+    risk_level="HIGH",
+)
+def spc_001_operator():
+    pass
+
+
+@OperatorRegistry.register(
+    id="THREAT_NJ_PEN_001_AlterEgo",
+    type=OperatorType.THREAT_INTERCEPT,
+    description="NJ法人人格否认威胁 — 触发CBL强制阻断",
+    trigger_facts=["Alter-Ego", "piercing the corporate veil"],
+    output_states=["IMMEDIATE_PRC_CBL_FORCE_VOID"],
+    citations=["《公司法》第23条第3款"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.92,
+    operator_preference={
+        "primary": "FORCE_VOID",
+        "critical_threshold": 0.92,
+    },
+)
+def threat_nj_pen_001():
+    pass
+
+
+@OperatorRegistry.register(
+    id="THREAT_WI_ENF_001_LongArm",
+    type=OperatorType.THREAT_INTERCEPT,
+    description="WI长臂管辖威胁 — 旁路Horn直接CBL阻断",
+    trigger_facts=["Long-Arm Statute 801.05", "Wis. Stat. 801.05"],
+    output_states=["IMMEDIATE_PRC_CBL_FORCE_VOID"],
+    citations=["《反外国制裁法》第12条"],
+    risk_level="CRITICAL",
+    sovereignty_anchoring=True,
+    allow_settlement=False,
+    critical_threshold=0.90,
+)
+def threat_wi_enf_001():
+    pass
+
+
+# ── 快捷函数 ──
+def get_all_schemas():
+    return OperatorRegistry.get_all_schemas()
+
+
+def get_critical_schemas():
+    return OperatorRegistry.get_critical_operators()
+
+
+def generate_task_schema(focus=None):
+    return OperatorRegistry.generate_legal_task_schema(focus)

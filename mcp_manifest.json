@@ -54,6 +54,14 @@
     "legal://state-router": {
       "description": "美国50州拓扑路由器 — 4大骨干模型",
       "mimeType": "application/yaml"
+    },
+    "legal://operator-schemas": {
+      "description": "算子注册表 — 全部已注册法律算子的自文档化JSON Schema (动态生成)",
+      "mimeType": "application/json"
+    },
+    "legal://task-schema": {
+      "description": "Codex法律对抗任务定义Schema — 基于当前内核能力动态生成",
+      "mimeType": "application/json"
     }
   },
 
@@ -158,6 +166,38 @@
           }
         },
         "required": ["rule_id"]
+      }
+    },
+
+    "get_operator_schemas": {
+      "description": "获取全部已注册算子的JSON Schema — Codex消费此接口获取内核能力边界",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "enum": ["all", "critical", "sovereignty", "by_type"],
+            "description": "过滤条件"
+          },
+          "type_filter": {
+            "type": "string",
+            "description": "按算子类型过滤 (配合 filter=by_type)"
+          }
+        }
+      }
+    },
+
+    "generate_task_schema": {
+      "description": "动态生成Codex可消费的法律对抗任务定义Schema",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jurisdiction_focus": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["PRC", "HK", "US"] },
+            "description": "聚焦法域"
+          }
+        }
       }
     }
   },
