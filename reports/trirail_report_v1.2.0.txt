@@ -4,13 +4,13 @@
 ======================================================================
 
 Total scenarios: 12
-  CHINA_US_COLLISION: 7
-  HK_CN_ASYMMETRY: 3
-  TRI_RESONANCE: 2
+  CHINA_US_COLLISION: 9
+  HK_CN_ASYMMETRY: 2
+  TRI_RESONANCE: 1
 
 --- TRI_001_UltraVires_DataExport [CHINA_US_COLLISION] ---
   HK董事越权 + 美国Cloud Act数据请求 → PRC数据出境阻断
-  HK: SUPPRESSED claims=['Contract_Validity']
+  HK: SUPPRESSED claims=['Parties_Duties_Defined']
   US: VALID claims=[]
   PRC FORCE_VOID: ['PEN_001_Data_CrossBorder_Security']
 
@@ -22,9 +22,9 @@ Total scenarios: 12
 
 --- TRI_003_OFAC_Sanction_Deadlock [CHINA_US_COLLISION] ---
   OFAC制裁 vs 反外国制裁法第12条强制对撞
-  HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
+  HK: VALID claims=['Parties_Duties_Defined', 'Contract_Validity']
   US: VALID claims=[]
-  PRC FORCE_SUPPRESS: ['PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield', 'PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
   PRC CN=2c SPC=0c (total=2117 rules)
 
 --- TRI_004_Plea_Bargaining_CrossBorder [HK_CN_ASYMMETRY] ---
@@ -34,15 +34,17 @@ Total scenarios: 12
   PRC MAPPING_OVERRIDE: ['OVR_001_Plea_Bargaining_Restruct', 'OVR_006_Wrongful_Omission_Fill']
   PRC CN=14c SPC=0c (total=2117 rules)
 
---- TRI_005_Chapter11_Director_Conflict [TRI_RESONANCE] ---
+--- TRI_005_Chapter11_Director_Conflict [CHINA_US_COLLISION] ---
   US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞
-  HK: SUPPRESSED claims=['Contract_Validity']
-  US: VALID claims=['AutomaticStay_InEffect → CreditorPower(Collect)=0']
+  HK: SUPPRESSED claims=['Parties_Duties_Defined']
+  US: VALID claims=['DIP_Status → Business_Operations_Continue']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
 
---- TRI_006_Factoring_CrossBorder [HK_CN_ASYMMETRY] ---
+--- TRI_006_Factoring_CrossBorder [CHINA_US_COLLISION] ---
   保理合同独立成章 vs US应收账款转让
   HK: VALID claims=[]
   US: VALID claims=[]
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
   PRC MAPPING_OVERRIDE: ['CN_SPEC_002_Factoring_Chapter']
   PRC CN=2c SPC=0c (total=2117 rules)
 
@@ -51,6 +53,7 @@ Total scenarios: 12
   HK: VALID claims=[]
   US: VALID claims=[]
   PRC FORCE_VOID: ['PEN_005_Crypto_Prohibition']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
   PRC CN=2c SPC=0c (total=2117 rules)
 
 --- TRI_008_VIE_Structure_Review [CHINA_US_COLLISION] ---
@@ -83,7 +86,7 @@ Total scenarios: 12
 
 --- TRI_012_CN_Bridge_Verification [TRI_RESONANCE] ---
   跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证
-  HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
+  HK: VALID claims=['Parties_Duties_Defined', 'Contract_Validity']
   US: VALID claims=[]
   PRC CN=66c SPC=0c (total=2117 rules)
 

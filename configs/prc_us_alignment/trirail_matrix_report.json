@@ -6,7 +6,7 @@
     "hk": {
       "state": "SUPPRESSED",
       "claims": [
-        "Contract_Validity"
+        "Parties_Duties_Defined"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -69,8 +69,8 @@
     "hk": {
       "state": "VALID",
       "claims": [
-        "Contract_Validity",
-        "Parties_Duties_Defined"
+        "Parties_Duties_Defined",
+        "Contract_Validity"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -86,9 +86,10 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 3,
       "force_void": [],
       "force_suppress": [
+        "BLK_001_Consideration_Shield",
         "PEN_002_Secondary_Sanction_Block",
         "PEN_004_OFAC_CounterCollision"
       ],
@@ -134,11 +135,11 @@
   "TRI_005_Chapter11_Director_Conflict": {
     "scenario_id": "TRI_005_Chapter11_Director_Conflict",
     "description": "US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞",
-    "classification": "TRI_RESONANCE",
+    "classification": "CHINA_US_COLLISION",
     "hk": {
       "state": "SUPPRESSED",
       "claims": [
-        "Contract_Validity"
+        "Parties_Duties_Defined"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -148,7 +149,7 @@
     "us": {
       "state": "VALID",
       "claims": [
-        "AutomaticStay_InEffect → CreditorPower(Collect)=0"
+        "DIP_Status → Business_Operations_Continue"
       ],
       "rebuttals": 0,
       "state_tracker": {
@@ -157,9 +158,11 @@
       }
     },
     "prc": {
-      "overrides_count": 0,
+      "overrides_count": 1,
       "force_void": [],
-      "force_suppress": [],
+      "force_suppress": [
+        "BLK_001_Consideration_Shield"
+      ],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
@@ -169,7 +172,7 @@
   "TRI_006_Factoring_CrossBorder": {
     "scenario_id": "TRI_006_Factoring_CrossBorder",
     "description": "保理合同独立成章 vs US应收账款转让",
-    "classification": "HK_CN_ASYMMETRY",
+    "classification": "CHINA_US_COLLISION",
     "hk": {
       "state": "VALID",
       "claims": [],
@@ -187,9 +190,11 @@
       }
     },
     "prc": {
-      "overrides_count": 1,
+      "overrides_count": 2,
       "force_void": [],
-      "force_suppress": [],
+      "force_suppress": [
+        "BLK_001_Consideration_Shield"
+      ],
       "mapping_override": [
         "CN_SPEC_002_Factoring_Chapter"
       ],
@@ -219,11 +224,13 @@
       }
     },
     "prc": {
-      "overrides_count": 1,
+      "overrides_count": 2,
       "force_void": [
         "PEN_005_Crypto_Prohibition"
       ],
-      "force_suppress": [],
+      "force_suppress": [
+        "BLK_001_Consideration_Shield"
+      ],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
@@ -367,8 +374,8 @@
     "hk": {
       "state": "VALID",
       "claims": [
-        "Contract_Validity",
-        "Parties_Duties_Defined"
+        "Parties_Duties_Defined",
+        "Contract_Validity"
       ],
       "rebuttals": 0,
       "state_tracker": {

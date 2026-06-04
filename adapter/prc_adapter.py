@@ -201,7 +201,10 @@ class PRCAdapter:
                 continue
 
             conditions = rule.get("additional_conditions", [])
+            conditions_or = rule.get("additional_conditions_OR", [])  # Gemini R3: 任一即触发
+
             condition_passed = True
+            # AND 条件: 全部必须满足
             for cond in conditions:
                 if cond.startswith("NOT "):
                     neg_fact = cond[4:]
@@ -213,7 +216,23 @@ class PRCAdapter:
                         condition_passed = False
                         break
             if not condition_passed:
-                continue
+                # OR 条件作为AND失败时的备选: 任一满足即通过
+                if conditions_or:
+                    or_passed = False
+                    for cond in conditions_or:
+                        if cond.startswith("NOT "):
+                            neg_fact = cond[4:]
+                            if neg_fact not in shared_facts or shared_facts[neg_fact].extraction_confidence <= 0:
+                                or_passed = True
+                                break
+                        else:
+                            if cond in shared_facts and shared_facts[cond].extraction_confidence > 0:
+                                or_passed = True
+                                break
+                    if not or_passed:
+                        continue
+                else:
+                    continue
 
             rule_id = rule.get("id", "")
             action_data = rule.get("action", {})

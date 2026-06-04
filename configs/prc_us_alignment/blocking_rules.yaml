@@ -23,12 +23,15 @@ rules:
     target_primitive: "Power"
     additional_conditions:
       - "Cross_Border_Context"
+    additional_conditions_OR:  # Gemini R3: 任一满足即触发（代持/隐名结构不应漏判）
       - "Foreign_Connected_Entity"
+      - "NOMINEE_STRUCTURE"
+      - "Chapter11_Filed"
     action:
       type: "FORCE_SUPPRESS"
       map_to: "CN_State_Asset_Protection"
       status: "VOID"
-    description: "GEMINI审计修正: 双重门控(跨境+涉外主体)。防止仅因LLM转译幻觉触发纯境内误封。"
+    description: "Gemini R3: 三重门控(跨境 + (涉外主体 OR 代持 OR Ch11破产))。Ch11破产本身即为高风险信号——即使无显式外方标识，代持/隐名结构常见于跨境重组。"
 
   - id: BLK_002_Promissory_Estoppel
     trigger_fact: "Promissory_Estoppel_Bar"
