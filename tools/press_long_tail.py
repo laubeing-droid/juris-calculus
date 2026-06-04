@@ -231,10 +231,37 @@ class LongTailPressEngine:
         from tools.run_trirail_matrix import classify_tri_state
         self.classify = classify_tri_state
 
-        print(f"[PressEngine] HK={len(hk_rules)} | US={len(us_rules)} | PRC={len(self.prc_engine.constraint_rules)}")
+        # ── 威胁拦截器 (WI/NJ 黑话快速通道) ──
+        from tools.distill_jurisdiction import FastPathInterceptor
+        self.threat_interceptor = FastPathInterceptor()
+
+        print(f"[PressEngine] HK={len(hk_rules)} | US={len(us_rules)} | PRC={len(self.prc_engine.constraint_rules)} | Threats={len(self.threat_interceptor.signatures)} sigs")
 
     def press_term(self, term: str, idx: int) -> Dict:
         """压榨单条术语"""
+        # ═══ 哨兵: 威胁签名预检 ═══
+        threat_hit = self.threat_interceptor.intercept([term])
+        if threat_hit:
+            return {
+                "term_id": f"TAIL_{idx+1:04d}",
+                "term": term,
+                "classification": "CHINA_US_COLLISION",
+                "hk_state": "?",
+                "us_state": "?",
+                "hk_claims": [],
+                "us_claims": [],
+                "prc_overrides": {
+                    "force_void": [threat_hit["target_rule"]],
+                    "force_suppress": [],
+                    "mapping_override": [],
+                },
+                "cn_claims_count": 0,
+                "total_prc_overrides": 1,
+                "fast_path": True,
+                "threat_signature": threat_hit.get("signature_id", ""),
+                "threat_level": threat_hit.get("threat_level", ""),
+            }
+
         fact_dict = term_to_l0_facts(term)
         facts = {
             k: LegalFact(id=k, description=f"{term} → {k}", extraction_confidence=v)
