@@ -3,7 +3,10 @@
 import json
 from pathlib import Path
 
-with open('D:/LegalOS/git/juris-calculus/configs/en_US/state_combined_terms.json','r',encoding='utf-8') as f:
+ROOT = Path(__file__).parent.parent
+TARGET = ROOT / "configs" / "en_US" / "state_combined_terms.json"
+
+with open(TARGET, 'r', encoding='utf-8') as f:
     terms = json.load(f)
 
 cleaned = []
@@ -27,6 +30,6 @@ for t in terms:
 
 print(f'Original: {len(terms)}, Cleaned: {len(cleaned)}')
 
-with open('D:/LegalOS/git/juris-calculus/configs/en_US/state_combined_terms.json','w',encoding='utf-8') as f:
+with open(TARGET, 'w', encoding='utf-8') as f:
     json.dump(cleaned, f, indent=2, ensure_ascii=False)
 print('Saved')

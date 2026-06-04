@@ -10,11 +10,13 @@ import csv, yaml, json, re, os
 from pathlib import Path
 from collections import defaultdict
 
-OUT_HK = Path("D:/LegalOS/git/juris-calculus/configs/hk/rules_expanded.yaml")
-OUT_PRC = Path("D:/LegalOS/git/juris-calculus/configs/prc_us_alignment/term_L0_mappings.yaml")
+ROOT = Path(__file__).parent.parent
+OUT_HK = ROOT / "configs" / "hk" / "rules_expanded.yaml"
+OUT_PRC = ROOT / "configs" / "prc_us_alignment" / "term_L0_mappings.yaml"
 
 # ═══ 1. HK: Extract A-grade terms with cap references ═══
-GLOSSARY = "D:/LegalOS/香港法数据/hk_terms_clean.csv"
+HK_TERMS = os.environ.get("HK_TERMS_PATH", str(ROOT.parent / "香港法数据" / "hk_terms_clean.csv"))
+GLOSSARY = HK_TERMS
 
 print("[HK] Extracting from 121K glossary...")
 raw_terms = []
@@ -89,7 +91,7 @@ for cap, term_list in sorted(domain_terms.items()):
 print(f"\n[HK] Generated {len(hk_rules_new)} new Horn rules")
 
 # Load existing rules
-with open("D:/LegalOS/git/juris-calculus/configs/hk/rules.yaml", 'r', encoding='utf-8') as f:
+with open(ROOT / "configs" / "hk" / "rules.yaml", 'r', encoding='utf-8') as f:
     existing = yaml.safe_load(f)
 
 merged = existing['rules'] + hk_rules_new

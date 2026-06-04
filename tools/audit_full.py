@@ -10,7 +10,8 @@ from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 
 RULES_PATH = "configs/hk/rules.yaml"
-GRAPH_PATH = Path(r"D:\LegalOS\git\juris-calculus\data\hk_mining\global_legal_entity_graph.json")
+ROOT = Path(__file__).parent.parent
+GRAPH_PATH = ROOT / "data" / "hk_mining" / "global_legal_entity_graph.json"
 
 # ─── 加载 ───
 print("═══ 全维度逻辑一致性审计 ═══")

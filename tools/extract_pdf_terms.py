@@ -3,10 +3,11 @@
 import pdfplumber, json, re, os
 from pathlib import Path
 
-BASE = "E:/20260604跨语种法律数据/美国法院/华盛顿州法院法律词汇表资源頁"
+# Set US_PDF_PATH env var to your PDF directory before running
+BASE = os.environ.get("US_PDF_PATH", ".")
 PDFS = [
-    ("WA_Glossary", f"{BASE}/Glossary of Legal Terms.pdf"),
-    ("DOJ_Glossary", f"{BASE}/U.S. Attorneys _ Legal Terms Glossary _ United States Department of Justice.pdf"),
+    ("WA_Glossary", Path(BASE) / "Glossary of Legal Terms.pdf"),
+    ("DOJ_Glossary", Path(BASE) / "U.S. Attorneys _ Legal Terms Glossary _ United States Department of Justice.pdf"),
 ]
 
 all_terms = set()

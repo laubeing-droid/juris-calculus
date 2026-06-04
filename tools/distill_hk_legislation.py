@@ -2,7 +2,7 @@
 """
 distill_hk_legislation.py — Distill HK ordinances into Horn rules
 ═══════════════════════════════════════════════════════════════════
-输入: D:/LegalOS/香港法数据/「電子版香港法例」— 香港法例(現行版本)/
+输入: HK_LEGISLATION_PATH 环境变量 → 香港法例 XML 目录
 输出: configs/hk/rules_expanded.yaml
 
 章节目标:
@@ -22,8 +22,9 @@ import json, yaml, os, re
 from pathlib import Path
 from collections import defaultdict
 
-HK_BASE = "D:/LegalOS/香港法数据/「電子版香港法例」— 香港法例(現行版本)"
-OUTPUT = Path("D:/LegalOS/git/juris-calculus/configs/hk/rules_expanded.yaml")
+ROOT = Path(__file__).parent.parent
+HK_BASE = os.environ.get("HK_LEGISLATION_PATH", "")
+OUTPUT = ROOT / "configs" / "hk" / "rules_expanded.yaml"
 NS = {'h': 'http://www.xml.gov.hk/schemas/hklm/1.0'}
 
 TARGET_CAPS = {
@@ -190,7 +191,7 @@ if __name__ == "__main__":
         all_rules.extend(rules)
     
     # Load existing Cap 26 rules
-    with open("D:/LegalOS/git/juris-calculus/configs/hk/rules.yaml", 'r', encoding='utf-8') as f:
+    with open(ROOT / "configs" / "hk" / "rules.yaml", 'r', encoding='utf-8') as f:
         existing = yaml.safe_load(f)
     
     cap26_rules = existing['rules']

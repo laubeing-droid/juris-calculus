@@ -112,7 +112,7 @@ class ShadowRunner:
                     }
                 }
                 # 自动存档
-                snap_dir = Path(r"D:\LegalOS\git\juris-calculus\data\trace_snapshots")
+                snap_dir = Path(__file__).parent.parent / "data" / "trace_snapshots"
                 snap_dir.mkdir(parents=True, exist_ok=True)
                 snap_file = snap_dir / f"divergence_{trace1.hash()[:8]}.json"
                 with open(snap_file, "w", encoding="utf-8") as f:
@@ -131,7 +131,8 @@ class AdversarialGenerator:
     """用概念图谱 + L0 原语生成对抗样本"""
 
     def __init__(self):
-        data = Path(r"D:\LegalOS\git\juris-calculus\data\hk_mining\global_legal_entity_graph.json")
+        repo_root = Path(__file__).parent.parent
+        data = repo_root / "data" / "hk_mining" / "global_legal_entity_graph.json"
         with open(data, encoding="utf-8") as f:
             self.graph = json.load(f)
 

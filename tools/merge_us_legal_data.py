@@ -14,7 +14,7 @@ import json, yaml, os
 from pathlib import Path
 from collections import OrderedDict
 
-EN_US = Path("D:/LegalOS/git/juris-calculus/configs/en_US")
+EN_US = Path(__file__).parent.parent / "configs" / "en_US"
 
 # ─── 加载所有来源 ───
 def jload(path):

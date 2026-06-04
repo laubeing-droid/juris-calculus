@@ -1,6 +1,6 @@
 # Gemini 审计提示词 — juris-calculus v1.2.0 全栈投产报告
 
-> 2026-06-04 | 刘伟彬律师 × DeepSeek-V4 Pro (WorkBuddy)
+> 2026-06-04 | LegalOS Team
 > 单日从 v1.0.0-coldstart 推进至 v1.2.0-TriRail
 
 ---
@@ -109,7 +109,7 @@
 ## 相关文件路径
 
 ```
-D:/LegalOS/git/juris-calculus/
+juris-calculus/
 ├── reports/GEMINI_AUDIT_BRIEF_v1.1.0.md (详细架构)
 ├── reports/trirail_report_v1.2.0.txt
 ├── reports/trirail_heatmap_v1.2.0.html
