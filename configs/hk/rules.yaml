@@ -1,0 +1,814 @@
+rules:
+- id: HK-S3-ContractOfSale
+  premise_atoms:
+  - Seller_TransfersOrAgrees_Property
+  - Buyer_Pays_MoneyConsideration
+  - Goods_Exist
+  head_claim: ContractOfSale_Exists
+  concepts:
+  - Contract
+  - Sale
+  - Goods
+  - Price
+  - Property
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S14-ImpliedTitleWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Seller_RightToSell
+  - Goods_FreeOfUndisclosedEncumbrance
+  - Buyer_QuietPossession
+  head_claim: ImpliedTitleWarranty_Exists
+  concepts:
+  - Title
+  - Warranty
+  - Encumbrance
+  - QuietPossession
+  exception_chain:
+  - HK-S14-X1-EncumbranceDisclosed
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S14-X1-EncumbranceDisclosed
+  premise_atoms:
+  - Encumbrance_DisclosedToBuyer
+  head_claim: EncumbranceWarranty_Negatived
+  concepts:
+  - Encumbrance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S16a-FitnessWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_MadeKnown_ParticularPurpose
+  - Buyer_ReliesOnSellerSkill
+  - Seller_Sells_InCourseOfBusiness
+  head_claim: ImpliedFitnessWarranty_Exists
+  concepts:
+  - Fitness
+  - Warranty
+  - Reliance
+  - ParticularPurpose
+  exception_chain:
+  - HK-S16-X1-PatentName
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-V1-Bridge-Validity
+  premise_atoms:
+  - ContractOfSale_Exists
+  head_claim: Contract_Validity
+  concepts:
+  - Contract_Existence
+  - Contract_Validity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S16-X1-PatentName
+  premise_atoms:
+  - Goods_SoldUnderPatentOrTradeName
+  head_claim: No_FitnessWarranty
+  concepts:
+  - Warranty
+  - Patent
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S16b-MerchantabilityWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Sells_InCourseOfBusiness
+  - Goods_BoughtByDescription
+  head_claim: ImpliedMerchantabilityWarranty_Exists
+  concepts:
+  - Merchantability
+  - Warranty
+  - Quality
+  exception_chain:
+  - HK-S16-X2-KnownDefects
+  - HK-S16-X3-BuyerExamined
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S16-X2-KnownDefects
+  premise_atoms:
+  - Defects_DrawnToBuyerAttention
+  head_claim: Warranty_Negatived_KnownDefects
+  concepts:
+  - Defect
+  - Warranty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S16-X3-BuyerExamined
+  premise_atoms:
+  - Buyer_ExaminedGoods_BeforeContract
+  head_claim: Warranty_Negatived_RevealableDefects
+  concepts:
+  - Examination
+  - Warranty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S30-ConcurrentConditions
+  premise_atoms:
+  - Contract_Validity
+  - No_ContraryAgreement
+  head_claim: PaymentDelivery_AreConcurrent
+  concepts:
+  - Delivery
+  - Payment
+  - Condition
+  exception_chain:
+  - HK-S30-X1-AgreedOtherwise
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S30-X1-AgreedOtherwise
+  premise_atoms:
+  - Parties_AgreedOtherwise
+  head_claim: ConcurrentCondition_Negatived
+  concepts:
+  - Condition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S51-ActionForPrice
+  premise_atoms:
+  - Contract_Validity
+  - Property_PassedToBuyer
+  - Buyer_WrongfullyRefusesPayment
+  head_claim: Seller_MayClaim_ContractPrice
+  concepts:
+  - Price
+  - Property
+  - Payment
+  exception_chain:
+  - HK-S51-X1-DayCertain
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S51-X1-DayCertain
+  premise_atoms:
+  - Price_PayableOnDayCertain
+  head_claim: Seller_MayClaim_EvenIfPropertyNotPassed
+  concepts:
+  - Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S52-DamagesForNonAcceptance
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_WrongfullyRefusesAcceptance
+  - Buyer_FailsToPay
+  head_claim: Seller_MayClaim_DamagesForNonAcceptance
+  concepts:
+  - Damages
+  - Acceptance
+  - Breach
+  exception_chain:
+  - HK-S52-X1-MarketMeasure
+  - HK-S52-X2-NoMarket
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S52-X1-MarketMeasure
+  premise_atoms:
+  - AvailableMarket_Exists
+  head_claim: Damages_ContractMinusMarketPrice
+  concepts:
+  - MarketPrice
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S52-X2-NoMarket
+  premise_atoms:
+  - No_AvailableMarket
+  head_claim: Damages_DirectNaturalLoss
+  concepts:
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S53-DamagesForNonDelivery
+  premise_atoms:
+  - Contract_Validity
+  - Seller_WrongfullyRefusesDelivery
+  head_claim: Buyer_MayClaim_DamagesForNonDelivery
+  concepts:
+  - Damages
+  - Delivery
+  - Breach
+  exception_chain:
+  - HK-S53-X1-MarketMeasure
+  - HK-S53-X2-NoMarket
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S53-X1-MarketMeasure
+  premise_atoms:
+  - AvailableMarket_Exists
+  head_claim: Damages_MarketMinusContractPrice
+  concepts:
+  - MarketPrice
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S53-X2-NoMarket
+  premise_atoms:
+  - No_AvailableMarket
+  head_claim: Damages_DirectNaturalLoss
+  concepts:
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S54-SpecificPerformance
+  premise_atoms:
+  - Contract_Validity
+  - Goods_AreSpecificOrAscertained
+  - BreachOfContract_Alleged
+  head_claim: SpecificPerformance_Available
+  concepts:
+  - SpecificPerformance
+  - Equity
+  - Breach
+  exception_chain:
+  - HK-S54-X1-AdequateRemedy
+  head_type: NON_HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S54-X1-AdequateRemedy
+  premise_atoms:
+  - Damages_AdequateRemedy
+  head_claim: SpecificPerformance_Denied
+  concepts:
+  - SpecificPerformance
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S55-RemediesForBreachOfWarranty
+  premise_atoms:
+  - Contract_Validity
+  - BreachOfWarranty_Established
+  - Buyer_NotWaivedBreach
+  head_claim: Buyer_MayClaim_RemediesForBreachOfWarranty
+  concepts:
+  - Warranty
+  - Breach
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S57-ExclusionOfImpliedTerms
+  premise_atoms:
+  - Contract_Validity
+  - ExpressAgreement_Or_CourseOfDealing_Or_Usage_Exists
+  head_claim: ImpliedTerms_MayBeExcluded
+  concepts:
+  - ImpliedTerms
+  - Exclusion
+  - Usage
+  exception_chain:
+  - HK-S57-X1-CECO_Violation
+  - HK-S57-X2-ConsistentTerm
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S57-X1-CECO_Violation
+  premise_atoms:
+  - Exclusion_Violates_CECO
+  head_claim: Exclusion_Void
+  concepts:
+  - Exclusion
+  - CECO
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S57-X2-ConsistentTerm
+  premise_atoms:
+  - ExpressTerm_ConsistentWithImplied
+  head_claim: ImpliedTerm_NotNegatived
+  concepts:
+  - ImpliedTerms
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S4-CapacityToContract
+  premise_atoms:
+  - ContractOfSale_Exists
+  - Necessaries_SoldAndDelivered
+  - Buyer_Is_Infant_Or_Incompetent
+  head_claim: Buyer_MustPay_ReasonablePrice
+  concepts:
+  - Contract
+  - Capacity
+  - Necessaries
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S8-GoodsPerished
+  premise_atoms:
+  - ContractForSale_SpecificGoods
+  - Goods_Perished_BeforeContract
+  - Seller_DidNotKnow
+  head_claim: Contract_Void
+  concepts:
+  - Contract_Existence
+  - Goods
+  - Contract_Void
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S10-PriceAscertainment
+  premise_atoms:
+  - Contract_Validity
+  - Price_FixedByContract_Or_CourseOfDealing
+  head_claim: Price_Ascertained
+  concepts:
+  - Contract_Existence
+  - Market_Price
+  exception_chain:
+  - HK-S10-X1-ReasonablePrice
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S10-X1-ReasonablePrice
+  premise_atoms:
+  - Price_NotDetermined
+  head_claim: Buyer_MustPay_ReasonablePrice
+  concepts:
+  - Damages
+  - Market_Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S12-TimeStipulation
+  premise_atoms:
+  - Contract_Validity
+  - Stipulation_Is_PaymentTime
+  head_claim: Time_NotOfTheEssence
+  concepts:
+  - Contract_Existence
+  - Payment
+  - Condition
+  exception_chain:
+  - HK-S12-X1-ContraryIntent
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S12-X1-ContraryIntent
+  premise_atoms:
+  - Contract_Shows_ContraryIntent
+  head_claim: Time_IsOfTheEssence
+  concepts:
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S13-ConditionToWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Condition_ToBeFulfilled
+  - BreachOfCondition_Occurred
+  head_claim: Buyer_MayTreatBreach_AsWarranty
+  concepts:
+  - Breach
+  - Warranty_Quality
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S15-SaleByDescription
+  premise_atoms:
+  - Contract_Validity
+  - Goods_SoldByDescription
+  head_claim: ImpliedCondition_GoodsCorrespondToDescription
+  concepts:
+  - Contract_Existence
+  - Warranty_Quality
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S18-UnascertainedGoods
+  premise_atoms:
+  - Contract_Validity
+  - Goods_Unascertained
+  head_claim: No_PropertyPasses
+  concepts:
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S19-PropertyPassesWhenIntended
+  premise_atoms:
+  - Contract_Validity
+  - Goods_SpecificOrAscertained
+  - Parties_IntendPropertyToPass
+  head_claim: Property_PassesToBuyer
+  concepts:
+  - Property_Pass
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S22-RiskPassesWithProperty
+  premise_atoms:
+  - Contract_Validity
+  - Property_PassedToBuyer
+  head_claim: Risk_PassesWithProperty
+  concepts:
+  - Property_Pass
+  - Damages
+  exception_chain:
+  - HK-S22-X1-DeliveryDelayByFault
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S22-X1-DeliveryDelayByFault
+  premise_atoms:
+  - Delivery_Delayed
+  - Delay_CausedByPartyFault
+  head_claim: Risk_OnPartyAtFault
+  concepts:
+  - Delivery
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S23-NemoDat
+  premise_atoms:
+  - Goods_Sold
+  - Seller_NotOwner
+  - Seller_NoAuthority
+  head_claim: Buyer_AcquiresNoBetterTitle
+  concepts:
+  - Property_Pass
+  - Encumbrance
+  exception_chain:
+  - HK-S23-X1-Estoppel
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S23-X1-Estoppel
+  premise_atoms:
+  - Owner_Conduct_PrecludesDenyingAuthority
+  head_claim: Buyer_AcquiresGoodTitle
+  concepts:
+  - Property_Pass
+  - Reliance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S25-VoidableTitle
+  premise_atoms:
+  - Goods_Sold
+  - Seller_HasVoidableTitle
+  - Title_NotAvoided_AtTimeOfSale
+  - Buyer_InGoodFaith
+  - Buyer_WithoutNotice
+  head_claim: Buyer_AcquiresGoodTitle
+  concepts:
+  - Property_Pass
+  - Breach
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S29-DutiesOfParties
+  premise_atoms:
+  - ContractOfSale_Exists
+  head_claim: Parties_Duties_Defined
+  concepts:
+  - Delivery
+  - Payment
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S31-PlaceOfDelivery
+  premise_atoms:
+  - Contract_Validity
+  - No_AgreedDeliveryPlace
+  head_claim: DeliveryPlace_SellersBusinessOrResidence
+  concepts:
+  - Delivery
+  exception_chain:
+  - HK-S31-X1-ContraryAgreement
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S31-X1-ContraryAgreement
+  premise_atoms:
+  - Contract_Specifies_DeliveryPlace
+  head_claim: DeliveryPlace_AsAgreed
+  concepts:
+  - Delivery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S32-WrongQuantityDelivery
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Delivers_LessThanContracted
+  head_claim: Buyer_MayReject
+  concepts:
+  - Delivery
+  - Breach
+  exception_chain:
+  - HK-S32-X1-BuyerAccepts
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S32-X1-BuyerAccepts
+  premise_atoms:
+  - Buyer_Accepts_ShortDelivery
+  head_claim: Buyer_MustPay_AtContractRate
+  concepts:
+  - Payment
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S33-DeliveryByInstalments
+  premise_atoms:
+  - Contract_Validity
+  - Delivery_ByInstalments
+  - Seller_DefectiveDeliveries
+  head_claim: BreachQuestion_DependsOnContractTerms
+  concepts:
+  - Delivery
+  - Breach
+  exception_chain: []
+  head_type: NON_HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S36-BuyerRightToExamine
+  premise_atoms:
+  - Contract_Validity
+  - Seller_TendersDelivery
+  head_claim: Buyer_EntitledToReasonableExamination
+  concepts:
+  - Delivery
+  - Acceptance
+  exception_chain:
+  - HK-S36-X1-AgreedOtherwise
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S36-X1-AgreedOtherwise
+  premise_atoms:
+  - Parties_AgreedOtherwise
+  head_claim: No_ExaminationRight
+  concepts:
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S37-AcceptanceOfGoods
+  premise_atoms:
+  - Goods_Delivered
+  - Buyer_IntimatesAcceptance_Or_ActsInconsistently
+  head_claim: Goods_Accepted
+  concepts:
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S38-RejectionWithoutReturn
+  premise_atoms:
+  - Goods_Delivered
+  - Buyer_HasRightToReject
+  - Buyer_IntimatesRefusal
+  head_claim: Rejection_Effective
+  concepts:
+  - Acceptance
+  - Delivery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S41-UnpaidSellerRights
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Unpaid
+  - Seller_InPossession
+  head_claim: Seller_HasLien_Right
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain:
+  - HK-S41-X1-BuyerInsolvent
+  - HK-S41-X2-RightOfResale
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S41-X1-BuyerInsolvent
+  premise_atoms:
+  - Buyer_Insolvent
+  - Seller_PartedWithPossession
+  head_claim: Seller_HasStoppageRight
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S41-X2-RightOfResale
+  premise_atoms:
+  - Seller_Exercised_Lien_Or_Stoppage
+  head_claim: Seller_HasResaleRight
+  concepts:
+  - Damages
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S43-LienConditions
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Unpaid
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain:
+  - HK-S43-X1-CreditExpired
+  - HK-S43-X2-BuyerInsolvent
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S43-X1-CreditExpired
+  premise_atoms:
+  - Goods_SoldOnCredit
+  - CreditTerm_Expired
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S43-X2-BuyerInsolvent
+  premise_atoms:
+  - Buyer_Insolvent
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S46-StoppageInTransitu
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_Insolvent
+  - Seller_Unpaid
+  - Goods_InTransit
+  head_claim: Seller_MayStopGoodsInTransitu
+  concepts:
+  - Delivery
+  - Payment
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S48-HowToStopTransitu
+  premise_atoms:
+  - StoppageRight_Exists
+  head_claim: Seller_MayTakePossession_Or_GiveNoticeToCarrier
+  concepts:
+  - Delivery
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S50-LienDoesNotRescind
+  premise_atoms:
+  - Contract_Validity
+  - Seller_ExercisesLien_Or_Stoppage
+  head_claim: Contract_NotRescinded
+  concepts:
+  - Contract_Existence
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S56-InterestAndSpecialDamages
+  premise_atoms:
+  - Contract_Validity
+  - Interest_Or_SpecialDamages_RecoverableByLaw
+  head_claim: Party_MayRecover_Interest_Or_SpecialDamages
+  concepts:
+  - Damages
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S59-RightsEnforceableByAction
+  premise_atoms:
+  - RightDutyLiability_DeclaredByOrdinance
+  head_claim: Right_EnforceableByAction
+  concepts:
+  - Breach
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+- id: HK-S60-AuctionSale
+  premise_atoms:
+  - Sale_ByAuction
+  - Auctioneer_AnnouncesCompletion
+  head_claim: Sale_Complete
+  concepts:
+  - Contract_Existence
+  - Offer_Acceptance
+  exception_chain:
+  - HK-S60-X1-ReservePriceNotMet
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-S60-X1-ReservePriceNotMet
+  premise_atoms:
+  - Auction_SubjectToReserve
+  - ReservePrice_NotMet
+  head_claim: Seller_MayWithdraw
+  concepts:
+  - Contract_Existence
+  - Market_Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+- id: HK-PreContractual-Restitution
+  premise_atoms:
+  - Reliance_Established
+  - Loss_Occurred
+  head_claim: PreContractual_Liability_Exists
+  concepts:
+  - PreContractual_Reliance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  legal_basis: HK普通法 缔约过失原则 (Hedley Byrne v Heller)
+  note: 平行责任链——不依赖 Contract_Existence 或 Contract_Validity
+- id: HK-Restitution-VoidContract
+  premise_atoms:
+  - Buyer_Has_Paid
+  - Seller_Has_ReceivedBenefit
+  head_claim: Restitution_Obligation_Exists
+  concepts:
+  - Payment
+  - Contract_Validity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  legal_basis: HK普通法 恢复原状原则
+  note: 合同无效后的返还责任——独立于合同效力

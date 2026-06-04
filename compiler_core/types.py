@@ -17,6 +17,16 @@ class LegalDomain(Enum):
     CIVIL = "民事"; CRIMINAL = "刑事"; ADMINISTRATIVE = "行政"
 
 
+class ValidityState(str, Enum):
+    """合同效力状态机 v1.1"""
+    VALID = "VALID"              # 生效
+    PENDING = "PENDING"          # 效力待定（如未成年人签约待追认）
+    CONDITIONAL = "CONDITIONAL"  # 附条件未成就
+    VOIDABLE = "VOIDABLE"        # 可撤销（未行使撤销权前）
+    VOID = "VOID"                # 自始无效
+    TERMINATED = "TERMINATED"    # 有效→解除，向前失效
+
+
 @dataclass
 class LegalFact:
     id: str; description: str = ""; source: str = ""; formalizable: float = 1.0
@@ -41,6 +51,8 @@ class LegalClaim:
     # V6: 扩展
     claim_type: str = ""  # HORN_CLAIM / DISCRETIONARY / REQUIRES_REVIEW
     execution_trace_id: str = ""
+    domain_origin: str = ""  # v1.1: 来自哪个 L2 领域 (contract/corporate/tort...)
+    L0_primitive_source: str = ""  # v1.1: 映射到哪个 L0 原语
     def taint_summary(self) -> str:
         return "CLEAR" if not self.taint_chain else " -> ".join(f"{n.rule_id}({n.taint_source})" for n in self.taint_chain)
 
@@ -75,3 +87,6 @@ class IRState:
     temporal_scope: dict = field(default_factory=lambda: {"fact_date": "2021-03-15", "governing_law": "PRC_CivilCode_2021"})
     world_id: str = "W1"; iteration_count: int = 0; max_iterations: int = 100
     domain: LegalDomain = LegalDomain.CIVIL
+    rebuttal_log: list = field(default_factory=list)
+    jurisdiction: str = ""
+    state_tracker: dict = field(default_factory=lambda: {"Contract_Validity": "VALID"})

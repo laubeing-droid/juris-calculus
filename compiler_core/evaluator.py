@@ -12,6 +12,7 @@ Production-grade monotonic fixpoint iterator with:
 """
 
 from typing import List, Dict, Set, Tuple, Optional
+from compiler_core.constraint_validator import ConstraintValidator
 import logging
 
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
@@ -114,6 +115,10 @@ class FixpointEvaluator:
 
         self.implicit_dependencies = self._detect_implicit_deps()
 
+        # 约束层：Rebuttal Hook + Audit Trail
+        self.constraint_validator = ConstraintValidator()
+        self.audit_log: List[dict] = []
+
     def _compute_depth(self, rule_id: str, visited: set = None) -> int:
         """Recursive depth in exception chain, with cycle detection."""
         if visited is None and rule_id in self._depth_cache:
@@ -195,6 +200,10 @@ class FixpointEvaluator:
                 depth=depth
             ))
 
+        # v1.1 Traceability: resolve L2→L1→L0 chain
+        domain_origin = getattr(rule, 'namespace', 'general')
+        l0_source = self.constraint_validator.resolve_L0_primitive(rule.concepts) if self.constraint_validator.loaded else ''
+
         return LegalClaim(
             id=rule.head_claim,
             description=f"{rule.id}: {rule.head_claim}",
@@ -203,7 +212,9 @@ class FixpointEvaluator:
             requires_human_review=(
                 score < self.config.taint_threshold or
                 score < self.config.hard_audit_threshold
-            )
+            ),
+            domain_origin=domain_origin,
+            L0_primitive_source=l0_source
         )
 
     def evaluate(self, state: IRState) -> IRState:
@@ -239,6 +250,59 @@ class FixpointEvaluator:
                 claim = self._apply_rule(rule, state, self.rule_depths.get(rule_id, 1))
                 if claim is None:
                     continue
+
+                # ═══ 约束层钩子：Rebuttal Check + Unknown Concept Warning ═══
+                confidence_before = claim.confidence
+                if self.constraint_validator.loaded and rule.concepts:
+                    # 未定义概念检测
+                    undef = self.constraint_validator.get_undefined_concepts(rule.concepts)
+                    if undef:
+                        logger.info(
+                            f"[ONTO_WARN] {rule.id}: concepts not in ontology: {undef} — treated as Strict"
+                        )
+
+                    rebuttal = self.constraint_validator.check_rebuttal(
+                        rule.head_claim, rule.concepts, state
+                    )
+                    if rebuttal.triggered:
+                        claim.confidence = 0.0
+                        state.rebuttal_log.append(
+                            self.constraint_validator.to_audit_json(
+                                rebuttal, rule_id=rule.id, confidence_before=confidence_before
+                            )
+                        )
+                        # ═══ State Machine Hook ═══
+                        if hasattr(rebuttal, 'new_state') and rebuttal.new_state:
+                            state.state_tracker[rebuttal.claim_id] = rebuttal.new_state
+                            logger.info(f"[STATE] {rebuttal.claim_id} → {rebuttal.new_state}")
+                        logger.info(f"[REBUTTAL] {rule.id}: {rebuttal.trigger_fact} → confidence {confidence_before:.2f}→0.0")
+
+                # ═══ v1.1 强制收敛钩子 ═══
+                if self.constraint_validator.loaded:
+                    forced = self.constraint_validator.check_constraint_rules(state)
+                    for fr in forced:
+                        target = fr.get("target", "")
+                        action = fr.get("action", "force_state")
+                        new_st = fr.get("new_state", "")
+
+                        # 不可逆保护: 已标记irreversible的跳过
+                        if state.state_tracker.get(f"{target}_irreversible"):
+                            logger.info(f"[FORCED] {fr['id']}: SKIPPED — {target} already irreversible ({state.state_tracker.get(target)})")
+                            continue
+
+                        if action == "force_state" and target and new_st:
+                            state.state_tracker[target] = new_st
+                            if fr.get("irreversible"):
+                                state.state_tracker[f"{target}_irreversible"] = True
+                            logger.info(f"[FORCED] {fr['id']}: {target} → {new_st} ({fr.get('reason','')})")
+
+                        elif action == "suppress_power" and target:
+                            state.state_tracker[target] = "SUPPRESSED"
+                            # 抑制所有以该target为premise的下游claim
+                            for cid, claim in list(state.claims.items()):
+                                if claim.confidence > 0:
+                                    claim.confidence = 0.0
+                            logger.info(f"[FORCED] {fr['id']}: {target} → SUPPRESSED | 下游claims已归零 ({fr.get('reason','')})")
 
                 # CRITICAL_CLARITY_FAILURE guard
                 if claim.confidence < self.config.critical_score_threshold:

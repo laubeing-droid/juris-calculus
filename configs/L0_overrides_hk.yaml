@@ -1,0 +1,67 @@
+# L0 覆写 — 香港法（普通法）
+jurisdiction: HK
+family: Common_Law
+description: 香港普通法对 L0 原语属性的覆写
+
+overrides:
+  Act:
+    legal_intent:
+      value: Optional
+      reason: "普通法承认严格责任行为——无意图也可构成 Act"
+
+  Agent:
+    capacity_required:
+      value: Conditional
+      reason: "未成年人可签订必需品合同(necessaries)，特定情况下无完全行为能力也可"
+
+  Status:
+    valid_transitions:
+      value:
+        - "Established->Valid"
+        - "Valid->Void"
+        - "Valid->Voidable"
+        - "Valid->Terminated"
+        - "PENDING->Valid"
+        - "CONDITIONAL->Valid"
+        - "Valid->Breached"
+        - "Breached->Remedied"
+      reason: "普通法救济链更长——违约后仍可补救"
+
+  Defect:
+    additional_defects:
+      value:
+        - Consideration_Failure
+        - Promissory_Estoppel_Bar
+      reason: "对价失败和允诺禁反言是普通法特有的效力阻断事由"
+
+# ═══════════════════════════════════════════
+# 强制收敛规则 — 运行时约束 (v1.1)
+# ═══════════════════════════════════════════
+constraint_rules:
+  - id: COURT_SUPERIOR_AUTHORITY
+    description: "Court裁决强制收敛——任何Status在Court_Decision面前必须收敛为Final"
+    trigger_fact: Court_Ruled_ContractVoid
+    action: force_state
+    target: Contract_Validity
+    new_state: VOID
+    irreversible: true
+    reason: "法院裁决具有既判力——不可通过后续反驳恢复"
+
+  - id: PERIOD_EXPIRATION_CHECK
+    description: "时态逻辑——过期状态自动迁移至Defect"
+    trigger_fact: SpecifiedPeriod_Expired
+    action: force_state
+    target: Contract_Validity
+    new_state: EXPIRED
+    cascade: "EXPIRED → Defect → 下游Performance规则全部抑制"
+    reason: "合同有效期届满——履行义务消灭"
+
+  - id: DIRECTOR_ULTRA_VIRES
+    description: "董事越权——无追认则Power归零"
+    trigger_fact: Director_Acted_UltraVires
+    additional_conditions:
+      - "NOT Director_Ratified_By_Board"
+    action: suppress_power
+    target: Contract_Validity
+    effect: "Power(Agent, Asset) = 0 → 任何以公司名义的Act不产生法律效力"
+    reason: "越权行为未经董事会追认——不对公司产生约束力"

@@ -1,0 +1,23 @@
+UK Sale of Goods Act 1979 — 精选条文 (用于蒸馏测试)
+
+Section 2: Contract of sale
+(1) A contract of sale of goods is a contract by which the seller transfers or agrees to transfer the property in goods to the buyer for a money consideration, called the price.
+
+Section 12: Implied terms about title
+(1) In a contract of sale, there is an implied term on the part of the seller that in the case of a sale he has a right to sell the goods, and in the case of an agreement to sell he will have such a right at the time when the property is to pass.
+(2) There is also an implied term that the goods are free from any charge or encumbrance not disclosed to the buyer before the contract is made.
+
+Section 14: Implied terms about quality or fitness
+(2) Where the seller sells goods in the course of a business, there is an implied term that the goods supplied under the contract are of satisfactory quality.
+(3) The term implied by subsection (2) does not extend to any matter making the quality of goods unsatisfactory which is specifically drawn to the buyer's attention before the contract is made.
+
+Section 49: Action for price
+(1) Where, under a contract of sale, the property in the goods has passed to the buyer and he wrongfully neglects or refuses to pay for the goods according to the terms of the contract, the seller may maintain an action against him for the price of the goods.
+
+Section 50: Damages for non-acceptance
+(1) Where the buyer wrongfully neglects or refuses to accept and pay for the goods, the seller may maintain an action against him for damages for non-acceptance.
+(2) The measure of damages is the estimated loss directly and naturally resulting in the ordinary course of events from the buyer's breach of contract.
+(3) Where there is an available market for the goods, the measure of damages is the difference between the contract price and the market price.
+
+Section 52: Specific performance
+(1) In any action for breach of contract to deliver specific or ascertained goods the court may, if it thinks fit, direct that the contract shall be performed specifically, without giving the defendant the option of retaining the goods on payment of damages.

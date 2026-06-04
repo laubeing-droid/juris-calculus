@@ -1,0 +1,1298 @@
+evolution_rules:
+  Instalments_Logic:
+    T1_Contract:
+      trigger: ContractOfSale_Exists
+      action: State_Active_PerformancePeriod
+    T2_PartialDelivery:
+      trigger: Delivery_Partial
+      action: State_PartialPerformance
+    T3_Failure:
+      trigger: Seller_DefectiveDeliveries
+      action: Transition_to_Breach_Status
+      target: Contract_Existence
+    T4_Remedy:
+      trigger: Buyer_Rejects_DefectiveInstalment
+      action: Activate_RemedyChain
+  Perished_Goods_Logic:
+    T1_Contract:
+      trigger: ContractOfSale_Exists
+      action: State_ContractPresumed
+    T2_Discovery:
+      trigger: Goods_Perished_BeforeContract
+      action: Check_SellerKnowledge
+    T3_Fraud:
+      trigger: Seller_Knew_Goods_Perished
+      action: Invalidate_Contract_AbInitio
+      target: Contract_Existence
+      set_value: false
+  NemoDat_Logic:
+    T1_Sale:
+      trigger: Goods_Sold
+      action: State_TransactionActive
+    T2_TitleCheck:
+      trigger: Seller_NotOwner
+      action: Raise_TitleDefect
+    T3_Estoppel:
+      trigger: Owner_Conduct_PrecludesDenyingAuthority
+      action: Override_NemoDat
+      target: Buyer_AcquiresGoodTitle
+concepts:
+  Contract_Existence:
+    meta_type: Strict_Atom
+    aliases:
+    - Contract
+    - Goods
+    - Price
+    - Sale
+    - adhesion contract [also contract of adhesion; take-it-or-leave-it contract]
+    - agreement collateral to a contract of service
+    - Capacity
+    - Necessaries
+    - contract for differences
+    - contract for services
+    - contract for the sale of goods by description
+    - contract for work done and materials supplied
+    - contract of ... learnership
+    - contract of ... security
+    - contract of apprenticeship
+    - contract of bailment
+    - contract of benevolence [also gratuitous contract]
+    - contract of carriage
+    - contract of employment
+    - contract of employment [also employment contract]
+    - contract of guarantee
+    - contract of indemnity
+    - contract of insurance
+    - contract of reinsurance
+    - contract of sale
+    - contract of sale of goods
+    - contract of service
+    - contract of tenancy
+    - gratuitous contract [also contract of benevolence]
+    - original contract of tenancy
+    - sale of goods
+    - take-it-or-leave-it contract [also adhesion contract; contract of adhesion]
+    - terminate a contract of
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 合同成立
+      HK: 合約存在
+      US: Contract Exists
+    behavioral_logic:
+      if_missing: No_Contractual_Relationship
+    parent: Relationship_Establishment
+    legal_stage: Contract_Formation
+    burden_of_proof: Claimant
+    elements:
+    - Valid_Offer_Made
+    - Unqualified_Acceptance_Communicated
+    jurisdiction_specific_elements:
+      HK:
+      - Consideration_Provided
+      CN: []
+    jurisdiction:
+    - HK
+    - CN
+  Consideration:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 0
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 对价（中国法不要求）
+      HK: 代價
+      US: Consideration
+    behavioral_logic:
+      if_missing:
+        CN: No_Effect
+        HK: Void_Contract
+        US: Void_Contract
+    aliases:
+    - amount or value of the consideration
+    - bona fide pecuniary consideration
+    - brought up for discussion or consideration
+    - cash consideration
+    - consideration ... ascertainable by reference to
+    - consideration attributable to
+    - consideration by way of marriage
+    - consideration for an assignment
+    - consideration in money
+    - consideration of ... proceedings
+    - consideration of a case
+    - consideration of the appropriation bill
+    - consideration reducible to a monetary value
+    - corrupt consideration
+    - due consideration
+    - extraneous considerations
+    - first and paramount consideration
+    - for the best consideration
+    - full consideration
+    - full valuable consideration
+    - good consideration
+    - gratuitous consideration
+    - illegal consideration
+    - immoral consideration
+    - in consideration of
+    - in consideration of a loan
+    - in good faith and for good consideration
+    - material considerations
+    - monetary consideration
+    - money consideration
+    - nominal consideration
+    - non-cash consideration
+    - past consideration
+    - pecuniary consideration
+    - primary consideration
+    - reasonable consideration
+    - receipt for consideration
+    - recommendation under consideration
+    - reputation risk considerations
+    - reserve question of law for consideration of court of appeal
+    - reserved for the consideration of
+    - sentencing considerations
+    - simple contract [contract not under seal and requiring consideration]
+    - such other considerations as appear
+    - sympathetic consideration
+    - take into consideration
+    - true consideration
+    - valuable consideration
+    - value of the consideration
+    - want of consideration
+    - without consideration
+    - without reasonable consideration for
+    parent: Relationship_Establishment
+  Offer_Acceptance:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 要约与承诺
+      HK: 要約與承約
+      US: Offer and Acceptance
+    aliases:
+    - firm offer
+    - offer and acceptance
+    parent: Relationship_Establishment
+  Warranty_Title:
+    meta_type: Defeasible_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: true
+      rebuttal_criteria:
+      - Encumbrance_Disclosed_To_Buyer
+    mapping:
+      CN: 权利瑕疵担保
+      HK: 產權保證
+      US: Warranty of Title
+    behavioral_logic:
+      override_priority:
+        US: 1.0
+        HK: 0.8
+        CN: 0.0
+      lex_loci_weight:
+        US: 1.0
+        HK: 0.2
+    aliases:
+    - express or implied warranty
+    - implied warranty
+    parent: Right_Claim_Validity
+  Warranty_Quality:
+    meta_type: Defeasible_Atom
+    aliases:
+    - Defect
+    - Examination
+    - Fitness
+    - Merchantability
+    - ParticularPurpose
+    - Patent
+    - Quality
+    - fitness for a particular purpose
+    - fitness for admission
+    - fitness for purpose
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: true
+      rebuttal_criteria:
+      - Defects_Drawn_To_Buyer_Attention
+      - Buyer_Examined_Goods_Before_Contract
+    mapping:
+      CN: 质量瑕疵担保
+      HK: 品質保證
+      US: Warranty of Quality/Fitness
+    behavioral_logic:
+      override_priority:
+        US: 1.0
+        HK: 0.8
+        CN: 0.0
+      lex_loci_weight:
+        US: 1.0
+        HK: 0.2
+    parent: Right_Claim_Validity
+  Delivery:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 交付
+      HK: 交付
+      US: Delivery
+    behavioral_logic:
+      if_missing: Performance_Not_Tendered
+    aliases:
+    - advice of delivery of
+    - bunker delivery note
+    - c.o.d. [cash on delivery; collect on delivery]
+    - cash on delivery parcel
+    - cash-against-delivery basis
+    - date for delivery
+    - delivery by due course of law
+    - delivery by hand
+    - delivery date
+    - delivery into the custody of
+    - delivery note
+    - delivery of a deed in escrow
+    - delivery of a written decision
+    - delivery of possession
+    - delivery of the judgment
+    - delivery of verdict
+    - effect delivery of documents
+    - goods ... take delivery of
+    - manual delivery
+    - order for delivery up
+    - order for the delivery of goods
+    - payment and delivery obligations
+    - physical delivery
+    - post office delivery bill
+    - post-delivery period
+    - ready for redelivery
+    - recorded delivery
+    - remedy of delivery up
+    - served on delivery
+    - take delivery of
+    - take delivery of the goods
+    - take or give delivery of
+    - takes delivery of any message
+    - timely delivery
+    - transferable ... by delivery and endorsement
+    - transferable by delivery (with or without endorsement)
+    - transferor by delivery
+    - warrants ... for the delivery of goods
+    - withhold delivery of
+    - writ of delivery
+    - writ of specific delivery
+    - wrongful delivery
+    parent: Obligation_Definition
+  Payment:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 付款
+      HK: 付款
+      US: Payment
+    aliases:
+    - additional payment
+    - agreement for the payment of fees and costs
+    - allowances for interest payments
+    - annuity payment
+    - apply ... deposit towards the payment of
+    - avoid payment
+    - cash payment
+    - casual payments
+    - caveat against release and payment
+    - certificate of interim payment
+    - compensatory payment
+    - conditional payment provision
+    - countermand (a) payment
+    - countermand of payment
+    - default in payment
+    - default of payment
+    - defer payment of
+    - designated retail payment system
+    - disturbance payment
+    - early repayment
+    - effected payment
+    - electronic payment facility
+    - eligible loan repayment
+    - end of year payment
+    - enforce payment of
+    - evasion of the payment of a levy
+    - ex gratia payment
+    - ex gratia payments
+    - final payment
+    - first payment of rent
+    - fixed payment
+    - forgo payment
+    - fraudulent evasion of the payment of
+    - fraudulent evasion of the payment of ... due from
+    - full and punctual payment
+    - grossly exorbitant payments
+    - guaranteed payment
+    - holding over of payment
+    - in or towards payment of
+    - in payment or towards payment of tax
+    - income payments order
+    - induced to wait for payment
+    - initial payment
+    - interim certificate of payment
+    - interim payment
+    - interim payment (of costs)
+    - interim payment of costs
+    - late payment
+    - late payment of a renewal fee
+    - late payment penalty
+    - liability for payment
+    - long service payment
+    - lump sum payment
+    - make payments, whether ex gratia or legally due
+    - making off without payment
+    - margin payment
+    - means of payment
+    - non-payment of a fine
+    - non-payment of rent
+    - non-periodical payment
+    - notice for payment
+    - notice of non-payment of rent
+    - notice of payment
+    - obtaining an early payment
+    - on payment
+    - on payment of
+    - one off payment
+    - order for payment of money
+    - order for payment of money drawn on
+    - order payment
+    - outstanding incidental payment
+    - part payment
+    - participation payment
+    - payment ... expressed to be made
+    - payment and delivery obligations
+    - payment by instalments
+    - payment by reimbursement
+    - payment claim
+    - payment deadline
+    - payment dispute
+    - payment due date
+    - payment in arrears
+    - payment in due course
+    - payment in full
+    - payment in kind
+    - payment in lieu of notice
+    - payment in tranches
+    - payment instruments
+    - payment into court
+    - payment into court of a specified fund
+    - payment into court on account of costs
+    - payment notice
+    - payment obligation
+    - payment of ... debts and liabilities
+    - payment of a lump sum
+    - payment of money into court
+    - payment on the spot
+    - payment out of a fund in court
+    - payment out of capital
+    - payment period
+    - payment response deadline
+    - payment system
+    - payment systems and stored value facilities appeals tribunal
+    - payments ... out of
+    - periodic payments
+    - periodical income payment
+    - periodical payment
+    - periodical payment order
+    - periodical payments
+    - periodical payments order
+    - preferential payment
+    - prepayment of postage
+    - presentment of a bill for payment
+    - progress payment
+    - provisional payment
+    - rate of payment
+    - receipts and payments account
+    - receive any payment on
+    - receive payment suprà protest
+    - recruitment payment
+    - redemption payment
+    - relief payment
+    - repayment default
+    - repayment of advances
+    - repayment of loans
+    - repayment schedule
+    - retail payment system
+    - review certificate of interim payment
+    - sanctioned payment notice
+    - secured periodical payments
+    - secured periodical payments order
+    - securing payment
+    - serving imprisonment in default of such payment
+    - settling a payment
+    - severance payment
+    - single full payment
+    - single lump sum payment
+    - special payment
+    - stablecoin payment system
+    - statement of receipts and payments
+    - stepped payment
+    - stop payment order
+    - subject to the payment of
+    - subsequent payment notice
+    - suspend payment
+    - tender payment
+    - terminal payments
+    - terms of payment
+    - to evade payment of the tax
+    - to forgo payment
+    - token payment
+    - variable or fixed payments
+    - voluntary payment
+    - waive the payment of
+    - withhold ... payment
+    - withhold payment of
+    - without payment
+    - without payment of any additional premium
+    - wrongly accepting payment
+    parent: Obligation_Definition
+  Property_Pass:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 所有权转移
+      HK: 產權轉移
+      US: Property Passes
+    aliases:
+    - property passing on the death
+    - transfer of title
+    parent: Asset_Transfer
+  Acceptance:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 受领
+      HK: 收貨
+      US: Acceptance
+    aliases:
+    - acceptance of an offer
+    - acceptance of tender
+    - available for acceptance
+    - certificate of acceptance of vessel
+    - first tender acceptance meeting
+    - giving, withholding or acceptance of instructions to a barrister
+    - having, claiming or accepting jurisdiction over
+    - instrument of ratification, acceptance, or approval
+    - letter of acceptance
+    - notice of acceptance
+    - notice of non-acceptance
+    - offer and acceptance
+    - qualified acceptance
+    - unqualified certificate of acceptance
+    - voluntary acceptance
+    - wrongly accepting payment
+    parent: Obligation_Definition
+  Breach:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 违约
+      HK: 違約
+      US: Breach
+    aliases:
+    - act in breach of trust
+    - alleged breach
+    - antecedent breach
+    - anticipatory breach
+    - breach of ... condition
+    - breach of ... international obligations
+    - breach of a covenant
+    - breach of a disclosure requirement
+    - breach of an oath
+    - breach of bail condition
+    - breach of close [also breaking a close ]
+    - breach of close [also breaking a close]
+    - breach of condition of stay
+    - breach of confidence
+    - breach of contract
+    - breach of covenant
+    - breach of deportation order
+    - breach of duty
+    - breach of good faith
+    - breach of law
+    - breach of oath
+    - breach of professional duty
+    - breach of promise
+    - breach of statutory duty
+    - breach of the peace
+    - breach of the recognizance
+    - breach of trust
+    - breaches of ... confidence
+    - conduct in breach of the oath
+    - continuing breach
+    - flagrant breach
+    - fraudulent breach of trust
+    - fundamental breach of contract
+    - gross breach
+    - in breach of ... confidence
+    - in breach of good faith
+    - material breach
+    - more honoured in the breach
+    - offence arising from a breach of trust
+    - persistent breaches of
+    - radical breach of contract
+    - radical or total breach of contract
+    - remedy other breaches
+    - repudiatory breach of contract
+    - serious breach of law
+    - severable breach
+    - technical breach
+    - technical breach of the law
+    - threatened breach
+    - total breach of contract
+    - trivial breaches
+    parent: Obligation_Breach
+  Damages:
+    meta_type: Strict_Atom
+    aliases:
+    - Condition
+    - MarketPrice
+    - abridgement of damages
+    - action for damages
+    - action for damages for personal injuries
+    - ad damnum pleadings [pleadings demanding damages]
+    - aggravated damages
+    - assessment of damages
+    - award damages
+    - award damages in lieu of rescission (of contract)
+    - award damages to
+    - award of damages
+    - award of further damages
+    - award of provisional damages
+    - by way of damages
+    - claim for damages
+    - claim for damages of harassment
+    - common law damages
+    - compensatory damages
+    - consequential damages
+    - cross-undertaking [cross-undertaking in damages]
+    - damages (n.)
+    - damages for bereavement
+    - damages for future pecuniary loss
+    - damages for past pecuniary loss
+    - damages for personal injuries
+    - damages for repudiation of contract
+    - damages in tort
+    - damages of harassment
+    - damages to be assessed
+    - damages-based agreement
+    - damages-based fee
+    - distinct head of damages
+    - exemplary damages
+    - exemplary damages [also punitive damages; retributory damages; vindictive damages]
+    - further damages
+    - general damages
+    - head of damages
+    - hedonic damages
+    - hybrid damages-based agreement
+    - hybrid damages-based agreements
+    - in mitigation of damages
+    - indirect damages
+    - judgment for multiple damages
+    - liable in damages for
+    - liable in damages to
+    - liquidated damages
+    - liquidated or unliquidated damages
+    - maliciously damages
+    - measure of damages
+    - mitigation-of-damages doctrine
+    - monetary damages
+    - multiple damages
+    - nominal damages
+    - pactional damages
+    - pay to ... damages by way of compensation for
+    - pecuniary damages
+    - provisional damages
+    - punitive ... damages
+    - punitive damages
+    - punitive damages [also exemplary damages; retributory damages; vindictive damages]
+    - recoverable ... by way of damages
+    - retributory damages
+    - sounding only in damages
+    - special damages
+    - specific damages
+    - statement of damages
+    - substantial damages
+    - total damages
+    - unliquidated damages
+    - vindictive damages [also punitive damages]
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 损害赔偿
+      HK: 損害賠償
+      US: Damages
+    parent: Remedy_Availability
+  Specific_Performance:
+    meta_type: Defeasible_Atom
+    aliases:
+    - Equity
+    - SpecificPerformance
+    - at law and in equity
+    - either at law or in equity
+    - in equity
+    - order for specific performance
+    - right in equity
+    - specific performance of a contract
+    - specific performance of the requirements of this ordinance
+    - specific relief
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: true
+      rebuttal_criteria:
+      - Damages_Adequate_Remedy
+    mapping:
+      CN: 继续履行
+      HK: 強制履行
+      US: Specific Performance
+    behavioral_logic:
+      override_priority:
+        HK: 1.0
+        US: 0.3
+        CN: 0.8
+      lex_loci_weight:
+        US: 0.3
+        HK: 0.8
+        CN: 0.8
+    parent: Remedy_Availability
+  Market_Price:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 0
+        HK: 0
+        US: 0
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 市场价格（损害赔偿计算方式之一）
+      HK: 市場價格
+      US: Market Price
+    aliases:
+    - assessed market value
+    - fair market value
+    - initial market value
+    - market value
+    - open market value
+    - orderly and fair market
+    - orderly, informed and fair market
+    - prevailing market price
+    - prevailing market value
+    - true market value
+    parent: Risk_Allocation
+  Exclusion_Clause:
+    meta_type: Defeasible_Atom
+    aliases:
+    - CECO
+    - ImpliedTerms
+    - Usage
+    - exemption clause
+    attributes:
+      necessary:
+        CN: 0
+        HK: 0
+        US: 0
+      defeasible: true
+      rebuttal_criteria:
+      - Exclusion_Violates_Statute
+    mapping:
+      CN: 免责条款
+      HK: 免責條款
+      US: Exclusion Clause
+    behavioral_logic:
+      override_priority:
+        US: 1.0
+        HK: 1.0
+        CN: 1.0
+    parent: Defense_Exclusion
+  Quiet_Possession:
+    meta_type: Strict_Atom
+    aliases:
+    - QuietPossession
+    - enjoy quiet possession of
+    - full peaceable and quiet possession
+    - peaceful possession
+    attributes:
+      necessary:
+        CN: 0
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 平静占有（中国大陆物权法概念）
+      HK: 安寧享有
+      US: Quiet Possession
+    parent: Possession_Rights
+  Encumbrance:
+    meta_type: Defeasible_Atom
+    attributes:
+      necessary:
+        CN: 0
+        HK: 1
+        US: 1
+      defeasible: true
+      rebuttal_criteria:
+      - Encumbrance_Disclosed_To_Buyer
+    mapping:
+      CN: 权利负担（中国大陆担保物权体系）
+      HK: 產權負擔
+      US: Encumbrance
+    aliases:
+    - discharge any incumbrance
+    - encumbered by any encumbrance
+    - encumbrance created
+    - free from all liens, claims or encumbrances
+    - free from encumbrances
+    - incumbrance [also encumbrance]
+    - order of encumbrance
+    - prior incumbrancer
+    - prior incumbrances
+    - subject to any encumbrance
+    - subsequent incumbrancer
+    parent: Encumbrance_Status
+  Reliance:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 合理信赖
+      HK: 依賴
+      US: Reliance
+    aliases:
+    - acted in reliance on
+    - any thing done in reliance on
+    - detrimental reliance
+    - in reliance on
+    - in reliance on false declaration
+    - reliance limit
+    parent: Reliance_Principle
+  Course_Of_Dealing:
+    meta_type: Strict_Atom
+    attributes:
+      necessary:
+        CN: 0
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 交易习惯
+      HK: 交易過程
+      US: Course of Dealing
+    aliases:
+    - course of business
+    - in the course of business
+    - in the ordinary course of business
+    - normal course of business
+    - ordinary course of business
+    - usual and ordinary course of business
+    parent: Contextual_Override
+  Contract_Validity:
+    meta_type: Defeasible_Atom
+    parent: Legal_Effectiveness
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: true
+      defeasibility_mode: Mixed
+      rebuttal_criteria:
+      - type: Absolute_Rebuttal
+        jurisdiction:
+        - HK
+        fact: Goods_Perished_BeforeContract
+        effect: Contract_Void_AbInitio
+      - type: Absolute_Rebuttal
+        jurisdiction:
+        - HK
+        - CN
+        fact: Party_Lacks_Capacity
+        effect: Contract_Void_AbInitio
+      - type: Absolute_Rebuttal
+        jurisdiction:
+        - HK
+        - CN
+        - US
+        fact: Contract_ForIllegalPurpose
+        effect: Contract_Void_AbInitio
+      - type: Conditional_Rebuttal
+        jurisdiction:
+        - HK
+        - CN
+        fact: Contract_Induced_By_Fraud
+        additional_conditions:
+        - Aggrieved_Party_Exercised_Rescission
+        - No_Affirmation_After_Knowledge
+        - Within_Rescission_Limitation
+        effect: Contract_Voidable
+      - type: Conditional_Rebuttal
+        jurisdiction:
+        - HK
+        - CN
+        fact: Contract_Induced_By_Duress
+        additional_conditions:
+        - Aggrieved_Party_Exercised_Rescission
+        - No_Affirmation_After_Duress_Ceased
+        - Within_Rescission_Limitation
+        effect: Contract_Voidable
+    mapping:
+      CN: 合同效力
+      HK: 合約效力
+      US: Contract Validity
+    behavioral_logic:
+      default_confidence: 1.0
+      if_rebutted_by_absolute: Contract_Void
+      if_rebutted_by_conditional: Contract_Voidable
+    aliases:
+    - Contract_Void
+    - ContractValidity
+    - Contract_Voidable
+    legal_stage: Contract_Validity
+    burden_of_proof: Respondent
+    precondition: Contract_Existence
+    independent_entities:
+    - Dispute_Resolution_Clause_Valid
+    - Liquidated_Damages_Clause_Valid
+    state_machine:
+      initial_state: VALID
+      transitions:
+      - from: VALID
+        to: VOID
+        trigger: Absolute_Rebuttal
+        description: 自始无效事由触发
+      - from: VALID
+        to: VOIDABLE
+        trigger: Conditional_Rebuttal_NotExercised
+        description: 欺诈/胁迫存在但撤销权未行使
+      - from: VOIDABLE
+        to: VOID
+        trigger: Conditional_Rebuttal_Exercised
+        description: 撤销权行使→合同自始无效
+      - from: PENDING
+        to: VALID
+        trigger: Ratification_By_Guardian
+        description: 监护人追认→合同生效
+      - from: CONDITIONAL
+        to: VALID
+        trigger: Condition_Fulfilled
+        description: 条件成就→合同生效
+      - from: VALID
+        to: TERMINATED
+        trigger: Contract_Rescinded
+        description: 合同解除→向前失效
+    initial_state: VALID
+  Dispute_Resolution_Clause_Valid:
+    meta_type: Strict_Atom
+    parent: Defense_Exclusion
+    legal_stage: Contract_Validity
+    burden_of_proof: Claimant
+    precondition: Contract_Existence
+    elements:
+    - Clause_Exists_In_Contract
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 争议解决条款有效
+      HK: 爭議解決條款有效
+      US: Dispute Resolution Clause Valid
+  Liquidated_Damages_Clause_Valid:
+    meta_type: Strict_Atom
+    parent: Remedy_Availability
+    legal_stage: Contract_Validity
+    burden_of_proof: Claimant
+    precondition: Contract_Existence
+    elements:
+    - Clause_Exists_In_Contract
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 清算条款有效
+      HK: 清算條款有效
+      US: Liquidated Damages Clause Valid
+  PreContractual_Reliance:
+    meta_type: Strict_Atom
+    parent: Reliance_Principle
+    legal_stage: Remedy
+    burden_of_proof: Claimant
+    description: 缔约过失责任——合同未成立或无效时，信赖方的赔偿请求权
+    trigger_on: NOT Contract_Existence OR Contract_Validity=VOID
+    elements:
+    - Reliance_Established
+    - Loss_Occurred
+    attributes:
+      necessary:
+        CN: 1
+        HK: 1
+        US: 1
+      defeasible: false
+      rebuttal_criteria: []
+    mapping:
+      CN: 缔约过失责任
+      HK: 締約過失責任
+      US: Pre-Contractual Liability
+L1_meta_ontology:
+  meta_layer: L1
+  description: 通用元本体——所有法域、所有案由共用的抽象法律概念。L2领域概念继承自L1。
+  concepts:
+    Relationship_Establishment:
+      description: 法律关系的成立
+      domains:
+      - contract
+      - corporate
+      - employment
+      - family
+      maps_to_L0: Status
+    Right_Claim_Validity:
+      description: 权利主张的有效性（含担保/质量/业权）
+      domains:
+      - contract
+      - property
+      - ip
+      maps_to_L0: Status
+    Obligation_Definition:
+      description: 义务的界定（交付/付款/受领）
+      domains:
+      - contract
+      - employment
+      - lease
+      maps_to_L0: Act
+    Obligation_Breach:
+      description: 义务违反的认定
+      domains:
+      - contract
+      - tort
+      - employment
+      maps_to_L0: Status
+    Remedy_Availability:
+      description: 救济的可获得性（赔偿/强制履行）
+      domains:
+      - contract
+      - tort
+      - property
+      maps_to_L0: Act
+    Asset_Transfer:
+      description: 资产的转移（货物/股权/知识产权）
+      domains:
+      - contract
+      - corporate
+      - ip
+      - property
+      maps_to_L0: Act
+    Risk_Allocation:
+      description: 风险的分配（市场价格/交付风险）
+      domains:
+      - contract
+      - insurance
+      maps_to_L0: Status
+    Defense_Exclusion:
+      description: 抗辩/免责条款
+      domains:
+      - contract
+      - tort
+      maps_to_L0: Defect
+    Reliance_Principle:
+      description: 信赖原则
+      domains:
+      - contract
+      - tort
+      - corporate
+      maps_to_L0: Act
+    Contextual_Override:
+      description: 交易习惯/行业惯例对默认规则的覆盖
+      domains:
+      - contract
+      - commercial
+      maps_to_L0: Defect
+    Possession_Rights:
+      description: 占有权
+      domains:
+      - property
+      - contract
+      maps_to_L0: Power
+    Encumbrance_Status:
+      description: 产权负担状态
+      domains:
+      - property
+      - contract
+      - corporate
+      maps_to_L0: Status
+    Legal_Effectiveness:
+      description: 法律效果的效力（可由反驳事由否定）
+      domains:
+      - contract
+      - corporate
+      - family
+      maps_to_L0: Status
+    Legal_Stage:
+      description: 法律推理阶段：成立→效力→履行→违约→救济
+      domains:
+      - contract
+      - tort
+      - corporate
+      maps_to_L0: Status
+    Legal_Stage_Pipeline:
+      description: 法律阶段流水线：前一阶段完成才进入下一阶段
+      execution_order:
+      - Fact_Finding
+      - Contract_Formation
+      - Contract_Validity
+      - Contract_Interpretation
+      - Performance
+      - Breach
+      - Remedy
+      stage_dependency: strict
+L0_primitives:
+  meta_layer: L0
+  description: 法律逻辑公理化原语——所有法域、所有案由的不可再分推理原子。L1继承自L0。
+  primitives:
+    Agent:
+      class: Subject
+      description: 权利义务主体
+      subtypes_by_domain:
+        contract:
+        - Seller
+        - Buyer
+        - Lessor
+        - Lessee
+        corporate:
+        - Shareholder
+        - Director
+        - Company
+        labor:
+        - Employer
+        - Employee
+        tort:
+        - Plaintiff
+        - Defendant
+        - Tortfeasor
+        family:
+        - Spouse
+        - Parent
+        - Child
+    Asset:
+      class: Object
+      description: 权利指向的客体
+      subtypes_by_domain:
+        contract:
+        - Goods
+        - Services
+        - Money
+        corporate:
+        - Shares
+        - Equity
+        - VotingRights
+        ip:
+        - Patent
+        - Copyright
+        - Trademark
+        - TradeSecret
+        property:
+        - RealEstate
+        - Chattel
+        - Leasehold
+        family:
+        - MatrimonialProperty
+        - Custody
+    Act:
+      class: Action
+      description: 法律行为——改变法律状态的作为或不作为
+      subtypes_by_domain:
+        contract:
+        - Delivery
+        - Payment
+        - Acceptance
+        corporate:
+        - ShareTransfer
+        - DividendPayment
+        - ResolutionPassing
+        labor:
+        - WorkPerformance
+        - WagePayment
+        - Termination
+        tort:
+        - NegligentAct
+        - IntentionalHarm
+        - Defamation
+    Status:
+      class: State
+      description: 法律效力的状态位置
+      states:
+      - Established
+      - Valid
+      - Pending
+      - Conditional
+      - Voidable
+      - Void
+      - Terminated
+      - Breached
+      - Remedied
+      state_machine: Contract_Validity.state_machine
+    Power:
+      class: Capacity
+      description: 处分权能——主体能否对客体施加法律变更
+      constraints:
+      - DispositionPower
+      - Transferability
+      - Alienability
+      type_check: Power(Agent, Asset) → {0,1}
+    Defect:
+      class: Vitiator
+      description: 效力阻断事由——使Status从Valid迁移到Void/Voidable的因素
+      subtypes_by_domain:
+        contract:
+        - Fraud
+        - Duress
+        - Mistake
+        - Illegality
+        - Incapacity
+        corporate:
+        - UltraVires
+        - MinorityOppression
+        - InsiderTrading
+        labor:
+        - UnfairDismissal
+        - Discrimination
+        tort:
+        - Consent
+        - SelfDefence
+        - Necessity
+        - ContributoryNegligence
+L0_schema:
+  description: L0 原语属性契约——所有法域必须满足的结构接口。overrides 可修改属性值，不可删除必填属性。
+  schemas:
+    Act:
+      required_properties:
+      - causality_link
+      - legal_intent
+      legal_intent:
+        default: Required
+        override_allowed: true
+        description: 大陆法=Required, 普通法=Optional(严格责任无意图)
+      causality_link:
+        default: Required
+        override_allowed: false
+        description: 任何法域的行为都必须有因果链
+    Asset:
+      required_properties:
+      - transferability
+      - alienability
+      transferability:
+        default: Required
+        override_allowed: true
+        description: 可转让性——大陆法默认允许，特定资产(违禁品)可覆写为Disabled
+    Status:
+      required_properties:
+      - initial_state
+      - valid_transitions
+      initial_state:
+        default: Established
+        override_allowed: false
+      valid_transitions:
+        default:
+        - Established→Valid
+        - Valid→Void
+        - Valid→Voidable
+        - Valid→Terminated
+        - PENDING→Valid
+        - CONDITIONAL→Valid
+        override_allowed: true
+    Defect:
+      required_properties:
+      - effect_on_status
+      - burden_of_proof
+      effect_on_status:
+        default: Status→Void
+        override_allowed: false
+    Agent:
+      required_properties:
+      - capacity_required
+      capacity_required:
+        default: Required
+        override_allowed: true
+        description: 大陆法=Required, 普通法未成年人可签必需品合同
+    Power:
+      required_properties:
+      - disposition_power
+      - transferability_check
+      disposition_power:
+        default: Required
+        override_allowed: true

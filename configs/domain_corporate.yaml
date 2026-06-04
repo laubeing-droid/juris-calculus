@@ -1,0 +1,59 @@
+# L2 公司法领域本体 — 继承自 L0 法律原语
+# 使用方式: 引擎加载 core_ontology.yaml + domain_corporate.yaml
+# 所有 L2 概念通过 parent 字段映射到 L0 原语
+
+meta:
+  domain: corporate
+  description: 股权转让/公司治理/股东纠纷
+  lexicon_filter: "[Corporate]"
+
+concepts:
+
+  # ─── Agent 原语 ───
+  Shareholder:
+    parent: Agent
+    mapping: { CN: "股东", HK: "股東", US: "Shareholder" }
+    attributes: { defeasible: false }
+  Director:
+    parent: Agent
+    mapping: { CN: "董事", HK: "董事", US: "Director" }
+    attributes: { defeasible: false }
+
+  # ─── Asset 原语 ───
+  Shares:
+    parent: Asset
+    mapping: { CN: "股权", HK: "股權", US: "Shares" }
+    attributes: { defeasible: false, transferable: true }
+  VotingRights:
+    parent: Asset
+    mapping: { CN: "表决权", HK: "表決權", US: "Voting Rights" }
+    attributes: { defeasible: false }
+
+  # ─── Status 原语 ───
+  ShareholderAgreement:
+    parent: Status
+    mapping: { CN: "股东协议有效", HK: "股東協議有效", US: "Shareholder Agreement Valid" }
+    attributes: { defeasible: true }
+    rebuttal_criteria:
+      - { type: Absolute_Rebuttal, jurisdiction: ["CN","HK"], fact: Agreement_Violates_MandatoryLaw }
+      - { type: Conditional_Rebuttal, jurisdiction: ["CN","HK"], fact: Minority_Oppression, additional_conditions: [Shareholder_Exercised_BuyoutRight] }
+
+  # ─── Act 原语 ───
+  ShareTransfer:
+    parent: Act
+    mapping: { CN: "股权转让", HK: "股權轉讓", US: "Share Transfer" }
+    attributes: { defeasible: false }
+    elements: [Transferor_Has_Title, Transferee_Accepts, Consideration_Provided]
+
+  # ─── Defect 原语 ───
+  UltraVires:
+    parent: Defect
+    mapping: { CN: "越权行为", HK: "越權行為", US: "Ultra Vires" }
+    attributes: { defeasible: true }
+    effect: Status→Void
+
+  InsiderTrading:
+    parent: Defect
+    mapping: { CN: "内幕交易", HK: "內幕交易", US: "Insider Trading" }
+    attributes: { defeasible: true }
+    effect: Status→Void
