@@ -178,6 +178,69 @@ class OperatorRegistry:
         return cls._functions[op_id](*args, **kwargs)
 
     @classmethod
+    def execute(cls, op_id: str, **kwargs) -> Any:
+        """
+        安全执行算子。
+        若 Pydantic 可用 → 自动校验入参 Schema。
+        返回: Schema校验通过后的算子执行结果。
+        """
+        if op_id not in cls._registry:
+            raise ValueError(f"Operator not found: {op_id}")
+
+        schema = cls._registry[op_id]
+        func = cls._functions[op_id]
+
+        # ── Pydantic 强校验 (可选) ──
+        try:
+            from pydantic import BaseModel, ValidationError
+            model = cls._build_validation_model(op_id, schema, kwargs)
+            validated = model(**kwargs).model_dump()
+            # 仅传函数实际接受的参数
+            import inspect
+            sig = inspect.signature(func)
+            clean_kwargs = {k: v for k, v in validated.items() if k in sig.parameters}
+            return func(**clean_kwargs)
+        except ImportError:
+            pass  # 降级: 不做Pydantic校验
+        except ValidationError as e:
+            raise ValueError(f"Codex input validation failed for {op_id}: {e}")
+
+        # 降级: 无Pydantic → 直接调用(仅传函数接受的参数)
+        import inspect
+        sig = inspect.signature(func)
+        clean_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+        return func(**clean_kwargs)
+
+    @classmethod
+    def _build_validation_model(cls, op_id: str, schema: 'OperatorSchema', kwargs: Dict):
+        """动态构建 Pydantic 校验模型 (仅当 Pydantic 可用时)"""
+        from pydantic import BaseModel, Field, create_model
+
+        fields = {}
+        for fact in schema.trigger_facts:
+            fields[fact_to_field(fact)] = (bool, Field(default=True,
+                description=f"Trigger fact: {fact}"))
+        for cond in schema.additional_conditions:
+            field_name = fact_to_field(cond.replace("NOT ", "NOT_"))
+            fields[field_name] = (bool, Field(default=True,
+                description=f"Condition: {cond}"))
+
+        fields["sovereignty_anchoring"] = (
+            bool, Field(default=schema.sovereignty_anchoring,
+                description=f"主权锚定 (固定值: {schema.sovereignty_anchoring})")
+        )
+        fields["allow_settlement_check"] = (
+            bool, Field(default=schema.allow_settlement,
+                description=f"是否允许和解 (固定值: {schema.allow_settlement})")
+        )
+        fields["critical_threshold"] = (
+            float, Field(default=schema.critical_threshold, ge=0.0, le=1.0,
+                description=f"置信度门控阈值")
+        )
+
+        return create_model(f"{op_id}Validation", **fields)
+
+    @classmethod
     def generate_legal_task_schema(cls, task_focus: List[str] = None) -> Dict:
         """
         动态生成 Codex 可消费的法律对抗任务 Schema。
@@ -413,14 +476,56 @@ def threat_wi_enf_001():
     pass
 
 
-# ── 快捷函数 ──
-def get_all_schemas():
-    return OperatorRegistry.get_all_schemas()
+def fact_to_field(fact_name: str) -> str:
+    """事实名 → 合法 Python 字段名"""
+    return fact_name.replace(" ", "_").replace("-", "_").replace(".", "_")[:60]
 
 
-def get_critical_schemas():
-    return OperatorRegistry.get_critical_operators()
+# ── Pydantic 模式注册 (可选 — 用于Codex严格输入校验) ──
+def register_pydantic(name: str, description: str = ""):
+    """
+    Pydantic 模式注册 — Codex 传入参数自动校验。
+    用法:
+      from pydantic import BaseModel
+      class CBLVoidInput(BaseModel):
+          fact_id: str
+          sovereignty_anchoring: bool = True
+      @register_pydantic("CBL_VOID", "中国法律强行法阻断")
+      def force_void_operator(fact_id, sovereignty_anchoring):
+          ...
+    """
+    def decorator(func: Callable):
+        import inspect
+        sig = inspect.signature(func)
+        fields = {}
+        for name, param in sig.parameters.items():
+            if name in ('self', 'cls'):
+                continue
+            annotation = param.annotation if param.annotation != inspect.Parameter.empty else str
+            default = param.default if param.default != inspect.Parameter.empty else ...
+            fields[name] = (annotation, default)
+        try:
+            from pydantic import create_model
+            model = create_model(f"{name}Schema", **fields)
+            OperatorRegistry._registry[name] = OperatorSchema(
+                id=name,
+                type=OperatorType.CBL_FORCE_VOID,
+                description=description,
+            )
+            OperatorRegistry._functions[name] = func
+        except ImportError:
+            # 降级: 不注册Schema，仅注册函数
+            OperatorRegistry._functions[name] = func
+        return func
+    return decorator
 
 
-def generate_task_schema(focus=None):
-    return OperatorRegistry.generate_legal_task_schema(focus)
+# ── MCP 工具: list_available_legal_operators ──
+def list_available_legal_operators() -> Dict:
+    """Codex 消费: 获取当前内核全部可用算子"""
+    return {
+        "total": len(OperatorRegistry._registry),
+        "operators": OperatorRegistry.get_all_schemas(),
+        "critical": OperatorRegistry.get_critical_operators(),
+        "sovereignty": OperatorRegistry.get_sovereignty_operators(),
+    }
