@@ -328,11 +328,15 @@ class FixpointEvaluator:
                     low_streak += 1
                     streak_log.append({"rule": rule_id, "score": claim.confidence})
                     if low_streak >= self.config.critical_streak_max:
-                        raise CriticalClarityFailure(
+                        # v1.2.0: 熔断时附带已收敛的 partial state，不再返回空
+                        exc = CriticalClarityFailure(
                             f"Consecutive {low_streak} rules scored below "
                             f"{self.config.critical_score_threshold}. Engine halted.",
                             streak_log
                         )
+                        # 注入 partial_state 供调用方降级消费
+                        exc.partial_state = state
+                        raise exc
                 else:
                     low_streak = 0
                     streak_log = []

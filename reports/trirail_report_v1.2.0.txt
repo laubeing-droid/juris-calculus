@@ -3,9 +3,9 @@
   HK x US x PRC Cross-Jurisdictional Collision Matrix
 ======================================================================
 
-Total scenarios: 10
+Total scenarios: 11
   CHINA_US_COLLISION: 9
-  HK_CN_ASYMMETRY: 1
+  HK_CN_ASYMMETRY: 2
 
 --- TRI_001_UltraVires_DataExport [CHINA_US_COLLISION] ---
   HK董事越权 + 美国Cloud Act数据请求 → PRC数据出境阻断
@@ -23,8 +23,7 @@ Total scenarios: 10
   OFAC制裁 vs 反外国制裁法第12条强制对撞
   HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
   US: VALID claims=[]
-  PRC FORCE_VOID: ['BLK_001_Consideration']
-  PRC FORCE_SUPPRESS: ['PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield', 'PEN_002_Secondary_Sanction_Block', 'PEN_004_OFAC_CounterCollision']
 
 --- TRI_004_Plea_Bargaining_CrossBorder [CHINA_US_COLLISION] ---
   美国辩诉交易 → PRC认罪认罚从宽映射 + 数据出境
@@ -36,21 +35,22 @@ Total scenarios: 10
 --- TRI_005_Chapter11_Director_Conflict [CHINA_US_COLLISION] ---
   US Ch11 + HK越权 → 破产重组 vs 权力抑制 三维对撞
   HK: SUPPRESSED claims=['Contract_Validity']
-  US: VALID claims=['AutomaticStay_InEffect → CreditorPower(Collect)=0']
-  PRC FORCE_VOID: ['BLK_001_Consideration']
+  US: VALID claims=['DIP_Status → Business_Operations_Continue']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
 
 --- TRI_006_Factoring_CrossBorder [CHINA_US_COLLISION] ---
   保理合同独立成章 vs US应收账款转让
   HK: VALID claims=[]
   US: VALID claims=[]
-  PRC FORCE_VOID: ['BLK_001_Consideration']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
   PRC MAPPING_OVERRIDE: ['CN_SPEC_002_Factoring_Chapter']
 
 --- TRI_007_Crypto_Transaction_Conflict [CHINA_US_COLLISION] ---
   US加密货币交易 vs PRC强制禁止
   HK: VALID claims=[]
   US: VALID claims=[]
-  PRC FORCE_VOID: ['BLK_001_Consideration', 'PEN_005_Crypto_Prohibition']
+  PRC FORCE_VOID: ['PEN_005_Crypto_Prohibition']
+  PRC FORCE_SUPPRESS: ['BLK_001_Consideration_Shield']
 
 --- TRI_008_VIE_Structure_Review [CHINA_US_COLLISION] ---
   VIE架构 vs 外商投资负面清单穿透审查
@@ -72,5 +72,11 @@ Total scenarios: 10
   HK: SUPPRESSED claims=[]
   US: VALID claims=[]
   PRC FORCE_VOID: ['BLK_019_AtWillEmployment']
+
+--- TRI_011_Pure_Domestic_CN [HK_CN_ASYMMETRY] ---
+  纯中国大陆境内保理合同——不应触发任何跨境阻断
+  HK: VALID claims=[]
+  US: VALID claims=[]
+  PRC MAPPING_OVERRIDE: ['CN_SPEC_002_Factoring_Chapter']
 
 ======================================================================

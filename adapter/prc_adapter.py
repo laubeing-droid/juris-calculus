@@ -92,6 +92,25 @@ class PRCAdapter:
             if fact.extraction_confidence <= 0:
                 continue
 
+            # ═══ additional_conditions 交叉校验 ═══
+            conditions = rule.get("additional_conditions", [])
+            condition_passed = True
+            for cond in conditions:
+                # 支持 NOT 前缀: "NOT FactID" → 该事实存在且置信度>0时条件失败
+                if cond.startswith("NOT "):
+                    neg_fact = cond[4:]
+                    if neg_fact in shared_facts and shared_facts[neg_fact].extraction_confidence > 0:
+                        condition_passed = False
+                        break
+                else:
+                    # 该事实必须存在且置信度>0
+                    if cond not in shared_facts or shared_facts[cond].extraction_confidence <= 0:
+                        condition_passed = False
+                        break
+
+            if not condition_passed:
+                continue  # 环境上下文不匹配，跳过此条阻断
+
             # 提取规则
             rule_id = rule.get("id", "")
             target_primitive = rule.get("target_primitive", "")

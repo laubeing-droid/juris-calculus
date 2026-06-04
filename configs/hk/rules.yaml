@@ -15,6 +15,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Intermediate_Node
 - id: HK-S14-ImpliedTitleWarranty
   premise_atoms:
   - Contract_Validity
@@ -32,6 +33,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S14-X1-EncumbranceDisclosed
   premise_atoms:
   - Encumbrance_DisclosedToBuyer
@@ -42,6 +44,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S16a-FitnessWarranty
   premise_atoms:
   - Contract_Validity
@@ -59,6 +62,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-V1-Bridge-Validity
   premise_atoms:
   - ContractOfSale_Exists
@@ -70,6 +74,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Intermediate_Node
 - id: HK-S16-X1-PatentName
   premise_atoms:
   - Goods_SoldUnderPatentOrTradeName
@@ -81,6 +86,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S16b-MerchantabilityWarranty
   premise_atoms:
   - Contract_Validity
@@ -97,6 +103,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S16-X2-KnownDefects
   premise_atoms:
   - Defects_DrawnToBuyerAttention
@@ -108,6 +115,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S16-X3-BuyerExamined
   premise_atoms:
   - Buyer_ExaminedGoods_BeforeContract
@@ -119,6 +127,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S30-ConcurrentConditions
   premise_atoms:
   - Contract_Validity
@@ -133,6 +142,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S30-X1-AgreedOtherwise
   premise_atoms:
   - Parties_AgreedOtherwise
@@ -143,6 +153,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S51-ActionForPrice
   premise_atoms:
   - Contract_Validity
@@ -158,6 +169,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S51-X1-DayCertain
   premise_atoms:
   - Price_PayableOnDayCertain
@@ -168,6 +180,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S52-DamagesForNonAcceptance
   premise_atoms:
   - Contract_Validity
@@ -184,6 +197,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S52-X1-MarketMeasure
   premise_atoms:
   - AvailableMarket_Exists
@@ -195,6 +209,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S52-X2-NoMarket
   premise_atoms:
   - No_AvailableMarket
@@ -205,6 +220,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S53-DamagesForNonDelivery
   premise_atoms:
   - Contract_Validity
@@ -220,6 +236,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S53-X1-MarketMeasure
   premise_atoms:
   - AvailableMarket_Exists
@@ -231,6 +248,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S53-X2-NoMarket
   premise_atoms:
   - No_AvailableMarket
@@ -241,6 +259,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S54-SpecificPerformance
   premise_atoms:
   - Contract_Validity
@@ -256,6 +275,7 @@ rules:
   head_type: NON_HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S54-X1-AdequateRemedy
   premise_atoms:
   - Damages_AdequateRemedy
@@ -267,6 +287,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S55-RemediesForBreachOfWarranty
   premise_atoms:
   - Contract_Validity
@@ -281,6 +302,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S57-ExclusionOfImpliedTerms
   premise_atoms:
   - Contract_Validity
@@ -296,6 +318,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S57-X1-CECO_Violation
   premise_atoms:
   - Exclusion_Violates_CECO
@@ -307,6 +330,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S57-X2-ConsistentTerm
   premise_atoms:
   - ExpressTerm_ConsistentWithImplied
@@ -317,6 +341,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S4-CapacityToContract
   premise_atoms:
   - ContractOfSale_Exists
@@ -331,20 +356,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
-- id: HK-S8-GoodsPerished
-  premise_atoms:
-  - ContractForSale_SpecificGoods
-  - Goods_Perished_BeforeContract
-  - Seller_DidNotKnow
-  head_claim: Contract_Void
-  concepts:
-  - Contract_Existence
-  - Goods
-  - Contract_Void
-  exception_chain: []
-  head_type: HORN
-  mechanical_exception: true
-  namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S10-PriceAscertainment
   premise_atoms:
   - Contract_Validity
@@ -358,6 +370,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S10-X1-ReasonablePrice
   premise_atoms:
   - Price_NotDetermined
@@ -369,6 +382,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S12-TimeStipulation
   premise_atoms:
   - Contract_Validity
@@ -383,6 +397,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S12-X1-ContraryIntent
   premise_atoms:
   - Contract_Shows_ContraryIntent
@@ -393,6 +408,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S13-ConditionToWarranty
   premise_atoms:
   - Contract_Validity
@@ -407,6 +423,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S15-SaleByDescription
   premise_atoms:
   - Contract_Validity
@@ -419,6 +436,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S18-UnascertainedGoods
   premise_atoms:
   - Contract_Validity
@@ -430,6 +448,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S19-PropertyPassesWhenIntended
   premise_atoms:
   - Contract_Validity
@@ -443,6 +462,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S22-RiskPassesWithProperty
   premise_atoms:
   - Contract_Validity
@@ -456,6 +476,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S22-X1-DeliveryDelayByFault
   premise_atoms:
   - Delivery_Delayed
@@ -468,6 +489,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S23-NemoDat
   premise_atoms:
   - Goods_Sold
@@ -482,6 +504,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S23-X1-Estoppel
   premise_atoms:
   - Owner_Conduct_PrecludesDenyingAuthority
@@ -493,6 +516,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S25-VoidableTitle
   premise_atoms:
   - Goods_Sold
@@ -508,6 +532,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S29-DutiesOfParties
   premise_atoms:
   - ContractOfSale_Exists
@@ -520,6 +545,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S31-PlaceOfDelivery
   premise_atoms:
   - Contract_Validity
@@ -532,6 +558,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S31-X1-ContraryAgreement
   premise_atoms:
   - Contract_Specifies_DeliveryPlace
@@ -542,6 +569,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S32-WrongQuantityDelivery
   premise_atoms:
   - Contract_Validity
@@ -555,6 +583,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S32-X1-BuyerAccepts
   premise_atoms:
   - Buyer_Accepts_ShortDelivery
@@ -566,6 +595,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S33-DeliveryByInstalments
   premise_atoms:
   - Contract_Validity
@@ -579,6 +609,7 @@ rules:
   head_type: NON_HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S36-BuyerRightToExamine
   premise_atoms:
   - Contract_Validity
@@ -592,6 +623,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S36-X1-AgreedOtherwise
   premise_atoms:
   - Parties_AgreedOtherwise
@@ -602,6 +634,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S37-AcceptanceOfGoods
   premise_atoms:
   - Goods_Delivered
@@ -613,6 +646,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S38-RejectionWithoutReturn
   premise_atoms:
   - Goods_Delivered
@@ -626,6 +660,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S41-UnpaidSellerRights
   premise_atoms:
   - Contract_Validity
@@ -641,6 +676,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S41-X1-BuyerInsolvent
   premise_atoms:
   - Buyer_Insolvent
@@ -653,6 +689,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S41-X2-RightOfResale
   premise_atoms:
   - Seller_Exercised_Lien_Or_Stoppage
@@ -664,6 +701,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S43-LienConditions
   premise_atoms:
   - Contract_Validity
@@ -678,6 +716,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S43-X1-CreditExpired
   premise_atoms:
   - Goods_SoldOnCredit
@@ -689,6 +728,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S43-X2-BuyerInsolvent
   premise_atoms:
   - Buyer_Insolvent
@@ -699,6 +739,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S46-StoppageInTransitu
   premise_atoms:
   - Contract_Validity
@@ -714,6 +755,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S48-HowToStopTransitu
   premise_atoms:
   - StoppageRight_Exists
@@ -725,6 +767,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S50-LienDoesNotRescind
   premise_atoms:
   - Contract_Validity
@@ -737,6 +780,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S56-InterestAndSpecialDamages
   premise_atoms:
   - Contract_Validity
@@ -749,6 +793,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S59-RightsEnforceableByAction
   premise_atoms:
   - RightDutyLiability_DeclaredByOrdinance
@@ -760,6 +805,7 @@ rules:
   head_type: HORN
   mechanical_exception: true
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S60-AuctionSale
   premise_atoms:
   - Sale_ByAuction
@@ -773,6 +819,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-S60-X1-ReservePriceNotMet
   premise_atoms:
   - Auction_SubjectToReserve
@@ -785,6 +832,7 @@ rules:
   head_type: HORN
   mechanical_exception: false
   namespace: hk_contract
+  output_type: Terminal_Output_Node
 - id: HK-PreContractual-Restitution
   premise_atoms:
   - Reliance_Established
@@ -798,6 +846,7 @@ rules:
   namespace: hk_contract
   legal_basis: HK普通法 缔约过失原则 (Hedley Byrne v Heller)
   note: 平行责任链——不依赖 Contract_Existence 或 Contract_Validity
+  output_type: Terminal_Output_Node
 - id: HK-Restitution-VoidContract
   premise_atoms:
   - Buyer_Has_Paid
@@ -812,3 +861,4 @@ rules:
   namespace: hk_contract
   legal_basis: HK普通法 恢复原状原则
   note: 合同无效后的返还责任——独立于合同效力
+  output_type: Terminal_Output_Node

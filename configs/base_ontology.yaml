@@ -1,0 +1,90 @@
+# base_ontology.yaml — L1 通用元本体 v0.9.1
+# juris-calculus: 所有法域、所有案由共用的原子类型系统和抽象法律概念
+---
+# ═══ 原子类型系统 ═══
+Strict_Atom:
+  meta_type: Meta_Atom
+  description: 不可反驳原子，真值一旦确定永不改变（事实判断层）
+  properties:
+    - burden_of_proof: str
+    - elements: list
+    - jurisdiction: "list[str] | *"
+
+Defeasible_Atom:
+  meta_type: Meta_Atom
+  description: 可废止原子，存在反驳事由时真值可被推翻（价值判断层）
+  properties:
+    - burden_of_proof: str
+    - default_confidence: float
+    - defeasibility_mode: str  # Absolute | Mixed
+    - rebuttal_criteria: list
+    - precondition: str  # 可选的依赖原子
+    - jurisdiction: "list[str] | *"
+    - max_modification_count: 3  # 防止振荡
+
+Rebuttal:
+  meta_type: Meta_Structure
+  description: 可废止原子的反驳事由定义
+  properties:
+    - type: Absolute_Rebuttal | Conditional_Rebuttal
+    - facts: list
+    - additional_conditions: list  # 仅 Conditional_Rebuttal
+    - jurisdiction: "list[str] | *"
+    - legal_basis: str
+
+# ═══ 抽象法律概念 ═══
+Relationship_Establishment:
+  meta_type: Abstract_Concept
+  description: 法律关系的成立
+  domains: [contract, corporate, employment, family]
+
+Legal_Effectiveness:
+  meta_type: Abstract_Concept
+  description: 法律行为的效力状态（可被反驳事由否定）
+  parent: Relationship_Establishment
+
+Legal_Stage:
+  meta_type: Abstract_Concept
+  description: 法律推理的阶段划分
+  enum: [Fact_Finding, Formation, Validity, Performance, Breach, Remedy]
+
+Obligation_Definition:
+  meta_type: Abstract_Concept
+  description: 义务的界定
+
+Obligation_Breach:
+  meta_type: Abstract_Concept
+  description: 义务违反的认定
+
+Remedy_Availability:
+  meta_type: Abstract_Concept
+  description: 救济的可获得性
+
+Asset_Transfer:
+  meta_type: Abstract_Concept
+  description: 资产的转移
+
+Risk_Allocation:
+  meta_type: Abstract_Concept
+  description: 风险的分配
+
+Defense_Exclusion:
+  meta_type: Abstract_Concept
+  description: 抗辩与免责
+
+Reliance_Principle:
+  meta_type: Abstract_Concept
+  description: 信赖原则
+
+Possession_Rights:
+  meta_type: Abstract_Concept
+  description: 占有权
+
+Encumbrance_Status:
+  meta_type: Abstract_Concept
+  description: 产权负担状态
+
+Severability:
+  meta_type: Abstract_Concept
+  description: 法律规则的可分性
+  parent: Remedy_Availability

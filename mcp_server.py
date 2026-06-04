@@ -330,5 +330,109 @@ else:
                 sys.stdout.flush()
 
 
+# ═══════════════════════════════════════════
+# NL Front-end: 自然语言 → 事实原子 → Evaluator
+# ═══════════════════════════════════════════
+
+_NL_FACT_PATTERNS = {
+    # 借贷
+    "ContractOfSale_Exists": ["借","贷","借款","贷款","欠条","借条","借贷","欠款","借款合同"],
+    "Principal": ["本金","借款额","借款金额","贷款金额"],
+    "InterestRate": ["利息","利率","月息","年息","月利","年利"],
+    "Term": ["期限","借期","还款期","到期"],
+    # 买卖
+    "Buyer_FailsToPay": ["未付","没付","未支付","没支付","拖欠","拒付"],
+    "Buyer_WrongfullyRefusesAcceptance": ["拒收","拒绝接收","不收货"],
+    "Delivery_Occurred": ["交付","交货","发货","送货","收到货","已交付"],
+    "Goods_Defective": ["瑕疵","缺陷","质量问题","不合格"],
+    # 违约
+    "Breach": ["违约","违反","不履行","逾期"],
+    # 担保
+    "Guarantor": ["担保人","保证人","担保"],
+    # 时效
+    "SpecifiedPeriod_Expired": ["已过期","届满","到期不还","期满"],
+}
+
+def nl_extract_facts(text: str) -> dict:
+    """从自然语言文本中提取结构化法律事实。
+    生产环境中替换为 LLM 调用。"""
+    facts = {}
+    text_clean = text.replace(" ","").lower()
+
+    for fact_id, keywords in _NL_FACT_PATTERNS.items():
+        for kw in keywords:
+            if kw in text_clean or kw in text:
+                facts[fact_id] = text[:120]  # 原文上下文
+                break
+
+    # 默认事实：任何被提交的案卷都隐含合同存在
+    if facts and "ContractOfSale_Exists" not in facts:
+        facts["ContractOfSale_Exists"] = "from context"
+
+    return facts
+
+
+def nl_evidence_review(
+    text: str,
+    rules_path: str = "configs/hk/rules.yaml",
+    jurisdiction: str = "HK",
+) -> dict:
+    """
+    自然语言证据核验: 输入一段案情描述 → 提取事实 → 推理 → 返回报告。
+
+    Args:
+        text: 自然语言案情描述
+        rules_path: 规则文件路径
+        jurisdiction: 法域 (HK/CN)
+
+    Returns:
+        {
+            "trace_id": "...",
+            "extracted_facts": {...},
+            "claims": [...],
+            "state": "...",
+            "rebuttals": [...]
+        }
+    """
+    trace_id = _generate_trace_id()
+
+    # Step 1: NL → Facts
+    facts_raw = nl_extract_facts(text)
+
+    # Step 2: Facts → State
+    ev = _get_evaluator(rules_path)
+    state = IRState(world_id=trace_id, jurisdiction=jurisdiction)
+    for fid, desc in facts_raw.items():
+        state.facts[fid] = LegalFact(fid, description=desc, extraction_confidence=0.85)
+
+    # Step 3: Evaluate
+    claims_list = []
+    halted = False
+    try:
+        result = ev.evaluate(state)
+        for cid, claim in result.claims.items():
+            claims_list.append({
+                "id": cid,
+                "confidence": claim.confidence,
+                "L0_primitive": claim.L0_primitive_source,
+                "requires_human_review": claim.requires_human_review,
+            })
+    except CriticalClarityFailure as e:
+        halted = True
+        claims_list.append({"error": str(e)})
+
+    # Step 4: Report
+    return {
+        "trace_id": trace_id,
+        "extracted_facts": {k: v[:50] for k, v in facts_raw.items()},
+        "claims": claims_list,
+        "state": state.state_tracker.get("Contract_Validity", "VALID"),
+        "jurisdiction": jurisdiction,
+        "rebuttals": len(state.rebuttal_log),
+        "halted": halted,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 if __name__ == "__main__":
     main()

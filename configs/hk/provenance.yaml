@@ -1,0 +1,11 @@
+# 法律溯源元数据 (从 rules.yaml 剪枝保留)
+# 这些规则已被 rebuttal/constraint_rules 接管，保留原文出处供溯源
+metadata:
+  source: "HK Cap 26 Sale of Goods Ordinance"
+  pruned_rules:
+    - id: HK-S8-GoodsPerished
+      original_premise_atoms: [ContractForSale_SpecificGoods, Goods_Perished_BeforeContract, Seller_DidNotKnow]
+      original_head_claim: Contract_Void
+      replaced_by: "Contract_Validity.rebuttal_criteria[Absolute_Rebuttal: Goods_Perished_BeforeContract]"
+      reason: "货品灭失逻辑已从独立 Horn 规则迁移至 Contract_Validity 的 Absolute_Rebuttal 机制。规则本体不再被 FixpointEvaluator 直接触发，但保留此记录供法律溯源。"
+      legal_basis: "HK Cap 26 s8"

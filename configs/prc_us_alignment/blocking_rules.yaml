@@ -18,14 +18,16 @@ rules:
   # ═══════════════════════════════════════
 
   # --- 合同编 (4项) ---
-  - id: BLK_001_Consideration
+  - id: BLK_001_Consideration_Shield
     trigger_fact: "Consideration_Provided"
     target_primitive: "Power"
+    additional_conditions:
+      - "Cross_Border_Context"
     action:
-      type: "FORCE_VOID"
-      map_to: "CN_Offer_Acceptance_Only"
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_State_Asset_Protection"
       status: "VOID"
-    description: "中国法无对价制度。合同成立仅需要约+承诺。《民法典》第471条。"
+    description: "仅涉外场景: 防止英美对价瑕疵算子被滥用于穿透境内涉外主体合法契约权益。纯境内场景(CHN-ONLY)不触发。"
 
   - id: BLK_002_Promissory_Estoppel
     trigger_fact: "Promissory_Estoppel_Bar"
