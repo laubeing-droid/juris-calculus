@@ -1,38 +1,131 @@
-# juris-calculus v1.0.3
+# juris-calculus v1.2.0 — Tri-Rail
 
-A jurisdiction-agnostic symbolic reasoning & actuarial pricing engine for legal practice.
+**A multi-jurisdiction symbolic legal reasoning engine with cross-border collision detection.**
 
-**Fixpoint iteration + Theil-Sen robust regression + Differential Privacy.**
+Fixpoint evaluator + Tri-Rail Collider (PRC × HK × US) + PRC-US semantic alignment framework.
 
-*Not a localized legal app. A universal legal reasoning kernel.*
+*Not a localized legal app. A universal legal reasoning kernel that refuses to answer when it shouldn't.*
 
 > **This is PostgreSQL, not Windows.**
 >
-> juris-calculus is a *legal reasoning kernel* — it provides the engine for logic, audit, and actuarial analysis. It does not manage documents, emails, or scheduling. If you are looking for an all-in-one legal suite, this is the engine you would build it upon, not the interface you would use daily.
+> juris-calculus is a *legal reasoning kernel* — it provides logic, audit trails, and cross-jurisdiction collision analysis. It does not manage documents, emails, or scheduling.
 
 ---
 
-## Scope (v1.0.3)
+## What's New in v1.2.0
 
-**Supported**: China Civil Code (Contract/Tort/Corporate/Family/Criminal/Admin/IP) — 2,117 Horn rules across 13 legal domains.
+- **Tri-Rail Collider**: Collide PRC, HK, and US parallel inference traces to detect 12 classes of cross-border conflict
+- **PRC-US Semantic Alignment**: 60 CBL blocking rules + 23 SPC judicial tendency rules + 10 procedural justice defenses — prevents US legal concepts from contaminating PRC reasoning
+- **HK Expansion**: 93 Horn rules distilled from HK e-Legislation (Cap 26, 32, 622, 571, 4A)
+- **Action Agent**: Auto-generate partner-ready legal memos from collider output via Jinja2 templates
+- **MCP Server**: Protocol-compliant server (9 resources, 7 tools) for AI assistant integration
+- **Operator Registry**: Bootstrap/snapshot/rollback for 68 legal operators with JSON Schema validation
 
-**Roadmap**: See [`concept-roadmap.md`](concept-roadmap.md) for the community expansion plan.
+---
 
-`HONEST_REFUSAL` on unsupported domains is a feature, not a bug.
+## Architecture
+
+```
+juris-calculus/
+├── compiler_core/            # Fixpoint reasoning kernel
+│   ├── evaluator.py          #   FixpointEvaluator + exception chain + critical clarity failure
+│   ├── types.py              #   LegalRule / LegalFact / LegalClaim / NegativeSpec
+│   ├── domain_config.py      #   Domain routing + discretionary concept detection
+│   ├── classifier.py         #   EvidenceClassifier (A/B/C carrier levels)
+│   ├── batch_processor.py    #   Bulk case processor + JSON audit export
+│   └── parallax_inference.py #   Cross-jurisdiction inference engine
+│
+├── pipeline/                 # End-to-end reasoning pipeline
+│   ├── pipeline.py           #   Text → facts → inference → report
+│   ├── prc_us_alignment.py   #   PRC-US alignment watchdog (3-layer gate)
+│   ├── schemas.py            #   Data contracts for the tri-rail pipeline
+│   ├── alignment_loader.py   #   YAML rule loader with FastPath hot-load
+│   ├── guardian.py           #   NOMINEE gate + error classifier
+│   └── llm_client.py         #   LLM API client (env-var configured)
+│
+├── adapter/                  # Jurisdiction adapters
+│   └── prc_adapter.py        #   PRC triple-rail engine (CBL + SPC + CN 2,117 rules)
+│
+├── configs/
+│   ├── zh_CN/                #   PRC Civil Code: 13 domains, 2,117 Horn rules
+│   ├── en_US/                #   US federal: 81 Horn rules + 86 L0 constraints
+│   ├── hk/                   #   HK: 93 Horn rules (Cap 26/32/622/571/4A)
+│   ├── prc_us_alignment/     #   PRC-US bridge: blocking rules + SPC + terms
+│   ├── us/threat_signatures/ #   US state-level FastPath signatures (WI 12 + NJ 12)
+│   ├── uk/                   #   UK: 5 candidate rules (community expansion)
+│   └── core_ontology.yaml    #   L0 schema (6 primitives) + L1 (14 abstractions)
+│
+├── tools/                    # Collision testing + maintenance
+│   ├── run_trirail_matrix.py #   Tri-Rail Collider: 12 cross-border scenarios
+│   ├── run_parallax_matrix.py#   Parallax matrix: jurisdiction divergence heatmap
+│   ├── press_long_tail.py    #   3,800-term long-tail saturation engine
+│   ├── distill_jurisdiction.py# Jurisdiction distillation workbench
+│   ├── operator_registry.py  #   Operator registry with bootstrap/snapshot/rollback
+│   └── action_agent/         #   MemoCompiler: collider output → partner memo
+│
+├── extractors/               # Structured fact extraction
+│   ├── zh_CN/                #   Chinese civil law parser
+│   └── en_US/                #   US common law IRAC skeleton
+│
+├── legalos_services/         # Mathematical pricing models
+│   ├── peripheral_models.py  #   Theil-Sen calibration + M10-M17 models
+│   ├── legalos_pricing.py    #   DAG-weighted pricing + multi-factor matrix
+│   └── differential_privacy.py#  Laplace DP with ratio-preserving geometry
+│
+├── tests/
+│   ├── unit/                 #   Unit tests (evaluator, inspectors, PRC rules)
+│   └── run_benchmark_zh.py   #   PRC benchmark (13 cases, 100% convergence)
+│
+├── mcp_server.py             # FastMCP server (9 resources, 7 tools)
+└── mcp_manifest.json         # MCP protocol manifest
+```
+
+---
+
+## Supported Jurisdictions
+
+| Jurisdiction | Rules | Domains | Status |
+|---|---|---|---|
+| **PRC** (Civil Code) | 2,117 | 13 domains (Contract/Tort/Corporate/Criminal/Admin/IP...) | v1.2.0 |
+| **US** (Federal) | 81 Horn + 86 constraints | UCC Art.2, Due Process, Equitable Remedies | v1.2.0 |
+| **US** (State threat) | 24 signatures | WI long-arm jurisdiction, NJ punitive damages | v1.2.0 |
+| **HK** (Ordinances) | 93 | Cap 26/32/622/571/4A | v1.2.0 |
+| **UK** | 5 candidates | Sale of Goods Act | Community |
+| **PRC-US Alignment** | 60 CBL + 23 SPC + 10 proc | Cross-jurisdiction blocking + defense | v1.2.0 |
+
+---
+
+## Tri-Rail Collider
+
+The collider runs a single fact pattern through three parallel legal reasoning traces:
+
+```
+Facts → [PRC Adapter (CBL gate + SPC + CN rules)]
+      → [HK Engine (93 Horn rules, Cap 26/32/622/571/4A)]
+      → [US Engine (81 federal + 86 constraints + state FastPath)]
+
+      → Collision Matrix (12 conflict classes)
+      → MemoCompiler (partner-ready markdown)
+```
+
+**12 conflict classes detected**: ultra vires data export, litigation discovery deadlock, OFAC sanction conflict, plea bargaining cross-border, Chapter 11 director conflict, cross-border factoring, crypto transaction, VIE structure, algorithm filing, at-will employment, pure domestic CN, CN bridge verification.
+
+---
+
+## Why This Is Different
+
+| | Legal RAG (Most Repos) | juris-calculus |
+|---|---|---|
+| **Logic** | Probabilistic (LLM) | Deterministic (Fixpoint) |
+| **Audit** | Blackbox (Prompt) | Whitebox (DAG Trace) |
+| **Cross-jurisdiction** | None | Tri-Rail Collider (12 classes) |
+| **Hallucination** | High | Low (Honest Refusal + CRITICAL_CLARITY_FAILURE) |
+| **Paradigm** | Chatbot | Symbolic AI / Computational Law |
+| **PRC-US alignment** | None | 60 CBL blocking rules |
 
 ---
 
 ## Quick Start
-
-```bash
-cp configs/ignite_config.example.yaml ./configs/ignite_config.yaml
-```
-
-> **Note**: `ignite.py` is the private production orchestrator and is not included in this open-source repository. This kernel is designed to be embedded into your own pipeline.
-
----
-
-## Environment
 
 ```bash
 git clone https://github.com/laubeing-droid/juris-calculus.git
@@ -40,205 +133,46 @@ cd juris-calculus
 pip install -r requirements.txt
 ```
 
-> Sensitive legal data is never committed. Manage your data in `./data/` (gitignored by default).
-
-## Architecture
-
-```
-juris-calculus/
-├── compiler_core/          # Fixpoint reasoning kernel
-│   ├── types.py            #   LegalRule / LegalFact / LegalClaim / TaintNode
-│   ├── evaluator.py        #   FixpointEvaluator with exception chain + CRITICAL_CLARITY_FAILURE
-│   ├── domain_config.py    #   Civil / Criminal dual-domain routing
-│   ├── classifier.py       #   EvidenceClassifier (A/B/C carrier levels)
-│   ├── provider.py         #   BaseDomainProvider abstract base
-│   ├── transformer.py      #   Compile-time AST rewriter
-│   └── batch_processor.py  #   Bulk case processor + JSON audit export
-│
-├── legalos_services/       # Mathematical models
-│   ├── peripheral_models.py   # M10-M17 + calibrate_theilsen()
-│   ├── legalos_pricing.py     # DAG-weighted nodes + multi-factor matrix + batch decay
-│   ├── inspectors.py          # 4-case pre-inspectors (LPR/Statute/Default/Deposit)
-│   ├── external_context.py    # LPR data + FinancialContext
-│   └── differential_privacy.py # Laplace DP with ratio-preserving geometry
-│
-├── pipeline/               # End-to-end reasoning pipeline
-│   ├── pipeline.py         #   Text → facts → inference → report
-│   ├── prc_us_alignment.py #   Cross-jurisdiction semantic alignment watchdog
-│   ├── extract_concepts.py #   OCR concept extraction from legal textbooks
-│   ├── build_ocr_index.py  #   OCR semantic search index builder
-│   └── fix_single_premise.py #   AND-logic enhancement for single-premise rules
-│
-├── extractors/             # Structured extraction pipeline
-│   ├── zh_CN/              #   Chinese Civil Law Parser 3.0
-│   └── en_US/              #   US Common Law IRAC skeleton (community PRs welcome)
-│
-├── configs/
-│   ├── zh_CN/              #   China rule set (2,117 rules), domain config, concept registries
-│   │   ├── rules.yaml
-│   │   ├── domain_config.yaml
-│   │   ├── concept_registry.yaml
-│   │   └── classifier_rules.yaml
-│   └── en_US/              #   US contract rules (YAML-configurable)
-│       ├── rules.yaml
-│       └── domain_config.example.yaml
-│
-├── tests/
-│   ├── run_benchmark_zh.py #   13-case China law benchmark (all converged)
-│   └── unit/               #   Unit tests
-│
-├── mcp_server.py           # FastMCP server for WorkBuddy integration
-└── chroma_db_ocr/          # OCR semantic index (gitignored, build locally)
-```
-
----
-
-## Why This Is Different
-
-Most legal AI tools are RAG wrappers around LLMs. juris-calculus takes the opposite approach.
-
-| | Legal RAG (Most Repos) | juris-calculus |
-|---|---|---|
-| **Logic** | Probabilistic (LLM) | Deterministic (Fixpoint) |
-| **Audit** | Blackbox (Prompt) | Whitebox (DAG Trace) |
-| **Pricing** | Guesswork | Theil-Sen Calibration |
-| **Hallucination** | High | Low (Honest Refusal) |
-| **Paradigm** | Chatbot | Symbolic AI / Computational Law |
-
-### Supported Jurisdictions
-
-| Jurisdiction | Status | Config |
-|---|---|---|
-| China (Civil Code — Contract/Tort/Corporate/Family) | ✅ v1.0.3 | `configs/zh_CN/` |
-| China (Criminal/Admin/IP/Procedure/Enforcement) | ✅ v1.0.3 | `configs/zh_CN/` |
-| US (UCC Article 2 + Equitable Remedies) | ✅ v1.0.0 | `configs/en_US/` |
-| US (Tort / Securities / Antitrust / Constitutional) | 🚧 Roadmap | See `concept-roadmap.md` |
-| EU / HK / Others | 🔮 Community | PRs welcome |
-
-## Cross-Jurisdictional Generalization
-
-The `FixpointEvaluator` is built on first-order predicate logic and monotonic fixed-point iteration. It is natively compatible with the **IRAC** (Issue, Rule, Application, Conclusion) paradigm of Common Law jurisdictions.
-
-By swapping the jurisdiction config package and re-running Theil-Sen calibration, international firms can:
-
-- Dissect complex case citation networks (DAG topology)
-- Audit associate billable hours across billing tiers (leverage vector **H**)
-- Mitigate LLM hallucinations in Federal/State litigation
-
-*For the philosophical lineage behind this project, read the [Chinese README (README_CN.md)](README_CN.md).*
-
----
-
-## Pricing Model
-
-```
-Quote = (WeightedNodes x DEFAULT_ALPHA) x B_location x G_stage + T_overhead
-
-B_location: Local=1.0  Cross-province=1.3  Cross-state=1.8
-G_stage:    First Instance=1.0  Appeal=1.25  Enforcement=1.1
-```
-
-`DEFAULT_ALPHA` = 1.0 (demo value). Calibrate with your own timesheet data via `calibrate_theilsen()`.
-
-See the [calibration guide](#calibrating-your-alpha) below.
-
----
-
-## Calibrating Your Alpha
-
-The default α = 1.0 is an academic placeholder. Your firm has its own muscle memory.
-
-**Three steps:**
-
-1. Pick 10-50 real cases you personally handled.
-2. Build a timesheet: each row = (deterministic node count D, actual hours h).
-3. Feed it to Theil-Sen:
-
 ```python
-from legalos_services.peripheral_models import CoveragePricingEngine
+from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+from compiler_core.types import IRState, LegalFact, LegalDomain
 
-timesheet = [
-    {"D": 8, "T": 2, "H": 0, "h": 12.0},
-    {"D": 15, "T": 3, "H": 0, "h": 25.0},
-    # ... at least 10 rows
-]
-
-cfg = CoveragePricingEngine.calibrate_theilsen(timesheet)
-print(f"Your alpha = {cfg.taint_hour:.2f} h/node")
+rules = load_rules_from_yaml("configs/hk/rules.yaml")
+facts = IRState(facts=[
+    LegalFact(atom="Seller_TransfersOrAgrees_Property", confidence=1.0),
+    LegalFact(atom="Buyer_Pays_MoneyConsideration", confidence=1.0),
+])
+evaluator = FixpointEvaluator(rules)
+result = evaluator.evaluate(facts)
+print(f"Claims: {len(result.claims)}, Tainted: {len(result.tainted)}")
 ```
-
-Theil-Sen median regression strips out associate padding and extreme case travel premiums, leaving only your firm's pure legal reasoning "golden slope."
 
 ---
 
-## Data Format
+## MCP Server
 
-### Input: facts.json
-
-```json
-{
-  "domain": "Civil_Contract",
-  "event_date": "20240601",
-  "party_names": ["Buyer", "Seller"],
-  "core_elements": {
-    "payment_rule": "Annual rent of 160,000 CNY, due by Jan 31",
-    "deposit": "Security deposit of 30,000 CNY"
-  },
-  "rigid_clauses": {
-    "liquidated_damages": "Late payment: LPR x 1.5",
-    "dispute_resolution": "Jurisdiction: court of contract execution"
-  }
-}
+```bash
+# Start the MCP server for AI assistant integration
+python mcp_server.py
 ```
 
-### Output: ignite_report.json
-
-```json
-{
-  "total_contracts": 10,
-  "avg_coverage": 0.75,
-  "halted_count": 0,
-  "details": [
-    {
-      "contract_id": "case_001",
-      "claims_found": 4, "tainted": 1, "critical": 0,
-      "coverage": 0.75, "trace_id": "TRACE-ABCD1234"
-    }
-  ]
-}
-```
+Provides 9 resources (rule sets, ontologies, matrix reports) and 7 tools (evidence review, argument lint, contract review, memo compile, etc.).
 
 ---
 
 ## FAQ
 
-**Q: Importing `peripheral_models` fails?**
-Upgrade to the latest version; the class name was updated from `LegalIREvaluator` to `FixpointEvaluator`.
-
-**Q: Where is `ignite.py`?**
-It is not included. `ignite.py` is the private production orchestrator. This kernel is designed to be embedded into your own pipeline using `FixpointEvaluator` and `LegalOSPricingEngine` directly.
-
-**Q: The default alpha gives inaccurate pricing?**
-Yes. `alpha=1.0` is a demo placeholder. Run `calibrate_theilsen()` with your firm's historical timesheet data to derive your own constant.
+**Q: Where is ignite.py?**
+It is not included. `ignite.py` is the private production orchestrator. This kernel is designed to be embedded into your own pipeline.
 
 **Q: Can I use this for torts / securities / antitrust?**
 Not yet. See [`concept-roadmap.md`](concept-roadmap.md). Contributions welcome.
 
----
+**Q: How do I add a new jurisdiction?**
+Use `tools/distill_jurisdiction.py` — a 4-stage workbench: term extraction → Horn generation → L0 validation → YAML output. See `configs/uk/rules_candidates.yaml` for an example.
 
-## Citing This Work
-
-If you use juris-calculus in academic research, please cite:
-
-```bibtex
-@software{juris-calculus,
-  author = {Laupinco},
-  title = {juris-calculus: A Jurisdiction-Agnostic Legal Reasoning Kernel},
-  year = {2026},
-  version = {1.0.3},
-  url = {https://github.com/laubeing-droid/juris-calculus}
-}
-```
+**Q: Is the pricing model production-ready?**
+`alpha=1.0` is a demo placeholder. Run `calibrate_theilsen()` with your firm's historical timesheet data to derive your own constant.
 
 ---
 
@@ -248,6 +182,6 @@ Apache 2.0
 
 ## Author
 
-Laupinco — Hokkien Computational Jurisprudence Enthusiast (Powered by Gemini & WorkBuddy & DeepSeek-V4 Pro)
+Laupinco — Hokkien Computational Jurisprudence Enthusiast
 
-[*中文说明 (README_CN.md)*](README_CN.md)
+[中文说明 (README_CN.md)](README_CN.md)
