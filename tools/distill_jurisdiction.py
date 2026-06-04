@@ -366,5 +366,135 @@ def main():
     print(wb.generate_report(terms, candidates, args.jurisdiction))
 
 
+# ═══════════════════════════════════════════════════════════
+# State-Level Topological Router — US 50-State Coverage
+# ═══════════════════════════════════════════════════════════
+
+def load_state_router(router_path: str = None) -> dict:
+    """加载州级路由表"""
+    if router_path is None:
+        router_path = str(Path(__file__).resolve().parents[1] / "configs" / "en_US" / "state_router.yaml")
+    with open(router_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def route_state_law_to_backbone(raw_state_fact: str, state_code: str = None, router: dict = None) -> dict:
+    """
+    将美国任意州的特有地方黑话,通过语义签名匹配,
+    无缝路由回四大拓扑主干 (DE_CORPORATE / LONG_ARM / CFA_PUNITIVE / DEFAULT_UCC).
+
+    Args:
+        raw_state_fact: 州法术语或fact名 (e.g. "CA_BP_17200_unfair_competition")
+        state_code: 可选的两字母州代码 (e.g. "CA", "TX", "DE")
+        router: 预加载的路由表 (避免重复IO)
+
+    Returns:
+        {
+            "backbone": "LONG_ARM",
+            "standard_label": "US_STANDARD_AGGRESSIVE_LONG_ARM",
+            "trigger_facts": ["US_Long_Arm_Jurisdiction_Asserted"],
+            "cross_rails": {"hk": "...", "prc": "..."},
+            "matched_by": "state_code" | "keyword_signature" | "fact_pattern"
+        }
+    """
+    if router is None:
+        router = load_state_router()
+
+    routing = router.get("routing_table", {})
+    engine = router.get("router_engine", {})
+
+    # ═══ 优先级1: 精确州代码匹配 ═══
+    if state_code and state_code.upper() in engine.get("state_to_backbone", {}):
+        backbone = engine["state_to_backbone"][state_code.upper()]
+        model = routing.get(backbone, {})
+        return {
+            "backbone": backbone,
+            "standard_label": model.get("target_backbone", ""),
+            "trigger_facts": [],
+            "cross_rails": {
+                "hk": model.get("cross_rail_hk", ""),
+                "prc": model.get("cross_rail_prc", "")
+            },
+            "states": model.get("states", []),
+            "matched_by": "state_code",
+        }
+
+    # ═══ 优先级2: 事实模式匹配 ═══
+    fact_lower = raw_state_fact.lower()
+    for entry in engine.get("fact_pattern_to_backbone", []):
+        pattern = entry["pattern"]
+        if re.search(pattern, fact_lower, re.IGNORECASE):
+            backbone = entry["backbone"]
+            model = routing.get(backbone, {})
+            return {
+                "backbone": backbone,
+                "standard_label": model.get("target_backbone", ""),
+                "trigger_facts": entry.get("trigger_facts", []),
+                "cross_rails": {
+                    "hk": model.get("cross_rail_hk", ""),
+                    "prc": model.get("cross_rail_prc", "")
+                },
+                "states": model.get("states", []),
+                "matched_by": f"fact_pattern: {pattern[:50]}",
+            }
+
+    # ═══ 优先级3: 州级关键词签名匹配 ═══
+    for backbone, model in routing.items():
+        if backbone == "DEFAULT_UCC":
+            continue
+        for sig in model.get("keyword_signatures", []):
+            if re.search(sig, fact_lower, re.IGNORECASE):
+                return {
+                    "backbone": backbone,
+                    "standard_label": model.get("target_backbone", ""),
+                    "trigger_facts": [],
+                    "cross_rails": {
+                        "hk": model.get("cross_rail_hk", ""),
+                        "prc": model.get("cross_rail_prc", "")
+                    },
+                    "states": model.get("states", []),
+                    "matched_by": f"keyword: {sig[:50]}",
+                }
+
+    # ═══ 降级: 默认UCC/联邦通用 ═══
+    default = routing.get("DEFAULT_UCC", {})
+    return {
+        "backbone": "DEFAULT_UCC",
+        "standard_label": default.get("target_backbone", "US_STANDARD_DEFAULT_UCC"),
+        "trigger_facts": [],
+        "cross_rails": {"hk": "", "prc": ""},
+        "states": default.get("states", []),
+        "matched_by": "fallback_default",
+    }
+
+
+def generate_state_fact_injection(term: str, state_code: str = None, router: dict = None) -> dict:
+    """
+    为长尾术语生成骨干模型对齐后的标准事实注入集。
+
+    返回: {fact_name: confidence, ...} 可直接注入 press_long_tail 或 TriRailCollider
+    """
+    route = route_state_law_to_backbone(term, state_code, router)
+
+    facts = {route["standard_label"]: 0.90}
+
+    for tf in route.get("trigger_facts", []):
+        facts[tf] = 0.88
+
+    # 根据骨干模型追加特征事实
+    backbone = route["backbone"]
+    if backbone == "DE_CORPORATE":
+        facts["Director_Duty_Breach_Potential"] = 0.85
+        facts["Affiliated_Companies_Asset_Confusion"] = 0.82
+    elif backbone == "LONG_ARM":
+        facts["US_Long_Arm_Jurisdiction_Asserted"] = 0.90
+        facts["Cross_Border_Context"] = 1.0
+    elif backbone == "CFA_PUNITIVE":
+        facts["US_Punitive_Damages_Potential"] = 0.88
+        facts["US_Pre_Trial_Discovery"] = 0.85
+
+    return facts
+
+
 if __name__ == "__main__":
     main()
