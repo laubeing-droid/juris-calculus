@@ -40,6 +40,12 @@ chroma_db_ocr/
 configs/zh_CN/rules_pre_inject.yaml
 configs/zh_CN/rules_augmented.yaml
 
+# Sensitive credentials
+.env
+.env.*
+*.pem
+*.key
+
 # Regenerated benchmark reports
 tests/results/
 
@@ -56,7 +62,7 @@ reports/parallax_detail_v1.1.0.json
 # ── Exception: production JSONs ──
 !configs/en_US/state_combined_terms.json
 !configs/en_US/llm_distilled_full.json
-!configs/en_US/hk_us_divergence_matrix.json
+!configs/prc_us_alignment/hk_us_divergence_matrix.json
 !configs/prc_us_alignment/long_tail_collision_matrix.json
 !configs/prc_us_alignment/trirail_matrix_report.json
 !mcp_manifest.json
