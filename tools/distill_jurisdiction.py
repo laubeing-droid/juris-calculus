@@ -574,8 +574,8 @@ class FastPathInterceptor:
                 for sp in sub_patterns:
                     if not sp:
                         continue
-                    if re.search(re.escape(sp), fact_blob, re.IGNORECASE):
-                        return {
+                if re.search(re.escape(sp), fact_blob, re.IGNORECASE):
+                    return {
                         "intercepted": True,
                         "signature_id": sig["signature_id"],
                         "threat_level": sig.get("threat_level", "MEDIUM"),
@@ -584,6 +584,15 @@ class FastPathInterceptor:
                         "reason": sig.get("description", ""),
                         "method": "FAST_PATH_BYPASS",
                         "source_file": sig.get("_source_file", ""),
+                        # P2: sovereignty audit trail
+                        "sovereignty_audit": {
+                            "gate": "FastPathInterceptor",
+                            "bypassed_validation": ["LegalTaskSchema.is_prc_sovereign_boundary"],
+                            "forced_operators": [sig.get("target_rule", "")],
+                            "sovereignty_anchored": True,
+                            "settlement_blocked": True,
+                            "timestamp": __import__('datetime').datetime.now().isoformat(),
+                        },
                     }
 
         return None

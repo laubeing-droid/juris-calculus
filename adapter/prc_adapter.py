@@ -106,7 +106,11 @@ class PRCAdapter:
         self.cn_rule_count = 0
         self.cn_concept_registry = {}
         self.cn_concept_ocr = {}
-        
+
+        # ── P1: Bridge Health Score ──
+        self._cn_zero_streak = 0
+        self._bridge_health_warnings = []
+
         self._load_configs()
 
     def _load_configs(self):
@@ -302,6 +306,28 @@ class PRCAdapter:
             "cn_claims": cn_claims,
             "cn_claims_count": cn_claims_count,
             "cn_rules_total": self.cn_rule_count,
+            # P1: Bridge Health Score
+            "bridge_health": self._update_bridge_health(cn_claims_count),
+        }
+
+    def _update_bridge_health(self, cn_count: int) -> Dict:
+        """P1: CN桥接健康分——连续3次CN=0触发预警"""
+        if cn_count == 0:
+            self._cn_zero_streak += 1
+        else:
+            self._cn_zero_streak = 0
+            self._bridge_health_warnings = []
+
+        if self._cn_zero_streak >= 3:
+            self._bridge_health_warnings.append(
+                f"BRIDGE_HEALTH_ALERT: CN=0 streak={self._cn_zero_streak}. "
+                "跨法域桥接表可能需要扩展——连续多场景未触发中国法规则。"
+            )
+
+        return {
+            "cn_zero_streak": self._cn_zero_streak,
+            "status": "HEALTHY" if self._cn_zero_streak < 3 else "DEGRADED",
+            "warnings": list(self._bridge_health_warnings[-3:]),
         }
 
     def get_force_void_triggers(self, state_prc: Dict) -> List[str]:

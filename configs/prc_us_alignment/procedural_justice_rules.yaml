@@ -1,0 +1,113 @@
+# ═══════════════════════════════════════════════════════════
+# Programmatic Justice Defense — 程序正义防御规则 v1.0
+# ═══════════════════════════════════════════════════════════
+# 覆盖: 域外送达违规 / 程序不透明 / 证据合法性抗辩
+# 来源: 《民事诉讼法》第284条 / 《刑事诉讼法》第56条
+#       海牙送达公约 / 双边司法协助条约
+# ═══════════════════════════════════════════════════════════
+
+metadata:
+  version: v1.2.0-P3
+  domain: Procedural_Justice
+  description: "Gemini R3 P3 — 域外送达/程序不透明/域外证据防御"
+
+rules:
+  # ── 域外送达违规 ──
+  - id: PJ_001_Extraterritorial_Service_Violation
+    trigger_fact: "Foreign_Service_Without_Approval"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Service_Requires_Central_Authority"
+      status: "VOID"
+    description: "《民诉法》第284条: 未经中国主管机关批准,任何组织或个人不得在中国境内直接送达文书。违反此规定的送达无效。"
+
+  - id: PJ_002_Hague_Service_Convention_Breach
+    trigger_fact: "Hague_Service_Convention_Violation"
+    target_primitive: "Act"
+    additional_conditions:
+      - "Cross_Border_Context"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Service_Through_Central_Authority_Only"
+      status: "VOID"
+    description: "海牙送达公约: 域外司法文书须通过中国司法部(中央机关)转递。绕过中央机关的私人送达无效。"
+
+  - id: PJ_003_Email_Service_Invalid_CN
+    trigger_fact: "Email_Service_Without_Bilateral_Agreement"
+    target_primitive: "Act"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Email_Service_Requires_Treaty"
+      status: "VOID"
+    description: "电子邮件送达在中国需有双边司法协助条约明确授权。美国法院单方面通过email送达在中国境内无法律效力。"
+
+  # ── 程序不透明 ──
+  - id: PJ_004_Notice_Insufficiency
+    trigger_fact: "Inadequate_Notice_Of_Proceedings"
+    target_primitive: "Defect"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Due_Notice_Requirement"
+      status: "VOID"
+    description: "《民诉法》第92条: 受送达人下落不明或用其他方式无法送达的,公告送达。但域外当事人未收到充分通知的,构成程序瑕疵。"
+
+  - id: PJ_005_Default_Judgment_Without_Proper_Service
+    trigger_fact: "Foreign_Default_Judgment"
+    target_primitive: "Status"
+    additional_conditions:
+      - "Inadequate_Notice_Of_Proceedings"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Default_Judgment_Invalid_Without_Service"
+      status: "VOID"
+    description: "域外缺席判决未经合法送达的,中国法院可拒绝承认和执行。《民事诉讼法》第288条。"
+
+  # ── 域外证据合法性 ──
+  - id: PJ_006_Extraterritorial_Evidence_Admissibility
+    trigger_fact: "Foreign_Evidence_Not_Legalized"
+    target_primitive: "Defect"
+    action:
+      type: "FORCE_VOID"
+      map_to: "CN_Evidence_Requires_Notarization_Legalization"
+      status: "VOID"
+    description: "域外形成的证据须经所在国公证机关证明并经中国驻该国使领馆认证,或履行相关条约手续。未认证的证据不具有证明力。"
+
+  - id: PJ_007_Discovery_Abuse_Procedural_Objection
+    trigger_fact: "Abusive_Discovery_Prejudicial"
+    target_primitive: "Defect"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_Discovery_Limited_To_Relevant_Material"
+      status: "SUPPRESSED"
+    description: "美方滥用证据开示(fishing expedition)构成程序滥用。中方可依据《民诉法》第284条及相关司法解释提出异议。"
+
+  # ── 程序正义反制 ──
+  - id: PJ_008_Forum_Non_Conveniens_Objection
+    trigger_fact: "US_Court_Forum_Non_Conveniens_Denied"
+    target_primitive: "Power"
+    additional_conditions:
+      - "Cross_Border_Context"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_Forum_Conveniens_Is_PRC"
+      status: "SUPPRESSED"
+    description: "当中国是更适宜法院(forum conveniens)时,可对美方拒绝不方便法院原则的决定提出程序性异议。"
+
+  - id: PJ_009_Parallel_Proceedings_Abuse
+    trigger_fact: "Parallel_Proceedings_US_And_CN"
+    target_primitive: "Defect"
+    action:
+      type: "MAPPING_OVERRIDE"
+      map_to: "CN_Lis_Pendens_Priority_Principle"
+      status: "CONDITIONAL"
+    description: "中美平行诉讼(parallel proceedings)中,中国法院可基于先受理原则主张管辖权优先。"
+
+  - id: PJ_010_Comity_Challenge
+    trigger_fact: "US_Refuses_Comity_To_CN_Judgment"
+    target_primitive: "Power"
+    action:
+      type: "FORCE_SUPPRESS"
+      map_to: "CN_Reciprocity_Retaliation"
+      status: "SUPPRESSED"
+    description: "美方拒绝承认中国判决(拒绝国际礼让),中方可以互惠原则为由采取对等措施。"
