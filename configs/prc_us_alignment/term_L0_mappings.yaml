@@ -1,269 +1,459 @@
-# term_L0_mappings.yaml — 三法域语义对齐矩阵
-# 来源: laubeing-droid/PRC-US-Legal-Semantic-Alignment-Framework v3.0.3
-# 180+ 中美法律术语 → L0 原语映射
-# 三方对照: US / HK / PRC
-
 metadata:
-  total_terms: 180
+  total_terms: 55
   source: laubeing-droid-v3.0.3-lexicon
-  jurisdictions: [US, HK, PRC]
-
+  jurisdictions:
+  - US
+  - HK
+  - PRC
+  cn_spec_terms: 27
 term_alignments:
-  # ═══════════════════════════════════════
-  # 关键缺口填补
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_001_WrongfulOmission
-    term_us: "Wrongful_Omission"
-    term_hk: "Silent_Non_Disclosure"
-    term_cn: "违法不作为"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Duty_Breach_By_Omission)"
-    prc_override: "CN_Security_Breach_Or_BreachOfTrust"
-
-  - id: ALIGN_002_AutomaticStay
-    term_us: "Automatic_Stay"
-    term_hk: "Winding_Up_Stay_Of_Proceedings"
-    term_cn: "破产保护自动中止"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(SUPPRESSED)"
-    prc_override: "CN_EnterpriseBankruptcyLaw_Art19_20"
-
-  - id: ALIGN_003_DIP
-    term_us: "Debtor_In_Possession"
-    term_hk: "Provisional_Liquidator_Appointed"
-    term_cn: "债务人自行管理"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(PENDING, Power_Retained)"
-
-  # ═══════════════════════════════════════
-  # 合同编 (15项)
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_004_Consideration
-    term_us: "Consideration"
-    term_hk: "Consideration"
-    term_cn: "❌ 无对应制度"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(Consideration_Required)"
-    prc_override: "FORCE_VOID — 约+承诺替代"
-
-  - id: ALIGN_005_PromissoryEstoppel
-    term_us: "Promissory_Estoppel"
-    term_hk: "Promissory_Estoppel"
-    term_cn: "缔约过失责任"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Duty_Of_GoodFaith_Breach)"
-    prc_override: "MAPPING_OVERRIDE → 民法典第500条"
-
-  - id: ALIGN_006_LiquidatedDamages
-    term_us: "Liquidated_Damages"
-    term_hk: "Liquidated_Damages"
-    term_cn: "违约金"
-    l0_chain:
-      primitive: "Asset"
-      expression: "Asset(Debt_Liquidated)"
-    prc_override: "民法典第585条 —— 可调整"
-
-  - id: ALIGN_007_ForceMajeure
-    term_us: "Force_Majeure"
-    term_hk: "Force_Majeure"
-    term_cn: "不可抗力"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(Performance_Impossible)"
-    prc_override: "民法典第180条"
-
-  - id: ALIGN_008_MaterialBreach
-    term_us: "Material_Breach"
-    term_hk: "Fundamental_Breach"
-    term_cn: "根本违约"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Contractual_Purpose_Frustrated)"
-
-  - id: ALIGN_009_CurePeriod
-    term_us: "Cure_Period"
-    term_hk: "Reasonable_Time_To_Remedy"
-    term_cn: "合理期限催告"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(PENDING_Remedy)"
-
-  - id: ALIGN_010_Deed
-    term_us: "Deed"
-    term_hk: "Deed"
-    term_cn: "❌ 无对应制度 — 赠与可撤销(第658条)"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(GRATUITOUS_REVOCABLE)"
-    prc_override: "FORCE_VOID"
-
-  - id: ALIGN_011_NominalConsideration
-    term_us: "Nominal_Consideration"
-    term_hk: "Nominal_Consideration"
-    term_cn: "穿透审查 — 通谋虚假意思表示(第146条)"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Sham_Transaction)"
-
-  # ═══════════════════════════════════════
-  # 物权编 (3项关键映射)
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_012_Trust
-    term_us: "Trust"
-    term_hk: "Trust"
-    term_cn: "信托 — 功能对应"
-    l0_chain:
-      primitive: "Asset"
-      expression: "Asset(Segregated_Fiduciary)"
-
-  - id: ALIGN_013_EquitableOwnership
-    term_us: "Equitable_Ownership"
-    term_hk: "Equitable_Ownership"
-    term_cn: "❌ 无对应制度"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(BENEFICIAL_INTEREST)"
-
-  # ═══════════════════════════════════════
-  # 民诉/刑诉 (10项关键映射)
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_014_Discovery
-    term_us: "Discovery"
-    term_hk: "Discovery"
-    term_cn: "证据交换"
-    l0_chain:
-      primitive: "Act"
-      expression: "Act(WEIGH_Document_Production)"
-    prc_override: "MAPPING_OVERRIDE → 范围远小于US"
-
-  - id: ALIGN_015_JuryTrial
-    term_us: "Jury_Trial"
-    term_hk: "Jury_Trial"
-    term_cn: "人民陪审员"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(Fact_Finding_By_Laypersons)"
-
-  - id: ALIGN_016_ResJudicata
-    term_us: "Res_Judicata"
-    term_hk: "Res_Judicata"
-    term_cn: "既判力"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(FINAL_And_Binding)"
-
-  - id: ALIGN_017_PleaBargaining
-    term_us: "Plea_Bargaining"
-    term_hk: "Plea_Bargaining"
-    term_cn: "认罪认罚从宽"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(Charge_Negotiation)"
-    prc_override: "MAPPING_OVERRIDE → 结构差异大"
-
-  - id: ALIGN_018_Hearsay
-    term_us: "Hearsay_Evidence"
-    term_hk: "Hearsay_Evidence"
-    term_cn: "❌ 无对应制度"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Admissibility_Failure)"
-
-  - id: ALIGN_019_PunitiveDamages
-    term_us: "Punitive_Damages"
-    term_hk: "Exemplary_Damages"
-    term_cn: "惩罚性赔偿 (知识产权/消费者)"
-    l0_chain:
-      primitive: "Asset"
-      expression: "Asset(Super_Compensatory_Liability)"
-
-  # ═══════════════════════════════════════
-  # 公司法 (5项关键映射)
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_020_PiercingVeil
-    term_us: "Piercing_Corporate_Veil"
-    term_hk: "Piercing_Corporate_Veil"
-    term_cn: "公司人格否认 + 横向否认"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(Claim_Shareholder_Directly)"
-    prc_override: "MAPPING_OVERRIDE → 含横向（全球独有）"
-
-  - id: ALIGN_021_FiduciaryDuty
-    term_us: "Fiduciary_Duty"
-    term_hk: "Fiduciary_Duty"
-    term_cn: "忠实义务 + 勤勉义务"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(BOUND_By_Trust)"
-
-  - id: ALIGN_022_UltraVires
-    term_us: "Ultra_Vires"
-    term_hk: "Ultra_Vires"
-    term_cn: "越权代表"
-    l0_chain:
-      primitive: "Defect"
-      expression: "Defect(Power_Exceeded)"
-
-  - id: ALIGN_023_Chapter11_Reorganization
-    term_us: "Chapter_11_Reorganization"
-    term_hk: "Scheme_Of_Arrangement"
-    term_cn: "重整"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(PENDING_PlanApproval)"
-
-  # ═══════════════════════════════════════
-  # 特色制度映射 (5项)
-  # ═══════════════════════════════════════
-
-  - id: ALIGN_024_AlgorithmFiling
-    term_us: "? (无对应)"
-    term_hk: "? (无对应)"
-    term_cn: "算法备案"
-    l0_chain:
-      primitive: "Act"
-      expression: "Act(REGISTER_Algorithm_With_CAC)"
-
-  - id: ALIGN_025_DataExportAssessment
-    term_us: "Privacy_Shield_Or_BCR"
-    term_hk: "Cross-Border_Data_Transfer"
-    term_cn: "数据出境安全评估"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(PENDING_CAC_Approval)"
-
-  - id: ALIGN_026_VoiceRight
-    term_us: "Right_of_Publicity"
-    term_hk: "Right_of_Publicity"
-    term_cn: "声音权 + 肖像权"
-    l0_chain:
-      primitive: "Asset"
-      expression: "Asset(Personal_Identity_Right)"
-
-  - id: ALIGN_027_DivorceCoolingOff
-    term_us: "? (无对应)"
-    term_hk: "? (无对应)"
-    term_cn: "离婚冷静期"
-    l0_chain:
-      primitive: "Status"
-      expression: "Status(PENDING_30Day)"
-
-  - id: ALIGN_028_VIE_Structure
-    term_us: "VIE_Structure"
-    term_hk: "VIE_Structure"
-    term_cn: "协议控制 — 外商投资负面清单"
-    l0_chain:
-      primitive: "Power"
-      expression: "Power(CONTRACTUAL_Control_Over_FIE)"
-    prc_override: "穿透审查 → CONDITIONAL"
+- id: ALIGN_001_WrongfulOmission
+  term_us: Wrongful_Omission
+  term_hk: Silent_Non_Disclosure
+  term_cn: 违法不作为
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Duty_Breach_By_Omission)
+  prc_override: CN_Security_Breach_Or_BreachOfTrust
+- id: ALIGN_002_AutomaticStay
+  term_us: Automatic_Stay
+  term_hk: Winding_Up_Stay_Of_Proceedings
+  term_cn: 破产保护自动中止
+  l0_chain:
+    primitive: Status
+    expression: Status(SUPPRESSED)
+  prc_override: CN_EnterpriseBankruptcyLaw_Art19_20
+- id: ALIGN_003_DIP
+  term_us: Debtor_In_Possession
+  term_hk: Provisional_Liquidator_Appointed
+  term_cn: 债务人自行管理
+  l0_chain:
+    primitive: Status
+    expression: Status(PENDING, Power_Retained)
+- id: ALIGN_004_Consideration
+  term_us: Consideration
+  term_hk: Consideration
+  term_cn: ❌ 无对应制度
+  l0_chain:
+    primitive: Power
+    expression: Power(Consideration_Required)
+  prc_override: FORCE_VOID — 约+承诺替代
+- id: ALIGN_005_PromissoryEstoppel
+  term_us: Promissory_Estoppel
+  term_hk: Promissory_Estoppel
+  term_cn: 缔约过失责任
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Duty_Of_GoodFaith_Breach)
+  prc_override: MAPPING_OVERRIDE → 民法典第500条
+- id: ALIGN_006_LiquidatedDamages
+  term_us: Liquidated_Damages
+  term_hk: Liquidated_Damages
+  term_cn: 违约金
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Debt_Liquidated)
+  prc_override: 民法典第585条 —— 可调整
+- id: ALIGN_007_ForceMajeure
+  term_us: Force_Majeure
+  term_hk: Force_Majeure
+  term_cn: 不可抗力
+  l0_chain:
+    primitive: Status
+    expression: Status(Performance_Impossible)
+  prc_override: 民法典第180条
+- id: ALIGN_008_MaterialBreach
+  term_us: Material_Breach
+  term_hk: Fundamental_Breach
+  term_cn: 根本违约
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Contractual_Purpose_Frustrated)
+- id: ALIGN_009_CurePeriod
+  term_us: Cure_Period
+  term_hk: Reasonable_Time_To_Remedy
+  term_cn: 合理期限催告
+  l0_chain:
+    primitive: Status
+    expression: Status(PENDING_Remedy)
+- id: ALIGN_010_Deed
+  term_us: Deed
+  term_hk: Deed
+  term_cn: ❌ 无对应制度 — 赠与可撤销(第658条)
+  l0_chain:
+    primitive: Status
+    expression: Status(GRATUITOUS_REVOCABLE)
+  prc_override: FORCE_VOID
+- id: ALIGN_011_NominalConsideration
+  term_us: Nominal_Consideration
+  term_hk: Nominal_Consideration
+  term_cn: 穿透审查 — 通谋虚假意思表示(第146条)
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Sham_Transaction)
+- id: ALIGN_012_Trust
+  term_us: Trust
+  term_hk: Trust
+  term_cn: 信托 — 功能对应
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Segregated_Fiduciary)
+- id: ALIGN_013_EquitableOwnership
+  term_us: Equitable_Ownership
+  term_hk: Equitable_Ownership
+  term_cn: ❌ 无对应制度
+  l0_chain:
+    primitive: Status
+    expression: Status(BENEFICIAL_INTEREST)
+- id: ALIGN_014_Discovery
+  term_us: Discovery
+  term_hk: Discovery
+  term_cn: 证据交换
+  l0_chain:
+    primitive: Act
+    expression: Act(WEIGH_Document_Production)
+  prc_override: MAPPING_OVERRIDE → 范围远小于US
+- id: ALIGN_015_JuryTrial
+  term_us: Jury_Trial
+  term_hk: Jury_Trial
+  term_cn: 人民陪审员
+  l0_chain:
+    primitive: Power
+    expression: Power(Fact_Finding_By_Laypersons)
+- id: ALIGN_016_ResJudicata
+  term_us: Res_Judicata
+  term_hk: Res_Judicata
+  term_cn: 既判力
+  l0_chain:
+    primitive: Status
+    expression: Status(FINAL_And_Binding)
+- id: ALIGN_017_PleaBargaining
+  term_us: Plea_Bargaining
+  term_hk: Plea_Bargaining
+  term_cn: 认罪认罚从宽
+  l0_chain:
+    primitive: Power
+    expression: Power(Charge_Negotiation)
+  prc_override: MAPPING_OVERRIDE → 结构差异大
+- id: ALIGN_018_Hearsay
+  term_us: Hearsay_Evidence
+  term_hk: Hearsay_Evidence
+  term_cn: ❌ 无对应制度
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Admissibility_Failure)
+- id: ALIGN_019_PunitiveDamages
+  term_us: Punitive_Damages
+  term_hk: Exemplary_Damages
+  term_cn: 惩罚性赔偿 (知识产权/消费者)
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Super_Compensatory_Liability)
+- id: ALIGN_020_PiercingVeil
+  term_us: Piercing_Corporate_Veil
+  term_hk: Piercing_Corporate_Veil
+  term_cn: 公司人格否认 + 横向否认
+  l0_chain:
+    primitive: Power
+    expression: Power(Claim_Shareholder_Directly)
+  prc_override: MAPPING_OVERRIDE → 含横向（全球独有）
+- id: ALIGN_021_FiduciaryDuty
+  term_us: Fiduciary_Duty
+  term_hk: Fiduciary_Duty
+  term_cn: 忠实义务 + 勤勉义务
+  l0_chain:
+    primitive: Power
+    expression: Power(BOUND_By_Trust)
+- id: ALIGN_022_UltraVires
+  term_us: Ultra_Vires
+  term_hk: Ultra_Vires
+  term_cn: 越权代表
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Power_Exceeded)
+- id: ALIGN_023_Chapter11_Reorganization
+  term_us: Chapter_11_Reorganization
+  term_hk: Scheme_Of_Arrangement
+  term_cn: 重整
+  l0_chain:
+    primitive: Status
+    expression: Status(PENDING_PlanApproval)
+- id: ALIGN_024_AlgorithmFiling
+  term_us: '? (无对应)'
+  term_hk: '? (无对应)'
+  term_cn: 算法备案
+  l0_chain:
+    primitive: Act
+    expression: Act(REGISTER_Algorithm_With_CAC)
+- id: ALIGN_025_DataExportAssessment
+  term_us: Privacy_Shield_Or_BCR
+  term_hk: Cross-Border_Data_Transfer
+  term_cn: 数据出境安全评估
+  l0_chain:
+    primitive: Status
+    expression: Status(PENDING_CAC_Approval)
+- id: ALIGN_026_VoiceRight
+  term_us: Right_of_Publicity
+  term_hk: Right_of_Publicity
+  term_cn: 声音权 + 肖像权
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Personal_Identity_Right)
+- id: ALIGN_027_DivorceCoolingOff
+  term_us: '? (无对应)'
+  term_hk: '? (无对应)'
+  term_cn: 离婚冷静期
+  l0_chain:
+    primitive: Status
+    expression: Status(PENDING_30Day)
+- id: ALIGN_028_VIE_Structure
+  term_us: VIE_Structure
+  term_hk: VIE_Structure
+  term_cn: 协议控制 — 外商投资负面清单
+  l0_chain:
+    primitive: Power
+    expression: Power(CONTRACTUAL_Control_Over_FIE)
+  prc_override: 穿透审查 → CONDITIONAL
+- id: PRC_SPEC_001_Horizontal_Veil_Piercing
+  term_cn: 横向人格否认
+  term_us_approximate: Affiliate_Asset_Confusion_Liability
+  l0_chain:
+    primitive: Agent
+    expression: Agent(Asso_Entities_Merged_Liability)
+    status: CN_SOVEREIGN
+  legal_basis: 公司法2024第23条3款
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 公司法2024第23条3款。'
+- id: PRC_SPEC_002_Leniency_Admission
+  term_cn: 认罪认罚从宽
+  term_us_approximate: Plea_Bargaining_Non_Equivalent
+  l0_chain:
+    primitive: Status
+    expression: Status(CN_Statutory_Mitigation)
+    status: CN_SOVEREIGN
+  legal_basis: 刑诉法第15条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 刑诉法第15条。'
+- id: PRC_SPEC_003_Data_Export_Assessment
+  term_cn: 数据出境安全评估
+  term_us_approximate: Cross_Border_Data_Interdiction
+  l0_chain:
+    primitive: Act
+    expression: Act(Data_Transfer_Suspended)
+    status: FORCE_OVERRIDE
+  legal_basis: 数据安全法第36条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 数据安全法第36条。'
+- id: PRC_SPEC_004_Algorithm_Filing
+  term_cn: 算法备案
+  term_us_approximate: Algorithm_Registration_Mandatory
+  l0_chain:
+    primitive: Act
+    expression: Act(Algorithm_Must_File)
+    status: FORCE_OVERRIDE
+  legal_basis: 互联网信息服务算法推荐管理规定
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 互联网信息服务算法推荐管理规定。'
+- id: PRC_SPEC_005_Factoring_Chapter
+  term_cn: 保理合同独立成章
+  term_us_approximate: Factoring_As_Named_Contract
+  l0_chain:
+    primitive: Status
+    expression: Status(CN_Factoring_Article_761)
+    status: CN_SOVEREIGN
+  legal_basis: 民法典第761条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民法典第761条。'
+- id: PRC_SPEC_006_Divorce_CoolingOff
+  term_cn: 离婚冷静期
+  term_us_approximate: Divorce_Mandatory_Waiting_Period
+  l0_chain:
+    primitive: Status
+    expression: Status(30Day_Cooling_Off)
+    status: CN_SOVEREIGN
+  legal_basis: 民法典第1077条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民法典第1077条。'
+- id: PRC_SPEC_007_Shadow_Director
+  term_cn: 影子董事/事实董事
+  term_us_approximate: DeFacto_Director_Liability
+  l0_chain:
+    primitive: Agent
+    expression: Agent(Shadow_Director_Identified)
+    status: CN_SOVEREIGN
+  legal_basis: 公司法2024
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 公司法2024。'
+- id: PRC_SPEC_008_Voice_Right
+  term_cn: 声音权
+  term_us_approximate: Voice_Right_Personality_Protection
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Voice_Reference_Portrait_Right)
+    status: CN_SOVEREIGN
+  legal_basis: 民法典第1023条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民法典第1023条。'
+- id: PRC_SPEC_009_Admin_Public_Interest
+  term_cn: 行政公益诉讼
+  term_us_approximate: Administrative_Public_Interest_Litigation
+  l0_chain:
+    primitive: Power
+    expression: Power(Procuratorate_Sue_Admin)
+    status: FORCE_OVERRIDE
+  legal_basis: 行政诉讼法第25条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 行政诉讼法第25条。'
+- id: PRC_SPEC_010_Normative_Review
+  term_cn: 规范性文件一并审查
+  term_us_approximate: Incidental_Normative_Review
+  l0_chain:
+    primitive: Power
+    expression: Power(Court_Review_Normative)
+    status: FORCE_OVERRIDE
+  legal_basis: 行政诉讼法第53条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 行政诉讼法第53条。'
+- id: PRC_SPEC_011_Important_Core_Data
+  term_cn: 重要数据/核心数据体系
+  term_us_approximate: Important_Core_Data_Classification
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Data_Grade_Important_Core)
+    status: CN_SOVEREIGN
+  legal_basis: 数据安全法第21条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 数据安全法第21条。'
+- id: PRC_SPEC_012_Vertical_Piercing
+  term_cn: 纵向人格否认(一人公司)
+  term_us_approximate: Vertical_Veil_Piercing_OnePerson
+  l0_chain:
+    primitive: Defect
+    expression: Defect(Shareholder_Asset_Confusion)
+    status: CN_SOVEREIGN
+  legal_basis: 公司法第23条1款
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 公司法第23条1款。'
+- id: PRC_SPEC_013_Community_Corrections
+  term_cn: 社区矫正
+  term_us_approximate: Community_Correction_System
+  l0_chain:
+    primitive: Status
+    expression: Status(Community_Correction_Active)
+    status: CN_SOVEREIGN
+  legal_basis: 社区矫正法
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 社区矫正法。'
+- id: PRC_SPEC_014_Environmental_PIL
+  term_cn: 环境公益诉讼
+  term_us_approximate: Environmental_Public_Interest_Standing
+  l0_chain:
+    primitive: Power
+    expression: Power(NGO_Environmental_Lawsuit)
+    status: FORCE_OVERRIDE
+  legal_basis: 环境保护法第58条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 环境保护法第58条。'
+- id: PRC_SPEC_015_Guiding_Case
+  term_cn: 指导性案例
+  term_us_approximate: Guiding_Case_NOT_Binding_Precedent
+  l0_chain:
+    primitive: Asset
+    expression: Asset(SPC_Guiding_Case_Must_Refer)
+    status: CN_SOVEREIGN
+  legal_basis: 最高法关于案例指导工作的规定
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 最高法关于案例指导工作的规定。'
+- id: PRC_SPEC_016_Retrial_Procedure
+  term_cn: 审判监督程序(再审)
+  term_us_approximate: Retrial_Procedure_Ex_Officio
+  l0_chain:
+    primitive: Act
+    expression: Act(Retrial_Initiated_By_Court_OR_Procuratorate)
+    status: FORCE_OVERRIDE
+  legal_basis: 民诉法第198-213条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民诉法第198-213条。'
+- id: PRC_SPEC_017_Preservation_Measures
+  term_cn: 行为保全/财产保全
+  term_us_approximate: Preservation_Injunction_Attachment
+  l0_chain:
+    primitive: Power
+    expression: Power(Court_Preserve_Property_Pre_Judgment)
+    status: FORCE_OVERRIDE
+  legal_basis: 民诉法第100-105条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民诉法第100-105条。'
+- id: PRC_SPEC_018_Enforcement_System
+  term_cn: 执行程序(执行难治理)
+  term_us_approximate: Judgment_Enforcement_Special_Procedures
+  l0_chain:
+    primitive: Act
+    expression: Act(Enforcement_Court_Specialized)
+    status: FORCE_OVERRIDE
+  legal_basis: 民诉法执行编
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民诉法执行编。'
+- id: PRC_SPEC_019_Anti_Foreign_Sanction
+  term_cn: 反外国制裁阻断
+  term_us_approximate: Anti_Foreign_Sanction_Countermeasure
+  l0_chain:
+    primitive: Power
+    expression: Power(Block_Foreign_Sanction_Effect)
+    status: FORCE_OVERRIDE
+  legal_basis: 反外国制裁法第12条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 反外国制裁法第12条。'
+- id: PRC_SPEC_020_State_Compensation
+  term_cn: 国家赔偿
+  term_us_approximate: State_Compensation_Liability
+  l0_chain:
+    primitive: Asset
+    expression: Asset(State_Pays_Compensation)
+    status: CN_SOVEREIGN
+  legal_basis: 国家赔偿法
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 国家赔偿法。'
+- id: PRC_SPEC_021_Securities_Class_Action
+  term_cn: 证券特别代表人诉讼
+  term_us_approximate: Securities_Special_Representative_Action
+  l0_chain:
+    primitive: Act
+    expression: Act(Investor_Center_Files_Class)
+    status: FORCE_OVERRIDE
+  legal_basis: 证券法第95条3款
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 证券法第95条3款。'
+- id: PRC_SPEC_022_Crypto_Prohibition
+  term_cn: 加密货币全面禁止
+  term_us_approximate: Cryptocurrency_Total_Ban
+  l0_chain:
+    primitive: Asset
+    expression: Asset(Crypto_Transaction_Invalid)
+    status: CN_SOVEREIGN
+  legal_basis: 2021年虚拟货币通知
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 2021年虚拟货币通知。'
+- id: PRC_SPEC_023_Cross_Border_Data_Law
+  term_cn: 数据出境三轨制
+  term_us_approximate: Cross_Border_Data_Three_Track
+  l0_chain:
+    primitive: Act
+    expression: Act(Data_Export_Assessment_Or_Contract_Or_Cert)
+    status: FORCE_OVERRIDE
+  legal_basis: 数据出境安全评估办法
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 数据出境安全评估办法。'
+- id: PRC_SPEC_024_Domestic_Violence_Order
+  term_cn: 人身安全保护令
+  term_us_approximate: Domestic_Violence_Protective_Order
+  l0_chain:
+    primitive: Power
+    expression: Power(Court_Issue_Habeas_DV_Order)
+    status: FORCE_OVERRIDE
+  legal_basis: 反家庭暴力法第23条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 反家庭暴力法第23条。'
+- id: PRC_SPEC_025_Third_Party_Revocation
+  term_cn: 第三人撤销之诉
+  term_us_approximate: Third_Party_Revocation_Lawsuit
+  l0_chain:
+    primitive: Act
+    expression: Act(Non_Party_Vacates_Judgment)
+    status: FORCE_OVERRIDE
+  legal_basis: 民诉法第56条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 民诉法第56条。'
+- id: PRC_SPEC_026_Tax_Anti_Avoidance
+  term_cn: 一般反避税规则
+  term_us_approximate: General_Anti_Avoidance_Rule
+  l0_chain:
+    primitive: Power
+    expression: Power(Tax_Authority_Recharacterize)
+    status: FORCE_OVERRIDE
+  legal_basis: 企业所得税法第47条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 企业所得税法第47条。'
+- id: PRC_SPEC_027_FiveYear_Capital_Contribution
+  term_cn: 五年认缴期限
+  term_us_approximate: FiveYear_Capital_Contribution_Deadline
+  l0_chain:
+    primitive: Status
+    expression: Status(Capital_Must_Paid_Within_5Years)
+    status: CN_SOVEREIGN
+  legal_basis: 公司法2024第47条
+  description: '中国法特有制度——严禁用普通法概念等同映射。法条依据: 公司法2024第47条。'

@@ -1,0 +1,5268 @@
+metadata:
+  version: v1.2.0-expanded
+  source: HK e-Legislation + DoJ 121K Glossary
+  chapters_covered:
+  - '26'
+  - '32'
+  - '33'
+  - 4A
+  - '571'
+  - '6'
+  - '622'
+  total_rules: 364
+  cap26_rules: 64
+  new_rules: 300
+rules:
+- id: HK-S3-ContractOfSale
+  premise_atoms:
+  - Seller_TransfersOrAgrees_Property
+  - Buyer_Pays_MoneyConsideration
+  - Goods_Exist
+  head_claim: ContractOfSale_Exists
+  concepts:
+  - Contract
+  - Sale
+  - Goods
+  - Price
+  - Property
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Intermediate_Node
+- id: HK-S14-ImpliedTitleWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Seller_RightToSell
+  - Goods_FreeOfUndisclosedEncumbrance
+  - Buyer_QuietPossession
+  head_claim: ImpliedTitleWarranty_Exists
+  concepts:
+  - Title
+  - Warranty
+  - Encumbrance
+  - QuietPossession
+  exception_chain:
+  - HK-S14-X1-EncumbranceDisclosed
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S14-X1-EncumbranceDisclosed
+  premise_atoms:
+  - Encumbrance_DisclosedToBuyer
+  head_claim: EncumbranceWarranty_Negatived
+  concepts:
+  - Encumbrance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S16a-FitnessWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_MadeKnown_ParticularPurpose
+  - Buyer_ReliesOnSellerSkill
+  - Seller_Sells_InCourseOfBusiness
+  head_claim: ImpliedFitnessWarranty_Exists
+  concepts:
+  - Fitness
+  - Warranty
+  - Reliance
+  - ParticularPurpose
+  exception_chain:
+  - HK-S16-X1-PatentName
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-V1-Bridge-Validity
+  premise_atoms:
+  - ContractOfSale_Exists
+  head_claim: Contract_Validity
+  concepts:
+  - Contract_Existence
+  - Contract_Validity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Intermediate_Node
+- id: HK-S16-X1-PatentName
+  premise_atoms:
+  - Goods_SoldUnderPatentOrTradeName
+  head_claim: No_FitnessWarranty
+  concepts:
+  - Warranty
+  - Patent
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S16b-MerchantabilityWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Sells_InCourseOfBusiness
+  - Goods_BoughtByDescription
+  head_claim: ImpliedMerchantabilityWarranty_Exists
+  concepts:
+  - Merchantability
+  - Warranty
+  - Quality
+  exception_chain:
+  - HK-S16-X2-KnownDefects
+  - HK-S16-X3-BuyerExamined
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S16-X2-KnownDefects
+  premise_atoms:
+  - Defects_DrawnToBuyerAttention
+  head_claim: Warranty_Negatived_KnownDefects
+  concepts:
+  - Defect
+  - Warranty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S16-X3-BuyerExamined
+  premise_atoms:
+  - Buyer_ExaminedGoods_BeforeContract
+  head_claim: Warranty_Negatived_RevealableDefects
+  concepts:
+  - Examination
+  - Warranty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S30-ConcurrentConditions
+  premise_atoms:
+  - Contract_Validity
+  - No_ContraryAgreement
+  head_claim: PaymentDelivery_AreConcurrent
+  concepts:
+  - Delivery
+  - Payment
+  - Condition
+  exception_chain:
+  - HK-S30-X1-AgreedOtherwise
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S30-X1-AgreedOtherwise
+  premise_atoms:
+  - Parties_AgreedOtherwise
+  head_claim: ConcurrentCondition_Negatived
+  concepts:
+  - Condition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S51-ActionForPrice
+  premise_atoms:
+  - Contract_Validity
+  - Property_PassedToBuyer
+  - Buyer_WrongfullyRefusesPayment
+  head_claim: Seller_MayClaim_ContractPrice
+  concepts:
+  - Price
+  - Property
+  - Payment
+  exception_chain:
+  - HK-S51-X1-DayCertain
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S51-X1-DayCertain
+  premise_atoms:
+  - Price_PayableOnDayCertain
+  head_claim: Seller_MayClaim_EvenIfPropertyNotPassed
+  concepts:
+  - Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S52-DamagesForNonAcceptance
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_WrongfullyRefusesAcceptance
+  - Buyer_FailsToPay
+  head_claim: Seller_MayClaim_DamagesForNonAcceptance
+  concepts:
+  - Damages
+  - Acceptance
+  - Breach
+  exception_chain:
+  - HK-S52-X1-MarketMeasure
+  - HK-S52-X2-NoMarket
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S52-X1-MarketMeasure
+  premise_atoms:
+  - AvailableMarket_Exists
+  head_claim: Damages_ContractMinusMarketPrice
+  concepts:
+  - MarketPrice
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S52-X2-NoMarket
+  premise_atoms:
+  - No_AvailableMarket
+  head_claim: Damages_DirectNaturalLoss
+  concepts:
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S53-DamagesForNonDelivery
+  premise_atoms:
+  - Contract_Validity
+  - Seller_WrongfullyRefusesDelivery
+  head_claim: Buyer_MayClaim_DamagesForNonDelivery
+  concepts:
+  - Damages
+  - Delivery
+  - Breach
+  exception_chain:
+  - HK-S53-X1-MarketMeasure
+  - HK-S53-X2-NoMarket
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S53-X1-MarketMeasure
+  premise_atoms:
+  - AvailableMarket_Exists
+  head_claim: Damages_MarketMinusContractPrice
+  concepts:
+  - MarketPrice
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S53-X2-NoMarket
+  premise_atoms:
+  - No_AvailableMarket
+  head_claim: Damages_DirectNaturalLoss
+  concepts:
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S54-SpecificPerformance
+  premise_atoms:
+  - Contract_Validity
+  - Goods_AreSpecificOrAscertained
+  - BreachOfContract_Alleged
+  head_claim: SpecificPerformance_Available
+  concepts:
+  - SpecificPerformance
+  - Equity
+  - Breach
+  exception_chain:
+  - HK-S54-X1-AdequateRemedy
+  head_type: NON_HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S54-X1-AdequateRemedy
+  premise_atoms:
+  - Damages_AdequateRemedy
+  head_claim: SpecificPerformance_Denied
+  concepts:
+  - SpecificPerformance
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S55-RemediesForBreachOfWarranty
+  premise_atoms:
+  - Contract_Validity
+  - BreachOfWarranty_Established
+  - Buyer_NotWaivedBreach
+  head_claim: Buyer_MayClaim_RemediesForBreachOfWarranty
+  concepts:
+  - Warranty
+  - Breach
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S57-ExclusionOfImpliedTerms
+  premise_atoms:
+  - Contract_Validity
+  - ExpressAgreement_Or_CourseOfDealing_Or_Usage_Exists
+  head_claim: ImpliedTerms_MayBeExcluded
+  concepts:
+  - ImpliedTerms
+  - Exclusion
+  - Usage
+  exception_chain:
+  - HK-S57-X1-CECO_Violation
+  - HK-S57-X2-ConsistentTerm
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S57-X1-CECO_Violation
+  premise_atoms:
+  - Exclusion_Violates_CECO
+  head_claim: Exclusion_Void
+  concepts:
+  - Exclusion
+  - CECO
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S57-X2-ConsistentTerm
+  premise_atoms:
+  - ExpressTerm_ConsistentWithImplied
+  head_claim: ImpliedTerm_NotNegatived
+  concepts:
+  - ImpliedTerms
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S4-CapacityToContract
+  premise_atoms:
+  - ContractOfSale_Exists
+  - Necessaries_SoldAndDelivered
+  - Buyer_Is_Infant_Or_Incompetent
+  head_claim: Buyer_MustPay_ReasonablePrice
+  concepts:
+  - Contract
+  - Capacity
+  - Necessaries
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S10-PriceAscertainment
+  premise_atoms:
+  - Contract_Validity
+  - Price_FixedByContract_Or_CourseOfDealing
+  head_claim: Price_Ascertained
+  concepts:
+  - Contract_Existence
+  - Market_Price
+  exception_chain:
+  - HK-S10-X1-ReasonablePrice
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S10-X1-ReasonablePrice
+  premise_atoms:
+  - Price_NotDetermined
+  head_claim: Buyer_MustPay_ReasonablePrice
+  concepts:
+  - Damages
+  - Market_Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S12-TimeStipulation
+  premise_atoms:
+  - Contract_Validity
+  - Stipulation_Is_PaymentTime
+  head_claim: Time_NotOfTheEssence
+  concepts:
+  - Contract_Existence
+  - Payment
+  - Condition
+  exception_chain:
+  - HK-S12-X1-ContraryIntent
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S12-X1-ContraryIntent
+  premise_atoms:
+  - Contract_Shows_ContraryIntent
+  head_claim: Time_IsOfTheEssence
+  concepts:
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S13-ConditionToWarranty
+  premise_atoms:
+  - Contract_Validity
+  - Condition_ToBeFulfilled
+  - BreachOfCondition_Occurred
+  head_claim: Buyer_MayTreatBreach_AsWarranty
+  concepts:
+  - Breach
+  - Warranty_Quality
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S15-SaleByDescription
+  premise_atoms:
+  - Contract_Validity
+  - Goods_SoldByDescription
+  head_claim: ImpliedCondition_GoodsCorrespondToDescription
+  concepts:
+  - Contract_Existence
+  - Warranty_Quality
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S18-UnascertainedGoods
+  premise_atoms:
+  - Contract_Validity
+  - Goods_Unascertained
+  head_claim: No_PropertyPasses
+  concepts:
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S19-PropertyPassesWhenIntended
+  premise_atoms:
+  - Contract_Validity
+  - Goods_SpecificOrAscertained
+  - Parties_IntendPropertyToPass
+  head_claim: Property_PassesToBuyer
+  concepts:
+  - Property_Pass
+  - Contract_Existence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S22-RiskPassesWithProperty
+  premise_atoms:
+  - Contract_Validity
+  - Property_PassedToBuyer
+  head_claim: Risk_PassesWithProperty
+  concepts:
+  - Property_Pass
+  - Damages
+  exception_chain:
+  - HK-S22-X1-DeliveryDelayByFault
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S22-X1-DeliveryDelayByFault
+  premise_atoms:
+  - Delivery_Delayed
+  - Delay_CausedByPartyFault
+  head_claim: Risk_OnPartyAtFault
+  concepts:
+  - Delivery
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S23-NemoDat
+  premise_atoms:
+  - Goods_Sold
+  - Seller_NotOwner
+  - Seller_NoAuthority
+  head_claim: Buyer_AcquiresNoBetterTitle
+  concepts:
+  - Property_Pass
+  - Encumbrance
+  exception_chain:
+  - HK-S23-X1-Estoppel
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S23-X1-Estoppel
+  premise_atoms:
+  - Owner_Conduct_PrecludesDenyingAuthority
+  head_claim: Buyer_AcquiresGoodTitle
+  concepts:
+  - Property_Pass
+  - Reliance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S25-VoidableTitle
+  premise_atoms:
+  - Goods_Sold
+  - Seller_HasVoidableTitle
+  - Title_NotAvoided_AtTimeOfSale
+  - Buyer_InGoodFaith
+  - Buyer_WithoutNotice
+  head_claim: Buyer_AcquiresGoodTitle
+  concepts:
+  - Property_Pass
+  - Breach
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S29-DutiesOfParties
+  premise_atoms:
+  - ContractOfSale_Exists
+  head_claim: Parties_Duties_Defined
+  concepts:
+  - Delivery
+  - Payment
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S31-PlaceOfDelivery
+  premise_atoms:
+  - Contract_Validity
+  - No_AgreedDeliveryPlace
+  head_claim: DeliveryPlace_SellersBusinessOrResidence
+  concepts:
+  - Delivery
+  exception_chain:
+  - HK-S31-X1-ContraryAgreement
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S31-X1-ContraryAgreement
+  premise_atoms:
+  - Contract_Specifies_DeliveryPlace
+  head_claim: DeliveryPlace_AsAgreed
+  concepts:
+  - Delivery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S32-WrongQuantityDelivery
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Delivers_LessThanContracted
+  head_claim: Buyer_MayReject
+  concepts:
+  - Delivery
+  - Breach
+  exception_chain:
+  - HK-S32-X1-BuyerAccepts
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S32-X1-BuyerAccepts
+  premise_atoms:
+  - Buyer_Accepts_ShortDelivery
+  head_claim: Buyer_MustPay_AtContractRate
+  concepts:
+  - Payment
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S33-DeliveryByInstalments
+  premise_atoms:
+  - Contract_Validity
+  - Delivery_ByInstalments
+  - Seller_DefectiveDeliveries
+  head_claim: BreachQuestion_DependsOnContractTerms
+  concepts:
+  - Delivery
+  - Breach
+  exception_chain: []
+  head_type: NON_HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S36-BuyerRightToExamine
+  premise_atoms:
+  - Contract_Validity
+  - Seller_TendersDelivery
+  head_claim: Buyer_EntitledToReasonableExamination
+  concepts:
+  - Delivery
+  - Acceptance
+  exception_chain:
+  - HK-S36-X1-AgreedOtherwise
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S36-X1-AgreedOtherwise
+  premise_atoms:
+  - Parties_AgreedOtherwise
+  head_claim: No_ExaminationRight
+  concepts:
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S37-AcceptanceOfGoods
+  premise_atoms:
+  - Goods_Delivered
+  - Buyer_IntimatesAcceptance_Or_ActsInconsistently
+  head_claim: Goods_Accepted
+  concepts:
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S38-RejectionWithoutReturn
+  premise_atoms:
+  - Goods_Delivered
+  - Buyer_HasRightToReject
+  - Buyer_IntimatesRefusal
+  head_claim: Rejection_Effective
+  concepts:
+  - Acceptance
+  - Delivery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S41-UnpaidSellerRights
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Unpaid
+  - Seller_InPossession
+  head_claim: Seller_HasLien_Right
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain:
+  - HK-S41-X1-BuyerInsolvent
+  - HK-S41-X2-RightOfResale
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S41-X1-BuyerInsolvent
+  premise_atoms:
+  - Buyer_Insolvent
+  - Seller_PartedWithPossession
+  head_claim: Seller_HasStoppageRight
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S41-X2-RightOfResale
+  premise_atoms:
+  - Seller_Exercised_Lien_Or_Stoppage
+  head_claim: Seller_HasResaleRight
+  concepts:
+  - Damages
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S43-LienConditions
+  premise_atoms:
+  - Contract_Validity
+  - Seller_Unpaid
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  - Property_Pass
+  exception_chain:
+  - HK-S43-X1-CreditExpired
+  - HK-S43-X2-BuyerInsolvent
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S43-X1-CreditExpired
+  premise_atoms:
+  - Goods_SoldOnCredit
+  - CreditTerm_Expired
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S43-X2-BuyerInsolvent
+  premise_atoms:
+  - Buyer_Insolvent
+  head_claim: Lien_MayBeExercised
+  concepts:
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S46-StoppageInTransitu
+  premise_atoms:
+  - Contract_Validity
+  - Buyer_Insolvent
+  - Seller_Unpaid
+  - Goods_InTransit
+  head_claim: Seller_MayStopGoodsInTransitu
+  concepts:
+  - Delivery
+  - Payment
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S48-HowToStopTransitu
+  premise_atoms:
+  - StoppageRight_Exists
+  head_claim: Seller_MayTakePossession_Or_GiveNoticeToCarrier
+  concepts:
+  - Delivery
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S50-LienDoesNotRescind
+  premise_atoms:
+  - Contract_Validity
+  - Seller_ExercisesLien_Or_Stoppage
+  head_claim: Contract_NotRescinded
+  concepts:
+  - Contract_Existence
+  - Property_Pass
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S56-InterestAndSpecialDamages
+  premise_atoms:
+  - Contract_Validity
+  - Interest_Or_SpecialDamages_RecoverableByLaw
+  head_claim: Party_MayRecover_Interest_Or_SpecialDamages
+  concepts:
+  - Damages
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S59-RightsEnforceableByAction
+  premise_atoms:
+  - RightDutyLiability_DeclaredByOrdinance
+  head_claim: Right_EnforceableByAction
+  concepts:
+  - Breach
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S60-AuctionSale
+  premise_atoms:
+  - Sale_ByAuction
+  - Auctioneer_AnnouncesCompletion
+  head_claim: Sale_Complete
+  concepts:
+  - Contract_Existence
+  - Offer_Acceptance
+  exception_chain:
+  - HK-S60-X1-ReservePriceNotMet
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-S60-X1-ReservePriceNotMet
+  premise_atoms:
+  - Auction_SubjectToReserve
+  - ReservePrice_NotMet
+  head_claim: Seller_MayWithdraw
+  concepts:
+  - Contract_Existence
+  - Market_Price
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  output_type: Terminal_Output_Node
+- id: HK-PreContractual-Restitution
+  premise_atoms:
+  - Reliance_Established
+  - Loss_Occurred
+  head_claim: PreContractual_Liability_Exists
+  concepts:
+  - PreContractual_Reliance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  legal_basis: HK普通法 缔约过失原则 (Hedley Byrne v Heller)
+  note: 平行责任链——不依赖 Contract_Existence 或 Contract_Validity
+  output_type: Terminal_Output_Node
+- id: HK-Restitution-VoidContract
+  premise_atoms:
+  - Buyer_Has_Paid
+  - Seller_Has_ReceivedBenefit
+  head_claim: Restitution_Obligation_Exists
+  concepts:
+  - Payment
+  - Contract_Validity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_contract
+  legal_basis: HK普通法 恢复原状原则
+  note: 合同无效后的返还责任——独立于合同效力
+  output_type: Terminal_Output_Node
+- id: HK-C32-abridged_version
+  premise_atoms:
+  - HK_abridged_Established
+  head_claim: HK_Cap32_abridged_version_Applies
+  concepts:
+  - Companies_Winding_Up
+  - abridged
+  - version
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: abridged version
+- id: HK-C32-absence_from_work
+  premise_atoms:
+  - HK_absence_Established
+  head_claim: HK_Cap32_absence_from_work_Applies
+  concepts:
+  - Companies_Winding_Up
+  - absence
+  - from
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: absence from work
+- id: HK-C32-accept_____bill_of_exchange
+  premise_atoms:
+  - HK_accept_Established
+  head_claim: HK_Cap32_accept_____bill_of_exchange_Applies
+  concepts:
+  - Companies_Winding_Up
+  - accept
+  - bill
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: accept ... bill of exchange
+- id: HK-C32-access
+  premise_atoms:
+  - HK_access_Established
+  head_claim: HK_Cap32_access_Applies
+  concepts:
+  - Companies_Winding_Up
+  - access
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: access
+- id: HK-C32-accounted_for
+  premise_atoms:
+  - HK_accounted_Established
+  head_claim: HK_Cap32_accounted_for_Applies
+  concepts:
+  - Companies_Winding_Up
+  - accounted
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: accounted for
+- id: HK-C32-acquire
+  premise_atoms:
+  - HK_acquire_Established
+  head_claim: HK_Cap32_acquire_Applies
+  concepts:
+  - Companies_Winding_Up
+  - acquire
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: acquire
+- id: HK-C32-act_by____
+  premise_atoms:
+  - HK_act_Established
+  head_claim: HK_Cap32_act_by_____Applies
+  concepts:
+  - Companies_Winding_Up
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: act by ...
+- id: HK-C32-acting_judicially
+  premise_atoms:
+  - HK_acting_Established
+  head_claim: HK_Cap32_acting_judicially_Applies
+  concepts:
+  - Companies_Winding_Up
+  - acting
+  - judicially
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: acting judicially
+- id: HK-C32-addendum
+  premise_atoms:
+  - HK_addendum_Established
+  head_claim: HK_Cap32_addendum_Applies
+  concepts:
+  - Companies_Winding_Up
+  - addendum
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: addendum
+- id: HK-C32-adjourned_meeting
+  premise_atoms:
+  - HK_adjourned_Established
+  head_claim: HK_Cap32_adjourned_meeting_Applies
+  concepts:
+  - Companies_Winding_Up
+  - adjourned
+  - meeting
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: adjourned meeting
+- id: HK-C32-affairs_____fully_wound_up
+  premise_atoms:
+  - HK_affairs_Established
+  head_claim: HK_Cap32_affairs_____fully_wound_up_Applies
+  concepts:
+  - Companies_Winding_Up
+  - affairs
+  - fully
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: affairs ... fully wound up
+- id: HK-C32-alleged_contributory
+  premise_atoms:
+  - HK_alleged_Established
+  head_claim: HK_Cap32_alleged_contributory_Applies
+  concepts:
+  - Companies_Winding_Up
+  - alleged
+  - contributory
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: alleged contributory
+- id: HK-C32-allotted_shares
+  premise_atoms:
+  - HK_allotted_Established
+  head_claim: HK_Cap32_allotted_shares_Applies
+  concepts:
+  - Companies_Winding_Up
+  - allotted
+  - shares
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: allotted shares
+- id: HK-C32-allottee
+  premise_atoms:
+  - HK_allottee_Established
+  head_claim: HK_Cap32_allottee_Applies
+  concepts:
+  - Companies_Winding_Up
+  - allottee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: allottee
+- id: HK-C32-answer
+  premise_atoms:
+  - HK_answer_Established
+  head_claim: HK_Cap32_answer_Applies
+  concepts:
+  - Companies_Winding_Up
+  - answer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: answer
+- id: HK-C32-answer_demands
+  premise_atoms:
+  - HK_answer_Established
+  head_claim: HK_Cap32_answer_demands_Applies
+  concepts:
+  - Companies_Winding_Up
+  - answer
+  - demands
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: answer demands
+- id: HK-C32-applied_____for_sanction_of____
+  premise_atoms:
+  - HK_applied_Established
+  head_claim: HK_Cap32_applied_____for_sanction_of_____Applies
+  concepts:
+  - Companies_Winding_Up
+  - applied
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: applied ... for sanction of ...
+- id: HK-C32-as_a_whole
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap32_as_a_whole_Applies
+  concepts:
+  - Companies_Winding_Up
+  - whole
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: as a whole
+- id: HK-C32-as_against_all_persons
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap32_as_against_all_persons_Applies
+  concepts:
+  - Companies_Winding_Up
+  - against
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: as against all persons
+- id: HK-C32-at_all_material_times
+  premise_atoms:
+  - HK_at_Established
+  head_claim: HK_Cap32_at_all_material_times_Applies
+  concepts:
+  - Companies_Winding_Up
+  - material
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: at all material times
+- id: HK-C32-attached_to
+  premise_atoms:
+  - HK_attached_Established
+  head_claim: HK_Cap32_attached_to_Applies
+  concepts:
+  - Companies_Winding_Up
+  - attached
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: attached to
+- id: HK-C32-auditors__report
+  premise_atoms:
+  - HK_auditors__Established
+  head_claim: HK_Cap32_auditors__report_Applies
+  concepts:
+  - Companies_Winding_Up
+  - auditors'
+  - report
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: auditors' report
+- id: HK-C32-authority_is_deficient
+  premise_atoms:
+  - HK_authority_Established
+  head_claim: HK_Cap32_authority_is_deficient_Applies
+  concepts:
+  - Companies_Winding_Up
+  - authority
+  - deficient
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: authority is deficient
+- id: HK-C32-authority_of_an_expert
+  premise_atoms:
+  - HK_authority_Established
+  head_claim: HK_Cap32_authority_of_an_expert_Applies
+  concepts:
+  - Companies_Winding_Up
+  - authority
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: authority of an expert
+- id: HK-C32-authorized_financial_institution
+  premise_atoms:
+  - HK_authorized_Established
+  head_claim: HK_Cap32_authorized_financial_institution_Applies
+  concepts:
+  - Companies_Winding_Up
+  - authorized
+  - financial
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: authorized financial institution
+- id: HK-C32-authorized_share_capital
+  premise_atoms:
+  - HK_authorized_Established
+  head_claim: HK_Cap32_authorized_share_capital_Applies
+  concepts:
+  - Companies_Winding_Up
+  - authorized
+  - share
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: authorized share capital
+- id: HK-C32-balance_sheet
+  premise_atoms:
+  - HK_balance_Established
+  head_claim: HK_Cap32_balance_sheet_Applies
+  concepts:
+  - Companies_Winding_Up
+  - balance
+  - sheet
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: balance sheet
+- id: HK-C32-basis
+  premise_atoms:
+  - HK_basis_Established
+  head_claim: HK_Cap32_basis_Applies
+  concepts:
+  - Companies_Winding_Up
+  - basis
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: basis
+- id: HK-C32-be_publicly_examined
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap32_be_publicly_examined_Applies
+  concepts:
+  - Companies_Winding_Up
+  - publicly
+  - examined
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: be publicly examined
+- id: HK-C32-board_of_directors
+  premise_atoms:
+  - HK_board_Established
+  head_claim: HK_Cap32_board_of_directors_Applies
+  concepts:
+  - Companies_Winding_Up
+  - board
+  - directors
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: board of directors
+- id: HK-C32-book_and_paper
+  premise_atoms:
+  - HK_book_Established
+  head_claim: HK_Cap32_book_and_paper_Applies
+  concepts:
+  - Companies_Winding_Up
+  - book
+  - paper
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: book and paper
+- id: HK-C32-breach_of_trust
+  premise_atoms:
+  - HK_breach_Established
+  head_claim: HK_Cap32_breach_of_trust_Applies
+  concepts:
+  - Companies_Winding_Up
+  - breach
+  - trust
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: breach of trust
+- id: HK-C32-by_reference
+  premise_atoms:
+  - HK_by_Established
+  head_claim: HK_Cap32_by_reference_Applies
+  concepts:
+  - Companies_Winding_Up
+  - reference
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: by reference
+- id: HK-C32-by_reference_incorporated
+  premise_atoms:
+  - HK_by_Established
+  head_claim: HK_Cap32_by_reference_incorporated_Applies
+  concepts:
+  - Companies_Winding_Up
+  - reference
+  - incorporated
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: by reference incorporated
+- id: HK-C32-by_way_of____
+  premise_atoms:
+  - HK_by_Established
+  head_claim: HK_Cap32_by_way_of_____Applies
+  concepts:
+  - Companies_Winding_Up
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: by way of ...
+- id: HK-C32-by_word_of_mouth
+  premise_atoms:
+  - HK_by_Established
+  head_claim: HK_Cap32_by_word_of_mouth_Applies
+  concepts:
+  - Companies_Winding_Up
+  - word
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: by word of mouth
+- id: HK-C32-call_the_attention_of_the_court
+  premise_atoms:
+  - HK_call_Established
+  head_claim: HK_Cap32_call_the_attention_of_the_court_Applies
+  concepts:
+  - Companies_Winding_Up
+  - call
+  - attention
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: call the attention of the court
+- id: HK-C32-calls
+  premise_atoms:
+  - HK_calls_Established
+  head_claim: HK_Cap32_calls_Applies
+  concepts:
+  - Companies_Winding_Up
+  - calls
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: calls
+- id: HK-C32-cash_balance
+  premise_atoms:
+  - HK_cash_Established
+  head_claim: HK_Cap32_cash_balance_Applies
+  concepts:
+  - Companies_Winding_Up
+  - cash
+  - balance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: cash balance
+- id: HK-C32-certificate_of_solvency
+  premise_atoms:
+  - HK_certificate_Established
+  head_claim: HK_Cap32_certificate_of_solvency_Applies
+  concepts:
+  - Companies_Winding_Up
+  - certificate
+  - solvency
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: certificate of solvency
+- id: HK-C32-circulate
+  premise_atoms:
+  - HK_circulate_Established
+  head_claim: HK_Cap32_circulate_Applies
+  concepts:
+  - Companies_Winding_Up
+  - circulate
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: circulate
+- id: HK-C32-circulation
+  premise_atoms:
+  - HK_circulation_Established
+  head_claim: HK_Cap32_circulation_Applies
+  concepts:
+  - Companies_Winding_Up
+  - circulation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: circulation
+- id: HK-C32-civil_action
+  premise_atoms:
+  - HK_civil_Established
+  head_claim: HK_Cap32_civil_action_Applies
+  concepts:
+  - Companies_Winding_Up
+  - civil
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: civil action
+- id: HK-C32-cohabitant
+  premise_atoms:
+  - HK_cohabitant_Established
+  head_claim: HK_Cap32_cohabitant_Applies
+  concepts:
+  - Companies_Winding_Up
+  - cohabitant
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: cohabitant
+- id: HK-C32-commencement_of_winding_up
+  premise_atoms:
+  - HK_commencement_Established
+  head_claim: HK_Cap32_commencement_of_winding_up_Applies
+  concepts:
+  - Companies_Winding_Up
+  - commencement
+  - winding
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: commencement of winding up
+- id: HK-C32-committee_of_inspection
+  premise_atoms:
+  - HK_committee_Established
+  head_claim: HK_Cap32_committee_of_inspection_Applies
+  concepts:
+  - Companies_Winding_Up
+  - committee
+  - inspection
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: committee of inspection
+- id: HK-C32-company_goes_into_liquidation
+  premise_atoms:
+  - HK_company_Established
+  head_claim: HK_Cap32_company_goes_into_liquidation_Applies
+  concepts:
+  - Companies_Winding_Up
+  - company
+  - goes
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: company goes into liquidation
+- id: HK-C32-company_having_a_share_capital
+  premise_atoms:
+  - HK_company_Established
+  head_claim: HK_Cap32_company_having_a_share_capital_Applies
+  concepts:
+  - Companies_Winding_Up
+  - company
+  - having
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: company having a share capital
+- id: HK-C32-company_limited_by_guarantee
+  premise_atoms:
+  - HK_company_Established
+  head_claim: HK_Cap32_company_limited_by_guarantee_Applies
+  concepts:
+  - Companies_Winding_Up
+  - company
+  - limited
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: company limited by guarantee
+- id: HK-C32-company_limited_by_shares
+  premise_atoms:
+  - HK_company_Established
+  head_claim: HK_Cap32_company_limited_by_shares_Applies
+  concepts:
+  - Companies_Winding_Up
+  - company
+  - limited
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_32
+  output_type: Intermediate_Node
+  source: Cap 32 Companies_Winding_Up
+  term: company limited by shares
+- id: HK-C33-accountable_for____
+  premise_atoms:
+  - HK_accountable_Established
+  head_claim: HK_Cap33_accountable_for_____Applies
+  concepts:
+  - Insurance
+  - accountable
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: accountable for ...
+- id: HK-C33-acquittance
+  premise_atoms:
+  - HK_acquittance_Established
+  head_claim: HK_Cap33_acquittance_Applies
+  concepts:
+  - Insurance
+  - acquittance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: acquittance
+- id: HK-C33-admitted_to_membership
+  premise_atoms:
+  - HK_admitted_Established
+  head_claim: HK_Cap33_admitted_to_membership_Applies
+  concepts:
+  - Insurance
+  - admitted
+  - membership
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: admitted to membership
+- id: HK-C33-area_of_operations
+  premise_atoms:
+  - HK_area_Established
+  head_claim: HK_Cap33_area_of_operations_Applies
+  concepts:
+  - Insurance
+  - area
+  - operations
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: area of operations
+- id: HK-C33-assignee_in_insolvency
+  premise_atoms:
+  - HK_assignee_Established
+  head_claim: HK_Cap33_assignee_in_insolvency_Applies
+  concepts:
+  - Insurance
+  - assignee
+  - insolvency
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: assignee in insolvency
+- id: HK-C33-be_a_sufficient_discharge_of____
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap33_be_a_sufficient_discharge_of_____Applies
+  concepts:
+  - Insurance
+  - sufficient
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: be a sufficient discharge of ...
+- id: HK-C33-be_called_in_question
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap33_be_called_in_question_Applies
+  concepts:
+  - Insurance
+  - called
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: be called in question
+- id: HK-C33-be_proscribed
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap33_be_proscribed_Applies
+  concepts:
+  - Insurance
+  - proscribed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: be proscribed
+- id: HK-C33-bona_fide_____transferee_without_notice
+  premise_atoms:
+  - HK_bona_Established
+  head_claim: HK_Cap33_bona_fide_____transferee_without_notice_Applies
+  concepts:
+  - Insurance
+  - bona
+  - fide
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: bona fide ... transferee without notice
+- id: HK-C33-bona_fide_purchaser
+  premise_atoms:
+  - HK_bona_Established
+  head_claim: HK_Cap33_bona_fide_purchaser_Applies
+  concepts:
+  - Insurance
+  - bona
+  - fide
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: bona fide purchaser
+- id: HK-C33-by_laws
+  premise_atoms:
+  - HK_by_laws_Established
+  head_claim: HK_Cap33_by_laws_Applies
+  concepts:
+  - Insurance
+  - by-laws
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: by-laws
+- id: HK-C33-cash_credits
+  premise_atoms:
+  - HK_cash_Established
+  head_claim: HK_Cap33_cash_credits_Applies
+  concepts:
+  - Insurance
+  - cash
+  - credits
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: cash credits
+- id: HK-C33-cash_in_hand
+  premise_atoms:
+  - HK_cash_Established
+  head_claim: HK_Cap33_cash_in_hand_Applies
+  concepts:
+  - Insurance
+  - cash
+  - hand
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: cash in hand
+- id: HK-C33-charitable_purpose
+  premise_atoms:
+  - HK_charitable_Established
+  head_claim: HK_Cap33_charitable_purpose_Applies
+  concepts:
+  - Insurance
+  - charitable
+  - purpose
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: charitable purpose
+- id: HK-C33-co_operative_society
+  premise_atoms:
+  - HK_co_operative_Established
+  head_claim: HK_Cap33_co_operative_society_Applies
+  concepts:
+  - Insurance
+  - co-operative
+  - society
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: co-operative society
+- id: HK-C33-committee
+  premise_atoms:
+  - HK_committee_Established
+  head_claim: HK_Cap33_committee_Applies
+  concepts:
+  - Insurance
+  - committee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: committee
+- id: HK-C33-common_good_fund
+  premise_atoms:
+  - HK_common_good_Established
+  head_claim: HK_Cap33_common_good_fund_Applies
+  concepts:
+  - Insurance
+  - common-good
+  - fund
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: common-good fund
+- id: HK-C33-compel
+  premise_atoms:
+  - HK_compel_Established
+  head_claim: HK_Cap33_compel_Applies
+  concepts:
+  - Insurance
+  - compel
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: compel
+- id: HK-C33-continuing_offence
+  premise_atoms:
+  - HK_continuing_Established
+  head_claim: HK_Cap33_continuing_offence_Applies
+  concepts:
+  - Insurance
+  - continuing
+  - offence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: continuing offence
+- id: HK-C33-contract_in_restraint_of_trade
+  premise_atoms:
+  - HK_contract_Established
+  head_claim: HK_Cap33_contract_in_restraint_of_trade_Applies
+  concepts:
+  - Insurance
+  - contract
+  - restraint
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: contract in restraint of trade
+- id: HK-C33-control
+  premise_atoms:
+  - HK_control_Established
+  head_claim: HK_Cap33_control_Applies
+  concepts:
+  - Insurance
+  - control
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: control
+- id: HK-C33-debar
+  premise_atoms:
+  - HK_debar_Established
+  head_claim: HK_Cap33_debar_Applies
+  concepts:
+  - Insurance
+  - debar
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: debar
+- id: HK-C33-demand
+  premise_atoms:
+  - HK_demand_Established
+  head_claim: HK_Cap33_demand_Applies
+  concepts:
+  - Insurance
+  - demand
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: demand
+- id: HK-C33-equality_of_votes
+  premise_atoms:
+  - HK_equality_Established
+  head_claim: HK_Cap33_equality_of_votes_Applies
+  concepts:
+  - Insurance
+  - equality
+  - votes
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: equality of votes
+- id: HK-C33-expulsion
+  premise_atoms:
+  - HK_expulsion_Established
+  head_claim: HK_Cap33_expulsion_Applies
+  concepts:
+  - Insurance
+  - expulsion
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: expulsion
+- id: HK-C33-false_representation
+  premise_atoms:
+  - HK_false_Established
+  head_claim: HK_Cap33_false_representation_Applies
+  concepts:
+  - Insurance
+  - 'false'
+  - representation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: false representation
+- id: HK-C33-have_more_than_one_vote
+  premise_atoms:
+  - HK_have_Established
+  head_claim: HK_Cap33_have_more_than_one_vote_Applies
+  concepts:
+  - Insurance
+  - have
+  - more
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: have more than one vote
+- id: HK-C33-imposition
+  premise_atoms:
+  - HK_imposition_Established
+  head_claim: HK_Cap33_imposition_Applies
+  concepts:
+  - Insurance
+  - imposition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: imposition
+- id: HK-C33-in_every_case_where____
+  premise_atoms:
+  - HK_in_Established
+  head_claim: HK_Cap33_in_every_case_where_____Applies
+  concepts:
+  - Insurance
+  - every
+  - case
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: in every case where ...
+- id: HK-C33-inspect
+  premise_atoms:
+  - HK_inspect_Established
+  head_claim: HK_Cap33_inspect_Applies
+  concepts:
+  - Insurance
+  - inspect
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: inspect
+- id: HK-C33-legal_representative
+  premise_atoms:
+  - HK_legal_Established
+  head_claim: HK_Cap33_legal_representative_Applies
+  concepts:
+  - Insurance
+  - legal
+  - representative
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: legal representative
+- id: HK-C33-liable_____to_a_further_fine_of_____for_each_day_d
+  premise_atoms:
+  - HK_liable_Established
+  head_claim: HK_Cap33_liable_____to_a_further_fine_of_____for_each_day_d_Applies
+  concepts:
+  - Insurance
+  - liable
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: liable ... to a further fine of ... for each day during which the offence continues
+- id: HK-C33-limited_liability
+  premise_atoms:
+  - HK_limited_Established
+  head_claim: HK_Cap33_limited_liability_Applies
+  concepts:
+  - Insurance
+  - limited
+  - liability
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: limited liability
+- id: HK-C33-liquidator_s_accounts
+  premise_atoms:
+  - HK_liquidator_s_Established
+  head_claim: HK_Cap33_liquidator_s_accounts_Applies
+  concepts:
+  - Insurance
+  - liquidator’s
+  - accounts
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: liquidator’s accounts
+- id: HK-C33-nominee
+  premise_atoms:
+  - HK_nominee_Established
+  head_claim: HK_Cap33_nominee_Applies
+  concepts:
+  - Insurance
+  - nominee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: nominee
+- id: HK-C33-non_age
+  premise_atoms:
+  - HK_non_age_Established
+  head_claim: HK_Cap33_non_age_Applies
+  concepts:
+  - Insurance
+  - non-age
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: non-age
+- id: HK-C33-not_contrary_to____
+  premise_atoms:
+  - HK_not_Established
+  head_claim: HK_Cap33_not_contrary_to_____Applies
+  concepts:
+  - Insurance
+  - contrary
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: not contrary to ...
+- id: HK-C33-obtain_possession_by_false_representation
+  premise_atoms:
+  - HK_obtain_Established
+  head_claim: HK_Cap33_obtain_possession_by_false_representation_Applies
+  concepts:
+  - Insurance
+  - obtain
+  - possession
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: obtain possession by false representation
+- id: HK-C33-outstanding_demand
+  premise_atoms:
+  - HK_outstanding_Established
+  head_claim: HK_Cap33_outstanding_demand_Applies
+  concepts:
+  - Insurance
+  - outstanding
+  - demand
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: outstanding demand
+- id: HK-C33-primary_object
+  premise_atoms:
+  - HK_primary_Established
+  head_claim: HK_Cap33_primary_object_Applies
+  concepts:
+  - Insurance
+  - primary
+  - object
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: primary object
+- id: HK-C33-prior_claim
+  premise_atoms:
+  - HK_prior_Established
+  head_claim: HK_Cap33_prior_claim_Applies
+  concepts:
+  - Insurance
+  - prior
+  - claim
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: prior claim
+- id: HK-C33-prior_registered_charge
+  premise_atoms:
+  - HK_prior_Established
+  head_claim: HK_Cap33_prior_registered_charge_Applies
+  concepts:
+  - Insurance
+  - prior
+  - registered
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: prior registered charge
+- id: HK-C33-refer_____for_the_ruling_of_the_court
+  premise_atoms:
+  - HK_refer_Established
+  head_claim: HK_Cap33_refer_____for_the_ruling_of_the_court_Applies
+  concepts:
+  - Insurance
+  - refer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: refer ... for the ruling of the court
+- id: HK-C33-refer_disputes_to_arbitration
+  premise_atoms:
+  - HK_refer_Established
+  head_claim: HK_Cap33_refer_disputes_to_arbitration_Applies
+  concepts:
+  - Insurance
+  - refer
+  - disputes
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: refer disputes to arbitration
+- id: HK-C33-registered_by_laws
+  premise_atoms:
+  - HK_registered_Established
+  head_claim: HK_Cap33_registered_by_laws_Applies
+  concepts:
+  - Insurance
+  - registered
+  - by-laws
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: registered by-laws
+- id: HK-C33-registered_housing_society
+  premise_atoms:
+  - HK_registered_Established
+  head_claim: HK_Cap33_registered_housing_society_Applies
+  concepts:
+  - Insurance
+  - registered
+  - housing
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: registered housing society
+- id: HK-C33-Registrar_of_Co_operative_Societies
+  premise_atoms:
+  - HK_Registrar_Established
+  head_claim: HK_Cap33_Registrar_of_Co_operative_Societies_Applies
+  concepts:
+  - Insurance
+  - Registrar
+  - Co-operative
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: Registrar of Co-operative Societies
+- id: HK-C33-representation
+  premise_atoms:
+  - HK_representation_Established
+  head_claim: HK_Cap33_representation_Applies
+  concepts:
+  - Insurance
+  - representation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: representation
+- id: HK-C33-retainer
+  premise_atoms:
+  - HK_retainer_Established
+  head_claim: HK_Cap33_retainer_Applies
+  concepts:
+  - Insurance
+  - retainer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: retainer
+- id: HK-C33-ruling
+  premise_atoms:
+  - HK_ruling_Established
+  head_claim: HK_Cap33_ruling_Applies
+  concepts:
+  - Insurance
+  - ruling
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_33
+  output_type: Intermediate_Node
+  source: Cap 33 Insurance
+  term: ruling
+- id: HK-C4A-abstain_from_doing_any_act
+  premise_atoms:
+  - HK_abstain_Established
+  head_claim: HK_Cap4A_abstain_from_doing_any_act_Applies
+  concepts:
+  - Rules_of_High_Court
+  - abstain
+  - from
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: abstain from doing any act
+- id: HK-C4A-abuse_of_the_process_of_the_court
+  premise_atoms:
+  - HK_abuse_Established
+  head_claim: HK_Cap4A_abuse_of_the_process_of_the_court_Applies
+  concepts:
+  - Rules_of_High_Court
+  - abuse
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: abuse of the process of the court
+- id: HK-C4A-accepts_service_of_the_writ
+  premise_atoms:
+  - HK_accepts_Established
+  head_claim: HK_Cap4A_accepts_service_of_the_writ_Applies
+  concepts:
+  - Rules_of_High_Court
+  - accepts
+  - service
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: accepts service of the writ
+- id: HK-C4A-account_____vouched
+  premise_atoms:
+  - HK_account_Established
+  head_claim: HK_Cap4A_account_____vouched_Applies
+  concepts:
+  - Rules_of_High_Court
+  - account
+  - vouched
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: account ... vouched
+- id: HK-C4A-accounting_party
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap4A_accounting_party_Applies
+  concepts:
+  - Rules_of_High_Court
+  - accounting
+  - party
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: accounting party
+- id: HK-C4A-accruing_due
+  premise_atoms:
+  - HK_accruing_Established
+  head_claim: HK_Cap4A_accruing_due_Applies
+  concepts:
+  - Rules_of_High_Court
+  - accruing
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: accruing due
+- id: HK-C4A-acknowledge_service
+  premise_atoms:
+  - HK_acknowledge_Established
+  head_claim: HK_Cap4A_acknowledge_service_Applies
+  concepts:
+  - Rules_of_High_Court
+  - acknowledge
+  - service
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: acknowledge service
+- id: HK-C4A-acknowledge_the_issue_of_the_writ
+  premise_atoms:
+  - HK_acknowledge_Established
+  head_claim: HK_Cap4A_acknowledge_the_issue_of_the_writ_Applies
+  concepts:
+  - Rules_of_High_Court
+  - acknowledge
+  - issue
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: acknowledge the issue of the writ
+- id: HK-C4A-acknowledgment_of_issue
+  premise_atoms:
+  - HK_acknowledgment_Established
+  head_claim: HK_Cap4A_acknowledgment_of_issue_Applies
+  concepts:
+  - Rules_of_High_Court
+  - acknowledgment
+  - issue
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: acknowledgment of issue
+- id: HK-C4A-acknowledgment_of_service
+  premise_atoms:
+  - HK_acknowledgment_Established
+  head_claim: HK_Cap4A_acknowledgment_of_service_Applies
+  concepts:
+  - Rules_of_High_Court
+  - acknowledgment
+  - service
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: acknowledgment of service
+- id: HK-C4A-act_in_person
+  premise_atoms:
+  - HK_act_Established
+  head_claim: HK_Cap4A_act_in_person_Applies
+  concepts:
+  - Rules_of_High_Court
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: act in person
+- id: HK-C4A-acting_in_person
+  premise_atoms:
+  - HK_acting_Established
+  head_claim: HK_Cap4A_acting_in_person_Applies
+  concepts:
+  - Rules_of_High_Court
+  - acting
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: acting in person
+- id: HK-C4A-action_begun_by_writ
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_begun_by_writ_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - begun
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action begun by writ
+- id: HK-C4A-action_for_personal_injuries
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_for_personal_injuries_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - personal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action for personal injuries
+- id: HK-C4A-action_for_recovery_of_land
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_for_recovery_of_land_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - recovery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action for recovery of land
+- id: HK-C4A-action_in_a_particular_list_to_be_removed_from_tha
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_in_a_particular_list_to_be_removed_from_tha_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action in a particular list to be removed from that list
+- id: HK-C4A-action_in_tort
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_in_tort_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - tort
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action in tort
+- id: HK-C4A-action_is_settled
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_is_settled_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - settled
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action is settled
+- id: HK-C4A-action_pending
+  premise_atoms:
+  - HK_action_Established
+  head_claim: HK_Cap4A_action_pending_Applies
+  concepts:
+  - Rules_of_High_Court
+  - action
+  - pending
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: action pending
+- id: HK-C4A-actuated_by_express_malice
+  premise_atoms:
+  - HK_actuated_Established
+  head_claim: HK_Cap4A_actuated_by_express_malice_Applies
+  concepts:
+  - Rules_of_High_Court
+  - actuated
+  - express
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: actuated by express malice
+- id: HK-C4A-added_as_a_defendant
+  premise_atoms:
+  - HK_added_Established
+  head_claim: HK_Cap4A_added_as_a_defendant_Applies
+  concepts:
+  - Rules_of_High_Court
+  - added
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: added as a defendant
+- id: HK-C4A-added_defendant
+  premise_atoms:
+  - HK_added_Established
+  head_claim: HK_Cap4A_added_defendant_Applies
+  concepts:
+  - Rules_of_High_Court
+  - added
+  - defendant
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: added defendant
+- id: HK-C4A-addition_____of_a_new_party
+  premise_atoms:
+  - HK_addition_Established
+  head_claim: HK_Cap4A_addition_____of_a_new_party_Applies
+  concepts:
+  - Rules_of_High_Court
+  - addition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: addition ... of a new party
+- id: HK-C4A-additional_costs
+  premise_atoms:
+  - HK_additional_Established
+  head_claim: HK_Cap4A_additional_costs_Applies
+  concepts:
+  - Rules_of_High_Court
+  - additional
+  - costs
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: additional costs
+- id: HK-C4A-address_for_service
+  premise_atoms:
+  - HK_address_Established
+  head_claim: HK_Cap4A_address_for_service_Applies
+  concepts:
+  - Rules_of_High_Court
+  - address
+  - service
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: address for service
+- id: HK-C4A-adjourned_generally
+  premise_atoms:
+  - HK_adjourned_Established
+  head_claim: HK_Cap4A_adjourned_generally_Applies
+  concepts:
+  - Rules_of_High_Court
+  - adjourned
+  - generally
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: adjourned generally
+- id: HK-C4A-adjournment_into_court
+  premise_atoms:
+  - HK_adjournment_Established
+  head_claim: HK_Cap4A_adjournment_into_court_Applies
+  concepts:
+  - Rules_of_High_Court
+  - adjournment
+  - into
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: adjournment into court
+- id: HK-C4A-adjudicate
+  premise_atoms:
+  - HK_adjudicate_Established
+  head_claim: HK_Cap4A_adjudicate_Applies
+  concepts:
+  - Rules_of_High_Court
+  - adjudicate
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: adjudicate
+- id: HK-C4A-administer_oaths_and_take_declarations
+  premise_atoms:
+  - HK_administer_Established
+  head_claim: HK_Cap4A_administer_oaths_and_take_declarations_Applies
+  concepts:
+  - Rules_of_High_Court
+  - administer
+  - oaths
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: administer oaths and take declarations
+- id: HK-C4A-administration_action
+  premise_atoms:
+  - HK_administration_Established
+  head_claim: HK_Cap4A_administration_action_Applies
+  concepts:
+  - Rules_of_High_Court
+  - administration
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: administration action
+- id: HK-C4A-Admiralty_action
+  premise_atoms:
+  - HK_Admiralty_Established
+  head_claim: HK_Cap4A_Admiralty_action_Applies
+  concepts:
+  - Rules_of_High_Court
+  - Admiralty
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: Admiralty action
+- id: HK-C4A-Admiralty_action_in_personam
+  premise_atoms:
+  - HK_Admiralty_Established
+  head_claim: HK_Cap4A_Admiralty_action_in_personam_Applies
+  concepts:
+  - Rules_of_High_Court
+  - Admiralty
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: Admiralty action in personam
+- id: HK-C4A-Admiralty_action_in_rem
+  premise_atoms:
+  - HK_Admiralty_Established
+  head_claim: HK_Cap4A_Admiralty_action_in_rem_Applies
+  concepts:
+  - Rules_of_High_Court
+  - Admiralty
+  - action
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: Admiralty action in rem
+- id: HK-C4A-Admiralty_causes_and_matters
+  premise_atoms:
+  - HK_Admiralty_Established
+  head_claim: HK_Cap4A_Admiralty_causes_and_matters_Applies
+  concepts:
+  - Rules_of_High_Court
+  - Admiralty
+  - causes
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: Admiralty causes and matters
+- id: HK-C4A-admissions_of_fact
+  premise_atoms:
+  - HK_admissions_Established
+  head_claim: HK_Cap4A_admissions_of_fact_Applies
+  concepts:
+  - Rules_of_High_Court
+  - admissions
+  - fact
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: admissions of fact
+- id: HK-C4A-admit
+  premise_atoms:
+  - HK_admit_Established
+  head_claim: HK_Cap4A_admit_Applies
+  concepts:
+  - Rules_of_High_Court
+  - admit
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: admit
+- id: HK-C4A-admit_the_claim
+  premise_atoms:
+  - HK_admit_Established
+  head_claim: HK_Cap4A_admit_the_claim_Applies
+  concepts:
+  - Rules_of_High_Court
+  - admit
+  - claim
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: admit the claim
+- id: HK-C4A-adverse_claims
+  premise_atoms:
+  - HK_adverse_Established
+  head_claim: HK_Cap4A_adverse_claims_Applies
+  concepts:
+  - Rules_of_High_Court
+  - adverse
+  - claims
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: adverse claims
+- id: HK-C4A-adverse_to____
+  premise_atoms:
+  - HK_adverse_Established
+  head_claim: HK_Cap4A_adverse_to_____Applies
+  concepts:
+  - Rules_of_High_Court
+  - adverse
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: adverse to ...
+- id: HK-C4A-affidavit_evidence
+  premise_atoms:
+  - HK_affidavit_Established
+  head_claim: HK_Cap4A_affidavit_evidence_Applies
+  concepts:
+  - Rules_of_High_Court
+  - affidavit
+  - evidence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: affidavit evidence
+- id: HK-C4A-affidavit_of_fitness
+  premise_atoms:
+  - HK_affidavit_Established
+  head_claim: HK_Cap4A_affidavit_of_fitness_Applies
+  concepts:
+  - Rules_of_High_Court
+  - affidavit
+  - fitness
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: affidavit of fitness
+- id: HK-C4A-affidavit_verifying_list_of_documents
+  premise_atoms:
+  - HK_affidavit_Established
+  head_claim: HK_Cap4A_affidavit_verifying_list_of_documents_Applies
+  concepts:
+  - Rules_of_High_Court
+  - affidavit
+  - verifying
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: affidavit verifying list of documents
+- id: HK-C4A-aided_person
+  premise_atoms:
+  - HK_aided_Established
+  head_claim: HK_Cap4A_aided_person_Applies
+  concepts:
+  - Rules_of_High_Court
+  - aided
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: aided person
+- id: HK-C4A-allegation_of_fraud
+  premise_atoms:
+  - HK_allegation_Established
+  head_claim: HK_Cap4A_allegation_of_fraud_Applies
+  concepts:
+  - Rules_of_High_Court
+  - allegation
+  - fraud
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: allegation of fraud
+- id: HK-C4A-alleged_will
+  premise_atoms:
+  - HK_alleged_Established
+  head_claim: HK_Cap4A_alleged_will_Applies
+  concepts:
+  - Rules_of_High_Court
+  - alleged
+  - will
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: alleged will
+- id: HK-C4A-allocatur___it_is_allowed__
+  premise_atoms:
+  - HK_allocatur_Established
+  head_claim: HK_Cap4A_allocatur___it_is_allowed___Applies
+  concepts:
+  - Rules_of_High_Court
+  - allocatur
+  - '["it'
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: allocatur ["it is allowed"]
+- id: HK-C4A-allow_the_appeal
+  premise_atoms:
+  - HK_allow_Established
+  head_claim: HK_Cap4A_allow_the_appeal_Applies
+  concepts:
+  - Rules_of_High_Court
+  - allow
+  - appeal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: allow the appeal
+- id: HK-C4A-alternative_claim
+  premise_atoms:
+  - HK_alternative_Established
+  head_claim: HK_Cap4A_alternative_claim_Applies
+  concepts:
+  - Rules_of_High_Court
+  - alternative
+  - claim
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: alternative claim
+- id: HK-C4A-alternative_directions
+  premise_atoms:
+  - HK_alternative_Established
+  head_claim: HK_Cap4A_alternative_directions_Applies
+  concepts:
+  - Rules_of_High_Court
+  - alternative
+  - directions
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: alternative directions
+- id: HK-C4A-alternative_dispute_resolution_procedure
+  premise_atoms:
+  - HK_alternative_Established
+  head_claim: HK_Cap4A_alternative_dispute_resolution_procedure_Applies
+  concepts:
+  - Rules_of_High_Court
+  - alternative
+  - dispute
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_4A
+  output_type: Intermediate_Node
+  source: Cap 4A Rules_of_High_Court
+  term: alternative dispute resolution procedure
+- id: HK-C571-a_bank_incorporated_outside_Hong_Kong
+  premise_atoms:
+  - HK_a_Established
+  head_claim: HK_Cap571_a_bank_incorporated_outside_Hong_Kong_Applies
+  concepts:
+  - Securities_Futures
+  - bank
+  - incorporated
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: a bank incorporated outside Hong Kong
+- id: HK-C571-accept
+  premise_atoms:
+  - HK_accept_Established
+  head_claim: HK_Cap571_accept_Applies
+  concepts:
+  - Securities_Futures
+  - accept
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accept
+- id: HK-C571-acceptable_participant
+  premise_atoms:
+  - HK_acceptable_Established
+  head_claim: HK_Cap571_acceptable_participant_Applies
+  concepts:
+  - Securities_Futures
+  - acceptable
+  - participant
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: acceptable participant
+- id: HK-C571-acceptance
+  premise_atoms:
+  - HK_acceptance_Established
+  head_claim: HK_Cap571_acceptance_Applies
+  concepts:
+  - Securities_Futures
+  - acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: acceptance
+- id: HK-C571-accounting_principles
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap571_accounting_principles_Applies
+  concepts:
+  - Securities_Futures
+  - accounting
+  - principles
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accounting principles
+- id: HK-C571-accreditation
+  premise_atoms:
+  - HK_accreditation_Established
+  head_claim: HK_Cap571_accreditation_Applies
+  concepts:
+  - Securities_Futures
+  - accreditation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accreditation
+- id: HK-C571-accreditation__of_a_licensed_representative_
+  premise_atoms:
+  - HK_accreditation_Established
+  head_claim: HK_Cap571_accreditation__of_a_licensed_representative__Applies
+  concepts:
+  - Securities_Futures
+  - accreditation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accreditation (of a licensed representative)
+- id: HK-C571-accredited
+  premise_atoms:
+  - HK_accredited_Established
+  head_claim: HK_Cap571_accredited_Applies
+  concepts:
+  - Securities_Futures
+  - accredited
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accredited
+- id: HK-C571-accredited_to_a_licensed_corporation
+  premise_atoms:
+  - HK_accredited_Established
+  head_claim: HK_Cap571_accredited_to_a_licensed_corporation_Applies
+  concepts:
+  - Securities_Futures
+  - accredited
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: accredited to a licensed corporation
+- id: HK-C571-acquire
+  premise_atoms:
+  - HK_acquire_Established
+  head_claim: HK_Cap571_acquire_Applies
+  concepts:
+  - Securities_Futures
+  - acquire
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: acquire
+- id: HK-C571-act_together
+  premise_atoms:
+  - HK_act_Established
+  head_claim: HK_Cap571_act_together_Applies
+  concepts:
+  - Securities_Futures
+  - together
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: act together
+- id: HK-C571-acting_in_a_professional_capacity
+  premise_atoms:
+  - HK_acting_Established
+  head_claim: HK_Cap571_acting_in_a_professional_capacity_Applies
+  concepts:
+  - Securities_Futures
+  - acting
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: acting in a professional capacity
+- id: HK-C571-active_trading
+  premise_atoms:
+  - HK_active_Established
+  head_claim: HK_Cap571_active_trading_Applies
+  concepts:
+  - Securities_Futures
+  - active
+  - trading
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: active trading
+- id: HK-C571-actual_notice
+  premise_atoms:
+  - HK_actual_Established
+  head_claim: HK_Cap571_actual_notice_Applies
+  concepts:
+  - Securities_Futures
+  - actual
+  - notice
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: actual notice
+- id: HK-C571-adjournment
+  premise_atoms:
+  - HK_adjournment_Established
+  head_claim: HK_Cap571_adjournment_Applies
+  concepts:
+  - Securities_Futures
+  - adjournment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: adjournment
+- id: HK-C571-advance_notice
+  premise_atoms:
+  - HK_advance_Established
+  head_claim: HK_Cap571_advance_notice_Applies
+  concepts:
+  - Securities_Futures
+  - advance
+  - notice
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: advance notice
+- id: HK-C571-adverse_statement
+  premise_atoms:
+  - HK_adverse_Established
+  head_claim: HK_Cap571_adverse_statement_Applies
+  concepts:
+  - Securities_Futures
+  - adverse
+  - statement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: adverse statement
+- id: HK-C571-advertisement
+  premise_atoms:
+  - HK_advertisement_Established
+  head_claim: HK_Cap571_advertisement_Applies
+  concepts:
+  - Securities_Futures
+  - advertisement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: advertisement
+- id: HK-C571-advise_on____
+  premise_atoms:
+  - HK_advise_Established
+  head_claim: HK_Cap571_advise_on_____Applies
+  concepts:
+  - Securities_Futures
+  - advise
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: advise on ...
+- id: HK-C571-amount_at_credit
+  premise_atoms:
+  - HK_amount_Established
+  head_claim: HK_Cap571_amount_at_credit_Applies
+  concepts:
+  - Securities_Futures
+  - amount
+  - credit
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: amount at credit
+- id: HK-C571-annual_fee
+  premise_atoms:
+  - HK_annual_Established
+  head_claim: HK_Cap571_annual_fee_Applies
+  concepts:
+  - Securities_Futures
+  - annual
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: annual fee
+- id: HK-C571-appeal_is_withdrawn
+  premise_atoms:
+  - HK_appeal_Established
+  head_claim: HK_Cap571_appeal_is_withdrawn_Applies
+  concepts:
+  - Securities_Futures
+  - appeal
+  - withdrawn
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: appeal is withdrawn
+- id: HK-C571-appeal_panel
+  premise_atoms:
+  - HK_appeal_Established
+  head_claim: HK_Cap571_appeal_panel_Applies
+  concepts:
+  - Securities_Futures
+  - appeal
+  - panel
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: appeal panel
+- id: HK-C571-appearance
+  premise_atoms:
+  - HK_appearance_Established
+  head_claim: HK_Cap571_appearance_Applies
+  concepts:
+  - Securities_Futures
+  - appearance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: appearance
+- id: HK-C571-application_for_review
+  premise_atoms:
+  - HK_application_Established
+  head_claim: HK_Cap571_application_for_review_Applies
+  concepts:
+  - Securities_Futures
+  - application
+  - review
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: application for review
+- id: HK-C571-approved_person
+  premise_atoms:
+  - HK_approved_Established
+  head_claim: HK_Cap571_approved_person_Applies
+  concepts:
+  - Securities_Futures
+  - approved
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: approved person
+- id: HK-C571-approved_trustee
+  premise_atoms:
+  - HK_approved_Established
+  head_claim: HK_Cap571_approved_trustee_Applies
+  concepts:
+  - Securities_Futures
+  - approved
+  - trustee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: approved trustee
+- id: HK-C571-arbitration_panel
+  premise_atoms:
+  - HK_arbitration_Established
+  head_claim: HK_Cap571_arbitration_panel_Applies
+  concepts:
+  - Securities_Futures
+  - arbitration
+  - panel
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: arbitration panel
+- id: HK-C571-arise_out_of
+  premise_atoms:
+  - HK_arise_Established
+  head_claim: HK_Cap571_arise_out_of_Applies
+  concepts:
+  - Securities_Futures
+  - arise
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: arise out of
+- id: HK-C571-artificial_transaction
+  premise_atoms:
+  - HK_artificial_Established
+  head_claim: HK_Cap571_artificial_transaction_Applies
+  concepts:
+  - Securities_Futures
+  - artificial
+  - transaction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: artificial transaction
+- id: HK-C571-as_soon_as_reasonably_practicable
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap571_as_soon_as_reasonably_practicable_Applies
+  concepts:
+  - Securities_Futures
+  - soon
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: as soon as reasonably practicable
+- id: HK-C571-asserting
+  premise_atoms:
+  - HK_asserting_Established
+  head_claim: HK_Cap571_asserting_Applies
+  concepts:
+  - Securities_Futures
+  - asserting
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: asserting
+- id: HK-C571-associate__n__
+  premise_atoms:
+  - HK_associate_Established
+  head_claim: HK_Cap571_associate__n___Applies
+  concepts:
+  - Securities_Futures
+  - associate
+  - (n.)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: associate (n.)
+- id: HK-C571-associated_corporation
+  premise_atoms:
+  - HK_associated_Established
+  head_claim: HK_Cap571_associated_corporation_Applies
+  concepts:
+  - Securities_Futures
+  - associated
+  - corporation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: associated corporation
+- id: HK-C571-associated_entity
+  premise_atoms:
+  - HK_associated_Established
+  head_claim: HK_Cap571_associated_entity_Applies
+  concepts:
+  - Securities_Futures
+  - associated
+  - entity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: associated entity
+- id: HK-C571-associated_person
+  premise_atoms:
+  - HK_associated_Established
+  head_claim: HK_Cap571_associated_person_Applies
+  concepts:
+  - Securities_Futures
+  - associated
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: associated person
+- id: HK-C571-at_the_request_or_with_the_consent_of____
+  premise_atoms:
+  - HK_at_Established
+  head_claim: HK_Cap571_at_the_request_or_with_the_consent_of_____Applies
+  concepts:
+  - Securities_Futures
+  - request
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: at the request or with the consent of ...
+- id: HK-C571-attached_to
+  premise_atoms:
+  - HK_attached_Established
+  head_claim: HK_Cap571_attached_to_Applies
+  concepts:
+  - Securities_Futures
+  - attached
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: attached to
+- id: HK-C571-attributable_to
+  premise_atoms:
+  - HK_attributable_Established
+  head_claim: HK_Cap571_attributable_to_Applies
+  concepts:
+  - Securities_Futures
+  - attributable
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: attributable to
+- id: HK-C571-authorization
+  premise_atoms:
+  - HK_authorization_Established
+  head_claim: HK_Cap571_authorization_Applies
+  concepts:
+  - Securities_Futures
+  - authorization
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: authorization
+- id: HK-C571-authorized_capital
+  premise_atoms:
+  - HK_authorized_Established
+  head_claim: HK_Cap571_authorized_capital_Applies
+  concepts:
+  - Securities_Futures
+  - authorized
+  - capital
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: authorized capital
+- id: HK-C571-authorized_person
+  premise_atoms:
+  - HK_authorized_Established
+  head_claim: HK_Cap571_authorized_person_Applies
+  concepts:
+  - Securities_Futures
+  - authorized
+  - person
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: authorized person
+- id: HK-C571-automated_trading_services
+  premise_atoms:
+  - HK_automated_Established
+  head_claim: HK_Cap571_automated_trading_services_Applies
+  concepts:
+  - Securities_Futures
+  - automated
+  - trading
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: automated trading services
+- id: HK-C571-banker_s_books
+  premise_atoms:
+  - HK_banker_s_Established
+  head_claim: HK_Cap571_banker_s_books_Applies
+  concepts:
+  - Securities_Futures
+  - banker's
+  - books
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: banker's books
+- id: HK-C571-bare_trustee
+  premise_atoms:
+  - HK_bare_Established
+  head_claim: HK_Cap571_bare_trustee_Applies
+  concepts:
+  - Securities_Futures
+  - bare
+  - trustee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: bare trustee
+- id: HK-C571-become_aware_of
+  premise_atoms:
+  - HK_become_Established
+  head_claim: HK_Cap571_become_aware_of_Applies
+  concepts:
+  - Securities_Futures
+  - become
+  - aware
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: become aware of
+- id: HK-C571-benefit
+  premise_atoms:
+  - HK_benefit_Established
+  head_claim: HK_Cap571_benefit_Applies
+  concepts:
+  - Securities_Futures
+  - benefit
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: benefit
+- id: HK-C571-bona_fide_employee
+  premise_atoms:
+  - HK_bona_Established
+  head_claim: HK_Cap571_bona_fide_employee_Applies
+  concepts:
+  - Securities_Futures
+  - bona
+  - fide
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: bona fide employee
+- id: HK-C571-bonds_with_warrants
+  premise_atoms:
+  - HK_bonds_Established
+  head_claim: HK_Cap571_bonds_with_warrants_Applies
+  concepts:
+  - Securities_Futures
+  - bonds
+  - with
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: bonds with warrants
+- id: HK-C571-borrow_money_on_security
+  premise_atoms:
+  - HK_borrow_Established
+  head_claim: HK_Cap571_borrow_money_on_security_Applies
+  concepts:
+  - Securities_Futures
+  - borrow
+  - money
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_571
+  output_type: Intermediate_Node
+  source: Cap 571 Securities_Futures
+  term: borrow money on security
+- id: HK-C6-abscond
+  premise_atoms:
+  - HK_abscond_Established
+  head_claim: HK_Cap6_abscond_Applies
+  concepts:
+  - Bankruptcy
+  - abscond
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: abscond
+- id: HK-C6-accrued_holiday_remuneration
+  premise_atoms:
+  - HK_accrued_Established
+  head_claim: HK_Cap6_accrued_holiday_remuneration_Applies
+  concepts:
+  - Bankruptcy
+  - accrued
+  - holiday
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: accrued holiday remuneration
+- id: HK-C6-acquiring_____possession
+  premise_atoms:
+  - HK_acquiring_Established
+  head_claim: HK_Cap6_acquiring_____possession_Applies
+  concepts:
+  - Bankruptcy
+  - acquiring
+  - possession
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: acquiring ... possession
+- id: HK-C6-act_with_impartiality
+  premise_atoms:
+  - HK_act_Established
+  head_claim: HK_Cap6_act_with_impartiality_Applies
+  concepts:
+  - Bankruptcy
+  - with
+  - impartiality
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: act with impartiality
+- id: HK-C6-actual_out_of_pocket_expenses
+  premise_atoms:
+  - HK_actual_Established
+  head_claim: HK_Cap6_actual_out_of_pocket_expenses_Applies
+  concepts:
+  - Bankruptcy
+  - actual
+  - out-of-pocket
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: actual out-of-pocket expenses
+- id: HK-C6-adjudged_bankrupt
+  premise_atoms:
+  - HK_adjudged_Established
+  head_claim: HK_Cap6_adjudged_bankrupt_Applies
+  concepts:
+  - Bankruptcy
+  - adjudged
+  - bankrupt
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: adjudged bankrupt
+- id: HK-C6-adjudicated_bankrupt
+  premise_atoms:
+  - HK_adjudicated_Established
+  head_claim: HK_Cap6_adjudicated_bankrupt_Applies
+  concepts:
+  - Bankruptcy
+  - adjudicated
+  - bankrupt
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: adjudicated bankrupt
+- id: HK-C6-adjudication_of_bankruptcy
+  premise_atoms:
+  - HK_adjudication_Established
+  head_claim: HK_Cap6_adjudication_of_bankruptcy_Applies
+  concepts:
+  - Bankruptcy
+  - adjudication
+  - bankruptcy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: adjudication of bankruptcy
+- id: HK-C6-administration_in_bankruptcy
+  premise_atoms:
+  - HK_administration_Established
+  head_claim: HK_Cap6_administration_in_bankruptcy_Applies
+  concepts:
+  - Bankruptcy
+  - administration
+  - bankruptcy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: administration in bankruptcy
+- id: HK-C6-administration_in_bankruptcy__of_the_estate_of_a_d
+  premise_atoms:
+  - HK_administration_Established
+  head_claim: HK_Cap6_administration_in_bankruptcy__of_the_estate_of_a_d_Applies
+  concepts:
+  - Bankruptcy
+  - administration
+  - bankruptcy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: administration in bankruptcy (of the estate of a deceased bankrupt)
+- id: HK-C6-administration_order
+  premise_atoms:
+  - HK_administration_Established
+  head_claim: HK_Cap6_administration_order_Applies
+  concepts:
+  - Bankruptcy
+  - administration
+  - order
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: administration order
+- id: HK-C6-adopted_child
+  premise_atoms:
+  - HK_adopted_Established
+  head_claim: HK_Cap6_adopted_child_Applies
+  concepts:
+  - Bankruptcy
+  - adopted
+  - child
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: adopted child
+- id: HK-C6-advertise
+  premise_atoms:
+  - HK_advertise_Established
+  head_claim: HK_Cap6_advertise_Applies
+  concepts:
+  - Bankruptcy
+  - advertise
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: advertise
+- id: HK-C6-alone_or_jointly_with____
+  premise_atoms:
+  - HK_alone_Established
+  head_claim: HK_Cap6_alone_or_jointly_with_____Applies
+  concepts:
+  - Bankruptcy
+  - alone
+  - jointly
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: alone or jointly with ...
+- id: HK-C6-annul
+  premise_atoms:
+  - HK_annul_Established
+  head_claim: HK_Cap6_annul_Applies
+  concepts:
+  - Bankruptcy
+  - annul
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: annul
+- id: HK-C6-appearance_to____
+  premise_atoms:
+  - HK_appearance_Established
+  head_claim: HK_Cap6_appearance_to_____Applies
+  concepts:
+  - Bankruptcy
+  - appearance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: appearance to ...
+- id: HK-C6-appointed
+  premise_atoms:
+  - HK_appointed_Established
+  head_claim: HK_Cap6_appointed_Applies
+  concepts:
+  - Bankruptcy
+  - appointed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: appointed
+- id: HK-C6-arbitration_funding
+  premise_atoms:
+  - HK_arbitration_Established
+  head_claim: HK_Cap6_arbitration_funding_Applies
+  concepts:
+  - Bankruptcy
+  - arbitration
+  - funding
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: arbitration funding
+- id: HK-C6-arising_out_of_or_incident_to____
+  premise_atoms:
+  - HK_arising_Established
+  head_claim: HK_Cap6_arising_out_of_or_incident_to_____Applies
+  concepts:
+  - Bankruptcy
+  - arising
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: arising out of or incident to ...
+- id: HK-C6-as_respects____
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap6_as_respects_____Applies
+  concepts:
+  - Bankruptcy
+  - respects
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: as respects ...
+- id: HK-C6-as_soon_as_may_be
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap6_as_soon_as_may_be_Applies
+  concepts:
+  - Bankruptcy
+  - soon
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: as soon as may be
+- id: HK-C6-Assistant_Official_Receiver__Case_Management_
+  premise_atoms:
+  - HK_Assistant_Established
+  head_claim: HK_Cap6_Assistant_Official_Receiver__Case_Management__Applies
+  concepts:
+  - Bankruptcy
+  - Assistant
+  - Official
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: Assistant Official Receiver (Case Management)
+- id: HK-C6-Assistant_Official_Receiver__Legal_
+  premise_atoms:
+  - HK_Assistant_Established
+  head_claim: HK_Cap6_Assistant_Official_Receiver__Legal__Applies
+  concepts:
+  - Bankruptcy
+  - Assistant
+  - Official
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: Assistant Official Receiver (Legal)
+- id: HK-C6-Assistant_Principal_Solicitor
+  premise_atoms:
+  - HK_Assistant_Established
+  head_claim: HK_Cap6_Assistant_Principal_Solicitor_Applies
+  concepts:
+  - Bankruptcy
+  - Assistant
+  - Principal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: Assistant Principal Solicitor
+- id: HK-C6-associate_of_the_bankrupt
+  premise_atoms:
+  - HK_associate_Established
+  head_claim: HK_Cap6_associate_of_the_bankrupt_Applies
+  concepts:
+  - Bankruptcy
+  - associate
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: associate of the bankrupt
+- id: HK-C6-attach_conditions_to
+  premise_atoms:
+  - HK_attach_Established
+  head_claim: HK_Cap6_attach_conditions_to_Applies
+  concepts:
+  - Bankruptcy
+  - attach
+  - conditions
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: attach conditions to
+- id: HK-C6-attached_____debt
+  premise_atoms:
+  - HK_attached_Established
+  head_claim: HK_Cap6_attached_____debt_Applies
+  concepts:
+  - Bankruptcy
+  - attached
+  - debt
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: attached ... debt
+- id: HK-C6-attachment_of_earnings
+  premise_atoms:
+  - HK_attachment_Established
+  head_claim: HK_Cap6_attachment_of_earnings_Applies
+  concepts:
+  - Bankruptcy
+  - attachment
+  - earnings
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: attachment of earnings
+- id: HK-C6-attestation_on_honour
+  premise_atoms:
+  - HK_attestation_Established
+  head_claim: HK_Cap6_attestation_on_honour_Applies
+  concepts:
+  - Bankruptcy
+  - attestation
+  - honour
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: attestation on honour
+- id: HK-C6-attorney
+  premise_atoms:
+  - HK_attorney_Established
+  head_claim: HK_Cap6_attorney_Applies
+  concepts:
+  - Bankruptcy
+  - attorney
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: attorney
+- id: HK-C6-auctioneer
+  premise_atoms:
+  - HK_auctioneer_Established
+  head_claim: HK_Cap6_auctioneer_Applies
+  concepts:
+  - Bankruptcy
+  - auctioneer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: auctioneer
+- id: HK-C6-authentication
+  premise_atoms:
+  - HK_authentication_Established
+  head_claim: HK_Cap6_authentication_Applies
+  concepts:
+  - Bankruptcy
+  - authentication
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: authentication
+- id: HK-C6-bankrupt__adj___n__
+  premise_atoms:
+  - HK_bankrupt_Established
+  head_claim: HK_Cap6_bankrupt__adj___n___Applies
+  concepts:
+  - Bankruptcy
+  - bankrupt
+  - (adj.,
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankrupt (adj., n.)
+- id: HK-C6-bankruptcy
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy
+- id: HK-C6-bankruptcy_court
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_court_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - court
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy court
+- id: HK-C6-bankruptcy_debt
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_debt_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - debt
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy debt
+- id: HK-C6-Bankruptcy_Estate_Account
+  premise_atoms:
+  - HK_Bankruptcy_Established
+  head_claim: HK_Cap6_Bankruptcy_Estate_Account_Applies
+  concepts:
+  - Bankruptcy
+  - Bankruptcy
+  - Estate
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: Bankruptcy Estate Account
+- id: HK-C6-bankruptcy_jurisdiction
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_jurisdiction_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - jurisdiction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy jurisdiction
+- id: HK-C6-bankruptcy_order
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_order_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - order
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy order
+- id: HK-C6-bankruptcy_petition
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_petition_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - petition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy petition
+- id: HK-C6-bankruptcy_proceedings
+  premise_atoms:
+  - HK_bankruptcy_Established
+  head_claim: HK_Cap6_bankruptcy_proceedings_Applies
+  concepts:
+  - Bankruptcy
+  - bankruptcy
+  - proceedings
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bankruptcy proceedings
+- id: HK-C6-be_excluded_from____
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap6_be_excluded_from_____Applies
+  concepts:
+  - Bankruptcy
+  - excluded
+  - from
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: be excluded from ...
+- id: HK-C6-be_punished_accordingly
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap6_be_punished_accordingly_Applies
+  concepts:
+  - Bankruptcy
+  - punished
+  - accordingly
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: be punished accordingly
+- id: HK-C6-beneficial_winding_up
+  premise_atoms:
+  - HK_beneficial_Established
+  head_claim: HK_Cap6_beneficial_winding_up_Applies
+  concepts:
+  - Bankruptcy
+  - beneficial
+  - winding
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: beneficial winding up
+- id: HK-C6-book_debt
+  premise_atoms:
+  - HK_book_Established
+  head_claim: HK_Cap6_book_debt_Applies
+  concepts:
+  - Bankruptcy
+  - book
+  - debt
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: book debt
+- id: HK-C6-books_or_accounts
+  premise_atoms:
+  - HK_books_Established
+  head_claim: HK_Cap6_books_or_accounts_Applies
+  concepts:
+  - Bankruptcy
+  - books
+  - accounts
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: books or accounts
+- id: HK-C6-breach_of_duty
+  premise_atoms:
+  - HK_breach_Established
+  head_claim: HK_Cap6_breach_of_duty_Applies
+  concepts:
+  - Bankruptcy
+  - breach
+  - duty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: breach of duty
+- id: HK-C6-bring_____any_action
+  premise_atoms:
+  - HK_bring_Established
+  head_claim: HK_Cap6_bring_____any_action_Applies
+  concepts:
+  - Bankruptcy
+  - bring
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: bring ... any action
+- id: HK-C6-burdened_with_____covenants
+  premise_atoms:
+  - HK_burdened_Established
+  head_claim: HK_Cap6_burdened_with_____covenants_Applies
+  concepts:
+  - Bankruptcy
+  - burdened
+  - with
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: burdened with ... covenants
+- id: HK-C6-by_commission
+  premise_atoms:
+  - HK_by_Established
+  head_claim: HK_Cap6_by_commission_Applies
+  concepts:
+  - Bankruptcy
+  - commission
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_6
+  output_type: Intermediate_Node
+  source: Cap 6 Bankruptcy
+  term: by commission
+- id: HK-C622-abandoning_or_restricting_any_of_the_objects
+  premise_atoms:
+  - HK_abandoning_Established
+  head_claim: HK_Cap622_abandoning_or_restricting_any_of_the_objects_Applies
+  concepts:
+  - Companies_Ordinance
+  - abandoning
+  - restricting
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: abandoning or restricting any of the objects
+- id: HK-C622-abrogation
+  premise_atoms:
+  - HK_abrogation_Established
+  head_claim: HK_Cap622_abrogation_Applies
+  concepts:
+  - Companies_Ordinance
+  - abrogation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: abrogation
+- id: HK-C622-absolutely_or_conditionally
+  premise_atoms:
+  - HK_absolutely_Established
+  head_claim: HK_Cap622_absolutely_or_conditionally_Applies
+  concepts:
+  - Companies_Ordinance
+  - absolutely
+  - conditionally
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: absolutely or conditionally
+- id: HK-C622-accept_loans_of_money_at_interest
+  premise_atoms:
+  - HK_accept_Established
+  head_claim: HK_Cap622_accept_loans_of_money_at_interest_Applies
+  concepts:
+  - Companies_Ordinance
+  - accept
+  - loans
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accept loans of money at interest
+- id: HK-C622-accidental_omission
+  premise_atoms:
+  - HK_accidental_Established
+  head_claim: HK_Cap622_accidental_omission_Applies
+  concepts:
+  - Companies_Ordinance
+  - accidental
+  - omission
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accidental omission
+- id: HK-C622-accidental_or_due_to_inadvertence
+  premise_atoms:
+  - HK_accidental_Established
+  head_claim: HK_Cap622_accidental_or_due_to_inadvertence_Applies
+  concepts:
+  - Companies_Ordinance
+  - accidental
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accidental or due to inadvertence
+- id: HK-C622-accompanying_instrument
+  premise_atoms:
+  - HK_accompanying_Established
+  head_claim: HK_Cap622_accompanying_instrument_Applies
+  concepts:
+  - Companies_Ordinance
+  - accompanying
+  - instrument
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accompanying instrument
+- id: HK-C622-accordingly
+  premise_atoms:
+  - HK_accordingly_Established
+  head_claim: HK_Cap622_accordingly_Applies
+  concepts:
+  - Companies_Ordinance
+  - accordingly
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accordingly
+- id: HK-C622-accounting_records
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap622_accounting_records_Applies
+  concepts:
+  - Companies_Ordinance
+  - accounting
+  - records
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accounting records
+- id: HK-C622-accounting_reference_date
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap622_accounting_reference_date_Applies
+  concepts:
+  - Companies_Ordinance
+  - accounting
+  - reference
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accounting reference date
+- id: HK-C622-accounting_reference_period
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap622_accounting_reference_period_Applies
+  concepts:
+  - Companies_Ordinance
+  - accounting
+  - reference
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accounting reference period
+- id: HK-C622-accounting_standards
+  premise_atoms:
+  - HK_accounting_Established
+  head_claim: HK_Cap622_accounting_standards_Applies
+  concepts:
+  - Companies_Ordinance
+  - accounting
+  - standards
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accounting standards
+- id: HK-C622-accumulated__unrealized_losses
+  premise_atoms:
+  - HK_accumulated__Established
+  head_claim: HK_Cap622_accumulated__unrealized_losses_Applies
+  concepts:
+  - Companies_Ordinance
+  - accumulated,
+  - unrealized
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accumulated, unrealized losses
+- id: HK-C622-accumulated__unrealized_profits
+  premise_atoms:
+  - HK_accumulated__Established
+  head_claim: HK_Cap622_accumulated__unrealized_profits_Applies
+  concepts:
+  - Companies_Ordinance
+  - accumulated,
+  - unrealized
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accumulated, unrealized profits
+- id: HK-C622-accustomed_to_act
+  premise_atoms:
+  - HK_accustomed_Established
+  head_claim: HK_Cap622_accustomed_to_act_Applies
+  concepts:
+  - Companies_Ordinance
+  - accustomed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: accustomed to act
+- id: HK-C622-acquisition
+  premise_atoms:
+  - HK_acquisition_Established
+  head_claim: HK_Cap622_acquisition_Applies
+  concepts:
+  - Companies_Ordinance
+  - acquisition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: acquisition
+- id: HK-C622-acquisition_of_shares
+  premise_atoms:
+  - HK_acquisition_Established
+  head_claim: HK_Cap622_acquisition_of_shares_Applies
+  concepts:
+  - Companies_Ordinance
+  - acquisition
+  - shares
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: acquisition of shares
+- id: HK-C622-adaptations
+  premise_atoms:
+  - HK_adaptations_Established
+  head_claim: HK_Cap622_adaptations_Applies
+  concepts:
+  - Companies_Ordinance
+  - adaptations
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: adaptations
+- id: HK-C622-affixing_an_official_seal
+  premise_atoms:
+  - HK_affixing_Established
+  head_claim: HK_Cap622_affixing_an_official_seal_Applies
+  concepts:
+  - Companies_Ordinance
+  - affixing
+  - official
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: affixing an official seal
+- id: HK-C622-all_the_members
+  premise_atoms:
+  - HK_all_Established
+  head_claim: HK_Cap622_all_the_members_Applies
+  concepts:
+  - Companies_Ordinance
+  - members
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: all the members
+- id: HK-C622-alleged_members
+  premise_atoms:
+  - HK_alleged_Established
+  head_claim: HK_Cap622_alleged_members_Applies
+  concepts:
+  - Companies_Ordinance
+  - alleged
+  - members
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: alleged members
+- id: HK-C622-allot_shares
+  premise_atoms:
+  - HK_allot_Established
+  head_claim: HK_Cap622_allot_shares_Applies
+  concepts:
+  - Companies_Ordinance
+  - allot
+  - shares
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: allot shares
+- id: HK-C622-allotment
+  premise_atoms:
+  - HK_allotment_Established
+  head_claim: HK_Cap622_allotment_Applies
+  concepts:
+  - Companies_Ordinance
+  - allotment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: allotment
+- id: HK-C622-allotment_of_shares
+  premise_atoms:
+  - HK_allotment_Established
+  head_claim: HK_Cap622_allotment_of_shares_Applies
+  concepts:
+  - Companies_Ordinance
+  - allotment
+  - shares
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: allotment of shares
+- id: HK-C622-alternate_director
+  premise_atoms:
+  - HK_alternate_Established
+  head_claim: HK_Cap622_alternate_director_Applies
+  concepts:
+  - Companies_Ordinance
+  - alternate
+  - director
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: alternate director
+- id: HK-C622-amalgamation
+  premise_atoms:
+  - HK_amalgamation_Established
+  head_claim: HK_Cap622_amalgamation_Applies
+  concepts:
+  - Companies_Ordinance
+  - amalgamation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: amalgamation
+- id: HK-C622-amount_unpaid_on_the_shares
+  premise_atoms:
+  - HK_amount_Established
+  head_claim: HK_Cap622_amount_unpaid_on_the_shares_Applies
+  concepts:
+  - Companies_Ordinance
+  - amount
+  - unpaid
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: amount unpaid on the shares
+- id: HK-C622-annexed
+  premise_atoms:
+  - HK_annexed_Established
+  head_claim: HK_Cap622_annexed_Applies
+  concepts:
+  - Companies_Ordinance
+  - annexed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: annexed
+- id: HK-C622-anniversary
+  premise_atoms:
+  - HK_anniversary_Established
+  head_claim: HK_Cap622_anniversary_Applies
+  concepts:
+  - Companies_Ordinance
+  - anniversary
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: anniversary
+- id: HK-C622-annual_consolidated_financial_statements
+  premise_atoms:
+  - HK_annual_Established
+  head_claim: HK_Cap622_annual_consolidated_financial_statements_Applies
+  concepts:
+  - Companies_Ordinance
+  - annual
+  - consolidated
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: annual consolidated financial statements
+- id: HK-C622-annual_general_meeting
+  premise_atoms:
+  - HK_annual_Established
+  head_claim: HK_Cap622_annual_general_meeting_Applies
+  concepts:
+  - Companies_Ordinance
+  - annual
+  - general
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: annual general meeting
+- id: HK-C622-annual_return
+  premise_atoms:
+  - HK_annual_Established
+  head_claim: HK_Cap622_annual_return_Applies
+  concepts:
+  - Companies_Ordinance
+  - annual
+  - return
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: annual return
+- id: HK-C622-any_liability_____in_tort
+  premise_atoms:
+  - HK_any_Established
+  head_claim: HK_Cap622_any_liability_____in_tort_Applies
+  concepts:
+  - Companies_Ordinance
+  - liability
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: any liability ... in tort
+- id: HK-C622-approved_name
+  premise_atoms:
+  - HK_approved_Established
+  head_claim: HK_Cap622_approved_name_Applies
+  concepts:
+  - Companies_Ordinance
+  - approved
+  - name
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: approved name
+- id: HK-C622-articles
+  premise_atoms:
+  - HK_articles_Established
+  head_claim: HK_Cap622_articles_Applies
+  concepts:
+  - Companies_Ordinance
+  - articles
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: articles
+- id: HK-C622-articles_of_association
+  premise_atoms:
+  - HK_articles_Established
+  head_claim: HK_Cap622_articles_of_association_Applies
+  concepts:
+  - Companies_Ordinance
+  - articles
+  - association
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: articles of association
+- id: HK-C622-as_if_____had_not_been_enacted
+  premise_atoms:
+  - HK_as_Established
+  head_claim: HK_Cap622_as_if_____had_not_been_enacted_Applies
+  concepts:
+  - Companies_Ordinance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: as if ... had not been enacted
+- id: HK-C622-associated_company
+  premise_atoms:
+  - HK_associated_Established
+  head_claim: HK_Cap622_associated_company_Applies
+  concepts:
+  - Companies_Ordinance
+  - associated
+  - company
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: associated company
+- id: HK-C622-at_all_times
+  premise_atoms:
+  - HK_at_Established
+  head_claim: HK_Cap622_at_all_times_Applies
+  concepts:
+  - Companies_Ordinance
+  - times
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: at all times
+- id: HK-C622-attend_before
+  premise_atoms:
+  - HK_attend_Established
+  head_claim: HK_Cap622_attend_before_Applies
+  concepts:
+  - Companies_Ordinance
+  - attend
+  - before
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: attend before
+- id: HK-C622-bailee
+  premise_atoms:
+  - HK_bailee_Established
+  head_claim: HK_Cap622_bailee_Applies
+  concepts:
+  - Companies_Ordinance
+  - bailee
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: bailee
+- id: HK-C622-base_value
+  premise_atoms:
+  - HK_base_Established
+  head_claim: HK_Cap622_base_value_Applies
+  concepts:
+  - Companies_Ordinance
+  - base
+  - value
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: base value
+- id: HK-C622-be_harmful_to
+  premise_atoms:
+  - HK_be_Established
+  head_claim: HK_Cap622_be_harmful_to_Applies
+  concepts:
+  - Companies_Ordinance
+  - harmful
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: be harmful to
+- id: HK-C622-beyond_____powers
+  premise_atoms:
+  - HK_beyond_Established
+  head_claim: HK_Cap622_beyond_____powers_Applies
+  concepts:
+  - Companies_Ordinance
+  - beyond
+  - powers
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: beyond ... powers
+- id: HK-C622-board_of_directors
+  premise_atoms:
+  - HK_board_Established
+  head_claim: HK_Cap622_board_of_directors_Applies
+  concepts:
+  - Companies_Ordinance
+  - board
+  - directors
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: board of directors
+- id: HK-C622-bonus_issue_of_shares
+  premise_atoms:
+  - HK_bonus_Established
+  head_claim: HK_Cap622_bonus_issue_of_shares_Applies
+  concepts:
+  - Companies_Ordinance
+  - bonus
+  - issue
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: bonus issue of shares
+- id: HK-C622-branch_register
+  premise_atoms:
+  - HK_branch_Established
+  head_claim: HK_Cap622_branch_register_Applies
+  concepts:
+  - Companies_Ordinance
+  - branch
+  - register
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: branch register
+- id: HK-C622-breach_of_trust
+  premise_atoms:
+  - HK_breach_Established
+  head_claim: HK_Cap622_breach_of_trust_Applies
+  concepts:
+  - Companies_Ordinance
+  - breach
+  - trust
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: breach of trust
+- id: HK-C622-bringing_the_information_up_to_date
+  premise_atoms:
+  - HK_bringing_Established
+  head_claim: HK_Cap622_bringing_the_information_up_to_date_Applies
+  concepts:
+  - Companies_Ordinance
+  - bringing
+  - information
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: bringing the information up to date
+- id: HK-C622-business_day
+  premise_atoms:
+  - HK_business_Established
+  head_claim: HK_Cap622_business_day_Applies
+  concepts:
+  - Companies_Ordinance
+  - business
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_cap_622
+  output_type: Intermediate_Node
+  source: Cap 622 Companies_Ordinance
+  term: business day
