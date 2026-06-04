@@ -84,7 +84,7 @@ Total scenarios: 12
 
 --- TRI_012_CN_Bridge_Verification [TRI_RESONANCE] ---
   跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证
-  HK: VALID claims=['Parties_Duties_Defined', 'Contract_Validity']
+  HK: VALID claims=['Contract_Validity', 'Parties_Duties_Defined']
   US: VALID claims=[]
   PRC CN=66c SPC=0c (total=2117 rules)
 

@@ -247,10 +247,16 @@ class TriRailCollider:
     def __init__(self):
         base = Path(__file__).resolve().parents[1]
 
-        # ── HK 引擎 ──
+        # ── HK 引擎 (Cap 26 + Extended Cap 32/622/571/4A) ──
         hk_rules_path = base / "configs" / "hk" / "rules.yaml"
+        hk_extended_path = base / "configs" / "hk" / "extended_rules.yaml"
         hk_overrides_path = base / "configs" / "L0_overrides_hk.yaml"
+
+        # 加载 Cap 26 基础规则
         hk_rules = load_rules_from_yaml(str(hk_rules_path))
+        # 追加扩展规则 (Cap 32/622/571/4A)
+        hk_extended = load_rules_from_yaml(str(hk_extended_path))
+        hk_rules += hk_extended
         self.hk_engine = FixpointEvaluator(
             hk_rules, DomainConfig(domain=LegalDomain.CIVIL),
             overrides_path=str(hk_overrides_path)

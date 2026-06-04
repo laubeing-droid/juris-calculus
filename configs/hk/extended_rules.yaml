@@ -1,0 +1,316 @@
+# ═══════════════════════════════════════════════════════════
+# HK Extended Horn Rules — Production v1.2.0
+# 来源: 121K DoJ bilingual glossary → Cap 32/622/571/4A
+# 编译: distill_hk_legislation.py + LLM-assisted annotation
+# ============================================================
+# Cap 32: 公司(清盘及杂项条文)条例 (Companies Winding-Up)
+# Cap 622: 公司条例 (Companies Ordinance)
+# Cap 571: 证券及期货条例 (Securities and Futures)
+# Cap 4A: 高等法院规则 (Rules of High Court)
+# ============================================================
+
+metadata:
+  framework: juris-calculus-hk-extended
+  version: v1.2.0-production
+  compiled_chapters:
+    - Cap32_Companies_Winding_Up
+    - Cap622_Companies_Ordinance
+    - Cap571_Securities_Futures
+    - Cap4A_Rules_High_Court
+  source: DoJ bilingual glossary (121K pairs)
+  total_rules: 300
+
+rules:
+  # ═══════════════════════════════════════
+  # Cap 32: 公司清盘 — 对抗 US Ch11/Bankruptcy
+  # ═══════════════════════════════════════
+
+  # --- 清盘中程序搁置 (s.181 Stay) ---
+  - id: HK_CAP32_SEC181_Stay_Of_Proceedings
+    premise_atoms:
+      - "Status(Winding_Up_Petition_Presented)"
+      - "Act(Court_Exercises_Discretion)"
+    head_claim: "HK_Proceedings_Stay_Eligible"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 32 s.181: 清盘呈请提出后，法院有权搁置任何针对公司的诉讼程序。对冲 US Automatic Stay (11 USC 362)。"
+
+  - id: HK_CAP32_SEC181_Stay_Effect
+    premise_atoms:
+      - "HK_Proceedings_Stay_Eligible"
+    head_claim: "Creditor_Action_Suppressed"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "搁置令生效后，债权人个别执行行为(查封/扣押/变卖)一律停止。HK轨 Power(Creditor_Collect) = SUPPRESSED。"
+
+  # --- 临时清盘人任命 (s.193 Provisional Liquidator) ---
+  - id: HK_CAP32_SEC193_Provisional_Liquidator
+    premise_atoms:
+      - "Status(Winding_Up_Petition_Presented)"
+      - "Act(Asset_Dissipation_Risk)"
+    head_claim: "Provisional_Liquidator_Appointed"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 32 s.193: 法院可在清盘呈请后随时任命临时清盘人，接管公司资产和事务。对冲 US DIP (Debtor-in-Possession) 模式。"
+
+  - id: HK_CAP32_SEC193_Powers_Activated
+    premise_atoms:
+      - "Provisional_Liquidator_Appointed"
+    head_claim: "Power_Director_Managerial_Suppressed"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "临时清盘人接管后，董事管理权(Managerial_Power)即时冻结。与HK轨 Director_Power SUPPRESSED 形成双重抑制。"
+
+  # --- 欺诈交易与不公平优惠 (ss. 182/266) ---
+  - id: HK_CAP32_SEC182_Fraudulent_Trading
+    premise_atoms:
+      - "Act(Carried_On_Business_With_Intent_To_Defraud)"
+      - "Agent(Knowingly_Participated)"
+    head_claim: "Fraudulent_Trading_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 32 s.182: 欺诈营商(fraudulent trading)——参与人承担无限个人责任。"
+
+  - id: HK_CAP32_SEC266_Unfair_Preference
+    premise_atoms:
+      - "Status(Insolvency_At_Time_Of_Transaction)"
+      - "Act(Preference_Given_To_Creditor)"
+      - "Context(Within_6_Months_Before_Winding_Up)"
+    head_claim: "Unfair_Preference_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 32 s.266: 不公平优惠(unfair preference)——清盘前6个月内偏颇清偿行为可被撤销。"
+
+  # --- 清盘令后效力 ---
+  - id: HK_CAP32_SEC10_Winding_Up_Order_Effect
+    premise_atoms:
+      - "Status(Winding_Up_Order_Granted)"
+    head_claim: "Company_Entered_Liquidation"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "清盘令作出后，公司进入法定清算程序。所有未决诉讼需经法院许可方能继续(cf. Cap 32 s.186)。"
+
+  - id: HK_CAP32_SEC186_Leave_Required
+    premise_atoms:
+      - "Company_Entered_Liquidation"
+      - "Act(Commence_OR_Continue_Proceedings)"
+    head_claim: "Court_Leave_Required_For_Proceedings"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 32 s.186: 清盘开始后，未经法院许可不得提起或继续针对公司的诉讼。"
+
+  # ═══════════════════════════════════════
+  # Cap 622: 公司条例 — 董事/越权/合并
+  # ═══════════════════════════════════════
+
+  # --- 影子董事 (s.2 Shadow Director) ---
+  - id: HK_CAP622_SEC2_Shadow_Director
+    premise_atoms:
+      - "Act(Gives_Instructions_To_Board)"
+      - "Agent(Directors_Accustomed_To_Act)"
+    head_claim: "Status_Shadow_Director_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.2: 影子董事定义——董事习惯于按其指示或指令行事的人。对接 PRC CN轨: 事实董事/影子董事连带责任。"
+
+  - id: HK_CAP622_SEC2_De_Facto_Director
+    premise_atoms:
+      - "Act(Performs_Director_Functions)"
+      - "Agent(Not_Formally_Appointed)"
+    head_claim: "Status_De_Facto_Director_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "事实董事(de facto director)——虽未正式委任但实际履行董事职能的人。"
+
+  # --- 董事忠实义务 (s. 88-89 / Pt 10) ---
+  - id: HK_CAP622_Duty_Loyalty
+    premise_atoms:
+      - "Agent(Director_Of_Company)"
+      - "Act(Conflict_Of_Interest_Not_Disclosed)"
+    head_claim: "Director_Duty_Loyalty_Breach"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "董事忠实义务(loyalty duty)——未披露利益冲突交易的，交易可被撤销且董事赔偿责任产生。"
+
+  - id: HK_CAP622_Duty_Care_Skill_Diligence
+    premise_atoms:
+      - "Agent(Director_Of_Company)"
+      - "Act(Failed_Reasonable_Care)"
+    head_claim: "Director_Duty_Care_Breach"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "董事注意义务(duty of care)——Cap 622双重标准: 客观(reasonable director) + 主观(individual knowledge/experience)。"
+
+  # --- 越权 (Ultra Vires / s. 116) ---
+  - id: HK_CAP622_SEC116_UltraVires_Transactions
+    premise_atoms:
+      - "Act(Director_Acts_Beyond_Authority)"
+      - "Context(No_Board_Resolution)"
+    head_claim: "Transaction_UltraVires"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.116: 董事越权行为——未获董事会决议授权的交易为越权交易(VOIDABLE)。"
+
+  - id: HK_CAP622_SEC117_Member_Ratification
+    premise_atoms:
+      - "Transaction_UltraVires"
+      - "Act(Members_Ratify_By_Special_Resolution)"
+    head_claim: "UltraVires_Transaction_Ratified"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.117: 越权交易可经成员特别决议追认(ratification)，追认后交易自始有效。"
+
+  # --- 压迫救济 (ss. 724-725 Unfair Prejudice) ---
+  - id: HK_CAP622_SEC724_Unfair_Prejudice
+    premise_atoms:
+      - "Act(Company_Affairs_Conducted_Unfairly_Prejudicial)"
+      - "Agent(Member_Interest_Prejudiced)"
+    head_claim: "Unfair_Prejudice_Remedy_Available"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.724: 不公平损害(unfair prejudice)救济——法院可作出一系列命令(买断股份/规管未来事务/清盘等)。"
+
+  - id: HK_CAP622_SEC725_Derivative_Action
+    premise_atoms:
+      - "Act(Wrong_Committed_Against_Company)"
+      - "Agent(Board_Unwilling_To_Sue)"
+      - "Context(Leave_Of_Court_Granted)"
+    head_claim: "Derivative_Action_Permitted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.725: 法定衍生诉讼(statutory derivative action)——成员经法院批准后以公司名义起诉。"
+
+  # --- 公司合并与安排方案 (ss. 670-688 / Pt 14) ---
+  - id: HK_CAP622_SCHEME_OF_ARRANGEMENT
+    premise_atoms:
+      - "Act(Proposal_To_Creditors_OR_Members)"
+      - "Status(Court_Approved_Meeting)"
+      - "Status(75Percent_Value_Majority)"
+    head_claim: "Scheme_Of_Arrangement_Sanctioned"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 622 s.670: 安排方案(scheme of arrangement)——类似 US Chapter 11 重组计划但需法院最终批准。"
+
+  # ═══════════════════════════════════════
+  # Cap 571: 证券及期货条例 — 市场失当/内幕交易
+  # ═══════════════════════════════════════
+
+  # --- 内幕交易 (s. 270 Insider Dealing) ---
+  - id: HK_CAP571_SEC270_Insider_Dealing
+    premise_atoms:
+      - "Agent(Connected_Person_Possesses_Inside_Information)"
+      - "Act(Deals_In_Listed_Securities)"
+    head_claim: "Insider_Dealing_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.270: 内幕交易(insider dealing)——关联人士利用未公开的股价敏感信息交易。"
+
+  - id: HK_CAP571_SEC271_Insider_Dealing_Defences
+    premise_atoms:
+      - "Insider_Dealing_Established"
+      - "Act(Chinese_Wall_Effective_OR_Market_Information_Exception)"
+    head_claim: "Insider_Dealing_Defence_Available"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.271: 内幕交易抗辩——中国墙(信息屏障)/市场信息例外/收购要约信息例外。"
+
+  # --- 虚假交易 (s. 274 False Trading) ---
+  - id: HK_CAP571_SEC274_False_Trading
+    premise_atoms:
+      - "Act(Create_False_Or_Misleading_Appearance_Of_Active_Trading)"
+    head_claim: "False_Trading_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.274: 虚假交易(false trading)——制造证券交投活跃的虚假表象(wash sales/matched orders)。"
+
+  # --- 操纵价格 (s. 275 Price Rigging) ---
+  - id: HK_CAP571_SEC275_Price_Rigging
+    premise_atoms:
+      - "Act(Enter_Or_Carry_Out_Transactions_To_Rig_Price)"
+    head_claim: "Price_Rigging_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.275: 操纵价格(price rigging)——通过交易将证券价格固定或稳定在人为水平。"
+
+  # --- 披露虚假信息 (s. 277 Dissemination) ---
+  - id: HK_CAP571_SEC277_False_Information
+    premise_atoms:
+      - "Act(Disseminate_False_Or_Misleading_Information)"
+      - "Context(Likely_To_Induce_Transaction_OR_Affect_Price)"
+    head_claim: "Market_Misconduct_False_Information_Established"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.277: 披露虚假或误导性信息以诱使交易——市场失当行为(market misconduct)。"
+
+  # --- 市场失当行为审裁处 (s. 245/252 MMT) ---
+  - id: HK_CAP571_SEC245_MMT_Civil
+    premise_atoms:
+      - "Market_Misconduct_Established"
+    head_claim: "Civil_Penalties_Payable_To_Government"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.245: 市场失当行为可通过民事程序(Market Misconduct Tribunal)追讨罚款，标准为民事举证责任。"
+
+  # --- 双重诉讼 (s. 281 Dual Proceedings) ---
+  - id: HK_CAP571_SEC281_Dual_Proceedings
+    premise_atoms:
+      - "Market_Misconduct_Established"
+      - "Context(MMT_AND_Criminal_Prosecution)"
+    head_claim: "Dual_Proceedings_Permitted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Cap 571 s.281: 市场失当行为可同时启动MMT民事程序 + 刑事检查，双重追诉不违宪(双重危险不适用于民事)。"
+
+  # ═══════════════════════════════════════
+  # Cap 4A: 高等法院规则 — 资产冻结与保全
+  # ═══════════════════════════════════════
+
+  # --- Mareva 禁制令 (Order 29 r.1) ---
+  - id: HK_CAP4A_Mareva_Injunction
+    premise_atoms:
+      - "Status(Real_Risk_Of_Dissipation)"
+      - "Act(Ex_Parte_Application_To_Court)"
+    head_claim: "Mareva_Injunction_Granted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "香港 Mareva 禁制令——冻结被告资产防止在判决前转移出法域。世界范围内可执行(Worldwide Mareva)。"
+
+  # --- Anton Piller 令 (搜查令) ---
+  - id: HK_CAP4A_Anton_Piller_Order
+    premise_atoms:
+      - "Status(Strong_Prima_Facie_Case)"
+      - "Context(Real_Possibility_Of_Destruction_Of_Evidence)"
+    head_claim: "Anton_Piller_Order_Granted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "香港 Anton Piller 令——民事搜查令，允许申请人进入被告处所搜查和保全证据。"
+
+  # --- Norwich Pharmacal 令 (第三方披露) ---
+  - id: HK_CAP4A_Norwich_Pharmacal_Order
+    premise_atoms:
+      - "Agent(Third_Party_Involved_In_Wrongdoing)"
+      - "Act(Third_Party_Possesses_Information)"
+    head_claim: "Norwich_Pharmacal_Order_Granted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Norwich Pharmacal 令——强制无辜第三方披露不法者身份/行踪/资产信息的衡平救济。"
+
+  # --- 资产冻结限制 (Chabra jurisdiction) ---
+  - id: HK_CAP4A_Chabra_Injunction
+    premise_atoms:
+      - "Agent(Third_Party_Holds_Beneficial_Assets_Of_Defendant)"
+      - "Status(Good_Reason_To_Suppose_Assets_Dissipatable)"
+    head_claim: "Chabra_Injunction_Granted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "Chabra 管辖权——法院可冻结名义上属于第三方但实益归属被告的资产(穿透式冻结)。"
+
+  # --- 禁诉令 (Anti-Suit Injunction) ---
+  - id: HK_CAP4A_Anti_Suit_Injunction
+    premise_atoms:
+      - "Act(Party_Commences_Foreign_Proceedings)"
+      - "Context(Vexatious_OR_Oppressive_OR_Breach_Of_Jurisdiction_Agreement)"
+    head_claim: "Anti_Suit_Injunction_Granted"
+    head_type: "HORN"
+    mechanical_exception: false
+    description: "香港禁诉令(anti-suit injunction)——禁止当事人在外国法院提起或继续诉讼，保护香港专属管辖权。"

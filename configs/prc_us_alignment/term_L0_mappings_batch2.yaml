@@ -1,0 +1,695 @@
+# PRC Term Mappings — Batch 2 (Append: 合同/侵权/物权/婚姻/继承/民诉/刑诉/行政/知产/反垄断/税法/环境)
+# Target: 55 → 180+ terms
+
+term_alignments:
+  # ═══ 合同编 (15 additions) ═══
+  - id: PRC_ALIGN_Contract_Consideration
+    term_cn: "对价替代(约因)"
+    term_us: "Consideration"
+    term_hk: "Consideration"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Offer_Acceptance_Only_CN)"
+    description: "中国合同法以要约+承诺替代英美对价制度,民法典第471条。"
+
+  - id: PRC_ALIGN_Promissory_Estoppel_Alt
+    term_cn: "信赖利益保护"
+    term_us: "Promissory Estoppel"
+    term_hk: "Promissory Estoppel"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Culpa_In_Contrahendo_CN)"
+    description: "缔约过失责任替代衡平禁反言,民法典第500条。"
+
+  - id: PRC_ALIGN_Statute_Frauds_Alt
+    term_cn: "书面形式要求"
+    term_us: "Statute of Frauds"
+    term_hk: "Statute of Frauds"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Written_Form_Required_CN)"
+    description: "民法典第469条: 法定书面形式替代反欺诈法。"
+
+  - id: PRC_ALIGN_Parol_Evidence_Alt
+    term_cn: "意思表示解释"
+    term_us: "Parol Evidence Rule"
+    term_hk: "Parol Evidence Rule"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Intent_Interpretation_CN)"
+    description: "民法典第142条: 意思表示解释替代口头证据规则。"
+
+  - id: PRC_ALIGN_Material_Breach
+    term_cn: "根本违约"
+    term_us: "Material Breach"
+    term_hk: "Fundamental Breach"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Contract_Purpose_Frustrated_CN)"
+    description: "民法典第563条: 合同目的不能实现构成根本违约,可解除合同。"
+
+  - id: PRC_ALIGN_Anticipatory_Breach
+    term_cn: "预期违约"
+    term_us: "Anticipatory Breach"
+    term_hk: "Anticipatory Breach"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Pre_Performance_Repudiation_CN)"
+    description: "民法典第563条: 履行期限届满前明确表示或以行为表明不履行。"
+
+  - id: PRC_ALIGN_Right_Of_Rescission
+    term_cn: "合同解除权"
+    term_us: "Right of Rescission"
+    term_hk: "Right of Rescission"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Unilateral_Rescission_CN)"
+    description: "民法典第563-566条: 法定/约定解除权及恢复原状。"
+
+  - id: PRC_ALIGN_Liquidated_Damages
+    term_cn: "违约金调整"
+    term_us: "Liquidated Damages"
+    term_hk: "Liquidated Damages"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(CN_Court_Adjusted_Damages)"
+    description: "民法典第585条: 违约金过高或过低时法院可依申请调整。"
+
+  - id: PRC_ALIGN_Force_Majeure
+    term_cn: "不可抗力"
+    term_us: "Force Majeure / Act of God"
+    term_hk: "Force Majeure"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Performance_Impossible_CN)"
+    description: "民法典第180条/第590条: 不可抗力免责与通知义务。"
+
+  - id: PRC_ALIGN_Change_Of_Circumstances
+    term_cn: "情势变更"
+    term_us: "Frustration / Impracticability"
+    term_hk: "Frustration"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Fundamental_Change_CN)"
+    description: "民法典第533条: 情势变更——继续履行显失公平的,可协商或请求变更解除。"
+
+  - id: PRC_ALIGN_Consequential_Damages
+    term_cn: "可得利益损失"
+    term_us: "Consequential Damages"
+    term_hk: "Consequential Loss"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Expectation_Loss_CN)"
+    description: "民法典第584条: 包括合同履行后可以获得的利益。"
+
+  - id: PRC_ALIGN_Third_Party_Beneficiary
+    term_cn: "第三人利益合同"
+    term_us: "Third Party Beneficiary"
+    term_hk: "Third Party Rights"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Beneficiary_Enforcement_CN)"
+    description: "民法典第522条: 真正的利益第三人合同——第三人可直接请求履行。"
+
+  - id: PRC_ALIGN_Guarantee_Independence
+    term_cn: "独立保函"
+    term_us: "Independent Guarantee / Standby LC"
+    term_hk: "Performance Bond"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Demand_Payment_Regardless_Of_Underlying_Dispute)"
+    description: "独立保函司法解释: 保函开立人付款义务独立于基础交易纠纷。"
+
+  - id: PRC_ALIGN_Deposit_Double
+    term_cn: "定金罚则"
+    term_us: "Earnest Money / Deposit Forfeiture"
+    term_hk: "Deposit"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Double_Return_OR_Forfeiture_CN)"
+    description: "民法典第587条: 给付定金方违约无权请求返还;收受定金方违约双倍返还。"
+
+  - id: PRC_ALIGN_Conditional_Contract
+    term_cn: "附条件/期限合同"
+    term_us: "Conditional Contract / Condition Precedent"
+    term_hk: "Condition Precedent"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Condition_Not_Yet_Triggered_CN)"
+    description: "民法典第158-160条: 附生效条件/解除条件/期限的合同效力状态。"
+
+  # ═══ 侵权编 (12 additions) ═══
+  - id: PRC_ALIGN_Punitive_Damages_CN
+    term_cn: "知识产权惩罚性赔偿"
+    term_us: "Punitive Damages (IP Only)"
+    term_hk: "Exemplary Damages"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Damages_Multiplier_CN_IP_Only)"
+    description: "民法典第1185条: 故意侵害知识产权且情节严重可适用惩罚性赔偿。"
+
+  - id: PRC_ALIGN_Strict_Liability_CN
+    term_cn: "无过错责任"
+    term_us: "Strict Liability"
+    term_hk: "Strict Liability"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Liability_Without_Fault_CN)"
+    description: "民法典第1166条: 法律规定的无过错归责原则(产品责任/环境/动物等)。"
+
+  - id: PRC_ALIGN_Vicarious_Liability_CN
+    term_cn: "用人单位替代责任"
+    term_us: "Vicarious Liability / Respondeat Superior"
+    term_hk: "Vicarious Liability"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Employer_Liable_For_Employee_ACT)"
+    description: "民法典第1191条: 用人单位工作人员执行工作任务致他人损害。"
+
+  - id: PRC_ALIGN_Medical_Malpractice
+    term_cn: "医疗损害责任"
+    term_us: "Medical Malpractice"
+    term_hk: "Medical Negligence"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Medical_Duty_Breach_CN)"
+    description: "民法典第1218-1228条: 医疗损害——过错推定+特殊举证(病历)。"
+
+  - id: PRC_ALIGN_Product_Liability
+    term_cn: "产品责任"
+    term_us: "Product Liability"
+    term_hk: "Product Liability"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Product_Defect_Causation_CN)"
+    description: "民法典第1202-1207条: 生产者/销售者的无过错/过错产品责任。"
+
+  - id: PRC_ALIGN_Traffic_Accident
+    term_cn: "机动车交通事故责任"
+    term_us: "Negligence / Auto Accident"
+    term_hk: "Road Traffic Accident"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Traffic_Violation_Liability_CN)"
+    description: "民法典第1208-1217条: 交通事故——过错推定的特殊侵权规则。"
+
+  - id: PRC_ALIGN_Environmental_Tort
+    term_cn: "环境污染侵权"
+    term_us: "Environmental Tort / Nuisance"
+    term_hk: "Nuisance / Rylands v Fletcher"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Environmental_Pollution_CN)"
+    description: "民法典第1229条: 污染环境/破坏生态——无过错责任+因果关系倒置。"
+
+  - id: PRC_ALIGN_Security_Obligor
+    term_cn: "安全保障义务"
+    term_us: "Premises Liability / Duty of Care"
+    term_hk: "Occupier's Liability"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Security_Duty_Breach_CN)"
+    description: "民法典第1198条: 经营场所/公共场所管理人未尽安全保障义务的补充责任。"
+
+  - id: PRC_ALIGN_Network_Infringement
+    term_cn: "网络侵权责任"
+    term_us: "Online Defamation / DMCA Notice"
+    term_hk: "Internet Intermediary Liability"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Failure_To_Takedown_CN)"
+    description: "民法典第1194-1197条: 避风港规则notification+notice/counter-notice。"
+
+  - id: PRC_ALIGN_Damages_Calculation
+    term_cn: "侵权损害赔偿计算"
+    term_us: "Compensatory Damages / Make-Whole"
+    term_hk: "Compensatory Damages"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Full_Restitution_CN)"
+    description: "民法典第1179-1182条: 侵害人身/财产——实际损失→获益→法院酌定。"
+
+  - id: PRC_ALIGN_Tort_Defence
+    term_cn: "侵权抗辩事由"
+    term_us: "Affirmative Defenses in Tort"
+    term_hk: "Defences to Tort"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Rebut_Tort_Liability_CN)"
+    description: "民法典第181-184条: 自助/紧急避险/正当防卫/受害人故意/自甘风险。"
+
+  - id: PRC_ALIGN_Contributory_Negligence
+    term_cn: "与有过失"
+    term_us: "Contributory / Comparative Negligence"
+    term_hk: "Contributory Negligence"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Plaintiff_Also_Negligent_CN)"
+    description: "民法典第1173条: 被侵权人对同一损害的发生有过错的减轻侵权人责任。"
+
+  # ═══ 物权编 (8 additions) ═══
+  - id: PRC_ALIGN_Bona_Fide_Acquisition
+    term_cn: "善意取得"
+    term_us: "Bona Fide Purchaser"
+    term_hk: "Bona Fide Purchaser For Value"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Good_Faith_Acquisition_CN)"
+    description: "民法典第311条: 善意受让人在支付合理对价+完成公示后可取得所有权。"
+
+  - id: PRC_ALIGN_Land_Use_Rights
+    term_cn: "建设用地使用权"
+    term_us: "Fee Simple / Real Property"
+    term_hk: "Government Lease"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(CN_Land_Use_Right_Time_Limited)"
+    description: "民法典第344条: 替代英美永久产权,70年/50年/40年分类型期限。"
+
+  - id: PRC_ALIGN_Mortgage
+    term_cn: "抵押权"
+    term_us: "Mortgage"
+    term_hk: "Legal Charge / Mortgage"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Priority_Repayment_From_Collateral_CN)"
+    description: "民法典第394条: 不转移占有的担保物权,优先受偿权。"
+
+  - id: PRC_ALIGN_Pledge
+    term_cn: "质押权"
+    term_us: "Pledge / Pawn"
+    term_hk: "Pledge"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Possessory_Security_CN)"
+    description: "民法典第425条: 转移占有的动产/权利担保物权。"
+
+  - id: PRC_ALIGN_Lien_Statutory
+    term_cn: "法定留置权"
+    term_us: "Statutory Lien / Mechanic's Lien"
+    term_hk: "Lien"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Retain_Until_Payment_CN)"
+    description: "民法典第447条: 同一法律关系中合法占有并拒绝交还的法定权利。"
+
+  - id: PRC_ALIGN_Attornment
+    term_cn: "指示交付/占有改定"
+    term_us: "Constructive Delivery"
+    term_hk: "Attornment"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(Constructive_Transfer_CN)"
+    description: "民法典第227-228条: 动产交付替代方式(指示交付/占有改定)。"
+
+  - id: PRC_ALIGN_Condominium
+    term_cn: "建筑物区分所有权"
+    term_us: "Condominium"
+    term_hk: "Multi-Storey Building Ownership"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Unit_Ownership_With_Common_Areas_CN)"
+    description: "民法典第271条: 专有部分所有权+共有部分共有权+共同管理权。"
+
+  - id: PRC_ALIGN_Servitude
+    term_cn: "地役权"
+    term_us: "Easement"
+    term_hk: "Easement"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Use_Others_Land_CN)"
+    description: "民法典第372条: 需役地权利人使用供役地的权利(通行/采光/排水等)。"
+
+  # ═══ 婚姻家庭/继承 (10 additions) ═══
+  - id: PRC_ALIGN_Divorce_Cooling_Off
+    term_cn: "离婚冷静期"
+    term_us: "No US Equivalent"
+    term_hk: "No HK Equivalent"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(CN_Divorce_Cooling_Off_Active)"
+    description: "民法典第1077条: 30天离婚冷静期——全球独有制度。"
+
+  - id: PRC_ALIGN_Community_Property
+    term_cn: "夫妻共同财产制"
+    term_us: "Community Property"
+    term_hk: "Matrimonial Property"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Marital_Community_Property_CN)"
+    description: "民法典第1062条: 婚后取得的工资/投资收益/知产收益等为共同财产。"
+
+  - id: PRC_ALIGN_Spousal_Support
+    term_cn: "离婚经济帮助"
+    term_us: "Alimony / Spousal Support"
+    term_hk: "Maintenance"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Post_Divorce_Support_CN)"
+    description: "民法典第1090条: 一方生活困难,有负担能力的另一方应给予适当帮助。"
+
+  - id: PRC_ALIGN_Child_Custody
+    term_cn: "子女抚养权"
+    term_us: "Child Custody / Visitation"
+    term_hk: "Custody / Care and Control"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Best_Interests_Of_Child_CN)"
+    description: "民法典第1084条: 离婚后子女8周岁以上尊重意愿/2周岁以下随母为原则。"
+
+  - id: PRC_ALIGN_Prenuptial
+    term_cn: "婚前财产协议"
+    term_us: "Prenuptial Agreement"
+    term_hk: "Pre-Nuptial Agreement"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(Separate_Property_By_Agreement_CN)"
+    description: "民法典第1065条: 可书面协议约定财产归属(分别/共同/部分共同)。"
+
+  - id: PRC_ALIGN_Intestate_Succession
+    term_cn: "法定继承"
+    term_us: "Intestate Succession"
+    term_hk: "Intestacy"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Statutory_Heir_Determined_CN)"
+    description: "民法典第1127条: 法定继承顺序(配偶/子女/父母为一顺序)。"
+
+  - id: PRC_ALIGN_Testamentary_Freedom
+    term_cn: "遗嘱自由与必留份"
+    term_us: "Testamentary Freedom / Forced Heirship"
+    term_hk: "Testamentary Freedom"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Testate_With_Forced_Retention_CN)"
+    description: "民法典第1133条+1141条: 遗嘱自由但需保留缺乏劳动能力又无生活来源者的必要份额。"
+
+  - id: PRC_ALIGN_Estate_Administration
+    term_cn: "遗产管理人"
+    term_us: "Executor / Personal Representative"
+    term_hk: "Executor / Administrator"
+    l0_chain:
+      primitive: "Agent"
+      expression: "Agent(Estate_Administrator_CN)"
+    description: "民法典第1145条: 遗产管理人制度——清理遗产/处理债权债务/分割移交。"
+
+  - id: PRC_ALIGN_Family_Violence
+    term_cn: "反家庭暴力保护令"
+    term_us: "Domestic Violence Protection Order"
+    term_hk: "Domestic Violence Injunction"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Protection_Order_Issued_CN)"
+    description: "反家庭暴力法第23条: 人身安全保护令——全国首创独立民事保护令制度。"
+
+  - id: PRC_ALIGN_Guardianship
+    term_cn: "意定监护"
+    term_us: "Durable Power of Attorney / Guardianship"
+    term_hk: "Enduring Power of Attorney"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Consensual_Guardian_CN)"
+    description: "民法典第33条: 意定监护——有完全民事行为能力时可预先确定监护人。"
+
+  # ═══ 民诉 (10 additions) ═══
+  - id: PRC_ALIGN_Class_Action
+    term_cn: "代表人诉讼"
+    term_us: "Class Action"
+    term_hk: "Representative Action"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_Representative_Action_Opt_In)"
+    description: "民诉法第56-57条: 代表人诉讼(共同诉讼基础,opt-in模式,非opt-out)。"
+
+  - id: PRC_ALIGN_Special_Representative
+    term_cn: "证券特别代表人诉讼"
+    term_us: "Securities Class Action"
+    term_hk: "No Direct Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CSRC_Designated_Institution_Opt_Out)"
+    description: "证券法第95条第3款: 投资者保护机构默示加入/明示退出(全球唯一)。"
+
+  - id: PRC_ALIGN_Res_Judicata
+    term_cn: "既判力/一事不再理"
+    term_us: "Res Judicata / Claim Preclusion"
+    term_hk: "Res Judicata"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Claim_Finally_Determined_CN)"
+    description: "民诉法第247条: 生效判决/调解书对同一当事人/同一诉讼标的具有既判力。"
+
+  - id: PRC_ALIGN_Third_Party_Revocation
+    term_cn: "第三人撤销之诉"
+    term_us: "Collateral Attack by Non-Party"
+    term_hk: "No Direct Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Non_Party_Revoke_Judgment_CN)"
+    description: "民诉法第59条: 不能归责于己的事由未参诉的第三人可撤销生效判决。"
+
+  - id: PRC_ALIGN_Retrial
+    term_cn: "再审程序"
+    term_us: "Motion for New Trial / Appeal"
+    term_hk: "Review / Appeal"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Court_OR_Procuratorate_Initiate_Retrial_CN)"
+    description: "民诉法第207条: 法院自行再审/检察院抗诉/当事人申请再审18项事由。"
+
+  - id: PRC_ALIGN_Enforcement
+    term_cn: "强制执行措施"
+    term_us: "Execution / Judgment Enforcement"
+    term_hk: "Execution"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_Enforcement_Court_Led)"
+    description: "民诉法第242条: 法院主导的查封/冻结/扣划/拍卖/限制消费/失信名单体系。"
+
+  - id: PRC_ALIGN_Preliminary_Injunction
+    term_cn: "行为保全"
+    term_us: "Preliminary Injunction / TRO"
+    term_hk: "Interim Injunction"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(CN_Interim_Measure_Active)"
+    description: "民诉法第103-104条: 行为保全+财产保全——独特的申请/担保/复议体系。"
+
+  - id: PRC_ALIGN_Evidence_Exchange
+    term_cn: "证据交换"
+    term_us: "Discovery / Document Production"
+    term_hk: "Discovery"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(CN_Court_Supervised_Exchange)"
+    description: "民诉解释第224条: 法院组织的证据交换,范围远小于美式discovery。"
+
+  - id: PRC_ALIGN_Simplified_Procedure
+    term_cn: "简易程序/小额诉讼"
+    term_us: "Small Claims Court / Summary Procedure"
+    term_hk: "Small Claims Tribunal"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Simplified_Procedure_Activated_CN)"
+    description: "民诉法第157条/第162条: 简易程序和小额诉讼程序(一审终审)。"
+
+  - id: PRC_ALIGN_Mediation_Judgment
+    term_cn: "法院调解书"
+    term_us: "Consent Decree / Mediated Settlement"
+    term_hk: "Consent Order"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Court_Mediated_Settlement_Enforceable)"
+    description: "民诉法第97条: 法院出具的调解书与判决书具有同等强制执行效力。"
+
+  # ═══ 刑诉 (8 additions) ═══
+  - id: PRC_ALIGN_Indictment
+    term_cn: "公诉/审查起诉"
+    term_us: "Indictment / Grand Jury"
+    term_hk: "Indictment"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(Procuratorate_Review_And_Indict_CN)"
+    description: "刑诉法第168条: 检察院审查起诉(无大陪审团制度)。"
+
+  - id: PRC_ALIGN_Hearsay
+    term_cn: "非法证据排除"
+    term_us: "Hearsay Rule / Exclusionary Rule"
+    term_hk: "Hearsay Rule"
+    l0_chain:
+      primitive: "Defect"
+      expression: "Defect(Illegal_Evidence_CN)"
+    description: "刑诉法第56条: 非法收集的证据应排除(范围窄于美式hearsay+fruit)。"
+
+  - id: PRC_ALIGN_Miranda
+    term_cn: "诉讼权利告知"
+    term_us: "Miranda Rights"
+    term_hk: "Caution / Right to Silence"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(CN_Rights_Notification_Without_Silence_Right)"
+    description: "刑诉法第120条: 告知涉嫌罪名/申请回避/聘请律师,但无沉默权。"
+
+  - id: PRC_ALIGN_Jury
+    term_cn: "人民陪审员"
+    term_us: "Jury Trial"
+    term_hk: "Jury (Criminal Only)"
+    l0_chain:
+      primitive: "Agent"
+      expression: "Agent(CN_People_Assessor_Fact_Law_Mixed)"
+    description: "人民陪审员法: 与法官组成合议庭,参与事实认定+法律适用。"
+
+  - id: PRC_ALIGN_Bail
+    term_cn: "取保候审"
+    term_us: "Bail / Pretrial Release"
+    term_hk: "Bail"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(CN_Supervised_Release_PreTrial)"
+    description: "刑诉法第66条: 取保候审(保证人/保证金+不得离开特定区域)。"
+
+  - id: PRC_ALIGN_Appeal_Criminal
+    term_cn: "上诉不加刑"
+    term_us: "Double Jeopardy / Appeal by Defendant"
+    term_hk: "Appeal against sentence"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(No_Worsening_On_Defendant_Appeal_CN)"
+    description: "刑诉法第237条: 仅被告方上诉的不得加重刑罚(但检察院抗诉除外)。"
+
+  - id: PRC_ALIGN_Death_Penalty_Review
+    term_cn: "死刑复核"
+    term_us: "Automatic Appeal in Capital Cases"
+    term_hk: "No Death Penalty"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Supreme_Court_Mandatory_Review_CN)"
+    description: "刑诉法第246条: 死刑由最高人民法院核准——全球最严死刑控制程序。"
+
+  - id: PRC_ALIGN_Procuratorate_Supervision
+    term_cn: "检察监督"
+    term_us: "No US Equivalent"
+    term_hk: "No HK Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Procuratorate_General_Supervision_CN)"
+    description: "宪法第134条/刑诉法第8条: 检察院对刑事诉讼进行全流程法律监督。"
+
+  # ═══ 行政法/国家赔偿 (5 additions) ═══
+  - id: PRC_ALIGN_Administrative_Litigation
+    term_cn: "行政诉讼"
+    term_us: "Administrative Law / APA Judicial Review"
+    term_hk: "Judicial Review"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_Court_Review_Agency_Action)"
+    description: "行政诉讼法: 公民诉行政机关——举证责任倒置(被告承担举证责任)。"
+
+  - id: PRC_ALIGN_Procuratorate_PIL
+    term_cn: "行政公益诉讼"
+    term_us: "No US Equivalent"
+    term_hk: "No HK Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_Procuratorate_Public_Interest_Litigation)"
+    description: "行政诉讼法第25条: 检察院可对损害公益的行政行为提起公益诉讼。"
+
+  - id: PRC_ALIGN_Norm_Review
+    term_cn: "规范性文件附带审查"
+    term_us: "No US Equivalent (cf. Chevron deference, overturned)"
+    term_hk: "No HK Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Court_Collateral_Review_Of_Normative_Document_CN)"
+    description: "行政诉讼法第53条: 法院可在行政诉讼中附带审查规范性文件合法性。"
+
+  - id: PRC_ALIGN_State_Comp_CN
+    term_cn: "国家赔偿"
+    term_us: "Federal Tort Claims Act / Sovereign Immunity Waiver"
+    term_hk: "No General State Compensation"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(CN_State_Liability_For_Illegal_Act)"
+    description: "国家赔偿法: 国家责任机关赔偿模式——直接侵权机关为义务人。"
+
+  - id: PRC_ALIGN_Administrative_Reconsideration
+    term_cn: "行政复议"
+    term_us: "Administrative Appeal / Agency Review"
+    term_hk: "Administrative Appeal"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(CN_Internal_Agency_Review)"
+    description: "行政复议法: 行政系统内部的准司法救济(免费/高效/不中止执行)。"
+
+  # ═══ 知产/反垄断/税法/环境 (8 additions) ═══
+  - id: PRC_ALIGN_IP_Punitive
+    term_cn: "知识产权侵权惩罚性赔偿"
+    term_us: "Enhanced Damages / Treble (Patent)"
+    term_hk: "Additional Damages"
+    l0_chain:
+      primitive: "Asset"
+      expression: "Asset(CN_Punitive_Damages_1_5x)"
+    description: "民法典+专利法第71条: 故意侵权+情节严重可1-5倍惩罚性赔偿。"
+
+  - id: PRC_ALIGN_Anti_Monopoly
+    term_cn: "反垄断行政执法"
+    term_us: "Antitrust Enforcement (DOJ/FTC)"
+    term_hk: "Competition Law (Ordinance Cap 619)"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_SAMR_Administrative_Penalty)"
+    description: "反垄断法: 国务院反垄断执法机构(SAMR)统一执法,罚款比例达上年度销售额1-10%。"
+
+  - id: PRC_ALIGN_Tax_Avoidance
+    term_cn: "反避税/关联交易调整"
+    term_us: "Transfer Pricing / Anti-Avoidance"
+    term_hk: "Transfer Pricing"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(CN_Tax_Authorities_Adjust_Related_Party_Pricing)"
+    description: "企业所得税法第41条+特别纳税调整实施办法: 独立交易原则+APA+受控外国企业。"
+
+  - id: PRC_ALIGN_Data_Localization
+    term_cn: "数据本地化存储"
+    term_us: "Data Localization Requirement"
+    term_hk: "No Direct Equivalent"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(Data_Must_Be_Stored_Domestically_CN)"
+    description: "网络安全法第37条: 关键信息基础设施运营者境内运营数据本地化存储。"
+
+  - id: PRC_ALIGN_Environmental_PIL
+    term_cn: "环境公益诉讼"
+    term_us: "Citizen Suit (CWA/CAA)"
+    term_hk: "No Direct Equivalent"
+    l0_chain:
+      primitive: "Power"
+      expression: "Power(Environmental_NGO_Standing_CN)"
+    description: "环境保护法第58条: 符合条件的环保NGO可提起环境公益诉讼。"
+
+  - id: PRC_ALIGN_Personal_Info
+    term_cn: "个人信息保护"
+    term_us: "Data Privacy / GDPR-Like"
+    term_hk: "Personal Data (Privacy) Ordinance"
+    l0_chain:
+      primitive: "Status"
+      expression: "Status(CN_PIPL_Consent_Basis)"
+    description: "个人信息保护法: 告知同意+单独同意+自动化决策拒绝权+可携权。"
+
+  - id: PRC_ALIGN_Algorithm_Governance
+    term_cn: "算法推荐管理"
+    term_us: "No US Equivalent"
+    term_hk: "No HK Equivalent"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(Algorithm_Filing_To_Cyber_Admin_CN)"
+    description: "互联网信息服务算法推荐管理规定: 算法备案/透明度/不得利用算法实施垄断。"
+
+  - id: PRC_ALIGN_Cross_Border_Data
+    term_cn: "数据出境安全评估"
+    term_us: "CFIUS / Cross-Border Data Transfer Review"
+    term_hk: "No Direct Equivalent"
+    l0_chain:
+      primitive: "Act"
+      expression: "Act(CAC_Mandatory_Pre_Transfer_Assessment_CN)"
+    description: "数据出境安全评估办法: 网信办主导的数据出境强制性安全评估。"

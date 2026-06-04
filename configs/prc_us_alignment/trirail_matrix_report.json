@@ -371,8 +371,8 @@
     "hk": {
       "state": "VALID",
       "claims": [
-        "Parties_Duties_Defined",
-        "Contract_Validity"
+        "Contract_Validity",
+        "Parties_Duties_Defined"
       ],
       "rebuttals": 0,
       "state_tracker": {

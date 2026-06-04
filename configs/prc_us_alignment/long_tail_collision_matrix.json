@@ -1,13 +1,13 @@
 {
   "metadata": {
     "version": "v1.2.0-TriRail-Saturation",
-    "total_terms": 3084,
+    "total_terms": 10,
     "stats": {
       "COLLISION": 0,
       "ASYMMETRY": 0,
-      "TRI_RESONANCE": 0,
+      "TRI_RESONANCE": 10,
       "COMPLEX_PARALLAX": 0,
-      "ERROR": 3084
+      "ERROR": 0
     }
   },
   "collisions": [],
