@@ -1,0 +1,2280 @@
+# ═══════════════════════════════════════════
+# US_Adapter.yaml — 美国联邦法 L0 适配器
+# Auto-generated from: D:\US_glossary_L0_unified.json
+# Terms: 81 | Rules: 81 | Constraints: 81
+# ═══════════════════════════════════════════
+
+jurisdiction: US
+family: Common_Law
+description: 美国联邦法 L0 适配器 — 从 uscourts.gov 和 justice.gov 提取的 81 条概念算子。涵盖破产法(Chapter 7/11/13)、民事诉讼、刑事诉讼、证据规则、宪法保护等领域。
+sources:
+- https://www.uscourts.gov/glossary
+- https://www.justice.gov/usao/justice-101/glossary
+l0_distribution:
+  Status: 31
+  Act: 19
+  Power: 11
+  Asset: 6
+  Agent: 8
+  Defect: 6
+perspective_distribution:
+  Judicial: 41
+  Prosecutorial: 40
+domain_distribution:
+  Remedy/Sanction: 16
+  Formation: 30
+  Breach: 7
+  Validity: 17
+  Performance: 11
+concepts:
+- primitive: Agent
+  count: 8
+  domains:
+  - Formation
+  - Performance
+  - Validity
+  mappings:
+    Power(Core_Bankruptcy_Matters):
+      domain: Validity
+      chain: Agent(BankruptcyJudge) → Power(Adjudicate_Bankruptcy) → Act(Hearing) → Status(Order_Issued)
+      premises: &id006
+      - ArticleI_Judge_Appointed
+    Clerk_Has_AdministrativeAuthority:
+      domain: Formation
+      chain: Agent(Clerk) → Act(Receive_Filings) → Act(Maintain_Docket) → Status(Records_Preserved)
+      premises: &id014
+      - Court_Established
+      - Clerk_Appointed
+    Attorney_Client_Relationship_Established:
+      domain: Formation
+      chain: Agent(Counsel) → Power(Represent_Client) → Act(Appear_Before_Court) → Status(Attorney_of_Record)
+      premises: &id016
+      - Attorney_Licensed
+      - Client_Retains
+    Magistrate_Has_Delegated_Authority:
+      domain: Validity
+      chain: Agent(MagistrateJudge) → Power(Delegated_Judicial) → Act(Conduct_Hearings/Issue_R&R) → Status(Subject_to_DistrictJudge_Review)
+      premises: &id031
+      - DistrictJudge_Refers_Matter
+    Court_Allows_ProSe:
+      domain: Formation
+      chain: Agent(Individual) → Power(Self_Representation) → Act(Appear_Without_Counsel) → Status(ProSe_Litigant)
+      premises: &id037
+      - Individual_Chooses_to_SelfRepresent
+    Trustee_Has_Fiduciary_Duty_to_Estate:
+      domain: Performance
+      chain: Agent(Trustee) → Power(Administer_Estate OR Monitor_DIP) → Act(Collect_and_Distribute) → Status(Estate=Settled)
+      premises: &id041
+      - Bankruptcy_Filed
+      - Trustee_Appointed
+    Commissioned:
+      domain: Formation
+      chain: Agent(USAttorney) → Power(Prosecute+Defend_US) → Act(Represent_UnitedStates)
+      premises: &id076
+      - President_Appoints+Senate_Confirms
+    Victim_Informed+Accompanied:
+      domain: Formation
+      chain: Agent(VictimAdvocate) → Power(Participatory_Rights) → Act(Assist_Victim) → Status(Victim_Rights_Enforced)
+      premises: &id077
+      - Crime_Victim
+      - Advocate_Assigned
+- primitive: Act
+  count: 19
+  domains:
+  - Breach
+  - Formation
+  - Performance
+  - Remedy/Sanction
+  - Validity
+  mappings:
+    AdversaryProceeding_Initiated:
+      domain: Formation
+      chain: Agent(Plaintiff) → Act(File_Complaint) → Agent(Defendant) → Act(Answer) → Status(Litigation_Active)
+      premises: &id002
+      - Bankruptcy_Case_Open
+      - Party_Files_Complaint
+    BenchTrial_Proceeds:
+      domain: Formation
+      chain: Agent(Judge) → Power(Find_Facts AND Apply_Law) → Act(Trial_Without_Jury) → Status(Verdict_Entered)
+      premises: &id007
+      - Jury_Waived
+      - Parties_Consent
+    Court_Considers → Premise_Atoms_Injected_into_Record:
+      domain: Formation
+      chain: Agent(Counsel) → Act(Draft_Brief) → Act(File_with_Court) → Status(Arguments_Preserved)
+      premises: &id008
+      - Party_Files_Brief
+    Damages_Awarded:
+      domain: Remedy/Sanction
+      chain: Agent(Court/Jury) → Act(Calculate_Loss) → Act(Award_Damages) → Status(Remedy=Monetary)
+      premises: &id018
+      - Breach_Established
+      - Loss_Quantified
+    Response_Due_within_30Days:
+      domain: Performance
+      chain: Agent(PropoundingParty) → Act(Serve_Interrogatories) → Agent(RespondingParty) → Act(Answer_UnderOath) → Status(Discovery_Response)
+      premises: &id026
+      - Discovery_Open
+      - Interrogatories_Served
+    Joint_Administration_Granted:
+      domain: Formation
+      chain: Agent(Court) → Act(Order_JointAdministration) → Agent(Multiple_Estates)_Consolidated → Status(Procedural_Union)
+      premises: &id027
+      - Related_Debtors
+      - NoPrejudice
+    Liquidation_Process_Begins:
+      domain: Remedy/Sanction
+      chain: Agent(Trustee) → Asset(Debtor_Property) → Act(Sell_Assets) → Status(Proceeds_for_Distribution)
+      premises: &id030
+      - Chapter7_Filed
+      - Trustee_Appointed
+    Stay_Lifted → Creditor_May_Foreclose:
+      domain: Breach
+      chain: Agent(Creditor) → Act(File_Motion) → Power(Stay=Lifted_for_Cause) → Status(Creditor_Remedies_Restored)
+      premises: &id032
+      - Cause_Shown
+      - NoAdequateProtection
+    Pleadings_Closed → Case_at_Issue:
+      domain: Formation
+      chain: Agent(Parties) → Act(File_Complaint/Answer) → Status(Issues=Joined) → Status(Discovery_Phase_Begins)
+      premises: &id035
+      - Complaint_Filed
+      - Answer_Served
+    Claim_Deemed_Allowed_Unless_Objected:
+      domain: Validity
+      chain: Agent(Creditor) → Act(File_ProofOfClaim) → Status(Claim=PrimaFacie_Valid) → Asset(Claim)_Registered_in_Estate
+      premises: &id038
+      - Creditor_Files_Before_BarDate
+    Plea_Entered → Pretrial_Phase_Begins:
+      domain: Formation
+      chain: Agent(Court) → Act(Conduct_Arraignment) → Agent(Defendant) → Act(Enter_Plea) → Status(Charges_Formally_Presented)
+      premises: &id043
+      - Defendant_Brought_Before_Court
+      - Charges_Read
+    Arrest_Authorized:
+      domain: Formation
+      chain: Agent(LawEnforcement) → Power(ProbableCause) → Act(Arrest_Subject) → Status(Subject=Custody) → Power(Liberty)=0
+      premises: &id044
+      - ProbableCause_Established
+      - Warrant_Issued
+    Bill_of_Particulars_Ordered:
+      domain: Formation
+      chain: Agent(Defendant) → Act(Request_BillOfParticulars) → Agent(Prosecutor) → Act(Provide_Details) → Status(Charges=Specified)
+      premises: &id046
+      - Indictment_Vague
+      - Defendant_Needs_Detail
+    Jury_Charged → Deliberations_Begin:
+      domain: Validity
+      chain: Agent(Judge) → Act(Instruct_Jury) → Status(Jury=Informed_of_Applicable_Law) → Status(Deliberation_Phase)
+      premises: &id051
+      - Evidence_Closed
+      - Instructions_Drafted
+    Mandatory_Disclosure AND Depositions_Authorized:
+      domain: Performance
+      chain: Agent(Parties) → Act(Exchange_Evidence) → Status(Mutual_Disclosure) → Power(Hide_Evidence)=0
+      premises: &id056
+      - Discovery_Period_Open
+    Information_Valid:
+      domain: Formation
+      chain: Agent(Prosecutor) → Act(File_Information) → Status(Defendant=Charged_Without_GrandJury)
+      premises: &id064
+      - Defendant_Waives_Indictment
+    Plea_Negotiations_Authorized:
+      domain: Performance
+      chain: Agent(Prosecutor) ↔ Agent(Defendant) → Act(Negotiate) → Status(Offers_Exchanged)
+      premises: &id068
+      - Charges_Filed
+    Court_Rules → Scope_Defined:
+      domain: Performance
+      chain: Agent(Defendant) → Act(File_Motion) → Agent(Court) → Act(Rule) → Status(Evidentiary_Landscape_Modified)
+      premises: &id070
+      - Motion_to_Suppress/Limine
+    Testimony_Admitted:
+      domain: Performance
+      chain: Agent(Witness) → Act(Give_Testimony_UnderOath) → Status(Fact=Introduced_into_Record)
+      premises: &id079
+      - Witness_Sworn
+      - Competent
+- primitive: Status
+  count: 31
+  domains:
+  - Breach
+  - Formation
+  - Performance
+  - Remedy/Sanction
+  - Validity
+  mappings:
+    Acquittal_Entered:
+      domain: Remedy/Sanction
+      chain: Agent(Jury) → Act(Deliberate) → Status(Guilt_NotProven) → Status(Acquitted_Final)
+      premises: &id001
+      - Jury_Verdict=NotGuilty
+    Judgment_Affirmed:
+      domain: Breach
+      chain: Agent(AppellateCourt) → Act(Review) → Status(LowerCourt_Judgment=Correct) → Status(Affirmed_NoChange)
+      premises: &id003
+      - Appeal_Filed
+      - NoReversibleError
+    DeathPenalty_Eligible:
+      domain: Remedy/Sanction
+      chain: Agent(Defendant) → Status(Charged_CapitalOffense) → Status(Punishment=Death_Possible)
+      premises: &id009
+      - Offense_Qualifies_as_Capital
+      - AggravatingFactors_Exist
+    Liquidation_Process_Triggered:
+      domain: Remedy/Sanction
+      chain: Agent(Debtor) → Asset(Nonexempt)_Seized → Act(Liquidation) → Status(Discharge_Granted) → Power(Debt)_Extinguished
+      premises: &id010
+      - MeansTest_Passed
+      - Chapter7_Filed
+    DIP_Status → Business_Operations_Continue:
+      domain: Performance
+      chain: Agent(Debtor=DIP) → Power(Operate_Business)_Retained → Act(File_ReorganizationPlan) → Status(Plan_Confirmed/Rejected)
+      premises: &id011
+      - Chapter11_Filed
+    Debtor_Must_Perform_Plan:
+      domain: Performance
+      chain: Agent(Debtor) → Act(File_RepaymentPlan) → Performance(Plan_Payments) → Status(Discharge_After_Completion)
+      premises: &id012
+      - Chapter13_Filed
+      - Plan_Confirmed
+    Confirmation_Granted:
+      domain: Validity
+      chain: Agent(Court) → Act(Hearing) → Status(Plan=Confirmed) → Act(Plan_Binding_on_All_Parties)
+      premises: &id015
+      - Plan_Meets_StatutoryRequirements
+      - GoodFaith_Found
+    Debtor_Becomes_DIP:
+      domain: Performance
+      chain: Agent(Debtor) → Status(DIP) → Power(Operate_Business AND Use_CashCollateral)_Retained
+      premises: &id019
+      - Chapter11_Filed
+      - NoTrustee_Appointed
+    Default_Entered → Judgment_for_Plaintiff:
+      domain: Breach
+      chain: Agent(Plaintiff) → Agent(Defendant)_NoResponse → Act(Court)_Enters_Default → Status(Judgment_for_Plaintiff)
+      premises: &id020
+      - Defendant_Fails_to_Answer_within_Period
+    ResJudicata_Attaches:
+      domain: Remedy/Sanction
+      chain: Agent(Court) → Act(Dismiss_with_Prejudice) → Power(Refile)_Extinguished → Status(Claim=Permanently_Barred)
+      premises: &id021
+      - Court_Orders_Dismissal_WithPrejudice
+    Plaintiff_May_Refile:
+      domain: Validity
+      chain: Agent(Court) → Act(Dismiss_without_Prejudice) → Power(Refile)_Preserved → Status(Claim=Dismissed_But_Revivable)
+      premises: &id022
+      - Court_Orders_Dismissal_WithoutPrejudice
+    Court_Grants_IFP → Financial_Barrier_Removed:
+      domain: Formation
+      chain: Agent(Litigant) → Status(Indigent) → Act(File_IFP_Motion) → Status(FilingFee=Waived)
+      premises: &id025
+      - Litigant_Proves_Indigence
+    Judgment_Final → All_Further_Proceedings_Governed_by_Judgment:
+      domain: Remedy/Sanction
+      chain: Agent(Court) → Act(Issue_Judgment) → Status(Dispute=Resolved) → Power(Execution/Appeal)_Activated
+      premises: &id028
+      - Verdict_or_Finding_Entered
+    Debt_Survives:
+      domain: Performance
+      chain: Agent(Debtor) → Act(Sign_Reaffirmation) → Status(Specific_Debt=Survives_Discharge) → Power(Creditor_Collect)=Restored
+      premises: &id039
+      - Debtor_Reaffirms
+      - Court_Approves
+      - NoUndueHardship
+    Action_Barred:
+      domain: Validity
+      chain: Agent(Plaintiff) → Power(File_Claim)_Expired_by_Time → Status(Claim=TimeBarred)
+      premises: &id040
+      - Claim_Accrued
+      - LimitationsPeriod_Passed
+    AlfordPlea_Accepted_by_Court → Conviction:
+      domain: Remedy/Sanction
+      chain: Agent(Defendant) → Act(Enter_AlfordPlea) → Status(Guilt_Accepted BUT Innocence_Maintained) → Status(Conviction_Entered)
+      premises: &id042
+      - Defendant_CannotAdmitGuilt BUT Evidence_Sufficient
+    Burden_on_Prosecution → Standard=BRD:
+      domain: Validity
+      chain: Agent(Prosecution) → Power(Burden_of_Proof) → Status(Standard=BeyondReasonableDoubt) → Status(Conviction_Requires_Surpassing)
+      premises: &id048
+      - Criminal_Prosecution
+    Stare_Decisis → Lower_Courts_Bound:
+      domain: Formation
+      chain: Agent(AppellateCourt) → Act(Issue_Opinion) → Status(Precedent=Established) → Power(Bind_LowerCourts)
+      premises: &id049
+      - Appellate_Decision_Published
+    Charge_Filed → Defendant_Status=Accused:
+      domain: Formation
+      chain: Agent(Prosecutor) → Act(File_Charge) → Status(Defendant=Accused) → Status(Criminal_Process_Initiated)
+      premises: &id050
+      - Prosecutor_Finds_ProbableCause
+    Circumstantial_Evidence_Considered:
+      domain: Validity
+      chain: Agent(Jury) → Status(Evidence=Circumstantial) → Act(Infer_Fact_from_Fact) → Status(Conclusion=Reached_via_Chain)
+      premises: &id052
+      - Direct_Evidence_Absent
+      - Inferences_Permissible
+    Common_Law_Rule_Applies:
+      domain: Formation
+      chain: Agent(Court) → Status(LegalSystem=CommonLaw) → Act(Apply_Precedent) → Status(Rule=Evolved_from_Cases)
+      premises: &id053
+      - No_Statute_Controls
+    Conviction_Entered:
+      domain: Remedy/Sanction
+      chain: Agent(Jury/Judge) → Act(Find_Guilty) → Status(Defendant=Convicted) → Status(Sentencing_Phase)
+      premises: &id054
+      - Guilt_Proven_Beyond_ReasonableDoubt
+    Hearing_Held → Bail_or_Detention_Ordered:
+      domain: Formation
+      chain: Agent(Court) → Act(Conduct_Detention_Hearing) → Status(Defendant_Detained_or_Released)
+      premises: &id055
+      - Arrest_Made
+      - Government_Seeks_Detention
+    Indictment_Filed → Formal_Charges:
+      domain: Formation
+      chain: Agent(GrandJury) → Act(Return_Indictment) → Status(Defendant=Indicted)
+      premises: &id063
+      - GrandJury_Returns_TrueBill
+    Hearing_within_48Hours → Rights_Advised:
+      domain: Formation
+      chain: Agent(Magistrate) → Act(Conduct_InitialHearing) → Status(Rights_Advised)
+      premises: &id065
+      - Arrested
+    Criminal_Conviction; Not_admissible_in_Civil:
+      domain: Remedy/Sanction
+      chain: Agent(Defendant) → Act(Enter_Nolo) → Status(Convicted BUT Civilly_NoAdmission)
+      premises: &id066
+      - Court_Accepts_Nolo
+    Plea_Binding:
+      domain: Remedy/Sanction
+      chain: Agent(Defendant) → Act(Enter_PleaAgreement) → Agent(Prosecutor) → Act(Recommend) → Status(Resolved_by_Contract)
+      premises: &id067
+      - Parties_Agree
+      - Court_Accepts
+    Prelim_Hearing → PC_Determined:
+      domain: Validity
+      chain: Agent(Magistrate) → Act(Test_ProbableCause) → Status(BoundOver_or_Dismissed)
+      premises: &id069
+      - Indictment_NotYet
+    PSR_Ordered → Guidelines_Calculated:
+      domain: Remedy/Sanction
+      chain: Agent(Probation) → Act(Prepare_PSR) → Status(Guidelines_Range_Established)
+      premises: &id071
+      - Conviction_Entered
+    NotGuilty:
+      domain: Validity
+      chain: Agent(Jury) → Status(Doubt=Reasonable) → Status(Conviction=Barred) → Status(Acquittal)
+      premises: &id073
+      - Not_Every_Reasonable_Doubt_Excluded
+    Sentence_Imposed:
+      domain: Remedy/Sanction
+      chain: Agent(Court) → Act(Impose_Sanction) → Status(Defendant=Punished)
+      premises: &id074
+      - Conviction+Guidelines
+- primitive: Power
+  count: 11
+  domains:
+  - Breach
+  - Formation
+  - Performance
+  - Remedy/Sanction
+  - Validity
+  mappings:
+    AutomaticStay_InEffect → CreditorPower(Collect)=0:
+      domain: Validity
+      chain: Agent(Creditor) → Power(Collect)_Suppressed → Status(Collection=Stayed)
+      premises: &id004
+      - Bankruptcy_Petition_Filed
+    Counterclaim_Active:
+      domain: Breach
+      chain: Agent(Defendant) → Act(Assert_Counterclaim) → Power(Seek_Relief_from_Plaintiff) → Status(Counterclaim=Pending)
+      premises: &id017
+      - Defendant_Files_Answer
+      - Includes_Counterclaim
+    Panel_Decision_Vacated → EnBanc_Hearing:
+      domain: Validity
+      chain: Agent(All_Active_Judges) → Power(Override_Panel_Decision) → Act(Rehear) → Status(Precedent=Set_at_FullCourt)
+      premises: &id023
+      - Majority_of_Judges_Vote_for_EnBanc
+    Court_May_Adjudicate:
+      domain: Formation
+      chain: Agent(Court) → Power(Jurisdiction)=SubjectMatter+Personal+Territorial → Status(Case=Properly_Before_Court)
+      premises: &id029
+      - SMJ_Exists
+      - PJ_Exists
+    TrueBill → Indictment:
+      domain: Formation
+      chain: Agent(GrandJury) → Power(Investigate+Indict) → Act(Review_Evidence) → Status(TrueBill_or_NoBill)
+      premises: &id059
+      - ProbableCause_Found
+    Subpoena_Issued → Mandatory_Compliance:
+      domain: Formation
+      chain: Agent(GrandJury) → Power(Compel) → Act(Issue_Subpoena) → Status(Recipient_Must_Comply)
+      premises: &id060
+      - GrandJury_Active
+    Cannot_Prosecute_Transaction:
+      domain: Remedy/Sanction
+      chain: Agent(Prosecutor) → Act(Grant_TransactionalImmunity) → Power(Prosecute)=0 → Status(Permanent)
+      premises: &id061
+      - Witness_Invokes_Fifth
+      - Immunity_Granted
+    Testimony_Compelled:
+      domain: Remedy/Sanction
+      chain: Agent(Prosecutor) → Act(Grant_UseImmunity) → Power(UseCompelledTestimony)=0 → Status(DerivativeUse_Only)
+      premises: &id062
+      - Witness_Invokes_Fifth
+      - Use_Immunity
+    May_Decline:
+      domain: Formation
+      chain: Agent(Prosecutor) → Power(Charge_or_Decline) → Act(Decide) → Status(Case_Proceeded_or_Not)
+      premises: &id072
+      - Evidence_Sufficient BUT Policy
+    Compliance_Required:
+      domain: Performance
+      chain: Agent(Court) → Power(Compel) → Act(Issue) → Status(Recipient_Obligated)
+      premises: &id075
+      - Subpoena_Issued+Served
+    Warrant_Issued → Execution_Authorized:
+      domain: Formation
+      chain: Agent(Magistrate) → Power(Issue_Warrant) → Act(Authorize_Search_or_Arrest) → Status(Particularity_Required)
+      premises: &id078
+      - ProbableCause+Oath
+- primitive: Asset
+  count: 6
+  domains:
+  - Formation
+  - Remedy/Sanction
+  - Validity
+  mappings:
+    Estate_Created → All_DebtorProperty=InEstate:
+      domain: Formation
+      chain: Agent(Debtor) → Asset(Property)_Transferred → Agent(Trustee) → Power(Administer_Estate)
+      premises: &id005
+      - Bankruptcy_Filed
+    Claim_Allowed:
+      domain: Validity
+      chain: Agent(Creditor) → Act(File_ProofOfClaim) → Asset(Claim)_Registered → Status(Claim_Allowed/Disallowed)
+      premises: &id013
+      - Creditor_Files_ProofOfClaim
+      - Claim_NotObjectedTo
+    Asset_Excluded_from_Liquidation:
+      domain: Formation
+      chain: Agent(Debtor) → Asset(Specific_Property) → Status(Exempt_from_Estate) → Power(Creditor_Reach)=0
+      premises: &id024
+      - Debtor_Claims_Exemption
+      - Property_Qualifies
+    Property_Classified_Nonexempt → Subject_to_Liquidation:
+      domain: Formation
+      chain: Agent(Debtor) → Asset(Specific_Property)=Nonexempt → Status(Available_to_Creditors)
+      premises: &id033
+      - Exemption_Claim_Denied
+    Civil_Or_Criminal_Forfeiture_Authorized:
+      domain: Remedy/Sanction
+      chain: Agent(Government) → Defect(Property_Connected_to_Crime) → Act(Seize) → Asset(Title)_Transferred_to_State
+      premises: &id045
+      - Property_ProceedsOfCrime OR Instrumentality
+    Pretrial_Release:
+      domain: Formation
+      chain: Agent(Defendant) → Asset(Bond)_Posted → Status(Defendant=Released_Pretrial) → Power(Liberty)_Conditionally_Restored
+      premises: &id047
+      - Bail_Set
+      - Defendant_Posts
+- primitive: Defect
+  count: 6
+  domains:
+  - Breach
+  - Validity
+  mappings:
+    Discharge_Denied:
+      domain: Breach
+      chain: Agent(Creditor/Trustee) → Defect(Debtor_Misconduct)→ Act(File_Objection) → Status(Discharge=Blocked)
+      premises: &id034
+      - Debtor_ConcealedAssets OR Made_False_Oath
+    Preference_Avoidable:
+      domain: Validity
+      chain: Agent(Debtor) → Defect(Preferential_Transfer) → Act(Trustee_Avoids_Transfer) → Status(Transfer=Recovered_for_Estate)
+      premises: &id036
+      - Transfer_Within_90Days_PrePetition
+      - Creditor_Benefited
+    Evidence_Suppressed:
+      domain: Validity
+      chain: Agent(Court) → Defect(Evidence_Obtained_Illegally) → Act(Suppress) → Status(Evidence=Excluded) → Power(UseAtTrial)=0
+      premises: &id057
+      - FourthAmendment_or_Miranda_Violation
+    Must_Disclose:
+      domain: Breach
+      chain: Agent(Prosecutor) → Defect(Withholding_BradyMaterial) → Act(Disclose) → Status(Defendant=Informed)
+      premises: &id058
+      - Evidence_Favorable+Material_to_Guilt
+    Wrongful_Omission:
+      domain: Breach
+      chain: Agent(Actor) → Defect(Failure_to_Act_When_Duty_Exists) → Act(Omission) → Status(Liability=Possible)
+      premises: &id080
+      - Legal_Duty_to_Act
+      - Failure_to_Act
+    Plea_Void → Withdrawn:
+      domain: Validity
+      chain: Agent(Defendant) → Defect(Plea_Not_Voluntary) → Status(Plea=VOID) → Act(Withdraw_Plea)
+      premises: &id081
+      - Coercion_or_Fraud_in_Plea
+rules:
+- id: US-Acquittal
+  term: Acquittal
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id001
+  head_claim: Acquittal_Entered
+  concepts:
+  - Acquitted
+  - Deliberate
+  - Final
+  - Guilt
+  - Jury
+  - NotProven
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Jury) → Act(Deliberate) → Status(Guilt_NotProven) → Status(Acquitted_Final)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Adversary_proceeding
+  term: Adversary proceeding
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id002
+  head_claim: AdversaryProceeding_Initiated
+  concepts:
+  - Active
+  - Answer
+  - Complaint
+  - Defendant
+  - File
+  - Litigation
+  - Plaintiff
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Plaintiff) → Act(File_Complaint) → Agent(Defendant) → Act(Answer) → Status(Litigation_Active)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Affirmed
+  term: Affirmed
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id003
+  head_claim: Judgment_Affirmed
+  concepts:
+  - Affirmed
+  - AppellateCourt
+  - Judgment=Correct
+  - LowerCourt
+  - NoChange
+  - Review
+  l0_primitive: Status
+  l1_domain: Breach
+  structural_chain: Agent(AppellateCourt) → Act(Review) → Status(LowerCourt_Judgment=Correct) → Status(Affirmed_NoChange)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Automatic_stay
+  term: Automatic stay
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id004
+  head_claim: AutomaticStay_InEffect → CreditorPower(Collect)=0
+  concepts:
+  - Collect
+  - Collection=Stayed
+  - Creditor
+  l0_primitive: Power
+  l1_domain: Validity
+  structural_chain: Agent(Creditor) → Power(Collect)_Suppressed → Status(Collection=Stayed)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Bankruptcy_estate
+  term: Bankruptcy estate
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id005
+  head_claim: Estate_Created → All_DebtorProperty=InEstate
+  concepts:
+  - Administer
+  - Debtor
+  - Estate
+  - Property
+  - Trustee
+  l0_primitive: Asset
+  l1_domain: Formation
+  structural_chain: Agent(Debtor) → Asset(Property)_Transferred → Agent(Trustee) → Power(Administer_Estate)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Bankruptcy_judges
+  term: Bankruptcy judges
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id006
+  head_claim: Power(Core_Bankruptcy_Matters)
+  concepts:
+  - Adjudicate
+  - Bankruptcy
+  - BankruptcyJudge
+  - Hearing
+  - Issued
+  - Order
+  l0_primitive: Agent
+  l1_domain: Validity
+  structural_chain: Agent(BankruptcyJudge) → Power(Adjudicate_Bankruptcy) → Act(Hearing) → Status(Order_Issued)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Bench_trial
+  term: Bench trial
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id007
+  head_claim: BenchTrial_Proceeds
+  concepts:
+  - Apply
+  - Entered
+  - Facts
+  - Find
+  - Judge
+  - Jury
+  - Law
+  - Trial
+  - Verdict
+  - Without
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Judge) → Power(Find_Facts AND Apply_Law) → Act(Trial_Without_Jury) → Status(Verdict_Entered)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Brief
+  term: Brief
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id008
+  head_claim: Court_Considers → Premise_Atoms_Injected_into_Record
+  concepts:
+  - Arguments
+  - Brief
+  - Counsel
+  - Court
+  - Draft
+  - File
+  - Preserved
+  - with
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Counsel) → Act(Draft_Brief) → Act(File_with_Court) → Status(Arguments_Preserved)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Capital_offense
+  term: Capital offense
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id009
+  head_claim: DeathPenalty_Eligible
+  concepts:
+  - CapitalOffense
+  - Charged
+  - Defendant
+  - Possible
+  - Punishment=Death
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Defendant) → Status(Charged_CapitalOffense) → Status(Punishment=Death_Possible)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Chapter_7
+  term: Chapter 7
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id010
+  head_claim: Liquidation_Process_Triggered
+  concepts:
+  - Debt
+  - Debtor
+  - Discharge
+  - Granted
+  - Liquidation
+  - Nonexempt
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Debtor) → Asset(Nonexempt)_Seized → Act(Liquidation) → Status(Discharge_Granted) → Power(Debt)_Extinguished
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Chapter_11
+  term: Chapter 11
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id011
+  head_claim: DIP_Status → Business_Operations_Continue
+  concepts:
+  - Business
+  - Confirmed/Rejected
+  - Debtor=DIP
+  - File
+  - Operate
+  - Plan
+  - ReorganizationPlan
+  l0_primitive: Status
+  l1_domain: Performance
+  structural_chain: Agent(Debtor=DIP) → Power(Operate_Business)_Retained → Act(File_ReorganizationPlan) → Status(Plan_Confirmed/Rejected)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Chapter_13
+  term: Chapter 13
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id012
+  head_claim: Debtor_Must_Perform_Plan
+  concepts:
+  - After
+  - Completion
+  - Debtor
+  - Discharge
+  - File
+  - RepaymentPlan
+  l0_primitive: Status
+  l1_domain: Performance
+  structural_chain: Agent(Debtor) → Act(File_RepaymentPlan) → Performance(Plan_Payments) → Status(Discharge_After_Completion)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Claim
+  term: Claim (Bankruptcy)
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id013
+  head_claim: Claim_Allowed
+  concepts:
+  - Allowed/Disallowed
+  - Claim
+  - Creditor
+  - File
+  - ProofOfClaim
+  l0_primitive: Asset
+  l1_domain: Validity
+  structural_chain: Agent(Creditor) → Act(File_ProofOfClaim) → Asset(Claim)_Registered → Status(Claim_Allowed/Disallowed)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Clerk_of_court
+  term: Clerk of court
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id014
+  head_claim: Clerk_Has_AdministrativeAuthority
+  concepts:
+  - Clerk
+  - Docket
+  - Filings
+  - Maintain
+  - Preserved
+  - Receive
+  - Records
+  l0_primitive: Agent
+  l1_domain: Formation
+  structural_chain: Agent(Clerk) → Act(Receive_Filings) → Act(Maintain_Docket) → Status(Records_Preserved)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Confirmation
+  term: Confirmation
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id015
+  head_claim: Confirmation_Granted
+  concepts:
+  - All
+  - Binding
+  - Court
+  - Hearing
+  - Parties
+  - Plan
+  - Plan=Confirmed
+  - 'on'
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Court) → Act(Hearing) → Status(Plan=Confirmed) → Act(Plan_Binding_on_All_Parties)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Counsel
+  term: Counsel
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id016
+  head_claim: Attorney_Client_Relationship_Established
+  concepts:
+  - Appear
+  - Attorney
+  - Before
+  - Client
+  - Counsel
+  - Court
+  - Record
+  - Represent
+  - of
+  l0_primitive: Agent
+  l1_domain: Formation
+  structural_chain: Agent(Counsel) → Power(Represent_Client) → Act(Appear_Before_Court) → Status(Attorney_of_Record)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Counterclaim
+  term: Counterclaim
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id017
+  head_claim: Counterclaim_Active
+  concepts:
+  - Assert
+  - Counterclaim
+  - Counterclaim=Pending
+  - Defendant
+  - Plaintiff
+  - Relief
+  - Seek
+  - from
+  l0_primitive: Power
+  l1_domain: Breach
+  structural_chain: Agent(Defendant) → Act(Assert_Counterclaim) → Power(Seek_Relief_from_Plaintiff) → Status(Counterclaim=Pending)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Damages
+  term: Damages
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id018
+  head_claim: Damages_Awarded
+  concepts:
+  - Award
+  - Calculate
+  - Court/Jury
+  - Damages
+  - Loss
+  - Remedy=Monetary
+  l0_primitive: Act
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Court/Jury) → Act(Calculate_Loss) → Act(Award_Damages) → Status(Remedy=Monetary)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Debtor_in_possession
+  term: Debtor in possession (DIP)
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id019
+  head_claim: Debtor_Becomes_DIP
+  concepts:
+  - Business
+  - CashCollateral
+  - DIP
+  - Debtor
+  - Operate
+  - Use
+  l0_primitive: Status
+  l1_domain: Performance
+  structural_chain: Agent(Debtor) → Status(DIP) → Power(Operate_Business AND Use_CashCollateral)_Retained
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Default_judgment
+  term: Default judgment
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id020
+  head_claim: Default_Entered → Judgment_for_Plaintiff
+  concepts:
+  - Court
+  - Defendant
+  - Judgment
+  - Plaintiff
+  - for
+  l0_primitive: Status
+  l1_domain: Breach
+  structural_chain: Agent(Plaintiff) → Agent(Defendant)_NoResponse → Act(Court)_Enters_Default → Status(Judgment_for_Plaintiff)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Dismissal_with_prejudice
+  term: Dismissal with prejudice
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id021
+  head_claim: ResJudicata_Attaches
+  concepts:
+  - Barred
+  - Claim=Permanently
+  - Court
+  - Dismiss
+  - Prejudice
+  - Refile
+  - with
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Court) → Act(Dismiss_with_Prejudice) → Power(Refile)_Extinguished → Status(Claim=Permanently_Barred)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Dismissal_without_prejudice
+  term: Dismissal without prejudice
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id022
+  head_claim: Plaintiff_May_Refile
+  concepts:
+  - But
+  - Claim=Dismissed
+  - Court
+  - Dismiss
+  - Prejudice
+  - Refile
+  - Revivable
+  - without
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Court) → Act(Dismiss_without_Prejudice) → Power(Refile)_Preserved → Status(Claim=Dismissed_But_Revivable)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-En_banc
+  term: En banc
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id023
+  head_claim: Panel_Decision_Vacated → EnBanc_Hearing
+  concepts:
+  - Active
+  - All
+  - Decision
+  - FullCourt
+  - Judges
+  - Override
+  - Panel
+  - Precedent=Set
+  - Rehear
+  - at
+  l0_primitive: Power
+  l1_domain: Validity
+  structural_chain: Agent(All_Active_Judges) → Power(Override_Panel_Decision) → Act(Rehear) → Status(Precedent=Set_at_FullCourt)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Exempt_property
+  term: Exempt property
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id024
+  head_claim: Asset_Excluded_from_Liquidation
+  concepts:
+  - Creditor
+  - Debtor
+  - Estate
+  - Exempt
+  - Property
+  - Reach
+  - Specific
+  - from
+  l0_primitive: Asset
+  l1_domain: Formation
+  structural_chain: Agent(Debtor) → Asset(Specific_Property) → Status(Exempt_from_Estate) → Power(Creditor_Reach)=0
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-In_forma_pauperis
+  term: In forma pauperis
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id025
+  head_claim: Court_Grants_IFP → Financial_Barrier_Removed
+  concepts:
+  - File
+  - FilingFee=Waived
+  - IFP
+  - Indigent
+  - Litigant
+  - Motion
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(Litigant) → Status(Indigent) → Act(File_IFP_Motion) → Status(FilingFee=Waived)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Interrogatory
+  term: Interrogatory
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id026
+  head_claim: Response_Due_within_30Days
+  concepts:
+  - Answer
+  - Discovery
+  - Interrogatories
+  - PropoundingParty
+  - RespondingParty
+  - Response
+  - Serve
+  - UnderOath
+  l0_primitive: Act
+  l1_domain: Performance
+  structural_chain: Agent(PropoundingParty) → Act(Serve_Interrogatories) → Agent(RespondingParty) → Act(Answer_UnderOath)
+    → Status(Discovery_Response)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Joint_administration
+  term: Joint administration
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id027
+  head_claim: Joint_Administration_Granted
+  concepts:
+  - Court
+  - Estates
+  - JointAdministration
+  - Multiple
+  - Order
+  - Procedural
+  - Union
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Court) → Act(Order_JointAdministration) → Agent(Multiple_Estates)_Consolidated → Status(Procedural_Union)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Judgment
+  term: Judgment
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id028
+  head_claim: Judgment_Final → All_Further_Proceedings_Governed_by_Judgment
+  concepts:
+  - Court
+  - Dispute=Resolved
+  - Execution/Appeal
+  - Issue
+  - Judgment
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Court) → Act(Issue_Judgment) → Status(Dispute=Resolved) → Power(Execution/Appeal)_Activated
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Jurisdiction
+  term: Jurisdiction
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id029
+  head_claim: Court_May_Adjudicate
+  concepts:
+  - Before
+  - Case=Properly
+  - Court
+  - Jurisdiction
+  l0_primitive: Power
+  l1_domain: Formation
+  structural_chain: Agent(Court) → Power(Jurisdiction)=SubjectMatter+Personal+Territorial → Status(Case=Properly_Before_Court)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Liquidation
+  term: Liquidation
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id030
+  head_claim: Liquidation_Process_Begins
+  concepts:
+  - Assets
+  - Debtor
+  - Distribution
+  - Proceeds
+  - Property
+  - Sell
+  - Trustee
+  - for
+  l0_primitive: Act
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Trustee) → Asset(Debtor_Property) → Act(Sell_Assets) → Status(Proceeds_for_Distribution)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Magistrate_judge
+  term: Magistrate judge
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id031
+  head_claim: Magistrate_Has_Delegated_Authority
+  concepts:
+  - Conduct
+  - Delegated
+  - DistrictJudge
+  - Hearings/Issue
+  - Judicial
+  - MagistrateJudge
+  - R&R
+  - Review
+  - Subject
+  - to
+  l0_primitive: Agent
+  l1_domain: Validity
+  structural_chain: Agent(MagistrateJudge) → Power(Delegated_Judicial) → Act(Conduct_Hearings/Issue_R&R) → Status(Subject_to_DistrictJudge_Review)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Motion_to_lift_automatic_stay
+  term: Motion to lift automatic stay
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id032
+  head_claim: Stay_Lifted → Creditor_May_Foreclose
+  concepts:
+  - Cause
+  - Creditor
+  - File
+  - Motion
+  - Remedies
+  - Restored
+  - Stay=Lifted
+  - for
+  l0_primitive: Act
+  l1_domain: Breach
+  structural_chain: Agent(Creditor) → Act(File_Motion) → Power(Stay=Lifted_for_Cause) → Status(Creditor_Remedies_Restored)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Nonexempt_property
+  term: Nonexempt property
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id033
+  head_claim: Property_Classified_Nonexempt → Subject_to_Liquidation
+  concepts:
+  - Available
+  - Creditors
+  - Debtor
+  - Property
+  - Specific
+  - to
+  l0_primitive: Asset
+  l1_domain: Formation
+  structural_chain: Agent(Debtor) → Asset(Specific_Property)=Nonexempt → Status(Available_to_Creditors)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Objection_to_discharge
+  term: Objection to discharge
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id034
+  head_claim: Discharge_Denied
+  concepts:
+  - Creditor/Trustee
+  - Debtor
+  - Discharge=Blocked
+  - File
+  - Misconduct
+  - Objection
+  l0_primitive: Defect
+  l1_domain: Breach
+  structural_chain: Agent(Creditor/Trustee) → Defect(Debtor_Misconduct)→ Act(File_Objection) → Status(Discharge=Blocked)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Pleadings
+  term: Pleadings
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id035
+  head_claim: Pleadings_Closed → Case_at_Issue
+  concepts:
+  - Begins
+  - Complaint/Answer
+  - Discovery
+  - File
+  - Issues=Joined
+  - Parties
+  - Phase
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Parties) → Act(File_Complaint/Answer) → Status(Issues=Joined) → Status(Discovery_Phase_Begins)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Preference
+  term: Preference
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id036
+  head_claim: Preference_Avoidable
+  concepts:
+  - Avoids
+  - Debtor
+  - Estate
+  - Preferential
+  - Transfer
+  - Transfer=Recovered
+  - Trustee
+  - for
+  l0_primitive: Defect
+  l1_domain: Validity
+  structural_chain: Agent(Debtor) → Defect(Preferential_Transfer) → Act(Trustee_Avoids_Transfer) → Status(Transfer=Recovered_for_Estate)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Pro_se
+  term: Pro se
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id037
+  head_claim: Court_Allows_ProSe
+  concepts:
+  - Appear
+  - Counsel
+  - Individual
+  - Litigant
+  - ProSe
+  - Representation
+  - Self
+  - Without
+  l0_primitive: Agent
+  l1_domain: Formation
+  structural_chain: Agent(Individual) → Power(Self_Representation) → Act(Appear_Without_Counsel) → Status(ProSe_Litigant)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Proof_of_claim
+  term: Proof of claim
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id038
+  head_claim: Claim_Deemed_Allowed_Unless_Objected
+  concepts:
+  - Claim
+  - Claim=PrimaFacie
+  - Creditor
+  - File
+  - ProofOfClaim
+  - Valid
+  l0_primitive: Act
+  l1_domain: Validity
+  structural_chain: Agent(Creditor) → Act(File_ProofOfClaim) → Status(Claim=PrimaFacie_Valid) → Asset(Claim)_Registered_in_Estate
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Reaffirmation_agreement
+  term: Reaffirmation agreement
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id039
+  head_claim: Debt_Survives
+  concepts:
+  - Collect
+  - Creditor
+  - Debt=Survives
+  - Debtor
+  - Discharge
+  - Reaffirmation
+  - Sign
+  - Specific
+  l0_primitive: Status
+  l1_domain: Performance
+  structural_chain: Agent(Debtor) → Act(Sign_Reaffirmation) → Status(Specific_Debt=Survives_Discharge) → Power(Creditor_Collect)=Restored
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Statute_of_limitations
+  term: Statute of limitations
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id040
+  head_claim: Action_Barred
+  concepts:
+  - Claim
+  - Claim=TimeBarred
+  - File
+  - Plaintiff
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Plaintiff) → Power(File_Claim)_Expired_by_Time → Status(Claim=TimeBarred)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Trustee_US_Trustee
+  term: Trustee / U.S. Trustee
+  origin: uscourts.gov
+  perspective: Judicial
+  premise_atoms: *id041
+  head_claim: Trustee_Has_Fiduciary_Duty_to_Estate
+  concepts:
+  - Administer
+  - Collect
+  - DIP
+  - Distribute
+  - Estate
+  - Estate=Settled
+  - Monitor
+  - Trustee
+  - and
+  l0_primitive: Agent
+  l1_domain: Performance
+  structural_chain: Agent(Trustee) → Power(Administer_Estate OR Monitor_DIP) → Act(Collect_and_Distribute) → Status(Estate=Settled)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Alford_plea
+  term: Alford plea
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id042
+  head_claim: AlfordPlea_Accepted_by_Court → Conviction
+  concepts:
+  - Accepted
+  - AlfordPlea
+  - BUT
+  - Conviction
+  - Defendant
+  - Enter
+  - Entered
+  - Guilt
+  - Innocence
+  - Maintained
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Defendant) → Act(Enter_AlfordPlea) → Status(Guilt_Accepted BUT Innocence_Maintained) → Status(Conviction_Entered)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Arraignment
+  term: Arraignment
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id043
+  head_claim: Plea_Entered → Pretrial_Phase_Begins
+  concepts:
+  - Arraignment
+  - Charges
+  - Conduct
+  - Court
+  - Defendant
+  - Enter
+  - Formally
+  - Plea
+  - Presented
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Court) → Act(Conduct_Arraignment) → Agent(Defendant) → Act(Enter_Plea) → Status(Charges_Formally_Presented)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Arrest
+  term: Arrest
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id044
+  head_claim: Arrest_Authorized
+  concepts:
+  - Arrest
+  - LawEnforcement
+  - Liberty
+  - ProbableCause
+  - Subject
+  - Subject=Custody
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(LawEnforcement) → Power(ProbableCause) → Act(Arrest_Subject) → Status(Subject=Custody) → Power(Liberty)=0
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Asset_forfeiture
+  term: Asset forfeiture
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id045
+  head_claim: Civil_Or_Criminal_Forfeiture_Authorized
+  concepts:
+  - Connected
+  - Crime
+  - Government
+  - Property
+  - Seize
+  - Title
+  - to
+  l0_primitive: Asset
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Government) → Defect(Property_Connected_to_Crime) → Act(Seize) → Asset(Title)_Transferred_to_State
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Bill_of_Particulars
+  term: Bill of Particulars
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id046
+  head_claim: Bill_of_Particulars_Ordered
+  concepts:
+  - BillOfParticulars
+  - Charges=Specified
+  - Defendant
+  - Details
+  - Prosecutor
+  - Provide
+  - Request
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Defendant) → Act(Request_BillOfParticulars) → Agent(Prosecutor) → Act(Provide_Details) → Status(Charges=Specified)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Bond_Bail
+  term: Bond / Bail
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id047
+  head_claim: Pretrial_Release
+  concepts:
+  - Bond
+  - Defendant
+  - Defendant=Released
+  - Liberty
+  - Pretrial
+  l0_primitive: Asset
+  l1_domain: Formation
+  structural_chain: Agent(Defendant) → Asset(Bond)_Posted → Status(Defendant=Released_Pretrial) → Power(Liberty)_Conditionally_Restored
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Burden_of_proof
+  term: Burden of proof
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id048
+  head_claim: Burden_on_Prosecution → Standard=BRD
+  concepts:
+  - Burden
+  - Conviction
+  - Proof
+  - Prosecution
+  - Requires
+  - Standard=BeyondReasonableDoubt
+  - Surpassing
+  - of
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Prosecution) → Power(Burden_of_Proof) → Status(Standard=BeyondReasonableDoubt) → Status(Conviction_Requires_Surpassing)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Case_law
+  term: Case law
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id049
+  head_claim: Stare_Decisis → Lower_Courts_Bound
+  concepts:
+  - AppellateCourt
+  - Bind
+  - Issue
+  - LowerCourts
+  - Opinion
+  - Precedent=Established
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(AppellateCourt) → Act(Issue_Opinion) → Status(Precedent=Established) → Power(Bind_LowerCourts)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Charge
+  term: Charge
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id050
+  head_claim: Charge_Filed → Defendant_Status=Accused
+  concepts:
+  - Charge
+  - Criminal
+  - Defendant=Accused
+  - File
+  - Initiated
+  - Process
+  - Prosecutor
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(Prosecutor) → Act(File_Charge) → Status(Defendant=Accused) → Status(Criminal_Process_Initiated)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Charge_to_the_jury
+  term: Charge to the jury
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id051
+  head_claim: Jury_Charged → Deliberations_Begin
+  concepts:
+  - Applicable
+  - Deliberation
+  - Instruct
+  - Judge
+  - Jury
+  - Jury=Informed
+  - Law
+  - Phase
+  - of
+  l0_primitive: Act
+  l1_domain: Validity
+  structural_chain: Agent(Judge) → Act(Instruct_Jury) → Status(Jury=Informed_of_Applicable_Law) → Status(Deliberation_Phase)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Circumstantial_evidence
+  term: Circumstantial evidence
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id052
+  head_claim: Circumstantial_Evidence_Considered
+  concepts:
+  - Chain
+  - Conclusion=Reached
+  - Evidence=Circumstantial
+  - Fact
+  - Infer
+  - Jury
+  - from
+  - via
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Jury) → Status(Evidence=Circumstantial) → Act(Infer_Fact_from_Fact) → Status(Conclusion=Reached_via_Chain)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Common_law
+  term: Common law
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id053
+  head_claim: Common_Law_Rule_Applies
+  concepts:
+  - Apply
+  - Cases
+  - Court
+  - LegalSystem=CommonLaw
+  - Precedent
+  - Rule=Evolved
+  - from
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(Court) → Status(LegalSystem=CommonLaw) → Act(Apply_Precedent) → Status(Rule=Evolved_from_Cases)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Conviction
+  term: Conviction
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id054
+  head_claim: Conviction_Entered
+  concepts:
+  - Defendant=Convicted
+  - Find
+  - Guilty
+  - Jury/Judge
+  - Phase
+  - Sentencing
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Jury/Judge) → Act(Find_Guilty) → Status(Defendant=Convicted) → Status(Sentencing_Phase)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Detention_hearing
+  term: Detention hearing
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id055
+  head_claim: Hearing_Held → Bail_or_Detention_Ordered
+  concepts:
+  - Conduct
+  - Court
+  - Defendant
+  - Detained
+  - Detention
+  - Hearing
+  - Released
+  - or
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(Court) → Act(Conduct_Detention_Hearing) → Status(Defendant_Detained_or_Released)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Discovery
+  term: Discovery
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id056
+  head_claim: Mandatory_Disclosure AND Depositions_Authorized
+  concepts:
+  - Disclosure
+  - Evidence
+  - Exchange
+  - Hide
+  - Mutual
+  - Parties
+  l0_primitive: Act
+  l1_domain: Performance
+  structural_chain: Agent(Parties) → Act(Exchange_Evidence) → Status(Mutual_Disclosure) → Power(Hide_Evidence)=0
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Exclusionary_rule
+  term: Exclusionary rule
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id057
+  head_claim: Evidence_Suppressed
+  concepts:
+  - Court
+  - Evidence
+  - Evidence=Excluded
+  - Illegally
+  - Obtained
+  - Suppress
+  - UseAtTrial
+  l0_primitive: Defect
+  l1_domain: Validity
+  structural_chain: Agent(Court) → Defect(Evidence_Obtained_Illegally) → Act(Suppress) → Status(Evidence=Excluded) → Power(UseAtTrial)=0
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Exculpatory_evidence
+  term: Exculpatory evidence
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id058
+  head_claim: Must_Disclose
+  concepts:
+  - BradyMaterial
+  - Defendant=Informed
+  - Disclose
+  - Prosecutor
+  - Withholding
+  l0_primitive: Defect
+  l1_domain: Breach
+  structural_chain: Agent(Prosecutor) → Defect(Withholding_BradyMaterial) → Act(Disclose) → Status(Defendant=Informed)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Grand_jury
+  term: Grand jury
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id059
+  head_claim: TrueBill → Indictment
+  concepts:
+  - Evidence
+  - GrandJury
+  - Investigate+Indict
+  - NoBill
+  - Review
+  - TrueBill
+  - or
+  l0_primitive: Power
+  l1_domain: Formation
+  structural_chain: Agent(GrandJury) → Power(Investigate+Indict) → Act(Review_Evidence) → Status(TrueBill_or_NoBill)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Grand_jury_subpoena
+  term: Grand jury subpoena
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id060
+  head_claim: Subpoena_Issued → Mandatory_Compliance
+  concepts:
+  - Compel
+  - Comply
+  - GrandJury
+  - Issue
+  - Must
+  - Recipient
+  - Subpoena
+  l0_primitive: Power
+  l1_domain: Formation
+  structural_chain: Agent(GrandJury) → Power(Compel) → Act(Issue_Subpoena) → Status(Recipient_Must_Comply)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Immunity
+  term: Immunity (Transactional)
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id061
+  head_claim: Cannot_Prosecute_Transaction
+  concepts:
+  - Grant
+  - Permanent
+  - Prosecute
+  - Prosecutor
+  - TransactionalImmunity
+  l0_primitive: Power
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Prosecutor) → Act(Grant_TransactionalImmunity) → Power(Prosecute)=0 → Status(Permanent)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Immunity
+  term: Immunity (Use)
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id062
+  head_claim: Testimony_Compelled
+  concepts:
+  - DerivativeUse
+  - Grant
+  - Only
+  - Prosecutor
+  - UseCompelledTestimony
+  - UseImmunity
+  l0_primitive: Power
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Prosecutor) → Act(Grant_UseImmunity) → Power(UseCompelledTestimony)=0 → Status(DerivativeUse_Only)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Indictment
+  term: Indictment
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id063
+  head_claim: Indictment_Filed → Formal_Charges
+  concepts:
+  - Defendant=Indicted
+  - GrandJury
+  - Indictment
+  - Return
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(GrandJury) → Act(Return_Indictment) → Status(Defendant=Indicted)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Information
+  term: Information
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id064
+  head_claim: Information_Valid
+  concepts:
+  - Defendant=Charged
+  - File
+  - GrandJury
+  - Information
+  - Prosecutor
+  - Without
+  l0_primitive: Act
+  l1_domain: Formation
+  structural_chain: Agent(Prosecutor) → Act(File_Information) → Status(Defendant=Charged_Without_GrandJury)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Initial_hearing
+  term: Initial hearing
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id065
+  head_claim: Hearing_within_48Hours → Rights_Advised
+  concepts:
+  - Advised
+  - Conduct
+  - InitialHearing
+  - Magistrate
+  - Rights
+  l0_primitive: Status
+  l1_domain: Formation
+  structural_chain: Agent(Magistrate) → Act(Conduct_InitialHearing) → Status(Rights_Advised)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Nolo_contendere
+  term: Nolo contendere
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id066
+  head_claim: Criminal_Conviction; Not_admissible_in_Civil
+  concepts:
+  - BUT
+  - Civilly
+  - Convicted
+  - Defendant
+  - Enter
+  - NoAdmission
+  - Nolo
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Defendant) → Act(Enter_Nolo) → Status(Convicted BUT Civilly_NoAdmission)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Plea_agreement
+  term: Plea agreement
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id067
+  head_claim: Plea_Binding
+  concepts:
+  - Contract
+  - Defendant
+  - Enter
+  - PleaAgreement
+  - Prosecutor
+  - Recommend
+  - Resolved
+  - by
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Defendant) → Act(Enter_PleaAgreement) → Agent(Prosecutor) → Act(Recommend) → Status(Resolved_by_Contract)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Plea_bargaining
+  term: Plea bargaining
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id068
+  head_claim: Plea_Negotiations_Authorized
+  concepts:
+  - Defendant
+  - Exchanged
+  - Negotiate
+  - Offers
+  - Prosecutor
+  l0_primitive: Act
+  l1_domain: Performance
+  structural_chain: Agent(Prosecutor) ↔ Agent(Defendant) → Act(Negotiate) → Status(Offers_Exchanged)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Preliminary_hearing
+  term: Preliminary hearing
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id069
+  head_claim: Prelim_Hearing → PC_Determined
+  concepts:
+  - BoundOver
+  - Dismissed
+  - Magistrate
+  - ProbableCause
+  - Test
+  - or
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Magistrate) → Act(Test_ProbableCause) → Status(BoundOver_or_Dismissed)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Pretrial_motions
+  term: Pre-trial motions
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id070
+  head_claim: Court_Rules → Scope_Defined
+  concepts:
+  - Court
+  - Defendant
+  - Evidentiary
+  - File
+  - Landscape
+  - Modified
+  - Motion
+  - Rule
+  l0_primitive: Act
+  l1_domain: Performance
+  structural_chain: Agent(Defendant) → Act(File_Motion) → Agent(Court) → Act(Rule) → Status(Evidentiary_Landscape_Modified)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Presentence_report
+  term: Presentence report
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id071
+  head_claim: PSR_Ordered → Guidelines_Calculated
+  concepts:
+  - Established
+  - Guidelines
+  - PSR
+  - Prepare
+  - Probation
+  - Range
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Probation) → Act(Prepare_PSR) → Status(Guidelines_Range_Established)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Prosecutorial_discretion
+  term: Prosecutorial discretion
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id072
+  head_claim: May_Decline
+  concepts:
+  - Case
+  - Charge
+  - Decide
+  - Decline
+  - Not
+  - Proceeded
+  - Prosecutor
+  - or
+  l0_primitive: Power
+  l1_domain: Formation
+  structural_chain: Agent(Prosecutor) → Power(Charge_or_Decline) → Act(Decide) → Status(Case_Proceeded_or_Not)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Reasonable_doubt
+  term: Reasonable doubt
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id073
+  head_claim: NotGuilty
+  concepts:
+  - Acquittal
+  - Conviction=Barred
+  - Doubt=Reasonable
+  - Jury
+  l0_primitive: Status
+  l1_domain: Validity
+  structural_chain: Agent(Jury) → Status(Doubt=Reasonable) → Status(Conviction=Barred) → Status(Acquittal)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node
+- id: US-Sanction
+  term: Sanction
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id074
+  head_claim: Sentence_Imposed
+  concepts:
+  - Court
+  - Defendant=Punished
+  - Impose
+  - Sanction
+  l0_primitive: Status
+  l1_domain: Remedy/Sanction
+  structural_chain: Agent(Court) → Act(Impose_Sanction) → Status(Defendant=Punished)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_remedy
+  output_type: Terminal_Output_Node
+- id: US-Subpoena
+  term: Subpoena
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id075
+  head_claim: Compliance_Required
+  concepts:
+  - Compel
+  - Court
+  - Issue
+  - Obligated
+  - Recipient
+  l0_primitive: Power
+  l1_domain: Performance
+  structural_chain: Agent(Court) → Power(Compel) → Act(Issue) → Status(Recipient_Obligated)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-US_Attorney
+  term: U.S. Attorney
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id076
+  head_claim: Commissioned
+  concepts:
+  - Prosecute+Defend
+  - Represent
+  - US
+  - USAttorney
+  - UnitedStates
+  l0_primitive: Agent
+  l1_domain: Formation
+  structural_chain: Agent(USAttorney) → Power(Prosecute+Defend_US) → Act(Represent_UnitedStates)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Victim_advocate
+  term: Victim advocate
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id077
+  head_claim: Victim_Informed+Accompanied
+  concepts:
+  - Assist
+  - Enforced
+  - Participatory
+  - Rights
+  - Victim
+  - VictimAdvocate
+  l0_primitive: Agent
+  l1_domain: Formation
+  structural_chain: Agent(VictimAdvocate) → Power(Participatory_Rights) → Act(Assist_Victim) → Status(Victim_Rights_Enforced)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Warrant
+  term: Warrant
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id078
+  head_claim: Warrant_Issued → Execution_Authorized
+  concepts:
+  - Arrest
+  - Authorize
+  - Issue
+  - Magistrate
+  - Particularity
+  - Required
+  - Search
+  - Warrant
+  - or
+  l0_primitive: Power
+  l1_domain: Formation
+  structural_chain: Agent(Magistrate) → Power(Issue_Warrant) → Act(Authorize_Search_or_Arrest) → Status(Particularity_Required)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_formation
+  output_type: Terminal_Output_Node
+- id: US-Testimony
+  term: Testimony
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id079
+  head_claim: Testimony_Admitted
+  concepts:
+  - Fact=Introduced
+  - Give
+  - Record
+  - Testimony
+  - UnderOath
+  - Witness
+  - into
+  l0_primitive: Act
+  l1_domain: Performance
+  structural_chain: Agent(Witness) → Act(Give_Testimony_UnderOath) → Status(Fact=Introduced_into_Record)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_performance
+  output_type: Terminal_Output_Node
+- id: US-Wrongful_omission
+  term: Wrongful omission
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id080
+  head_claim: Wrongful_Omission
+  concepts:
+  - Act
+  - Actor
+  - Duty
+  - Exists
+  - Failure
+  - Liability=Possible
+  - Omission
+  - When
+  - to
+  l0_primitive: Defect
+  l1_domain: Breach
+  structural_chain: Agent(Actor) → Defect(Failure_to_Act_When_Duty_Exists) → Act(Omission) → Status(Liability=Possible)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_breach
+  output_type: Terminal_Output_Node
+- id: US-Involuntary_plea
+  term: Involuntary plea
+  origin: justice.gov
+  perspective: Prosecutorial
+  premise_atoms: *id081
+  head_claim: Plea_Void → Withdrawn
+  concepts:
+  - Defendant
+  - Not
+  - Plea
+  - Plea=VOID
+  - Voluntary
+  - Withdraw
+  l0_primitive: Defect
+  l1_domain: Validity
+  structural_chain: Agent(Defendant) → Defect(Plea_Not_Voluntary) → Status(Plea=VOID) → Act(Withdraw_Plea)
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: us_validity
+  output_type: Terminal_Output_Node

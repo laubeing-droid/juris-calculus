@@ -36,7 +36,7 @@ class ConstraintValidator:
     - 迭代保护：每个可废止原子的修改次数上限为 MAX_MODIFICATION_COUNT。
     """
 
-    def __init__(self, ontology_path: Optional[str] = None):
+    def __init__(self, ontology_path: Optional[str] = None, overrides_path: Optional[str] = None):
         self.ontology = {}
         self.L1_meta = {}
         self._constraint_rules = []  # v1.1: L0_overrides constraint_rules
@@ -54,14 +54,15 @@ class ConstraintValidator:
         except Exception as e:
             logger.warning(f"ConstraintValidator: ontology load failed ({e}) — all atoms treated as Strict. Engine safe.")
 
-        # v1.1: 加载 L0_overrides 中的强制收敛规则
-        override_path = str(Path(__file__).resolve().parents[1] / "configs" / "L0_overrides_hk.yaml")
+        # v1.1: 加载 L0_overrides 中的强制收敛规则（支持法域特定）
+        if overrides_path is None:
+            overrides_path = str(Path(__file__).resolve().parents[1] / "configs" / "L0_overrides_hk.yaml")
         try:
-            with open(override_path, "r", encoding="utf-8") as f:
+            with open(overrides_path, "r", encoding="utf-8") as f:
                 ov = yaml.safe_load(f)
             self._constraint_rules = ov.get("constraint_rules", [])
             if self._constraint_rules:
-                logger.info(f"ConstraintValidator: loaded {len(self._constraint_rules)} L0 constraint rules")
+                logger.info(f"ConstraintValidator: loaded {len(self._constraint_rules)} L0 constraint rules from {overrides_path}")
         except Exception as e:
             logger.warning(f"ConstraintValidator: L0_overrides load failed ({e}) — constraint rules disabled.")
 

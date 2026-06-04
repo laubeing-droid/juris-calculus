@@ -83,7 +83,7 @@ class FixpointEvaluator:
         "当事人另有约定", "合同另有约定"
     ]
 
-    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None):
+    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None):
         self.config = config or get_domain_config()
         self.domain_id = domain_id
 
@@ -116,7 +116,7 @@ class FixpointEvaluator:
         self.implicit_dependencies = self._detect_implicit_deps()
 
         # 约束层：Rebuttal Hook + Audit Trail
-        self.constraint_validator = ConstraintValidator()
+        self.constraint_validator = ConstraintValidator(overrides_path=overrides_path)
         self.audit_log: List[dict] = []
 
     def _compute_depth(self, rule_id: str, visited: set = None) -> int:
@@ -237,6 +237,25 @@ class FixpointEvaluator:
             new_claims_this_round = 0
             triggered_rule_ids = set()
 
+            # ═══ v1.1.0 前置强制收敛钩子 (pre-iteration) ═══
+            # 在每次迭代开始时应用约束规则，确保状态变化在规则匹配前生效
+            if self.constraint_validator.loaded and state.iteration_count == 1:
+                forced = self.constraint_validator.check_constraint_rules(state)
+                for fr in forced:
+                    target = fr.get("target", "")
+                    action = fr.get("action", "force_state")
+                    new_st = fr.get("new_state", "")
+                    if state.state_tracker.get(f"{target}_irreversible"):
+                        continue
+                    if action == "force_state" and target and new_st:
+                        state.state_tracker[target] = new_st
+                        if fr.get("irreversible"):
+                            state.state_tracker[f"{target}_irreversible"] = True
+                        logger.info(f"[FORCED-PRE] {fr['id']}: {target} → {new_st}")
+                    elif action == "suppress_power" and target:
+                        state.state_tracker[target] = "SUPPRESSED"
+                        logger.info(f"[FORCED-PRE] {fr['id']}: {target} → SUPPRESSED")
+
             # Reverse-index lookup: which rules care about our current facts/claims?
             for fact_id in set(state.facts.keys()) | set(state.claims.keys()):
                 for rule_id in self.fact_to_rules.get(fact_id, []):
@@ -277,7 +296,7 @@ class FixpointEvaluator:
                             logger.info(f"[STATE] {rebuttal.claim_id} → {rebuttal.new_state}")
                         logger.info(f"[REBUTTAL] {rule.id}: {rebuttal.trigger_fact} → confidence {confidence_before:.2f}→0.0")
 
-                # ═══ v1.1 强制收敛钩子 ═══
+                # ═══ v1.1 强制收敛钩子 (per-rule) ═══
                 if self.constraint_validator.loaded:
                     forced = self.constraint_validator.check_constraint_rules(state)
                     for fr in forced:

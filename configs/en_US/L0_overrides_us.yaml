@@ -1,0 +1,748 @@
+# ═══════════════════════════════════════════
+# L0_overrides_us.yaml — 美国联邦法 L0 覆写
+# Auto-generated from: D:\US_glossary_L0_unified.json
+# Constraint rules: 86
+# ═══════════════════════════════════════════
+
+jurisdiction: US
+family: Common_Law
+description: 美国联邦法对 L0 原语的覆写。US 普通法继承了英国普通法的核心特征（对价、禁反言），但增加了宪法层面的权利保护（Due Process, Double Jeopardy）和破产法的特殊状态机（Automatic Stay,
+  Discharge）。
+overrides:
+  Act:
+    legal_intent:
+      value: Optional
+      reason: 普通法承认严格责任——特定行为（如危险品运输）无意图也可构成 Act
+  Agent:
+    capacity_required:
+      value: Conditional
+      reason: 美国法：未成年人可签订必需品合同；公司代理人需授权但表见代理可越权
+  Status:
+    valid_transitions:
+      value:
+      - Established→Valid
+      - Valid→Void
+      - Valid→Voidable
+      - Valid→Terminated
+      - Valid→PENDING
+      - PENDING→Valid
+      - CONDITIONAL→Valid
+      - VALID→SUPPRESSED
+      - SUPPRESSED→VALID
+      - Valid→Breached
+      - Breached→Remedied
+      - VOIDABLE→VOID
+      - VOIDABLE→VALID
+      reason: 美国法状态机：增加 SUPPRESSED 状态（破产自动中止）、VOIDABLE 双向转换（可追认/可确认无效）
+  Defect:
+    additional_defects:
+      value:
+      - Consideration_Failure
+      - Promissory_Estoppel_Bar
+      - Due_Process_Violation
+      - Double_Jeopardy_Attached
+      - Fraud_on_the_Court
+      - Automatic_Stay_Violation
+      - Wrongful_Omission
+      reason: 美国法特有缺陷：宪法保护 + 破产法 + 检察视角
+  Power:
+    Consideration:
+      value: Required
+      reason: 美国普通法继承英国对价原则——无对价无合同（promissory estoppel 为例外）
+    Automatic_Stay_Suppression:
+      value: Enabled
+      reason: Chapter 11/13 自动中止——债权人 Power(Collect) 被全局抑制
+    Director_Power:
+      value: Subject_to_Bankruptcy_Override
+      reason: 美国法下：进入 Chapter 11 后，DIP 或 Trustee 接管董事经营权力
+constraint_rules:
+- id: US-AUTOMATIC_STAY
+  description: 破产自动中止：所有债权人催收权力全局抑制
+  trigger_fact: Bankruptcy_Petition_Filed
+  action: suppress_power
+  target: Creditor_Collect
+  effect: Power(Collect)=0 → 所有催收行为中止
+  irreversible: false
+  reason: 11 U.S.C. §362 — Automatic Stay
+- id: US-DIP_MANAGEMENT_DISPLACEMENT
+  description: Chapter 11 DIP/Trustee 替代原管理层——董事经营权力被抑制
+  trigger_fact: Chapter11_Filed
+  additional_conditions:
+  - Trustee_Appointed
+  action: suppress_power
+  target: Director_Operational_Power
+  effect: Power(Director, Operate)=0 → DIP/Trustee 接管
+  irreversible: false
+  reason: 11 U.S.C. §1107-1108 — DIP powers; §1104 — Trustee appointment
+- id: US-CONFIRMATION_IRREVERSIBLE
+  description: Chapter 11 Plan 确认后——状态不可逆（除欺诈撤销外）
+  trigger_fact: Plan_Confirmed
+  action: force_state
+  target: Reorganization_Status
+  new_state: CONFIRMED
+  irreversible: true
+  reason: 11 U.S.C. §1141 — Effect of confirmation
+- id: US-DOUBLE_JEOPARDY
+  description: 一事不再理——无罪判决后禁止再诉
+  trigger_fact: Acquittal_Entered
+  action: force_state
+  target: Criminal_Liability
+  new_state: FINAL
+  irreversible: true
+  reason: U.S. Const. Amend. V — Double Jeopardy Clause
+- id: US-DUE_PROCESS
+  description: 正当程序——未听证不得剥夺财产/自由
+  trigger_fact: Due_Process_Violation_Alleged
+  action: force_state
+  target: Agency_Action
+  new_state: VOID
+  irreversible: false
+  reason: U.S. Const. Amend. V, XIV — Due Process Clause
+- id: US-CONSTRAINT-US-Acquittal
+  description: Edge case for Acquittal
+  trigger_fact: DoubleJeopardy_Attaches
+  action: force_state
+  target: Acquittal_Entered
+  new_state: Final
+  source_edge_case: DoubleJeopardy_Attaches → Status=Final; No retrial permitted
+  reason: US Acquittal edge case trigger
+- id: US-CONSTRAINT-US-Adversary_proceeding
+  description: Edge case for Adversary proceeding
+  trigger_fact: FRBP7001_Scope
+  action: force_state
+  target: AdversaryProceeding_Initiated
+  new_state: ContestedMatter
+  source_edge_case: FRBP7001_Scope → Only listed proceedings qualify; others → Status=ContestedMatter
+  reason: US Adversary proceeding edge case trigger
+- id: US-CONSTRAINT-US-Affirmed
+  description: Edge case for Affirmed
+  trigger_fact: CrossAppeal_Exists
+  action: force_state
+  target: Judgment_Affirmed
+  new_state: SUPPRESSED
+  source_edge_case: CrossAppeal_Exists → Affirmed_on_one_count does not preclude reversal on another
+  reason: US Affirmed edge case trigger
+- id: US-CONSTRAINT-US-Automatic_stay
+  description: Edge case for Automatic stay
+  trigger_fact: Motion_to_Lift_Stay_Granted
+  action: force_state
+  target: AutomaticStay_InEffect → CreditorPower(Collect)=0
+  new_state: StayLifted
+  source_edge_case: Motion_to_Lift_Stay_Granted → Status=StayLifted; Creditor Power restored
+  reason: US Automatic stay edge case trigger
+- id: US-CONSTRAINT-US-Bankruptcy_estate
+  description: Edge case for Bankruptcy estate
+  trigger_fact: ExemptProperty_Claimed
+  action: force_state
+  target: Estate_Created → All_DebtorProperty=InEstate
+  new_state: SUPPRESSED
+  source_edge_case: ExemptProperty_Claimed → Asset_Excluded_from_Estate
+  reason: US Bankruptcy estate edge case trigger
+- id: US-CONSTRAINT-US-Bankruptcy_judges
+  description: Edge case for Bankruptcy judges
+  trigger_fact: Stern_v_Marshall
+  action: force_state
+  target: Power(Core_Bankruptcy_Matters)
+  new_state: SUPPRESSED
+  source_edge_case: Stern_v_Marshall → Non-core matters → Power limited to recommendations
+  reason: US Bankruptcy judges edge case trigger
+- id: US-CONSTRAINT-US-Bench_trial
+  description: Edge case for Bench trial
+  trigger_fact: Judge_Recused
+  action: force_state
+  target: BenchTrial_Proceeds
+  new_state: Vacated
+  source_edge_case: Judge_Recused → New_Judge must rehear; prior Status=Vacated
+  reason: US Bench trial edge case trigger
+- id: US-CONSTRAINT-US-Brief
+  description: Edge case for Brief
+  trigger_fact: Failure_to_Raise_Issue_in_Brief
+  action: force_state
+  target: Court_Considers → Premise_Atoms_Injected_into_Record
+  new_state: SUPPRESSED
+  source_edge_case: Failure_to_Raise_Issue_in_Brief → Waiver → Appeal=Barred
+  reason: US Brief edge case trigger
+- id: US-CONSTRAINT-US-Capital_offense
+  description: Edge case for Capital offense
+  trigger_fact: MitigatingFactors_Override
+  action: force_state
+  target: DeathPenalty_Eligible
+  new_state: SUPPRESSED
+  source_edge_case: MitigatingFactors_Override → Sanction_reduced_to_LifeImprisonment
+  reason: US Capital offense edge case trigger
+- id: US-CONSTRAINT-US-Chapter_7
+  description: Edge case for Chapter 7
+  trigger_fact: Objection_to_Discharge_Sustained
+  action: force_state
+  target: Liquidation_Process_Triggered
+  new_state: SUPPRESSED
+  source_edge_case: Objection_to_Discharge_Sustained → Discharge_Denied; Debt survives
+  reason: US Chapter 7 edge case trigger
+- id: US-CONSTRAINT-US-Chapter_11
+  description: Edge case for Chapter 11
+  trigger_fact: Plan_NotConfirmed_in_Timeline
+  action: force_state
+  target: DIP_Status → Business_Operations_Continue
+  new_state: SUPPRESSED
+  source_edge_case: Plan_NotConfirmed_in_Timeline → Status converted to Chapter7_Liquidation
+  reason: US Chapter 11 edge case trigger
+- id: US-CONSTRAINT-US-Chapter_13
+  description: Edge case for Chapter 13
+  trigger_fact: Default_in_Plan_Payments
+  action: force_state
+  target: Debtor_Must_Perform_Plan
+  new_state: SUPPRESSED
+  source_edge_case: Default_in_Plan_Payments → Status converted to Chapter7 OR Dismissal
+  reason: US Chapter 13 edge case trigger
+- id: US-CONSTRAINT-US-Claim
+  description: Edge case for Claim (Bankruptcy)
+  trigger_fact: Claim_Objection_Sustained
+  action: force_state
+  target: Claim_Allowed
+  new_state: Disallowed
+  source_edge_case: Claim_Objection_Sustained → Status=Disallowed; No distribution
+  reason: US Claim (Bankruptcy) edge case trigger
+- id: US-CONSTRAINT-US-Clerk_of_court
+  description: Edge case for Clerk of court
+  trigger_fact: Clerk_Error_in_Docketing
+  action: force_state
+  target: Clerk_Has_AdministrativeAuthority
+  new_state: SUPPRESSED
+  source_edge_case: Clerk_Error_in_Docketing → Remedy=Correction_by_NuncProTunc_Order
+  reason: US Clerk of court edge case trigger
+- id: US-CONSTRAINT-US-Confirmation
+  description: Edge case for Confirmation
+  trigger_fact: Confirmation_Revoked_for_Fraud
+  action: force_state
+  target: Confirmation_Granted
+  new_state: Void
+  source_edge_case: 'Confirmation_Revoked_for_Fraud → Status=Void: Plan nullified'
+  reason: US Confirmation edge case trigger
+- id: US-CONSTRAINT-US-Counsel
+  description: Edge case for Counsel
+  trigger_fact: Conflict_of_Interest
+  action: force_state
+  target: Attorney_Client_Relationship_Established
+  new_state: SUPPRESSED
+  source_edge_case: Conflict_of_Interest → Disqualification → Power revoked; new Counsel required
+  reason: US Counsel edge case trigger
+- id: US-CONSTRAINT-US-Counterclaim
+  description: Edge case for Counterclaim
+  trigger_fact: Compulsory_Counterclaim_NotRaised
+  action: force_state
+  target: Counterclaim_Active
+  new_state: SUPPRESSED
+  source_edge_case: Compulsory_Counterclaim_NotRaised → Waiver; Power lost
+  reason: US Counterclaim edge case trigger
+- id: US-CONSTRAINT-US-Damages
+  description: Edge case for Damages
+  trigger_fact: Speculative_Damages
+  action: force_state
+  target: Damages_Awarded
+  new_state: SUPPRESSED
+  source_edge_case: Speculative_Damages → Not_recoverable; Nominal_Damages only
+  reason: US Damages edge case trigger
+- id: US-CONSTRAINT-US-Debtor_in_possession
+  description: Edge case for Debtor in possession (DIP)
+  trigger_fact: Fraud_or_GrossMismanagement
+  action: force_state
+  target: Debtor_Becomes_DIP
+  new_state: SUPPRESSED
+  source_edge_case: Fraud_or_GrossMismanagement → DIP_Status_Revoked → Trustee appointed
+  reason: US Debtor in possession (DIP) edge case trigger
+- id: US-CONSTRAINT-US-Default_judgment
+  description: Edge case for Default judgment
+  trigger_fact: Excusable_Neglect_Shown
+  action: force_state
+  target: Default_Entered → Judgment_for_Plaintiff
+  new_state: Reopened
+  source_edge_case: Excusable_Neglect_Shown → Default_set_aside; Status=Reopened
+  reason: US Default judgment edge case trigger
+- id: US-CONSTRAINT-US-Dismissal_with_prejudice
+  description: Edge case for Dismissal with prejudice
+  trigger_fact: Appeal_Successful
+  action: force_state
+  target: ResJudicata_Attaches
+  new_state: SUPPRESSED
+  source_edge_case: Appeal_Successful → Dismissal_Reversed; Power restored
+  reason: US Dismissal with prejudice edge case trigger
+- id: US-CONSTRAINT-US-Dismissal_without_prejudice
+  description: Edge case for Dismissal without prejudice
+  trigger_fact: Statute_of_Limitations_Expires_Before_Refile
+  action: force_state
+  target: Plaintiff_May_Refile
+  new_state: SUPPRESSED
+  source_edge_case: Statute_of_Limitations_Expires_Before_Refile → Power extinguished by time
+  reason: US Dismissal without prejudice edge case trigger
+- id: US-CONSTRAINT-US-En_banc
+  description: Edge case for En banc
+  trigger_fact: Circuit_Split_exists
+  action: force_state
+  target: Panel_Decision_Vacated → EnBanc_Hearing
+  new_state: SUPPRESSED
+  source_edge_case: Circuit_Split_exists → EnBanc likely; uniform precedent needed
+  reason: US En banc edge case trigger
+- id: US-CONSTRAINT-US-Exempt_property
+  description: Edge case for Exempt property
+  trigger_fact: Exemption_Objected_and_Overruled
+  action: force_state
+  target: Asset_Excluded_from_Liquidation
+  new_state: SUPPRESSED
+  source_edge_case: Exemption_Objected_and_Overruled → Asset_returns_to_Estate
+  reason: US Exempt property edge case trigger
+- id: US-CONSTRAINT-US-In_forma_pauperis
+  description: Edge case for In forma pauperis
+  trigger_fact: IFP_Abused_by_Serial_Filers
+  action: force_state
+  target: Court_Grants_IFP → Financial_Barrier_Removed
+  new_state: SUPPRESSED
+  source_edge_case: IFP_Abused_by_Serial_Filers → Court may deny under 28USC1915(g)
+  reason: US In forma pauperis edge case trigger
+- id: US-CONSTRAINT-US-Interrogatory
+  description: Edge case for Interrogatory
+  trigger_fact: Evasive_or_Incomplete_Answers
+  action: force_state
+  target: Response_Due_within_30Days
+  new_state: SUPPRESSED
+  source_edge_case: Evasive_or_Incomplete_Answers → Motion_to_Compel; Sanctions possible
+  reason: US Interrogatory edge case trigger
+- id: US-CONSTRAINT-US-Joint_administration
+  description: Edge case for Joint administration
+  trigger_fact: Substantive_Consolidation_REQUESTED
+  action: force_state
+  target: Joint_Administration_Granted
+  new_state: SUPPRESSED
+  source_edge_case: Substantive_Consolidation_REQUESTED → Different from JointAdmin; higher bar
+  reason: US Joint administration edge case trigger
+- id: US-CONSTRAINT-US-Judgment
+  description: Edge case for Judgment
+  trigger_fact: Clerical_Error
+  action: force_state
+  target: Judgment_Final → All_Further_Proceedings_Governed_by_Judgment
+  new_state: SUPPRESSED
+  source_edge_case: Clerical_Error → Correction_per_FRCP60(a); Substantive_Error → Appeal_or_FRCP60(b)
+  reason: US Judgment edge case trigger
+- id: US-CONSTRAINT-US-Jurisdiction
+  description: Edge case for Jurisdiction
+  trigger_fact: Lack_of_Jurisdiction_Raised_at_AnyTime
+  action: force_state
+  target: Court_May_Adjudicate
+  new_state: SUPPRESSED
+  source_edge_case: Lack_of_Jurisdiction_Raised_at_AnyTime → Case_Dismissed; Judgment Void
+  reason: US Jurisdiction edge case trigger
+- id: US-CONSTRAINT-US-Liquidation
+  description: Edge case for Liquidation
+  trigger_fact: Secured_Creditor_Relief_from_Stay
+  action: force_state
+  target: Liquidation_Process_Begins
+  new_state: SUPPRESSED
+  source_edge_case: Secured_Creditor_Relief_from_Stay → Asset removed from Estate before liquidation
+  reason: US Liquidation edge case trigger
+- id: US-CONSTRAINT-US-Magistrate_judge
+  description: Edge case for Magistrate judge
+  trigger_fact: Parties_DoNotConsent_to_Magistrate
+  action: force_state
+  target: Magistrate_Has_Delegated_Authority
+  new_state: SUPPRESSED
+  source_edge_case: Parties_DoNotConsent_to_Magistrate → Power limited to R&R only
+  reason: US Magistrate judge edge case trigger
+- id: US-CONSTRAINT-US-Motion_to_lift_automatic_stay
+  description: Edge case for Motion to lift automatic stay
+  trigger_fact: Debtor_Cures_Default
+  action: force_state
+  target: Stay_Lifted → Creditor_May_Foreclose
+  new_state: SUPPRESSED
+  source_edge_case: Debtor_Cures_Default → Motion denied; Stay remains in effect
+  reason: US Motion to lift automatic stay edge case trigger
+- id: US-CONSTRAINT-US-Nonexempt_property
+  description: Edge case for Nonexempt property
+  trigger_fact: Trustee_Abandons_Nonexempt_Property
+  action: force_state
+  target: Property_Classified_Nonexempt → Subject_to_Liquidation
+  new_state: SUPPRESSED
+  source_edge_case: Trustee_Abandons_Nonexempt_Property → Burdensome/Inconsequential → Returned to Debtor
+  reason: US Nonexempt property edge case trigger
+- id: US-CONSTRAINT-US-Objection_to_discharge
+  description: Edge case for Objection to discharge
+  trigger_fact: Objection_Overruled
+  action: force_state
+  target: Discharge_Denied
+  new_state: SUPPRESSED
+  source_edge_case: Objection_Overruled → Discharge proceeds; Objection=TimeBarred under FRBP4004
+  reason: US Objection to discharge edge case trigger
+- id: US-CONSTRAINT-US-Pleadings
+  description: Edge case for Pleadings
+  trigger_fact: Amendment_After_Deadline
+  action: force_state
+  target: Pleadings_Closed → Case_at_Issue
+  new_state: SUPPRESSED
+  source_edge_case: Amendment_After_Deadline → Requires leave of court or opposing party consent
+  reason: US Pleadings edge case trigger
+- id: US-CONSTRAINT-US-Preference
+  description: Edge case for Preference
+  trigger_fact: Ordinary_Course_of_Business_Defense
+  action: force_state
+  target: Preference_Avoidable
+  new_state: SUPPRESSED
+  source_edge_case: Ordinary_Course_of_Business_Defense → Transfer protected from avoidance
+  reason: US Preference edge case trigger
+- id: US-CONSTRAINT-US-Pro_se
+  description: Edge case for Pro se
+  trigger_fact: Corporation_Cannot_Appear_ProSe
+  action: force_state
+  target: Court_Allows_ProSe
+  new_state: SUPPRESSED
+  source_edge_case: Corporation_Cannot_Appear_ProSe → Must retain licensed attorney
+  reason: US Pro se edge case trigger
+- id: US-CONSTRAINT-US-Proof_of_claim
+  description: Edge case for Proof of claim
+  trigger_fact: Late_Filed_Claim
+  action: force_state
+  target: Claim_Deemed_Allowed_Unless_Objected
+  new_state: SUPPRESSED
+  source_edge_case: Late_Filed_Claim → Subordinated or Disallowed; depends on chapter
+  reason: US Proof of claim edge case trigger
+- id: US-CONSTRAINT-US-Reaffirmation_agreement
+  description: Edge case for Reaffirmation agreement
+  trigger_fact: Debtor_Rescinds_within_60Days
+  action: force_state
+  target: Debt_Survives
+  new_state: SUPPRESSED
+  source_edge_case: Debtor_Rescinds_within_60Days → Reaffirmation_Void; Debt discharged normally
+  reason: US Reaffirmation agreement edge case trigger
+- id: US-CONSTRAINT-US-Statute_of_limitations
+  description: Edge case for Statute of limitations
+  trigger_fact: Equitable_Tolling_Applied
+  action: force_state
+  target: Action_Barred
+  new_state: SUPPRESSED
+  source_edge_case: Equitable_Tolling_Applied → Limitations period extended; claim revives
+  reason: US Statute of limitations edge case trigger
+- id: US-CONSTRAINT-US-Trustee_US_Trustee
+  description: Edge case for Trustee / U.S. Trustee
+  trigger_fact: Trustee_Breach_of_Duty
+  action: force_state
+  target: Trustee_Has_Fiduciary_Duty_to_Estate
+  new_state: SUPPRESSED
+  source_edge_case: Trustee_Breach_of_Duty → Removed; Surcharge liability
+  reason: US Trustee / U.S. Trustee edge case trigger
+- id: US-CONSTRAINT-US-Alford_plea
+  description: Edge case for Alford plea
+  trigger_fact: Plea_NotKnowingVoluntary
+  action: force_state
+  target: AlfordPlea_Accepted_by_Court → Conviction
+  new_state: Void
+  source_edge_case: Plea_NotKnowingVoluntary → Status=Void; Withdrawn for Defect
+  reason: US Alford plea edge case trigger
+- id: US-CONSTRAINT-US-Arraignment
+  description: Edge case for Arraignment
+  trigger_fact: Defendant_Refuses_to_Plead
+  action: force_state
+  target: Plea_Entered → Pretrial_Phase_Begins
+  new_state: SUPPRESSED
+  source_edge_case: Defendant_Refuses_to_Plead → Court_Enters_NotGuilty_Plea_on_Defendant_Behalf
+  reason: US Arraignment edge case trigger
+- id: US-CONSTRAINT-US-Arrest
+  description: Edge case for Arrest
+  trigger_fact: Arrest_Without_Warrant
+  action: force_state
+  target: Arrest_Authorized
+  new_state: SUPPRESSED
+  source_edge_case: Arrest_Without_Warrant → Must_Show_ExigentCircumstances; Otherwise Suppression
+  reason: US Arrest edge case trigger
+- id: US-CONSTRAINT-US-Asset_forfeiture
+  description: Edge case for Asset forfeiture
+  trigger_fact: Innocent_Owner_Defense
+  action: force_state
+  target: Civil_Or_Criminal_Forfeiture_Authorized
+  new_state: SUPPRESSED
+  source_edge_case: Innocent_Owner_Defense → Forfeiture barred; Asset returned
+  reason: US Asset forfeiture edge case trigger
+- id: US-CONSTRAINT-US-Bill_of_Particulars
+  description: Edge case for Bill of Particulars
+  trigger_fact: Prosecutor_Fails_to_Comply
+  action: force_state
+  target: Bill_of_Particulars_Ordered
+  new_state: SUPPRESSED
+  source_edge_case: Prosecutor_Fails_to_Comply → Sanctions; Charges may be limited
+  reason: US Bill of Particulars edge case trigger
+- id: US-CONSTRAINT-US-Bond_Bail
+  description: Edge case for Bond / Bail
+  trigger_fact: Flight_Risk_or_Danger
+  action: force_state
+  target: Pretrial_Release
+  new_state: Detained
+  source_edge_case: Flight_Risk_or_Danger → Bail_Denied → Status=Detained
+  reason: US Bond / Bail edge case trigger
+- id: US-CONSTRAINT-US-Burden_of_proof
+  description: Edge case for Burden of proof
+  trigger_fact: Affirmative_Defense_Raised
+  action: force_state
+  target: Burden_on_Prosecution → Standard=BRD
+  new_state: SUPPRESSED
+  source_edge_case: Affirmative_Defense_Raised → Burden_shifts_to_Defendant → Standard=Preponderance
+  reason: US Burden of proof edge case trigger
+- id: US-CONSTRAINT-US-Case_law
+  description: Edge case for Case law
+  trigger_fact: Circuit_Split
+  action: force_state
+  target: Stare_Decisis → Lower_Courts_Bound
+  new_state: SUPPRESSED
+  source_edge_case: Circuit_Split → Conflicting_Precedent → SCOTUS_certiorari resolves
+  reason: US Case law edge case trigger
+- id: US-CONSTRAINT-US-Charge
+  description: Edge case for Charge
+  trigger_fact: Charge_Dismissed_by_Court
+  action: force_state
+  target: Charge_Filed → Defendant_Status=Accused
+  new_state: Cleared
+  source_edge_case: Charge_Dismissed_by_Court → Status=Cleared; No further prosecution on that charge
+  reason: US Charge edge case trigger
+- id: US-CONSTRAINT-US-Charge_to_the_jury
+  description: Edge case for Charge to the jury
+  trigger_fact: Erroneous_Instruction
+  action: force_state
+  target: Jury_Charged → Deliberations_Begin
+  new_state: SUPPRESSED
+  source_edge_case: Erroneous_Instruction → Reversible_Error → Conviction may be overturned
+  reason: US Charge to the jury edge case trigger
+- id: US-CONSTRAINT-US-Circumstantial_evidence
+  description: Edge case for Circumstantial evidence
+  trigger_fact: Inference_Stack_too_Deep
+  action: force_state
+  target: Circumstantial_Evidence_Considered
+  new_state: SUPPRESSED
+  source_edge_case: Inference_Stack_too_Deep → ReasonableDoubt not overcome; Acquittal
+  reason: US Circumstantial evidence edge case trigger
+- id: US-CONSTRAINT-US-Common_law
+  description: Edge case for Common law
+  trigger_fact: Statute_Abrogates_CommonLaw
+  action: force_state
+  target: Common_Law_Rule_Applies
+  new_state: SUPPRESSED
+  source_edge_case: Statute_Abrogates_CommonLaw → Legislative override; Precedent displaced
+  reason: US Common law edge case trigger
+- id: US-CONSTRAINT-US-Conviction
+  description: Edge case for Conviction
+  trigger_fact: PostConviction_Relief_Granted
+  action: force_state
+  target: Conviction_Entered
+  new_state: Reset
+  source_edge_case: PostConviction_Relief_Granted → Conviction_Vacated; Status=Reset
+  reason: US Conviction edge case trigger
+- id: US-CONSTRAINT-US-Detention_hearing
+  description: Edge case for Detention hearing
+  trigger_fact: New_Evidence_of_FlightRisk
+  action: force_state
+  target: Hearing_Held → Bail_or_Detention_Ordered
+  new_state: SUPPRESSED
+  source_edge_case: New_Evidence_of_FlightRisk → Detention_Reconsidered
+  reason: US Detention hearing edge case trigger
+- id: US-CONSTRAINT-US-Discovery
+  description: Edge case for Discovery
+  trigger_fact: Discovery_Abuse
+  action: force_state
+  target: Mandatory_Disclosure AND Depositions_Authorized
+  new_state: SUPPRESSED
+  source_edge_case: Discovery_Abuse → Protective_Order OR Sanctions under FRCP37
+  reason: US Discovery edge case trigger
+- id: US-CONSTRAINT-US-Exclusionary_rule
+  description: Edge case for Exclusionary rule
+  trigger_fact: GoodFaith_Exception
+  action: force_state
+  target: Evidence_Suppressed
+  new_state: SUPPRESSED
+  source_edge_case: GoodFaith_Exception → Defect healed; Evidence admitted
+  reason: US Exclusionary rule edge case trigger
+- id: US-CONSTRAINT-US-Exculpatory_evidence
+  description: Edge case for Exculpatory evidence
+  trigger_fact: Brady_Violation
+  action: force_state
+  target: Must_Disclose
+  new_state: SUPPRESSED
+  source_edge_case: Brady_Violation → Conviction reversed; Misconduct
+  reason: US Exculpatory evidence edge case trigger
+- id: US-CONSTRAINT-US-Grand_jury
+  description: Edge case for Grand jury
+  trigger_fact: GrandJury_Abuse
+  action: force_state
+  target: TrueBill → Indictment
+  new_state: SUPPRESSED
+  source_edge_case: GrandJury_Abuse → Indictment Dismissed
+  reason: US Grand jury edge case trigger
+- id: US-CONSTRAINT-US-Grand_jury_subpoena
+  description: Edge case for Grand jury subpoena
+  trigger_fact: FifthAmendment_Invoked
+  action: force_state
+  target: Subpoena_Issued → Mandatory_Compliance
+  new_state: SUPPRESSED
+  source_edge_case: FifthAmendment_Invoked → Testimony only with Immunity
+  reason: US Grand jury subpoena edge case trigger
+- id: US-CONSTRAINT-US-Immunity
+  description: Edge case for Immunity (Transactional)
+  trigger_fact: Perjury_Exception
+  action: force_state
+  target: Cannot_Prosecute_Transaction
+  new_state: SUPPRESSED
+  source_edge_case: Perjury_Exception → Immunity_does_not_cover_perjury
+  reason: US Immunity (Transactional) edge case trigger
+- id: US-CONSTRAINT-US-Immunity
+  description: Edge case for Immunity (Use)
+  trigger_fact: Independent_Source
+  action: force_state
+  target: Testimony_Compelled
+  new_state: SUPPRESSED
+  source_edge_case: Independent_Source → Prosecution may proceed if untainted
+  reason: US Immunity (Use) edge case trigger
+- id: US-CONSTRAINT-US-Indictment
+  description: Edge case for Indictment
+  trigger_fact: Defective_Indictment
+  action: force_state
+  target: Indictment_Filed → Formal_Charges
+  new_state: SUPPRESSED
+  source_edge_case: Defective_Indictment → Dismissed; Re-presentable
+  reason: US Indictment edge case trigger
+- id: US-CONSTRAINT-US-Information
+  description: Edge case for Information
+  trigger_fact: Felony_Without_Waiver
+  action: force_state
+  target: Information_Valid
+  new_state: SUPPRESSED
+  source_edge_case: Felony_Without_Waiver → Must use Indictment
+  reason: US Information edge case trigger
+- id: US-CONSTRAINT-US-Initial_hearing
+  description: Edge case for Initial hearing
+  trigger_fact: Delay_>48h
+  action: force_state
+  target: Hearing_within_48Hours → Rights_Advised
+  new_state: SUPPRESSED
+  source_edge_case: Delay >48h → Confession may be suppressed
+  reason: US Initial hearing edge case trigger
+- id: US-CONSTRAINT-US-Nolo_contendere
+  description: Edge case for Nolo contendere
+  trigger_fact: Court_Rejects
+  action: force_state
+  target: Criminal_Conviction; Not_admissible_in_Civil
+  new_state: SUPPRESSED
+  source_edge_case: Court_Rejects → Must plead Guilty/NotGuilty
+  reason: US Nolo contendere edge case trigger
+- id: US-CONSTRAINT-US-Plea_agreement
+  description: Edge case for Plea agreement
+  trigger_fact: Court_Rejects
+  action: force_state
+  target: Plea_Binding
+  new_state: SUPPRESSED
+  source_edge_case: Court_Rejects → Defendant_may_withdraw
+  reason: US Plea agreement edge case trigger
+- id: US-CONSTRAINT-US-Plea_bargaining
+  description: Edge case for Plea bargaining
+  trigger_fact: Vindictiveness
+  action: force_state
+  target: Plea_Negotiations_Authorized
+  new_state: SUPPRESSED
+  source_edge_case: Vindictiveness → Plea invalid
+  reason: US Plea bargaining edge case trigger
+- id: US-CONSTRAINT-US-Preliminary_hearing
+  description: Edge case for Preliminary hearing
+  trigger_fact: No_PC
+  action: force_state
+  target: Prelim_Hearing → PC_Determined
+  new_state: SUPPRESSED
+  source_edge_case: No_PC → Dismissed
+  reason: US Preliminary hearing edge case trigger
+- id: US-CONSTRAINT-US-Pretrial_motions
+  description: Edge case for Pre-trial motions
+  trigger_fact: Denied
+  action: force_state
+  target: Court_Rules → Scope_Defined
+  new_state: SUPPRESSED
+  source_edge_case: Denied → Issue preserved for appeal
+  reason: US Pre-trial motions edge case trigger
+- id: US-CONSTRAINT-US-Presentence_report
+  description: Edge case for Presentence report
+  trigger_fact: Errors_in_PSR
+  action: force_state
+  target: PSR_Ordered → Guidelines_Calculated
+  new_state: SUPPRESSED
+  source_edge_case: Errors_in_PSR → Objections; Court resolves
+  reason: US Presentence report edge case trigger
+- id: US-CONSTRAINT-US-Prosecutorial_discretion
+  description: Edge case for Prosecutorial discretion
+  trigger_fact: Selective_Prosecution
+  action: force_state
+  target: May_Decline
+  new_state: SUPPRESSED
+  source_edge_case: Selective_Prosecution → Must show Discriminatory Intent
+  reason: US Prosecutorial discretion edge case trigger
+- id: US-CONSTRAINT-US-Reasonable_doubt
+  description: Edge case for Reasonable doubt
+  trigger_fact: Hung_Jury
+  action: force_state
+  target: NotGuilty
+  new_state: SUPPRESSED
+  source_edge_case: Hung_Jury → Mistrial; Retrial possible
+  reason: US Reasonable doubt edge case trigger
+- id: US-CONSTRAINT-US-Sanction
+  description: Edge case for Sanction
+  trigger_fact: Cruel_Unusual
+  action: force_state
+  target: Sentence_Imposed
+  new_state: SUPPRESSED
+  source_edge_case: Cruel_Unusual → 8thAmd_Violation → Reduced
+  reason: US Sanction edge case trigger
+- id: US-CONSTRAINT-US-Subpoena
+  description: Edge case for Subpoena
+  trigger_fact: Overbroad
+  action: force_state
+  target: Compliance_Required
+  new_state: SUPPRESSED
+  source_edge_case: Overbroad → Motion_to_Quash; Power nullified
+  reason: US Subpoena edge case trigger
+- id: US-CONSTRAINT-US-US_Attorney
+  description: Edge case for U.S. Attorney
+  trigger_fact: Conflict
+  action: force_state
+  target: Commissioned
+  new_state: SUPPRESSED
+  source_edge_case: Conflict → Recusal; Special_Counsel
+  reason: US U.S. Attorney edge case trigger
+- id: US-CONSTRAINT-US-Victim_advocate
+  description: Edge case for Victim advocate
+  trigger_fact: CVRA_Violation
+  action: force_state
+  target: Victim_Informed+Accompanied
+  new_state: SUPPRESSED
+  source_edge_case: CVRA_Violation → Victim may seek mandamus
+  reason: US Victim advocate edge case trigger
+- id: US-CONSTRAINT-US-Warrant
+  description: Edge case for Warrant
+  trigger_fact: NoKnock_Entry
+  action: force_state
+  target: Warrant_Issued → Execution_Authorized
+  new_state: SUPPRESSED
+  source_edge_case: NoKnock_Entry → Requires specific justification
+  reason: US Warrant edge case trigger
+- id: US-CONSTRAINT-US-Testimony
+  description: Edge case for Testimony
+  trigger_fact: Perjury
+  action: force_state
+  target: Testimony_Admitted
+  new_state: SUPPRESSED
+  source_edge_case: Perjury → Testimony=Defect; Criminal liability
+  reason: US Testimony edge case trigger
+- id: US-CONSTRAINT-US-Wrongful_omission
+  description: Edge case for Wrongful omission
+  trigger_fact: No_Duty
+  action: force_state
+  target: Wrongful_Omission
+  new_state: NoBreach
+  source_edge_case: No_Duty → No liability; Status=NoBreach
+  reason: US Wrongful omission edge case trigger
+- id: US-CONSTRAINT-US-Involuntary_plea
+  description: Edge case for Involuntary plea
+  trigger_fact: Knowing_and_Voluntary
+  action: force_state
+  target: Plea_Void → Withdrawn
+  new_state: Conviction
+  source_edge_case: Knowing_and_Voluntary → Plea valid; Status=Conviction
+  reason: US Involuntary plea edge case trigger
