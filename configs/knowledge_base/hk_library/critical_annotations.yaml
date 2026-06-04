@@ -1,0 +1,104 @@
+# ═══════════════════════════════════════════════════════════
+# Knowledge Base — HK Library
+# 271 条未算子化的 HK 法律标注 (从 extended_rules.yaml 中提取)
+# 层级: Contextual Memory — 供 Action Agent 起草文书时检索调用
+# 不同于 Logic Core (Horn规则)，此处为判例法中的法官裁量依据和上下文背景
+# ═══════════════════════════════════════════════════════════
+
+metadata:
+  tier: Contextual_Memory
+  total_entries: 271
+  source: HK DoJ bilingual glossary + Cap 32/622/571/4A annotations
+  usage: "Action Agent 起草法律文书时通过关键词检索调用"
+
+entries:
+  # ── Cap 32: 公司清盘 (法官裁量依据) ──
+  - id: HK_LIB_001
+    citation: "Cap 32 s.180 — 自愿清盘 vs 强制清盘"
+    context: "成员自愿清盘(members' voluntary winding up)与债权人自愿清盘(creditors' voluntary winding up)的区别在于公司是否有偿债能力声明(solvency statement)。"
+    trigger_scenario: "境外债权人申请强制清盘时判断公司偿债能力"
+    operator_note: "该裁量权不可完全算子化——需人工判断 solvency 证据"
+
+  - id: HK_LIB_002
+    citation: "Cap 32 s.200 — 清盘人权力"
+    context: "清盘人(liquidator)可行使的权力包括出售资产、签署收据、雇用代理人等。涉及境外资产处置时需考虑互认安排。"
+    trigger_scenario: "清盘人拟处置境内资产时"
+
+  - id: HK_LIB_003
+    citation: "Cap 32 s.203 — 清盘人审查权"
+    context: "清盘人可强制要求公司高管及前高管提交财产说明(statement of affairs)并接受公开质询(public examination)。"
+    trigger_scenario: "清盘人要求境内关联公司高管接受质询"
+
+  - id: HK_LIB_004
+    citation: "Cap 32 s.221 — 证明债务"
+    context: "债权人需通过法定宣誓(affidavit)程序证明其债权。域外判决不能自动注册为证明债务(proof of debt)。"
+    trigger_scenario: "美国法院判决在香港清盘程序中是否可直接作为债权证明"
+
+  - id: HK_LIB_005
+    citation: "Cap 32 s.245 — 剩余资产分配优先级"
+    context: "清盘剩余资产按以下顺序分配: 清盘费用 > 优先债权人 > 浮动抵押持有人 > 无担保债权人 > 成员。跨境案件中需注意外国税务债权的优先级。"
+    trigger_scenario: "美方税务债权 vs 境内无担保债权的受偿顺位"
+
+  # ── Cap 622: 公司条例 (判例法细节) ──
+  - id: HK_LIB_006
+    citation: "Cap 622 s.88 — 董事披露利益冲突的义务"
+    context: "董事在交易或安排中有直接或间接利益关系时，必须向董事会申报(must declare)。未申报的交易可被撤销(voidable)。申报内容包括利益的性质和范围(nature and extent)。"
+    trigger_scenario: "跨境关联交易的董事利益冲突审查"
+    operator_note: "HK_CAP622_Duty_Loyalty 已覆盖核心Horn路径"
+
+  - id: HK_LIB_007
+    citation: "Cap 622 s.462 — 公司不得资助购买自身股份(Financial Assistance)"
+    context: "公司不得为任何人购买其股份提供直接或间接财务资助。例外包括雇员持股计划、贷款给雇员(不超过净资产的5%)等特定情况。"
+    trigger_scenario: "跨境收购中境内子公司提供担保是否构成非法财务资助"
+
+  - id: HK_LIB_008
+    citation: "Cap 622 s.722 — 不公平损害的救济范围"
+    context: "法院可作出的命令包括: 禁止继续实施、要求以特定方式处理事务、授权民事程序、变更章程、买断股份(share buyout)。买断价格是争议焦点——通常按 pro rata 部分估值而非折价。"
+    trigger_scenario: "少数股东被大股东排挤(freeze-out)时的救济"
+
+  - id: HK_LIB_009
+    citation: "Cap 622 s.729 — 董事离职补偿金限制"
+    context: "董事的离职补偿金(loss of office payment)若超过合理范围，需经成员批准(members' approval)。未经批准的补偿金由董事以信托方式持有(held on trust)。"
+    trigger_scenario: "跨境高管离职时高额补偿金的合规审查"
+
+  - id: HK_LIB_010
+    citation: "Cap 622 s.3 — 公司独立法律人格 vs 法院揭开面纱"
+    context: "虽然公司具有独立法律人格(separate legal personality)，但法院在特定情况下可揭开公司面纱(pierce/lift the corporate veil)——包括欺诈(fraud)、逃避法律义务(evasion of legal obligations)、代理关系(agency)等情况。但HK法院对揭开面纱极为谨慎。"
+    trigger_scenario: "能否穿透HK子公司直接追索境内母公司"
+
+  # ── Cap 571: 证券期货条例 (市场行为判例) ──
+  - id: HK_LIB_011
+    citation: "Cap 571 s.271 — 内幕交易抗辩: 中国墙(Chinese Wall)"
+    context: "若内幕信息被有效的信息屏障(Chinese Wall / information barrier)隔离，且决策者未接触该信息，可构成抗辩。但须证明屏障是'有效的'(effective)——非形式化存在即可。"
+    trigger_scenario: "跨境金融机构的内幕交易抗辩——信息屏障是否跨法域有效"
+
+  - id: HK_LIB_012
+    citation: "Cap 571 s.278 — 市场失当行为的民事举证标准"
+    context: "MMT(Market Misconduct Tribunal)程序适用民事举证标准(balance of probabilities)，而非刑事标准(beyond reasonable doubt)。这意味着SFC举证难度较低。"
+    trigger_scenario: "跨境证券欺诈的SFC调查——民事标准意味着更低启动门槛"
+
+  - id: HK_LIB_013
+    citation: "Cap 571 s.294 — 双重处罚禁止(Double Jeopardy in SFC)"
+    context: "同一行为不得在MMT民事程序和刑事程序中被重复处罚。但SFC可先走民事程序获取禁令(injunction)再启动刑事调查——这不构成双重处罚。"
+    trigger_scenario: "SFC同时启动MMT+刑事调查的策略——是否存在程序滥用"
+
+  # ── Cap 4A: 高等法院规则 (程序裁量) ──
+  - id: HK_LIB_014
+    citation: "Cap 4A Order 11 — 域外送达(Service Out of Jurisdiction)"
+    context: "法院许可域外送达需满足: (1)存在可争辩的案件(serious issue to be tried); (2)属于Order 11列举的管辖权基础之一; (3)香港是适当的诉讼地(forum conveniens)。"
+    trigger_scenario: "美方律师试图通过Order 11向境内实体送达传票"
+
+  - id: HK_LIB_015
+    citation: "Cap 4A Order 29 — Mareva 禁制令的辅助披露"
+    context: "获得Mareva令后，原告可申请辅助令(ancillary order)要求被告披露全球资产的位置和价值(disclosure of assets worldwide)。被告不披露则构成藐视法庭(contempt)。"
+    trigger_scenario: "Mareva令后被告被迫披露境内资产——能否以中国保密法抗辩"
+
+  - id: HK_LIB_016
+    citation: "Cap 4A Order 14 — 简易判决(Summary Judgment)"
+    context: "原告可申请简易判决——无需全面庭审(full trial)即可获得判决。前提是被告没有真实的抗辩理由(no bona fide defence)。在跨境案件中，被告以'中国法不允许'为由抗辩需举证。"
+    trigger_scenario: "原告申请简易判决——被告能否以中国法域外适用为由构成真实抗辩"
+
+  - id: HK_LIB_017
+    citation: "Cap 4A Order 72 — 禁诉令的域外执行"
+    context: "HK法院的禁诉令(anti-suit injunction)仅在违反者处于HK司法管辖范围内时可强制执行。对纯境外主体的效力依赖于普通法礼让(comity)。"
+    trigger_scenario: "禁诉令对纯美国主体的执行力——是否仅为纸面约束"
