@@ -318,7 +318,7 @@ def align_concepts_llm(cn_concept: str, us_concept: str):
 def generate_nlni_llm(case_description: str):
     from tools.llm_bridge import generate_nlni_llm as _gn
     return _gn(case_description)
- (all route through juris_query) ---
+ # all route through juris_query
 
 def search_rules(query: str, top_k: int = 5):
     return juris_query("search_rules", query, {"top_k": top_k})
