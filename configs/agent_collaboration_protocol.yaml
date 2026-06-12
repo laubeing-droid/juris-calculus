@@ -1,77 +1,72 @@
-version: "2.0.0"
-name: "juris-calculus physically isolated agent collaboration protocol"
-source_inspirations:
-  - name: "Superpowers subagent-driven-development"
-    repository: "https://github.com/obra/superpowers"
-    local_reference: "D:/Superpowers/skills/subagent-driven-development"
-
-roles:
-  implementer:
-    isolation: "agent_tool_spawn"
-    allowed_actions:
-      - "read_contracts"
-      - "write_code"
-      - "write_tests"
-      - "self_review"
-      - "report_status"
-    forbidden_actions:
-      - "declare_pass"
-      - "replace_independent_review"
-    status_enum:
-      - "DONE"
-      - "DONE_WITH_CONCERNS"
-      - "NEEDS_CONTEXT"
-      - "BLOCKED"
-
-  spec_compliance_reviewer:
-    isolation: "shell_claude_p_or_local_subprocess"
-    sequence: 1
-    purpose: "Verify implementation matches requested contract exactly, nothing more and nothing less."
-    must_not_trust:
-      - "implementer_report"
-      - "claimed_test_results"
-    required_evidence:
-      - "reads_actual_diff_or_code"
-      - "compares_against_contract"
-      - "reports_file_line_issues"
-
-  code_quality_reviewer:
-    isolation: "shell_claude_p_or_local_subprocess"
-    sequence: 2
-    purpose: "Verify maintainability, testing quality, decomposition, and integration risk."
-    precondition:
-      - "spec_compliance_reviewer_PASS"
-    required_evidence:
-      - "base_sha"
-      - "head_sha"
-      - "diff_review"
-      - "risk_assessment"
-
-  verification:
-    isolation: "local_subprocess_or_shell_claude_p"
-    sequence: 3
-    purpose: "Run phase commands and replay at least one PASS command."
-    required_evidence:
-      - "command"
-      - "pid"
-      - "returncode"
-      - "stdout"
-      - "stderr"
-
 controller_rules:
-  provide_full_task_text_to_subagents: true
-  subagents_must_not_be_forced_to_read_plan_file: true
-  spec_review_before_quality_review: true
-  reviewer_issue_requires_implementer_fix_and_rereview: true
   do_not_parallelize_conflicting_implementers: true
-  stop_on_blocked_or_needs_context: true
   final_whole_change_review_required: true
   human_review_evidence_required_before_public_release: true
-
+  provide_full_task_text_to_subagents: true
+  reviewer_issue_requires_implementer_fix_and_rereview: true
+  spec_review_before_quality_review: true
+  stop_on_blocked_or_needs_context: true
+  subagents_must_not_be_forced_to_read_plan_file: true
+name: juris-calculus physically isolated agent collaboration protocol
 release_evidence:
   required_fields:
-    - "human_reviewer"
-    - "reviewed_diff_scope"
-    - "model_or_harness_disclosure"
-    - "verification_report"
-    - "known_limitations"
+  - human_reviewer
+  - reviewed_diff_scope
+  - model_or_harness_disclosure
+  - verification_report
+  - known_limitations
+roles:
+  code_quality_reviewer:
+    isolation: shell_claude_p_or_local_subprocess
+    precondition:
+    - spec_compliance_reviewer_PASS
+    purpose: Verify maintainability, testing quality, decomposition, and integration
+      risk.
+    required_evidence:
+    - base_sha
+    - head_sha
+    - diff_review
+    - risk_assessment
+    sequence: 2
+  implementer:
+    allowed_actions:
+    - read_contracts
+    - write_code
+    - write_tests
+    - self_review
+    - report_status
+    forbidden_actions:
+    - declare_pass
+    - replace_independent_review
+    isolation: agent_tool_spawn
+    status_enum:
+    - DONE
+    - DONE_WITH_CONCERNS
+    - NEEDS_CONTEXT
+    - BLOCKED
+  spec_compliance_reviewer:
+    isolation: shell_claude_p_or_local_subprocess
+    must_not_trust:
+    - implementer_report
+    - claimed_test_results
+    purpose: Verify implementation matches requested contract exactly, nothing more
+      and nothing less.
+    required_evidence:
+    - reads_actual_diff_or_code
+    - compares_against_contract
+    - reports_file_line_issues
+    sequence: 1
+  verification:
+    isolation: local_subprocess_or_shell_claude_p
+    purpose: Run phase commands and replay at least one PASS command.
+    required_evidence:
+    - command
+    - pid
+    - returncode
+    - stdout
+    - stderr
+    sequence: 3
+source_inspirations:
+- name: Superpowers subagent-driven-development
+  repository: https://github.com/obra/superpowers
+version: 2.0.0

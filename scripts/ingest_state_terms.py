@@ -3,7 +3,7 @@
 # auto-extract terms + L0 primitives + MoE domains into blueprint.
 #
 # Usage:
-#   python scripts/ingest_state_terms.py D:\ca_statutes --state CA
+#   python scripts/ingest_state_terms.py ./ca_statutes --state CA
 #   python scripts/ingest_state_terms.py --list
 import json, os, sys, re, argparse
 from collections import defaultdict

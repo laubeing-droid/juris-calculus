@@ -54,7 +54,7 @@ def verify_import_sources(expected_root: str | Path) -> Dict[str, Any]:
 
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify JC module import sources.")
-    parser.add_argument("--root", default="D:/v2.0")
+    parser.add_argument("--root", default=str(Path(__file__).resolve().parent.parent))
     args = parser.parse_args(argv)
     report = verify_import_sources(args.root)
     print(f"status={report['status']} root={report['expected_root']}")

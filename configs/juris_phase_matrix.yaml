@@ -16,7 +16,7 @@ anti_degradation:
   l0_import_source_guard:
     description: 运行测试前验证 import 源路径来自本地目录而非外部泄漏。
     enforced: true
-    expected_root: D:/v2.0
+    expected_root: auto-detect from tool
     guard_modules:
     - compiler_core
     - pipeline
@@ -199,7 +199,7 @@ phases:
   - configs/zh_CN/criminal_complexity.yaml
   - configs/zh_CN/router_moe.yaml
   commands:
-  - python tools/import_source_verifier.py --root D:/v2.0
+  - python tools/import_source_verifier.py
   - python tools/kg_audit_loop.py --contracts configs/juris_contracts.yaml --mode
     local --out-dir reports/kg_audit
   - python tools/agent_protocol_auditor.py --protocol configs/agent_collaboration_protocol.yaml
