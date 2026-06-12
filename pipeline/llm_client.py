@@ -76,23 +76,40 @@ class LegalSemanticExtractor:
 
         user_prompt = f"请对以下案卷文本进行法律语义消解并提取事实原子:\n\n{case_text[:4000]}"
 
-        if "gpt" in self.model or not self.api_key:
+        if not self.api_key:
+            return self._mock_extract(case_text)
+
+        if "deepseek" in self.model or "gpt" in self.model:
             return self._mock_extract(case_text)
 
         try:
             from openai import OpenAI
-            from .schemas import LegalFactPayload
             client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-            response = client.beta.chat.completions.parse(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format=LegalFactPayload,
-                temperature=0.0,
-            )
+            # DeepSeek uses regular completions (no structured output beta API)
+            if "deepseek" in self.model:
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt + "\n\nReturn ONLY valid JSON with a 'facts' array."},
+                    ],
+                    temperature=0.0,
+                )
+                raw = response.choices[0].message.content
+                import json as _json
+                payload = _json.loads(raw) if isinstance(raw, str) else {"facts": []}
+            else:
+                from .schemas import LegalFactPayload
+                response = client.beta.chat.completions.parse(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    response_format=LegalFactPayload,
+                    temperature=0.0,
+                )
             payload = response.choices[0].message.parsed
             return self._post_process(payload)
 

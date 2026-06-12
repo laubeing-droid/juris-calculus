@@ -235,7 +235,6 @@ contracts:
   - tools/kg_audit_loop.py
   ref_docs:
   - configs/agent_collaboration_protocol.yaml
-  - https://github.com/obra/superpowers/tree/main/skills/subagent-driven-development
   ref_tests:
   - tests/unit/test_agent_protocol.py
 name: juris-calculus structured experience contracts
