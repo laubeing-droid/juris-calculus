@@ -29,7 +29,7 @@ from typing import Dict, List, Any
 from dataclasses import dataclass, field
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from adapter import FederatedReasoner, HKAdapter, USAdapter
+from compiler_core.plugin_registry import registry as _r
 
 
 # ═══════════════════════════════════════════

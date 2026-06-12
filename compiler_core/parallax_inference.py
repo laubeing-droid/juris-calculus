@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Set
 from dataclasses import dataclass, field
 from compiler_core.types import IRState, LegalFact, LegalClaim, LegalDomain
 from compiler_core.domain_config import DomainConfig
+from compiler_core.config_paths import rules_path as _cp_rules
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
 
 @dataclass
@@ -48,8 +49,8 @@ class ParallaxInference:
             print(f"[{w.severity}] {w.message}")
     """
 
-    def __init__(self, cn_rules_path: str = "configs/zh_CN/rules.yaml", 
-                 hk_rules_path: str = "configs/hk/rules.yaml"):
+    def __init__(self, cn_rules_path: str = None, 
+                 hk_rules_path: str = None):
         self.cn_rules = load_rules_from_yaml(cn_rules_path) if cn_rules_path else []
         self.hk_rules = load_rules_from_yaml(hk_rules_path) if hk_rules_path else []
         self.cn_evaluator = None

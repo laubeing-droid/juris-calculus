@@ -26,7 +26,7 @@ def test_watchdog_violation():
     """US文本在CN模式下触发看门狗阻断"""
     from mcp_server import _juris_evaluate_core
     facts = json.dumps({"punitive_damages": "seeks punitive damages"})
-    result = _juris_evaluate_core("contract", facts, source_law="CN", dry_run=True)
+    result = _juris_evaluate_core("contract", facts, source_law="CN", dry_run=False)
     blocked = result.get("blocked_reasons", [])
     assert len(blocked) > 0, "应触发US概念阻断"
     print(f"  ✅ 看门狗阻断: {len(blocked)}条")

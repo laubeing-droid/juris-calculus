@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """juris-calculus 外围模型 M10-M17"""
 import sys,os,math
 from typing import List,Dict,Set,Tuple,Optional
@@ -10,6 +10,30 @@ from compiler_core.evaluator import FixpointEvaluator,compute_formalizable
 from compiler_core.domain_config import DomainConfig,get_domain_config
 
 # M10
+
+def _load_pricing_config():
+    """Load pricing params from domain_config YAML. Hardcoded defaults as fallback."""
+    import yaml
+    from pathlib import Path
+    config_path = Path(__file__).resolve().parents[1] / 'configs' / 'zh_CN' / 'domain_config.example.yaml'
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        pricing = data.get('pricing', {})
+        return {
+            'rate': pricing.get('default_rate', 2000.0),
+            'base_fee': pricing.get('base_fee', 2.0),
+            'slope_clip_min': pricing.get('slope_clip_min', 0.01),
+            'slope_clip_max': pricing.get('slope_clip_max', 10.0),
+            'alpha_clamp_min': pricing.get('alpha_clamp_min', 0.05),
+            'alpha_clamp_max': pricing.get('alpha_clamp_max', 2.0),
+            'taint_hour': pricing.get('taint_hour_default', 0.2),
+            'hard_hour': pricing.get('hard_hour_default', 1.5),
+        }
+    except Exception:
+        return dict(rate=2000.0, base_fee=2.0, slope_clip_min=0.01, slope_clip_max=10.0,
+                    alpha_clamp_min=0.05, alpha_clamp_max=2.0, taint_hour=0.2, hard_hour=1.5)
+
 class BackwardGapScanner:
     def __init__(self,ev:FixpointEvaluator): self.ev=ev; self.km=ev.config.k_max
     def scan(self,t:str,f:Set[str])->Dict:
@@ -114,8 +138,9 @@ class LiabilityShield:
 @dataclass
 class PricingConfig: base_fee:float=2.0; taint_hour:float=0.2; hard_hour:float=1.5
 class CoveragePricingEngine:
-    def __init__(self,cfg:PricingConfig=None): self.cfg=cfg or PricingConfig()
-    def calculate(self,D:int,T:int,H:int,rate:float=2000.0)->Dict:
+    def __init__(self,cfg:PricingConfig=None): self.cfg=cfg or PricingConfig(); self._pc=_load_pricing_config()
+    def calculate(self,D:int,T:int,H:int,rate:float=None)->Dict:
+        if rate is None: rate=self._pc['rate']
         cov=D/max(1,D+T+H); base=self.cfg.base_fee*D; eh=self.cfg.taint_hour*T+self.cfg.hard_hour*H; prem=eh*rate
         return {"coverage":round(cov,2),"base_fee":round(base,2),"est_hours":round(eh,1),"premium":round(prem,2),"total":round(base+prem,2),"breakdown":{"D":D,"T":T,"H":H}}
     @staticmethod
@@ -130,7 +155,7 @@ class CoveragePricingEngine:
         return PricingConfig(base_fee=med(rl)or 2.0,taint_hour=med(ra)or 0.2,hard_hour=med(rb)or 1.5)
     
     @staticmethod
-    def calibrate_theilsen(ts: List[Dict]) -> PricingConfig:
+    def calibrate_clipped_theilsen_like(ts: List[Dict]) -> PricingConfig:
         """Theil-Sen稳健回归：中位数斜率法，自动清洗离群点
         
         原理：
@@ -144,6 +169,26 @@ class CoveragePricingEngine:
         if not ts:
             return PricingConfig(taint_hour=0.92)
         
+
+    @staticmethod
+    def calibrate_siegel_repeated_median(ts):
+        """Siegel repeated median: outlier-resistant Theil-Sen variant."""
+        if len(ts) < 3:
+            return PricingConfig()
+        def med(vals):
+            s = sorted(vals)
+            return s[len(s)//2]
+        slopes = []
+        for i, a in enumerate(ts):
+            for b in ts[i+1:]:
+                if abs(a['nodes'] - b['nodes']) > 0:
+                    slopes.append((a['hours'] - b['hours']) / (a['nodes'] - b['nodes']))
+        m = med(slopes) if slopes else 1.0
+        pc=_load_pricing_config(); m=max(pc['slope_clip_min'], min(pc['slope_clip_max'], m))
+        cfg = PricingConfig()
+        pc=_load_pricing_config(); cfg.rate=m*pc['rate']
+        return cfg
+
         # 提取有效数据点：(总节点数, 总工时)
         points = []
         for t in ts:
@@ -183,7 +228,7 @@ class CoveragePricingEngine:
             alpha = round(slopes[len(slopes)//2], 2)
         
         # 夹紧到合理区间
-        alpha = max(0.05, min(2.0, alpha))
+        pc=_load_pricing_config(); alpha=max(pc['alpha_clamp_min'], min(pc['alpha_clamp_max'], alpha))
         
         return PricingConfig(
             base_fee=2.0,

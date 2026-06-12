@@ -3,13 +3,14 @@
 import sys, yaml
 from pathlib import Path
 from collections import defaultdict
+from compiler_core.config_paths import rules_path as _cp_rules, overrides_path as _cp_overrides
 
 BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE))
 
 def load_coverage() -> tuple:
     """加载 constraint_rules + rebuttal_criteria 覆盖的事实集"""
-    with open(BASE / "configs/L0_overrides_hk.yaml", encoding="utf-8") as f:
+    with open(BASE / _cp_overrides("hk"), encoding="utf-8") as f:
         ov = yaml.safe_load(f)
     constraint_facts = {cr['trigger_fact'] for cr in ov.get('constraint_rules', [])}
 
@@ -102,7 +103,7 @@ def prune(rules_path: str, dry_run: bool = True) -> dict:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="通用规则剪枝器")
-    parser.add_argument("--rules", default="configs/hk/rules.yaml", help="规则文件路径")
+    parser.add_argument("--rules", default=_cp_rules("hk"), help="规则文件路径")
     parser.add_argument("--dry-run", action="store_true", default=True, help="试运行(默认)")
     parser.add_argument("--apply", action="store_true", help="执行剪枝")
     args = parser.parse_args()

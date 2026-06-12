@@ -2,6 +2,8 @@
 """juris-calculus 类型定义"""
 from dataclasses import dataclass, field
 from typing import List, Dict, Set, Optional, Tuple
+from typing import TYPE_CHECKING
+from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin, RuleMaturity
 from enum import Enum
 
 
@@ -45,7 +47,7 @@ class TaintNode:
 
 @dataclass
 class LegalClaim:
-    id: str; description: str = ""; confidence: float = 1.0
+    id: str; description: str = ""; confidence: float = 1.0; epistemic_status: Optional[EpistemicStatus] = None
     taint_chain: List[TaintNode] = field(default_factory=list)
     requires_human_review: bool = False
     # V6: 扩展
@@ -53,6 +55,10 @@ class LegalClaim:
     execution_trace_id: str = ""
     domain_origin: str = ""  # v1.1: 来自哪个 L2 领域 (contract/corporate/tort...)
     L0_primitive_source: str = ""  # v1.1: 映射到哪个 L0 原语
+    def get_trust_label(self) -> str:
+        if self.epistemic_status is None: return "UNVERIFIED"
+        return self.epistemic_status.trust_label.value
+
     def taint_summary(self) -> str:
         return "CLEAR" if not self.taint_chain else " -> ".join(f"{n.rule_id}({n.taint_source})" for n in self.taint_chain)
 

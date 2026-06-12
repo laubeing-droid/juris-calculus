@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 juris-calculus 差分隐私脱敏引擎 (模型四)
 Laplace噪声注入 + 几何特征保持 (Homomorphic Invariance)
@@ -15,7 +15,21 @@ Laplace噪声注入 + 几何特征保持 (Homomorphic Invariance)
 """
 import math, random
 from typing import List, Tuple, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class DPPolicyConfig:
+    provenance: str = 'UNSET'
+    approval_required: bool = True
+    jurisdiction: str = 'CN'
+    epsilon: float = 1.0
+    sensitivity: float = 100000.0
+    limitations: List[str] = field(default_factory=list)
+
+    @staticmethod
+    def from_epsilon(eps: float) -> 'DPPolicyConfig':
+        return DPPolicyConfig(epsilon=eps, provenance='LEGACY_EPSILON_WITHOUT_POLICY_PROVENANCE')
 
 @dataclass
 class DPConfig:
@@ -84,9 +98,11 @@ class LaplaceNoise:
 class RatioPreservingDP:
     """几何特征保持差分隐私 — 保持本金/利息/罚息比例"""
     
-    def __init__(self, epsilon: float = 1.0):
-        self.epsilon = epsilon
-        self.noiser = LaplaceNoise(DPConfig(epsilon=epsilon))
+    def __init__(self, config: DPPolicyConfig = None):
+        if config is None: config = DPPolicyConfig()
+        self.epsilon = config.epsilon
+        self.policy_config = config
+        self.noiser = LaplaceNoise(DPConfig(epsilon=config.epsilon))
     
     def anonymize_loan(self, principal: float, interest: float, 
                        penalty: float = 0, late_fee: float = 0) -> Dict:

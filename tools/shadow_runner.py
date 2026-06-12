@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from compiler_core.types import IRState, LegalFact, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+from compiler_core.config_paths import rules_path as _cp_rules
 
 
 @dataclass
@@ -50,7 +51,7 @@ class DiffReport:
 class ShadowRunner:
     """多实例影子运行器"""
 
-    def __init__(self, baseline_rules: str = "configs/hk/rules.yaml",
+    def __init__(self, baseline_rules: str = _cp_rules("hk"),
                  experiment_rules: Optional[str] = None):
         self.cfg = DomainConfig(domain=LegalDomain.CIVIL)
         self.baseline = FixpointEvaluator(load_rules_from_yaml(baseline_rules), self.cfg)
@@ -169,7 +170,7 @@ if __name__ == "__main__":
     print("═══ Shadow Runner + 对抗生成 ═══")
     print()
 
-    runner = ShadowRunner("configs/hk/rules.yaml")
+    runner = ShadowRunner(_cp_rules("hk"))
     gen = AdversarialGenerator()
     cases = gen.generate(10)
 

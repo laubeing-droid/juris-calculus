@@ -1,0 +1,19 @@
+﻿name: Python Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install deps
+        run: |
+          pip install pyyaml python-docx pdfplumber
+          pip install pytest hypothesis
+      - name: Unit tests
+        run: python -m pytest tests/unit -q
+      - name: Conflict smoke
+        run: python -m pytest tests/test_conflict_case.py -q
+      - name: Compile check
+        run: python -m compileall -q compiler_core legalos_services pipeline mcp_server.py

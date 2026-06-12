@@ -3,9 +3,9 @@ juris-calculus: Fixpoint Legal Reasoning Engine
 Author: Laupinco — Hokkien Computational Jurisprudence Enthusiast (Powered by Gemini & WorkBuddy & DeepSeek-V4 Pro)
 License: Apache 2.0
 
-Production-grade monotonic fixpoint iterator with:
-  - Reverse-indexed rule triggering (fact→rule O(1) lookup)
-  - Exception chain penetration with cycle-safe memoization
+Stratified legal reasoning engine with:
+  - Reverse-indexed rule triggering (Horn closure, monotone) (fact→rule O(1) lookup)
+  - Exception chain penetration with cycle-safe memoization (rebuttal, non-monotone)
   - Concept registry scoring for cross-domain rule evaluation
   - CRITICAL_CLARITY_FAILURE: auto-halt on consecutive low-confidence streaks
   - Implicit dependency detection across exception chains
@@ -16,6 +16,15 @@ from compiler_core.constraint_validator import ConstraintValidator
 import logging
 
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
+from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
+from enum import Enum
+
+
+class ThinkMode(str, Enum):
+    QUICK_SCAN = "QUICK_SCAN"
+    STANDARD = "STANDARD"
+    MAX = "MAX"
+
 from compiler_core.domain_config import DomainConfig, get_domain_config, check_discretionary
 
 logger = logging.getLogger(__name__)
@@ -83,8 +92,9 @@ class FixpointEvaluator:
         "当事人另有约定", "合同另有约定"
     ]
 
-    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None):
+    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None, l0_map: Dict[str, str] = None):
         self.config = config or get_domain_config()
+        self.l0_map = l0_map or {}  # v2.0: L0 concept mapping for cross-jurisdiction degradation
         self.domain_id = domain_id
 
         # 编译期转换：单前提规则注入域锚点
@@ -269,6 +279,14 @@ class FixpointEvaluator:
                 claim = self._apply_rule(rule, state, self.rule_depths.get(rule_id, 1))
                 if claim is None:
                     continue
+
+                # v2.0: L0 degradation ? unmapped concepts ? UNVERIFIED
+                if self.l0_map:
+                    for premise in rule.premise_atoms:
+                        l0 = self.l0_map.get(premise, '?')
+                        if l0 == '?':
+                            claim.epistemic_status = 'UNVERIFIED'
+                            break
 
                 # ═══ 约束层钩子：Rebuttal Check + Unknown Concept Warning ═══
                 confidence_before = claim.confidence

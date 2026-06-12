@@ -5,8 +5,9 @@ import json, time
 from compiler_core.types import IRState, LegalFact, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+from compiler_core.config_paths import rules_path as _cp_rules
 
-HK_RULES = load_rules_from_yaml("configs/hk/rules.yaml")
+HK_RULES = load_rules_from_yaml(_cp_rules("hk"))
 CONFIG = DomainConfig(domain=LegalDomain.CIVIL)
 
 with open("tests/fact_templates/scenarios.json", "r", encoding="utf-8") as f:

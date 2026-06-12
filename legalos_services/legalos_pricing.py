@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 juris-calculus 工业级法律精算引擎
 模型二：多因子混合调节工时精算
@@ -139,7 +139,7 @@ class LegalOSPricingEngine:
     
     # ═══════ 模型三核心公式 ═══════
     
-    def compute_graph_similarity(self, v_new: int, e_new: int, features_new: set,
+    def contextual_overlap_score(self, v_new: int, e_new: int, features_new: set,
                                   v_base: int, e_base: int, features_base: set) -> float:
         """
         图同构相似度 Sim(G_new, G_base) = (|V_MCS| + |E_MCS|) / (|V_new| + |E_new|)
@@ -169,7 +169,7 @@ class LegalOSPricingEngine:
         
         similar = []
         for case_id, (v_base, e_base, feat_base) in self.case_graphs.items():
-            sim = self.compute_graph_similarity(v_count, e_count, features, 
+            sim = self.deprecated_compute_graph_similarity(v_count, e_count, features,   # DEPRECATED: renamed to contextual_overlap_score
                                                 v_base, e_base, feat_base)
             if sim >= threshold:
                 similar.append((case_id, sim))

@@ -37,6 +37,79 @@ sys.path.insert(0, str(BASE))
 # MCP 协议层 (轻量实现，无需外部依赖)
 # ═══════════════════════════════════════════════
 
+
+# --- v2.0 backward-compat wrappers for smoke tests ---
+def _juris_evaluate_core(domain, facts_json, dry_run=False, source_law="CN"):
+    """Legacy wrapper: evaluate legal facts through FixpointEvaluator."""
+    from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+    from compiler_core.types import IRState, LegalFact, LegalDomain
+    from compiler_core.domain_config import DomainConfig
+    from compiler_core.config_paths import rules_path as _cp_rules
+    try:
+        facts = json.loads(facts_json) if isinstance(facts_json, str) else facts_json
+    except (json.JSONDecodeError, TypeError):
+        facts = {}
+    state = IRState()
+    for k, v in facts.items():
+        if isinstance(k, str) and k != "_source_law":
+            state.facts[k] = LegalFact(id=k, description=str(v)[:200], formalizable=1.0)
+    if dry_run:
+        return {
+            "dry_run": True,
+            "total_claims": 0, "top_claims": [], "domain": domain,
+            "validated_facts": list(facts.keys()),
+            "blocked_reasons": [],
+            "status": "DRY_RUN",
+        }
+    try:
+        cfg = DomainConfig(domain=LegalDomain.CIVIL)
+
+        # ?? ???: US ???? CN ??????? ??
+        us_keywords = [
+            "punitive damages", "punitive_damages", "exemplary damages",
+            "jury trial", "habeas corpus", "class action",
+            "treble damages", "constitutional tort", "federal question",
+
+        ]
+
+        # v2.0: blueprint-backed US Code citation validation (via US addon)
+        try:
+            from addons.us.us_lookup import validate_usc_citation
+            usc_cits = validate_usc_citation(facts_text)
+            for cit in usc_cits:
+                if not cit.get("valid"):
+                    blocked.append("USC_BLUEPRINT_MISMATCH: " + cit.get("citation","?") + " -> Title " + str(cit.get("title","?")) + " not found")
+        except Exception:
+            pass
+        blocked = []
+        facts_text = " ".join(str(v) for v in facts.values()).lower()
+        for kw in us_keywords:
+            if kw in facts_text:
+                blocked.append(f"US ????: '{kw}' ?????????")
+
+        if blocked and source_law == "CN":
+            return {"dry_run": False, "total_claims": 0, "top_claims": [],
+                    "domain": domain, "blocked_reasons": blocked, "status": "BLOCKED"}
+
+        rules = load_rules_from_yaml(_cp_rules("zh_CN"))
+        evaluator = FixpointEvaluator(rules, cfg)
+        claims = evaluator.evaluate(state)
+        return {
+            "dry_run": False,
+            "total_claims": len(claims.claims) if hasattr(claims, "claims") else 0,
+            "top_claims": [{"id": c.id, "confidence": c.confidence, "trust_label": c.get_trust_label() if hasattr(c, "get_trust_label") else "UNVERIFIED"} for c in list(claims.claims.values())[:10]] if hasattr(claims, "claims") else [],
+            "domain": domain,
+            "blocked_reasons": blocked,
+            "status": "OK",
+        }
+    except Exception as e:
+        return {"dry_run": dry_run, "total_claims": 0, "top_claims": [], "domain": domain, "blocked_reasons": [str(e)], "status": "ERROR"}
+
+def _juris_evaluate_sync(domain, facts_json):
+    """Legacy wrapper: synchronous evaluate with error handling."""
+    return _juris_evaluate_core(domain, facts_json, dry_run=False)
+
+
 class MCPServer:
     """MCP 协议服务端 — stdio JSON-RPC"""
 
@@ -79,7 +152,15 @@ class MCPServer:
         self._PRCAdapter = PRCAdapter
 
         # 预加载引擎
-        self._hk_rules = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "rules.yaml"))
+        from compiler_core.plugin_registry import registry
+        self._addon_adapters = {}
+        for code in ["hk", "us"]:
+            adapter = registry.get(code)
+            if adapter is not None:
+                self._addon_adapters[code] = adapter
+        self._hk_rules = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "rules.yaml")) if registry.is_installed("hk") else []
+        self._hk_extended = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "extended_rules.yaml")) if registry.is_installed("hk") else []
+        self._us_rules = self._load_rules_from_yaml(str(BASE / "configs" / "en_US" / "US_Adapter.yaml")) if registry.is_installed("us") else []
         self._hk_extended = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "extended_rules.yaml"))
         self._us_rules = self._load_rules_from_yaml(str(BASE / "configs" / "en_US" / "US_Adapter.yaml"))
         self._threat = self._FastPathInterceptor()
@@ -141,6 +222,13 @@ class MCPServer:
         # legal://cn-rules
         if path == "cn-rules":
             return (BASE / "configs" / "zh_CN" / "rules.yaml").read_text(encoding="utf-8")
+        # legal://blueprint
+        if path == "blueprint":
+            bp_path = BASE / "configs" / "juris_blueprint.json"
+            if bp_path.exists():
+                return bp_path.read_text(encoding="utf-8")
+            return json.dumps({"error": "blueprint not built"}, ensure_ascii=False)
+
 
         # legal://glossary/{jurisdiction}
         if parts[0] == "glossary":
@@ -326,6 +414,38 @@ class MCPServer:
             "filter": filter_type,
             "schemas": schemas,
         }
+
+    
+    def _tool_rule_router(self, args: Dict) -> Dict:
+        """v2.0 domain routing - map facts to expert shards"""
+        from compiler_core.rule_router import RuleRouter
+        router = RuleRouter()
+        fact_texts = args.get("fact_texts", [])
+        result = router.route(fact_texts)
+        return {"experts": result["selected_experts"], "cross_conflicts": result["cross_expert_conflicts"], "scores": result["all_scores"]}
+
+    def _tool_stratified_evaluate(self, args: Dict) -> Dict:
+        """v2.0 stratified evaluator - 4-stage Horn+AAF pipeline"""
+        from compiler_core.stratified_evaluator import StratifiedEvaluator
+        facts_dict = args.get("facts", {})
+        se = StratifiedEvaluator(_cp_rules("zh_CN"))
+        from compiler_core.types import IRState, LegalFact
+        state = IRState()
+        for k, v in facts_dict.items():
+            state.facts[k] = LegalFact(id=k, description=str(v)[:200], confidence=float(v) if isinstance(v, (int, float)) else 1.0)
+        claims = se.evaluate(state)
+        return {"total_claims": len(claims), "claims": [{"id": c.id, "confidence": c.confidence, "trust_label": c.get_trust_label()} for c in claims[:20]]}
+
+    def _tool_neural_leaf_status(self, args: Dict) -> Dict:
+        """v2.0 neural leaf node registry status"""
+        from compiler_core.neural_leaf import NeuralLeafRegistry, NeuralLeafType
+        reg = NeuralLeafRegistry()
+        for nt in NeuralLeafType:
+            reg.register(nt.value, nt)
+        node_id = args.get("node_id", "")
+        if node_id:
+            return {"node_id": node_id, "available": reg.is_available(node_id), "kill_switch": reg._kill_switch}
+        return {"nodes": list(reg._nodes.keys()), "kill_switch": reg._kill_switch}
 
     def _tool_generate_task_schema(self, args: Dict) -> Dict:
         """生成法律任务 Schema"""

@@ -1,10 +1,9 @@
 {
   "name": "juris-calculus",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Tri-Rail Cross-Jurisdictional Legal Collision Engine — HK × US × PRC",
   "vendor": "laubeing-droid",
   "protocol_version": "2024-11-05",
-
   "resources": {
     "legal://threat-intel/{state}": {
       "description": "威胁情报签名库 — WI/NJ 州级程序黑话与对抗策略",
@@ -62,9 +61,12 @@
     "legal://task-schema": {
       "description": "Codex法律对抗任务定义Schema — 基于当前内核能力动态生成",
       "mimeType": "application/json"
+    },
+    "legal://blueprint": {
+      "description": "v2.0 unified legal inference blueprint (10MB, 15 domains, 2117 rules)",
+      "mimeType": "application/json"
     }
   },
-
   "tools": {
     "trirail_collide": {
       "description": "执行 HK×US×PRC 三轨并发对撞 — 输入事实流，输出分类+风险矩阵+法条引用",
@@ -86,11 +88,16 @@
           },
           "context": {
             "type": "string",
-            "enum": ["cross_border", "domestic"],
+            "enum": [
+              "cross_border",
+              "domestic"
+            ],
             "description": "跨境/境内上下文"
           }
         },
-        "required": ["facts"]
+        "required": [
+          "facts"
+        ]
       },
       "examples": [
         {
@@ -103,7 +110,6 @@
         }
       ]
     },
-
     "check_threat": {
       "description": "检查事实流是否命中 WI/NJ 威胁签名 — 返回 threat_level + 建议CBL规则",
       "inputSchema": {
@@ -111,14 +117,17 @@
         "properties": {
           "facts": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "事实ID列表"
           }
         },
-        "required": ["facts"]
+        "required": [
+          "facts"
+        ]
       }
     },
-
     "generate_memo": {
       "description": "生成合伙人可签字的涉外商事争议跨境处置备忘录 (Markdown)",
       "inputSchema": {
@@ -133,10 +142,12 @@
             "description": "trirail_collide 的输出结果"
           }
         },
-        "required": ["case_id", "trirail_result"]
+        "required": [
+          "case_id",
+          "trirail_result"
+        ]
       }
     },
-
     "route_state": {
       "description": "查询美国州级法律术语的拓扑路由 — 返回骨干模型+触发事实+对接轨道",
       "inputSchema": {
@@ -151,10 +162,11 @@
             "description": "两字母州代码 (e.g. CA, TX, DE)"
           }
         },
-        "required": ["raw_fact"]
+        "required": [
+          "raw_fact"
+        ]
       }
     },
-
     "get_citation": {
       "description": "查询 CBL/SPC 规则ID对应的中国法条全文引用",
       "inputSchema": {
@@ -165,10 +177,11 @@
             "description": "CBL/SPC 规则ID (e.g. PEN_003_Long_Arm_Interdiction)"
           }
         },
-        "required": ["rule_id"]
+        "required": [
+          "rule_id"
+        ]
       }
     },
-
     "get_operator_schemas": {
       "description": "获取全部已注册算子的JSON Schema — Codex消费此接口获取内核能力边界",
       "inputSchema": {
@@ -176,7 +189,12 @@
         "properties": {
           "filter": {
             "type": "string",
-            "enum": ["all", "critical", "sovereignty", "by_type"],
+            "enum": [
+              "all",
+              "critical",
+              "sovereignty",
+              "by_type"
+            ],
             "description": "过滤条件"
           },
           "type_filter": {
@@ -186,7 +204,6 @@
         }
       }
     },
-
     "generate_task_schema": {
       "description": "动态生成Codex可消费的法律对抗任务定义Schema",
       "inputSchema": {
@@ -194,14 +211,65 @@
         "properties": {
           "jurisdiction_focus": {
             "type": "array",
-            "items": { "type": "string", "enum": ["PRC", "HK", "US"] },
+            "items": {
+              "type": "string",
+              "enum": [
+                "PRC",
+                "HK",
+                "US"
+              ]
+            },
             "description": "聚焦法域"
+          }
+        }
+      }
+    },
+    "rule_router": {
+      "description": "v2.0 domain routing - map legal facts to 13 expert shards",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fact_texts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fact_texts"
+        ]
+      }
+    },
+    "stratified_evaluate": {
+      "description": "v2.0 4-stage Horn+AAF stratified evaluator with trust labels",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "facts": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "neural_leaf_status": {
+      "description": "v2.0 neural leaf node registry status and kill switch",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
           }
         }
       }
     }
   },
-
   "icon": "⚖️",
-  "tags": ["legal", "compliance", "cross-border", "sanctions", "bankruptcy"]
+  "tags": [
+    "legal",
+    "compliance",
+    "cross-border",
+    "sanctions",
+    "bankruptcy"
+  ]
 }

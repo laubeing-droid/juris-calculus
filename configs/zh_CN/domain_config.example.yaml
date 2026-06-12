@@ -29,3 +29,45 @@ factors:
 # ── 概念注册表 ──
 # 由 convert_to_juris_rules.py 自动从规则集生成
 # 完整列表见 concept_registry.yaml
+
+# ============================================================
+# pricing: migrated hardcoded params from peripheral_models.py
+# ============================================================
+pricing:
+  slope_clip_min: 0.01
+  slope_clip_max: 10.0
+  alpha_clamp_min: 0.05
+  alpha_clamp_max: 2.0
+  default_rate: 2000.0
+  base_fee: 2.0
+
+# ============================================================
+# semantic: migrated hardcoded params from semantic_fact_matcher
+# ============================================================
+semantic:
+  default_threshold: 0.65
+  threshold_range: [0.20, 0.50]
+
+# ############################################################
+# pricing: 律师费定价参数（从 peripheral_models.py 硬编码迁移至 YAML）
+# ############################################################
+pricing:
+  # --- 费率参数 ---
+  default_rate: 2000.0         # 默认小时费率（元/小时），各地律师协会收费标准不同，福建漳州约2000，北京上海约3000-5000
+  base_fee: 2.0                # 最低收费倍数，每案至少收 base_fee × D（预计工作日）倍基准费
+  taint_hour_default: 0.2      # 轻度污染工时系数（TAINTED 级别：事实提取有疑问但可推理）
+  hard_hour_default: 1.5       # 重度污染工时系数（HARD 级别：大量手工复核）
+  # --- 定价斜率安全阀（防止极端案件定价失真） ---
+  slope_clip_min: 0.01         # 斜率下限，低于此值视为"案件类型无法定价"，强制 clamp
+  slope_clip_max: 10.0         # 斜率上限，高于此值视为"极端复杂案件"，强制 clamp
+  # --- 复杂度系数 ---
+  alpha_clamp_min: 0.05        # 最低复杂度系数，最简案子不低于 0.05 倍基准费
+  alpha_clamp_max: 2.0         # 最高复杂度系数，最复案子不高于 2.0 倍基准费
+
+# ############################################################
+# semantic: 语义匹配参数（从 semantic_fact_matcher.py 硬编码迁移至 YAML）
+# ############################################################
+semantic:
+  default_threshold: 0.65      # 事实-法条语义匹配相似度阈值，低于此值判"不相关"
+                               # 刑法案由建议调高至 0.80，民事合同纠纷可放宽至 0.50
+  threshold_range: [0.20, 0.50]  # 阈值自动校准的探查范围（NLNI-02 神经节点用）

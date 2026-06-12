@@ -5,6 +5,7 @@ import json
 from compiler_core.types import IRState, LegalFact, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+from compiler_core.config_paths import rules_path as _cp_rules
 
 # ─── 构造冲突场景 ───
 # 香港供货商签了一份中英文合同，卖给美国买家一批定制零件。
@@ -33,7 +34,7 @@ config = DomainConfig(domain=LegalDomain.CIVIL, taint_threshold=0.5)
 print("=" * 60)
 print("US 规则（8条 UCC）")
 print("=" * 60)
-us_rules = load_rules_from_yaml('configs/en_US/rules.yaml')
+us_rules = load_rules_from_yaml(_cp_rules("en_US"))
 us_state = IRState(domain=LegalDomain.CIVIL, jurisdiction='US')
 for f in facts: us_state.facts[f.id] = f
 us_ev = FixpointEvaluator(us_rules, config)
@@ -47,7 +48,7 @@ print()
 print("=" * 60)
 print("HK 规则（24条 Cap 26）")
 print("=" * 60)
-hk_rules = load_rules_from_yaml('configs/hk/rules.yaml')
+hk_rules = load_rules_from_yaml(_cp_rules("hk"))
 hk_state = IRState(domain=LegalDomain.CIVIL, jurisdiction='HK')
 for f in facts: hk_state.facts[f.id] = f
 hk_ev = FixpointEvaluator(hk_rules, config)
@@ -64,6 +65,7 @@ print("Lex Loci 加权合并")
 print("=" * 60)
 
 from compiler_core.constraint_validator import ConstraintValidator
+from compiler_core.config_paths import rules_path as _cp_rules
 cv = ConstraintValidator()
 
 all_claims = {}

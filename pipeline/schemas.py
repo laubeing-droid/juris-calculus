@@ -1,3 +1,5 @@
+﻿from compiler_core.trust_labels import DataOrigin
+
 #!/usr/bin/env python3
 """
 juris-calculus Pipeline 结构化 Schema v1.0

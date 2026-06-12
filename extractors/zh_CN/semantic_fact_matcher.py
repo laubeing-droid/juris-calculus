@@ -113,7 +113,22 @@ class SemanticFactMatcher:
             self.premise_texts, normalize_embeddings=True, show_progress_bar=False
         )
 
-    def extract_facts(self, case_text: str, threshold: float = 0.65) -> Dict[str, float]:
+    @staticmethod
+    def _load_threshold():
+        """Load semantic threshold from domain_config YAML, fallback to 0.65"""
+        try:
+            import yaml
+            from pathlib import Path
+            config_path = Path(__file__).resolve().parents[2] / "configs" / "zh_CN" / "domain_config.example.yaml"
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            return data.get("semantic", {}).get("default_threshold", 0.65)
+        except Exception:
+            return 0.65
+
+    def extract_facts(self, case_text: str, threshold: float = None) -> Dict[str, float]:
+        if threshold is None:
+            threshold = self._load_threshold()
         """
         从案卷文本提取事实谓词（语义匹配版）
         返回 {predicate_id: confidence}

@@ -9,7 +9,7 @@ from compiler_core.types import IRState, LegalFact, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 
-RULES_PATH = "configs/hk/rules.yaml"
+RULES_PATH = _cp_rules("hk")
 ROOT = Path(__file__).parent.parent
 GRAPH_PATH = ROOT / "data" / "hk_mining" / "global_legal_entity_graph.json"
 
@@ -126,6 +126,7 @@ print()
 print("=== 4. 概念冲击: 随机组合事实 → 逻辑稳定性 ===")
 
 import random
+from compiler_core.config_paths import rules_path as _cp_rules
 tier3_keys = list(tier3.keys())
 random.shuffle(tier3_keys)
 

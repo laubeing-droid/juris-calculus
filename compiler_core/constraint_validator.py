@@ -1,4 +1,4 @@
-"""
+﻿"""
 constraint_validator.py — Rebuttal Hook + Audit Trail + Oscillation Guard
 三层架构之约束层 v0.9.1
 - 绝对反驳(Absolute_Rebuttal): 置信度→0
@@ -168,7 +168,7 @@ class ConstraintValidator:
                     key = f"{rule_head_claim}:{fact_name}"
                     self._modification_counts[key] = self._modification_counts.get(key, 0) + 1
                     if self._modification_counts[key] > MAX_MODIFICATION_COUNT:
-                        logger.warning(f"[OSCILLATION_GUARD] {key} modified {self._modification_counts[key]} times — halted")
+                        logger.warning(f"[OSCILLATION_GUARD] guard_triggered=True {key} modified {self._modification_counts[key]} times — halted")
                         return result  # Still apply but log warning
                     return result
 
