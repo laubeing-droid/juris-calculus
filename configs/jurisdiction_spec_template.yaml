@@ -1,0 +1,17 @@
+version: "1.0"
+name: "New Jurisdiction Addon Spec Template"
+jurisdiction:
+  id: "XX"
+  legal_family: "civil_law | common_law"
+  primary_code: "Primary Legal Code"
+rules:
+  source_file: "configs/XX/rules.yaml"
+  estimated_rules: 0
+configs:
+  domain_config: "configs/XX/domain_config.example.yaml"
+addon:
+  path: "addons/XX/"
+  interface_methods: [load_rules, classify_facts, resolve_conflict]
+verified_dimensions:
+  rules_count: 0
+  domains: 0

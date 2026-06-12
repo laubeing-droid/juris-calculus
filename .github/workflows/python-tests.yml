@@ -17,3 +17,5 @@ jobs:
         run: python -m pytest tests/test_conflict_case.py -q
       - name: Compile check
         run: python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+      - name: Phase matrix verification
+        run: python tools/phase_runner.py --phase L6 --report-dir reports/phase_report_ci
