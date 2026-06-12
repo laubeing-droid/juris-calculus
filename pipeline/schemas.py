@@ -1,5 +1,3 @@
-﻿from compiler_core.trust_labels import DataOrigin
-
 #!/usr/bin/env python3
 """
 juris-calculus Pipeline 结构化 Schema v1.0
@@ -7,6 +5,8 @@ Pydantic 紧箍咒 — 大模型输出格式铁律
 """
 from typing import List, Optional
 from pydantic import BaseModel, Field
+from compiler_core.trust_labels import DataOrigin
+
 
 class ExtractedFact(BaseModel):
     atom: str = Field(
@@ -23,6 +23,7 @@ class ExtractedFact(BaseModel):
         default=False,
         description="是否触发 PRC-US 对齐框架的高危风险标签"
     )
+
 
 class LegalFactPayload(BaseModel):
     reasoning_path: str = Field(
