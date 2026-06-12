@@ -303,7 +303,22 @@ class MCPServer:
 
 
 
-# --- v2.0.1 MCP tool wrappers (all route through juris_query) ---
+# --- v2.0.1 MCP tool wrappers
+
+# --- v2.0.1 LLM-enhanced MCP tools (privacy-gated, always TAINTED) ---
+
+def evaluate_facts_llm(fact_text: str):
+    from tools.llm_bridge import evaluate_facts_llm as _ef
+    return _ef(fact_text)
+
+def align_concepts_llm(cn_concept: str, us_concept: str):
+    from tools.llm_bridge import align_concepts_llm as _ac
+    return _ac(cn_concept, us_concept)
+
+def generate_nlni_llm(case_description: str):
+    from tools.llm_bridge import generate_nlni_llm as _gn
+    return _gn(case_description)
+ (all route through juris_query) ---
 
 def search_rules(query: str, top_k: int = 5):
     return juris_query("search_rules", query, {"top_k": top_k})

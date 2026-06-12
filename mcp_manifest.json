@@ -339,6 +339,42 @@
           }
         }
       }
+    },
+    "evaluate_facts_llm": {
+      "description": "LLM-enhanced fact evaluation (privacy-gated, TAINTED output)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fact_text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "align_concepts_llm": {
+      "description": "LLM cross-jurisdiction concept alignment (privacy-gated)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cn_concept": {
+            "type": "string"
+          },
+          "us_concept": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "generate_nlni_llm": {
+      "description": "LLM NLNI training data generation for cold start",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "case_description": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "icon": "⚖️",
