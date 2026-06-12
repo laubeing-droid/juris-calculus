@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "name": "juris-calculus-blueprint",
+  "description": "Main blueprint for juris-calculus verification",
+  "phases": [],
+  "metadata": {
+    "created_at": "2026-06-12",
+    "last_modified": "2026-06-12"
+  }
+}
