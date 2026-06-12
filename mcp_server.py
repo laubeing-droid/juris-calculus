@@ -297,166 +297,126 @@ class MCPServer:
         if threat:
             return {
                 "scenario_id": scenario_id,
-                "classification": "CHINA_US_COLLISION",
-                "fast_path": True,
-                "threat": threat,
-                "hk": {"state": "?"},
-                "us": {"state": "?"},
-                "prc": {
-                    "force_void": [threat["target_rule"]],
-                    "force_suppress": [],
-                    "mapping_override": [],
-                    "cn_claims_count": 0,
-                }
+                "threat": threat
             }
-
-        # 构造事实
-        from compiler_core.types import LegalFact, IRState
-        fact_objs = {k: LegalFact(id=k, description=k, extraction_confidence=v)
-                     for k, v in facts_dict.items()}
-
-        hk_state = IRState(facts=dict(fact_objs))
-        us_state = IRState(facts=dict(fact_objs))
-        prc_state = self._prc_adapter.execute_prc_first_override(fact_objs)
-
-        try:
-            hk_state = hk_eng.evaluate(hk_state)
-        except self._CriticalClarityFailure as e:
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                hk_state = e.partial_state
-
-        try:
-            us_state = us_eng.evaluate(us_state)
-        except self._CriticalClarityFailure as e:
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                us_state = e.partial_state
-
-        from tools.run_trirail_matrix import classify_tri_state
-        classification = classify_tri_state(hk_state, us_state, prc_state)
-
-        return {
-            "scenario_id": scenario_id,
-            "classification": classification,
-            "hk": {
-                "claims": list(hk_state.claims.keys()),
-                "state": hk_state.state_tracker.get("Contract_Validity", "VALID") if hk_state.state_tracker else "?",
-            },
-            "us": {
-                "claims": list(us_state.claims.keys()),
-                "state": us_state.state_tracker.get("Contract_Validity", "VALID") if us_state.state_tracker else "?",
-            },
-            "prc": {
-                "force_void": self._prc_adapter.get_force_void_triggers(prc_state),
-                "force_suppress": self._prc_adapter.get_force_suppress_triggers(prc_state),
-                "mapping_override": [m["id"] for m in self._prc_adapter.get_mapping_overrides(prc_state)],
-                "cn_claims_count": prc_state.get("cn_claims_count", 0),
-                "cn_rules_total": prc_state.get("cn_rules_total", 0),
-            },
-            "citations": {
-                rid: self._get_citation(rid)
-                for rid in (prc_state.get("blocking_overrides", {}).keys())
-            }
-        }
-
-    def _tool_check_threat(self, args: Dict) -> Dict:
-        """威胁校验"""
-        facts = args.get("facts", [])
-        hit = self._threat.intercept(facts)
-        report = self._threat.get_threat_report(facts)
-        return {
-            "hit": hit is not None,
-            "threat": hit,
-            "report": report,
-        }
-
-    def _tool_generate_memo(self, args: Dict) -> Dict:
-        """生成备忘录"""
-        case_id = args.get("case_id", "UNKNOWN")
-        trirail_result = args.get("trirail_result", {})
-        memo = self._memo_compiler.compile(trirail_result, case_id)
-        return {"case_id": case_id, "memo_markdown": memo, "length": len(memo)}
-
-    def _tool_route_state(self, args: Dict) -> Dict:
-        """州级路由"""
-        raw_fact = args.get("raw_fact", "")
-        state_code = args.get("state_code")
-        return self._route_state(raw_fact, state_code)
-
-    def _tool_get_citation(self, args: Dict) -> Dict:
-        """法条引用"""
-        rule_id = args.get("rule_id", "")
-        short = self._get_citation(rule_id)
-        from tools.action_agent.state_to_text import get_prc_citation_full
-        full = get_prc_citation_full(short)
-        return {"rule_id": rule_id, "citation_short": short, "citation_full": full}
-
-    def _tool_get_operator_schemas(self, args: Dict) -> Dict:
-        """算子 Schema 查询"""
-        from tools.operator_registry import OperatorRegistry, OperatorType
-        filter_type = args.get("filter", "all")
-
-        if filter_type == "critical":
-            schemas = OperatorRegistry.get_critical_operators()
-        elif filter_type == "sovereignty":
-            schemas = OperatorRegistry.get_sovereignty_operators()
-        elif filter_type == "by_type":
-            type_name = args.get("type_filter", "")
-            try:
-                ot = OperatorType(type_name)
-                schemas = OperatorRegistry.get_schemas_by_type(ot)
-            except ValueError:
-                schemas = {}
-        else:
-            schemas = OperatorRegistry.get_all_schemas()
-
-        return {
-            "total": len(schemas),
-            "filter": filter_type,
-            "schemas": schemas,
-        }
-
-    
-    def _tool_rule_router(self, args: Dict) -> Dict:
-        """v2.0 domain routing - map facts to expert shards"""
-        from compiler_core.rule_router import RuleRouter
-        router = RuleRouter()
-        fact_texts = args.get("fact_texts", [])
-        result = router.route(fact_texts)
-        return {"experts": result["selected_experts"], "cross_conflicts": result["cross_expert_conflicts"], "scores": result["all_scores"]}
-
-    def _tool_stratified_evaluate(self, args: Dict) -> Dict:
-        """v2.0 stratified evaluator - 4-stage Horn+AAF pipeline"""
-        from compiler_core.stratified_evaluator import StratifiedEvaluator
-        facts_dict = args.get("facts", {})
-        se = StratifiedEvaluator(_cp_rules("zh_CN"))
-        from compiler_core.types import IRState, LegalFact
-        state = IRState()
-        for k, v in facts_dict.items():
-            state.facts[k] = LegalFact(id=k, description=str(v)[:200], confidence=float(v) if isinstance(v, (int, float)) else 1.0)
-        claims = se.evaluate(state)
-        return {"total_claims": len(claims), "claims": [{"id": c.id, "confidence": c.confidence, "trust_label": c.get_trust_label()} for c in claims[:20]]}
-
-    def _tool_neural_leaf_status(self, args: Dict) -> Dict:
-        """v2.0 neural leaf node registry status"""
-        from compiler_core.neural_leaf import NeuralLeafRegistry, NeuralLeafType
-        reg = NeuralLeafRegistry()
-        for nt in NeuralLeafType:
-            reg.register(nt.value, nt)
-        node_id = args.get("node_id", "")
-        if node_id:
-            return {"node_id": node_id, "available": reg.is_available(node_id), "kill_switch": reg._kill_switch}
-        return {"nodes": list(reg._nodes.keys()), "kill_switch": reg._kill_switch}
-
-    def _tool_generate_task_schema(self, args: Dict) -> Dict:
-        """生成法律任务 Schema"""
-        from tools.operator_registry import generate_task_schema
-        focus = args.get("jurisdiction_focus", ["PRC", "HK", "US"])
-        return generate_task_schema(focus)
+        return {}
 
 
-# ═══════════════════════════════════════════════
-# Main: stdio JSON-RPC 模式
-# ═══════════════════════════════════════════════
+
+# --- v2.0.1 MCP tool wrappers (all route through juris_query) ---
+
+def search_rules(query: str, top_k: int = 5):
+    return juris_query("search_rules", query, {"top_k": top_k})
+
+def evaluate_facts(fact_text: str, fact_items: dict = None):
+    return juris_query("evaluate_facts", fact_text, {"fact_items": fact_items})
+
+def calculate_damages(principal: float = 100000, lpr_rate: float = 3.45,
+                      interest_days: int = 365, contract_value: float = 0,
+                      actual_loss: float = 0, deposit_paid: float = 0):
+    return juris_query("calculate_damages", "", {
+        "principal": principal, "lpr_rate": lpr_rate,
+        "interest_days": interest_days, "contract_value": contract_value,
+        "actual_loss": actual_loss, "deposit_paid": deposit_paid})
+
+def analyze_strategy(fact_text: str):
+    return juris_query("analyze_strategy", fact_text)
+
+def extract_elements(fact_text: str):
+    return juris_query("extract_elements", fact_text)
+# --- v2.0.1 MCP unified query tool ---
+
+def juris_query(mode: str, query: str = "", params: dict = None):
+    params = params or {}
+    if mode == "search_rules":
+        from compiler_core.config_paths import rules_path
+        from difflib import SequenceMatcher
+        import yaml
+        def fuzzy_score(q, t):
+            q, t = str(q).lower(), str(t).lower()
+            if q == t: return 1.0
+            if q in t or t in q: return 0.85
+            return SequenceMatcher(None, q, t).ratio()
+        rules_data = yaml.safe_load(Path(rules_path("zh_CN")).read_text(encoding="utf-8"))
+        items = rules_data.get("rules", []) if isinstance(rules_data, dict) else rules_data
+        results = []
+        for rule in items:
+            if not isinstance(rule, dict): continue
+            head = str(rule.get("head_claim", ""))
+            rid = str(rule.get("id", ""))
+            score = max(fuzzy_score(query, head[:200]), fuzzy_score(query, rid))
+            if score > 0.2:
+                results.append({"id": rid, "head": head[:200], "score": round(score, 2)})
+        results.sort(key=lambda x: -x["score"])
+        top_k = params.get("top_k", 5)
+        return {"query": query, "total_rules": len(items) if isinstance(items, list) else 0, "results": results[:top_k]}
+    elif mode == "evaluate_facts":
+        from compiler_core.evaluator import load_rules_from_yaml, FixpointEvaluator
+        from compiler_core.types import IRState, LegalFact, LegalDomain
+        from compiler_core.domain_config import DomainConfig
+        from compiler_core.config_paths import rules_path
+        loaded = load_rules_from_yaml(rules_path("zh_CN"))
+        ev = FixpointEvaluator(loaded, DomainConfig(domain=LegalDomain.CIVIL))
+        st = IRState()
+        facts = params.get("fact_items", None) or {"f1": query}
+        for k, v in facts.items():
+            st.facts[k] = LegalFact(id=k, description=str(v)[:200], formalizable=1.0)
+        result = ev.evaluate(st)
+        raw = list(result.claims.values()) if hasattr(result, "claims") else []
+        claims = sorted(raw, key=lambda x: -x.confidence)
+        top = claims[0] if claims else None
+        if not top: return {"prediction": "N/A", "confidence": 0, "trust": "UNVERIFIED", "total_claims": 0}
+        return {"prediction": top.description[:200], "confidence": round(top.confidence, 2), "trust": top.get_trust_label(), "total_claims": len(claims)}
+    elif mode == "calculate_damages":
+        from legalos_services.inspectors import inspect_lpr, inspect_deposit, inspect_damages, inspect_limitation
+        class Ctx: pass
+        ctx = Ctx()
+        principal = float(params.get("principal", 100000))
+        lpr_rate = float(params.get("lpr_rate", 3.45))
+        lpr_4x = lpr_rate * 4
+        ctx.principal = principal; ctx.lpr_rate = lpr_rate; ctx.interest_days = int(params.get("interest_days", 365))
+        ctx.lpr_4x_cap = lpr_4x; ctx.agreed_rate = lpr_rate
+        ctx.deposit_amount = float(params.get("deposit_paid", 0))
+        ctx.contract_value = max(float(params.get("contract_value", 0)), principal)
+        ctx.deposit_rate = 0.2; ctx.dispute_date = "2026-01-01T00:00:00"
+        ctx.damages_claimed = float(params.get("actual_loss", 0)) * 2
+        ctx.actual_loss = max(float(params.get("actual_loss", 0)), principal * 0.1)
+        ctx.lpr_1y = lpr_rate; ctx.loan_amount = principal
+        lpr_r = inspect_lpr(ctx); deposit_r = inspect_deposit(ctx)
+        damages_r = inspect_damages(ctx); limitation_r = inspect_limitation(ctx)
+        max_interest = round(principal * (lpr_4x / 100) * (int(params.get("interest_days", 365)) / 365), 2)
+        return {"principal": principal, "max_legal_interest": max_interest, "lpr_exceeded": lpr_r.get("lpr_exceeded", False), "deposit_exceeded": deposit_r.get("deposit_exceeded", False), "damages_excessive": damages_r.get("appeared_excessive", False), "within_limitation": not limitation_r.get("limitation_expired", False), "total_estimate": round(principal + max_interest, 2)}
+    elif mode == "analyze_strategy":
+        from compiler_core.evaluator import load_rules_from_yaml, FixpointEvaluator
+        from compiler_core.types import IRState, LegalFact, LegalDomain
+        from compiler_core.domain_config import DomainConfig
+        from compiler_core.config_paths import rules_path
+        from pipeline.adversarial_pipeline import AdversarialPipeline
+        loaded = load_rules_from_yaml(rules_path("zh_CN"))
+        ev = FixpointEvaluator(loaded, DomainConfig(domain=LegalDomain.CIVIL))
+        st = IRState(); st.facts["case"] = LegalFact(id="case", description=query[:200], formalizable=1.0)
+        result = ev.evaluate(st)
+        raw = list(result.claims.values()) if hasattr(result, "claims") else []
+        claims = sorted(raw, key=lambda x: -x.confidence)
+        top = [{"id": c.id, "confidence": c.confidence, "trust": c.get_trust_label()} for c in claims[:5]]
+        adv = AdversarialPipeline()
+        reasoner = adv.run_reasoner([{"id": c.id, "confidence": c.confidence} for c in claims], list(result.rules_applied)[:5])
+        strengths = [c["id"] for c in top if c["confidence"] >= 0.7]
+        weaknesses = [c["id"] for c in top if c["confidence"] < 0.3]
+        return {"top_claims": top, "strengths": strengths or ["none"], "weaknesses": weaknesses or ["none"], "recommended": "offense" if len(strengths) >= len(weaknesses) else "defense", "reasoner_issues": reasoner.issues[:5]}
+    elif mode == "extract_elements":
+        from compiler_core.evaluator import load_rules_from_yaml
+        from compiler_core.config_paths import rules_path
+        rules = load_rules_from_yaml(rules_path("zh_CN"))
+        elements = set()
+        for rule in rules:
+            if hasattr(rule, "premise_atoms"):
+                for atom in rule.premise_atoms:
+                    if len(atom) >= 2 and (atom[:2] in query or atom[-2:] in query):
+                        elements.add(atom)
+        return {"fact_text": query[:200], "matched_elements": sorted(elements)[:20], "total": len(elements)}
+    return {"error": "unknown mode: " + mode}
+
 
 def run_stdio():
     """stdio 模式 — MCP 协议标准传输"""

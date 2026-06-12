@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform and cross-jurisdiction compatibility check (MetaInfer Section 6 adaptation).
+"""Cross-platform and cross-jurisdiction compatibility check.
 
 For JC, "cross-platform" means:
   - Multi-OS: verify Python/stdlib availability (no GPU-specific deps)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Feed perf_baseline results back into the knowledge graph (MetaInfer Section 7.1).
+"""Feed perf_baseline results back into the knowledge graph.
 
 For JC, "performance knowledge graph enhancement" means:
   - Extract performance patterns from baseline traces

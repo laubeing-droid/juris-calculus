@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run MetaInfer-style phase gates and write verification evidence."""
+"""Run phase gates and write verification evidence."""
 from __future__ import annotations
 
 import argparse

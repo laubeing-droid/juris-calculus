@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harness Module Interface Checker: verify key classes expose standard methods (MetaInfer 7.4.3.2)."""
+"""Harness Module Interface Checker: verify key classes expose standard methods."""
 import argparse, sys
 from pathlib import Path
 from typing import Any, Dict, List

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harness Shape Checker: verify JC core data class interfaces (MetaInfer 7.4.3.1)."""
+"""Harness Shape Checker: verify JC core data class interfaces."""
 import argparse, sys, inspect
 from pathlib import Path
 from typing import Any, Dict, List

@@ -189,7 +189,7 @@ closure_policy:
   - code_change
   - test_or_phase_command
   - blueprint_or_matrix_update_when_contract_changes
-name: juris-calculus MetaInfer-style acceptance matrix
+name: juris-calculus acceptance matrix
 phases:
 - blueprint_contracts:
   - configs/juris_blueprint.json
@@ -270,5 +270,5 @@ roles:
     boundary: checks blueprint and phase contracts before runtime verification
   verification:
     boundary: runs commands and records evidence; only this role can declare PASS
-source_paradigm: MetaInfer implementer/spec-reviewer/verification
+source_paradigm: implementer/spec-reviewer/verification
 version: 2.0.0

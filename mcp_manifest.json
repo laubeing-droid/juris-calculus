@@ -262,6 +262,83 @@
           }
         }
       }
+    },
+    "search_rules": {
+      "description": "Search 2,117 CN legal rules by keyword with fuzzy matching",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "integer",
+            "default": 5
+          }
+        }
+      }
+    },
+    "evaluate_facts": {
+      "description": "Evaluate legal facts through Horn evaluator, return top claims with confidence and trust labels",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fact_text": {
+            "type": "string"
+          },
+          "fact_items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "calculate_damages": {
+      "description": "Calculate itemized damages with LPR/penalty/deposit/limitation checks",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "principal": {
+            "type": "number"
+          },
+          "lpr_rate": {
+            "type": "number"
+          },
+          "interest_days": {
+            "type": "integer"
+          },
+          "contract_value": {
+            "type": "number"
+          },
+          "actual_loss": {
+            "type": "number"
+          },
+          "deposit_paid": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "analyze_strategy": {
+      "description": "Adversarial SWOT analysis: strengths, weaknesses, recommended strategy",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fact_text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "extract_elements": {
+      "description": "Extract matched Horn rule premise atoms from fact text",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fact_text": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "icon": "⚖️",

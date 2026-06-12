@@ -4,9 +4,6 @@ source_inspirations:
   - name: "Superpowers subagent-driven-development"
     repository: "https://github.com/obra/superpowers"
     local_reference: "D:/Superpowers/skills/subagent-driven-development"
-  - name: "MetaInfer"
-    repository: "https://github.com/MetaInfer/MetaInfer"
-    local_reference: "D:/MetaInfer"
 
 roles:
   implementer:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect JC performance baseline across 5 key operations (MetaInfer-style profiler)."""
+"""Collect JC performance baseline across 5 key operations (profiler)."""
 from __future__ import annotations
 
 import argparse

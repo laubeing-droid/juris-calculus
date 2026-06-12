@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-healing closed loop: detect regression, auto-diagnose, suggest fixes (MetaInfer 7.4.4.3)."""
+"""Self-healing closed loop: detect regression, auto-diagnose, suggest fixes."""
 import argparse, json, sys
 from datetime import datetime
 from pathlib import Path

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare two JC baseline traces to detect performance regression (MetaInfer anti-regression gate)."""
+"""Compare two JC baseline traces to detect performance regression."""
 from __future__ import annotations
 
 import argparse
