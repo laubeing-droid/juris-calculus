@@ -20,7 +20,7 @@ def test_module_interface_checker_all_pass():
 
 def test_self_healing_loop_runs(tmp_path):
     result = run_healing_loop(
-        baseline_path="reports/perf/baseline1.json",
+        baseline_path=None,
         out_dir=str(tmp_path),
     )
     assert "report_path" in result

@@ -11,7 +11,7 @@ MATRIX = "configs/juris_phase_matrix.yaml"
 
 
 def test_import_source_verifier_all_local():
-    report = verify_import_sources("D:/v2.0")
+    from pathlib import Path; ROOT = Path(__file__).resolve().parent.parent.parent; report = verify_import_sources(str(ROOT))
     assert report["status"] in ("PASS", "WARN"), f"leaked: {report['findings']}"
     assert len(report["checked_modules"]) >= 4
 
