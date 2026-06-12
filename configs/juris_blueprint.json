@@ -1,10 +1,22 @@
 {
-  "version": "1.0",
-  "name": "juris-calculus-blueprint",
-  "description": "Main blueprint for juris-calculus verification",
-  "phases": [],
-  "metadata": {
-    "created_at": "2026-06-12",
-    "last_modified": "2026-06-12"
-  }
+  "name": "juris-calculus blueprint",
+  "version": "1.0.0",
+  "description": "Formal specification of legal reasoning core system",
+  "contracts": [
+    {
+      "contract_id": "BLUEPRINT_MATRIX",
+      "layer": "truth_source",
+      "purpose": "Define the acceptance matrix structure and phase contracts",
+      "ref_docs": ["README.md"],
+      "ref_code": ["tools/blueprint_contract_auditor.py"],
+      "ref_tests": ["tests/unit/test_phase_harness.py"],
+      "pseudocode": "load_matrix(yaml) → validate_structure() → check_all_contracts_exist() → return audit_report",
+      "dynamic_parameters": [
+        {
+          "name": "matrix_path",
+          "source": "configs/juris_phase_matrix.yaml"
+        }
+      ]
+    }
+  ]
 }
