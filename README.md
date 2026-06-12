@@ -1,4 +1,4 @@
-# juris-calculus v1.2.0 — Tri-Rail
+# juris-calculus v2.0.0 — Tri-Rail
 
 **A multi-jurisdiction symbolic legal reasoning engine with cross-border collision detection.**
 
@@ -12,7 +12,7 @@ Fixpoint evaluator + Tri-Rail Collider (PRC × HK × US) + PRC-US semantic align
 
 ---
 
-## What's New in v1.2.0
+## What's New in v2.0.0
 
 - **Tri-Rail Collider**: Collide PRC, HK, and US parallel inference traces to detect 12 classes of cross-border conflict
 - **PRC-US Semantic Alignment**: 60 CBL blocking rules + 23 SPC judicial tendency rules + 10 procedural justice defenses — prevents US legal concepts from contaminating PRC reasoning
@@ -86,12 +86,12 @@ juris-calculus/
 
 | Jurisdiction | Rules | Domains | Status |
 |---|---|---|---|
-| **PRC** (Civil Code) | 2,117 | 13 domains (Contract/Tort/Corporate/Criminal/Admin/IP...) | v1.2.0 |
-| **US** (Federal) | 81 Horn + 86 constraints | UCC Art.2, Due Process, Equitable Remedies | v1.2.0 |
-| **US** (State threat) | 24 signatures | WI long-arm jurisdiction, NJ punitive damages | v1.2.0 |
-| **HK** (Ordinances) | 93 | Cap 26/32/622/571/4A | v1.2.0 |
+| **PRC** (Civil Code) | 2,117 | 13 domains (Contract/Tort/Corporate/Criminal/Admin/IP...) | v2.0.0 |
+| **US** (Federal) | 81 Horn + 86 constraints | UCC Art.2, Due Process, Equitable Remedies | v2.0.0 |
+| **US** (State threat) | 24 signatures | WI long-arm jurisdiction, NJ punitive damages | v2.0.0 |
+| **HK** (Ordinances) | 93 | Cap 26/32/622/571/4A | v2.0.0 |
 | **UK** | 5 candidates | Sale of Goods Act | Community |
-| **PRC-US Alignment** | 60 CBL + 23 SPC + 10 proc | Cross-jurisdiction blocking + defense | v1.2.0 |
+| **PRC-US Alignment** | 60 CBL + 23 SPC + 10 proc | Cross-jurisdiction blocking + defense | v2.0.0 |
 
 ---
 
