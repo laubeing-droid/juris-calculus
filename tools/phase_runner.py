@@ -50,7 +50,7 @@ def run_phases(matrix_path: str | Path = "configs/juris_phase_matrix.yaml",
     out_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     summary["report_path"] = str(out_path)
     step35 = matrix.get("anti_degradation", {}).get("step35_spot_check", {})
-    if step35.get("enforced"):
+    if step35.get("enforced") and not dry_run:
         if summary["status"] == "PASS":
             from tools.verification_replay import replay_report
             replay_result = replay_report(str(out_path), seed=os.getpid() % 100)

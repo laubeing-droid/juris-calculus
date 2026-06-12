@@ -9,7 +9,7 @@ jobs:
         with: { python-version: "3.11" }
       - name: Install deps
         run: |
-          pip install pyyaml python-docx pdfplumber
+          pip install -r requirements.txt
           pip install pytest hypothesis
       - name: Unit tests
         run: python -m pytest tests/unit -q

@@ -1,7 +1,8 @@
-python>=3.10
+# Python >= 3.10
 pyyaml>=6.0
 python-docx>=1.1.0
 pdfplumber>=0.10.0
+pydantic>=2.0.0
 
 # Optional: MCP Server (Beta)
 # pip install juris-calculus[mcp]

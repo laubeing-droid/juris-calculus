@@ -109,3 +109,10 @@ print(f"\nAudit: {total_rebuttals} rebuttals detected")
 print(f"US jurisdiction claims: {len(us_result.claims)}")
 print(f"HK jurisdiction claims: {len(hk_result.claims)}")
 print(f"Lex Loci merged claims: {len(all_claims)}")
+
+
+def test_conflict_case_runs_and_merges_hk_claims():
+    assert len(us_result.claims) == 0
+    assert len(hk_result.claims) >= 1
+    assert len(all_claims) == len(hk_result.claims)
+    assert "Contract_Validity" in all_claims
