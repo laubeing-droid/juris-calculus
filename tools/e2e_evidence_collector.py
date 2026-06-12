@@ -51,7 +51,8 @@ def collect_evidence(out_dir: str = "reports/e2e_evidence") -> Dict[str, Any]:
         "trust_label": claims_list[0].get_trust_label() if claims_list else "N/A",
     }
 
-    trace_path = out / f"eval_trace_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    trace_path = out / f"eval_trace_{timestamp}.json"
     trace_path.write_text(json.dumps(trace, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return {
