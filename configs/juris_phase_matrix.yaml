@@ -1,0 +1,274 @@
+anti_degradation:
+  anti_hardcoded_reasoning:
+    description: 禁止硬编码文本冒充真实推理输出。trust_label 必须来自 evaluator 实际运行。
+    enforced: true
+  cross_phase_regression:
+    description: P3 开始的 verification 必须重跑前序 Phase。任一回滚 → 打回。
+    enforced: true
+    start_from: P3_HORN_EVALUATOR
+  e2e_evidence_chain:
+    description: P10 验收输出必须附带评估 trace 和性能探针记录。
+    enforced: true
+    required_artifacts:
+    - evaluation_trace
+    - rules_load_timing
+    - blueprint_contract_audit_report
+  l0_import_source_guard:
+    description: 运行测试前验证 import 源路径来自本地目录而非外部泄漏。
+    enforced: true
+    expected_root: D:/v2.0
+    guard_modules:
+    - compiler_core
+    - pipeline
+    - legalos_services
+    - legal_gates
+  phase_gate_strict:
+    description: 每个 Phase 的全部命令必须 PASS 后才能进入下一 Phase。禁止跳过。
+    enforced: true
+  scripts_immutable:
+    description: 测试脚本是先验知识，Agent 无权修改。测试不过 → 改代码，不降测试。
+    enforced: true
+    test_dirs:
+    - tests/
+    - tools/
+  step35_spot_check:
+    description: verification PASS 后主 Agent 抽 1 条命令重跑，比对 stdout。不一致 → 作废。
+    enforced: true
+build_phases:
+- blueprint_contracts:
+  - compiler_core/types.py
+  - compiler_core/trust_labels.py
+  commands:
+  - python -m compileall -q compiler_core/types.py compiler_core/trust_labels.py
+  - python -m pytest tests/unit/test_trust_labels.py -q
+  id: P1_TYPES_TRUST
+  layer: core_primitives
+  name: Types, trust labels, and epistemic status
+  physical_dependency: none
+- blueprint_contracts:
+  - configs/zh_CN/rules.yaml
+  - compiler_core/config_paths.py
+  - compiler_core/domain_config.py
+  - compiler_core/juris_blueprint.py
+  commands:
+  - python -m pytest tests/unit/test_zh_rules.py -q
+  id: P2_CONFIG_RULE_PARSE
+  layer: config_layer
+  name: Configuration parsing and rule YAML loading
+  physical_dependency: P1_TYPES_TRUST
+- blueprint_contracts:
+  - compiler_core/evaluator.py
+  - compiler_core/types.py
+  - compiler_core/domain_config.py
+  commands:
+  - python -m pytest tests/unit/test_evaluator.py -q
+  id: P3_HORN_EVALUATOR
+  layer: evaluation
+  name: Horn rule fixpoint evaluator core
+  physical_dependency: P2_CONFIG_RULE_PARSE
+- blueprint_contracts:
+  - compiler_core/rule_router.py
+  - compiler_core/criminal_complexity.py
+  - configs/zh_CN/router_moe.yaml
+  - configs/zh_CN/criminal_complexity.yaml
+  commands:
+  - python -m pytest tests/unit/test_criminal_complexity.py -q
+  id: P4_MOE_ROUTER
+  layer: routing
+  name: MoE domain router and criminal complexity
+  physical_dependency: P3_HORN_EVALUATOR
+- blueprint_contracts:
+  - legal_gates/__init__.py
+  - compiler_core/constraint_validator.py
+  - legalos_services/inspectors.py
+  commands:
+  - python -m pytest tests/unit/test_inspectors.py -q
+  id: P5_GATES_CONSTRAINTS
+  layer: constraints
+  name: Legal gates and constraint validators
+  physical_dependency: P3_HORN_EVALUATOR
+- blueprint_contracts:
+  - compiler_core/step_verifier.py
+  - compiler_core/argumentation.py
+  - compiler_core/stratified_evaluator.py
+  - compiler_core/criminal_complexity.py
+  commands:
+  - python -m pytest tests/unit/test_argumentation.py tests/unit/test_criminal_complexity.py
+    -q
+  id: P6_STEP_VERIFIER_AAF
+  layer: verification
+  name: Step verifier, argumentation (AAF), and binding verification
+  physical_dependency: P4_MOE_ROUTER
+- blueprint_contracts:
+  - pipeline/adversarial_pipeline.py
+  - tools/kg_audit_loop.py
+  - tools/kg_correctness_auditor.py
+  - tools/kg_completeness_auditor.py
+  - configs/agent_collaboration_protocol.yaml
+  commands:
+  - python -m pytest tests/unit/test_kg_audit.py tests/unit/test_agent_protocol.py
+    -q
+  id: P7_ADVERSARIAL_REVIEW
+  layer: adversarial
+  name: Adversarial pipeline and dual KG audit
+  physical_dependency: P6_STEP_VERIFIER_AAF
+- blueprint_contracts:
+  - mcp_server.py
+  - mcp_manifest.json
+  - adapter/__init__.py
+  commands:
+  - python -m pytest tests/test_mcp_smoke.py -q
+  id: P8_MCP_OPERATION_INTERFACE
+  layer: interface
+  name: MCP server, manifest, and operation-layer integration
+  physical_dependency: P7_ADVERSARIAL_REVIEW
+- blueprint_contracts:
+  - addons/__init__.py
+  - addons/federation/__init__.py
+  - addons/federation/common_law.py
+  - addons/hk/__init__.py
+  - addons/us/__init__.py
+  - compiler_core/plugin_registry.py
+  - tools/platform_check.py
+  commands:
+  - python -m pytest tests/unit/test_criminal_complexity.py tests/test_conflict_case.py
+    -q
+  - python tools/platform_check.py --jurisdictions cn hk us
+  id: P9_ADDON_FEDERATION
+  layer: federation
+  name: Cross-jurisdiction addons and federated reasoning
+  physical_dependency: P8_MCP_OPERATION_INTERFACE
+- blueprint_contracts:
+  - configs/juris_contracts.yaml
+  - configs/juris_phase_matrix.yaml
+  - configs/agent_collaboration_protocol.yaml
+  commands:
+  - python -m pytest tests -q
+  - python -m compileall -q .
+  - python tools/kg_audit_loop.py --contracts configs/juris_contracts.yaml --mode
+    local --out-dir reports/kg_audit
+  - python tools/agent_protocol_auditor.py --protocol configs/agent_collaboration_protocol.yaml
+  id: P10_E2E_KG_AUDIT
+  layer: e2e
+  name: End-to-end cases, full KG audit, and release evidence
+  physical_dependency: P9_ADDON_FEDERATION
+- blueprint_contracts:
+  - compiler_core/neural_leaf.py
+  - compiler_core/neural_yaml_sync.py
+  - scripts/prune_ocr_registry.py
+  - tools/perf_baseline.py
+  - tools/perf_compare.py
+  - tools/perf_to_blueprint.py
+  - tools/shape_checker.py
+  - tools/module_interface_checker.py
+  - tools/self_healing_loop.py
+  - tools/blueprint_completeness_meter.py
+  - tools/test_quality_auditor.py
+  - tools/recovery_guard.py
+  commands:
+  - python -m pytest tests/unit/test_phase_harness.py -q
+  - python -c "import time; t0=time.time(); from compiler_core.config_paths import
+    rules_path, blueprint_path; import yaml, json; yaml.safe_load(open(rules_path('zh_CN'),encoding='utf-8').read());
+    print(f'rules_load_sec={time.time()-t0:.3f}')"
+  - python tools/perf_baseline.py --out-dir reports/perf
+  - python tools/perf_to_blueprint.py --baseline reports/perf/baseline1.json
+  - python tools/shape_checker.py
+  - python tools/module_interface_checker.py
+  - python tools/self_healing_loop.py --baseline reports/perf/baseline1.json --out-dir
+    reports/healing
+  - python tools/blueprint_completeness_meter.py
+  - python tools/test_quality_auditor.py
+  - python tools/recovery_guard.py
+  id: P11_PERF_PRUNE_COLDSTART
+  layer: performance
+  name: Performance probe, rule pruning, and coldstart optimization
+  physical_dependency: P10_E2E_KG_AUDIT
+closure_policy:
+  bug_fix_requires:
+  - root_cause
+  - code_change
+  - test_or_phase_command
+  - blueprint_or_matrix_update_when_contract_changes
+name: juris-calculus MetaInfer-style acceptance matrix
+phases:
+- blueprint_contracts:
+  - configs/juris_blueprint.json
+  - configs/juris_contracts.yaml
+  - configs/agent_collaboration_protocol.yaml
+  - configs/zh_CN/domain_config.example.yaml
+  - configs/zh_CN/criminal_complexity.yaml
+  - configs/zh_CN/router_moe.yaml
+  commands:
+  - python tools/import_source_verifier.py --root D:/v2.0
+  - python tools/kg_audit_loop.py --contracts configs/juris_contracts.yaml --mode
+    local --out-dir reports/kg_audit
+  - python tools/agent_protocol_auditor.py --protocol configs/agent_collaboration_protocol.yaml
+  id: L0
+  layer: truth_source
+  name: Blueprint and config contract
+- blueprint_contracts:
+  - compiler_core/trust_labels.py
+  commands:
+  - python -m pytest tests/unit/test_trust_labels.py -q
+  id: L1
+  layer: trust
+  name: Trust labels and epistemic status
+- blueprint_contracts:
+  - configs/zh_CN/rules.yaml
+  - legal_gates/__init__.py
+  commands:
+  - python -m pytest tests/unit/test_zh_rules.py -q
+  id: L2
+  layer: rules
+  name: Rules, gates, and Chinese Horn baseline
+- blueprint_contracts:
+  - compiler_core/rule_router.py
+  - compiler_core/criminal_complexity.py
+  - compiler_core/experience_contracts.py
+  - configs/zh_CN/router_moe.yaml
+  - configs/juris_contracts.yaml
+  commands:
+  - python -m pytest tests/unit/test_criminal_complexity.py -q
+  id: L3
+  layer: routing
+  name: MoE routing and criminal complexity
+- blueprint_contracts:
+  - pipeline/adversarial_pipeline.py
+  commands:
+  - python -m pytest tests/unit/test_criminal_complexity.py -q
+  id: L4
+  layer: audit
+  name: Adversarial audit
+- blueprint_contracts:
+  - compiler_core/argumentation.py
+  - compiler_core/step_verifier.py
+  - compiler_core/stratified_evaluator.py
+  commands:
+  - python -m pytest tests/unit/test_argumentation.py tests/unit/test_inspectors.py
+    tests/unit/test_criminal_complexity.py -q
+  id: L5
+  layer: verification
+  name: Argumentation and step verification
+- blueprint_contracts:
+  - compiler_core/neural_leaf.py
+  - compiler_core/neural_yaml_sync.py
+  commands:
+  - python -m pytest tests -q
+  - python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+  id: L6
+  layer: neural_guarded
+  name: Neural leaves and full regression
+replay_policy:
+  enabled: true
+  require_previous_phase_regression_from: L3
+  sample_size: 1
+report_dir: reports/phase_report
+roles:
+  implementer:
+    boundary: writes code and submits diff; must not declare PASS
+  spec_reviewer:
+    boundary: checks blueprint and phase contracts before runtime verification
+  verification:
+    boundary: runs commands and records evidence; only this role can declare PASS
+source_paradigm: MetaInfer implementer/spec-reviewer/verification
+version: 2.0.0

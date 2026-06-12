@@ -1,0 +1,89 @@
+# MultiJustice-MPMCP 抽象配置：用于刑事多人多罪复杂案件，不把数据集原文塞进规则库。
+source:
+  id: "MultiJustice-MPMCP"
+  repository: "https://github.com/lololo-xiao/MultiJustice-MPMCP"
+  purpose: "criminal_multi_party_multi_charge_complexity"
+
+# 四种场景来自 MultiJustice：单被告/多被告 × 单罪名/多罪名。
+scenarios:
+  S1:
+    label: "单人单罪"
+    min_defendants: 1
+    max_defendants: 1
+    min_charges: 1
+    max_charges: 1
+    route_tag: "criminal_single_defendant_single_charge"
+  S2:
+    label: "单人多罪"
+    min_defendants: 1
+    max_defendants: 1
+    min_charges: 2
+    max_charges: null
+    route_tag: "criminal_single_defendant_multi_charge"
+  S3:
+    label: "多人单罪"
+    min_defendants: 2
+    max_defendants: null
+    min_charges: 1
+    max_charges: 1
+    route_tag: "criminal_multi_defendant_single_charge"
+  S4:
+    label: "多人多罪"
+    min_defendants: 2
+    max_defendants: null
+    min_charges: 2
+    max_charges: null
+    route_tag: "criminal_multi_defendant_multi_charge"
+
+# L3：刑事 MoE 子路由触发词。
+route_keywords:
+  criminal:
+    - "刑事"
+    - "犯罪"
+    - "罪"
+    - "罪名"
+    - "被告人"
+    - "公诉机关"
+    - "判处"
+    - "有期徒刑"
+    - "拘役"
+    - "罚金"
+    - "自首"
+    - "立功"
+    - "共同犯罪"
+
+# L4：审计器重点检查项。
+audit_policy:
+  require_defendant_charge_binding_for:
+    - "S2"
+    - "S3"
+    - "S4"
+  warn_if_claim_mentions_charge_without_defendant: true
+  warn_if_claim_mentions_penalty_without_defendant: true
+
+# L5：人-行为-罪名-刑期-法条绑定字段名，兼容 MultiJustice CSV。
+binding_fields:
+  defendants:
+    - "defendant"
+    - "defendants"
+    - "defendant_ls"
+    - "被告人"
+  charges:
+    - "accusation"
+    - "charge"
+    - "charges"
+    - "罪名"
+  per_defendant_charges:
+    - "defendant_accusation"
+    - "defendant_charge"
+    - "被告人罪名"
+  per_defendant_judgment:
+    - "defendant_judgement"
+    - "defendant_judgment"
+    - "被告人判决"
+  relevant_law:
+    - "relevant_law"
+    - "relevant_article"
+    - "article_content"
+    - "法律依据"
+    - "适用法条"

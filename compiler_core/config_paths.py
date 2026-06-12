@@ -42,6 +42,21 @@ def domain_config_path(jurisdiction: str = "zh_CN") -> str:
     return str(_CONFIG_ROOT / jurisdiction / "domain_config.example.yaml")
 
 
+def criminal_complexity_path(jurisdiction: str = "zh_CN") -> str:
+    """Path to criminal multi-party/multi-charge scenario config."""
+    return str(_CONFIG_ROOT / jurisdiction / "criminal_complexity.yaml")
+
+
+def router_moe_path(jurisdiction: str = "zh_CN") -> str:
+    """Path to MoE router shard config."""
+    return str(_CONFIG_ROOT / jurisdiction / "router_moe.yaml")
+
+
+def juris_contracts_path() -> str:
+    """Path to structured experience contracts."""
+    return str(_CONFIG_ROOT / "juris_contracts.yaml")
+
+
 def overrides_path(jurisdiction: str = "hk") -> str:
     """Path to L0 overrides for a given jurisdiction."""
     mapping = {

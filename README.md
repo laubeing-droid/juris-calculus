@@ -1,42 +1,98 @@
-# juris-calculus v2.0.0
+# juris-calculus v2.0.1
 
-Symbolic legal reasoning engine for Chinese law, with addon-based cross-jurisdiction support.
+Symbolic legal reasoning engine for Chinese law, with addon-based cross-jurisdiction support, MetaInfer-style engineering paradigm.
 
 ## Architecture
 
 ```
-  Layer 0: juris_blueprint.json (14 CN MoE domains)
-  Layer 1: Trust labels (epistemic status)
-  Layer 2: Horn clause fixpoint evaluator (2,117 CN rules)
-  Layer 3: MoE rule router + stratified evaluator
-  Layer 4: Adversarial pipeline (Reasoner/Auditor/Verifier)
-  Layer 5: Dung AAF argumentation + step verifier (EVM)
-  Layer 6: Neural leaf nodes (kill switch + cold start)
+                                  ????????????????????????????????
+                                  ?  Phase Matrix (P1-P11)      ?
+                                  ?  blueprint_contract_auditor  ?
+                                  ?  step35_spot_check           ?
+                                  ?  anti_degradation guard      ?
+                                  ????????????????????????????????
+                                  ????????????????????????????????
+                                  ?  KG Audit Loop               ?
+                                  ?  correctness / completeness  ?
+                                  ?  self_healing_loop            ?
+                                  ????????????????????????????????
+Layer 6: Neural leaf nodes (kill switch + cold start)
+Layer 5: Dung AAF argumentation + StepVerifier (EVM + binding)
+Layer 4: Adversarial pipeline (Reasoner / Auditor / Verifier)
+Layer 3: MoE rule router (YAML-backed 14 domains) + criminal complexity
+Layer 2: Horn clause fixpoint evaluator (2,117 CN rules)
+Layer 1: Trust labels (epistemic status / data origin / red lines)
+Layer 0: juris_blueprint.json (14 CN MoE domains, 5.7MB knowledge graph)
 
-  addons/             <-- optional jurisdiction plugins
-    hk/               Hong Kong SAR (Cap 26, 364 Horn rules)
-    us/               United States (UCC, 53 Title index, 266 courts, 419 federal terms)
+  addons/
+    hk/               Hong Kong SAR (Cap 26, 93+ Horn rules)
+    us/               United States (53 titles, 266 courts, 419 federal terms)
     federation/       Common-law pair-wise comparison engine
 ```
 
-## Core vs Addons
+## Engineering Paradigm (MetaInfer-inspired)
 
-The core engine is **China-law only**. All other jurisdictions are optional addons
-loaded via `plugin_registry.discover()`. No HK/US code is imported by core modules.
+| Component | Description |
+|-----------|-------------|
+| `configs/juris_phase_matrix.yaml` | L0-L6 layers + P1-P11 build phases with physical dependency chain |
+| `configs/juris_contracts.yaml` | Structured experience contracts: ref_docs/ref_code/ref_tests + pseudocode + dynamic parameters |
+| `configs/agent_collaboration_protocol.yaml` | Implementer / spec-compliance-reviewer / code-quality-reviewer / verification with strict sequencing |
+| `configs/knowledge_layers.yaml` | 4-layer legal knowledge architecture (L0 common ? L1 family ? L2 jurisdiction ? L3 deploy) |
+| `tools/phase_runner.py` | Phase gate execution with spot check replay anti-fake-PASS |
+| `tools/kg_audit_loop.py` | Dual independent correctness + completeness audit with merged findings |
+| `tools/self_healing_loop.py` | Performance regression detection ? harness diagnosis ? auto-suggest |
+| `tools/shape_checker.py` | Harness: verify core data class interfaces (LegalFact, LegalClaim, IRState, etc.) |
+| `tools/module_interface_checker.py` | Harness: verify standard methods on key classes |
+| `tools/perf_baseline.py` | 5-metric performance baseline (rules load, blueprint load, evaluator, router, collision) |
+| `tools/perf_compare.py` | Before/after comparison with regression threshold (1.2x WARN, 2x ERROR) |
+| `tools/perf_to_blueprint.py` | Feed performance patterns back into knowledge graph |
+| `tools/import_source_verifier.py` | L0 import guard: verify modules resolve to local worktree |
+| `tools/verification_replay.py` | Step 3.5: replay one PASS command, compare stdout |
 
-```python
-from compiler_core.plugin_registry import registry
-registry.discover()  # auto-scans addons/ directory
-adapter = registry.get("hk")  # None if addon not installed
+## Knowledge Graph Audit (Dual Reviewer)
+
+```text
+kg_correctness_auditor:  "Is what we said true?"  ? every ref_docs/ref_code/ref_tests must exist
+kg_completeness_auditor: "Did we say enough?"      ? every contract must have inputs, outputs, failure modes, pseudocode, dynamic params
+kg_audit_loop:           merges both, generates blueprint_repair_queue
 ```
 
-## Jurisdiction Coverage
+## Agent Collaboration Protocol
 
-| Jurisdiction | Rules | Legal Family | Status |
-|-------------|-------|-------------|--------|
-| CN (PRC) | 2,117 Horn rules, 14 MoE domains | Civil Law | Core (always loaded) |
-| HK | 364 Horn rules (Cap 26/32/33/4A/571/6/622) | Common Law | Addon |
-| US | 53 Title index + 266 courts + 419 federal terms | Common Law | Addon |
+```text
+Sequence:
+1. Implementer (spawned agent, writes code + tests + self-review)
+   ? status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED
+2. Spec Compliance Reviewer (independent PID)
+   ? reads actual diff, does NOT trust implementer report
+3. Code Quality Reviewer (independent PID, only if spec PASS)
+4. Verification (local subprocess, runs phase commands + replay)
+```
+
+## Build Phases (P1-P11)
+
+Phases ordered by physical dependency, verified by `phase_runner --all-build`:
+
+```
+P1_TYPES_TRUST           ? P2_CONFIG_RULE_PARSE ? P3_HORN_EVALUATOR ? P4_MOE_ROUTER
+                                                                   ? P5_GATES_CONSTRAINTS
+P6_STEP_VERIFIER_AAF    ? P7_ADVERSARIAL_REVIEW ? P8_MCP_OPERATION_INTERFACE
+P9_ADDON_FEDERATION       ? P10_E2E_KG_AUDIT     ? P11_PERF_PRUNE_COLDSTART
+```
+
+Each phase has immutable test scripts (anti-degradation), cross-phase regression (P3+), and auto spot check.
+
+## Anti-Degradation Mechanisms
+
+| Guard | Mechanism |
+|-------|-----------|
+| Scripts immutable | Agent modifies code, never tests |
+| Phase gate strict | Phase N fails ? cannot enter N+1 |
+| L0 import source guard | Verify modules resolve to local worktree, not external leak |
+| Step 3.5 spot check | Replay 1 random PASS command, compare stdout |
+| Cross-phase regression | P3+ rerun all prior phases |
+| E2E evidence chain | eval trace + rules timing + contract audit report |
+| Anti-hardcoded reasoning | trust_label must come from evaluator, not hardcoded |
 
 ## MCP Tools (v2.0.0 manifest)
 
@@ -48,10 +104,6 @@ adapter = registry.get("hk")  # None if addon not installed
 | `route_state` | Jurisdiction router |
 | `get_citation` | Legal citation lookup |
 | `stratified_evaluate` | 4-stage Horn + AAF pipeline |
-| `claims_detail` | Claims with trust labels |
-| `blueprint_query` | Query juris_blueprint.json |
-| `neural_status` | Cold-start status report |
-| `adversarial_audit` | Reasoner/Auditor/Verifier pipeline |
 
 ## Quick Start
 
@@ -59,25 +111,18 @@ adapter = registry.get("hk")  # None if addon not installed
 git clone https://github.com/laubeing-droid/juris-calculus.git
 cd juris-calculus
 pip install -r requirements.txt
-pytest tests/          # 43 tests
-python mcp_server.py   # MCP stdio server
+pytest tests/                    # 75+ tests
+python tools/phase_runner.py --all-build   # P1-P11 verification
+python mcp_server.py             # MCP service
 ```
 
-## Personal YAML (Multi-Lawyer Sharing)
+## Personal YAML (Multi-Lawyer Shared Algorithm)
 
-Set `JURIS_CONFIG_DIR` to point at your personal YAML library.
-Same algorithm code, different per-lawyer rule distillation.
-
-```bash
-export JURIS_CONFIG_DIR=/path/to/my-yaml
-```
-
-## Development
+Set `JURIS_CONFIG_DIR` to point at your personal YAML library. Same algorithm code, each lawyer maintains their own distilled rules.
 
 ```bash
-pytest tests/ -v              # unit + smoke tests
-python -c "import compileall; compileall.compile_dir('.')"
-python scripts/ingest_state_terms.py --list
+set JURIS_CONFIG_DIR=C:/my-rules  # Windows
+export JURIS_CONFIG_DIR=~/my-rules  # Linux/Mac
 ```
 
 ## License

@@ -1,51 +1,32 @@
-# juris-calculus v2.0.0
+﻿# juris-calculus v2.0.1
 
-中国法符号化推理引擎，支持基于 addon 插件的跨法域扩展。
+中国法符号化推理引擎，基于 addon 插件的跨法域扩展，MetaInfer 范式的工程体系。
 
 ## 架构
 
-```
-  Layer 0: juris_blueprint.json（14 个 CN MoE 领域）
-  Layer 1: 信任标签（认知状态枚举）
-  Layer 2: Horn 子句不动点评估器（2,117 条中国法规则）
-  Layer 3: MoE 规则路由 + 分层评估器
-  Layer 4: 对抗管线（推理器/审计器/验证器）
-  Layer 5: Dung AAF 论证框架 + 步骤验证器（EVM）
-  Layer 6: 神经叶子节点（Kill Switch + 冷启动保护）
+> Layer 6: 神经叶子节点（Kill Switch + 冷启动保护）
+> Layer 5: Dung AAF 论证 + StepVerifier（EVM + 人/罪名/法条绑定）
+> Layer 4: 对抗管线（Reasoner / Auditor / Verifier + 刑事复杂案件审计）
+> Layer 3: MoE 规则路由（YAML 配置 14 领域）+ 刑事复杂案件路由
+> Layer 2: Horn 子句不动点评估器（2117 条中国法规则）
+> Layer 1: 信任标签（EpistemicStatus / DataOrigin / 红线短语）
+> Layer 0: juris_blueprint.json（14 个 CN MoE 领域，5.7MB 知识图谱）
+>   addons/
+>     hk/               香港特别行政区（Cap 26，93+ Horn 规则）
+>     us/               美国（53 个 Title 索引，266 法院，419 联邦术语）
+>     federation/       普通法系配对比较引擎
 
-  addons/             <-- 可选法域插件
-    hk/               香港特别行政区（Cap 26，364 条 Horn 规则）
-    us/               美国（UCC，53 Title 索引，266 法院，419 联邦术语）
-    federation/       普通法系配对比较引擎
-```
+## MetaInfer 工程范式
 
-## 本体 vs Addons
+| 组件 | 说明 |
+|------|------|
+| configs/juris_phase_matrix.yaml | L0-L6 层 + P1-P11 构建阶段矩阵 |
+| configs/juris_contracts.yaml | 结构化经验契约：三级引用链 + 伪代码 + 动态参数 |
+| configs/agent_collaboration_protocol.yaml | 四角色物理隔离协作 |
+| configs/knowledge_layers.yaml | 四层知识架构 |
+| tools/phase_runner.py | 阶段门禁执行器，自动 step35 防假 PASS |
+| tools/kg_audit_loop.py | 知识图谱双审计 |
 
-本体引擎只含中国法。其他法域通过 `plugin_registry.discover()` 自动发现并加载。
-核心代码不含任何 HK/US 的 import。
-
-## 法域覆盖
-
-| 法域 | 规则 | 法系 | 状态 |
-|------|------|------|------|
-| CN（中国大陆） | 2,117 条 Horn 规则，14 个 MoE 领域 | 大陆法系 | 本体（始终加载） |
-| HK（香港） | 364 条 Horn 规则（Cap 26/32/33/4A/571/6/622） | 普通法系 | Addon |
-| US（美国） | 53 Title 索引 + 266 法院 + 419 联邦术语 | 普通法系 | Addon |
-
-## 快速开始
-
-```bash
-git clone https://github.com/laubeing-droid/juris-calculus.git
-cd juris-calculus
-pip install -r requirements.txt
-pytest tests/          # 43 个测试
-python mcp_server.py   # MCP 服务端
-```
-
-## 个性化 YAML（多律师共享算法）
-
-设置 `JURIS_CONFIG_DIR` 指向个人 YAML 库。同一套算法代码，不同律师各自沉淀规则。
-
-## 许可
+## 许可证
 
 MIT

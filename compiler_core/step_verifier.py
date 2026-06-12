@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Optional
 from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin
+from compiler_core.criminal_complexity import verify_actor_charge_binding
 
 
 class Verdict(str, Enum):
@@ -70,12 +71,20 @@ class StepVerifier:
             result.fact_law_relevance = Verdict.FAIL
             result.downgrade_reason = f"Confidence too low: {claim.confidence}"
 
+        if rule_context and rule_context.get("criminal_case"):
+            binding = verify_actor_charge_binding(claim, rule_context.get("criminal_case"))
+            result.audit_log.append(f"criminal_binding={binding['passed']}")
+            if not binding["passed"]:
+                result.fact_law_relevance = Verdict.DOWNGRADE
+                reason = "; ".join(binding["issues"])
+                result.downgrade_reason = (result.downgrade_reason + " | " if result.downgrade_reason else "") + reason
+
         has_fail = any(v == Verdict.FAIL for v in [
             result.knowledge_accuracy, result.fact_law_relevance,
             result.procedural_compliance, result.neural_output_compliance
         ])
         has_downgrade = any(v == Verdict.DOWNGRADE for v in [
-            result.knowledge_accuracy
+            result.knowledge_accuracy, result.fact_law_relevance
         ])
         if has_fail:
             result.overall = Verdict.FAIL
