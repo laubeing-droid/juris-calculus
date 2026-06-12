@@ -1,5 +1,18 @@
 # juris-calculus Changelog
 
+## v2.0.0 -- Addon Architecture (2026-06-12)
+
+- Plugin registry with auto-discovery (scans addons/ directory)
+- HK/US moved from core to addons/hk/ and addons/us/
+- Blueprint split: core (14 CN MoE domains) + addon-local blueprints
+- config_paths.py: all config paths parameterized via JURIS_CONFIG_DIR
+- L0 concept degradation: unmapped concepts -> UNVERIFIED
+- Federation by legal family: addons/federation/common_law.py
+- US data: 53 titles, 266 courts, 419 federal terms, 3084 state vocabulary
+- State term parser: ingest_state_terms.py + addons/us/parser.py
+- NLNI cold start: cold_start_status() in neural_leaf.py
+- 43/43 tests passing, 0 hardcoded paths remaining
+
 ## v1.2.0 — Tri-Rail (2026-06-04)
 
 ### Multi-Jurisdiction Collision Detection
