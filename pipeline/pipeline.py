@@ -376,13 +376,31 @@ def process_case(case_path: str) -> PipelineResult:
         filtered_rules = filter_rules_by_namespace(facts, text)
         if len(filtered_rules) < len(ZH_RULES):
             engine = FixpointEvaluator(filtered_rules, ZH_CONFIG)
-            engine = FixpointEvaluator(filtered_rules, ZH_CONFIG)
+
+        # ── L1 护栏：证据链验证 ──
+        try:
+            from compiler_core.evidence_chain_validator import validate_evidence_chain
+            chain_report = validate_evidence_chain(facts)
+            if chain_report.get('blocked'):
+                result.blocked_reasons.extend(chain_report['blocked'])
+        except ImportError:
+            pass
 
         halted = False
         try:
             state = engine.evaluate(state)
         except CriticalClarityFailure:
             halted = True
+
+        # ── L2 护栏：De Jure 法定审计 ──
+        try:
+            from compiler_core.de_jure_auditor import audit_claims
+            audit_report = audit_claims(state.claims, facts)
+            for finding in audit_report.get('findings', []):
+                if finding.get('severity') == 'BLOCK':
+                    result.blocked_reasons.append(finding['reason'])
+        except ImportError:
+            pass
 
         elapsed = round((time.time() - t0) * 1000, 1)
         claims = list(state.claims.values()) if state.claims else []
