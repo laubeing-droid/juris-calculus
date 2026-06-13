@@ -1,0 +1,77 @@
+# CN DDL 模态词汇映射表
+# 中文法律术语 → DDL 标准模态
+# 设计依据: Gemini 审计 — "DDL 模态跨法域通用，需要法域特定的模态映射表"
+
+version: "v2.1.0"
+jurisdiction: "CN"
+legal_family: "civil_law"
+
+# ── 义务性规范 (OBLIGATION) ──
+obligation_markers:
+  - word: "应当"
+    confidence: 0.95
+    note: "最常见义务标记，民法典/刑法/民诉均使用"
+  - word: "必须"
+    confidence: 0.95
+    note: "强制性义务，效力等同应当"
+  - word: "有义务"
+    confidence: 0.90
+    note: "显式义务声明"
+  - word: "应当知道"
+    confidence: 0.85
+    note: "推定知悉义务"
+  - word: "负责"
+    confidence: 0.80
+    note: "责任承担义务"
+
+# ── 禁止性规范 (PROHIBITION) ──
+prohibition_markers:
+  - word: "不得"
+    confidence: 0.95
+    note: "最常见禁止标记"
+  - word: "禁止"
+    confidence: 0.95
+    note: "绝对禁止"
+  - word: "不可以"
+    confidence: 0.90
+    note: "禁止性规范"
+  - word: "严禁"
+    confidence: 0.95
+    note: "绝对禁止，语义最强"
+
+# ── 许可性规范 (PERMISSION) ──
+permission_markers:
+  - word: "可以"
+    confidence: 0.90
+    note: "最常见许可标记"
+  - word: "有权"
+    confidence: 0.90
+    note: "权利赋予"
+  - word: "允许"
+    confidence: 0.85
+    note: "许可性规范"
+  - word: "依照...约定"
+    confidence: 0.80
+    note: "当事人自治许可"
+
+# ── 构成性规范 (CONSTITUTIVE) ──
+constitutive_markers:
+  - word: "属于"
+    confidence: 0.85
+    note: "分类/归属"
+  - word: "视为"
+    confidence: 0.90
+    note: "法律拟制"
+  - word: "是指"
+    confidence: 0.85
+    note: "定义性规范"
+  - word: "构成"
+    confidence: 0.85
+    note: "构成要件"
+
+# ── 普通法对标映射（参考用） ──
+common_law_equivalents:
+  OBLIGATION: ["shall", "must", "is required to"]
+  PROHIBITION: ["shall not", "must not", "may not"]
+  PERMISSION: ["may", "is entitled to", "is permitted to"]
+  CONSTITUTIVE: ["is defined as", "means", "refers to"]

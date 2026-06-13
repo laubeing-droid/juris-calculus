@@ -1,0 +1,96 @@
+metadata:
+  version: v2.1.0
+  method: keyword_match
+  total: 10
+  us_coverage: 10/99
+alignments:
+- concept_id: CONCEPT-CONSIDERATION
+  l0: Power
+  us_term: Consideration
+  us_cn: ❌ 无对应制度
+  hk_en: cash consideration
+  hk_cn: 金钱代价
+  hk_cap: 第622章，第142(2)(d)条
+  domain: corporate
+  alignment: CROSS_L0
+- concept_id: CONCEPT-DEED
+  l0: Status
+  us_term: Deed
+  us_cn: ❌ 无对应制度 — 赠与可撤销(第658条)
+  hk_en: deed of settlement
+  hk_cn: 组织安排契据
+  hk_cap: 第622章，第806条
+  domain: corporate
+  alignment: CROSS_L0
+- concept_id: CONCEPT-TRUST
+  l0: Asset
+  us_term: Trust
+  us_cn: 信托 — 功能对应
+  hk_en: trust money
+  hk_cn: 信讬金钱
+  hk_cap: 第38章，第15(b)条
+  domain: corporate
+  alignment: ALIGNED
+- concept_id: CONCEPT-DISCOVERY
+  l0: Act
+  us_term: Discovery
+  us_cn: 证据交换
+  hk_en: discovery of documents
+  hk_cn: 透露文件
+  hk_cap: 第609章，第56(1)(b)条
+  domain: procedure
+  alignment: ALIGNED
+- concept_id: CONCEPT-JURY_TRIAL
+  l0: Power
+  us_term: Jury_Trial
+  us_cn: 人民陪审员
+  hk_en: at a trial by and before a judge and jury
+  hk_cn: 在法官会同陪审团主持的审讯中以及在法官会同陪审团席前进行的审讯中
+  hk_cap: 第8章，第4A(1)条
+  domain: procedure
+  alignment: CROSS_L0
+- concept_id: CONCEPT-HEARSAY_EVIDENCE
+  l0: Defect
+  us_term: Hearsay_Evidence
+  us_cn: ❌ 无对应制度
+  hk_en: hearsay evidence
+  hk_cn: 传闻证据
+  hk_cap: 第8章，第46条
+  domain: procedure
+  alignment: CROSS_L0
+- concept_id: CONCEPT-FIDUCIARY_DUTY
+  l0: Power
+  us_term: Fiduciary_Duty
+  us_cn: 忠实义务 + 勤勉义务
+  hk_en: fiduciary duty
+  hk_cn: 受信责任
+  hk_cap: 第571章，第52(2)条
+  domain: corporate
+  alignment: CROSS_L0
+- concept_id: CONCEPT-VIE_STRUCTURE
+  l0: Power
+  us_term: VIE_Structure
+  us_cn: 协议控制 — 外商投资负面清单
+  hk_en: outcome related fee structure
+  hk_cn: 与结果有关的收费架构
+  hk_cap: 第609章，第98ZA条
+  domain: procedure
+  alignment: CROSS_L0
+- concept_id: CONCEPT-MORTGAGE
+  l0: Power
+  us_term: Mortgage
+  us_cn: 抵押权
+  hk_en: foreclosure or redemption of a mortgage
+  hk_cn: 止赎或赎回按揭
+  hk_cap: 第336章，第37(1)(c)条
+  domain: procedure
+  alignment: CROSS_L0
+- concept_id: CONCEPT-JURY_TRIAL
+  l0: Agent
+  us_term: Jury Trial
+  us_cn: 人民陪审员
+  hk_en: at a trial by and before a judge and jury
+  hk_cn: 在法官会同陪审团主持的审讯中以及在法官会同陪审团席前进行的审讯中
+  hk_cap: 第8章，第4A(1)条
+  domain: procedure
+  alignment: ALIGNED

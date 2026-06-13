@@ -1,0 +1,157 @@
+# US→HK Blocking Rules
+# US concepts that are BLOCKED or significantly different in Hong Kong law
+# These rules fire BEFORE any mapping attempt — same priority as CN CBL blocking
+#
+# Design: Gemini audit — "转换层必须通过阻断规则拦截无法平移到普通法的逻辑断层"
+
+version: "v2.1.0"
+strategy: US-HK-Mandatory-Interdiction
+total_rules: 12
+
+rules:
+
+# ═══════════════════════════════════════════
+# 绝对阻断 — US 概念在 HK 法下完全不存在
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-001-AtWillEmployment
+  trigger_fact: At_Will_Employment
+  description: "US at-will employment does not exist in HK. HK has statutory protection under Employment Ordinance (Cap 57)."
+  target_primitive: Status
+  action:
+    type: FORCE_VOID
+    map_to: EmploymentContract_StatutoryProtection
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 57 雇佣条例 — 不存在任意雇佣制度
+
+- id: HK-BLK-002-PunitiveDamages
+  trigger_fact: Punitive_Damages_Claimed
+  description: "Punitive damages are generally NOT available in HK civil litigation. Only compensatory damages."
+  target_primitive: Asset
+  action:
+    type: FORCE_SUPPRESS
+    map_to: Compensatory_Damages_Only
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: HK普通法 — 民事案件不支持惩罚性赔偿（Rookes v Barnard 例外极窄）
+
+- id: HK-BLK-003-MirandaRights
+  trigger_fact: Miranda_Rights
+  description: "Miranda rights are US-specific (5th Amendment). HK has different caution rules under PACE."
+  target_primitive: Power
+  action:
+    type: FORCE_VOID
+    map_to: HK_Caution_Rules
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 221 证据条例 — 不同的警告规则
+
+- id: HK-BLK-004-ClassAction
+  trigger_fact: US_Class_Action
+  description: "US-style class action does not exist in HK. HK has representative proceedings under RHC O.15 r.12."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Representative_Proceedings
+    status: MAPPED_TO_HK_EQUIVALENT
+  additional_conditions: []
+  legal_basis: 高等法院规则 O.15 r.12 代表诉讼
+
+- id: HK-BLK-005-Discovery_USStyle
+  trigger_fact: US_Broad_Discovery
+  description: "US broad discovery (FRCP Rule 26) has no HK equivalent. HK has much more limited disclosure."
+  target_primitive: Act
+  action:
+    type: FORCE_SUPPRESS
+    map_to: HK_Limited_Disclosure
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: 高等法院规则 O.24 — 有限度的文件透露
+
+# ═══════════════════════════════════════════
+# 条件阻断 — US 概念在 HK 法下部分存在或有限制
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-006-StatuteOfFrauds
+  trigger_fact: Statute_of_Frauds_Defence
+  description: "US Statute of Frauds (UCC §2-201) differs from HK. HK Cap 26 s.5 has different requirements."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_S5_WritingRequirement
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions:
+  - Cross_Border_Context
+  legal_basis: Cap 26 s.5 售卖合约的订立方式
+
+- id: HK-BLK-007-ChevronDeference
+  trigger_fact: Chevron_Deference
+  description: "Chevron deference is US administrative law doctrine. HK has no equivalent — courts exercise full judicial review."
+  target_primitive: Power
+  action:
+    type: FORCE_VOID
+    map_to: HK_Full_Judicial_Review
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 4 高等法院条例 — 完整司法审查权
+
+- id: HK-BLK-008-SovereignImmunity
+  trigger_fact: Sovereign_Immunity
+  description: "US sovereign immunity doctrine differs from HK. HK has State Immunity Ordinance (Cap 399)."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_State_Immunity_Act
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 399 国家豁免条例
+
+- id: HK-BLK-009-ArbitrationPunitiveDamages
+  trigger_fact: Arbitral_Punitive_Damages
+  description: "HK arbitrators generally cannot award punitive damages unless parties expressly agree."
+  target_primitive: Asset
+  action:
+    type: FORCE_SUPPRESS
+    map_to: Compensatory_Damages_Only
+    status: BLOCKED
+  additional_conditions:
+  - Arbitration_Agreement_Exists
+  legal_basis: Cap 609 仲裁条例 — 补偿性赔偿原则
+
+# ═══════════════════════════════════════════
+# 概念改造 — US 概念在 HK 法下有不同含义
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-010-ConsiderationDifference
+  trigger_fact: Consideration_Provided
+  description: "US/HK both have consideration but HK follows UK common law (more formal). CN has no equivalent."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Valuable_Consideration
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  note: "HK requires 'valuable consideration' (有值代价), similar to US but with UK case law interpretation"
+
+- id: HK-BLK-011-PromissoryEstoppelLimited
+  trigger_fact: Promissory_Estoppel
+  description: "HK has estoppel but application is narrower than US promissory estoppel (Central London Property v High Trees)."
+  target_primitive: Defect
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Equitable_Estoppel
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: HK普通法 — 不容反悔原则
+
+- id: HK-BLK-012-FruitOfPoisonousTree
+  trigger_fact: Fruit_Of_Poisonous_Tree
+  description: "US exclusionary rule (fruit of poisonous tree) does not strictly apply in HK. HK courts have discretion."
+  target_primitive: Status
+  action:
+    type: FORCE_VOID
+    map_to: HK_Judicial_Discretion_Exclusion
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 221 证据条例 — 法官裁量权
