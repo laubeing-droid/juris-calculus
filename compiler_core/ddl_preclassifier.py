@@ -4,6 +4,26 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
+# Path to confirmed modalities from LLM batch validation
+_CONFIRMED_MODALITIES_PATH = "neural/registry/ddl_confirmed_modalities.json"
+_CONFIRMED: Dict[str, Any] = {}
+try:
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent.parent / _CONFIRMED_MODALITIES_PATH
+    if p.exists():
+        _CONFIRMED = json.loads(p.read_text(encoding="utf-8"))
+except Exception:
+    pass
+
+def _get_confirmed(rule_id: str) -> "NormModality | None":
+    from compiler_core.types import NormModality
+    entry = _CONFIRMED.get(rule_id)
+    if entry and "modality" in entry:
+            return NormModality(entry["modality"])
+    return None
+
+
 from compiler_core.types import NormModality
 
 
@@ -37,6 +57,11 @@ class DDLPreclassResult:
 
 
 def preclassify_rule(rule: Dict[str, Any]) -> DDLPreclassResult:
+    rid = str(rule.get("id", ""))
+    confirmed = _get_confirmed(rid)
+    if confirmed:
+        return DDLPreclassResult(rule_id=rid, modality=confirmed, confidence=0.90, reason="confirmed via LLM batch validation")
+
     head = str(rule.get("head_claim", ""))
     premises = [str(p) for p in rule.get("premise_atoms", []) or []]
     concepts = [str(c) for c in rule.get("concepts", []) or []]
