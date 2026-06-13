@@ -93,3 +93,29 @@ class StepVerifier:
 
         self.results.append(result)
         return result
+
+    def verify_neural_output(self, neural_result, registry=None) -> StepVerificationResult:
+        """Verify a neural leaf result before it can influence any pipeline state."""
+        result = StepVerificationResult(claim_id=getattr(neural_result, "node_id", str(neural_result)))
+        if registry is not None:
+            valid, errors = registry.validate_result(neural_result)
+        elif hasattr(neural_result, "validate"):
+            valid, errors = neural_result.validate()
+        else:
+            valid, errors = False, ["NEURAL_RESULT_VALIDATE_MISSING"]
+
+        result.audit_log.extend(errors)
+        if not valid:
+            result.neural_output_compliance = Verdict.FAIL
+            result.overall = Verdict.FAIL
+            result.downgrade_reason = "; ".join(errors)
+        elif not getattr(neural_result, "requires_symbolic_verification", True):
+            result.neural_output_compliance = Verdict.FAIL
+            result.overall = Verdict.FAIL
+            result.downgrade_reason = "SYMBOLIC_VERIFICATION_REQUIRED"
+        else:
+            result.neural_output_compliance = Verdict.PASS
+            result.audit_log.append("neural_output_guardrails=PASS")
+
+        self.results.append(result)
+        return result
