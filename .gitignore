@@ -66,3 +66,4 @@ reports/parallax_detail_v1.1.0.json
 !configs/prc_us_alignment/long_tail_collision_matrix.json
 !configs/prc_us_alignment/trirail_matrix_report.json
 !mcp_manifest.json
+.hatch-pet-runs/
