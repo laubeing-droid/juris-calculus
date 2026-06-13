@@ -195,9 +195,31 @@ class FixpointEvaluator:
         return None
 
     def _apply_rule(self, rule: LegalRule, state: IRState, depth: int) -> Optional[LegalClaim]:
-        """Apply a single rule: check premises → check exceptions → score → produce claim."""
+        """Apply a single rule: modal gate → check premises → check exceptions → score → produce claim."""
+        # ── DDL modal gate ──
+        modality = getattr(rule, 'norm_modality', None)
+        if modality:
+            modality = str(modality) if not isinstance(modality, str) else modality
         satisfied, missing = self._check_premises(rule, state)
+
         if not satisfied:
+            # OBLIGATION rules: missing premises = legal gap → flag as Negative Spec
+            if modality == 'OBLIGATION':
+                self.audit_log.append(ProofEvent(
+                    event_type="OBLIGATION_GAP",
+                    rule_id=rule.id,
+                    claim_id=rule.head_claim,
+                    premises=list(rule.premise_atoms),
+                    missing_premises=missing,
+                    source_anchor=getattr(rule, "source_anchor", ""),
+                ).to_dict())
+                state.negative_specs.append({
+                    "rule_id": rule.id,
+                    "head_claim": rule.head_claim,
+                    "missing": list(missing),
+                    "reason": "obligation rule missing mandatory premises"
+                })
+
             self.audit_log.append(ProofEvent(
                 event_type="RULE_SKIPPED_MISSING_PREMISES",
                 rule_id=rule.id,
@@ -206,6 +228,18 @@ class FixpointEvaluator:
                 missing_premises=missing,
                 source_anchor=getattr(rule, "source_anchor", ""),
             ).to_dict())
+            return None
+
+        # PROHIBITION rules: if premises satisfied, block the conclusion chain
+        if modality == 'PROHIBITION' and satisfied:
+            self.audit_log.append(ProofEvent(
+                event_type="PROHIBITION_BLOCK",
+                rule_id=rule.id,
+                claim_id=rule.head_claim,
+                premises=list(rule.premise_atoms),
+                source_anchor=getattr(rule, "source_anchor", ""),
+            ).to_dict())
+            state.blocked_claims.add(rule.head_claim)
             return None
 
         # Exception chain penetration: if exception triggered, recurse into it
@@ -501,6 +535,9 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             attacks=r.get('attacks', []),
             priority_over=r.get('priority_over', []),
             source_anchor=r.get('source_anchor', ''),
+            norm_modality=r.get('norm_modality', 'UNKNOWN'),
+            modality_confidence=r.get('modality_confidence', 0.0),
+            modality_source=r.get('modality_source', ''),
             valid_from=str(r.get('valid_from', '') or ''),
             valid_to=str(r.get('valid_to', '') or ''),
             jurisdiction=str(r.get('jurisdiction', '') or ''),

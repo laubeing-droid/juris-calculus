@@ -87,6 +87,8 @@ class LegalRule:
     attacks: List[str] = field(default_factory=list)
     priority_over: List[str] = field(default_factory=list)
     norm_modality: str = "UNKNOWN"
+    modality_confidence: float = 0.0
+    modality_source: str = ""
     violation_consequence: str = ""
     reparation_chain_pool: list = field(default_factory=list)
     source_anchor: str = ""
@@ -108,6 +110,8 @@ class IRState:
     rebuttal_log: list = field(default_factory=list)
     jurisdiction: str = ""
     state_tracker: dict = field(default_factory=lambda: {"Contract_Validity": "VALID"})
+    negative_specs: list = field(default_factory=list)
+    blocked_claims: set = field(default_factory=set)
 
 class NormModality(str, Enum):
     """DDL norm modality: obligation, prohibition, permission, constitutive."""
