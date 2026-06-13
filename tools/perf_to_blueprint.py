@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
 PATTERNS_PATH = "configs/perf_patterns.yaml"
 
 
-def extract_patterns(baseline_path: str) -> Dict[str, Any]:
+def extract_patterns(baseline_path: str, out_path: str | Path | None = None) -> Dict[str, Any]:
     baseline = json.loads(Path(baseline_path).read_text(encoding="utf-8"))
     trace = baseline.get("trace", baseline)
     metrics = trace.get("metrics", {}) or baseline.get("metrics", {})
@@ -110,7 +110,10 @@ def extract_patterns(baseline_path: str) -> Dict[str, Any]:
         "patterns": patterns,
     }
 
-    out_path = ROOT / PATTERNS_PATH
+    out_path = Path(out_path) if out_path else ROOT / PATTERNS_PATH
+    if not out_path.is_absolute():
+        out_path = ROOT / out_path
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(yaml.dump(patterns_doc, allow_unicode=True), encoding="utf-8")
 
     return {"status": "PASS", "patterns_path": str(out_path), "pattern_count": len(patterns)}
@@ -120,8 +123,9 @@ def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Extract performance patterns from baseline and feed back into knowledge graph.")
     parser.add_argument("--baseline", required=True, help="Path to a perf_baseline JSON report")
+    parser.add_argument("--out", help="Output YAML path. Defaults to configs/perf_patterns.yaml")
     args = parser.parse_args(argv)
-    report = extract_patterns(args.baseline)
+    report = extract_patterns(args.baseline, args.out)
     print(f"status={report['status']} patterns={report['pattern_count']} path={report['patterns_path']}")
     return 0 if report["status"] == "PASS" else 1
 

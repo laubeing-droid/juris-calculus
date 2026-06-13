@@ -17,6 +17,8 @@ import logging
 
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
+from compiler_core.proof_trace import ProofEvent, make_trace_id
+from compiler_core.trust_labels import DataOrigin, EpistemicStatus, RuleMaturity, TrustLabel
 from enum import Enum
 
 
@@ -129,6 +131,14 @@ class FixpointEvaluator:
         self.constraint_validator = ConstraintValidator(overrides_path=overrides_path)
         self.audit_log: List[dict] = []
 
+    def _record_event(self, event_type: str, rule_id: str = "", claim_id: str = "", **metadata) -> None:
+        self.audit_log.append(ProofEvent(
+            event_type=event_type,
+            rule_id=rule_id,
+            claim_id=claim_id,
+            metadata=metadata,
+        ).to_dict())
+
     def _compute_depth(self, rule_id: str, visited: set = None) -> int:
         """Recursive depth in exception chain, with cycle detection."""
         if visited is None and rule_id in self._depth_cache:
@@ -186,13 +196,30 @@ class FixpointEvaluator:
 
     def _apply_rule(self, rule: LegalRule, state: IRState, depth: int) -> Optional[LegalClaim]:
         """Apply a single rule: check premises → check exceptions → score → produce claim."""
-        satisfied, _ = self._check_premises(rule, state)
+        satisfied, missing = self._check_premises(rule, state)
         if not satisfied:
+            self.audit_log.append(ProofEvent(
+                event_type="RULE_SKIPPED_MISSING_PREMISES",
+                rule_id=rule.id,
+                claim_id=rule.head_claim,
+                premises=list(rule.premise_atoms),
+                missing_premises=missing,
+                source_anchor=getattr(rule, "source_anchor", ""),
+            ).to_dict())
             return None
 
         # Exception chain penetration: if exception triggered, recurse into it
         triggered_exception = self._check_exceptions(rule, state)
         if triggered_exception:
+            self.audit_log.append(ProofEvent(
+                event_type="RULE_EXCEPTION_TRIGGERED",
+                rule_id=rule.id,
+                claim_id=rule.head_claim,
+                premises=list(rule.premise_atoms),
+                exceptions=list(rule.exception_chain),
+                triggered_exception=triggered_exception,
+                source_anchor=getattr(rule, "source_anchor", ""),
+            ).to_dict())
             exception_rule = self.rules.get(triggered_exception)
             if exception_rule:
                 return self._apply_rule(exception_rule, state, depth + 1)
@@ -213,18 +240,43 @@ class FixpointEvaluator:
         # v1.1 Traceability: resolve L2→L1→L0 chain
         domain_origin = getattr(rule, 'namespace', 'general')
         l0_source = self.constraint_validator.resolve_L0_primitive(rule.concepts) if self.constraint_validator.loaded else ''
+        trace_id = make_trace_id(state.world_id, rule.id, rule.head_claim)
+        proof_event = ProofEvent(
+            event_type="RULE_APPLIED",
+            rule_id=rule.id,
+            claim_id=rule.head_claim,
+            premises=list(rule.premise_atoms),
+            exceptions=list(rule.exception_chain),
+            confidence=score,
+            source_anchor=getattr(rule, "source_anchor", ""),
+            metadata={
+                "depth": depth,
+                "unregistered_concepts": list(unregistered),
+                "domain_origin": domain_origin,
+                "l0_source": l0_source,
+            },
+        )
 
         return LegalClaim(
             id=rule.head_claim,
             description=f"{rule.id}: {rule.head_claim}",
             confidence=score,
+            epistemic_status=EpistemicStatus(
+                trust_label=TrustLabel.ENGINEERING_BASELINE,
+                rule_maturity=RuleMaturity.L2_TESTED,
+                data_origin=DataOrigin.SYMBOLIC_ENGINE,
+                verification_artifacts=[trace_id],
+            ),
             taint_chain=taint_nodes,
             requires_human_review=(
                 score < self.config.taint_threshold or
                 score < self.config.hard_audit_threshold
             ),
+            execution_trace_id=trace_id,
             domain_origin=domain_origin,
-            L0_primitive_source=l0_source
+            L0_primitive_source=l0_source,
+            proof_trace=[proof_event.to_dict()],
+            source_anchor=getattr(rule, "source_anchor", ""),
         )
 
     def evaluate(self, state: IRState) -> IRState:
@@ -261,9 +313,13 @@ class FixpointEvaluator:
                         state.state_tracker[target] = new_st
                         if fr.get("irreversible"):
                             state.state_tracker[f"{target}_irreversible"] = True
+                        self._record_event("FORCED_STATE_APPLIED", rule_id=fr.get("id", ""), claim_id=target,
+                                           action=action, new_state=new_st, pre_iteration=True)
                         logger.info(f"[FORCED-PRE] {fr['id']}: {target} → {new_st}")
                     elif action == "suppress_power" and target:
                         state.state_tracker[target] = "SUPPRESSED"
+                        self._record_event("POWER_SUPPRESSED", rule_id=fr.get("id", ""), claim_id=target,
+                                           action=action, pre_iteration=True)
                         logger.info(f"[FORCED-PRE] {fr['id']}: {target} → SUPPRESSED")
 
             # Reverse-index lookup: which rules care about our current facts/claims?
@@ -285,7 +341,13 @@ class FixpointEvaluator:
                     for premise in rule.premise_atoms:
                         l0 = self.l0_map.get(premise, '?')
                         if l0 == '?':
-                            claim.epistemic_status = 'UNVERIFIED'
+                            claim.epistemic_status = EpistemicStatus(
+                                trust_label=TrustLabel.UNVERIFIED,
+                                rule_maturity=RuleMaturity.DRAFT,
+                                data_origin=DataOrigin.SYMBOLIC_ENGINE,
+                                verification_artifacts=[claim.execution_trace_id],
+                                limitations=[f"Missing L0 mapping for premise {premise}"],
+                            )
                             break
 
                 # ═══ 约束层钩子：Rebuttal Check + Unknown Concept Warning ═══
@@ -303,6 +365,10 @@ class FixpointEvaluator:
                     )
                     if rebuttal.triggered:
                         claim.confidence = 0.0
+                        self._record_event("RULE_REBUTTED", rule_id=rule.id, claim_id=claim.id,
+                                           trigger_fact=rebuttal.trigger_fact,
+                                           confidence_before=confidence_before,
+                                           confidence_after=claim.confidence)
                         state.rebuttal_log.append(
                             self.constraint_validator.to_audit_json(
                                 rebuttal, rule_id=rule.id, confidence_before=confidence_before
@@ -362,6 +428,7 @@ class FixpointEvaluator:
                 if claim.id not in state.claims:
                     state.claims[claim.id] = claim
                     state.rules_applied.add(rule_id)
+                    self.audit_log.extend(claim.proof_trace)
                     new_claims_this_round += 1
 
             if new_claims_this_round == 0:
@@ -431,5 +498,12 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             exception_chain=r.get('exception_chain', []),
             head_type=r.get('head_type', 'HORN'),
             mechanical_exception=r.get('mechanical_exception', True),
+            attacks=r.get('attacks', []),
+            priority_over=r.get('priority_over', []),
+            source_anchor=r.get('source_anchor', ''),
+            valid_from=str(r.get('valid_from', '') or ''),
+            valid_to=str(r.get('valid_to', '') or ''),
+            jurisdiction=str(r.get('jurisdiction', '') or ''),
+            authority_rank=str(r.get('authority_rank', '') or ''),
         ))
     return rules

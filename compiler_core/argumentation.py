@@ -1,5 +1,5 @@
 ﻿"""v2.0 Dung AAF grounded extension for Layer 5."""
-from typing import List, Dict, Set, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 def grounded_extension(claims, attacks, max_iter=100):
     cids = {c["id"] for c in claims}
@@ -30,3 +30,30 @@ def grounded_extension(claims, attacks, max_iter=100):
 
     rejected = cids - accepted
     return {"accepted": sorted(accepted), "rejected": sorted(rejected), "iterations": _ + 1}
+
+
+def build_attack_edges_from_rules(rules: Iterable) -> List[Tuple[str, str]]:
+    """Build attack edges from explicit rule metadata."""
+    edges: Set[Tuple[str, str]] = set()
+    rules = list(rules)
+    claim_by_rule_id = {
+        getattr(rule, "id", ""): getattr(rule, "head_claim", "")
+        for rule in rules
+        if getattr(rule, "head_claim", "")
+    }
+    claim_ids = set(claim_by_rule_id.values())
+
+    for rule in rules:
+        source_claim = getattr(rule, "head_claim", "")
+        if not source_claim:
+            continue
+        for target in getattr(rule, "attacks", []) or []:
+            target_claim = claim_by_rule_id.get(target, target)
+            if target_claim in claim_ids and target_claim != source_claim:
+                edges.add((source_claim, target_claim))
+        for target in getattr(rule, "priority_over", []) or []:
+            target_claim = claim_by_rule_id.get(target, target)
+            if target_claim in claim_ids and target_claim != source_claim:
+                edges.add((source_claim, target_claim))
+
+    return sorted(edges)

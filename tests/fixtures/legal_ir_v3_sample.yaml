@@ -1,0 +1,21 @@
+rules:
+  - rule_id: IR_CONTRACT_1
+    rule_type: horn
+    validity:
+      jurisdiction: PRC
+      valid_from: "2021-01-01"
+    source:
+      authority_id: "civil_code_577#abc"
+      source_span: "Article 577"
+    variables:
+      - name: debtor
+        type: LegalPerson
+    conditions:
+      all:
+        - predicate: Contract_Exists
+        - predicate: Payment_Missing
+    conclusion:
+      predicate: Breach_Established
+    exceptions: []
+    priority:
+      authority_rank: statute

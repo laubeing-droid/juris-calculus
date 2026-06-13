@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 """juris-calculus 类型定义"""
 from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Optional, Tuple, Any
 from typing import TYPE_CHECKING
 from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin, RuleMaturity
 from enum import Enum
@@ -53,6 +53,8 @@ class LegalClaim:
     # V6: 扩展
     claim_type: str = ""  # HORN_CLAIM / DISCRETIONARY / REQUIRES_REVIEW
     execution_trace_id: str = ""
+    proof_trace: List[Dict[str, Any]] = field(default_factory=list)
+    source_anchor: str = ""
     domain_origin: str = ""  # v1.1: 来自哪个 L2 领域 (contract/corporate/tort...)
     L0_primitive_source: str = ""  # v1.1: 映射到哪个 L0 原语
     def get_trust_label(self) -> str:
@@ -82,6 +84,13 @@ class LegalRule:
     head_claim: str = ""; exception_chain: List[str] = field(default_factory=list)
     concepts: List[str] = field(default_factory=list)
     mechanical_exception: bool = True; head_type: str = "HORN"
+    attacks: List[str] = field(default_factory=list)
+    priority_over: List[str] = field(default_factory=list)
+    source_anchor: str = ""
+    valid_from: str = ""
+    valid_to: str = ""
+    jurisdiction: str = ""
+    authority_rank: str = ""
 
 
 @dataclass

@@ -17,5 +17,10 @@ jobs:
         run: python -m pytest tests/test_conflict_case.py -q
       - name: Compile check
         run: python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+      - name: P0-P2 guardrails
+        run: |
+          python tools/relevance_sensitivity_runner.py tests/relevance_sensitivity
+          python tools/neural_contract_auditor.py
+          python tools/rule_quality_auditor.py tests/relevance_sensitivity/contract_basics.yaml
       - name: Phase matrix verification
         run: python tools/phase_runner.py --phase L6 --report-dir reports/phase_report_ci

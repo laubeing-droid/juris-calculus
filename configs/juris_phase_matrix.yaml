@@ -171,7 +171,7 @@ build_phases:
     rules_path, blueprint_path; import yaml, json; yaml.safe_load(open(rules_path('zh_CN'),encoding='utf-8').read());
     print(f'rules_load_sec={time.time()-t0:.3f}')"
   - python tools/perf_baseline.py --out-dir reports/perf
-  - python tools/perf_to_blueprint.py --baseline reports/perf/baseline1.json
+  - python tools/perf_to_blueprint.py --baseline reports/perf/baseline1.json --out reports/perf/perf_patterns_ci.yaml
   - python tools/shape_checker.py
   - python tools/module_interface_checker.py
   - python tools/self_healing_loop.py --baseline reports/perf/baseline1.json --out-dir
@@ -255,6 +255,9 @@ phases:
   commands:
   - python -m pytest tests -q
   - python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+  - python tools/relevance_sensitivity_runner.py tests/relevance_sensitivity
+  - python tools/neural_contract_auditor.py
+  - python tools/rule_quality_auditor.py tests/relevance_sensitivity/contract_basics.yaml
   id: L6
   layer: neural_guarded
   name: Neural leaves and full regression

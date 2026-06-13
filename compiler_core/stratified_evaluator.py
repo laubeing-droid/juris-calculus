@@ -8,7 +8,7 @@ Stage 4: Trust label projection onto output claims
 """
 from typing import List, Dict, Optional
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.argumentation import grounded_extension
+from compiler_core.argumentation import build_attack_edges_from_rules, grounded_extension
 from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin, RuleMaturity
 from compiler_core.domain_config import DomainConfig
 from compiler_core.types import LegalDomain, LegalClaim
@@ -44,12 +44,12 @@ class StratifiedEvaluator:
         if not raw_claims:
             return []
 
-        attacks = []
+        attacks = build_attack_edges_from_rules(self.rules)
         for i, c1 in enumerate(raw_claims):
             for j, c2 in enumerate(raw_claims):
                 if i != j and c1.id != c2.id:
                     for note in getattr(c1, 'exception_notes', []):
-                        if c2.id in note:
+                        if c2.id in note and (c1.id, c2.id) not in attacks:
                             attacks.append((c1.id, c2.id))
 
         ge_result = grounded_extension(

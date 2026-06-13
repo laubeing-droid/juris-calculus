@@ -1,0 +1,14 @@
+version: 1
+model_id: sample-domain-router
+model_version: 0.0.0
+training_data_version: synthetic-fixture-v1
+task: domain_router_rerank
+allowed_outputs:
+  - rank
+  - score
+evaluation_metrics:
+  - Macro-F1
+  - Recall@K
+limitations:
+  - Synthetic fixture only; not approved for legal decisions.
+promotion_status: SHADOW_ONLY
