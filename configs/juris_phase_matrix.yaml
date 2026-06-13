@@ -1,20 +1,20 @@
 anti_degradation:
   anti_hardcoded_reasoning:
-    description: 禁止硬编码文本冒充真实推理输出。trust_label 必须来自 evaluator 实际运行。
+    description: 绂佹纭紪鐮佹枃鏈啋鍏呯湡瀹炴帹鐞嗚緭鍑恒€倀rust_label 蹇呴』鏉ヨ嚜 evaluator 瀹為檯杩愯銆?
     enforced: true
   cross_phase_regression:
-    description: P3 开始的 verification 必须重跑前序 Phase。任一回滚 → 打回。
+    description: P3 寮€濮嬬殑 verification 蹇呴』閲嶈窇鍓嶅簭 Phase銆備换涓€鍥炴粴 鈫?鎵撳洖銆?
     enforced: true
     start_from: P3_HORN_EVALUATOR
   e2e_evidence_chain:
-    description: P10 验收输出必须附带评估 trace 和性能探针记录。
+    description: P10 楠屾敹杈撳嚭蹇呴』闄勫甫璇勪及 trace 鍜屾€ц兘鎺㈤拡璁板綍銆?
     enforced: true
     required_artifacts:
     - evaluation_trace
     - rules_load_timing
     - blueprint_contract_audit_report
   l0_import_source_guard:
-    description: 运行测试前验证 import 源路径来自本地目录而非外部泄漏。
+    description: 杩愯娴嬭瘯鍓嶉獙璇?import 婧愯矾寰勬潵鑷湰鍦扮洰褰曡€岄潪澶栭儴娉勬紡銆?
     enforced: true
     expected_root: auto-detect from tool
     guard_modules:
@@ -23,16 +23,16 @@ anti_degradation:
     - legalos_services
     - legal_gates
   phase_gate_strict:
-    description: 每个 Phase 的全部命令必须 PASS 后才能进入下一 Phase。禁止跳过。
+    description: 姣忎釜 Phase 鐨勫叏閮ㄥ懡浠ゅ繀椤?PASS 鍚庢墠鑳借繘鍏ヤ笅涓€ Phase銆傜姝㈣烦杩囥€?
     enforced: true
   scripts_immutable:
-    description: 测试脚本是先验知识，Agent 无权修改。测试不过 → 改代码，不降测试。
+    description: 娴嬭瘯鑴氭湰鏄厛楠岀煡璇嗭紝Agent 鏃犳潈淇敼銆傛祴璇曚笉杩?鈫?鏀逛唬鐮侊紝涓嶉檷娴嬭瘯銆?
     enforced: true
     test_dirs:
     - tests/
     - tools/
   step35_spot_check:
-    description: verification PASS 后主 Agent 抽 1 条命令重跑，比对 stdout。不一致 → 作废。
+    description: verification PASS 鍚庝富 Agent 鎶?1 鏉″懡浠ら噸璺戯紝姣斿 stdout銆備笉涓€鑷?鈫?浣滃簾銆?
     enforced: true
 build_phases:
 - blueprint_contracts:
@@ -263,6 +263,10 @@ phases:
   - python tools/rule_to_ir_migrator.py configs/hk/rules.yaml --jurisdiction hk --limit 3 --allow-findings --out reports/typed_ir_smoke/hk.ir.yaml
   - python tools/rule_to_ir_migrator.py configs/en_US/US_Adapter.yaml --jurisdiction us --limit 3 --allow-findings --out reports/typed_ir_smoke/us_adapter.ir.yaml
   - python tools/llm_batch_contract.py create CI_SMOKE --root reports/llm_batch_smoke --task rule_extraction --task source_span_alignment
+  - python tools/dacl_graph_runner.py tests/fixtures/rule_migration_sample.yaml
+  - python tools/relevance_dataset_builder.py validate tests/relevance_sensitivity
+  - python tools/semantic_compile_batch.py tests/fixtures/ci_requests.jsonl
+  - python tools/promotion_gate.py tests/fixtures/ci_promotion_candidate.json --source-anchor PASS --type-check PASS --relevance PASS --smt PASS --shadow PASS --neural-contract PASS --promotion-policy PASS
   id: L6
   layer: neural_guarded
   name: Neural leaves and full regression

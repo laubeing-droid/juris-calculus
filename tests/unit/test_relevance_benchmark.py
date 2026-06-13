@@ -26,6 +26,7 @@ def test_validate_existing_fixtures_passes():
 def test_validate_empty_directory_warns(tmp_path):
     report = validate_dataset(str(tmp_path))
     assert report["case_count"] == 0
+    assert report["fixture_count"] == 0
     assert not any(f["issue"].startswith("UNKNOWN_") for f in report["findings"])
 
 

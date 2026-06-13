@@ -1,4 +1,4 @@
-﻿name: Python Tests
+name: Python Tests
 on: [push, pull_request]
 jobs:
   test:
@@ -29,5 +29,11 @@ jobs:
           python tools/rule_to_ir_migrator.py configs/hk/rules.yaml --jurisdiction hk --limit 3 --allow-findings --out reports/typed_ir_smoke/hk.ir.yaml
           python tools/rule_to_ir_migrator.py configs/en_US/US_Adapter.yaml --jurisdiction us --limit 3 --allow-findings --out reports/typed_ir_smoke/us_adapter.ir.yaml
           python tools/llm_batch_contract.py create CI_SMOKE --root reports/llm_batch_smoke --task rule_extraction --task source_span_alignment
+      - name: Sprint 2-6 smoke
+        run: |
+          python tools/dacl_graph_runner.py tests/fixtures/rule_migration_sample.yaml
+          python tools/relevance_dataset_builder.py validate tests/relevance_sensitivity
+          python tools/semantic_compile_batch.py tests/fixtures/ci_requests.jsonl
+          python tools/promotion_gate.py tests/fixtures/ci_promotion_candidate.json --source-anchor PASS --type-check PASS --relevance PASS --smt PASS --shadow PASS --neural-contract PASS --promotion-policy PASS
       - name: Phase matrix verification
         run: python tools/phase_runner.py --phase L6 --report-dir reports/phase_report_ci

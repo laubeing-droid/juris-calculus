@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
@@ -41,6 +41,7 @@ def test_compile_batch_with_mock_provider(tmp_path):
     assert report["passed_count"] == 1
     out_data = [json.loads(line) for line in out_path.read_text(encoding="utf-8").splitlines()]
     assert out_data[0]["model"]["provider"] == "mock"
+    assert out_data[0]["status"] == "candidate"
 
 
 def test_compile_batch_dry_run_sets_needs_context(tmp_path):
@@ -60,5 +61,5 @@ def test_compile_batch_with_empty_request(tmp_path):
     contract = CompilerContract(provider="mock", model_id="mock/v0")
     report = compile_batch(path, contract)
     assert report["request_count"] == 0
+    assert report["response_count"] == 0
     assert report["status"] == "PASS"
-
