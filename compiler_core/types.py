@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """juris-calculus 类型定义"""
 from dataclasses import dataclass, field
 from typing import List, Dict, Set, Optional, Tuple, Any
@@ -86,6 +86,9 @@ class LegalRule:
     mechanical_exception: bool = True; head_type: str = "HORN"
     attacks: List[str] = field(default_factory=list)
     priority_over: List[str] = field(default_factory=list)
+    norm_modality: str = "UNKNOWN"
+    violation_consequence: str = ""
+    reparation_chain_pool: list = field(default_factory=list)
     source_anchor: str = ""
     valid_from: str = ""
     valid_to: str = ""
@@ -105,3 +108,12 @@ class IRState:
     rebuttal_log: list = field(default_factory=list)
     jurisdiction: str = ""
     state_tracker: dict = field(default_factory=lambda: {"Contract_Validity": "VALID"})
+
+class NormModality(str, Enum):
+    """DDL norm modality: obligation, prohibition, permission, constitutive."""
+    UNKNOWN = "UNKNOWN"
+    OBLIGATION = "OBLIGATION"
+    PROHIBITION = "PROHIBITION"
+    PERMISSION = "PERMISSION"
+    CONSTITUTIVE = "CONSTITUTIVE"
+

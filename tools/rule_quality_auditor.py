@@ -66,6 +66,9 @@ def audit_rules(path: str | Path, strict_source_anchor: bool = False, tests_root
         if tests_root and not _rule_id_mentioned(rid, tests_root):
             findings.append(_finding(index, rid, "RULE_ID_NOT_MENTIONED_IN_TESTS", False))
 
+    # DDL audit
+    _audit_ddl_dimensions(rule, findings, index, rid)
+
     graph = {
         str(rule.get("id", "")): list(rule.get("exception_chain", []) or []) + list(rule.get("attacks", []) or [])
         for rule in rules
@@ -102,6 +105,23 @@ def _finding(index: int, rule_id: str, issue: str, blocking: bool) -> Dict[str, 
         "repair_instruction": _repair(issue),
     }
 
+def _audit_ddl_dimensions(rule: dict, findings: list, index: int, rid: str) -> None:
+    norm = str(rule.get("norm_modality", "UNKNOWN") or "UNKNOWN")
+    if norm == "UNKNOWN":
+        findings.append(_finding(index, rid, "DDL_NORM_MODALITY_UNASSIGNED", True))
+    rcp = rule.get("reparation_chain_pool") or []
+    if rcp:
+        for item in rcp:
+            if isinstance(item, dict):
+                alts = item.get("alternatives", []) or []
+                for alt in alts:
+                    if isinstance(alt, dict) and not alt.get("selector"):
+                        findings.append(_finding(index, rid, "DDL_REMEDY_POOL_WITHOUT_SELECTOR", False))
+    head = str(rule.get("head_claim", ""))
+    for sig in [chr(25110)+chr(32773), chr(20219)+chr(36873)+chr(20854)+chr(19968), chr(31561)+chr(36829)+chr(32422)+chr(36131)+chr(20219)]:
+        if sig in head and norm == "OBLIGATION":
+            findings.append(_finding(index, rid, "DDL_OBLIGATION_WITH_OR_CHAIN", False))
+
 
 def _repair(issue: str) -> str:
     if issue.startswith("MISSING_FIELD"):
@@ -110,6 +130,8 @@ def _repair(issue: str) -> str:
         return "Reference an existing rule id or claim id, or add the missing rule."
     if issue == "SOURCE_ANCHOR_EMPTY":
         return "Add source_anchor before promoting this rule beyond draft maturity."
+    if issue.startswith("DDL_"):
+        return "Assign norm_modality via ddl_preclassifier or LLM candidate pipeline."
     return "Inspect and repair the rule metadata."
 
 
