@@ -1,0 +1,31 @@
+# Relevance benchmark manifest
+version: "1.0.0"
+description: "LexGuard-style relevance sensitivity benchmark for juris-calculus"
+domains:
+  - contract
+  - tort
+  - criminal
+  - procedure
+  - evidence
+  - limitation
+  - company
+kinds:
+  - SHOULD_NOT_CHANGE
+  - SHOULD_CHANGE
+  - STATUTE_CONFUSION
+  - TEMPORAL_SPLIT
+  - EXCEPTION_SENSITIVITY
+  - PARAPHRASE_INVARIANCE
+split_policy:
+  golden_max: 100
+  silver_max: 10000
+  golden_source: "deterministic fixtures only"
+  silver_source: "third-party LLM candidate generation only"
+metrics:
+  - invariance
+  - change_alignment
+  - statute_confusion
+  - temporal_consistency
+  - exception_sensitivity
+  - paraphrase_robustness
+ci_smoke_size: 30
