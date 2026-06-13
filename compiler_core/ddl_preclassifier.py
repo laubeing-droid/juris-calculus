@@ -80,6 +80,27 @@ def preclassify_rule(rule: Dict[str, Any]) -> DDLPreclassResult:
     if any(kw in concept_str for kw in [u"\u6743\u5229", u"\u8bb8\u53ef", u"\u6388\u6743"]):
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PERMISSION,
                                  confidence=0.50, reason="concept-based: right/permit concept")
+
+    # Structure-based fallback: exception_chain implies obligation
+    if rule.get("exception_chain"):
+        ns = namespace.lower()
+        if ns in ("criminal",):
+            return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
+                                     confidence=0.60, reason="structure: exception_chain in criminal context")
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
+                                 confidence=0.60, reason="structure: exception_chain implies defeasible obligation")
+
+    # Namespace-based fallback
+    ns = namespace.lower()
+    if ns in ("contract", "tort", "general", "juvenile", "family"):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
+                                 confidence=0.50, reason="namespace fallback: substantive law context")
+    if ns in ("admin", "corporate", "procedure", "enforcement"):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.CONSTITUTIVE,
+                                 confidence=0.50, reason="namespace fallback: structural/procedural context")
+    if ns in ("criminal", "ip"):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
+                                 confidence=0.50, reason="namespace fallback: criminal/IP prohibition context")
     return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.UNKNOWN,
                              confidence=0.0, reason="no modal keyword or known concept")
 
