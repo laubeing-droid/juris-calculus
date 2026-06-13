@@ -103,7 +103,8 @@ Important:
 - Write normalized candidates to:
   {next_root}\\output\\candidates.jsonl
 - Fix exactly the validator_issues listed in each request.
-- If evidence is still insufficient, return `needs_context` or `abstain`.
+- If evidence is still insufficient, return 
+eeds_context` or `abstain`.
 - Output JSONL only.
 """
 

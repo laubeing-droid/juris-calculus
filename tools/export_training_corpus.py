@@ -21,13 +21,23 @@ from compiler_core.dacl_graph import build_dacl_graph
 from compiler_core.types import LegalRule
 
 
-def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_train: float = 0.8, split_dev: float = 0.1, split_test: float = 0.1, seed: int = 42) -> Dict[str, Any]:
+def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_train: float = 0.8, split_dev: float = 0.1, split_test: float = 0.1, seed: int = 42, split_mode: str = 'random', split_date: str = '2024-01-01') -> Dict[str, Any]:
     all_items: List[Dict[str, Any]] = []
     for rp in rule_paths:
         data = yaml.safe_load(Path(rp).read_text(encoding="utf-8")) or {}
         raw_rules = data.get("rules", []) if isinstance(data, dict) else []
         for rule in raw_rules:
             if isinstance(rule, dict):
+                rid = str(rule.get('id',''))
+                valid_from = str(rule.get('valid_from',''))
+                premise_sig = hashlib.sha256('|'.join(sorted(rule.get('premise_atoms',[]))).encode()).hexdigest()[:8]
+                exception_sig = hashlib.sha256('|'.join(sorted(rule.get('exception_chain',[]))).encode()).hexdigest()[:8]
+                split_tag = ''
+                if split_mode == 'case': split_tag = f'case_head:{rule.get("head_claim","")[:20]}'
+                elif split_mode == 'rule': split_tag = f'rule_prefix:{rid[:2]}'
+                elif split_mode == 'structure': split_tag = f'struct:{premise_sig}_{exception_sig}'
+                elif split_mode == 'counterfactual': split_tag = f'cf_premise:{premise_sig}'
+                elif split_mode == 'temporal': split_tag = 'pre_threshold' if valid_from < split_date else 'post_threshold'
                 digest = hashlib.sha256(rule.get("id", "").encode()).hexdigest()[:12]
                 all_items.append({
                     "id": rule.get("id", ""),

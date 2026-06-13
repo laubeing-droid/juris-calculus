@@ -69,8 +69,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build and audit a typed DACL graph from a rule YAML file.")
     parser.add_argument("source")
     parser.add_argument("--out")
+    parser.add_argument("--verify-against-horn", action="store_true", help="Compare DACL graph claims against Horn evaluator output.")
     args = parser.parse_args()
     report = run(args.source, out=args.out)
+    if args.verify_against_horn:
+        from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+        from compiler_core.types import IRState, LegalDomain, LegalFact
+        rules = load_rules_from_yaml(str(_resolve(args.source)))
+        state = IRState(domain=LegalDomain.CIVIL, jurisdiction="test")
+        state.facts["contract_exists"] = LegalFact(id="contract_exists", description="contract_exists", extraction_confidence=1.0)
+        try:
+            evaluator = FixpointEvaluator(rules=rules)
+            eval_result = evaluator.evaluate(state)
+            horn_claims = {claim.id for claim in eval_result.claims.values() if claim.confidence > 0}
+            dacl_claim_ids = {node.node_id for node in report.get("graph", {}).get("nodes", {}).values() if node.get("type") == "Claim"} if report.get("graph") else set()
+            divergence = bool(horn_claims or dacl_claim_ids) and horn_claims != dacl_claim_ids
+            report["horn_claim_count"] = len(horn_claims)
+            report["dacl_claim_count"] = len(dacl_claim_ids)
+            report["compilation_divergence"] = divergence
+            report["status"] = "COMPILATION_DIVERGENCE" if divergence else report["status"]
+        except Exception as exc:
+            report["horn_error"] = str(exc)
     print(json.dumps({k: v for k, v in report.items() if k != "graph"}, ensure_ascii=False, indent=2))
     return 0 if report["status"] == "PASS" else 1
 
