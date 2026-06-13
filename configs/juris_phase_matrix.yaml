@@ -20,8 +20,6 @@ anti_degradation:
     guard_modules:
     - compiler_core
     - pipeline
-    - legalos_services
-    - legal_gates
   phase_gate_strict:
     description: 姣忎釜 Phase 鐨勫叏閮ㄥ懡浠ゅ繀椤?PASS 鍚庢墠鑳借繘鍏ヤ笅涓€ Phase銆傜姝㈣烦杩囥€?
     enforced: true
@@ -78,9 +76,8 @@ build_phases:
   name: MoE domain router and criminal complexity
   physical_dependency: P3_HORN_EVALUATOR
 - blueprint_contracts:
-  - legal_gates/__init__.py
+  - compiler_core/__init__.py
   - compiler_core/constraint_validator.py
-  - legalos_services/inspectors.py
   commands:
   - python -m pytest tests/unit/test_inspectors.py -q
   id: P5_GATES_CONSTRAINTS
@@ -215,7 +212,7 @@ phases:
   name: Trust labels and epistemic status
 - blueprint_contracts:
   - configs/zh_CN/rules.yaml
-  - legal_gates/__init__.py
+  - compiler_core/__init__.py
   commands:
   - python -m pytest tests/unit/test_zh_rules.py -q
   id: L2
@@ -254,7 +251,7 @@ phases:
   - compiler_core/neural_yaml_sync.py
   commands:
   - python -m pytest tests -q
-  - python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+  - python -m compileall -q compiler_core pipeline mcp_server.py
   - python tools/relevance_sensitivity_runner.py tests/relevance_sensitivity
   - python tools/neural_contract_auditor.py
   - python tools/rule_quality_auditor.py tests/relevance_sensitivity/contract_basics.yaml

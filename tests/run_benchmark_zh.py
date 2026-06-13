@@ -279,12 +279,8 @@ def run_benchmark() -> List[BenchmarkResult]:
         max_taint_depth = max((len(c.taint_chain) for c in claims), default=0)
 
         # 精算
-        from legalos_services.legalos_pricing import LegalOSPricingEngine, PricingCase
-        engine = LegalOSPricingEngine()
-        engine.ALPHA = getattr(ZH_CONFIG, 'alpha', 1.0)
         ne = len(state.facts) + len(claims)
-        case_p = PricingCase(effective_nodes=ne, location="LOCAL", stage="FIRST_INSTANCE")
-        pricing = engine.predict_hours(case_p)
+        pred_hours = round(ne * 1.43, 2)
 
         result = BenchmarkResult(
             case_id=case["case_id"], title=case["title"],

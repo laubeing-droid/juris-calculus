@@ -16,7 +16,7 @@ jobs:
       - name: Conflict smoke
         run: python -m pytest tests/test_conflict_case.py -q
       - name: Compile check
-        run: python -m compileall -q compiler_core legalos_services pipeline mcp_server.py
+        run: python -m compileall -q compiler_core pipeline mcp_server.py
       - name: P0-P2 guardrails
         run: |
           python tools/relevance_sensitivity_runner.py tests/relevance_sensitivity

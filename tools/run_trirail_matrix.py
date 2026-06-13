@@ -31,7 +31,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from compiler_core.types import LegalFact, IRState, LegalClaim
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 from compiler_core.domain_config import DomainConfig, LegalDomain
-from adapter.prc_adapter import PRCAdapter
 
 # ── 威胁拦截器 (Gemini审计: 下沉至TriRailCollider主路径最前端) ──
 from tools.distill_jurisdiction import FastPathInterceptor

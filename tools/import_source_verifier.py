@@ -19,8 +19,6 @@ GUARD_MODULES = [
     "compiler_core.trust_labels",
     "pipeline.pipeline",
     "pipeline.schemas",
-    "legalos_services",
-    "legal_gates",
 ]
 
 

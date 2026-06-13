@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from compiler_core.types import LegalFact, IRState
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 from compiler_core.domain_config import DomainConfig, LegalDomain
-from adapter.prc_adapter import PRCAdapter
 
 
 # ═══════════════════════════════════════════

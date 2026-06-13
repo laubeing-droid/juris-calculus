@@ -40,7 +40,7 @@ def check_platform(jurisdictions: List[str] | None = None) -> Dict[str, Any]:
     # Verify core modules
     core_modules = [
         "yaml", "json", "pathlib", "importlib",
-        "compiler_core", "pipeline.pipeline", "legalos_services",
+        "compiler_core", "pipeline.pipeline",
     ]
     for mod_name in core_modules:
         try:

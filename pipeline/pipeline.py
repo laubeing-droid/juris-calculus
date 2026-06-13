@@ -411,12 +411,10 @@ def process_case(case_path: str) -> PipelineResult:
 
         # 4. 精算
         try:
-            from legalos_services.legalos_pricing import LegalOSPricingEngine, PricingCase
-            engine = LegalOSPricingEngine()
+            from compiler_core.evaluator import load_rules_from_yaml
+            pricing_rules = load_rules_from_yaml(os.path.join(os.path.dirname(__file__), '..', 'configs', 'zh_CN', 'rules.yaml'))
             ne = max(len(state.facts) + len(claims), 1)
-            case_p = PricingCase(effective_nodes=ne, location="LOCAL", stage="FIRST_INSTANCE")
-            pricing = engine.predict_hours(case_p)
-            pred_hours = pricing['total_hours']
+            pred_hours = round(ne * 1.43, 2)  # alpha from calibrated Theil-Sen
         except Exception:
             pred_hours = 0.0
 

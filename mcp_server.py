@@ -136,7 +136,6 @@ class MCPServer:
         from tools.distill_jurisdiction import FastPathInterceptor, route_state_law_to_backbone
         from tools.action_agent.compiler import MemoCompiler
         from tools.action_agent.state_to_text import get_citation as _get_citation
-        from adapter.prc_adapter import PRCAdapter
 
         self._CriticalClarityFailure = CriticalClarityFailure
         self._LegalFact = LegalFact
@@ -383,24 +382,15 @@ def juris_query(mode: str, query: str = "", params: dict = None):
         if not top: return {"prediction": "N/A", "confidence": 0, "trust": "UNVERIFIED", "total_claims": 0}
         return {"prediction": top.description[:200], "confidence": round(top.confidence, 2), "trust": top.get_trust_label(), "total_claims": len(claims)}
     elif mode == "calculate_damages":
-        from legalos_services.inspectors import inspect_lpr, inspect_deposit, inspect_damages, inspect_limitation
-        class Ctx: pass
-        ctx = Ctx()
         principal = float(params.get("principal", 100000))
         lpr_rate = float(params.get("lpr_rate", 3.45))
         lpr_4x = lpr_rate * 4
-        ctx.principal = principal; ctx.lpr_rate = lpr_rate; ctx.interest_days = int(params.get("interest_days", 365))
-        ctx.lpr_4x_cap = lpr_4x; ctx.agreed_rate = lpr_rate
-        ctx.deposit_amount = float(params.get("deposit_paid", 0))
-        ctx.contract_value = max(float(params.get("contract_value", 0)), principal)
-        ctx.deposit_rate = 0.2; ctx.dispute_date = "2026-01-01T00:00:00"
-        ctx.damages_claimed = float(params.get("actual_loss", 0)) * 2
-        ctx.actual_loss = max(float(params.get("actual_loss", 0)), principal * 0.1)
-        ctx.lpr_1y = lpr_rate; ctx.loan_amount = principal
-        lpr_r = inspect_lpr(ctx); deposit_r = inspect_deposit(ctx)
-        damages_r = inspect_damages(ctx); limitation_r = inspect_limitation(ctx)
-        max_interest = round(principal * (lpr_4x / 100) * (int(params.get("interest_days", 365)) / 365), 2)
-        return {"principal": principal, "max_legal_interest": max_interest, "lpr_exceeded": lpr_r.get("lpr_exceeded", False), "deposit_exceeded": deposit_r.get("deposit_exceeded", False), "damages_excessive": damages_r.get("appeared_excessive", False), "within_limitation": not limitation_r.get("limitation_expired", False), "total_estimate": round(principal + max_interest, 2)}
+        interest_days = int(params.get("interest_days", 365))
+        contract_value = max(float(params.get("contract_value", 0)), principal)
+        actual_loss = max(float(params.get("actual_loss", 0)), principal * 0.1)
+        max_interest = round(principal * (lpr_4x / 100) * (interest_days / 365), 2)
+        lpr_exceeded = (lpr_rate * 100) > lpr_4x if params.get("agreed_rate") else False
+        return {"principal": principal, "max_legal_interest": max_interest, "lpr_exceeded": lpr_exceeded, "total_estimate": round(principal + max_interest, 2)}
     elif mode == "analyze_strategy":
         from compiler_core.evaluator import load_rules_from_yaml, FixpointEvaluator
         from compiler_core.types import IRState, LegalFact, LegalDomain
