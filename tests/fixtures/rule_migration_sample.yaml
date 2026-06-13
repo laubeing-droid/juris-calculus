@@ -1,0 +1,30 @@
+rules:
+  - id: R-SAMPLE-1
+    premise_atoms:
+      - contract_exists
+      - payment_due
+    head_claim: Breach_Established
+    exception_chain:
+      - R-SAMPLE-2
+    attacks: []
+    priority_over: []
+    head_type: HORN
+    mechanical_exception: true
+    source_anchor: sample-authority:1
+    valid_from: "2021-01-01"
+    jurisdiction: test
+    authority_rank: statute
+  - id: R-SAMPLE-2
+    premise_atoms:
+      - payment_excused
+    head_claim: Defense_Available
+    exception_chain: []
+    attacks:
+      - Breach_Established
+    priority_over: []
+    head_type: HORN
+    mechanical_exception: true
+    source_anchor: sample-authority:2
+    valid_from: "2021-01-01"
+    jurisdiction: test
+    authority_rank: statute

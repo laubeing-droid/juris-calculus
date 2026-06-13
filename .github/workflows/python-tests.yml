@@ -22,5 +22,12 @@ jobs:
           python tools/relevance_sensitivity_runner.py tests/relevance_sensitivity
           python tools/neural_contract_auditor.py
           python tools/rule_quality_auditor.py tests/relevance_sensitivity/contract_basics.yaml
+      - name: Typed IR and LLM batch smoke
+        run: |
+          python tools/rule_to_ir_migrator.py --discover
+          python tools/rule_to_ir_migrator.py configs/zh_CN/rules.yaml --jurisdiction zh_CN --limit 3 --allow-findings --out reports/typed_ir_smoke/zh_CN.ir.yaml --repair-requests-out reports/typed_ir_smoke/zh_CN_exception_repairs.jsonl
+          python tools/rule_to_ir_migrator.py configs/hk/rules.yaml --jurisdiction hk --limit 3 --allow-findings --out reports/typed_ir_smoke/hk.ir.yaml
+          python tools/rule_to_ir_migrator.py configs/en_US/US_Adapter.yaml --jurisdiction us --limit 3 --allow-findings --out reports/typed_ir_smoke/us_adapter.ir.yaml
+          python tools/llm_batch_contract.py create CI_SMOKE --root reports/llm_batch_smoke --task rule_extraction --task source_span_alignment
       - name: Phase matrix verification
         run: python tools/phase_runner.py --phase L6 --report-dir reports/phase_report_ci
