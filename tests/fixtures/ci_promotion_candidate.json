@@ -1,0 +1,1 @@
+{"id": "SMOKE-CI-001", "confidence": 0.92, "source_spans": ["CivilCode_Art585"], "gates": {}, "solver_verification_id": "trace-ci-001", "state": "PROMOTABLE", "rollback_trigger": "auto"}

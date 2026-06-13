@@ -11,6 +11,7 @@
 # Exception: US benchmark complaint templates (core + roadmap)
 !tests/us_complaints/core/*.json
 !tests/us_complaints/roadmap/*.json
+!tests/fixtures/*.json
 
 # IDE
 .idea/
