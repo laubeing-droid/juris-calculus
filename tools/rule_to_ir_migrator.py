@@ -50,8 +50,8 @@ def migrate_rule_file(
             legal_rule = _legal_rule_from_dict(raw, default_jurisdiction=jurisdiction or _infer_jurisdiction(source_path))
             ir_rule = LegalIRRule.from_legal_rule(legal_rule, jurisdiction=legal_rule.jurisdiction)
             textual_exceptions = _normalize_exception_refs(ir_rule, known_rule_ids)
-            for text in textual_exceptions:
-                repair_requests.append(_exception_repair_request(source_path, legal_rule, text, index))
+            for exception_index, text in enumerate(textual_exceptions, start=1):
+                repair_requests.append(_exception_repair_request(source_path, legal_rule, text, index, exception_index))
             check_report = check_legal_ir_rule(ir_rule, known_rule_ids=known_rule_ids)
             for issue in check_report.issues:
                 findings.append({"index": index, "rule_id": legal_rule.id, "issue": issue})
@@ -146,8 +146,15 @@ def _normalize_exception_refs(rule: LegalIRRule, known_rule_ids: List[str]) -> L
     return textual
 
 
-def _exception_repair_request(source_path: Path, rule: LegalRule, textual_exception: str, index: int) -> Dict[str, Any]:
-    request_id = f"MIGRATE-{source_path.stem}-{rule.id}-{index}"
+def _exception_repair_request(
+    source_path: Path,
+    rule: LegalRule,
+    textual_exception: str,
+    index: int,
+    exception_index: int,
+) -> Dict[str, Any]:
+    digest = hashlib.sha256(textual_exception.encode("utf-8")).hexdigest()[:8]
+    request_id = f"MIGRATE-{source_path.stem}-{rule.id}-{index}-EX{exception_index}-{digest}"
     payload = {
         "source": str(source_path),
         "rule_id": rule.id,

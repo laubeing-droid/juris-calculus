@@ -55,7 +55,7 @@ def test_rule_to_ir_migrator_writes_repair_requests_for_textual_exceptions(tmp_p
                         "id": "R-TEXT",
                         "premise_atoms": ["contract_exists"],
                         "head_claim": "Claim_Available",
-                        "exception_chain": ["除非已经超过诉讼时效"],
+                        "exception_chain": ["除非已经超过诉讼时效", "除非存在法定免责事由"],
                         "head_type": "HORN",
                         "source_anchor": "sample-authority:3",
                         "jurisdiction": "test",
@@ -69,11 +69,15 @@ def test_rule_to_ir_migrator_writes_repair_requests_for_textual_exceptions(tmp_p
     report = migrate_rule_file(legacy, jurisdiction="test", repair_requests_out=repair_out)
 
     assert report["status"] == "PASS"
-    assert report["repair_request_count"] == 1
-    request = json.loads(repair_out.read_text(encoding="utf-8").strip())
-    assert request["task"] == "ir_migration_repair"
-    assert request["constraints"]["repo_write_allowed"] is False
-    assert request["input"]["textual_exception"] == "除非已经超过诉讼时效"
+    assert report["repair_request_count"] == 2
+    requests = [json.loads(line) for line in repair_out.read_text(encoding="utf-8").splitlines()]
+    assert len({request["request_id"] for request in requests}) == 2
+    assert all(request["task"] == "ir_migration_repair" for request in requests)
+    assert all(request["constraints"]["repo_write_allowed"] is False for request in requests)
+    assert {request["input"]["textual_exception"] for request in requests} == {
+        "除非已经超过诉讼时效",
+        "除非存在法定免责事由",
+    }
 
 
 def test_llm_batch_contract_creates_isolated_requests(tmp_path):
