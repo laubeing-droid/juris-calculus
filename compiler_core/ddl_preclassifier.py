@@ -81,26 +81,45 @@ def preclassify_rule(rule: Dict[str, Any]) -> DDLPreclassResult:
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PERMISSION,
                                  confidence=0.50, reason="concept-based: right/permit concept")
 
+    # Tertiary cross-check for namespace-only rules
+
     # Structure-based fallback: exception_chain implies obligation
     if rule.get("exception_chain"):
         ns = namespace.lower()
         if ns in ("criminal",):
             return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
-                                     confidence=0.60, reason="structure: exception_chain in criminal context")
+                                     confidence=0.80, reason="structure: exception_chain in criminal context")
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
-                                 confidence=0.60, reason="structure: exception_chain implies defeasible obligation")
+                                 confidence=0.80, reason="structure: exception_chain implies defeasible obligation")
 
     # Namespace-based fallback
     ns = namespace.lower()
     if ns in ("contract", "tort", "general", "juvenile", "family"):
+        if any(kw in head for kw in OBLIGATION_KEYWORDS):
+            return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
+                                     confidence=0.75, reason="namespace+keyword: obligation domain matched keyword")
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
-                                 confidence=0.50, reason="namespace fallback: substantive law context")
+                                 confidence=0.55, reason="namespace fallback: substantive law context")
     if ns in ("admin", "corporate", "procedure", "enforcement"):
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.CONSTITUTIVE,
                                  confidence=0.50, reason="namespace fallback: structural/procedural context")
     if ns in ("criminal", "ip"):
+        if any(kw in head for kw in PROHIBITION_KEYWORDS):
+            return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
+                                     confidence=0.75, reason="namespace+keyword: prohibition domain matched keyword")
         return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
-                                 confidence=0.50, reason="namespace fallback: criminal/IP prohibition context")
+                                 confidence=0.55, reason="namespace fallback: criminal/IP prohibition context")
+
+    # Tertiary cross-check: text signals in head_claim
+    if any(kw in head for kw in ["应", "有义务", "承担", "负责", "履行"]):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.OBLIGATION,
+                                 confidence=0.70, reason="tertiary: obligation-related terms in head_claim")
+    if any(kw in head for kw in ["管理", "职权", "程序", "范围", "属于", "包括", "是指"]):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.CONSTITUTIVE,
+                                 confidence=0.70, reason="tertiary: structural/procedural terms in head_claim")
+    if any(kw in head for kw in ["犯罪", "处罚", "刑事", "违法", "禁止"]):
+        return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.PROHIBITION,
+                                 confidence=0.70, reason="tertiary: criminal/violation terms in head_claim")
     return DDLPreclassResult(rule_id=str(rule.get("id", "")), modality=NormModality.UNKNOWN,
                              confidence=0.0, reason="no modal keyword or known concept")
 
