@@ -108,7 +108,7 @@ def _finding(index: int, rule_id: str, issue: str, blocking: bool) -> Dict[str, 
 def _audit_ddl_dimensions(rule: dict, findings: list, index: int, rid: str) -> None:
     norm = str(rule.get("norm_modality", "UNKNOWN") or "UNKNOWN")
     if norm == "UNKNOWN":
-        findings.append(_finding(index, rid, "DDL_NORM_MODALITY_UNASSIGNED", True))
+        findings.append(_finding(index, rid, "DDL_NORM_MODALITY_UNASSIGNED", False))
     rcp = rule.get("reparation_chain_pool") or []
     if rcp:
         for item in rcp:
