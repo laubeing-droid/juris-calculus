@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Semantic acceptance gates for isolated third-party LLM batches."""
 from __future__ import annotations
 
@@ -91,19 +91,22 @@ def _validate_ir_migration_candidate(candidate: Dict[str, Any], requests: Dict[s
     request = requests.get(request_id)
     if request is None:
         return "BLOCKED", ["UNKNOWN_REQUEST_ID"]
+    original_input = dict(request.get("input", {}))
+    if "original_request" in original_input:
+        original_input = original_input["original_request"].get("input", original_input)
     output = candidate.get("output", {})
     patch = output.get("proposed_patch", {}) if isinstance(output, dict) else {}
     if candidate.get("status") != "candidate":
         issues.append("CANDIDATE_STATUS_REQUIRED")
     if candidate.get("task") != "ir_migration_repair":
         issues.append("TASK_MISMATCH")
-    if candidate.get("source_ref") != request["input"].get("rule_id"):
+    if candidate.get("source_ref") != original_input.get("rule_id"):
         issues.append("SOURCE_REF_MISMATCH")
-    if candidate.get("source_span") != request["input"].get("textual_exception"):
+    if candidate.get("source_span") != original_input.get("textual_exception"):
         issues.append("SOURCE_SPAN_MUST_EQUAL_TEXTUAL_EXCEPTION")
-    if patch.get("parent_rule_id") != request["input"].get("rule_id"):
+    if patch.get("parent_rule_id") != original_input.get("rule_id"):
         issues.append("PARENT_RULE_MISMATCH")
-    if patch.get("trigger") != request["input"].get("textual_exception"):
+    if patch.get("trigger") != original_input.get("textual_exception"):
         issues.append("TRIGGER_MUST_EQUAL_TEXTUAL_EXCEPTION")
     if not patch.get("exception_rule_id_suggestion"):
         issues.append("EXCEPTION_RULE_ID_REQUIRED")
@@ -210,3 +213,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
