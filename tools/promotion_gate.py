@@ -37,6 +37,15 @@ def evaluate_candidate(candidate: Dict[str, Any], available_gate_results: Dict[s
     if confidence < 0.01:
         issues.append({"gate": "confidence", "result": "INVALID_CONFIDENCE", "issue": "CONFIDENCE_TOO_LOW"})
 
+
+    trace_id = candidate.get("solver_verification_id", "")
+    if not trace_id:
+        state_guess = candidate.get("state", "")
+        if state_guess in ("FINAL_AUTOMATED", "PROMOTABLE"):
+            issues.append({"gate": "solver_trace", "result": "MISSING_SOLVER_TRACE", "issue": "GATE_FAIL:solver_trace"})
+    if trace_id:
+        results["solver_trace"] = "PASS"
+
     hard = [i for i in issues if i["issue"].startswith("GATE_FAIL") or i["issue"] == "SOURCE_SPANS_EMPTY"]
     if hard:
         state = PromotionState.BLOCKED

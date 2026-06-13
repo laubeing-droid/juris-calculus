@@ -268,6 +268,7 @@ phases:
   - python tools/semantic_compile_batch.py tests/fixtures/ci_requests.jsonl
   - python tools/promotion_gate.py tests/fixtures/ci_promotion_candidate.json --source-anchor PASS --type-check PASS --relevance PASS --smt PASS --shadow PASS --neural-contract PASS --promotion-policy PASS
   - python tools/smt_evaluator_compare.py tests/fixtures/rule_migration_sample.yaml --jurisdiction test
+  - python tools/ddl_remedy_pool_filler.py configs/zh_CN/rules.yaml
   id: L6
   layer: neural_guarded
   name: Neural leaves and full regression
