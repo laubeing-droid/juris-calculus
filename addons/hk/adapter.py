@@ -74,15 +74,17 @@ class HKAdapter(JurisdictionAdapter):
         self._claim_table_cn: Optional[Dict[str, str]] = None
         self._claim_table_en: Optional[Dict[str, str]] = None
         self._trilingual: Optional[List[Dict]] = None
+        self._blocking_rules: Optional[List[Dict]] = None
 
     def _ensure_loaded(self) -> None:
-        """Lazy-load L0 map and claim tables from YAML."""
+        """Lazy-load L0 map, claim tables, and blocking rules from YAML."""
         if self._l0_map is not None:
             return
 
         base = Path(__file__).resolve().parents[2]
         term_path = base / "configs" / "hk" / "term_L0_mappings.yaml"
         tri_path = base / "configs" / "hk" / "trilingual_alignment.yaml"
+        block_path = base / "configs" / "hk" / "blocking_rules.yaml"
 
         l0 = dict(_HK_CORE_L0)
         cn_table: Dict[str, str] = {}
@@ -115,6 +117,32 @@ class HKAdapter(JurisdictionAdapter):
         else:
             self._trilingual = []
 
+        # Load US→HK blocking rules
+        if block_path.exists():
+            with open(block_path, "r", encoding="utf-8") as f:
+                block_data = yaml.safe_load(f) or {}
+            self._blocking_rules = block_data.get("rules", [])
+        else:
+            self._blocking_rules = []
+
+    def check_blocking(self, fact_id: str) -> Optional[Dict]:
+        """Check if a fact is blocked by US→HK blocking rules.
+
+        Returns blocking rule dict if blocked, None otherwise.
+        """
+        self._ensure_loaded()
+        for rule in self._blocking_rules or []:
+            if rule.get("trigger_fact") == fact_id:
+                action = rule.get("action", {})
+                if action.get("type") in ("FORCE_VOID", "FORCE_SUPPRESS"):
+                    return {
+                        "rule_id": rule.get("id"),
+                        "action_type": action.get("type"),
+                        "map_to": action.get("map_to", ""),
+                        "description": rule.get("description", ""),
+                    }
+        return None
+
     def map_to_L0(self, domain_concept: str) -> str:
         self._ensure_loaded()
         return self._l0_map.get(domain_concept, "?")
@@ -143,6 +171,20 @@ class HKAdapter(JurisdictionAdapter):
             }
         """
         self._ensure_loaded()
+
+        # Check blocking rules first — if blocked, short-circuit
+        block_result = self.check_blocking(us_term)
+        if block_result:
+            return {
+                'us_term': us_term,
+                'us_l0': '?',
+                'hk_term': block_result.get('map_to', ''),
+                'hk_l0': '?',
+                'cn_term': '',
+                'alignment': 'BLOCKED',
+                'block_rule': block_result['rule_id'],
+                'block_reason': block_result['description'],
+            }
 
         # Normalize US term
         us_norm = us_term.strip().replace("_", " ").lower()
@@ -191,11 +233,20 @@ class HKAdapter(JurisdictionAdapter):
 
     def validate_against_guardrails(self, state: IRState) -> Dict:
         issues = []
+        blocked = []
         for fid, fact in state.facts.items():
             l0 = self.map_to_L0(fid)
             if l0 == "?":
                 issues.append(f"{fid}: no L0 mapping")
-        return {"valid": len(issues) == 0, "issues": issues}
+            # Check US→HK blocking rules
+            block_result = self.check_blocking(fid)
+            if block_result:
+                blocked.append(block_result)
+        return {
+            "valid": len(issues) == 0 and len(blocked) == 0,
+            "issues": issues,
+            "blocked": blocked,
+        }
 
     def load_evaluator(self, route_request: Optional[List[str]] = None) -> FixpointEvaluator:
         compiler = LegalCompiler(self.rules_path, overrides_path=self.overrides_path)

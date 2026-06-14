@@ -149,20 +149,21 @@ class PRCCollisionEngine:
         tree = ProofTree(jurisdiction="CN")
 
         # ═══ Track 1: CBL 阻断（一票否决）═══
-        self._run_cbl_track(shared_facts, tree)
+        blocked_targets = self._run_cbl_track(shared_facts, tree)
 
-        # ═══ Track 2: SPC 裁判倾向 ═══
-        self._run_spc_track(shared_facts, tree)
+        # ═══ Track 2: SPC 裁判倾向（过滤被阻断的 claim）═══
+        self._run_spc_track(shared_facts, tree, blocked_targets)
 
-        # ═══ Track 3: CN 成文法全量 ═══
-        self._run_cn_track(shared_facts, tree)
+        # ═══ Track 3: CN 成文法全量（过滤被阻断的 claim）═══
+        self._run_cn_track(shared_facts, tree, blocked_targets)
 
         # Bridge health
         tree.bridge_health = self._compute_bridge_health(len(tree.cn_claims))
         return tree
 
-    def _run_cbl_track(self, facts: Dict[str, LegalFact], tree: ProofTree) -> None:
-        """Track 1: CBL 成文法阻断。"""
+    def _run_cbl_track(self, facts: Dict[str, LegalFact], tree: ProofTree) -> set:
+        """Track 1: CBL 成文法阻断。返回被阻断的 claim 目标集合。"""
+        blocked_targets = set()
         for rule in self._blocking_rules:
             trigger = rule.get("trigger_fact", "")
             if trigger not in facts:
@@ -176,10 +177,11 @@ class PRCCollisionEngine:
 
             rule_id = rule.get("id", "")
             action_data = rule.get("action", {})
+            target = rule.get("target_primitive", rule_id)
             node = ProofNode(
                 node_id=f"R:{rule_id}",
                 kind="blocking",
-                head_claim=rule.get("target_primitive", rule_id),
+                head_claim=target,
                 confidence=1.0,
                 children=[],
                 source_anchor=rule.get("description", ""),
@@ -188,8 +190,19 @@ class PRCCollisionEngine:
             tree.add_node(node)
             tree.blocked_claims.append(rule_id)
 
-    def _run_spc_track(self, facts: Dict[str, LegalFact], tree: ProofTree) -> None:
-        """Track 2: SPC 最高法裁判倾向（non-blocking）。"""
+            # Collect blocked targets for downstream filtering
+            blocked_targets.add(target)
+            map_to = action_data.get("map_to", "")
+            if map_to:
+                blocked_targets.add(map_to)
+            # Also block the trigger fact itself
+            blocked_targets.add(trigger)
+
+        return blocked_targets
+
+    def _run_spc_track(self, facts: Dict[str, LegalFact], tree: ProofTree,
+                       blocked_targets: set) -> None:
+        """Track 2: SPC 最高法裁判倾向（non-blocking，过滤被阻断的 claim）。"""
         if not self.spc_loaded:
             return
 
@@ -197,7 +210,7 @@ class PRCCollisionEngine:
         try:
             spc_result = self._spc_evaluator.evaluate(spc_state)
             for cid, claim in spc_result.claims.items():
-                if claim.confidence > 0:
+                if claim.confidence > 0 and cid not in blocked_targets:
                     node_id = f"S:{cid}"
                     node = ProofNode(
                         node_id=node_id,
@@ -213,7 +226,7 @@ class PRCCollisionEngine:
         except CriticalClarityFailure as e:
             if hasattr(e, "partial_state") and e.partial_state is not None:
                 for cid, claim in e.partial_state.claims.items():
-                    if claim.confidence > 0.8:
+                    if claim.confidence > 0.8 and cid not in blocked_targets:
                         node_id = f"S:{cid}"
                         node = ProofNode(
                             node_id=node_id,
@@ -226,8 +239,9 @@ class PRCCollisionEngine:
                         tree.add_node(node)
                         tree.spc_tendencies.append(node_id)
 
-    def _run_cn_track(self, facts: Dict[str, LegalFact], tree: ProofTree) -> None:
-        """Track 3: CN 成文法全量 Horn 规则。"""
+    def _run_cn_track(self, facts: Dict[str, LegalFact], tree: ProofTree,
+                      blocked_targets: set) -> None:
+        """Track 3: CN 成文法全量 Horn 规则（过滤被阻断的 claim）。"""
         if not self.cn_loaded:
             return
 
@@ -241,7 +255,7 @@ class PRCCollisionEngine:
         try:
             cn_result = self._cn_evaluator.evaluate(cn_state)
             for cid, claim in cn_result.claims.items():
-                if claim.confidence > 0:
+                if claim.confidence > 0 and cid not in blocked_targets:
                     node_id = f"C:{cid}"
                     node = ProofNode(
                         node_id=node_id,
@@ -257,7 +271,7 @@ class PRCCollisionEngine:
         except CriticalClarityFailure as e:
             if hasattr(e, "partial_state") and e.partial_state is not None:
                 for cid, claim in e.partial_state.claims.items():
-                    if claim.confidence > 0.8:
+                    if claim.confidence > 0.8 and cid not in blocked_targets:
                         node_id = f"C:{cid}"
                         node = ProofNode(
                             node_id=node_id,
@@ -271,39 +285,41 @@ class PRCCollisionEngine:
                         tree.cn_claims.append(node_id)
 
     def _check_conditions(self, rule: Dict, facts: Dict[str, LegalFact]) -> bool:
-        """检查阻断规则的附加条件。"""
+        """检查阻断规则的附加条件。
+
+        逻辑：
+        - 无 OR 列表时：AND 条件全部满足
+        - 有 OR 列表时：AND 条件全部满足 且 OR 至少满足一个
+        """
         conditions = rule.get("additional_conditions", [])
         conditions_or = rule.get("additional_conditions_OR", [])
 
-        condition_passed = True
+        # Check AND conditions
         for cond in conditions:
             if cond.startswith("NOT "):
                 neg_fact = cond[4:]
                 if neg_fact in facts and facts[neg_fact].extraction_confidence > 0:
-                    condition_passed = False
-                    break
-            else:
-                if cond not in facts or facts[cond].extraction_confidence <= 0:
-                    condition_passed = False
-                    break
-
-        if not condition_passed:
-            if conditions_or:
-                or_passed = False
-                for cond in conditions_or:
-                    if cond.startswith("NOT "):
-                        neg_fact = cond[4:]
-                        if neg_fact not in facts or facts[neg_fact].extraction_confidence <= 0:
-                            or_passed = True
-                            break
-                    else:
-                        if cond in facts and facts[cond].extraction_confidence > 0:
-                            or_passed = True
-                            break
-                if not or_passed:
                     return False
             else:
+                if cond not in facts or facts[cond].extraction_confidence <= 0:
+                    return False
+
+        # Check OR conditions (only if OR list exists)
+        if conditions_or:
+            or_passed = False
+            for cond in conditions_or:
+                if cond.startswith("NOT "):
+                    neg_fact = cond[4:]
+                    if neg_fact not in facts or facts[neg_fact].extraction_confidence <= 0:
+                        or_passed = True
+                        break
+                else:
+                    if cond in facts and facts[cond].extraction_confidence > 0:
+                        or_passed = True
+                        break
+            if not or_passed:
                 return False
+
         return True
 
     def _compute_bridge_health(self, cn_count: int) -> Dict:
