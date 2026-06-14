@@ -1,5 +1,52 @@
 # juris-calculus Changelog
 
+## v2.1.2 (2026-06-15)
+
+### Debug Pass — 18 Issues from Socratic Analysis
+
+- **PROHIBITION 阻断修复**：`_check_premises` 现在检查 `blocked_claims`，被阻断的 claim 不再被下游规则使用
+- **执行顺序确定**：`sorted(triggered_rule_ids)` 保证可复现结果
+- **Dead code 清理**：删除 ThinkMode、validate_transition、check_negative_specs、evaluate_with_full_gate、violation_consequence
+- **L0 降级修正**：全部 premise 映射到 `?` 时跳过降级（跨法域无关的规则不被误伤）
+- **PERMISSION 过度声称**：PERMISSION 规则产出的 claim 标记为 HYPOTHETICAL
+- **Source anchor 警告**：`load_rules_from_yaml` 对缺少 source_anchor 的规则记录 WARNING
+- **时间有效性**：`case_date` 参数过滤有效期内的规则
+- **冲突法推理**：`compiler_core/conflict_of_laws.py` — 选择管辖法域
+- **多法域编排器**：`compiler_core/multi_jurisdiction_orchestrator.py` — 跨法域评估
+- **meta_constraints 消费**：`PRCCollisionEngine` 现在处理 meta_constraints 预处理
+- **测试扩展**：159 → 209 个测试（+50），新增 DDL 模态门控、ConstraintValidator、PluginRegistry、LanguageRenderer、冲突法测试
+
+### US L0 扩展
+
+- `configs/us/term_L0_mappings.yaml`：567 条 US 术语→L0 映射（NJ 普通话 + WI 中文 + UCC 关键词）
+
+### HK 阻断规则扩展
+
+- `configs/hk/blocking_rules.yaml`：12 → 21 条（+家事 3 条 +雇佣 3 条 +财产 3 条）
+
+### CN 命名标准化
+
+- `configs/zh_CN/rules.yaml`：20 个 dot.notation atom → snake_case（690 处引用修正）
+
+---
+
+## v2.1.1 (2026-06-14)
+
+### UCC + FRCivP + Restatement Contracts
+
+- `configs/us/rules.yaml`：73 → 123 条 Horn 规则
+  - UCC Article 2 Sales（19 条）：合同成立、battle of forms、保证、perfect tender、买方救济
+  - UCC Article 9 Secured Transactions（9 条）：attachment、perfection、priority、default
+  - FRCivP（9 条）：跨国送达、管辖权异议、证据开示、Rule 44.1 外国法查明
+  - Restatement 2d Contracts（14 条）：consideration、promissory estoppel、good faith、breach、damages
+- US L0 映射：39 → 138 条（从 term_L0_mappings.yaml 动态加载）
+
+### auto-release.yml 修复
+
+- 添加 `permissions: contents: write` 解决 GitHub Actions release 权限问题
+
+---
+
 ## v2.1.0 (2026-06-14)
 
 ### 跨法域架构

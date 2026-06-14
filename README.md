@@ -14,11 +14,12 @@ juris-calculus compiles statutory law into executable Horn rules, then reasons o
 
 **Three jurisdictions, one engine:**
 
-| Jurisdiction | Rules | Coverage | Role |
-|-------------|-------|----------|------|
-| CN (China) | 2,117 | 13 domains | Primary jurisdiction |
-| HK (Hong Kong) | 104 | 7 namespaces | US↔CN bridge layer |
-| US (Federal) | 73 | 7 titles | Cross-border disputes |
+| Jurisdiction | Rules | Blocking | L0 Mappings | Role |
+|-------------|-------|----------|-------------|------|
+| CN (China) | 2,117 | 60 CBL | 106 | Primary jurisdiction |
+| HK (Hong Kong) | 104 | 21 | 1,687 | US↔CN bridge layer |
+| US (Federal) | 123 | 18 | 567 | Cross-border disputes |
+| **Total** | **2,344** | **99** | **2,360** | |
 
 **Cross-border architecture:**
 
@@ -39,8 +40,10 @@ juris-calculus/
 │   ├── evaluator.py                  #   FixpointEvaluator + DDL modal gate
 │   ├── types.py                      #   LegalRule / LegalFact / IRState / NormModality
 │   ├── proof_tree.py                 #   ProofTree — jurisdiction-neutral output format
-│   ├── language_renderer.py          #   ChineseRenderer / EnglishRenderer (post-processing)
+│   ├── language_renderer.py          #   ChineseRenderer / EnglishRenderer
 │   ├── prc_collision_engine.py       #   Three-track collision (CBL + SPC + CN)
+│   ├── conflict_of_laws.py           #   Jurisdiction selection (choice-of-law)
+│   ├── multi_jurisdiction_orchestrator.py  #  Cross-jurisdiction evaluation
 │   ├── adapter_base.py              #   JurisdictionAdapter abstract base
 │   └── plugin_registry.py           #   Auto-discovery addon system
 ├── addons/
@@ -48,12 +51,16 @@ juris-calculus/
 │   ├── hk/                           #   Hong Kong addon (common_law, bridge layer)
 │   └── us/                           #   US Federal addon (common_law)
 ├── configs/
-│   ├── zh_CN/rules.yaml              #   2,117 Chinese law Horn rules
-│   ├── hk/rules.yaml                 #   104 Hong Kong Horn rules
-│   ├── us/rules.yaml                 #   73 US Federal Horn rules
-│   ├── prc_us_alignment/             #   60 CBL blocking + 25 SPC tendency rules
-│   └── hk/blocking_rules.yaml        #   12 US→HK blocking rules
-└── tests/                            #   160 tests, all passing
+│   ├── zh_CN/rules.yaml              #   2,117 CN Horn rules
+│   ├── hk/rules.yaml                 #   104 HK Horn rules (7 namespaces)
+│   ├── hk/blocking_rules.yaml        #   21 US→HK blocking rules
+│   ├── hk/term_L0_mappings.yaml      #   1,729 HK terms → L0
+│   ├── us/rules.yaml                 #   123 US Horn rules (9 namespaces)
+│   ├── us/term_L0_mappings.yaml      #   567 US terms → L0
+│   ├── us/blocking_rules.yaml        #   18 US→HK blocking rules
+│   ├── us/modal_mapping.yaml         #   US DDL modal words
+│   └── prc_us_alignment/             #   60 CBL + 25 SPC + 199 term mappings
+└── tests/                            #   209 tests, all passing
 ```
 
 ---
@@ -108,6 +115,16 @@ result = hk.trilingual_bridge("Consideration")
 # Three-track collision (CBL + SPC + CN)
 tree = cn.run_collision(facts)
 # → ProofTree with blocked_claims, spc_tendencies, cn_claims
+
+# Conflict of laws — auto-detect governing jurisdiction
+from compiler_core.conflict_of_laws import select_jurisdiction
+jurisdiction = select_jurisdiction(facts)
+# → "CN" or "HK" or "US"
+
+# Multi-jurisdiction orchestration
+from compiler_core.multi_jurisdiction_orchestrator import MultiJurisdictionOrchestrator
+mjo = MultiJurisdictionOrchestrator()
+tree = mjo.run(facts, jurisdictions=["CN", "HK", "US"])
 ```
 
 ---
@@ -117,11 +134,33 @@ tree = cn.run_collision(facts)
 ### China (CN) — 2,117 rules, 13 domains
 Contract, Tort, Corporate, Family, Criminal, Administrative, IP, Procedure, Execution, State Compensation, Juvenile, Maritime, Court Management
 
-### Hong Kong (HK) — 104 rules, 7 namespaces
+### Hong Kong (HK) — 104 rules, 7 namespaces, 21 blocking rules
 Contract (Cap 26), Corporate (Cap 622), Employment (Cap 57), Family (Cap 179), Property (Cap 219), Arbitration (Cap 609), IP (Cap 528)
 
-### US Federal — 73 rules, 7 titles
-Arbitration (Title 9), Jurisdiction/FSIA (Title 28), Sanctions/IEEPA (Title 50), Bankruptcy (Title 11), Commerce/Antitrust (Title 15), Copyrights (Title 17), Patents (Title 35)
+### US Federal — 123 rules, 9 namespaces, 18 blocking rules
+- **Title 9** Arbitration (FAA + NYC + Inter-American) — 21 rules
+- **Title 28** Jurisdiction/FSIA/§1782 — 12 rules
+- **Title 50** Sanctions (IEEPA + ECRA) — 5 rules
+- **Title 11** Bankruptcy (Ch.7 + Ch.11 + Ch.15) — 12 rules
+- **Title 15** Commerce/Antitrust/Securities/Trademark — 7 rules
+- **Title 17** Copyrights — 16 rules
+- **Title 35** Patents — 16 rules
+- **UCC** Article 2 (Sales) + Article 9 (Secured Transactions) — 27 rules
+- **Restatement 2d** Contracts — 14 rules
+- **FRCivP** Federal Rules of Civil Procedure — 9 rules
+
+---
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| ProofTree output (no natural language) | Language is a post-processing layer, decoupled from reasoning |
+| L0 primitives as bridge | US↔HK↔CN mapping through 6 universal primitives, not text-to-text |
+| DDL modal gate | PROHIBITION blocks claims, OBLIGATION flags gaps, PERMISSION marks hypothetical |
+| Three-track collision | CBL (blocking) > SPC (judicial tendency) > CN (full statutory) |
+| Addons pattern | New jurisdiction = new directory, zero changes to core engine |
+| Honest refusal | CriticalClarityFailure halts on consecutive low-confidence — refuses to hallucinate |
 
 ---
 
