@@ -864,6 +864,303 @@ rules:
   output_type: Terminal_Output_Node
 
 # ═══════════════════════════════════════════════════════════════
+# Cap 57 — 雇佣条例 (Employment Ordinance)
+# ║ 跨境雇佣核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C57-S5-EmploymentContractDuration
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - No_Contrary_Agreement
+  head_claim: Employment_Deemed_Monthly
+  concepts:
+  - Employment
+  - Contract
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_employment
+  legal_basis: Cap 57 s.5 连续性雇佣合约当作为期1个月并可按月续期
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S6-TerminationByNotice
+  premise_atoms:
+  - Employment_Relationship_Exists
+  head_claim: Either_Party_MayTerminate_ByNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain:
+  - HK-C57-S6-X1-MinNoticePeriod
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.6 以通知终止合约
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S6-X1-MinNoticePeriod
+  premise_atoms:
+  - Notice_Period_LessThan_1Month
+  head_claim: NoticePeriod_MustBe_AtLeast1Month
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.6(2)(a) 通知期不得少于1个月
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S7-PaymentInLieuOfNotice
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Either_Party_Waives_Notice
+  head_claim: PaymentInLieu_Acceptable
+  concepts:
+  - Employment
+  - Termination
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.7 以代通知金终止合约
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S8A-WrongfulTerminationDamages
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Termination_NotPer_S6orS7
+  head_claim: WrongfulTermination_Damages_Due
+  concepts:
+  - Employment
+  - Damages
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.8A 不当地终止合约的损害赔偿
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S9-EmployerSummaryDismissal
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Employee_WilfulDisobedience_Or_Misconduct_Or_Fraud_Or_Negligence
+  head_claim: Employer_MayDismiss_WithoutNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.9 雇主不给予通知而终止合约（故意不服从/行为不当/欺诈/惯常疏忽）
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S10-EmployeeSummaryTermination
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Employee_Fears_Violence_Or_IllHealth_Or_Mistreatment
+  head_claim: Employee_MayTerminate_WithoutNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.10 雇员不给予通知而终止合约（暴力/疾病/苛待）
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 179 — 婚姻法律程序与财产条例
+# ║ 跨境家事法核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C179-S3-DivorceJurisdiction
+  premise_atoms:
+  - Marriage_Exists
+  - Either_Party_Domiciled_In_HK_Or_Ordinarily_Resident_3Years_Or_CloseConnection
+  head_claim: HK_Court_HasDivorceJurisdiction
+  concepts:
+  - Divorce
+  - Jurisdiction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.3 对离婚案的司法管辖权（居籍/惯常居所3年/密切联系）
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S11-BreakdownGround
+  premise_atoms:
+  - Marriage_Exists
+  - Marriage_Irretrievably_Broken_Down
+  head_claim: Divorce_Ground_Established
+  concepts:
+  - Divorce
+  - Ground
+  exception_chain:
+  - HK-C179-S12-OneYearBar
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.11 离婚唯一理由：婚姻已破裂至无可挽救
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S12-OneYearBar
+  premise_atoms:
+  - Marriage_LessThan_1Year
+  head_claim: Divorce_Petition_Barred
+  concepts:
+  - Divorce
+  - Procedure
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.12 对结婚后1年内提出呈请的限制
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S20-MarriageVoid
+  premise_atoms:
+  - Marriage_Exists
+  - Ground_For_Nullity_Exists
+  head_claim: Marriage_MayBe_Declared_Void
+  concepts:
+  - Marriage
+  - Nullity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.20 批出婚姻无效判令的理由
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S18-RemarriageAfterAbsoluteDecree
+  premise_atoms:
+  - Divorce_Absolute_Decree_Granted
+  - No_Pending_Appeal
+  head_claim: Either_Party_MayRemarry
+  concepts:
+  - Divorce
+  - Remarriage
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.18 离婚者再婚
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 219 — 物业转易及财产条例
+# ║ 跨境财产法核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C219-S3-WritingRequirement
+  premise_atoms:
+  - Land_Sale_Contract_Exists
+  head_claim: Contract_MustBe_InWriting_Signed
+  concepts:
+  - Property
+  - Contract
+  - Writing
+  exception_chain:
+  - HK-C219-S3-X1-PartPerformance
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.3 土地合约须以书面作出并由被告签署
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S3-X1-PartPerformance
+  premise_atoms:
+  - Part_Performance_Established
+  head_claim: WritingRequirement_Waived
+  concepts:
+  - Property
+  - Exception
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.3(2) 部分履行例外
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S4-DeedRequirement
+  premise_atoms:
+  - Legal_Estate_Disposition
+  head_claim: MustBe_ByDeed
+  concepts:
+  - Property
+  - Deed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.4 法定产业权的处置须以契据作出
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S8-JointTenancySeverance
+  premise_atoms:
+  - Joint_Tenancy_Exists
+  - Notice_Served_To_Other_CoOwner
+  head_claim: JointTenancy_Severed
+  concepts:
+  - Property
+  - CoOwnership
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.8 联权共有的划分
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S9-TenancyInCommonPresumption
+  premise_atoms:
+  - Property_Transferred_To_TwoOrMore_By_Instrument
+  head_claim: Presumed_TenancyInCommon_NotJoint
+  concepts:
+  - Property
+  - CoOwnership
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.9 有利于分权共有的推定
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S17-FullTitleTransfer
+  premise_atoms:
+  - Conveyance_Executed
+  head_claim: All_Estates_Rights_Interests_Transferred
+  concepts:
+  - Property
+  - Transfer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_property
+  legal_basis: Cap 219 s.17 转让即全部产业权转移
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S22-CapacityPresumption
+  premise_atoms:
+  - Person_Is_Party_To_Instrument
+  head_claim: Presumed_FullLegalCapacity
+  concepts:
+  - Property
+  - Capacity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.22 关于行为能力的推定
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
 # Cap 622 — 公司条例 (Companies Ordinance)
 # ║ 跨境公司治理核心规则
 # ═══════════════════════════════════════════════════════════════

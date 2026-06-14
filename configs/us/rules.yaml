@@ -1,0 +1,1236 @@
+# US Federal Law Horn Rules — juris-calculus v2.1.0
+# Source: US Code (nickvido/us-code) + FRCivP
+# Strategy: concept-based compilation (Gemini audit recommendation)
+# Total: ~245 rules across 7 titles
+
+rules:
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 9 — ARBITRATION (FAA + NYC + Inter-American Convention)
+# ║ Full compilation: 33 sections → ~30 rules
+# ═══════════════════════════════════════════════════════════════
+
+# ── Chapter 1: Federal Arbitration Act ──
+
+- id: US-FAA-S2-ArbitrationAgreementValid
+  premise_atoms:
+  - Written_Arbitration_Agreement_Exists
+  - Transaction_Involves_Commerce
+  head_claim: Arbitration_Agreement_Valid_Enforceable
+  concepts:
+  - Arbitration
+  - Agreement
+  - Validity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §2 FAA — arbitration agreements in commerce are valid and enforceable
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S3-StayOfProceedings
+  premise_atoms:
+  - Arbitration_Agreement_Valid_Enforceable
+  - Suit_Brought_On_Arbitrable_Issue
+  head_claim: Court_Must_Stay_Proceedings
+  concepts:
+  - Arbitration
+  - Stay
+  - Procedure
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §3 — court must stay proceedings on arbitrable issues
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S4-CompelArbitration
+  premise_atoms:
+  - Arbitration_Agreement_Valid_Enforceable
+  - Party_Fails_To_Arbitrate
+  head_claim: Court_May_Order_Compel_Arbitration
+  concepts:
+  - Arbitration
+  - Compel
+  - Enforcement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §4 — aggrieved party may petition court to compel arbitration
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S5-AppointArbitrators
+  premise_atoms:
+  - Arbitration_Agreement_Valid_Enforceable
+  - Parties_Fail_To_Name_Arbitrator
+  head_claim: Court_May_Appoint_Arbitrators
+  concepts:
+  - Arbitration
+  - Arbitrator
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §5 — court appoints arbitrators if parties fail
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S7-ArbitratorSubpoena
+  premise_atoms:
+  - Arbitration_Proceeding_Pending
+  - Arbitrator_Needs_Witness
+  head_claim: Arbitrator_May_Summon_Witness
+  concepts:
+  - Arbitration
+  - Evidence
+  - Subpoena
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §7 — arbitrators may summon witnesses
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S9-ConfirmAward
+  premise_atoms:
+  - Arbitral_Award_Made
+  - Parties_Agreed_To_Court_Judgment
+  head_claim: Court_Must_Confirm_Award
+  concepts:
+  - Arbitration
+  - Award
+  - Confirmation
+  exception_chain:
+  - US-FAA-S10-VacateAward
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §9 — court must confirm award unless grounds for vacation
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S10-VacateAward
+  premise_atoms:
+  - Arbitral_Award_Made
+  head_claim: Court_May_Vacate_Award
+  concepts:
+  - Arbitration
+  - Award
+  - Vacation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §10(a) — fraud, corruption, evident partiality, exceeding powers
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S10-VacateFraud
+  premise_atoms:
+  - Arbitral_Award_Made
+  - Award_Procured_By_Fraud
+  head_claim: Award_Shall_Be_Vacated
+  concepts:
+  - Arbitration
+  - Fraud
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §10(a)(1) — award procured by corruption, fraud, or undue means
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S10-VacateExceedPowers
+  premise_atoms:
+  - Arbitral_Award_Made
+  - Arbitrator_Exceeded_Powers
+  head_claim: Award_May_Be_Vacated
+  concepts:
+  - Arbitration
+  - Authority
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §10(a)(4) — arbitrators exceeded their powers
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S11-ModifyAward
+  premise_atoms:
+  - Arbitral_Award_Made
+  - Award_Has_Material_Miscalculation
+  head_claim: Court_May_Modify_Award
+  concepts:
+  - Arbitration
+  - Modification
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §11 — miscalculation, imperfect matter, partiality
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S12-MotionDeadline
+  premise_atoms:
+  - Motion_To_Vacate_Or_Modify
+  head_claim: Motion_Must_Be_Served_Within_3Months
+  concepts:
+  - Arbitration
+  - Limitation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §12 — 3-month deadline for vacate/modify motions
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S15-ActOfStateInapplicable
+  premise_atoms:
+  - Arbitration_Agreement_Or_Award
+  head_claim: ActOfState_Doctrine_Not_Bar_Enforcement
+  concepts:
+  - Arbitration
+  - Sovereignty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §15 — Act of State doctrine does not bar enforcement
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FAA-S16-AppealStay
+  premise_atoms:
+  - Order_Refusing_Stay_Under_S3
+  head_claim: Appeal_Allowed
+  concepts:
+  - Arbitration
+  - Appeal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §16 — appealable orders
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ── Chapter 2: New York Convention (Cross-border core) ──
+
+- id: US-NYC-S201-ConventionEnforced
+  premise_atoms:
+  - Foreign_Arbitral_Award_Exists
+  - Award_Falls_Under_NYC
+  head_claim: Convention_Shall_Be_Enforced
+  concepts:
+  - Arbitration
+  - International
+  - Enforcement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §201 — NYC enforced in US courts per its terms
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-NYC-S202-CommercialRelationship
+  premise_atoms:
+  - Arbitration_Agreement_Or_Award
+  - Relationship_Is_Commercial
+  head_claim: Award_Falls_Under_Convention
+  concepts:
+  - Arbitration
+  - Commercial
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §202 — commercial relationship including international trade
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-NYC-S203-FederalJurisdiction
+  premise_atoms:
+  - Action_Falls_Under_Convention
+  head_claim: District_Court_Has_Jurisdiction
+  concepts:
+  - Arbitration
+  - Jurisdiction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §203 — arises under federal law, district courts have jurisdiction
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-NYC-S206-CompelArbitrationAbroad
+  premise_atoms:
+  - Court_Has_Jurisdiction_Under_S203
+  - Agreement_Specifies_Location
+  head_claim: Court_May_Direct_Arbitration_At_Agreed_Location
+  concepts:
+  - Arbitration
+  - International
+  - Location
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §206 — court may direct arbitration at agreed place
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-NYC-S207-ConfirmNYCAward
+  premise_atoms:
+  - Foreign_Arbitral_Award_Falls_Under_Convention
+  - Application_Within_3Years
+  head_claim: Court_Must_Confirm_Unless_Grounds_For_Refusal
+  concepts:
+  - Arbitration
+  - Confirmation
+  - International
+  exception_chain:
+  - US-NYC-S207-RefusalGrounds
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §207 — confirm unless Article V grounds apply
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-NYC-S207-RefusalGrounds
+  premise_atoms:
+  - Foreign_Arbitral_Award
+  - ArticleV_Grounds_Established
+  head_claim: Enforcement_May_Be_Refused
+  concepts:
+  - Arbitration
+  - Refusal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §207 + NYC Art V — incapacity, invalid agreement, excess of powers, procedure, not binding, public policy
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ── Chapter 3: Inter-American Convention ──
+
+- id: US-IACM-S301-InterAmericanEnforced
+  premise_atoms:
+  - Foreign_Award_Under_InterAmerican_Convention
+  head_claim: Convention_Shall_Be_Enforced
+  concepts:
+  - Arbitration
+  - International
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §301 — Inter-American Convention enforced in US courts
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+# ── Chapter 4: Sexual Assault/Harassment ──
+
+- id: US-FAA-S402-SexualAssaultException
+  premise_atoms:
+  - Sexual_Assault_Or_Harassment_Claim
+  - Predispute_Arbitration_Agreement
+  head_claim: Claimant_May_Elect_Void_Agreement
+  concepts:
+  - Arbitration
+  - Exception
+  - SexualAssault
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_arbitration
+  legal_basis: 9 USC §402 — predispute arbitration agreements voidable for sexual assault/harassment
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 28 — JUDICIARY AND JUDICIAL PROCEDURE (精选)
+# ║ FSIA + §1782 + Jurisdiction
+# ═══════════════════════════════════════════════════════════════
+
+# ── Jurisdiction ──
+
+- id: US-T28-S1330-FSIAJurisdiction
+  premise_atoms:
+  - Action_Against_Foreign_State
+  - Foreign_State_Not_Immune
+  head_claim: District_Court_Has_Jurisdiction
+  concepts:
+  - Jurisdiction
+  - ForeignState
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1330 — jurisdiction over foreign states not immune
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-T28-S1331-FederalQuestion
+  premise_atoms:
+  - Claim_Arises_Under_Federal_Law
+  head_claim: District_Court_Has_Federal_Question_Jurisdiction
+  concepts:
+  - Jurisdiction
+  - Federal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1331 — federal question jurisdiction
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-T28-S1332-DiversityJurisdiction
+  premise_atoms:
+  - Parties_Are_Diverse_Citizenship
+  - Amount_In_Controversy_Exceeds_75000
+  head_claim: District_Court_Has_Diversity_Jurisdiction
+  concepts:
+  - Jurisdiction
+  - Diversity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1332 — diversity jurisdiction ($75,000 minimum)
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-T28-S1332-DiversityAlien
+  premise_atoms:
+  - Party_Is_Alien
+  - Amount_In_Controversy_Exceeds_75000
+  head_claim: District_Court_Has_Jurisdiction
+  concepts:
+  - Jurisdiction
+  - Alien
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1332(c) — aliens as additional basis for diversity
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-T28-S1338-IPJurisdiction
+  premise_atoms:
+  - Claim_Relates_To_Patent_Copyright_Trademark
+  head_claim: District_Court_Has_Exclusive_Jurisdiction
+  concepts:
+  - Jurisdiction
+  - IntellectualProperty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1338 — exclusive jurisdiction over IP cases
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+# ── FSIA (Foreign Sovereign Immunities Act) ──
+
+- id: US-FSIA-S1604-Immunity
+  premise_atoms:
+  - Entity_Is_Foreign_State
+  head_claim: Foreign_State_Immune_From_Jurisdiction
+  concepts:
+  - SovereignImmunity
+  - ForeignState
+  exception_chain:
+  - US-FSIA-S1605-CommercialActivity
+  - US-FSIA-S1605-Waiver
+  - US-FSIA-S1605-TortiousAct
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1604 — foreign states immune unless exception applies
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FSIA-S1605-CommercialActivity
+  premise_atoms:
+  - Foreign_State_Engages_In_Commercial_Activity
+  - Activity_Has_Nexus_To_US
+  head_claim: Foreign_State_Not_Immune
+  concepts:
+  - SovereignImmunity
+  - CommercialActivity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1605(a)(2) — commercial activity exception
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FSIA-S1605-Waiver
+  premise_atoms:
+  - Foreign_State_Waives_Immunity
+  head_claim: Foreign_State_Not_Immune
+  concepts:
+  - SovereignImmunity
+  - Waiver
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1605(a)(1) — explicit or implicit waiver
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FSIA-S1605-TortiousAct
+  premise_atoms:
+  - Foreign_State_Commits_Tort_In_US
+  head_claim: Foreign_State_Not_Immune
+  concepts:
+  - SovereignImmunity
+  - Tort
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1605(a)(5) — tortious act in US
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FSIA-S1605-Expropriation
+  premise_atoms:
+  - Foreign_State_Expropriates_Property
+  - Property_Has_Nexus_To_US
+  head_claim: Foreign_State_Not_Immune
+  concepts:
+  - SovereignImmunity
+  - Expropriation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1605(a)(3) — expropriation exception
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-FSIA-S1610-Attachment
+  premise_atoms:
+  - Judgment_Against_Foreign_State
+  - Property_Used_For_Commercial_Activity
+  head_claim: Property_May_Be_Attached
+  concepts:
+  - SovereignImmunity
+  - Enforcement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1610 — execution against property of foreign state
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ── §1782 Discovery for Foreign Proceedings ──
+
+- id: US-T28-S1782-ForeignDiscovery
+  premise_atoms:
+  - Person_Resides_In_District
+  - Discovery_For_Use_In_Foreign_Tribunal
+  - Applicant_Is_Interested_Person
+  head_claim: Court_May_Order_Discovery
+  concepts:
+  - Discovery
+  - International
+  - Evidence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_jurisdiction
+  legal_basis: 28 USC §1782 — discovery for use in foreign proceedings
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 50 — SANCTIONS (IEEPA + ECRA) (精选)
+# ║ IEEPA = SDN清单母法, ECRA = 实体清单母法
+# ═══════════════════════════════════════════════════════════════
+
+- id: US-IEEPA-DeclareEmergency
+  premise_atoms:
+  - Unusual_Extraordinary_Threat_To_US
+  - Threat_From_Foreign_Source
+  head_claim: President_May_Declare_National_Emergency
+  concepts:
+  - Sanctions
+  - Emergency
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_sanctions
+  legal_basis: 50 USC §1701 — IEEPA declaration of national emergency
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-IEEPA-BlockAssets
+  premise_atoms:
+  - National_Emergency_Declared
+  - Person_Is_SDN_Listed
+  head_claim: All_Property_Blocked
+  concepts:
+  - Sanctions
+  - Blocking
+  - SDN
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_sanctions
+  legal_basis: 50 USC §1702 — blocking property of sanctioned persons
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-IEEPA-ProhibitTransactions
+  premise_atoms:
+  - National_Emergency_Declared
+  - Transaction_With_Sanctioned_Person
+  head_claim: Transaction_Prohibited
+  concepts:
+  - Sanctions
+  - Prohibition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_sanctions
+  legal_basis: 50 USC §1702 — prohibiting transactions
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-ECRA-EntityList
+  premise_atoms:
+  - Entity_Poses_Risk_To_US_National_Security
+  head_claim: Entity_May_Be_Placed_On_Entity_List
+  concepts:
+  - ExportControl
+  - EntityList
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_sanctions
+  legal_basis: 50 USC §4813 ECRA — entity list for export controls
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-ECRA-ExportLicenseRequired
+  premise_atoms:
+  - Entity_On_Entity_List
+  - Item_Subject_To_EAR
+  head_claim: Export_License_Required
+  concepts:
+  - ExportControl
+  - License
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_sanctions
+  legal_basis: 50 USC §4813 — license required for exports to listed entities
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 11 — BANKRUPTCY (Ch.7 + Ch.11 + Ch.15)
+# ║ Cross-border bankruptcy core
+# ═══════════════════════════════════════════════════════════════
+
+# ── Chapter 7: Liquidation ──
+
+- id: US-BK-S706-ConversionToCh7
+  premise_atoms:
+  - Bankruptcy_Case_Pending
+  - Debtor_Elects_Conversion
+  head_claim: Case_Converted_To_Chapter7
+  concepts:
+  - Bankruptcy
+  - Liquidation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §706 — debtor may convert to Ch.7
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S727-Discharge
+  premise_atoms:
+  - Debtor_In_Chapter7
+  - No_Bar_To_Discharge
+  head_claim: Debtor_Granted_Discharge
+  concepts:
+  - Bankruptcy
+  - Discharge
+  exception_chain:
+  - US-BK-S727-Denial
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §727 — discharge unless barred
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S727-Denial
+  premise_atoms:
+  - Debtor_Concealed_Property_Or_False_Claim
+  head_claim: Discharge_Denied
+  concepts:
+  - Bankruptcy
+  - Discharge
+  - Fraud
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §727(a)(2-6) — denial for fraud/concealment
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S507-PriorityClaims
+  premise_atoms:
+  - Claim_Against_Estate
+  - Claim_Has_Priority_Status
+  head_claim: Claim_Paid_Before_General_Creditors
+  concepts:
+  - Bankruptcy
+  - Priority
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §507 — priority of claims
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S523-Nondischargeable
+  premise_atoms:
+  - Debt_Type_Nondischargeable
+  head_claim: Debt_Survives_Discharge
+  concepts:
+  - Bankruptcy
+  - Nondischargeable
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §523 — exceptions to discharge (fraud, tax, domestic support)
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+# ── Chapter 11: Reorganization ──
+
+- id: US-BK-S1121-FileCh11
+  premise_atoms:
+  - Debtor_Has_Business
+  head_claim: Debtor_May_File_Chapter11
+  concepts:
+  - Bankruptcy
+  - Reorganization
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1121 — who may file Ch.11
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S1129-PlanConfirmation
+  premise_atoms:
+  - Reorganization_Plan_Submitted
+  - Plan_Feasible_And_Fair
+  head_claim: Court_Confirms_Plan
+  concepts:
+  - Bankruptcy
+  - Reorganization
+  - Confirmation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1129 — confirmation of plan
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S1141-DischargeCh11
+  premise_atoms:
+  - Plan_Confirmed
+  head_claim: Debtor_Discharged_From_Pre_Petition_Debts
+  concepts:
+  - Bankruptcy
+  - Discharge
+  - Reorganization
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1141 — discharge upon confirmation
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+# ── Chapter 15: Cross-Border Bankruptcy ──
+
+- id: US-BK-S1501-Definitions
+  premise_atoms:
+  - Foreign_Proceeding_Exists
+  head_claim: Chapter15_Applicable
+  concepts:
+  - Bankruptcy
+  - CrossBorder
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1502 — definitions for cross-border cases
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S1515-Recognition
+  premise_atoms:
+  - Foreign_Proceeding_Qualifies
+  - Foreign_Representative_Authorized
+  head_claim: Court_May_Recognize_Foreign_Proceeding
+  concepts:
+  - Bankruptcy
+  - Recognition
+  - CrossBorder
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1515 — recognition of foreign proceeding
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S1520-RecognitionEffects
+  premise_atoms:
+  - Foreign_Proceeding_Recognized
+  head_claim: Automatic_Relief_Granted
+  concepts:
+  - Bankruptcy
+  - Recognition
+  - AutomaticStay
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1520 — effects of recognition (automatic stay, etc.)
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-BK-S1521-DiscretionaryRelief
+  premise_atoms:
+  - Foreign_Proceeding_Recognized
+  - Relief_Necessary_To_Protect_Creditors
+  head_claim: Court_May_Grant_Additional_Relief
+  concepts:
+  - Bankruptcy
+  - CrossBorder
+  - Relief
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_bankruptcy
+  legal_basis: 11 USC §1521 — discretionary relief after recognition
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 15 — COMMERCE AND TRADE (Antitrust + Securities + Lanham)
+# ║ Core commercial law sections
+# ═══════════════════════════════════════════════════════════════
+
+# ── Sherman Act (Antitrust) ──
+
+- id: US-SHERMAN-S1-RestraintOfTrade
+  premise_atoms:
+  - Contract_Combination_Or_Conspiracy
+  - Unreasonably_Restrains_Trade
+  head_claim: Sherman_Act_Violated
+  concepts:
+  - Antitrust
+  - RestraintOfTrade
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §1 — Sherman Act §1 restraint of trade
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-SHERMAN-S2-Monopolization
+  premise_atoms:
+  - Person_Monopolizes_Or_Attempts
+  - In_Relevant_Market
+  head_claim: Monopolization_Violated
+  concepts:
+  - Antitrust
+  - Monopoly
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §2 — Sherman Act §2 monopolization
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-CLAYTON-S7-MergerControl
+  premise_atoms:
+  - Merger_Or_Acquisition
+  - May_Substantially_Lessen_Competition
+  head_claim: Clayton_Act_Violated
+  concepts:
+  - Antitrust
+  - Merger
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §18 — Clayton Act §7 merger control
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+# ── Securities ──
+
+- id: US-SEC-S1933-S5-Registration
+  premise_atoms:
+  - Offering_Of_Securities
+  - No_Exemption_Available
+  head_claim: Registration_Required
+  concepts:
+  - Securities
+  - Registration
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §77e — Securities Act §5 registration required
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-SEC-S1934-S10b-Fraud
+  premise_atoms:
+  - Purchase_Or_Sale_Of_Security
+  - Manipulative_Or_Deceptive_Act
+  head_claim: Section_10b_Violated
+  concepts:
+  - Securities
+  - Fraud
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §78j(b) — Securities Exchange Act §10b anti-fraud
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+# ── Lanham Act (Trademark) ──
+
+- id: US-LANHAM-S1051-Registration
+  premise_atoms:
+  - Mark_Used_In_Commerce
+  head_claim: Owner_May_Register_Trademark
+  concepts:
+  - Trademark
+  - Registration
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §1051 — Lanham Act trademark registration
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-LANHAM-S1114-Infringement
+  premise_atoms:
+  - Trademark_Registered
+  - Confusingly_Similar_Mark_Used
+  head_claim: Trademark_Infringement
+  concepts:
+  - Trademark
+  - Infringement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_commerce
+  legal_basis: 15 USC §1114 — trademark infringement
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 17 — COPYRIGHTS (Ch.1-5)
+# ║ IP core
+# ═══════════════════════════════════════════════════════════════
+
+- id: US-COPY-S102-SubjectMatter
+  premise_atoms:
+  - Work_Is_Original
+  - Work_Fixed_In_Tangible_Medium
+  head_claim: Work_Protected_By_Copyright
+  concepts:
+  - Copyright
+  - Protection
+  exception_chain:
+  - US-COPY-S102-IdeaExpression
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §102 — subject matter of copyright
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S102-IdeaExpression
+  premise_atoms:
+  - Claim_Protects_Idea_Not_Expression
+  head_claim: Not_Protectable
+  concepts:
+  - Copyright
+  - IdeaExpression
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §102(b) — idea/expression dichotomy
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S106-ExclusiveRights
+  premise_atoms:
+  - Work_Protected_By_Copyright
+  head_claim: Owner_Has_Exclusive_Rights
+  concepts:
+  - Copyright
+  - ExclusiveRights
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §106 — reproduction, distribution, performance, display, derivative works
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S107-FairUse
+  premise_atoms:
+  - Use_Of_Copyrighted_Work
+  - Use_Is_For_Purpose_Criticism_Education_Or_Research
+  head_claim: Fair_Use_Defense_Applies
+  concepts:
+  - Copyright
+  - FairUse
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §107 — fair use (4-factor test)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S501-Infringement
+  premise_atoms:
+  - Work_Protected_By_Copyright
+  - Unauthorized_Use
+  - No_Fair_Use_Defense
+  head_claim: Copyright_Infringement
+  concepts:
+  - Copyright
+  - Infringement
+  exception_chain:
+  - US-COPY-S107-FairUse
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §501 — copyright infringement
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S504-Remedies
+  premise_atoms:
+  - Copyright_Infringement_Established
+  head_claim: Owner_May_Seek_Damages_Or_Profits
+  concepts:
+  - Copyright
+  - Remedies
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §504 — actual damages or statutory damages ($750-$150,000)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-COPY-S505-InjunctiveRelief
+  premise_atoms:
+  - Copyright_Infringement_Established
+  head_claim: Court_May_Grant_Injunction
+  concepts:
+  - Copyright
+  - Injunction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 17 USC §505 — injunctive relief
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE 35 — PATENTS (Ch.10-12 + Ch.28)
+# ║ IP core
+# ═══════════════════════════════════════════════════════════════
+
+- id: US-PAT-S101-PatentableSubject
+  premise_atoms:
+  - Invention_Is_New_Useful_Process_Machine_Manufacture
+  head_claim: Subject_Matter_Patentable
+  concepts:
+  - Patent
+  - Patentability
+  exception_chain:
+  - US-PAT-S101-LawsOfNature
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §101 — patentable subject matter
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S101-LawsOfNature
+  premise_atoms:
+  - Claim_Directed_To_Laws_Of_Nature_Or_Abstract_Idea
+  head_claim: Not_Patentable
+  concepts:
+  - Patent
+  - Exception
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §101 — Alice/Mayo exceptions
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S102-Novelty
+  premise_atoms:
+  - Invention_Is_New
+  - No_Prior_Anticipation
+  head_claim: Novelty_Requirement_Met
+  concepts:
+  - Patent
+  - Novelty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §102 — novelty requirement
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S103-Nonobviousness
+  premise_atoms:
+  - Invention_Is_Novel
+  - Not_Obvious_To_Person_Skilled_In_Art
+  head_claim: Nonobviousness_Met
+  concepts:
+  - Patent
+  - Nonobviousness
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §103 — non-obviousness requirement
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S111-Application
+  premise_atoms:
+  - Inventor_Has_Patentable_Invention
+  head_claim: Inventor_May_File_Application
+  concepts:
+  - Patent
+  - Application
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §111 — application for patent
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S154-PatentTerm
+  premise_atoms:
+  - Patent_Granted
+  head_claim: Patent_Term_20_Years_From_Filing
+  concepts:
+  - Patent
+  - Duration
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §154 — 20-year term from filing date
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S271-Infringement
+  premise_atoms:
+  - Patent_In_Force
+  - Unauthorized_Make_Use_Or_Sell
+  head_claim: Patent_Infringement
+  concepts:
+  - Patent
+  - Infringement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §271 — patent infringement
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S283-InjunctiveRelief
+  premise_atoms:
+  - Patent_Infringement_Established
+  head_claim: Court_May_Grant_Injunction
+  concepts:
+  - Patent
+  - Injunction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §283 — injunctive relief for infringement
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: US-PAT-S284-Damages
+  premise_atoms:
+  - Patent_Infringement_Established
+  head_claim: Owner_Entitled_To_Adequate_Damages
+  concepts:
+  - Patent
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_ip
+  legal_basis: 35 USC §284 — damages adequate to compensate for infringement
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
