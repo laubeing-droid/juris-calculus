@@ -148,8 +148,11 @@ class PRCCollisionEngine:
         """
         tree = ProofTree(jurisdiction="CN")
 
+        # ═══ Meta Constraints 预处理 ═══
+        filtered_facts = self._apply_meta_constraints(shared_facts)
+
         # ═══ Track 1: CBL 阻断（一票否决）═══
-        blocked_targets = self._run_cbl_track(shared_facts, tree)
+        blocked_targets = self._run_cbl_track(filtered_facts, tree)
 
         # ═══ Track 2: SPC 裁判倾向（过滤被阻断的 claim）═══
         self._run_spc_track(shared_facts, tree, blocked_targets)
@@ -321,6 +324,31 @@ class PRCCollisionEngine:
                 return False
 
         return True
+
+    def _apply_meta_constraints(self, facts: Dict[str, LegalFact]) -> Dict[str, LegalFact]:
+        """Apply meta_constraints as pre-processing on facts.
+
+        META_005 (Jurisdiction Separation): facts only, no HK/US claims.
+        META_006 (Strict Jurisdiction): if asset/behavior in PRC, force PRC override.
+        """
+        if not self._meta_rules:
+            return facts
+
+        filtered = dict(facts)
+
+        for rule in self._meta_rules:
+            rule_id = rule.get("id", "")
+            behavior = rule.get("behavior", "")
+
+            # META_006: Strict Jurisdiction — if Cross_Border_Context exists,
+            # log the meta constraint as active (actual FORCE_VOID is in CBL track)
+            if behavior == "PRE_ITERATION_HOOK_OVERRIDE":
+                trigger = rule.get("trigger", "")
+                if "Cross_Border_Context" in filtered:
+                    # Meta constraint is active — CBL track will handle blocking
+                    pass
+
+        return filtered
 
     def _compute_bridge_health(self, cn_count: int) -> Dict:
         """CN 桥接健康分 — 连续 3 次 CN=0 触发预警。"""

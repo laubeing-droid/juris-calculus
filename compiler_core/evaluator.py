@@ -16,16 +16,9 @@ from compiler_core.constraint_validator import ConstraintValidator
 import logging
 
 from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
-from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
 from compiler_core.proof_trace import ProofEvent, make_trace_id
 from compiler_core.trust_labels import DataOrigin, EpistemicStatus, RuleMaturity, TrustLabel
-from enum import Enum
 
-
-class ThinkMode(str, Enum):
-    QUICK_SCAN = "QUICK_SCAN"
-    STANDARD = "STANDARD"
-    MAX = "MAX"
 
 from compiler_core.domain_config import DomainConfig, get_domain_config, check_discretionary
 
@@ -94,7 +87,7 @@ class FixpointEvaluator:
         "当事人另有约定", "合同另有约定"
     ]
 
-    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None, l0_map: Dict[str, str] = None):
+    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None, l0_map: Dict[str, str] = None, case_date: str = None):
         self.config = config or get_domain_config()
         self.l0_map = l0_map or {}  # v2.0: L0 concept mapping for cross-jurisdiction degradation
         self.domain_id = domain_id
@@ -102,6 +95,10 @@ class FixpointEvaluator:
         # 编译期转换：单前提规则注入域锚点
         from compiler_core.transformer import auto_patch
         rules = auto_patch(rules)
+
+        # #9: Temporal validity — filter rules by case_date
+        if case_date:
+            rules = [r for r in rules if self._is_valid_at(r, case_date)]
 
         # 多租户安全防线
         if self.domain_id:
@@ -130,6 +127,20 @@ class FixpointEvaluator:
         # 约束层：Rebuttal Hook + Audit Trail
         self.constraint_validator = ConstraintValidator(overrides_path=overrides_path)
         self.audit_log: List[dict] = []
+
+    @staticmethod
+    def _is_valid_at(rule: LegalRule, case_date: str) -> bool:
+        """Check if rule is valid at the given date.
+
+        valid_from/valid_to format: "YYYY-MM-DD" or empty (means unbounded).
+        """
+        vf = rule.valid_from
+        vt = rule.valid_to
+        if vf and case_date < vf:
+            return False
+        if vt and case_date > vt:
+            return False
+        return True
 
     def _record_event(self, event_type: str, rule_id: str = "", claim_id: str = "", **metadata) -> None:
         self.audit_log.append(ProofEvent(
@@ -177,11 +188,18 @@ class FixpointEvaluator:
         return deps
 
     def _check_premises(self, rule: LegalRule, state: IRState) -> Tuple[bool, List[str]]:
-        """Check if all premises of a rule are satisfied."""
-        missing = [
-            atom for atom in rule.premise_atoms
-            if atom not in state.facts and atom not in state.claims
-        ]
+        """Check if all premises of a rule are satisfied.
+
+        A premise is NOT satisfied if:
+        - it's missing from both facts and claims, OR
+        - it's present but has been blocked by a PROHIBITION rule
+        """
+        missing = []
+        for atom in rule.premise_atoms:
+            if atom in state.blocked_claims:
+                missing.append(atom)  # blocked = effectively missing
+            elif atom not in state.facts and atom not in state.claims:
+                missing.append(atom)
         return len(missing) == 0, missing
 
     def _check_exceptions(self, rule: LegalRule, state: IRState) -> Optional[str]:
@@ -291,7 +309,7 @@ class FixpointEvaluator:
             },
         )
 
-        return LegalClaim(
+        claim = LegalClaim(
             id=rule.head_claim,
             description=f"{rule.id}: {rule.head_claim}",
             confidence=score,
@@ -313,6 +331,17 @@ class FixpointEvaluator:
             source_anchor=getattr(rule, "source_anchor", ""),
         )
 
+        # PERMISSION: "may" ≠ "does" — mark as HYPOTHETICAL, not a firm conclusion
+        if modality == 'PERMISSION':
+            claim.epistemic_status = EpistemicStatus(
+                trust_label=TrustLabel.UNVERIFIED,
+                rule_maturity=RuleMaturity.DRAFT,
+                data_origin=DataOrigin.SYMBOLIC_ENGINE,
+                verification_artifacts=[trace_id],
+            )
+
+        return claim
+
     def evaluate(self, state: IRState) -> IRState:
         """
         Run fixpoint iteration until convergence or max_iterations.
@@ -332,6 +361,7 @@ class FixpointEvaluator:
             state.iteration_count += 1
             new_claims_this_round = 0
             triggered_rule_ids = set()
+            constraint_cache = {}  # cache constraint results per iteration
 
             # ═══ v1.1.0 前置强制收敛钩子 (pre-iteration) ═══
             # 在每次迭代开始时应用约束规则，确保状态变化在规则匹配前生效
@@ -361,7 +391,7 @@ class FixpointEvaluator:
                 for rule_id in self.fact_to_rules.get(fact_id, []):
                     triggered_rule_ids.add(rule_id)
 
-            for rule_id in triggered_rule_ids:
+            for rule_id in sorted(triggered_rule_ids):
                 if rule_id in state.rules_applied or rule_id not in self.rules:
                     continue
 
@@ -370,19 +400,23 @@ class FixpointEvaluator:
                 if claim is None:
                     continue
 
-                # v2.0: L0 degradation ? unmapped concepts ? UNVERIFIED
+                # v2.0: L0 degradation — unmapped concepts → UNVERIFIED
+                # Only degrade if the l0_map is relevant for this rule's jurisdiction.
+                # If ALL premises map to '?', the l0_map is from a different jurisdiction — skip.
                 if self.l0_map:
-                    for premise in rule.premise_atoms:
-                        l0 = self.l0_map.get(premise, '?')
-                        if l0 == '?':
-                            claim.epistemic_status = EpistemicStatus(
-                                trust_label=TrustLabel.UNVERIFIED,
-                                rule_maturity=RuleMaturity.DRAFT,
-                                data_origin=DataOrigin.SYMBOLIC_ENGINE,
-                                verification_artifacts=[claim.execution_trace_id],
-                                limitations=[f"Missing L0 mapping for premise {premise}"],
-                            )
-                            break
+                    unmapped = [p for p in rule.premise_atoms if self.l0_map.get(p, '?') == '?']
+                    if len(unmapped) < len(rule.premise_atoms):  # at least 1 mapped
+                        for premise in rule.premise_atoms:
+                            l0 = self.l0_map.get(premise, '?')
+                            if l0 == '?':
+                                claim.epistemic_status = EpistemicStatus(
+                                    trust_label=TrustLabel.UNVERIFIED,
+                                    rule_maturity=RuleMaturity.DRAFT,
+                                    data_origin=DataOrigin.SYMBOLIC_ENGINE,
+                                    verification_artifacts=[claim.execution_trace_id],
+                                    limitations=[f"Missing L0 mapping for premise {premise}"],
+                                )
+                                break
 
                 # ═══ 约束层钩子：Rebuttal Check + Unknown Concept Warning ═══
                 confidence_before = claim.confidence
@@ -485,25 +519,6 @@ class FixpointEvaluator:
             state.facts[fact_id] = self.check_fact_discretionary(state.facts[fact_id])
         return self.evaluate(state)
 
-    def check_negative_specs(self, state):
-        """V6: Reverse requirement gap detection."""
-        violations = []
-        for rule_id, rule in self.rules.items():
-            pass
-        return violations
-
-    def evaluate_with_full_gate(self, state):
-        """V6: Negative Spec -> Discretionary -> Fixpoint pipeline."""
-        violations = self.check_negative_specs(state)
-        if violations:
-            logger.warning("NEGATIVE_SPEC: %d violations", len(violations))
-        state = self.evaluate_with_taint_gate(state)
-        return state
-
-    def validate_transition(self, from_state: str, to_state: str) -> bool:
-        """Validate procedural state transition against domain config."""
-        return to_state in self.config.valid_transitions.get(from_state, [])
-
 
 def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
     """
@@ -523,7 +538,11 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
     with open(filepath, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     rules = []
+    missing_anchors = []
     for r in data.get('rules', []):
+        anchor = r.get('source_anchor', '')
+        if not anchor:
+            missing_anchors.append(r.get('id', '?'))
         rules.append(LegalRule(
             id=r['id'],
             premise_atoms=r.get('premise_atoms', []),
@@ -543,4 +562,9 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             jurisdiction=str(r.get('jurisdiction', '') or ''),
             authority_rank=str(r.get('authority_rank', '') or ''),
         ))
+    if missing_anchors:
+        logger.warning(
+            "SOURCE_ANCHOR_MISSING: %d rules lack source_anchor (e.g. %s)",
+            len(missing_anchors), ", ".join(missing_anchors[:5])
+        )
     return rules

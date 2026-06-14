@@ -74,3 +74,8 @@ scripts/
 .audit-*.md
 .audit-version.json
 .github/converge-briefing.md
+
+# Planning files (working docs, not source)
+task_plan.md
+findings.md
+progress.md

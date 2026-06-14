@@ -89,7 +89,6 @@ class LegalRule:
     norm_modality: str = "UNKNOWN"
     modality_confidence: float = 0.0
     modality_source: str = ""
-    violation_consequence: str = ""
     reparation_chain_pool: list = field(default_factory=list)
     source_anchor: str = ""
     valid_from: str = ""
