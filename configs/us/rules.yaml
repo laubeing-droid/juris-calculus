@@ -1234,3 +1234,851 @@ rules:
   legal_basis: 35 USC §284 — damages adequate to compensate for infringement
   norm_modality: OBLIGATION
   output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# UCC ARTICLE 2 — SALES (State Law, Model Code)
+# ║ Core contract formation + performance + remedies
+# ═══════════════════════════════════════════════════════════════
+
+- id: UCC-2-204-Formation
+  premise_atoms:
+  - Agreement_Sufficiently_Shows_Contract
+  head_claim: Sales_Contract_Formed
+  concepts:
+  - UCC
+  - Contract
+  - Formation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-204 — formation in any manner sufficient to show agreement
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-205-FirmOffer
+  premise_atoms:
+  - Merchant_Signs_Written_Offer
+  - Offer_Promises_To_Hold_Open
+  head_claim: Firm_Offer_Irrevocable
+  concepts:
+  - UCC
+  - Offer
+  - Merchant
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-205 — firm offer by merchant irrevocable for stated period
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-206-OfferAcceptance
+  premise_atoms:
+  - Offer_Made
+  - Acceptance_In_Manner_Reasonable
+  head_claim: Contract_Formed_On_Acceptance
+  concepts:
+  - UCC
+  - Offer
+  - Acceptance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-206 — offer and acceptance
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-207-BattleOfForms
+  premise_atoms:
+  - Acceptance_Varies_From_Offer
+  - Both_Party_Merchants
+  head_claim: Additional_Terms_Become_Part_Contract
+  concepts:
+  - UCC
+  - BattleOfForms
+  - Merchant
+  exception_chain:
+  - UCC-2-207-MaterialAlteration
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-207 — battle of the forms, additional terms between merchants
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-207-MaterialAlteration
+  premise_atoms:
+  - Acceptance_Varies_From_Offer
+  - Term_Materially_Alters_Offer
+  head_claim: Additional_Terms_Not_Included
+  concepts:
+  - UCC
+  - BattleOfForms
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-207(2)(b) — material alteration exception
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-302-Unconscionable
+  premise_atoms:
+  - Contract_Or_Term_Unconscionable
+  head_claim: Court_May_Refuse_Enforcement
+  concepts:
+  - UCC
+  - Unconscionability
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-302 — unconscionable contract or term
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-312-WarrantyTitle
+  premise_atoms:
+  - Sale_Of_Goods
+  head_claim: Seller_Warrants_Good_Title
+  concepts:
+  - UCC
+  - Warranty
+  - Title
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-312 — warranty of title and against infringement
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-314-ImpliedMerchantability
+  premise_atoms:
+  - Sale_Of_Goods
+  - Seller_Is_Merchant
+  head_claim: Implied_Warranty_Merchantability
+  concepts:
+  - UCC
+  - Warranty
+  - Merchant
+  exception_chain:
+  - UCC-2-316-Disclaimer
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-314 — implied warranty of merchantability
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-315-ImpliedFitness
+  premise_atoms:
+  - Sale_Of_Goods
+  - Seller_Knows_Buyer_Purpose
+  - Buyer_Relies_On_Seller
+  head_claim: Implied_Warranty_Fitness_For_Purpose
+  concepts:
+  - UCC
+  - Warranty
+  - Fitness
+  exception_chain:
+  - UCC-2-316-Disclaimer
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-315 — implied warranty of fitness for particular purpose
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-316-Disclaimer
+  premise_atoms:
+  - Disclaimer_Conspicuous
+  - Uses_As_Is_Language
+  head_claim: Warranties_Disclaimed
+  concepts:
+  - UCC
+  - Warranty
+  - Disclaimer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-316 — exclusion or modification of warranties
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-508-Cure
+  premise_atoms:
+  - Nonconforming_Goods_Delivered
+  - Time_For_Performance_Not_Expired
+  head_claim: Seller_May_Cure_Defect
+  concepts:
+  - UCC
+  - Cure
+  - Nonconformity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-508 — seller's right to cure nonconforming delivery
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-513-BuyerInspection
+  premise_atoms:
+  - Goods_Delivered
+  head_claim: Buyer_Has_Right_To_Inspect
+  concepts:
+  - UCC
+  - Inspection
+  - Buyer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-513 — buyer's right to inspection of goods
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-601-BuyerRejection
+  premise_atoms:
+  - Goods_Nonconforming
+  head_claim: Buyer_May_Reject_Goods
+  concepts:
+  - UCC
+  - Rejection
+  - Nonconformity
+  exception_chain:
+  - UCC-2-508-Cure
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-601 — buyer's rights on improper delivery (perfect tender rule)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-711-BuyerRemedies
+  premise_atoms:
+  - Seller_Breaches
+  head_claim: Buyer_May_Cancel_Recover_Damages
+  concepts:
+  - UCC
+  - Remedies
+  - Breach
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-711 — buyer's remedies in general
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-712-Cover
+  premise_atoms:
+  - Seller_Breaches
+  - Buyer_Procures_Substitute_Goods
+  head_claim: Buyer_May_Recover_Cover_Damages
+  concepts:
+  - UCC
+  - Remedies
+  - Cover
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-712 — "cover"; buyer's procurement of substitute goods
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-713-MarketPrice
+  premise_atoms:
+  - Seller_Breaches
+  head_claim: Buyer_May_Recover_Market_Differential
+  concepts:
+  - UCC
+  - Remedies
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-713 — buyer's damages for non-delivery (market price differential)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-714-AcceptedGoods
+  premise_atoms:
+  - Buyer_Accepts_Goods
+  - Goods_Breaching_Warranty
+  head_claim: Buyer_May_Recover_Breach_Damages
+  concepts:
+  - UCC
+  - Remedies
+  - Warranty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-714 — buyer's damages for accepted goods
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-715-IncidentalConsequential
+  premise_atoms:
+  - Seller_Breaches
+  head_claim: Buyer_May_Recover_Incidental_Consequential
+  concepts:
+  - UCC
+  - Remedies
+  - ConsequentialDamages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-715 — incidental and consequential damages
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-2-717-DeductionFromPrice
+  premise_atoms:
+  - Seller_Breaches
+  - Buyer_Has_Damages
+  head_claim: Buyer_May_Deduct_From_Price
+  concepts:
+  - UCC
+  - Remedies
+  - SelfHelp
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §2-717 — deduction of damages from the price
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# UCC ARTICLE 9 — SECURED TRANSACTIONS
+# ║ Core security interest rules
+# ═══════════════════════════════════════════════════════════════
+
+- id: UCC-9-203-Attachment
+  premise_atoms:
+  - Security_Agreement_Signed
+  - Value_Given
+  - Debtor_Has_Rights_In_Collateral
+  head_claim: Security_Interest_Attaches
+  concepts:
+  - UCC
+  - SecuredTransaction
+  - Attachment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-203 — attachment and enforceability of security interest
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-308-Perfection
+  premise_atoms:
+  - Security_Interest_Attaches
+  - Perfection_Requirements_Met
+  head_claim: Security_Interest_Perfected
+  concepts:
+  - UCC
+  - SecuredTransaction
+  - Perfection
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-308 — when security interest is perfected
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-310-FilingPerfection
+  premise_atoms:
+  - Financing_Statement_Filed
+  head_claim: Security_Interest_Perfected_By_Filing
+  concepts:
+  - UCC
+  - SecuredTransaction
+  - Filing
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-310 — filing as method of perfection
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-317-PriorityUnperfected
+  premise_atoms:
+  - Security_Interest_Not_Perfected
+  - Lien_Creditor_Or_Buyer_Exists
+  head_claim: Unperfected_Interest_Subordinate
+  concepts:
+  - UCC
+  - Priority
+  - SecuredTransaction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-317 — priority of unperfected security interests
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-322-PriorityByFiling
+  premise_atoms:
+  - Multiple_Security_Interests_In_Same_Collateral
+  head_claim: First_To_File_Has_Priority
+  concepts:
+  - UCC
+  - Priority
+  - Filing
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-322 — first-to-file priority rule
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-601-DefaultRemedies
+  premise_atoms:
+  - Debtor_Defaults
+  - Security_Agreement_In_Force
+  head_claim: Secured_Party_Has_Remedies
+  concepts:
+  - UCC
+  - Default
+  - Remedies
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-601 — rights after default
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-610-DisposeCollateral
+  premise_atoms:
+  - Debtor_Defaults
+  - Secured_Party_Wishes_To_Dispose
+  head_claim: Secured_Party_May_Sell_Lease_Collateral
+  concepts:
+  - UCC
+  - Default
+  - Disposition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-610 — disposition of collateral after default
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: UCC-9-611-NoticeBeforeDisposal
+  premise_atoms:
+  - Secured_Party_Disposes_Collateral
+  head_claim: Reasonable_Notice_Required
+  concepts:
+  - UCC
+  - Default
+  - Notice
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract_ucc
+  legal_basis: UCC §9-611 — notification before disposition of collateral
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# FRCivP — FEDERAL RULES OF CIVIL PROCEDURE
+# ║ Cross-border procedural rules
+# ═══════════════════════════════════════════════════════════════
+
+- id: FRCivP-R4-Summons
+  premise_atoms:
+  - Action_Commenced
+  head_claim: Summons_Must_Be_Served
+  concepts:
+  - Procedure
+  - Service
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 4 — summons requirements and service
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R4d-ServiceAbroad
+  premise_atoms:
+  - Defendant_Located_Abroad
+  head_claim: Service_May_Be_Made_Internationally
+  concepts:
+  - Procedure
+  - Service
+  - International
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 4(f) — service on individuals in foreign country
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R12b-Defenses
+  premise_atoms:
+  - Complaint_Served
+  head_claim: Defendant_May_Raise_Defenses_Motion
+  concepts:
+  - Procedure
+  - Defense
+  - Motion
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 12(b) — defenses (lack of jurisdiction, improper venue, insufficient process)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R12b2-LackJurisdiction
+  premise_atoms:
+  - Court_Lacks_Subject_Matter_Jurisdiction
+  head_claim: Action_Must_Be_Dismissed
+  concepts:
+  - Procedure
+  - Jurisdiction
+  - Dismissal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 12(b)(1) — lack of subject matter jurisdiction
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R12b3-ImproperVenue
+  premise_atoms:
+  - Venue_Improper
+  head_claim: Action_May_Be_Dismissed_Or_Transferred
+  concepts:
+  - Procedure
+  - Venue
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 12(b)(3) — improper venue
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R26-Discovery
+  premise_atoms:
+  - Action_Pending
+  head_claim: Parties_May_Obtain_Discovery
+  concepts:
+  - Procedure
+  - Discovery
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 26 — general provisions governing discovery
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R26b-Scope
+  premise_atoms:
+  - Discovery_Requested
+  - Matter_Relevant_To_Claim_Or_Defense
+  head_claim: Discovery_Allowed
+  concepts:
+  - Procedure
+  - Discovery
+  - Scope
+  exception_chain:
+  - FRCivP-R26b-Privilege
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 26(b)(1) — scope of discovery (relevant, proportional)
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R26b-Privilege
+  premise_atoms:
+  - Material_Is_Privileged
+  head_claim: Discovery_Not_Allowed
+  concepts:
+  - Procedure
+  - Discovery
+  - Privilege
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 26(b)(1) — privilege/protection from discovery
+  norm_modality: PROHIBITION
+  output_type: Terminal_Output_Node
+
+- id: FRCivP-R44-1-ForeignLaw
+  premise_atoms:
+  - Party_Raises_Foreign_Law_Issue
+  head_claim: Notice_Required_By_Pleading
+  concepts:
+  - Procedure
+  - ForeignLaw
+  - ChoiceOfLaw
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_procedure
+  legal_basis: FRCivP Rule 44.1 — determining foreign law (notice + court may consider any source)
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# RESTATEMENT (SECOND) OF CONTRACTS
+# ║ Core US contract law principles
+# ═══════════════════════════════════════════════════════════════
+
+- id: R2C-S1-ContractDefined
+  premise_atoms:
+  - Promise_Legally_Enforceable
+  head_claim: Contract_Exists
+  concepts:
+  - Restatement
+  - Contract
+  - Definition
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §1 — contract defined as promise or set of promises
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S17-ConsiderationRequired
+  premise_atoms:
+  - Agreement_Exists
+  head_claim: Bargain_Required_For_Contract
+  concepts:
+  - Restatement
+  - Consideration
+  - Formation
+  exception_chain:
+  - R2C-S90-PromissoryEstoppel
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §17 — requirement of a bargain
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S71-ConsiderationDefined
+  premise_atoms:
+  - Performance_Or_Return_Promise_Bargained_For
+  head_claim: Consideration_Exists
+  concepts:
+  - Restatement
+  - Consideration
+  - Exchange
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §71 — requirement of exchange
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S90-PromissoryEstoppel
+  premise_atoms:
+  - Promise_Induces_Reliance
+  - Reliance_Reasonably_Foreseeable
+  - Injustice_Requires_Enforcement
+  head_claim: Promise_Enforceable_Promissory_Estoppel
+  concepts:
+  - Restatement
+  - PromissoryEstoppel
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §90 — promise reasonably inducing definite and substantial action
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S204-SupplyTerm
+  premise_atoms:
+  - Contract_Exists
+  - Essential_Term_Omitted
+  head_claim: Court_May_Supply_Reasonable_Term
+  concepts:
+  - Restatement
+  - GapFiller
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §204 — supplying an omitted essential term
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: R2C-S205-GoodFaith
+  premise_atoms:
+  - Contract_Exists
+  head_claim: Parties_Must_Act_Good_Faith
+  concepts:
+  - Restatement
+  - GoodFaith
+  - Performance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §205 — duty of good faith and fair dealing
+  norm_modality: OBLIGATION
+  output_type: Terminal_Output_Node
+
+- id: R2C-S235-NonPerformance
+  premise_atoms:
+  - Performance_Due
+  - Performance_Not_Rendered
+  head_claim: Non_Performance_Is_Breach
+  concepts:
+  - Restatement
+  - Breach
+  - Performance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §235 — non-performance as breach
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S261-Impracticability
+  premise_atoms:
+  - Contract_Exists
+  - Supervening_Event_Makes_Performance_Impracticable
+  - Non_Occurrence_Basic_Assumption
+  head_claim: Duties_Discharged_Impracticability
+  concepts:
+  - Restatement
+  - Impracticability
+  - Discharge
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §261 — discharge by supervening impracticability
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S347-MeasureDamages
+  premise_atoms:
+  - Breach_Occurs
+  head_claim: Damages_Equal_Loss_In_Value_Plus_Incidental
+  concepts:
+  - Restatement
+  - Damages
+  - Measure
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §347 — measure of damages in general
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S349-RelianceDamages
+  premise_atoms:
+  - Breach_Occurs
+  - Damages_Based_On_Reliance
+  head_claim: May_Recover_Reliance_Damages
+  concepts:
+  - Restatement
+  - Damages
+  - Reliance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §349 — damages based on reliance interest
+  norm_modality: PERMISSION
+  output_type: Terminal_Output_Node
+
+- id: R2C-S350-Avoidability
+  premise_atoms:
+  - Breach_Occurs
+  - Loss_Could_Be_Avoided
+  head_claim: Damages_Limited_By_Avoidability
+  concepts:
+  - Restatement
+  - Damages
+  - Mitigation
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §350 — avoidability as limitation on damages
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S351-Foreseeability
+  premise_atoms:
+  - Breach_Occurs
+  head_claim: Damages_Limited_To_Foreseeable
+  concepts:
+  - Restatement
+  - Damages
+  - Foreseeability
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §351 — unforeseeability limitations (Hadley v Baxendale)
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S356-LiquidatedDamages
+  premise_atoms:
+  - Contract_Provides_Liquidated_Damages
+  - Amount_Reasonable_At_Formation
+  - Actual_Damages_Difficult_To_Estimate
+  head_claim: Liquidated_Damages_Enforceable
+  concepts:
+  - Restatement
+  - Damages
+  - Liquidated
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §356 — liquidated damages and penalties
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node
+
+- id: R2C-S359-AdequacyOfDamages
+  premise_atoms:
+  - Damages_Adequate_To_Protect_Interest
+  head_claim: Specific_Performance_Not_Granted
+  concepts:
+  - Restatement
+  - Remedies
+  - SpecificPerformance
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: us_contract
+  legal_basis: Restatement 2d §359 — effect of adequacy of damages
+  norm_modality: CONSTITUTIVE
+  output_type: Terminal_Output_Node

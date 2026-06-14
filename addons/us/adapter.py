@@ -100,7 +100,23 @@ class USAdapter(JurisdictionAdapter):
     def _ensure_loaded(self) -> None:
         if self._l0_map is not None:
             return
-        self._l0_map = dict(self._L0_MAP)
+        base = Path(__file__).resolve().parents[2]
+
+        # Load from YAML term mappings
+        l0 = dict(self._L0_MAP)
+        term_path = base / "configs" / "prc_us_alignment" / "term_L0_mappings.yaml"
+        term_path2 = base / "configs" / "prc_us_alignment" / "term_L0_mappings_batch2.yaml"
+        for tp in [term_path, term_path2]:
+            if tp.exists():
+                with open(tp, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                for t in data.get("term_alignments", []):
+                    us = t.get("term_us", "").strip()
+                    prim = t.get("l0_chain", {}).get("primitive", "?")
+                    if us and us not in l0:
+                        l0[us] = prim
+
+        self._l0_map = l0
         self._claim_table_cn = {}
         self._claim_table_en = {}
 
