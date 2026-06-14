@@ -1,5 +1,47 @@
 # juris-calculus Changelog
 
+## v2.1.0 (2026-06-14)
+
+### 跨法域架构
+
+- **ProofTree 输出格式** (`compiler_core/proof_tree.py`)：法域中立的证明树，只含 ID + 逻辑算子
+- **语言渲染插件** (`compiler_core/language_renderer.py`)：ChineseRenderer / EnglishRenderer，后置渲染层
+- **三轨对撞引擎** (`compiler_core/prc_collision_engine.py`)：CBL 阻断 + SPC 倾向 + CN 全量，阻断真正拦截下游
+- **JurisdictionAdapter 增强** (`compiler_core/adapter_base.py`)：load_evaluator / get_legal_family / get_modal_mapping / get_priority_evaluator
+
+### CN addon
+
+- `addons/cn/`：CNAdapter + 三轨模式 + 106 条 L0 映射 + 99 条翻译表
+- `configs/prc_us_alignment/`：60 条 CBL 阻断 + 25 条 SPC 倾向 + 199 条术语映射
+
+### HK addon（转换层）
+
+- `addons/hk/adapter.py`：动态加载 1,687 条 L0 + 三语桥接 + 12 条阻断规则
+- `configs/hk/rules.yaml`：85 → 104 条（+7 雇佣 Cap 57 +5 家事 Cap 179 +7 财产 Cap 219）
+- `configs/hk/term_L0_mappings.yaml`：1,729 条术语→L0（从律政司 78,912 条词汇表提取）
+- `configs/hk/trilingual_alignment.yaml`：US↔HK↔CN 三语映射
+- `configs/hk/blocking_rules.yaml`：12 条 US→HK 阻断规则
+
+### US addon（7 个 Title）
+
+- `addons/us/adapter.py`：USAdapter + 39 条 L0 映射 + 14 条模态映射
+- `configs/us/rules.yaml`：73 条 Horn 规则
+  - Title 9 仲裁（21 条）：FAA + 纽约公约 + 美洲公约
+  - Title 28 管辖权（12 条）：FSIA + §1782 跨境取证 + 异籍管辖权
+  - Title 50 制裁（5 条）：IEEPA + ECRA 实体清单
+  - Title 11 破产（12 条）：Ch.7 清算 + Ch.11 重组 + Ch.15 跨境破产
+  - Title 15 商事（7 条）：反垄断 + 证券 + 商标
+  - Title 17 版权（16 条）：保护范围 + 侵权救济
+  - Title 35 专利（16 条）：可专利性 + 侵权救济
+- `configs/us/blocking_rules.yaml`：18 条 US→HK 阻断规则
+- `configs/us/modal_mapping.yaml`：US DDL 模态词
+
+### 测试
+
+- 154 → 160 测试全绿（+6 三轨碰撞测试）
+
+---
+
 ## v2.0.0 (2026-06-14)
 
 ### DDL 模态引擎
