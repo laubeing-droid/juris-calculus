@@ -102,11 +102,22 @@ class USAdapter(JurisdictionAdapter):
             return
         base = Path(__file__).resolve().parents[2]
 
-        # Load from YAML term mappings
+        # Load from term_L0_mappings.yaml
         l0 = dict(self._L0_MAP)
-        term_path = base / "configs" / "prc_us_alignment" / "term_L0_mappings.yaml"
-        term_path2 = base / "configs" / "prc_us_alignment" / "term_L0_mappings_batch2.yaml"
-        for tp in [term_path, term_path2]:
+        term_path = base / "configs" / "us" / "term_L0_mappings.yaml"
+        if term_path.exists():
+            with open(term_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            for t in data.get("term_mappings", []):
+                term = t.get("term", "").strip()
+                prim = t.get("l0_primitive", "?")
+                if term and term not in l0:
+                    l0[term] = prim
+
+        # Also load from prc_us_alignment term mappings
+        align_path = base / "configs" / "prc_us_alignment" / "term_L0_mappings.yaml"
+        align_path2 = base / "configs" / "prc_us_alignment" / "term_L0_mappings_batch2.yaml"
+        for tp in [align_path, align_path2]:
             if tp.exists():
                 with open(tp, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}

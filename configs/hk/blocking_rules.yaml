@@ -155,3 +155,114 @@ rules:
     status: BLOCKED
   additional_conditions: []
   legal_basis: Cap 221 证据条例 — 法官裁量权
+
+# ═══════════════════════════════════════════
+# 家事法领域阻断
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-013-NoFaultDivorce
+  trigger_fact: US_No_Fault_Divorce
+  description: "US no-fault divorce concept maps differently in HK. HK requires proof of breakdown (Cap 179 s.11)."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap179_Irretrievable_Breakdown
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 179 s.11 — 婚姻破裂至无可挽救
+
+- id: HK-BLK-014-CommunityProperty
+  trigger_fact: US_Community_Property
+  description: "US community property regime does not exist in HK. HK uses separate property with equitable distribution."
+  target_primitive: Asset
+  action:
+    type: FORCE_VOID
+    map_to: HK_Separate_Property
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 179 财产条款 — 分别财产制
+
+- id: HK-BLK-015-ChildSupportGuidelines
+  trigger_fact: US_Child_Support_Guidelines
+  description: "US federal/state child support guidelines do not apply in HK. HK uses court discretion."
+  target_primitive: Asset
+  action:
+    type: FORCE_VOID
+    map_to: HK_Court_Discretion_Maintenance
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 192 未成年人监护条例 — 法院裁量
+
+# ═══════════════════════════════════════════
+# 雇佣法领域阻断
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-016-FMLA
+  trigger_fact: US_FMLA_Leave
+  description: "US Family and Medical Leave Act does not apply in HK. HK has maternity/paternity leave under Cap 57."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap57_Maternity_Paternity_Leave
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 57 雇佣条例 — 产假/侍产假
+
+- id: HK-BLK-017-TitleVII
+  trigger_fact: US_Title_VII_Discrimination
+  description: "US Title VII employment discrimination does not apply in HK. HK has anti-discrimination ordinances (Cap 480/487/527)."
+  target_primitive: Defect
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Anti_Discrimination_Ordinance
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 480 性别歧视条例 / Cap 487 残疾歧视条例
+
+- id: HK-BLK-018-ERISA
+  trigger_fact: US_ERISA_Benefits
+  description: "US ERISA pension/benefits law does not apply in HK. HK has Mandatory Provident Fund (Cap 485)."
+  target_primitive: Asset
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap485_MPF
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 485 强制性公积金计划条例
+
+# ═══════════════════════════════════════════
+# 财产法领域阻断
+# ═══════════════════════════════════════════
+
+- id: HK-BLK-019-AdversePossession
+  trigger_fact: US_Adverse_Possession
+  description: "US adverse possession doctrine has different requirements in HK. HK Limitation Ordinance (Cap 347) applies."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap347_Limitation
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 347 时效条例
+
+- id: HK-BLK-020-Zoning
+  trigger_fact: US_Zoning_Law
+  description: "US zoning laws do not apply in HK. HK uses Town Planning Ordinance (Cap 131)."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap131_Town_Planning
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 131 城市规划条例
+
+- id: HK-BLK-021-EminentDomain
+  trigger_fact: US_Eminent_Domain
+  description: "US eminent domain (5th Amendment) does not apply in HK. HK uses Crown Lands Resumption Ordinance (Cap 124)."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap124_Land_Resumption
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 124 收回土地条例
