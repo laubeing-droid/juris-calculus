@@ -3,8 +3,10 @@
 Convention: put raw data under addons/us/data/ (same format as _usc/uscode).
 On addon registration, parse() is called automatically to update blueprint.
 """
-import json, os, re
+import json, os, re, logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def parse() -> list:
@@ -70,4 +72,4 @@ def update_blueprint(parsed: list):
 
     with open(bp_path, "w", encoding="utf-8") as f:
         json.dump(bp, f, ensure_ascii=False, indent=2)
-    print(f"US addon: blueprint updated with {len(parsed)} data sources")
+    logger.info("US addon: blueprint updated with %d data sources", len(parsed))
