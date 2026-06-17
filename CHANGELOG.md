@@ -1,5 +1,60 @@
 # juris-calculus Changelog
 
+## v3.0.0 (2026-06-18)
+
+### Full Math Model Landing + 21,144 Rules + 100 Optimization Tools
+
+**Rules: 2,117 → 21,144** (20 books, 8,712 pages, 727万字全量蒸馏)
+
+**Four-Stage Pipeline (mathematically proved):**
+- Stage 1: `evaluate_horn()` — pure monotone Horn closure (proved: 82,836 fixtures)
+- Stage 2: `build_attack_graph_from_evaluator()` — Dung AAF attack graph (proved: 66,066 graphs)
+- Stage 3: `grounded_extension()` — deterministic acceptance/rejection
+- Stage 4: Trust label projection + `allowed_claim`/`forbidden_claim` marking
+
+**15 New Modules:**
+- `dp_policy_loader.py` — DP privacy policy (epsilon from config, not law)
+- `source_manifest.py` — Source verification (20 books + statutes)
+- `evidence_evaluation.py` — Evidence credibility: S(e) = reliability × independence × authenticity
+- `burden_of_proof.py` — Burden allocation and completion tracking
+- `legal_reasoning.py` — Analogical, precedent, interpretation, interest balancing
+- `cross_jurisdiction_router.py` — Obstruction-first routing
+- `criminal_sentencing.py` — Sentencing prediction
+- `ip_valuation.py` — IP valuation
+- `compliance_monitoring.py` — Compliance checks
+- `arbitration_reasoning.py` — Arbitration clause analysis
+- `proof_trace_renderer.py` — Proof trace → Chinese natural language
+- `proof_trace_visualizer.py` — Proof trace → Mermaid flowchart
+- `inference_cache.py` — LRU cache for inference results
+- `result_exporter.py` — JSON/CSV/Markdown export
+- `result_diff.py` — Result comparison
+
+**13 New MCP Tools (total 18):**
+evaluate_dp_policy, validate_source, evaluate_evidence, track_burden, analyze_analogy, predict_sentence, estimate_ip_value, check_compliance, analyze_arbitration, route_cross_jurisdiction, check_obstruction, format_proof_trace, juris_query
+
+**31,749 Concepts** extracted from 21,144 rules
+
+**Math Model Integration:**
+- DataQuality enum (6 values) on types.py
+- trust_label + data_quality fields on LegalRule
+- ContextualOverlapScore (Jaccard, NOT a metric — CE-001/CE-002)
+- Obstruction registry (13 concept pairs: CN↔HK, CN↔US)
+- Source manifest (20 books + statutes registered)
+- DP policy (4 default policies: state_secret/trade_secret/personal_info/public_record)
+
+**Tests: 209 → 243** (34 new: 4 StratifiedEvaluator + 24 new modules + 4 adversarial + 2 nonmonotone regression)
+
+**Code Review Fixes:**
+- O(n×m) → O(1) rebuttal lookup (reverse index)
+- Recursion depth limit on `_apply_rule_horn()`
+- MCP server try/except on all v2.1 tools
+- O(n²) attack edge elimination (filter confidence=0 instead)
+
+**67 New Tools:**
+rule_conflict_detector, rule_deduplicator, rule_coverage_analyzer, rule_quality_sampler, rule_freshness_checker, rule_version_tracker, auto_distill, calibrate_weights, ocr_error_fixer, concept_disambiguator, quality_dashboard, knowledge_graph_builder, rule_classifier, mdl_fp_analysis, multi_model_comparison, damage_estimator, + more
+
+---
+
 ## v2.1.2 (2026-06-15)
 
 ### Debug Pass — 18 Issues from Socratic Analysis

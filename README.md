@@ -1,8 +1,8 @@
 # juris-calculus
 
-**Agnostic Symbolic Legal Reasoning Compiler — DDL + Multi-Jurisdiction + ProofTree**
+**Deterministic Symbolic Legal Reasoning Engine — Four-Stage Pipeline + Multi-Jurisdiction + Evidence-Calibrated Trust Labels**
 
-A jurisdiction-agnostic Horn clause engine with fixed-point iteration, Defeasible Deontic Logic (DDL) modal classification, and cross-jurisdiction bridge layer.
+A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Defeasible Deontic Logic (DDL) modal classification, cross-jurisdiction obstruction-first routing, and a 7-level trust label system backed by formal mathematical proofs.
 
 *Not a legal app. A legal reasoning kernel.*
 
@@ -10,25 +10,38 @@ A jurisdiction-agnostic Horn clause engine with fixed-point iteration, Defeasibl
 
 ## What It Does
 
-juris-calculus compiles statutory law into executable Horn rules, then reasons over them using fixed-point iteration with DDL modal gates (OBLIGATION / PROHIBITION / PERMISSION / CONSTITUTIVE).
+juris-calculus compiles statutory law into executable Horn rules, then reasons over them through a **four-stage pipeline** with evidence-calibrated trust labels.
+
+```
+Stage 1: Monotone Horn Closure (proved: 82,836 fixtures)
+    ↓
+Stage 2: Dung AAF Attack Graph (proved: 66,066 graphs)
+    ↓
+Stage 3: Grounded Extension (deterministic, finite convergence)
+    ↓
+Stage 4: Trust Label Projection + allowed/forbidden marking
+```
 
 **Three jurisdictions, one engine:**
 
-| Jurisdiction | Rules | Blocking | L0 Mappings | Role |
-|-------------|-------|----------|-------------|------|
-| CN (China) | 2,117 | 60 CBL | 106 | Primary jurisdiction |
-| HK (Hong Kong) | 104 | 21 | 1,687 | US↔CN bridge layer |
-| US (Federal) | 123 | 18 | 567 | Cross-border disputes |
-| **Total** | **2,344** | **99** | **2,360** | |
+| Jurisdiction | Rules | Source | Role |
+|-------------|-------|--------|------|
+| CN (China) | 21,144 | 20 books (8,712 pages, 727万字) | Primary jurisdiction |
+| HK (Hong Kong) | 104 | HK legislation | US↔CN bridge layer |
+| US (Federal) | 123 | US Code + UCC + Restatement | Cross-border disputes |
 
-**Cross-border architecture:**
+**Cross-border architecture (obstruction-first):**
 
 ```
 US Terms ──→ L0 Primitives ←── HK Terms ──→ L0 Primitives ←── CN Terms
               (Status/Act/Defect/Power/Agent/Asset)
-```
 
-Hong Kong serves as the "Rosetta Stone" between US common law and Chinese civil law — it has official Chinese legislation within a common law system.
+Obstruction Registry:
+  MATCH       → allow mapping (preserve jurisdiction tag)
+  COLLISION   → block automatic mapping
+  ASYMMETRY   → block automatic mapping
+  UNVERIFIED  → human review only
+```
 
 ---
 
@@ -36,43 +49,52 @@ Hong Kong serves as the "Rosetta Stone" between US common law and Chinese civil 
 
 ```
 juris-calculus/
-├── compiler_core/                    # Reasoning kernel
-│   ├── evaluator.py                  #   FixpointEvaluator + DDL modal gate
-│   ├── types.py                      #   LegalRule / LegalFact / IRState / NormModality
-│   ├── proof_tree.py                 #   ProofTree — jurisdiction-neutral output format
-│   ├── language_renderer.py          #   ChineseRenderer / EnglishRenderer
-│   ├── prc_collision_engine.py       #   Three-track collision (CBL + SPC + CN)
-│   ├── conflict_of_laws.py           #   Jurisdiction selection (choice-of-law)
-│   ├── multi_jurisdiction_orchestrator.py  #  Cross-jurisdiction evaluation
-│   ├── adapter_base.py              #   JurisdictionAdapter abstract base
-│   └── plugin_registry.py           #   Auto-discovery addon system
+├── compiler_core/                    # Reasoning kernel (68 modules)
+│   ├── evaluator.py                  #   FixpointEvaluator + evaluate_horn() + DDL modal gate
+│   ├── stratified_evaluator.py       #   Four-stage pipeline (Horn → AAF → GE → Trust Labels)
+│   ├── argumentation.py              #   Dung AAF grounded extension + attack graph builder
+│   ├── types.py                      #   LegalRule / LegalClaim / IRState / DataQuality
+│   ├── trust_labels.py               #   7-level TrustLabel + EpistemicStatus + RuleMaturity
+│   ├── constraint_validator.py       #   Absolute/Conditional rebuttal + L0 constraints
+│   ├── domain_config.py              #   Weight/threshold config per domain
+│   ├── dp_policy_loader.py           #   Differential privacy policy (epsilon from config, not law)
+│   ├── source_manifest.py            #   Source verification (20 books + statutes registered)
+│   ├── evidence_evaluation.py        #   Evidence credibility: S(e) = reliability × independence × authenticity
+│   ├── burden_of_proof.py            #   Burden allocation and completion tracking
+│   ├── legal_reasoning.py            #   Analogical, precedent, interpretation, interest balancing
+│   ├── cross_jurisdiction_router.py  #   Obstruction-first routing (no universal functor)
+│   ├── proof_trace_renderer.py       #   Proof trace → Chinese natural language
+│   ├── invariance_metrics.py         #   Inv(f)/Align(f) + ContextualOverlapScore (NOT a metric)
+│   └── ... (15 more modules)
 ├── addons/
-│   ├── cn/                           #   China addon (civil_law)
-│   ├── hk/                           #   Hong Kong addon (common_law, bridge layer)
-│   └── us/                           #   US Federal addon (common_law)
+│   ├── cn/                           #   China addon
+│   ├── hk/                           #   Hong Kong addon (bridge layer)
+│   └── us/                           #   US Federal addon
 ├── configs/
-│   ├── zh_CN/rules.yaml              #   2,117 CN Horn rules
-│   ├── hk/rules.yaml                 #   104 HK Horn rules (7 namespaces)
-│   ├── hk/blocking_rules.yaml        #   21 US→HK blocking rules
-│   ├── hk/term_L0_mappings.yaml      #   1,729 HK terms → L0
-│   ├── us/rules.yaml                 #   123 US Horn rules (9 namespaces)
-│   ├── us/term_L0_mappings.yaml      #   567 US terms → L0
-│   ├── us/blocking_rules.yaml        #   18 US→HK blocking rules
-│   ├── us/modal_mapping.yaml         #   US DDL modal words
-│   └── prc_us_alignment/             #   60 CBL + 25 SPC + 199 term mappings
-└── tests/                            #   209 tests, all passing
+│   ├── zh_CN/rules.yaml              #   21,144 CN rules (20 books auto-distilled)
+│   ├── zh_CN/concept_registry.yaml   #   31,749 unique legal concepts
+│   ├── zh_CN/dp_policy.yaml          #   DP privacy policies
+│   ├── zh_CN/source_manifest.yaml    #   Registered sources (20 books + statutes)
+│   ├── obstruction_registry.yaml     #   CN↔HK↔US concept mapping status
+│   └── ...
+├── tools/                            #   67 analysis and quality tools
+└── tests/                            #   243 tests, all passing
 ```
 
 ---
 
-## How It Works
+## Key Metrics
 
-1. **Compile**: Load statutory law YAML → `LegalRule` objects
-2. **Infer**: `FixpointEvaluator.evaluate()` — Horn clause fixed-point iteration with DDL modal gates
-3. **Output**: `ProofTree` — pure ID + logic operators, no natural language
-4. **Render**: `LanguageRenderer` translates ProofTree → Chinese / English legal text
-
-The compiler never outputs natural language directly. Language is a post-processing layer, decoupled from reasoning.
+| Metric | Value |
+|--------|-------|
+| CN Rules | 21,144 |
+| Tests | 243 passed |
+| Core Modules | 68 |
+| MCP Tools | 18 |
+| Unique Concepts | 31,749 |
+| Source Anchor Coverage | 97.1% |
+| Mathematical Proofs | 10 proved, 3 refuted, 4 pending |
+| Audit Rounds | 5 rounds Codex (14 findings, all fixed) |
 
 ---
 
@@ -87,80 +109,79 @@ rules = load_rules_from_yaml("configs/zh_CN/rules.yaml")
 ev = FixpointEvaluator(rules)
 
 # Run inference
-state = IRState(facts={
-    "contract_formed": LegalFact(id="contract_formed", description="", extraction_confidence=0.95),
-    "breach_alleged": LegalFact(id="breach_alleged", description="", extraction_confidence=0.9),
-})
+state = IRState()
+state.facts["contract_formed"] = LegalFact(id="contract_formed", description="合同成立")
+state.facts["breach_alleged"] = LegalFact(id="breach_alleged", description="违约事实")
 result = ev.evaluate(state)
 
-# Output: ProofTree with jurisdiction-neutral claims
+# Output: claims with confidence, trust labels, proof traces
+for cid, claim in result.claims.items():
+    print(f"{cid}: conf={claim.confidence:.2f}, trust={claim.get_trust_label()}")
 ```
 
 ---
 
-## Cross-Jurisdiction Bridge
+## Four-Stage Pipeline
 
 ```python
-from compiler_core.plugin_registry import registry
+from compiler_core.stratified_evaluator import StratifiedEvaluator
 
-# Auto-discovered addons
-cn = registry.get("cn")  # China
-hk = registry.get("hk")  # Hong Kong (bridge layer)
-us = registry.get("us")  # US Federal
+se = StratifiedEvaluator("configs/zh_CN/rules.yaml")
+state = IRState()
+state.facts["breach"] = LegalFact(id="breach", description="违约")
 
-# Trilingual bridge
-result = hk.trilingual_bridge("Consideration")
-# → {'alignment': 'CROSS_L0', 'us_l0': 'Power', 'hk_term': 'cash consideration', ...}
-
-# Three-track collision (CBL + SPC + CN)
-tree = cn.run_collision(facts)
-# → ProofTree with blocked_claims, spc_tendencies, cn_claims
-
-# Conflict of laws — auto-detect governing jurisdiction
-from compiler_core.conflict_of_laws import select_jurisdiction
-jurisdiction = select_jurisdiction(facts)
-# → "CN" or "HK" or "US"
-
-# Multi-jurisdiction orchestration
-from compiler_core.multi_jurisdiction_orchestrator import MultiJurisdictionOrchestrator
-mjo = MultiJurisdictionOrchestrator()
-tree = mjo.run(facts, jurisdictions=["CN", "HK", "US"])
+claims = se.evaluate(state)
+# Each claim has: allowed_claim, forbidden_claim, agent_instruction, epistemic_status
 ```
 
----
-
-## Coverage
-
-### China (CN) — 2,117 rules, 13 domains
-Contract, Tort, Corporate, Family, Criminal, Administrative, IP, Procedure, Execution, State Compensation, Juvenile, Maritime, Court Management
-
-### Hong Kong (HK) — 104 rules, 7 namespaces, 21 blocking rules
-Contract (Cap 26), Corporate (Cap 622), Employment (Cap 57), Family (Cap 179), Property (Cap 219), Arbitration (Cap 609), IP (Cap 528)
-
-### US Federal — 123 rules, 9 namespaces, 18 blocking rules
-- **Title 9** Arbitration (FAA + NYC + Inter-American) — 21 rules
-- **Title 28** Jurisdiction/FSIA/§1782 — 12 rules
-- **Title 50** Sanctions (IEEPA + ECRA) — 5 rules
-- **Title 11** Bankruptcy (Ch.7 + Ch.11 + Ch.15) — 12 rules
-- **Title 15** Commerce/Antitrust/Securities/Trademark — 7 rules
-- **Title 17** Copyrights — 16 rules
-- **Title 35** Patents — 16 rules
-- **UCC** Article 2 (Sales) + Article 9 (Secured Transactions) — 27 rules
-- **Restatement 2d** Contracts — 14 rules
-- **FRCivP** Federal Rules of Civil Procedure — 9 rules
+**Stage 1** (Horn): Pure forward-chain, monotone (Tarski fixpoint exists).
+**Stage 2** (AAF): Build attack graph from rules, exceptions, rebuttals, prohibitions.
+**Stage 3** (GE): Dung grounded extension — deterministic acceptance/rejection.
+**Stage 4** (Labels): Trust label projection + allowed/forbidden marking.
 
 ---
 
-## Key Design Decisions
+## MCP Tools (18)
 
-| Decision | Rationale |
-|----------|-----------|
-| ProofTree output (no natural language) | Language is a post-processing layer, decoupled from reasoning |
-| L0 primitives as bridge | US↔HK↔CN mapping through 6 universal primitives, not text-to-text |
-| DDL modal gate | PROHIBITION blocks claims, OBLIGATION flags gaps, PERMISSION marks hypothetical |
-| Three-track collision | CBL (blocking) > SPC (judicial tendency) > CN (full statutory) |
-| Addons pattern | New jurisdiction = new directory, zero changes to core engine |
-| Honest refusal | CriticalClarityFailure halts on consecutive low-confidence — refuses to hallucinate |
+| Tool | Function |
+|------|----------|
+| search_rules | Concept-aware rule search |
+| evaluate_facts | Four-stage pipeline inference |
+| calculate_damages | LPR-based damage calculation |
+| analyze_strategy | Strategy analysis with adversarial pipeline |
+| evaluate_dp_policy | DP privacy policy check |
+| validate_source | Source manifest verification |
+| evaluate_evidence | Evidence credibility scoring |
+| track_burden | Burden of proof tracking |
+| analyze_analogy | Analogical similarity + precedent force |
+| predict_sentence | Criminal sentencing prediction |
+| estimate_ip_value | IP valuation |
+| check_compliance | Compliance monitoring |
+| analyze_arbitration | Arbitration clause analysis |
+| route_cross_jurisdiction | Obstruction-first routing |
+| check_obstruction | Obstruction registry lookup |
+| format_proof_trace | Proof trace → Chinese text |
+| extract_elements | Legal element extraction |
+| juris_query | Unified query entry point |
+
+---
+
+## Mathematical Foundation
+
+Backed by the [legal-math-modeling](https://github.com/laubeing-droid/legal-math-modeling) companion repository:
+
+| Claim | Status | Evidence |
+|-------|--------|----------|
+| Horn closure is monotone | **PROVED** | 82,836 fixtures |
+| Dung grounded extension exists + unique | **PROVED** | 66,066 graphs |
+| Evaluator is non-monotonic | **REFUTED** (counterexample) | A={a}, B={a,b} |
+| Bounded operational termination | **PROVED** | 5 operational bounds |
+| Graph similarity is a metric | **REFUTED** | CE-001, CE-002 |
+| DP epsilon derivable from law | **REFUTED** | two-model witness |
+| Cross-jurisdiction universal functor | **REFUTED** | obstruction witnesses |
+
+**Trust Label System (7 levels):**
+UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
 
 ---
 

@@ -1,8 +1,8 @@
 # juris-calculus
 
-**法域无关符号法律推理编译器 — DDL + 跨法域 + ProofTree**
+**确定性符号法律推理引擎 — 四阶段 Pipeline + 跨法域 + 证据校准信任标签**
 
-法域无关的 Horn 子句引擎，支持不动点迭代、可废止道义逻辑（DDL）模态分类、跨法域桥接层。
+法域无关的 Horn 子句引擎，支持 Dung AAF 扩展、可废止道义逻辑（DDL）模态分类、跨法域障碍优先路由、7 级信任标签系统，背后有严格数学证明支撑。
 
 *不是法律 App，是法律推理内核。*
 
@@ -10,69 +10,53 @@
 
 ## 做什么
 
-juris-calculus 将成文法编译为可执行的 Horn 规则，通过不动点迭代和 DDL 模态门控（OBLIGATION / PROHIBITION / PERMISSION / CONSTITUTIVE）进行推理。
+juris-calculus 将成文法编译为可执行 Horn 规则，通过**四阶段 pipeline** 进行推理，输出携带信任标签的法律结论。
+
+```
+Stage 1: 单调 Horn 闭包（已证明：82,836 fixtures）
+    ↓
+Stage 2: Dung AAF 攻击图（已证明：66,066 图）
+    ↓
+Stage 3: 扩展集计算（确定性，有限收敛）
+    ↓
+Stage 4: 信任标签投影 + allowed/forbidden 标记
+```
 
 **三个法域，一个引擎：**
 
-| 法域 | 规则数 | 阻断规则 | L0 映射 | 角色 |
-|------|--------|---------|---------|------|
-| CN（中国） | 2,117 | 60 CBL | 106 | 主法域 |
-| HK（香港） | 104 | 21 | 1,687 | US↔CN 转换层 |
-| US（美国联邦） | 123 | 18 | 567 | 跨境争议 |
-| **合计** | **2,344** | **99** | **2,360** | |
+| 法域 | 规则数 | 来源 | 角色 |
+|------|--------|------|------|
+| CN（中国） | 21,144 | 20 本书（8,712 页，727 万字） | 主法域 |
+| HK（香港） | 104 | 香港法例 | US↔CN 转换层 |
+| US（美国联邦） | 123 | US Code + UCC + Restatement | 跨境争议 |
 
-**跨法域架构：**
+**跨法域架构（障碍优先）：**
 
 ```
 US 术语 ──→ L0 原语 ←── HK 术语 ──→ L0 原语 ←── CN 术语
           (Status/Act/Defect/Power/Agent/Asset)
-```
 
-香港定位为中美"罗塞塔石碑"——在普通法体系中拥有官方中文立法文本。
-
----
-
-## 架构
-
-```
-juris-calculus/
-├── compiler_core/                    # 推理内核
-│   ├── evaluator.py                  #   FixpointEvaluator + DDL 模态门控
-│   ├── types.py                      #   LegalRule / LegalFact / IRState / NormModality
-│   ├── proof_tree.py                 #   ProofTree — 法域中立输出格式
-│   ├── language_renderer.py          #   ChineseRenderer / EnglishRenderer（后置渲染）
-│   ├── prc_collision_engine.py       #   三轨对撞（CBL + SPC + CN）
-│   ├── conflict_of_laws.py           #   冲突法推理（法域选择）
-│   ├── multi_jurisdiction_orchestrator.py  #  多法域编排器
-│   ├── adapter_base.py              #   JurisdictionAdapter 抽象基类
-│   └── plugin_registry.py           #   自动发现 addon 系统
-├── addons/
-│   ├── cn/                           #   中国 addon（civil_law）
-│   ├── hk/                           #   香港 addon（common_law，转换层）
-│   └── us/                           #   美国联邦 addon（common_law）
-├── configs/
-│   ├── zh_CN/rules.yaml              #   2,117 条中国法 Horn 规则
-│   ├── hk/rules.yaml                 #   104 条香港法 Horn 规则（7 命名空间）
-│   ├── hk/blocking_rules.yaml        #   21 条 US→HK 阻断规则
-│   ├── hk/term_L0_mappings.yaml      #   1,729 条 HK 术语→L0
-│   ├── us/rules.yaml                 #   123 条美国联邦法 Horn 规则（9 命名空间）
-│   ├── us/term_L0_mappings.yaml      #   567 条 US 术语→L0
-│   ├── us/blocking_rules.yaml        #   18 条 US→HK 阻断规则
-│   ├── us/modal_mapping.yaml         #   US DDL 模态词
-│   └── prc_us_alignment/             #   60 条 CBL + 25 条 SPC + 199 条术语映射
-└── tests/                            #   209 个测试，全部通过
+障碍注册表：
+  MATCH       → 允许映射（保留法域标签）
+  COLLISION   → 禁止自动映射
+  ASYMMETRY   → 禁止自动映射
+  UNVERIFIED  → 仅人工审核
 ```
 
 ---
 
-## 工作原理
+## 核心指标
 
-1. **编译**：加载成文法 YAML → `LegalRule` 对象
-2. **推理**：`FixpointEvaluator.evaluate()` — Horn 子句不动点迭代 + DDL 模态门控
-3. **输出**：`ProofTree` — 纯 ID + 逻辑算子，不含自然语言
-4. **渲染**：`LanguageRenderer` 将 ProofTree 翻译为中文/英文法律文书
-
-编译器核心不输出自然语言。语言是后置渲染层，与推理解耦。
+| 指标 | 数值 |
+|------|------|
+| CN 规则 | 21,144 |
+| 测试 | 243 passed |
+| 核心模块 | 68 |
+| MCP 工具 | 18 |
+| 唯一概念 | 31,749 |
+| 来源锚定覆盖率 | 97.1% |
+| 数学证明 | 10 proved, 3 refuted, 4 pending |
+| Codex 审计 | 5 轮（14 发现，全部修复） |
 
 ---
 
@@ -86,81 +70,55 @@ from compiler_core.types import IRState, LegalFact
 rules = load_rules_from_yaml("configs/zh_CN/rules.yaml")
 ev = FixpointEvaluator(rules)
 
-# 运行推理
-state = IRState(facts={
-    "contract_formed": LegalFact(id="contract_formed", description="", extraction_confidence=0.95),
-    "breach_alleged": LegalFact(id="breach_alleged", description="", extraction_confidence=0.9),
-})
+# 推理
+state = IRState()
+state.facts["contract_formed"] = LegalFact(id="contract_formed", description="合同成立")
+state.facts["breach_alleged"] = LegalFact(id="breach_alleged", description="违约事实")
 result = ev.evaluate(state)
 
-# 输出：ProofTree，法域中立的推理结论
+# 输出：含置信度、信任标签、推理轨迹的 claims
+for cid, claim in result.claims.items():
+    print(f"{cid}: conf={claim.confidence:.2f}, trust={claim.get_trust_label()}")
 ```
 
 ---
 
-## 跨法域桥接
+## 四阶段 Pipeline
 
 ```python
-from compiler_core.plugin_registry import registry
+from compiler_core.stratified_evaluator import StratifiedEvaluator
 
-# 自动发现的 addon
-cn = registry.get("cn")  # 中国
-hk = registry.get("hk")  # 香港（转换层）
-us = registry.get("us")  # 美国联邦
+se = StratifiedEvaluator("configs/zh_CN/rules.yaml")
+state = IRState()
+state.facts["breach"] = LegalFact(id="breach", description="违约")
 
-# 三语桥接
-result = hk.trilingual_bridge("Consideration")
-# → {'alignment': 'CROSS_L0', 'us_l0': 'Power', 'hk_term': 'cash consideration', ...}
-
-# 三轨对撞（CBL + SPC + CN）
-tree = cn.run_collision(facts)
-# → ProofTree，含 blocked_claims / spc_tendencies / cn_claims
-
-# 冲突法 — 自动识别管辖法域
-from compiler_core.conflict_of_laws import select_jurisdiction
-jurisdiction = select_jurisdiction(facts)
-# → "CN" 或 "HK" 或 "US"
-
-# 多法域编排
-from compiler_core.multi_jurisdiction_orchestrator import MultiJurisdictionOrchestrator
-mjo = MultiJurisdictionOrchestrator()
-tree = mjo.run(facts, jurisdictions=["CN", "HK", "US"])
+claims = se.evaluate(state)
+# 每个 claim 携带：allowed_claim, forbidden_claim, agent_instruction, epistemic_status
 ```
 
----
-
-## 覆盖范围
-
-### 中国（CN）— 2,117 条规则，13 领域
-合同、侵权、公司、家事、刑事、行政、知产、程序、执行、国赔、少年、海事、审管
-
-### 香港（HK）— 104 条规则，7 个命名空间，21 条阻断规则
-合同（Cap 26）、公司（Cap 622）、雇佣（Cap 57）、家事（Cap 179）、财产（Cap 219）、仲裁（Cap 609）、知产（Cap 528）
-
-### 美国联邦（US）— 123 条规则，9 个命名空间，18 条阻断规则
-- **Title 9** 仲裁（FAA + 纽约公约 + 美洲公约）— 21 条
-- **Title 28** 管辖权/FSIA/§1782 — 12 条
-- **Title 50** 制裁（IEEPA + ECRA）— 5 条
-- **Title 11** 破产（Ch.7 + Ch.11 + Ch.15）— 12 条
-- **Title 15** 商事/反垄断/证券/商标 — 7 条
-- **Title 17** 版权 — 16 条
-- **Title 35** 专利 — 16 条
-- **UCC** Article 2（货物买卖）+ Article 9（动产担保）— 27 条
-- **Restatement 2d** 合同法 — 14 条
-- **FRCivP** 联邦民事诉讼规则 — 9 条
+**Stage 1**（Horn）：纯前向链，单调（Tarski 不动点存在）。
+**Stage 2**（AAF）：从规则、例外、反驳、禁止构建攻击图。
+**Stage 3**（GE）：Dung 扩展集 — 确定性接受/拒绝。
+**Stage 4**（标签）：信任标签投影 + allowed/forbidden 标记。
 
 ---
 
-## 关键设计决策
+## 数学基础
 
-| 决策 | 理由 |
-|------|------|
-| ProofTree 输出（无自然语言） | 语言是后置渲染层，与推理解耦 |
-| L0 原语做桥接 | US↔HK↔CN 通过 6 个通用原语映射，不做文本互撞 |
-| DDL 模态门控 | PROHIBITION 阻断 claim，OBLIGATION 标记缺口，PERMISSION 标记假设 |
-| 三轨对撞 | CBL（阻断）> SPC（裁判倾向）> CN（成文法全量） |
-| Addons 模式 | 新法域 = 新目录，核心引擎零改动 |
-| 诚实拒绝 | CriticalClarityFailure 在连续低置信度时停止推理，拒绝幻觉 |
+由 [legal-math-modeling](https://github.com/laubeing-droid/legal-math-modeling) 仓库支撑：
+
+| 命题 | 状态 | 证据 |
+|------|------|------|
+| Horn 闭包单调 | **已证明** | 82,836 fixtures |
+| Dung 扩展存在+唯一 | **已证明** | 66,066 图 |
+| Evaluator 非单调 | **已反证** | A={a}, B={a,b} |
+| 有界操作终止 | **已证明** | 5 个操作边界 |
+| Graph similarity 是度量 | **已反证** | CE-001, CE-002 |
+| DP epsilon 可从法律推导 | **已反证** | two-model witness |
+| 跨法域全函子存在 | **已反证** | obstruction witnesses |
+
+**信任标签系统（7 级）：**
+UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
 
 ---
 
