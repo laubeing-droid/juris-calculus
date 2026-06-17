@@ -1,0 +1,75 @@
+# Obstruction Registry — cross-jurisdiction concept mapping status
+# Mathematical basis: category_theory_rosetta.py — no universal functor
+# Status: MATCH / COLLISION / ASYMMETRY / REFERENCE_UNVERIFIED
+
+pairs:
+  # CN <-> HK
+  - source: CN
+    target: HK
+    concept: 合同效力
+    status: MATCH
+    note: Both follow similar contract validity rules
+  - source: CN
+    target: HK
+    concept: 侵权责任
+    status: ASYMMETRY
+    note: HK follows common law tort, CN follows civil law
+  - source: CN
+    target: HK
+    concept: 知识产权保护
+    status: MATCH
+    note: Both implement TRIPS standards
+  - source: CN
+    target: HK
+    concept: 仲裁裁决执行
+    status: ASYMMETRY
+    note: Different enforcement mechanisms
+  - source: CN
+    target: HK
+    concept: 刑事管辖权
+    status: COLLISION
+    note: Fundamentally different criminal systems
+
+  # CN <-> US
+  - source: CN
+    target: US
+    concept: 合同效力
+    status: ASYMMETRY
+    note: Different formation requirements
+  - source: CN
+    target: US
+    concept: 侵权责任
+    status: COLLISION
+    note: CN statutory vs US common law
+  - source: CN
+    target: US
+    concept: 知识产权保护
+    status: MATCH
+    note: Both implement TRIPS minimum standards
+  - source: CN
+    target: US
+    concept: 仲裁裁决执行
+    status: MATCH
+    note: Both parties to NYC Convention
+  - source: CN
+    target: US
+    concept: 刑事管辖权
+    status: COLLISION
+    note: Fundamentally different systems
+
+  # HK <-> US
+  - source: HK
+    target: US
+    concept: 合同效力
+    status: MATCH
+    note: Both common law jurisdictions
+  - source: HK
+    target: US
+    concept: 侵权责任
+    status: MATCH
+    note: Similar common law tort frameworks
+  - source: HK
+    target: US
+    concept: 知识产权保护
+    status: MATCH
+    note: Both implement TRIPS

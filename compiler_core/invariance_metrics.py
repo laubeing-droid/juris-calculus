@@ -67,3 +67,18 @@ def aggregate_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "change_alignment_cases": len(align_scores),
         "status": "PASS" if passed == total else "FAIL",
     }
+
+
+def contextual_overlap_score(base_claims: List[str], perturbed_claims: List[str]) -> float:
+    """Contextual overlap score (Jaccard). NOT a metric.
+
+    Known limitations: CE-001 (reflexivity=0.4), CE-002 (identity: C4 vs star+edge=1.0).
+    Use for relative comparison only. Do NOT rely on triangle inequality.
+    """
+    base_set = set(base_claims)
+    pert_set = set(perturbed_claims)
+    if not base_set and not pert_set:
+        return 1.0
+    if not base_set or not pert_set:
+        return 0.0
+    return len(base_set & pert_set) / len(base_set | pert_set)

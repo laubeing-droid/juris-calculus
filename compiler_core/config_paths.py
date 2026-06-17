@@ -37,6 +37,11 @@ def rules_path(jurisdiction: str = "zh_CN") -> str:
     return str(_CONFIG_ROOT / jurisdiction / "rules.yaml")
 
 
+def config_dir(jurisdiction: str = "zh_CN") -> str:
+    """Path to config directory for a given jurisdiction."""
+    return str(_CONFIG_ROOT / jurisdiction)
+
+
 def domain_config_path(jurisdiction: str = "zh_CN") -> str:
     """Path to domain_config.example.yaml for a given jurisdiction."""
     return str(_CONFIG_ROOT / jurisdiction / "domain_config.example.yaml")

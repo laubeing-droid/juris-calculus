@@ -63,7 +63,7 @@
       "mimeType": "application/json"
     },
     "legal://blueprint": {
-      "description": "v2.0 unified legal inference blueprint (10MB, 15 domains, 2117 rules)",
+      "description": "v2.0 unified legal inference blueprint (10MB, 15 domains, 21145 rules)",
       "mimeType": "application/json"
     }
   },

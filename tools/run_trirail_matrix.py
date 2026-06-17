@@ -415,7 +415,7 @@ class TriRailCollider:
         lines = [
             "=" * 70,
             "  Tri-Rail Collider Report — v1.2.0",
-            "  HK (64) x US (81) x PRC (CBL=41 + SPC=23 + CN=2117)",
+            "  HK (64) x US (81) x PRC (CBL=41 + SPC=23 + CN=21145)",
             "=" * 70,
             "",
         ]

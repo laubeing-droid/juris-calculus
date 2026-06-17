@@ -338,6 +338,43 @@ def analyze_strategy(fact_text: str):
 
 def extract_elements(fact_text: str):
     return juris_query("extract_elements", fact_text)
+
+# v2.1 new tools
+def evaluate_dp_policy(data_class: str, epsilon: float = 1.0):
+    return juris_query("evaluate_dp_policy", data_class, {"epsilon": epsilon})
+
+def validate_source(anchor: str):
+    return juris_query("validate_source", anchor)
+
+def evaluate_evidence(description: str, reliability: float = 1.0, independence: float = 1.0, authenticity: float = 1.0):
+    return juris_query("evaluate_evidence", description, {"reliability": reliability, "independence": independence, "authenticity": authenticity})
+
+def track_burden(party: str, allegation: str, standard: str = "preponderance", evidence: list = None):
+    return juris_query("track_burden", allegation, {"party": party, "standard": standard, "evidence": evidence or []})
+
+def analyze_analogy(current_facts: list, precedent_facts: list, court_level: str = "intermediate"):
+    return juris_query("analyze_analogy", "", {"current_facts": current_facts, "precedent_facts": precedent_facts, "court_level": court_level})
+
+def predict_sentence(min_months: int = 0, max_months: int = 36, mitigating: list = None, aggravating: list = None):
+    return juris_query("predict_sentence", "", {"min_months": min_months, "max_months": max_months, "mitigating": mitigating or [], "aggravating": aggravating or []})
+
+def estimate_ip_value(ip_type: str = "patent", development_cost: float = 0, licensing_revenue: float = 0, market_value: float = 0, remaining_years: int = 0):
+    return juris_query("estimate_ip_value", "", {"ip_type": ip_type, "development_cost": development_cost, "licensing_revenue": licensing_revenue, "market_value": market_value, "remaining_years": remaining_years})
+
+def check_compliance(regulation_id: str, requirement: str = "", evidence: list = None):
+    return juris_query("check_compliance", regulation_id, {"requirement": requirement, "evidence": evidence or []})
+
+def analyze_arbitration(clause_valid: bool = False, institution: str = "", seat: str = "", law: str = ""):
+    return juris_query("analyze_arbitration", "", {"clause_valid": clause_valid, "institution": institution, "seat": seat, "law": law})
+
+def route_cross_jurisdiction(concept: str, source: str = "CN", target: str = "HK"):
+    return juris_query("route_cross_jurisdiction", concept, {"source": source, "target": target})
+
+def check_obstruction(concept: str, source: str = "CN", target: str = "HK"):
+    return juris_query("check_obstruction", concept, {"source": source, "target": target})
+
+def format_proof_trace(trace: list):
+    return juris_query("format_proof_trace", "", {"trace": trace})
 # --- v2.0.1 MCP unified query tool ---
 
 def juris_query(mode: str, query: str = "", params: dict = None):
@@ -420,6 +457,105 @@ def juris_query(mode: str, query: str = "", params: dict = None):
                     if len(atom) >= 2 and (atom[:2] in query or atom[-2:] in query):
                         elements.add(atom)
         return {"fact_text": query[:200], "matched_elements": sorted(elements)[:20], "total": len(elements)}
+    # ── v2.1 新增工具 ──
+    try:
+        if mode == "evaluate_dp_policy":
+            from compiler_core.dp_policy_loader import DPPolicyLoader
+            from compiler_core.config_paths import config_dir
+            loader = DPPolicyLoader()
+            loader.load(str(Path(config_dir()) / "dp_policy.yaml"))
+            data_class = params.get("data_class", query)
+            epsilon = float(params.get("epsilon", 1.0))
+            return loader.check_release(data_class, epsilon)
+        elif mode == "validate_source":
+            from compiler_core.source_manifest import SourceManifest
+            from compiler_core.config_paths import config_dir
+            m = SourceManifest()
+            m.load(str(Path(config_dir()) / "source_manifest.yaml"))
+            anchor = params.get("anchor", query)
+            return m.validate_anchor(anchor)
+        elif mode == "evaluate_evidence":
+            from compiler_core.evidence_evaluation import EvidenceItem
+            reliability = float(params.get("reliability", 1.0))
+            independence = float(params.get("independence", 1.0))
+            authenticity = float(params.get("authenticity", 1.0))
+            e = EvidenceItem(id=query[:20], description=query[:200],
+                             reliability=reliability, independence=independence, authenticity=authenticity)
+            return {"credibility_score": round(e.credibility_score, 3), "components": {"reliability": reliability, "independence": independence, "authenticity": authenticity}}
+        elif mode == "track_burden":
+            from compiler_core.burden_of_proof import BurdenTracker
+            t = BurdenTracker()
+            party = params.get("party", "plaintiff")
+            allegation = params.get("allegation", query)
+            standard = params.get("standard", "preponderance")
+            t.add(party, allegation, "burden_of_persuasion", standard)
+            evidence = params.get("evidence", [])
+            for ev in evidence:
+                t.submit_evidence(allegation, ev)
+            return t.evaluate_completion(allegation)
+        elif mode == "analyze_analogy":
+            from compiler_core.legal_reasoning import analogical_similarity, precedent_binding_force
+            current = params.get("current_facts", query.split(","))
+            precedent = params.get("precedent_facts", [])
+            sim = analogical_similarity(current, precedent)
+            court = params.get("court_level", "intermediate")
+            force = precedent_binding_force(court, params.get("jurisdiction_match", True))
+            return {"similarity": round(sim, 3), "binding_force": round(force, 3), "court_level": court}
+        elif mode == "predict_sentence":
+            from compiler_core.criminal_sentencing import SentencingFactors
+            lo = int(params.get("min_months", 0))
+            hi = int(params.get("max_months", 36))
+            mitigating = params.get("mitigating", [])
+            aggravating = params.get("aggravating", [])
+            f = SentencingFactors(statutory_range_months=(lo, hi),
+                                  mitigating_factors=mitigating, aggravating_factors=aggravating)
+            r = f.predict_range()
+            return {"statutory_range": [lo, hi], "predicted_range": list(r), "mitigating": mitigating, "aggravating": aggravating}
+        elif mode == "estimate_ip_value":
+            from compiler_core.ip_valuation import IPValuation
+            v = IPValuation(ip_type=params.get("ip_type", "patent"),
+                            development_cost=float(params.get("development_cost", 0)),
+                            licensing_revenue=float(params.get("licensing_revenue", 0)),
+                            market_value=float(params.get("market_value", 0)),
+                            remaining_useful_life_years=int(params.get("remaining_years", 0)))
+            return {"ip_type": v.ip_type, "estimated_value": v.estimate_value()}
+        elif mode == "check_compliance":
+            from compiler_core.compliance_monitoring import ComplianceCheck
+            c = ComplianceCheck(regulation_id=params.get("regulation_id", query), requirement=params.get("requirement", ""))
+            evidence = params.get("evidence", [])
+            return c.evaluate(evidence)
+        elif mode == "analyze_arbitration":
+            from compiler_core.arbitration_reasoning import ArbitrationAnalysis
+            a = ArbitrationAnalysis(arbitration_clause_valid=params.get("clause_valid", False),
+                                    arbitral_institution=params.get("institution", ""),
+                                    seat_of_arbitration=params.get("seat", ""),
+                                    applicable_law=params.get("law", ""))
+            return a.evaluate_enforceability()
+        elif mode == "route_cross_jurisdiction":
+            from compiler_core.cross_jurisdiction_router import CrossJurisdictionRouter
+            from compiler_core.config_paths import config_dir
+            router = CrossJurisdictionRouter()
+            router.load(str(Path(config_dir()) / "obstruction_registry.yaml"))
+            concept = params.get("concept", query)
+            src = params.get("source", "CN")
+            tgt = params.get("target", "HK")
+            return router.route(concept, src, tgt)
+        elif mode == "check_obstruction":
+            from compiler_core.cross_jurisdiction_router import CrossJurisdictionRouter
+            from compiler_core.config_paths import config_dir
+            router = CrossJurisdictionRouter()
+            router.load(str(Path(config_dir()) / "obstruction_registry.yaml"))
+            concept = params.get("concept", query)
+            src = params.get("source", "CN")
+            tgt = params.get("target", "HK")
+            result = router.route(concept, src, tgt)
+            return {"concept": concept, "source": src, "target": tgt, "status": result.get("status", "UNMAPPED"), "allowed": result.get("allowed", False)}
+        elif mode == "format_proof_trace":
+            from compiler_core.proof_trace_renderer import format_proof_trace_cn
+            trace = params.get("trace", [])
+            return {"rendered": format_proof_trace_cn(trace)}
+    except Exception as e:
+        return {"error": f"{mode}: {str(e)}"}
     return {"error": "unknown mode: " + mode}
 
 

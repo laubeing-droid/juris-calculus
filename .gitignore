@@ -79,3 +79,5 @@ scripts/
 task_plan.md
 findings.md
 progress.md
+*.bak.*
+configs/zh_CN/rules.yaml.bak.*

@@ -1,4 +1,4 @@
-"""DDL preclassifier: deterministic norm_modality classification for 2117 Chinese legal rules."""
+"""DDL preclassifier: deterministic norm_modality classification for Chinese legal rules."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

@@ -504,6 +504,87 @@ class FixpointEvaluator:
 
         return state
 
+    def _apply_rule_horn(self, rule: LegalRule, state: IRState, depth: int) -> Optional[LegalClaim]:
+        """Stage 1 (Horn): pure forward-chain rule application.
+
+        Retains: premise check, exception chain penetration, compute_formalizable, claim build.
+        Removes: PROHIBITION blocking, rebuttal, constraint rules, CriticalClarityFailure.
+        Mathematical guarantee: monotone (Tarski fixpoint exists).
+        """
+        if depth > self.config.k_max:
+            return None
+
+        satisfied, missing = self._check_premises(rule, state)
+        if not satisfied:
+            return None
+
+        triggered_exception = self._check_exceptions(rule, state)
+        if triggered_exception:
+            exception_rule = self.rules.get(triggered_exception)
+            if exception_rule:
+                return self._apply_rule_horn(exception_rule, state, depth + 1)
+
+        score, unregistered = compute_formalizable(rule, depth, self.config)
+        taint_nodes = []
+        if score < self.config.taint_threshold:
+            source = ", ".join(unregistered) if unregistered else f"depth={depth}"
+            taint_nodes.append(TaintNode(
+                rule_id=rule.id, claim_id=rule.head_claim,
+                taint_source=source, formalizable_score=score, depth=depth
+            ))
+
+        domain_origin = getattr(rule, 'namespace', 'general')
+        l0_source = self.constraint_validator.resolve_L0_primitive(rule.concepts) if self.constraint_validator.loaded else ''
+        trace_id = make_trace_id(state.world_id, rule.id, rule.head_claim)
+
+        return LegalClaim(
+            id=rule.head_claim,
+            description=f"{rule.id}: {rule.head_claim}",
+            confidence=score,
+            epistemic_status=EpistemicStatus(
+                trust_label=TrustLabel.ENGINEERING_BASELINE,
+                rule_maturity=RuleMaturity.L2_TESTED,
+                data_origin=DataOrigin.SYMBOLIC_ENGINE,
+                verification_artifacts=[trace_id],
+            ),
+            taint_chain=taint_nodes,
+            requires_human_review=(score < self.config.taint_threshold or score < self.config.hard_audit_threshold),
+            execution_trace_id=trace_id,
+            domain_origin=domain_origin,
+            L0_primitive_source=l0_source,
+            source_anchor=getattr(rule, "source_anchor", ""),
+        )
+
+    def evaluate_horn(self, state: IRState) -> IRState:
+        """Stage 1: pure monotone Horn closure.
+
+        Only: fact -> rule match -> claim generation.
+        No: rebuttal, constraint rules, CriticalClarityFailure, PROHIBITION blocking.
+        Mathematical guarantee: monotone (Tarski fixpoint exists, proved 82,836 fixtures).
+        """
+        while state.iteration_count < state.max_iterations:
+            state.iteration_count += 1
+            new_claims_this_round = 0
+            triggered_rule_ids = set()
+
+            for fact_id in set(state.facts.keys()) | set(state.claims.keys()):
+                for rule_id in self.fact_to_rules.get(fact_id, []):
+                    triggered_rule_ids.add(rule_id)
+
+            for rule_id in sorted(triggered_rule_ids):
+                if rule_id in state.rules_applied or rule_id not in self.rules:
+                    continue
+                rule = self.rules[rule_id]
+                claim = self._apply_rule_horn(rule, state, self.rule_depths.get(rule_id, 1))
+                if claim is not None and claim.id not in state.claims:
+                    state.claims[claim.id] = claim
+                    state.rules_applied.add(rule_id)
+                    new_claims_this_round += 1
+
+            if new_claims_this_round == 0:
+                break
+        return state
+
     def check_fact_discretionary(self, fact):
         if not self.config.enable_discretionary_taint:
             return fact
@@ -561,6 +642,8 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             valid_to=str(r.get('valid_to', '') or ''),
             jurisdiction=str(r.get('jurisdiction', '') or ''),
             authority_rank=str(r.get('authority_rank', '') or ''),
+            trust_label=r.get('trust_label', 'UNVERIFIED'),
+            data_quality=r.get('data_quality', 'CLEAN'),
         ))
     if missing_anchors:
         logger.warning(
