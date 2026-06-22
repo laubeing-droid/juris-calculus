@@ -90,6 +90,7 @@ class StratifiedEvaluator:
             attacks
         )
         accepted_ids = set(ge_result["accepted"])
+        undecided_ids = set(ge_result.get("undecided", []))
 
         # Stage 4: Trust label projection + agent payload
         result = []
@@ -103,6 +104,11 @@ class StratifiedEvaluator:
                         rule_maturity=RuleMaturity.L2_TESTED,
                         data_origin=DataOrigin.SYMBOLIC_ENGINE,
                     )
+                result.append(c)
+            elif c.id in undecided_ids and c.confidence > 0:
+                c.allowed_claim = False
+                c.forbidden_claim = False
+                c.requires_human_review = True
                 result.append(c)
             else:
                 c.allowed_claim = False

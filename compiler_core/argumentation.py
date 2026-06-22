@@ -3,6 +3,14 @@ from typing import Dict, Iterable, List, Set, Tuple, Optional, Any
 
 
 def grounded_extension(claims, attacks, max_iter=100):
+    """Compute grounded extension and return accepted, rejected, undecided.
+
+    Per Dung (1995):
+    - IN  (accepted):  arguments in the grounded extension
+    - OUT (rejected):  arguments attacked by an IN argument
+    - UNDECIDED:       everything else (cycles where grounded semantics
+                        gives empty; these are NOT rejected)
+    """
     cids = {c["id"] for c in claims}
     attackers_of: Dict[str, Set[str]] = {}
     for src, tgt in attacks:
@@ -29,8 +37,22 @@ def grounded_extension(claims, attacks, max_iter=100):
             break
         accepted = defended
 
-    rejected = cids - accepted
-    return {"accepted": sorted(accepted), "rejected": sorted(rejected), "iterations": _ + 1}
+    # Grounded labelling: OUT = attacked by IN
+    rejected = set()
+    for cid in cids:
+        if cid in accepted:
+            continue
+        atts = attackers_of.get(cid, set())
+        if atts & accepted:
+            rejected.add(cid)
+
+    undecided = cids - accepted - rejected
+    return {
+        "accepted": sorted(accepted),
+        "rejected": sorted(rejected),
+        "undecided": sorted(undecided),
+        "iterations": _ + 1,
+    }
 
 
 def build_attack_edges_from_rules(rules: Iterable) -> List[Tuple[str, str]]:
