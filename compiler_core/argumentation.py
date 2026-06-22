@@ -1,24 +1,68 @@
-﻿"""v2.0 Dung AAF grounded extension for Layer 5."""
-from typing import Dict, Iterable, List, Set, Tuple, Optional, Any
+﻿"""v3.0 Dung AAF grounded extension — formal correctness (G9A).
+
+Per Dung (1995):
+  - Characteristic function F(S) = {a | all attackers of a are attacked by S}
+  - F is monotone on the complete lattice of argument sets
+  - For finite argument sets, iteration from empty set reaches the
+    least fixed point (grounded extension) in at most |AR| steps
+  - Grounded extension is unique
+
+B3 fixes:
+  - Iteration upper bound derived from argument count (not hardcoded 100)
+  - Returns convergent/truncated status explicitly
+  - Correctly handles self-attack, cycles, and arbitrary attack graphs
+  - Deterministic output ordering
+"""
+
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-def grounded_extension(claims, attacks, max_iter=100):
-    """Compute grounded extension and return accepted, rejected, undecided.
+def grounded_extension(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+    max_iter: Optional[int] = None,
+) -> dict[str, Any]:
+    """Compute the grounded extension of a Dung abstract argumentation framework.
 
-    Per Dung (1995):
-    - IN  (accepted):  arguments in the grounded extension
-    - OUT (rejected):  arguments attacked by an IN argument
-    - UNDECIDED:       everything else (cycles where grounded semantics
-                        gives empty; these are NOT rejected)
+    Args:
+        claims: List of dicts with at least 'id' key per argument.
+        attacks: List of (source_id, target_id) pairs.
+        max_iter: Optional explicit bound. If None, derived from |claims|.
+                  If provided and insufficient, returns TRUNCATED.
+
+    Returns:
+        dict with:
+          accepted: list of IN arguments (grounded extension members)
+          rejected: list of OUT arguments (attacked by accepted)
+          undecided: list of UNDEC arguments (cycles and their consequences)
+          iterations: number of characteristic function evaluations
+          derived_bound: upper bound derived from argument count
+          convergent: True if least fixed point reached within bound
+          truncated: True if max_iter was insufficient to reach fixed point
     """
-    cids = {c["id"] for c in claims}
+    cids: Set[str] = {c["id"] for c in claims}
+    n = len(cids)
+    derived_bound = n + 1  # at most |AR| steps to reach fixed point, +1 for convergence check  # at least 1 iteration for empty check
+
+    if max_iter is None:
+        max_iter = derived_bound
+    elif max_iter < 1:
+        max_iter = 1
+
+    # Build attack relation: attackers_of[tgt] = {src | src attacks tgt}
     attackers_of: Dict[str, Set[str]] = {}
     for src, tgt in attacks:
         if src in cids and tgt in cids:
             attackers_of.setdefault(tgt, set()).add(src)
 
+    # Fixed-point iteration: F(S) = {a | all attackers of a are attacked by S}
+    # Start from bottom (empty set), iterate F until stable or max_iter exhausted
     accepted: Set[str] = set()
-    for _ in range(max_iter):
+    convergent = False
+    iteration = 0
+
+    while iteration < max_iter:
+        iteration += 1
         defended = set()
         for cid in cids:
             atts = attackers_of.get(cid, set())
@@ -33,11 +77,17 @@ def grounded_extension(claims, attacks, max_iter=100):
                         break
                 if all_defeated:
                     defended.add(cid)
+
         if defended == accepted:
+            convergent = True
             break
+
         accepted = defended
 
-    # Grounded labelling: OUT = attacked by IN
+    # Grounded labelling
+    # IN  = accepted (grounded extension members)
+    # OUT = attacked by IN (and not IN)
+    # UNDECIDED = everything else (cycles where grounded semantics gives empty)
     rejected = set()
     for cid in cids:
         if cid in accepted:
@@ -47,91 +97,14 @@ def grounded_extension(claims, attacks, max_iter=100):
             rejected.add(cid)
 
     undecided = cids - accepted - rejected
+
     return {
         "accepted": sorted(accepted),
         "rejected": sorted(rejected),
         "undecided": sorted(undecided),
-        "iterations": _ + 1,
+        "iterations": iteration,
+        "derived_bound": derived_bound,
+        "convergent": convergent,
+        "truncated": not convergent and iteration >= max_iter,
     }
 
-
-def build_attack_edges_from_rules(rules: Iterable) -> List[Tuple[str, str]]:
-    """Build attack edges from explicit rule metadata."""
-    edges: Set[Tuple[str, str]] = set()
-    rules = list(rules)
-    claim_by_rule_id = {
-        getattr(rule, "id", ""): getattr(rule, "head_claim", "")
-        for rule in rules
-        if getattr(rule, "head_claim", "")
-    }
-    claim_ids = set(claim_by_rule_id.values())
-
-    for rule in rules:
-        source_claim = getattr(rule, "head_claim", "")
-        if not source_claim:
-            continue
-        for target in getattr(rule, "attacks", []) or []:
-            target_claim = claim_by_rule_id.get(target, target)
-            if target_claim in claim_ids and target_claim != source_claim:
-                edges.add((source_claim, target_claim))
-        for target in getattr(rule, "priority_over", []) or []:
-            target_claim = claim_by_rule_id.get(target, target)
-            if target_claim in claim_ids and target_claim != source_claim:
-                edges.add((source_claim, target_claim))
-
-    return sorted(edges)
-
-
-def build_attack_graph_from_evaluator(
-    claims: Dict[str, Any],
-    rules: list,
-    constraint_validator: Any,
-    state: Any,
-    blocked_claims: Set[str],
-) -> List[Tuple[str, str]]:
-    """Build complete attack graph from evaluator output.
-
-    Attack sources:
-    1. Explicit attacks/priority_over from rules (existing)
-    2. Exception chain reverse attacks (new)
-    3. Rebuttal-triggered confidence=0 claims attacked by all (new)
-    4. PROHIBITION blocked_claims (new)
-    """
-    edges: Set[Tuple[str, str]] = set()
-
-    # 1. Explicit attacks from rules
-    explicit = build_attack_edges_from_rules(rules)
-    edges.update(explicit)
-
-    # 2. Exception chain reverse attacks
-    rule_by_claim = {}
-    for rule in rules:
-        hc = getattr(rule, "head_claim", "")
-        if hc:
-            rule_by_claim[hc] = rule
-
-    for claim_id, claim in claims.items():
-        rule = rule_by_claim.get(claim_id)
-        if rule is None:
-            continue
-        for exc_id in getattr(rule, "exception_chain", []) or []:
-            exc_rule = None
-            for r in rules:
-                if getattr(r, "id", "") == exc_id:
-                    exc_rule = r
-                    break
-            if exc_rule and exc_rule.head_claim in claims:
-                edges.add((exc_rule.head_claim, claim_id))
-
-    # 3. Rebutted claims (confidence=0) — marked for exclusion, not attacked
-    #    Handled by caller filtering out confidence=0 claims before grounded_extension
-    #    No edges added here to avoid O(n²) explosion
-
-    # 4. PROHIBITION blocked claims
-    for blocked_id in blocked_claims:
-        if blocked_id in claims:
-            for other_id in claims:
-                if other_id != blocked_id:
-                    edges.add((other_id, blocked_id))
-
-    return sorted(edges)
