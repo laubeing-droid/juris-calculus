@@ -108,3 +108,225 @@ def grounded_extension(
         "truncated": not convergent and iteration >= max_iter,
     }
 
+
+# ---------------------------------------------------------------------------
+# B6 Engineering capabilities: cycle/SCC witness, label reasons, proof trace
+# ---------------------------------------------------------------------------
+
+def scc_decomposition(
+    claims: list[dict[str, Any]], attacks: list[tuple[str, str]]
+) -> list[list[str]]:
+    """Decompose attack graph into strongly connected components (Kosaraju).
+
+    Returns list of SCCs, each a list of argument IDs. Topological order
+    (source SCCs first, sink SCCs last).
+    """
+    cids = {c["id"] for c in claims}
+    adj: dict[str, list[str]] = {cid: [] for cid in cids}
+    radj: dict[str, list[str]] = {cid: [] for cid in cids}
+    for src, tgt in attacks:
+        if src in cids and tgt in cids:
+            adj[src].append(tgt)
+            radj[tgt].append(src)
+
+    visited: set[str] = set()
+    order: list[str] = []
+
+    def dfs1(v: str) -> None:
+        visited.add(v)
+        for w in adj.get(v, []):
+            if w not in visited:
+                dfs1(w)
+        order.append(v)
+
+    for v in sorted(cids):
+        if v not in visited:
+            dfs1(v)
+
+    visited.clear()
+    sccs: list[list[str]] = []
+
+    def dfs2(v: str, comp: list[str]) -> None:
+        visited.add(v)
+        comp.append(v)
+        for w in radj.get(v, []):
+            if w not in visited:
+                dfs2(w, comp)
+
+    for v in reversed(order):
+        if v not in visited:
+            comp: list[str] = []
+            dfs2(v, comp)
+            sccs.append(sorted(comp))
+
+    return sccs
+
+
+def find_cycles(
+    claims: list[dict[str, Any]], attacks: list[tuple[str, str]]
+) -> list[list[str]]:
+    """Find all SCCs that contain cycles (size > 1 or self-attack).
+    Returns list of cycle witness SCCs.
+    """
+    sccs = scc_decomposition(claims, attacks)
+    attack_set = {(s, t) for s, t in attacks}
+
+    cycles = []
+    for scc in sccs:
+        if len(scc) > 1:
+            cycles.append(scc)
+        elif len(scc) == 1:
+            # Check self-attack
+            v = scc[0]
+            if (v, v) in attack_set:
+                cycles.append(scc)
+    return cycles
+
+
+def label_reasons(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+    result: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Generate human-readable reasons for each argument's label.
+
+    Returns dict mapping argument ID to:
+      - label: "IN" | "OUT" | "UNDEC"
+      - reason: short explanation
+      - witnesses: list of relevant argument IDs
+      - cycle_scc: SCC ID if undecided due to cycle
+    """
+    accepted = set(result["accepted"])
+    rejected = set(result["rejected"])
+    undecided = set(result["undecided"])
+    cids = {c["id"] for c in claims}
+
+    attackers_of: dict[str, set[str]] = {}
+    for src, tgt in attacks:
+        if src in cids and tgt in cids:
+            attackers_of.setdefault(tgt, set()).add(src)
+
+    sccs = scc_decomposition(claims, attacks)
+    scc_map: dict[str, int] = {}
+    for i, scc in enumerate(sccs):
+        for v in scc:
+            scc_map[v] = i
+
+    reasons: dict[str, dict[str, Any]] = {}
+
+    for cid in sorted(cids):
+        if cid in accepted:
+            atts = attackers_of.get(cid, set())
+            if not atts:
+                reasons[cid] = {"label": "IN", "reason": "no attackers", "witnesses": []}
+            else:
+                defeated_by = set()
+                for a in atts:
+                    a_atts = attackers_of.get(a, set())
+                    if a_atts & accepted:
+                        defeated_by.add(a)
+                reasons[cid] = {
+                    "label": "IN",
+                    "reason": f"all attackers defeated by accepted arguments",
+                    "witnesses": sorted(defeated_by),
+                }
+        elif cid in rejected:
+            atts = attackers_of.get(cid, set())
+            in_attackers = atts & accepted
+            reasons[cid] = {
+                "label": "OUT",
+                "reason": f"attacked by IN argument(s)",
+                "witnesses": sorted(in_attackers),
+            }
+        else:  # undecided
+            scc_id = scc_map.get(cid)
+            scc_nodes = sccs[scc_id] if scc_id is not None else [cid]
+            if len(scc_nodes) > 1 or (
+                len(scc_nodes) == 1 and (scc_nodes[0], scc_nodes[0]) in {(s, t) for s, t in attacks}
+            ):
+                reasons[cid] = {
+                    "label": "UNDEC",
+                    "reason": f"part of cycle/SCC that prevents grounded resolution",
+                    "witnesses": scc_nodes,
+                    "cycle_scc": scc_id,
+                }
+            else:
+                # Depends on another undecided argument
+                reasons[cid] = {
+                    "label": "UNDEC",
+                    "reason": "depends on undecided argument(s)",
+                    "witnesses": sorted(undecided & {cid} if undecided else []),
+                }
+
+    return reasons
+
+
+def proof_trace(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+    result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Generate a complete proof trace for the grounded extension computation.
+
+    Returns:
+      - sccs: SCC decomposition
+      - cycles: cycle witnesses
+      - iteration_history: per-iteration accepted/defended sets
+      - labels: per-argument label with reasons
+      - convergent: whether convergence was achieved
+    """
+    if result is None:
+        result = grounded_extension(claims, attacks)
+
+    # Replay iterations to capture history
+    cids = {c["id"] for c in claims}
+    attackers_of: dict[str, set[str]] = {}
+    for src, tgt in attacks:
+        if src in cids and tgt in cids:
+            attackers_of.setdefault(tgt, set()).add(src)
+
+    iteration_history: list[dict[str, Any]] = []
+    accepted: set[str] = set()
+    iteration = 0
+    max_iter = result["derived_bound"]
+
+    while iteration < max_iter:
+        iteration += 1
+        defended = set()
+        for cid in cids:
+            atts = attackers_of.get(cid, set())
+            if not atts:
+                defended.add(cid)
+            else:
+                all_defeated = True
+                for a in atts:
+                    a_atts = attackers_of.get(a, set())
+                    if not (a_atts & accepted):
+                        all_defeated = False
+                        break
+                if all_defeated:
+                    defended.add(cid)
+
+        iteration_history.append({
+            "iteration": iteration,
+            "accepted": sorted(accepted),
+            "defended": sorted(defended),
+        })
+
+        if defended == accepted:
+            break
+        accepted = defended
+
+    sccs = scc_decomposition(claims, attacks)
+    cycles = find_cycles(claims, attacks)
+
+    return {
+        "sccs": sccs,
+        "cycles": cycles,
+        "iteration_history": iteration_history,
+        "labels": label_reasons(claims, attacks, result),
+        "convergent": result["convergent"],
+        "accepted": result["accepted"],
+        "rejected": result["rejected"],
+        "undecided": result["undecided"],
+    }
