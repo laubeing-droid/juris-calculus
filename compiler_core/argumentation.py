@@ -132,12 +132,22 @@ def scc_decomposition(
     visited: set[str] = set()
     order: list[str] = []
 
-    def dfs1(v: str) -> None:
-        visited.add(v)
-        for w in adj.get(v, []):
-            if w not in visited:
-                dfs1(w)
-        order.append(v)
+    # Iterative DFS (first pass) — avoids recursion limit for large graphs
+    def dfs1(start: str) -> None:
+        stack: list[tuple[str, int]] = [(start, 0)]
+        visited.add(start)
+        while stack:
+            v, idx = stack[-1]
+            neighbors = adj.get(v, [])
+            if idx < len(neighbors):
+                w = neighbors[idx]
+                stack[-1] = (v, idx + 1)
+                if w not in visited:
+                    visited.add(w)
+                    stack.append((w, 0))
+            else:
+                stack.pop()
+                order.append(v)
 
     for v in sorted(cids):
         if v not in visited:
@@ -146,12 +156,23 @@ def scc_decomposition(
     visited.clear()
     sccs: list[list[str]] = []
 
-    def dfs2(v: str, comp: list[str]) -> None:
-        visited.add(v)
-        comp.append(v)
-        for w in radj.get(v, []):
-            if w not in visited:
-                dfs2(w, comp)
+    # Iterative DFS (second pass) — avoids recursion limit for large graphs
+    def dfs2(start: str, comp: list[str]) -> None:
+        stack: list[tuple[str, int]] = [(start, 0)]
+        visited.add(start)
+        comp.append(start)
+        while stack:
+            v, idx = stack[-1]
+            neighbors = radj.get(v, [])
+            if idx < len(neighbors):
+                w = neighbors[idx]
+                stack[-1] = (v, idx + 1)
+                if w not in visited:
+                    visited.add(w)
+                    comp.append(w)
+                    stack.append((w, 0))
+            else:
+                stack.pop()
 
     for v in reversed(order):
         if v not in visited:
