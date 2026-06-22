@@ -1,0 +1,19 @@
+{
+  "case_id": "gc07",
+  "case_name": "缺失必要事实",
+  "input_facts": [],
+  "attacks": [],
+  "grounded_in": [
+    "因果关系",
+    "损害事实",
+    "赔偿请求成立",
+    "过错行为"
+  ],
+  "grounded_out": [],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 5,
+  "converged": true,
+  "truncated": false,
+  "note": "No facts, Horn closure empty"
+}

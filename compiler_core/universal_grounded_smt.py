@@ -1,4 +1,4 @@
-﻿"""Universal SMT proofs for grounded extension via explicit fixpoint unrolling.
+﻿"""bounded_enumeration SMT proofs for grounded extension via explicit fixpoint unrolling.
 
 Instead of encoding the algebraic fixed-point condition (which allows non-minimal
 solutions), we unroll the fixpoint iteration exactly as the Python engine does:
@@ -202,3 +202,4 @@ def prove_cycle_all_undecided(n_nodes: int, timeout_ms: int = 60000) -> ProofRes
         return ProofResult(n_nodes, False,
                           f"SAT=CE edges={edges_list} acc={acc_list}", time_seconds=elapsed)
     return ProofResult(n_nodes, False, f"UNKNOWN={result}", time_seconds=elapsed)
+

@@ -1,0 +1,28 @@
+{
+  "case_id": "gc05",
+  "case_name": "法条优先级冲突",
+  "input_facts": [
+    "特别法规定",
+    "一般法规定"
+  ],
+  "attacks": [
+    [
+      "适用一般法",
+      "适用特别法"
+    ]
+  ],
+  "grounded_in": [
+    "一般法规定",
+    "特别法规定",
+    "适用一般法"
+  ],
+  "grounded_out": [
+    "适用特别法"
+  ],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 5,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

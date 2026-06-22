@@ -1,0 +1,31 @@
+{
+  "case_id": "gc02",
+  "case_name": "双方证据相互攻击",
+  "input_facts": [
+    "原告证据A"
+  ],
+  "attacks": [
+    [
+      "原告证据A",
+      "被告证据B不成立"
+    ],
+    [
+      "被告证据B",
+      "原告证据A不成立"
+    ]
+  ],
+  "grounded_in": [
+    "原告证据A",
+    "被告证据B"
+  ],
+  "grounded_out": [
+    "原告证据A不成立",
+    "被告证据B不成立"
+  ],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 5,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

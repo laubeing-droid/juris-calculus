@@ -1,0 +1,37 @@
+{
+  "case_id": "gc01",
+  "case_name": "合约请求权—抗辩—反抗辩",
+  "input_facts": [
+    "买方已付款",
+    "卖方交货迟延"
+  ],
+  "attacks": [
+    [
+      "卖方交货迟延",
+      "卖方应交货"
+    ],
+    [
+      "卖方应交货",
+      "卖方违约"
+    ],
+    [
+      "卖方违约",
+      "买方索赔可成立"
+    ]
+  ],
+  "grounded_in": [
+    "买方已付款",
+    "卖方交货迟延",
+    "卖方违约"
+  ],
+  "grounded_out": [
+    "买方索赔可成立",
+    "卖方应交货"
+  ],
+  "grounded_undec": [],
+  "iterations": 3,
+  "derived_bound": 6,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

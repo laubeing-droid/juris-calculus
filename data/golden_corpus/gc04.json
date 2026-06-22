@@ -1,0 +1,31 @@
+{
+  "case_id": "gc04",
+  "case_name": "规则例外链",
+  "input_facts": [
+    "合同已签"
+  ],
+  "attacks": [
+    [
+      "合同有效",
+      "不可抗力例外不适用"
+    ],
+    [
+      "不可抗力例外适用",
+      "合同有效"
+    ]
+  ],
+  "grounded_in": [
+    "不可抗力例外不适用",
+    "不可抗力例外适用",
+    "合同已签"
+  ],
+  "grounded_out": [
+    "合同有效"
+  ],
+  "grounded_undec": [],
+  "iterations": 3,
+  "derived_bound": 5,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

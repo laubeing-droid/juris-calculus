@@ -1,0 +1,28 @@
+{
+  "case_id": "gc08",
+  "case_name": "时间效力冲突",
+  "input_facts": [
+    "旧法时行为",
+    "新法已生效"
+  ],
+  "attacks": [
+    [
+      "适用旧法",
+      "适用新法"
+    ]
+  ],
+  "grounded_in": [
+    "新法已生效",
+    "旧法时行为",
+    "适用旧法"
+  ],
+  "grounded_out": [
+    "适用新法"
+  ],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 5,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

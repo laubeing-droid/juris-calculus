@@ -1,0 +1,26 @@
+{
+  "case_id": "gc09",
+  "case_name": "跨法域概念未映射",
+  "input_facts": [
+    "中国信托关系"
+  ],
+  "attacks": [
+    [
+      "中国信托关系",
+      "US_fiduciary_duty适用"
+    ]
+  ],
+  "grounded_in": [
+    "US_fiduciary_duty不适用",
+    "中国信托关系"
+  ],
+  "grounded_out": [
+    "US_fiduciary_duty适用"
+  ],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 4,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}

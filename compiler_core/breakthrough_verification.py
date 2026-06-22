@@ -1,4 +1,4 @@
-﻿"""Phase F2 verification: 2 non-G8/G9/G10 math breakthroughs rigorously verified.
+﻿"""Phase F2 verification: 2 non-G8/G9/G10 math breakthroughs bounded_verification.
 
 Candidate B: Grounded certificate minimization — every IN argument has a
   minimal defense witness (subset-minimal set of arguments that defeats
@@ -179,3 +179,4 @@ BREAKTHROUGH_VERIFICATION_MANIFEST: dict[str, Any] = {
         "limitations": "Only CN→US direction tested; reverse mapping and other jurisdictions pending",
     },
 }
+

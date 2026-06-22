@@ -1,0 +1,26 @@
+{
+  "case_id": "gc06",
+  "case_name": "循环争点",
+  "input_facts": [],
+  "attacks": [
+    [
+      "原告主张成立",
+      "被告反诉成立"
+    ],
+    [
+      "被告反诉成立",
+      "原告主张成立"
+    ]
+  ],
+  "grounded_in": [],
+  "grounded_out": [],
+  "grounded_undec": [
+    "原告主张成立",
+    "被告反诉成立"
+  ],
+  "iterations": 1,
+  "derived_bound": 3,
+  "converged": true,
+  "truncated": false,
+  "note": ""
+}
