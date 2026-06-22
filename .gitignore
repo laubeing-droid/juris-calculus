@@ -1,87 +1,73 @@
-# LegalOS-Core .gitignore
-# Blocks all local R&D, test, and blind-run artifacts.
-# Only pure open-source source code reaches GitHub.
-
-# Data artifacts (facts, timesheets, reports)
-*.json
-*.csv
-*.xlsx
-*.log
-
-# Exception: US benchmark complaint templates (core + roadmap)
-!tests/us_complaints/core/*.json
-!tests/us_complaints/roadmap/*.json
-!tests/fixtures/*.json
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# Private configs (only .example.yaml is allowed in)
-*config.yaml
 !*config.example.yaml
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Binary artifacts (vectors, indices)
-chroma_db_ocr/
-*.npy
-*.pkl
-
-# Rule backup files (concept injection/Augment 前备份)
-configs/zh_CN/rules_pre_inject.yaml
-configs/zh_CN/rules_augmented.yaml
-
-# Sensitive credentials
-.env
-.env.*
-*.pem
-*.key
-
-# Regenerated benchmark reports
-tests/results/
-
-# ── Interim build artifacts ──
-configs/en_US/llm_distilled_batch*.json
-configs/en_US/llm_distilled_pilot.json
-configs/en_US/all_glossary_terms.json
-configs/en_US/combined_all_terms.json
-configs/en_US/pdf_glossary_terms.json
-configs/en_US/US_complete.json
-reports/asymmetry_distillation_v1.1.0.json
-reports/parallax_detail_v1.1.0.json
-
-# ── Exception: production JSONs ──
-!configs/en_US/state_combined_terms.json
 !configs/en_US/llm_distilled_full.json
+!configs/en_US/state_combined_terms.json
 !configs/prc_us_alignment/hk_us_divergence_matrix.json
 !configs/prc_us_alignment/long_tail_collision_matrix.json
 !configs/prc_us_alignment/trirail_matrix_report.json
 !mcp_manifest.json
-.hatch-pet-runs/
-
+!tests/fixtures/*.json
+!tests/us_complaints/core/*.json
+!tests/us_complaints/roadmap/*.json
 # Audit artifacts (deployed by pre-release-auditor, not tracked)
-scripts/
+# Binary artifacts (vectors, indices)
+# Blocks all local R&D, test, and blind-run artifacts.
+# Data artifacts (facts, timesheets, reports)
+# Exception: US benchmark complaint templates (core + roadmap)
+# IDE
+# LegalOS-Core .gitignore
+# OS files
+# Only pure open-source source code reaches GitHub.
+# Planning files (working docs, not source)
+# Private configs (only .example.yaml is allowed in)
+# Python cache
+# Regenerated benchmark reports
+# Rule backup files (concept injection/Augment 前备份)
+# Sensitive credentials
+# ── Exception: production JSONs ──
+# ── Interim build artifacts ──
+*.bak.*
+*.csv
+*.json
+*.key
+*.log
+*.npy
+*.pem
+*.pkl
+*.pyc
+*.pyo
+*.swo
+*.swp
+*.xlsx
+*config.yaml
+.DS_Store
 .audit-*.md
 .audit-version.json
+.claude/
+.env
+.env.*
 .github/converge-briefing.md
-
-# Planning files (working docs, not source)
-task_plan.md
+.hatch-pet-runs/
+.idea/
+.vscode/
+Thumbs.db
+__pycache__/
+chroma_db_ocr/
+configs/en_US/US_complete.json
+configs/en_US/all_glossary_terms.json
+configs/en_US/combined_all_terms.json
+configs/en_US/llm_distilled_batch*.json
+configs/en_US/llm_distilled_pilot.json
+configs/en_US/pdf_glossary_terms.json
+configs/zh_CN/rules.yaml.bak.*
+configs/zh_CN/rules_augmented.yaml
+configs/zh_CN/rules_pre_inject.yaml
 findings.md
 progress.md
-*.bak.*
-configs/zh_CN/rules.yaml.bak.*
+reports/asymmetry_distillation_v1.1.0.json
+reports/parallax_detail_v1.1.0.json
+scripts/
+task_plan.md
+tests/results/
 下载存放区/
-过程文件/
 源码/
-.claude/
+过程文件/
