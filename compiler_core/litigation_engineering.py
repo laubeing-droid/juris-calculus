@@ -64,14 +64,17 @@ def check_scc_correctness(
     for scc_idx, scc in enumerate(sccs):
         # Compute grounded for this SCC, considering attacks from previous SCCs
         scc_claims = [c for c in claims if c["id"] in scc]
-        # Attacks within SCC + attacks from previously resolved SCCs
+        # Include claims from all previous SCCs (needed for grounded propagation)
+        for prev_idx in range(scc_idx):
+            for c in claims:
+                if c["id"] in sccs[prev_idx] and c["id"] not in {x["id"] for x in scc_claims}:
+                    scc_claims.append(c)
+        # Attacks: all attacks among the combined claim set
+        scc_claim_ids = {c["id"] for c in scc_claims}
         scc_attacks = [
             (s, t) for s, t in attacks
-            if t in scc and s in (set(scc) | scc_accepted)
+            if s in scc_claim_ids and t in scc_claim_ids
         ]
-        # Also include attacks from earlier SCCs (whose accepted set is known)
-        earlier_accepted = {v for v in scc_accepted if scc_map.get(v, 999) < scc_idx}
-        # For grounded: arguments in earlier SCCs that are accepted attack into current SCC
         scc_result = grounded_extension(scc_claims, scc_attacks)
         scc_accepted |= set(scc_result["accepted"])
 

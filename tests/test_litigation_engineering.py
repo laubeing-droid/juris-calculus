@@ -13,14 +13,13 @@ def test_scc_correctness_dag():
     claims = [_c("A"),_c("B"),_c("C")]
     attacks = [("A","B"),("B","C")]
     r = check_scc_correctness(claims, attacks)
-    # Known limitation: SCC-ordered computation does not include resolved claims from previous SCCs
-    # in the grounded_extension call, causing false negative for DAGs.
-    # The other 7 tests demonstrate the module is functionally correct.
+    assert r.correct is True, f"DAG SCC failed: mismatches={r.mismatches}"
+
+def test_scc_correctness_pure_cycle():
     """Pure cycle: SCC decomposition works (one SCC)."""
     claims = [_c("A"),_c("B")]
     attacks = [("A","B"),("B","A")]
     r = check_scc_correctness(claims, attacks)
-    assert r.correct is True  # SCC decomposition preserves grounded semantics for DAGs
 
 def test_scc_correctness_cross_scc():
     """Mixed graph: SCC decomposition may fail due to cross-SCC propagation."""
@@ -28,7 +27,7 @@ def test_scc_correctness_cross_scc():
     attacks = [("C","A"),("A","B"),("B","A")]
     r = check_scc_correctness(claims, attacks)
     # Cross-SCC undecided propagation is expected
-    assert r.counterexample is not None or not r.correct
+    assert r.correct is True, f"Cross-SCC fixed: mismatches={r.mismatches}"
 
 def test_certificate_verifiable():
     claims = [_c("A"),_c("B")]
@@ -70,5 +69,4 @@ def test_stability_analysis():
     sa = analyze_stability("A", claims, attacks, result)
     assert sa.label == "IN"
     assert isinstance(sa.robustness_radius, int)
-
 
