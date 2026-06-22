@@ -1,0 +1,7 @@
+# S7: Hardcoded Constants Registry
+constants:
+  - id: C001; file: compiler_core/evaluator.py; role: max_iterations; type: safety; value: 100; status: FROZEN
+  - id: C002; file: compiler_core/evaluator.py; role: k_max; type: safety; value: 3; status: FROZEN
+  - id: C003; file: compiler_core/evaluator.py; role: critical_streak_max; type: safety; value: 5; status: FROZEN
+calibration_status: DATA_BLOCKED
+next_step: OAT_sanity_check_on_top10_most_sensitive
