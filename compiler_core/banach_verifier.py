@@ -93,7 +93,7 @@ class BanachVerifier:
         norm_type: str = "max",
         threshold: float = 1.0,
     ) -> ContractionResult:
-        """Verify block-triangular contraction: each diagonal block is a contraction."""
+        """Verify block-diagonal contraction — only diagonal blocks contracted individually, cannot infer full-matrix contraction without coupling analysis: each diagonal block is a contraction."""
         if not blocks:
             return ContractionResult(True, norm_type, 0.0, "Empty block system (trivial contraction)")
         max_factor = 0.0
@@ -216,3 +216,5 @@ class BanachVerifier:
             else: failed += 1
 
         return {"total": passed + failed, "passed": passed, "failed": failed, "results": results}
+
+
