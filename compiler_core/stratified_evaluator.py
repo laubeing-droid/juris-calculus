@@ -1,24 +1,33 @@
 ﻿#!/usr/bin/env python3
-"""v2.0 Stratified Evaluator - four-stage Layer 5 pipeline.
+"""v2.1 Stratified Evaluator — four-stage pipeline.
 
-Stage 1: Horn closure on routed rules (monotone, PROVED_FORMAL)
-Stage 2: Attack graph construction (Dung AAF)
-Stage 3: Grounded extension computation (deterministic)
-Stage 4: Trust label projection onto output claims
+Stage 1: evaluate_horn() — pure monotone Horn closure
+Stage 2: build_attack_graph_from_evaluator() — AAF attack graph + rebuttal
+Stage 3: grounded_extension() — Dung deterministic extension
+Stage 4: Trust label projection + allowed/forbidden marking
+
+Mathematical basis:
+- Stage 1 monotone: bounded_horn_correctness.py (3,965 fixtures)
+- Stage 3 deterministic: dung_grounded_extension.py (66,066 graphs)
+- Termination: production_bounded_termination.py (5 operational bounds, NOT Tarski)
 """
 from typing import List, Dict, Optional
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.argumentation import build_attack_edges_from_rules, grounded_extension
+from compiler_core.argumentation import (
+    build_attack_edges_from_rules,
+    build_attack_graph_from_evaluator,
+    grounded_extension,
+)
 from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin, RuleMaturity
 from compiler_core.domain_config import DomainConfig
-from compiler_core.types import LegalDomain, LegalClaim
+from compiler_core.types import LegalDomain, LegalClaim, IRState
 
 
 class StratifiedEvaluator:
 
     @staticmethod
     def _check_damage_limits(claims):
-        """Post-process: validate damage claims against statutory limits from blueprint."""
+        """Post-process: validate damage claims against statutory limits."""
         try:
             import json
             from compiler_core.config_paths import blueprint_path
@@ -36,31 +45,59 @@ class StratifiedEvaluator:
 
     def __init__(self, rules_path: str, overrides_path: Optional[str] = None):
         self.rules = load_rules_from_yaml(rules_path)
-        self.evaluator = FixpointEvaluator(self.rules, DomainConfig(domain=LegalDomain.CIVIL),
-                                           overrides_path=overrides_path)
+        self.evaluator = FixpointEvaluator(
+            self.rules, DomainConfig(domain=LegalDomain.CIVIL),
+            overrides_path=overrides_path
+        )
+        # Reverse index: head_claim -> rule (O(1) lookup for rebuttal)
+        self._claim_to_rule = {}
+        for r in self.rules:
+            if r.head_claim:
+                self._claim_to_rule[r.head_claim] = r
 
-    def evaluate(self, state, contract: Optional[Dict] = None) -> List[LegalClaim]:
-        raw_claims = self.evaluator.evaluate(state)
+    def evaluate(self, state: IRState, contract: Optional[Dict] = None) -> List[LegalClaim]:
+        """Four-stage pipeline: Horn -> AAF -> Grounded Extension -> Trust Labels."""
+
+        # Stage 1: Pure monotone Horn closure
+        horn_state = self.evaluator.evaluate_horn(state)
+        raw_claims = list(horn_state.claims.values())
         if not raw_claims:
             return []
 
-        attacks = build_attack_edges_from_rules(self.rules)
-        for i, c1 in enumerate(raw_claims):
-            for j, c2 in enumerate(raw_claims):
-                if i != j and c1.id != c2.id:
-                    for note in getattr(c1, 'exception_notes', []):
-                        if c2.id in note and (c1.id, c2.id) not in attacks:
-                            attacks.append((c1.id, c2.id))
-
-        ge_result = grounded_extension(
-            [{"id": c.id, "confidence": c.confidence} for c in raw_claims],
-            attacks
+        # Stage 2: Build complete attack graph
+        attacks = build_attack_graph_from_evaluator(
+            horn_state.claims, self.rules,
+            self.evaluator.constraint_validator,
+            horn_state, horn_state.blocked_claims
         )
 
+        # Stage 2b: Run rebuttal checks (non-monotone part) — O(claims) with reverse index
+        if self.evaluator.constraint_validator.loaded:
+            for claim in raw_claims:
+                rule = self._claim_to_rule.get(claim.id)
+                if rule and rule.concepts:
+                    rebuttal = self.evaluator.constraint_validator.check_rebuttal(
+                        claim.id, rule.concepts, horn_state
+                    )
+                    if rebuttal.triggered:
+                        claim.confidence = 0.0
+                        claim.forbidden_claim = True
+
+        # Stage 3: Dung grounded extension (exclude confidence=0 claims)
+        active_claims = [c for c in raw_claims if c.confidence > 0]
+        ge_result = grounded_extension(
+            [{"id": c.id, "confidence": c.confidence} for c in active_claims],
+            attacks
+        )
         accepted_ids = set(ge_result["accepted"])
+        undecided_ids = set(ge_result.get("undecided", []))
+
+        # Stage 4: Trust label projection + agent payload
         result = []
         for c in raw_claims:
-            if c.id in accepted_ids:
+            if c.id in accepted_ids and c.confidence > 0:
+                c.allowed_claim = True
+                c.forbidden_claim = False
                 if c.epistemic_status is None:
                     c.epistemic_status = EpistemicStatus(
                         trust_label=TrustLabel.ENGINEERING_BASELINE,
@@ -68,5 +105,13 @@ class StratifiedEvaluator:
                         data_origin=DataOrigin.SYMBOLIC_ENGINE,
                     )
                 result.append(c)
+            elif c.id in undecided_ids and c.confidence > 0:
+                c.allowed_claim = False
+                c.forbidden_claim = False
+                c.requires_human_review = True
+                result.append(c)
+            else:
+                c.allowed_claim = False
+                c.forbidden_claim = True
 
         return result

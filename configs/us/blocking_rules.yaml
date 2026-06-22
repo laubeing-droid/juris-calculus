@@ -1,0 +1,223 @@
+# US → HK Blocking Rules
+# US concepts that are BLOCKED, SUPPRESSED, or significantly DIFFERENT in Hong Kong law
+#
+# Design: Gemini audit — "HK 作为公共政策拦截层"
+# Source: 73 条 US federal rules + cross-border practice analysis
+
+version: "v2.1.0"
+strategy: US-HK-Mandatory-Interdiction
+total_rules: 18
+
+rules:
+
+# ═══════════════════════════════════════════
+# 绝对阻断 — US 概念在 HK 法下完全不存在
+# ═══════════════════════════════════════════
+
+- id: HK-US-BLK-001-FSIA
+  trigger_fact: Entity_Is_Foreign_State
+  description: "FSIA (Foreign Sovereign Immunities Act) is US-specific. HK has State Immunity Ordinance (Cap 399) with different framework."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap399_State_Immunity
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 399 国家豁免条例 — 不同的豁免框架
+
+- id: HK-US-BLK-002-DiversityJurisdiction
+  trigger_fact: Parties_Are_Diverse_Citizenship
+  description: "Diversity jurisdiction is US-specific (federal system). HK has no equivalent — single court system."
+  target_primitive: Status
+  action:
+    type: FORCE_VOID
+    map_to: ""
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: HK 单一法院系统 — 无多元管辖权概念
+
+- id: HK-US-BLK-003-S1782-Discovery
+  trigger_fact: Discovery_For_Use_In_Foreign_Tribunal
+  description: "28 USC §1782 discovery is US-specific. HK has much more limited disclosure under RHC O.24."
+  target_primitive: Act
+  action:
+    type: FORCE_VOID
+    map_to: HK_Limited_Disclosure
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: 高等法院规则 O.24 — 有限度的文件透露
+
+- id: HK-US-BLK-004-IEEPA-Sanctions
+  trigger_fact: National_Emergency_Declared
+  description: "IEEPA/ECRA sanctions are US-specific unilateral measures. HK has its own sanctions regime under UN Ordinance (Cap 605)."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap605_UN_Sanctions
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 605 联合国制裁条例 — 不同的制裁框架
+
+- id: HK-US-BLK-005-FAA-SexualAssault
+  trigger_fact: Sexual_Assault_Or_Harassment_Claim
+  description: "FAA §402 sexual assault exception is US-specific. HK has no equivalent carve-out from arbitration."
+  target_primitive: Status
+  action:
+    type: FORCE_VOID
+    map_to: ""
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: Cap 609 仲裁条例 — 无性侵例外
+
+- id: HK-US-BLK-006-SecuritiesPrivateRight
+  trigger_fact: Section_10b_Violated
+  description: "US §10b securities fraud private right of action has no HK equivalent. HK Securities and Futures Ordinance (Cap 571) has different enforcement."
+  target_primitive: Act
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap571_SFO_Enforcement
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 571 证券及期货条例 — 不同的执行机制
+
+- id: HK-US-BLK-007-ClassAction
+  trigger_fact: US_Class_Action
+  description: "US-style class action (Rule 23) does not exist in HK. HK has representative proceedings under RHC O.15 r.12."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Representative_Proceedings
+    status: MAPPED_TO_HK_EQUIVALENT
+  additional_conditions: []
+  legal_basis: 高等法院规则 O.15 r.12 代表诉讼
+
+# ═══════════════════════════════════════════
+# 条件阻断 — US 概念在 HK 法下部分存在或有限制
+# ═══════════════════════════════════════════
+
+- id: HK-US-BLK-008-TrebleDamages
+  trigger_fact: Clayton_Act_Violated
+  description: "US antitrust treble damages (3x) generally unavailable in HK. HK Competition Ordinance (Cap 619) only allows compensatory damages."
+  target_primitive: Asset
+  action:
+    type: FORCE_SUPPRESS
+    map_to: Compensatory_Damages_Only
+    status: BLOCKED
+  additional_conditions:
+  - Cross_Border_Context
+  legal_basis: Cap 619 竞争条例 — 仅补偿性赔偿
+
+- id: HK-US-BLK-009-StatutoryDamages
+  trigger_fact: Copyright_Infringement_Established
+  description: "US statutory damages ($750-$150,000 per work) have no direct HK equivalent. HK courts award actual damages."
+  target_primitive: Asset
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Actual_Damages_Only
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions:
+  - Cross_Border_Context
+  legal_basis: Cap 528 s.108 — 实际损害赔偿
+
+- id: HK-US-BLK-010-FairUse
+  trigger_fact: Fair_Use_Defense_Applies
+  description: "US fair use (4-factor test) is broader than HK fair dealing. HK Cap 528 has specific enumerated exceptions."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Fair_Dealing_Cap528
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 528 s.38 — 公平处理（列举式，比 US 窄）
+
+- id: HK-US-BLK-011-PunitiveDamages
+  trigger_fact: Punitive_Damages_Claimed
+  description: "US punitive damages generally unavailable in HK civil litigation. Only compensatory damages (Rookes v Barnard exceptions extremely narrow)."
+  target_primitive: Asset
+  action:
+    type: FORCE_SUPPRESS
+    map_to: Compensatory_Damages_Only
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: HK普通法 — Rookes v Barnard 原则
+
+- id: HK-US-BLK-012-Chapter11Reorg
+  trigger_fact: Debtor_May_File_Chapter11
+  description: "US Chapter 11 reorganization has no direct HK equivalent. HK uses schemes of arrangement under Companies Ordinance (Cap 622 Part 13)."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap622_Scheme_Of_Arrangement
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 622 Part 13 债务偿还安排
+
+- id: HK-US-BLK-013-Discharge
+  trigger_fact: Debtor_Granted_Discharge
+  description: "US bankruptcy discharge has no direct HK equivalent. HK winding up does not discharge debts."
+  target_primitive: Status
+  action:
+    type: FORCE_SUPPRESS
+    map_to: ""
+    status: BLOCKED
+  additional_conditions: []
+  legal_basis: HK 公司清盘 — 不免除债务
+
+- id: HK-US-BLK-014-ActOfState
+  trigger_fact: ActOfState_Doctrine_Not_Bar_Enforcement
+  description: "US Act of State doctrine (FAA §15) is US-specific judicial restraint principle. HK has different approach via Cap 399."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_State_Immunity_Approach
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 399 国家豁免条例
+
+# ═══════════════════════════════════════════
+# 概念改造 — US 概念在 HK 法下有不同含义
+# ═══════════════════════════════════════════
+
+- id: HK-US-BLK-015-TrademarkRegistration
+  trigger_fact: Owner_May_Register_Trademark
+  description: "US use-based trademark system vs HK registration-based. Different acquisition requirements."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap559_Registration_Based
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 559 商标条例 — 注册制（非使用制）
+
+- id: HK-US-BLK-016-PatentSystem
+  trigger_fact: Patent_In_Force
+  description: "US patent system is original grant. HK has no independent patent system — relies on re-registration of PRC/UK patents via Cap 514."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap514_Standard_Patent_Reregistration
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 514 专利条例 — 标准专利再注册制度
+
+- id: HK-US-BLK-017-ArbitrationVenue
+  trigger_fact: Court_May_Direct_Arbitration_At_Agreed_Location
+  description: "US FAA allows court to direct arbitration location. HK Cap 609 has similar but different approach — parties choose, court intervenes only if no agreement."
+  target_primitive: Power
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap609_S34_PartyChoice
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 609 s.34 — 仲裁地由当事人选择
+
+- id: HK-US-BLK-018-CommerceDefinition
+  trigger_fact: Transaction_Involves_Commerce
+  description: "US FAA 'commerce' definition (interstate/foreign commerce) is US constitutional concept. HK uses 'international commercial arbitration' under Cap 609."
+  target_primitive: Status
+  action:
+    type: MAPPING_OVERRIDE
+    map_to: HK_Cap609_International_Commercial
+    status: MAPPED_WITH_DIFFERENCES
+  additional_conditions: []
+  legal_basis: Cap 609 — 国际商事仲裁定义

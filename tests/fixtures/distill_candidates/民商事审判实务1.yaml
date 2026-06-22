@@ -1,0 +1,26 @@
+# 民商事审判实务1 candidate rules
+rules:
+- id: CM-604
+  premise_atoms: ['representative_authority_statutory_limit']
+  head_claim: 法定限制代表权善意需举证约定限制善意推定
+  exception_chain: []
+  concepts: ['representative_authority_statutory_limit']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务1
+- id: CM-605
+  premise_atoms: ['limitation_interruption_restart']
+  head_claim: 时效中断非持续性事由从中断时起算持续性从终结时起算
+  exception_chain: []
+  concepts: ['limitation_interruption_restart']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务1

@@ -1,233 +1,198 @@
 #!/usr/bin/env python3
-"""US addon ? UCC/common law adapter with blueprint-backed L0 + court lookup."""
-import sys, yaml
-from pathlib import Path
-from typing import Dict, List
+"""US adapter — US federal law with 7-title coverage.
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+Covers: Arbitration (Title 9), Jurisdiction/FSIA (Title 28), Sanctions (Title 50),
+Bankruptcy (Title 11), Commerce/Antitrust/Securities (Title 15),
+Copyrights (Title 17), Patents (Title 35).
+"""
+import yaml
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 from compiler_core.adapter_base import JurisdictionAdapter
 from compiler_core.types import LegalFact, IRState, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
 from compiler_core.legal_compiler import LegalCompiler
 from compiler_core.constraint_validator import ConstraintValidator
-from compiler_core.config_paths import us_adapter_path as _cp_adapter, overrides_path as _cp_overrides
+from compiler_core.proof_tree import ProofTree
+
 
 class USAdapter(JurisdictionAdapter):
+    """US federal law adapter."""
+
     jurisdiction = "US"
-    rules_path = _cp_adapter()
-    overrides_path = _cp_overrides("us")
+    rules_path = "configs/us/rules.yaml"
+    overrides_path = "configs/L0_overrides_us.yaml"
 
-    # Dynamically loaded from US_Adapter.yaml via _load_L0_map()
-    _L0_MAP: Dict[str, str] = {}
-    _constraint_rules: List[Dict] = []
-    _loaded = False
+    # Core L0 map for US legal concepts
+    _L0_MAP: Dict[str, str] = {
+        # Arbitration
+        "Arbitration_Agreement_Valid_Enforceable": "Status",
+        "Arbitral_Award_Made": "Status",
+        "Foreign_Arbitral_Award_Exists": "Status",
+        "Party_Fails_To_Arbitrate": "Act",
+        "Award_Procured_By_Fraud": "Defect",
+        "Arbitrator_Exceeded_Powers": "Defect",
+        "Written_Arbitration_Agreement_Exists": "Status",
+        "Transaction_Involves_Commerce": "Status",
+        # Jurisdiction
+        "Action_Against_Foreign_State": "Act",
+        "Claim_Arises_Under_Federal_Law": "Status",
+        "Parties_Are_Diverse_Citizenship": "Status",
+        "Amount_In_Controversy_Exceeds_75000": "Status",
+        "Foreign_State_Engages_In_Commercial_Activity": "Act",
+        "Foreign_State_Waives_Immunity": "Act",
+        "Foreign_State_Commits_Tort_In_US": "Act",
+        "Entity_Is_Foreign_State": "Agent",
+        # Bankruptcy
+        "Bankruptcy_Case_Pending": "Status",
+        "Debtor_In_Chapter7": "Status",
+        "Plan_Confirmed": "Status",
+        "Foreign_Proceeding_Exists": "Status",
+        "Foreign_Representative_Authorized": "Agent",
+        # Commerce
+        "Contract_Combination_Or_Conspiracy": "Act",
+        "Unreasonably_Restrains_Trade": "Defect",
+        "Person_Monopolizes_Or_Attempts": "Act",
+        "Offering_Of_Securities": "Act",
+        "Manipulative_Or_Deceptive_Act": "Defect",
+        "Mark_Used_In_Commerce": "Status",
+        "Confusingly_Similar_Mark_Used": "Act",
+        # IP
+        "Work_Is_Original": "Status",
+        "Work_Fixed_In_Tangible_Medium": "Status",
+        "Unauthorized_Use": "Act",
+        "Invention_Is_New_Useful_Process_Machine_Manufacture": "Status",
+        "Patent_In_Force": "Status",
+        "Unauthorized_Make_Use_Or_Sell": "Act",
+        "Copyright_Infringement_Established": "Status",
+        "Patent_Infringement_Established": "Status",
+        # Sanctions
+        "Unusual_Extraordinary_Threat_To_US": "Status",
+        "Person_Is_SDN_Listed": "Status",
+        "Entity_On_Entity_List": "Status",
+    }
 
-    @classmethod
-    def _ensure_loaded(cls):
-        """懒加载 US_Adapter.yaml → 自动构建 _L0_MAP + 约束规则"""
-        if cls._loaded:
+    _MODAL_MAPPING: Dict[str, str] = {
+        "shall": "OBLIGATION",
+        "must": "OBLIGATION",
+        "is required to": "OBLIGATION",
+        "shall not": "PROHIBITION",
+        "may not": "PROHIBITION",
+        "must not": "PROHIBITION",
+        "is prohibited": "PROHIBITION",
+        "is unlawful": "PROHIBITION",
+        "may": "PERMISSION",
+        "is entitled to": "PERMISSION",
+        "is authorized to": "PERMISSION",
+        "means": "CONSTITUTIVE",
+        "is defined as": "CONSTITUTIVE",
+        "includes": "CONSTITUTIVE",
+    }
+
+    def __init__(self):
+        self._l0_map: Optional[Dict[str, str]] = None
+        self._claim_table_cn: Optional[Dict[str, str]] = None
+        self._claim_table_en: Optional[Dict[str, str]] = None
+        self._blocking_rules: Optional[List[Dict]] = None
+
+    def _ensure_loaded(self) -> None:
+        if self._l0_map is not None:
             return
-        try:
-            adapter_path = Path(__file__).resolve().parents[1] / cls.rules_path
-            with open(adapter_path, "r", encoding="utf-8") as f:
-                raw = yaml.safe_load(f)
+        base = Path(__file__).resolve().parents[2]
 
-            for r in raw.get("rules", []):
-                head = r.get("head_claim", "")
-                l0 = r.get("l0_primitive", "?")
-                if head:
-                    cls._L0_MAP[head] = l0
-                for p in r.get("premise_atoms", []):
-                    if p and p not in cls._L0_MAP:
-                        cls._L0_MAP[p] = l0
+        # Load from term_L0_mappings.yaml
+        l0 = dict(self._L0_MAP)
+        term_path = base / "configs" / "us" / "term_L0_mappings.yaml"
+        if term_path.exists():
+            with open(term_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            for t in data.get("term_mappings", []):
+                term = t.get("term", "").strip()
+                prim = t.get("l0_primitive", "?")
+                if term and term not in l0:
+                    l0[term] = prim
 
-            # 加载 L0_overrides constraint rules
-            override_path = Path(__file__).resolve().parents[1] / cls.overrides_path
-            with open(override_path, "r", encoding="utf-8") as f:
-                ov = yaml.safe_load(f)
-            cls._constraint_rules = ov.get("constraint_rules", [])
+        # Also load from prc_us_alignment term mappings
+        align_path = base / "configs" / "prc_us_alignment" / "term_L0_mappings.yaml"
+        align_path2 = base / "configs" / "prc_us_alignment" / "term_L0_mappings_batch2.yaml"
+        for tp in [align_path, align_path2]:
+            if tp.exists():
+                with open(tp, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                for t in data.get("term_alignments", []):
+                    us = t.get("term_us", "").strip()
+                    prim = t.get("l0_chain", {}).get("primitive", "?")
+                    if us and us not in l0:
+                        l0[us] = prim
 
-            cls._loaded = True
-        except Exception as e:
-            # 降级: 使用硬编码的最小 _L0_MAP
-            cls._L0_MAP = {
-                "ContractFormed": "Status",
-                "PerformanceDue": "Act",
-                "BreachEstablished": "Status",
-                "RemedyMonetaryDamages": "Act",
-                "Consideration_Provided": "Status",
-                "Promissory_Estoppel_Bar": "Defect",
-                "Foreseeable_Damages": "Status",
-                "Mitigation_Duty": "Act",
-                "Fiduciary_Duty": "Power",
-                "Ultra_Vires": "Defect",
-                "Reasonable_Reliance": "Status",
-            }
-            cls._loaded = True
+        self._l0_map = l0
+        self._claim_table_cn = {}
+        self._claim_table_en = {}
 
-    def map_to_L0(self, concept: str) -> str:
+        # Load US→HK blocking rules
+        base = Path(__file__).resolve().parents[2]
+        block_path = base / "configs" / "us" / "blocking_rules.yaml"
+        if block_path.exists():
+            with open(block_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            self._blocking_rules = data.get("rules", [])
+        else:
+            self._blocking_rules = []
+
+    def check_blocking(self, fact_id: str) -> Optional[Dict]:
+        """Check if a fact is blocked by US→HK blocking rules."""
         self._ensure_loaded()
-        result = self._L0_MAP.get(concept, None)
-        if result is not None:
-            return result
-        try:
-            from .us_lookup import l0_primitive_from_term
-            bp_result = l0_primitive_from_term(concept)
-            if bp_result != "?":
-                return bp_result
-        except Exception:
-            pass
-        return "?"
+        for rule in self._blocking_rules or []:
+            if rule.get("trigger_fact") == fact_id:
+                action = rule.get("action", {})
+                if action.get("type") in ("FORCE_VOID", "FORCE_SUPPRESS"):
+                    return {
+                        "rule_id": rule.get("id"),
+                        "action_type": action.get("type"),
+                        "map_to": action.get("map_to", ""),
+                        "description": rule.get("description", ""),
+                    }
+        return None
+
+    def map_to_L0(self, domain_concept: str) -> str:
+        self._ensure_loaded()
+        return self._l0_map.get(domain_concept, "?")
+
+    def get_claim_tables(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+        self._ensure_loaded()
+        return self._claim_table_cn, self._claim_table_en
+
+    def get_modal_mapping(self) -> Dict[str, str]:
+        return dict(self._MODAL_MAPPING)
+
+    def get_legal_family(self) -> str:
+        return "common_law"
 
     def validate_against_guardrails(self, state: IRState) -> Dict:
-        self._ensure_loaded()
         issues = []
-        unmapped = []
+        blocked = []
         for fid, fact in state.facts.items():
             l0 = self.map_to_L0(fid)
             if l0 == "?":
-                unmapped.append(fid)
-        if unmapped:
-            issues.append(f"无L0映射: {', '.join(unmapped)}")
-
-        # v1.1: 检查 constraint_rules 触发
-        triggered_constraints = []
-        for cr in self._constraint_rules:
-            trigger = cr.get("trigger_fact", "")
-            if trigger in state.facts and state.facts[trigger].extraction_confidence > 0:
-                # 附加条件检查
-                conds = cr.get("additional_conditions", [])
-                all_met = True
-                for c in conds:
-                    if c.startswith("NOT "):
-                        neg = c[4:]
-                        if neg in state.facts and state.facts[neg].extraction_confidence > 0:
-                            all_met = False
-                    elif c not in state.facts or state.facts[c].extraction_confidence <= 0:
-                        all_met = False
-                if all_met:
-                    triggered_constraints.append({
-                        "id": cr.get("id", ""),
-                        "action": cr.get("action", ""),
-                        "target": cr.get("target", ""),
-                        "new_state": cr.get("new_state", ""),
-                        "irreversible": cr.get("irreversible", False),
-                    })
-
+                issues.append(f"{fid}: no L0 mapping")
+            block_result = self.check_blocking(fid)
+            if block_result:
+                blocked.append(block_result)
         return {
-            "valid": len(issues) == 0,
+            "valid": len(issues) == 0 and len(blocked) == 0,
             "issues": issues,
-            "unmapped_count": len(unmapped),
-            "constraints_triggered": triggered_constraints,
+            "blocked": blocked,
         }
 
-
-# ═══════════════════════════════════════════
-# 联邦推理器: HK+US 双域并行
-# ═══════════════════════════════════════════
-
-class FederatedReasoner:
-    """多法域联邦推理: 输入概念 → 双域并行评估 → 差异报告"""
-
-    def __init__(self):
-        self.adapters = {
-            "HK": HKAdapter(),
-            "US": USAdapter(),
-        }
-
-    def run(self, facts: Dict[str, float], jurisdictions: List[str] = None) -> Dict:
-        """并行跑指定法域，返回差异报告"""
-        if jurisdictions is None:
-            jurisdictions = list(self.adapters.keys())
-
-        results = {}
-        for jdx in jurisdictions:
-            adapter = self.adapters[jdx]
-            ev = adapter.load_evaluator()
-            s = IRState(domain=LegalDomain.CIVIL, jurisdiction=jdx)
-
-            for fid, conf in facts.items():
-                s.facts[fid] = LegalFact(fid, extraction_confidence=conf)
-
-            try:
-                res = ev.evaluate(s)
-                results[jdx] = {
-                    "claims": {c.id: c.confidence for c in res.claims.values() if c.confidence > 0},
-                    "state": s.state_tracker.get("Contract_Validity", "?"),
-                    "rebuttals": len(s.rebuttal_log),
-                    "L0_map": {fid: adapter.map_to_L0(fid) for fid in facts},
-                    "guardrail": adapter.validate_against_guardrails(s),
-                }
-            except Exception as e:
-                results[jdx] = {"error": str(e)}
-
-        # 差异检测
-        diff = self._compute_diff(results, jurisdictions)
-        return {"results": results, "diff": diff}
-
-    def _compute_diff(self, results: Dict, jdxs: List[str]) -> Dict:
-        if len(jdxs) < 2:
-            return {"message": "至少两个法域才能检测差异"}
-
-        r1, r2 = results.get(jdxs[0], {}), results.get(jdxs[1], {})
-        c1 = set(r1.get("claims", {}).keys())
-        c2 = set(r2.get("claims", {}).keys())
-
-        return {
-            "shared_claims": sorted(c1 & c2),
-            f"{jdxs[0]}_only": sorted(c1 - c2),
-            f"{jdxs[1]}_only": sorted(c2 - c1),
-            "state_divergence": f"{r1.get('state','?')} vs {r2.get('state','?')}" if r1.get("state") != r2.get("state") else "",
-        }
-
-
-# ═══════════════════════════════════════════
-# Hadley v Baxendale 视差实验室
-# ═══════════════════════════════════════════
-
-def hadley_v_baxendale_test():
-    """经典判例: 可预见性损害赔偿原则 — 跨法系视差检测"""
-    federated = FederatedReasoner()
-
-    print("═══ Hadley v Baxendale 跨法系视差实验室 ═══")
-    print()
-    print("案情: 磨坊主Hadley委托承运人Baxendale运送断裂的机轴去Greenwich")
-    print("      Baxendale延迟交付 → Hadley的磨坊停工5天 → 索赔利润损失")
-    print("      法院裁定: 利润损失不可预见 → 仅赔一般损害赔偿")
-    print()
-
-    # 映射到通用事实
-    facts = {
-        "ContractOfSale_Exists": 1.0,    # 运输合同成立
-        "Breach_By_Delay": 1.0,           # 延迟违约
-        "Special_Damages_Claimed": 1.0,   # 特殊损害赔偿(利润损失)
-        "Damages_Were_Foreseeable": 0.3,  # 可预见性存在争议
-        "General_Damages_Sufficient": 1.0, # 一般损害赔偿足够
-    }
-
-    result = federated.run(facts, ["HK", "US"])
-
-    print("法域结果:")
-    for jdx, data in result["results"].items():
-        if "error" in data:
-            print(f"  {jdx}: ERROR - {data['error']}")
-        else:
-            claims = data.get("claims", {})
-            l0_map = data.get("L0_map", {})
-            print(f"  {jdx}: state={data['state']} | claims={len(claims)} | rebuttals={data['rebuttals']}")
-            for cid, conf in claims.items():
-                print(f"    {cid}: conf={conf:.2f}")
-            print(f"    L0映射: {l0_map}")
-
-    print()
-    print("视差报告:")
-    diff = result["diff"]
-    if diff.get("hk_only"):
-        print(f"  HK特有主张: {diff['hk_only']}")
-    if diff.get("us_only"):
-        print(f"  US特有主张: {diff['us_only']}")
-    if diff.get("state_divergence"):
-        print(f"  ⚠️ 状态分歧: {diff['state_divergence']}")
-    if not diff.get("hk_only") and not diff.get("us_only") and not diff.get("state_divergence"):
-        print(f"  ✅ 双法域结论一致 — L0原语层无分歧")
+    def load_evaluator(self, route_request: Optional[List[str]] = None) -> FixpointEvaluator:
+        compiler = LegalCompiler(self.rules_path, overrides_path=self.overrides_path)
+        rules = compiler.compile_rules(route_request)
+        self._ensure_loaded()
+        return FixpointEvaluator(
+            rules,
+            DomainConfig(domain=LegalDomain.CIVIL),
+            overrides_path=self.overrides_path,
+            l0_map=self._l0_map,
+        )

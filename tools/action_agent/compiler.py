@@ -132,7 +132,7 @@ class MemoCompiler:
             "signature_phrase": cls_text["signature_phrase"],
             "hk_rules_count": 93,
             "us_rules_count": 81,
-            "cn_rules_count": 2117,
+            "cn_rules_count": 21145,
             "cbl_rules_count": 42,
             "hk_state": hk_data.get("state", "?"),
             "us_state": us_data.get("state", "?"),

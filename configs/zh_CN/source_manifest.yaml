@@ -1,0 +1,76 @@
+sources:
+  - source_id: 民商事审判实务
+    source_type: textbook
+    title: 民商事审判实务(1-6册)
+    jurisdiction: CN
+    verified: true
+  - source_id: 刑事审判实务
+    source_type: textbook
+    title: 刑事审判实务(上下册)
+    jurisdiction: CN
+    verified: true
+  - source_id: 审判监督实务
+    source_type: textbook
+    title: 审判监督实务(上下册)
+    jurisdiction: CN
+    verified: true
+  - source_id: 涉外商事海事审判实务
+    source_type: textbook
+    title: 涉外商事海事审判实务和国际司法协助
+    jurisdiction: CN
+    verified: true
+  - source_id: 行政审判实务
+    source_type: textbook
+    title: 行政审判实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 立案工作实务
+    source_type: textbook
+    title: 立案工作实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 涉港澳民商事审判实务
+    source_type: textbook
+    title: 涉港澳民商事审判实务和区际司法协助
+    jurisdiction: CN
+    verified: true
+  - source_id: 国家赔偿审判实务
+    source_type: textbook
+    title: 国家赔偿审判实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 未成年人审判实务
+    source_type: textbook
+    title: 未成年人审判实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 审判管理实务
+    source_type: textbook
+    title: 审判管理实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 知识产权审判实务
+    source_type: textbook
+    title: 知识产权审判实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 执行案件办理实务
+    source_type: textbook
+    title: 执行案件办理实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 环境资源审判实务
+    source_type: textbook
+    title: 环境资源审判实务
+    jurisdiction: CN
+    verified: true
+  - source_id: 民法典
+    source_type: statute
+    title: 中华人民共和国民法典
+    jurisdiction: CN
+    verified: true
+  - source_id: 刑法
+    source_type: statute
+    title: 中华人民共和国刑法
+    jurisdiction: CN
+    verified: true

@@ -1,0 +1,26 @@
+# 民商事审判实务5 candidate rules
+rules:
+- id: CM-612
+  premise_atoms: ['capital_withdrawal_malicious_intent']
+  head_claim: 抽逃出资需主观恶意且未经法定程序
+  exception_chain: []
+  concepts: ['capital_withdrawal_malicious_intent']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务5
+- id: CM-613
+  premise_atoms: ['bankruptcy_secured_property_priority']
+  head_claim: 破产担保物属债务人财产但担保权人优先受偿
+  exception_chain: []
+  concepts: ['bankruptcy_secured_property_priority']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务5

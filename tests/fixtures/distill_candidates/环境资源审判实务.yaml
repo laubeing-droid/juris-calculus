@@ -1,0 +1,232 @@
+# 环境资源审判实务 — 蒸馏候选规则
+# 来源: D:\同步网盘\软件开发\权威裁判规则数据库\output\全文json\环境资源审判实务_ocr.json
+# 蒸馏日期: 2026-06-17
+# 当前规则: 43 条 (GA-001 ~ GA-043)
+# 新增候选: 从 GA-044 开始
+
+rules:
+
+# ═══ 第二编 环境资源刑事审判疑难问题 ═══
+
+- id: GA-044
+  premise_atoms: [illegal_disposal_hazardous_waste, weight_exceeds_3_tons]
+  head_claim: 非法排放、倾倒、处置危险废物三吨以上的，认定为严重污染环境
+  exception_chain: []
+  concepts: [污染环境罪, 危险废物, 严重污染环境]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第一节
+
+- id: GA-045
+  premise_atoms: [pollutant_discharge, exceeds_standard_3x_or_10x]
+  head_claim: 排放含铅汞镉铬砷铊锑污染物超标准三倍以上，或含镍铜锌银钒锰钴超标准十倍以上，认定为严重污染环境
+  exception_chain: []
+  concepts: [污染环境罪, 超标倍数, 入罪标准]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第一节
+
+- id: GA-046
+  premise_atoms: [pollution_facility_malfunction, operator_unaware, accidental_discharge]
+  head_claim: 污染防治设施突发故障且行为人不知情期间的超标排放系不可抗拒，不认定为犯罪；但明知故障不及时处理的构成污染环境罪
+  exception_chain: [GA-046-exc]
+  concepts: [污染环境罪, 意外事件, 不可抗力]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第一节
+
+- id: GA-047
+  premise_atoms: [hidden_pollution_method, regulatory_evasion, no_reasonable_explanation]
+  head_claim: 通过暗管渗井渗坑等逃避监管方式排放污染物且不能合理解释的，推定主观故意构成污染环境罪
+  exception_chain: [GA-047-exc]
+  concepts: [隐蔽性排污, 主观故意推定, 暗管, 渗坑]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第一节
+
+- id: GA-048
+  premise_atoms: [pollution_crime, post_crime_environmental_repair]
+  head_claim: 被告人案发后积极履行环境修复义务的，可作为从轻量刑情节
+  exception_chain: []
+  concepts: [污染环境罪, 环境修复, 从轻量刑]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: PERMISSION
+  modality_confidence: 0.85
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第一节
+
+- id: GA-049
+  premise_atoms: [public_property_loss, purpose_element, condition_element, time_element]
+  head_claim: 污染环境罪公私财产损失认定须同时具备目的要素(防止污染扩大/消除污染)、条件要素(必要科学合理)、时间要素(应急紧迫)
+  exception_chain: []
+  concepts: [污染环境罪, 公私财产损失, 认定标准]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第三节
+
+- id: GA-050
+  premise_atoms: [destroying_forest_to_occupy_land, one_act_two_crimes]
+  head_claim: 以毁林方式非法占用林地的，非法占用农用地罪与滥伐林木罪想象竞合，择一重罪处罚
+  exception_chain: []
+  concepts: [非法占用农用地罪, 滥伐林木罪, 想象竞合]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第四节
+
+- id: GA-051
+  premise_atoms: [black_soil_resource_crime, administrative_order_ignored]
+  head_claim: 破坏黑土地资源犯罪中，行政处理决定后继续实施、暴力抗拒执法、向国家工作人员行贿的，应当从重处罚
+  exception_chain: []
+  concepts: [破坏黑土地, 从重处罚, 行政处理后继续违法]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: OBLIGATION
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第四节
+
+- id: GA-052
+  premise_atoms: [knowing_stolen_black_soil, concealing_or_selling]
+  head_claim: 明知是犯罪所得黑土及其收益而窝藏转移收购代为销售的，以掩饰隐瞒犯罪所得罪论处；事前通谋的以共同犯罪论处
+  exception_chain: []
+  concepts: [掩饰隐瞒犯罪所得罪, 黑土地, 事前通谋]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第四节
+
+- id: GA-053
+  premise_atoms: [agricultural_self_use, small_amount_black_soil]
+  head_claim: 因农业生产自用零星少量取黑土的，一般不作为犯罪处理
+  exception_chain: []
+  concepts: [黑土地, 农业自用, 刑法谦抑性]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: PERMISSION
+  modality_confidence: 0.85
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第四节
+
+- id: GA-054
+  premise_atoms: [illegal_mining, no_mining_permit]
+  head_claim: 未取得采矿许可证擅自采矿、擅自进入国家规划矿区或他人矿区采矿、擅自开采保护性特定矿种三种情形并列，具备之一且情节严重即构成非法采矿罪
+  exception_chain: []
+  concepts: [非法采矿罪, 采矿许可证, 情节严重]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第二编/第五节
+
+# ═══ 第三编 环境资源民事审判疑难问题 ═══
+
+- id: GA-055
+  premise_atoms: [environmental_tort, causation_issue]
+  head_claim: 生态环境侵权因果关系推定既适用于责任成立也适用于责任范围，举证责任由侵权人承担
+  exception_chain: []
+  concepts: [生态环境侵权, 因果关系推定, 举证责任倒置]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: tort
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第一节
+
+- id: GA-056
+  premise_atoms: [multiple_polluters, each_sufficient_for_full_damage]
+  head_claim: 数人分别排污均足以造成全部损害的，承担连带责任；不足以造成全部损害的，各自承担相应责任
+  exception_chain: [GA-056-exc]
+  concepts: [数人侵权, 连带责任, 环境污染]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: tort
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第一节
+
+- id: GA-057
+  premise_atoms: [different_substances_chemical_reaction, new_pollutant_created]
+  head_claim: 因不同物质发生物理化学作用产生新污染物造成损害的，数侵权人承担连带责任
+  exception_chain: []
+  concepts: [化学作用, 新污染物, 连带责任]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: tort
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第一节
+
+- id: GA-058
+  premise_atoms: [forest_land_contract, democratic_decision_violated]
+  head_claim: 林地承包合同违反民主议定程序原则上无效，但三种例外有效：行为时法无强制要求、一审辩论终结前已补正、承包方合理审查且已大量投入
+  exception_chain: [GA-058-exc]
+  concepts: [林地承包, 民主议定程序, 合同效力]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第四节
+
+- id: GA-059
+  premise_atoms: [emission_trading_right, pledge_registered]
+  head_claim: 排污权可以作为应收账款出质设立质权，质押合同有效，质权人对变价款享有优先受偿权
+  exception_chain: []
+  concepts: [排污权, 质押, 应收账款, 优先受偿]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第七节
+
+- id: GA-060
+  premise_atoms: [carbon_emission_quota, pledge_registered]
+  head_claim: 碳排放配额质押不被法律禁止，可在登记机构办理质押登记设立质权
+  exception_chain: []
+  concepts: [碳排放权, 质押, 碳排放配额]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: PERMISSION
+  modality_confidence: 0.85
+  modality_source: deep_distill_v2
+  source_anchor: 环境资源审判实务/第三编/第七节

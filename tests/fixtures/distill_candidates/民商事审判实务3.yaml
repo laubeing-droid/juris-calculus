@@ -1,0 +1,26 @@
+# 民商事审判实务3 candidate rules
+rules:
+- id: CM-608
+  premise_atoms: ['construction_design_change_pricing']
+  head_claim: 设计变更与清单不符应按实际调整造价
+  exception_chain: []
+  concepts: ['construction_design_change_pricing']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务3
+- id: CM-609
+  premise_atoms: ['construction_supervisor_no_priority']
+  head_claim: 监理人不享有建设工程价款优先受偿权
+  exception_chain: []
+  concepts: ['construction_supervisor_no_priority']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务3

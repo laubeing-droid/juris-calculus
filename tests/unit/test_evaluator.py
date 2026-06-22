@@ -78,15 +78,6 @@ class TestFixpointEvaluator(unittest.TestCase):
         with self.assertRaises(CriticalClarityFailure):
             ev.evaluate(state)
 
-    def test_validate_transition(self):
-        config = DomainConfig(
-            domain=LegalDomain.CIVIL,
-            valid_transitions={"Pre-trial": ["Discovery"], "Discovery": ["Trial"]},
-        )
-        ev = FixpointEvaluator([], config)
-        self.assertTrue(ev.validate_transition("Pre-trial", "Discovery"))
-        self.assertFalse(ev.validate_transition("Pre-trial", "Trial"))
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

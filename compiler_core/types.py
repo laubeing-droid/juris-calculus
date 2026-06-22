@@ -15,6 +15,16 @@ class TaintStatus(str, Enum):
     VERBATIM_MISMATCH = "VERBATIM_MISMATCH"  # 原文不匹配：编辑距离>3
 
 
+class DataQuality(str, Enum):
+    """数据质量标签 — 来源: legal-math-modeling/model_status.py"""
+    CLEAN = "CLEAN"                    # 干净: 蒸馏 + 人工双审
+    UNCERTAIN = "UNCERTAIN"            # 不确定: 仅 LLM 蒸馏, 无人工审核
+    DEGRADED = "DEGRADED"              # 降级: 概念映射缺失或过时
+    CONFLICTING = "CONFLICTING"        # 冲突: 与其他规则存在攻击关系
+    SPARSE = "SPARSE"                  # 稀疏: 补偿字段缺失 (赔偿/免责 未提取)
+    PROVISIONAL = "PROVISIONAL"        # 临时: L2/L3 轻量级条目
+
+
 class LegalDomain(Enum):
     CIVIL = "民事"; CRIMINAL = "刑事"; ADMINISTRATIVE = "行政"
 
@@ -57,6 +67,9 @@ class LegalClaim:
     source_anchor: str = ""
     domain_origin: str = ""  # v1.1: 来自哪个 L2 领域 (contract/corporate/tort...)
     L0_primitive_source: str = ""  # v1.1: 映射到哪个 L0 原语
+    allowed_claim: bool = True
+    forbidden_claim: bool = False
+    agent_instruction: str = ""
     def get_trust_label(self) -> str:
         if self.epistemic_status is None: return "UNVERIFIED"
         return self.epistemic_status.trust_label.value
@@ -89,13 +102,14 @@ class LegalRule:
     norm_modality: str = "UNKNOWN"
     modality_confidence: float = 0.0
     modality_source: str = ""
-    violation_consequence: str = ""
     reparation_chain_pool: list = field(default_factory=list)
     source_anchor: str = ""
     valid_from: str = ""
     valid_to: str = ""
     jurisdiction: str = ""
     authority_rank: str = ""
+    trust_label: str = "UNVERIFIED"
+    data_quality: str = "CLEAN"
 
 
 @dataclass

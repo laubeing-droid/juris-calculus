@@ -1,0 +1,26 @@
+# 审判监督实务下册 candidate rules
+rules:
+- id: ZS-195
+  premise_atoms: ['civil_retrial_procuratorial_suggestion']
+  head_claim: 检察机关提出再审检察建议法院应依法审查
+  exception_chain: []
+  concepts: ['civil_retrial_procuratorial_suggestion']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: supervision
+  norm_modality: OBLIGATION
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 审判监督实务下册
+- id: ZS-196
+  premise_atoms: ['first_instance_retrial_public_hearing']
+  head_claim: 一审程序再审应公开开庭原合议庭成员不得参与
+  exception_chain: []
+  concepts: ['first_instance_retrial_public_hearing']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: supervision
+  norm_modality: OBLIGATION
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 审判监督实务下册

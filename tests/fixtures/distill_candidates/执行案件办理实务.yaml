@@ -1,0 +1,122 @@
+# 执行案件办理实务 — 蒸馏候选规则
+# 当前规则: 51 条 (ZX-001 ~ ZX-051)
+# 新增候选: 从 ZX-052 开始
+
+rules:
+
+- id: ZX-052
+  premise_atoms: [shareholder_capital_withdrawal, short_period_after_contribution, no_reasonable_explanation]
+  head_claim: 股东出资后短期内转出资金不能证明系正常经营支出或有其他合理理由的，认定为抽逃出资
+  exception_chain: [ZX-052-exc]
+  concepts: [抽逃出资, 股东出资, 举证责任]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第一章执行主体
+
+- id: ZX-053
+  premise_atoms: [company_insufficient_assets, shareholder_unfulfilled_contribution, equity_transferred]
+  head_claim: 公司财产不足以清偿债务时，股东未履行出资义务即转让股权的可追加该原股东为被执行人
+  exception_chain: []
+  concepts: [追加被执行人, 未出资转让股权, 出资义务]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第一章执行主体
+
+- id: ZX-054
+  premise_atoms: [retrial_reverses_original_judgment, debt_not_exist_from_beginning]
+  head_claim: 再审撤销原生效法律文书驳回债权人诉讼请求的，原执行案件加倍部分债务利息不应计算
+  exception_chain: []
+  concepts: [再审, 债务利息, 执行回转]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第二章执行程序
+
+- id: ZX-164
+  premise_atoms: [financial_bad_debt_transfer, non_financial_institution_assignee]
+  head_claim: 非金融机构受让金融不良债权后停止计算受让日之后的利息，参照适用金融不良债权转让纪要
+  exception_chain: []
+  concepts: [金融不良债权, 债权转让, 利息计算]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第二章执行程序
+
+- id: ZX-056
+  premise_atoms: [mortgage_established_then_leased, lease_affects_mortgage_enforcement]
+  head_claim: 抵押权设立后出租且对抵押权实现有影响的，法院可除去租赁权后拍卖；不影响抵押权实现的可带租拍卖
+  exception_chain: [ZX-056-exc]
+  concepts: [抵押权, 租赁权, 带租拍卖, 除去租赁]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第三章金钱债权执行
+
+- id: ZX-057
+  premise_atoms: [prior_lease, auction_of_leased_property]
+  head_claim: 承租人在先租赁权成立不能阻却拍卖，但可在租赁期内阻止向受让人移交占有
+  exception_chain: []
+  concepts: [租赁权, 拍卖, 执行异议, 占有保护]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第三章金钱债权执行
+
+- id: ZX-058
+  premise_atoms: [criminal_judgment_property_items, unclear_judgment]
+  head_claim: 刑事裁判涉财产部分判项必须明确具体，不明确的应通过补充说明或补正裁定明确，避免以执代审
+  exception_chain: []
+  concepts: [刑事裁判执行, 判项明确, 补充说明, 补正裁定]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: OBLIGATION
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第六章刑事裁判涉财产部分执行
+
+- id: ZX-059
+  premise_atoms: [joint_crime_illegal_gains, no_individual_share_specified]
+  head_claim: 共同犯罪违法所得追缴未区分份额的，可向任何被告人执行全部违法所得，各被告人均对全部违法所得负退缴责任
+  exception_chain: []
+  concepts: [共同犯罪, 违法所得追缴, 连带退缴]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第六章刑事裁判涉财产部分执行
+
+- id: ZX-060
+  premise_atoms: [execution_supervision, parties_appeal]
+  head_claim: 执行监督既可依当事人申请启动也可依职权启动，当事人对执行复议裁定申诉的应作为执行监督案件立案审查
+  exception_chain: []
+  concepts: [执行监督, 执行信访, 依职权启动]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: execution
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 执行案件办理实务/第七章执行救济监督

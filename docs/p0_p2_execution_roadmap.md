@@ -1,57 +1,53 @@
-# P0-P2 Execution Roadmap
+# Execution Roadmap
 
-> v2.0.0 — 2026-06-14
+> Updated: 2026-06-15
 
-## P0: Make the symbolic chain measurable and auditable ✅
+## P0: Symbolic chain measurable and auditable ✅
 
-- [x] Relevance-sensitive fixtures and runner: `tests/relevance_sensitivity/`, `tools/relevance_sensitivity_runner.py`
-- [x] Claims carry stable execution trace ids: `compiler_core/proof_trace.py`
-- [x] AAF attack edges from rule metadata: `compiler_core/argumentation.py`
-- [x] Rule quality audit: `tools/rule_quality_auditor.py`
-- [x] LLM batch acceptance: `tools/llm_batch_acceptor.py`, `tools/llm_batch_orchestrator.py`
+- [x] Relevance-sensitive fixtures
+- [x] Proof trace
+- [x] AAF attack edges
+- [x] Rule quality audit
+- [x] LLM batch acceptance
 
-## P1: Add minimal Typed Legal IR and constraint sidecar ✅
+## P1: Typed Legal IR + constraint sidecar ✅
 
-- [x] IR schema: `compiler_core/legal_ir_v3.py`
-- [x] Type checker: `compiler_core/type_checker.py`
-- [x] Source anchor: `compiler_core/source_anchor.py`
-- [x] SMT sidecar: `compiler_core/smt_sidecar.py`
-- [x] Typed IR migration: `tools/rule_to_ir_migrator.py` (conservative, sidecar-only)
-- [x] Semantic compiler contract: `compiler_core/semantic_compiler_contract.py`
+- [x] IR schema, type checker, SMT sidecar
+- [x] Semantic compiler contract
 
-## P2: Prepare neural assistance without letting it decide ✅
+## P2: Cross-jurisdiction architecture ✅
 
-- [x] Shadow state: `compiler_core/shadow_state.py`
-- [x] Divergence report: `tools/shadow_divergence_report.py`
-- [x] Neural contracts: `neural/contracts/feature_schema.yaml`, `output_schema.yaml`, `model_card_schema.yaml`, `promotion_policy.yaml`
-- [x] Neural guardrails: `compiler_core/neural_leaf.py`, `neural_yaml_sync.py`, `step_verifier.py` (6/6 tests)
-- [x] Model registry: `neural/registry/model_registry.yaml` (all models SHADOW_ONLY)
+- [x] ProofTree output
+- [x] Language renderer (ChineseRenderer / EnglishRenderer)
+- [x] Three-track collision engine (CBL + SPC + CN)
+- [x] JurisdictionAdapter base
+- [x] Plugin registry auto-discovery
+- [x] Conflict of laws module
+- [x] Multi-jurisdiction orchestrator
 
-## DDL Modal Engine ✅
+## P3: Three jurisdictions complete ✅
 
-- [x] Norm modality annotations: 2,117/2,117 rules in `configs/zh_CN/rules.yaml`
-- [x] DDL preclassifier: `compiler_core/ddl_preclassifier.py` (5-layer: keyword + structure + concept + namespace + LLM confirmed)
-- [x] Confirmed modalities lookup: `neural/registry/ddl_confirmed_modalities.json` (825 rules)
-- [x] Evaluator modal gate: `_apply_rule()` reads `norm_modality`
-  - OBLIGATION missing → Negative Spec gap report
-  - PROHIBITION hit → block conclusion chain
-- [x] IRState: `negative_specs` + `blocked_claims` fields
+- [x] CN: 2,117 rules, 13 domains, 106 L0, 60 CBL blocking
+- [x] HK: 104 rules, 7 namespaces, 1,687 L0, 21 blocking rules
+- [x] US: 123 rules, 9 namespaces, 567 L0, 18 blocking rules
 
-## L1-L2 Guardrails ✅
+## P4: Debug pass ✅ (2026-06-15)
 
-- [x] L1 Evidence chain validator: `compiler_core/evidence_chain_validator.py` (pre-inference)
-- [x] L2 De Jure auditor: `compiler_core/de_jure_auditor.py` (post-inference)
-- [x] L2 Cross-jurisdiction: `cross_jurisdiction_compare.py`, `multi_solver_router.py`
-- [x] L2 Invariance metrics: `invariance_metrics.py`, `validity_state_machine.py`
-- [x] L2 Defeasible priority: `defeasible_priority.py`, `proleg_translator.py`
-- [x] L2 Entity anonymizer: `entity_anonymizer.py`
-- [x] L2 KG recall: `kg_recall.py`
-- [x] All L1-L2 wired into `pipeline/pipeline.py`
+- [x] PROHIBITION blocking fix
+- [x] Deterministic execution order
+- [x] Dead code cleanup (~20% removed)
+- [x] L0 degradation fix
+- [x] PERMISSION hypothetical marking
+- [x] Source anchor warnings
+- [x] CN atom standardization (dot.notation → snake_case)
+- [x] Tests: 159 → 209
 
-## Non-goals (unchanged)
+## P5: Next steps (not started)
 
-- No end-to-end neural adjudication
-- No replacement of FixpointEvaluator
-- No mandatory Z3 dependency
-- No full migration of all YAML rules to IR v3
-- No automatic promotion of neural output into official IRState
+- [ ] IRAC renderer (ProofTree → legal memorandum)
+- [ ] NLP fact extraction (natural language → structured atoms)
+- [ ] UCC full compilation (Articles 2 + 9 complete text)
+- [ ] Restatement Contracts full compilation
+- [ ] FRCivP full integration
+- [ ] Confidence score calibration against real case outcomes
+- [ ] HK coverage expansion (Tort, Landlord/Tenant, Trust)

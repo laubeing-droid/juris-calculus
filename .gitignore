@@ -11,6 +11,7 @@
 # Exception: US benchmark complaint templates (core + roadmap)
 !tests/us_complaints/core/*.json
 !tests/us_complaints/roadmap/*.json
+!tests/fixtures/*.json
 
 # IDE
 .idea/
@@ -73,3 +74,14 @@ scripts/
 .audit-*.md
 .audit-version.json
 .github/converge-briefing.md
+
+# Planning files (working docs, not source)
+task_plan.md
+findings.md
+progress.md
+*.bak.*
+configs/zh_CN/rules.yaml.bak.*
+下载存放区/
+过程文件/
+源码/
+.claude/

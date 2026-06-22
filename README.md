@@ -1,184 +1,196 @@
-﻿# juris-calculus v2.0.0
+# juris-calculus
 
-**符号法律推理编译器 — DDL模态 + 证据链 + 法定审计**
+**Deterministic Symbolic Legal Reasoning Engine — Four-Stage Pipeline + Multi-Jurisdiction + Evidence-Calibrated Trust Labels**
 
-不动点评估器 + DDL（可废止道义逻辑）模态分类 + L1-L2 证据链/法定审计护栏 + 神经网络守卫层。
+A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Defeasible Deontic Logic (DDL) modal classification, cross-jurisdiction obstruction-first routing, and a 7-level trust label system backed by formal mathematical proofs.
 
-*不是法律 App，是法律推理内核。*
-
-> **This is PostgreSQL, not Windows.**
->
-> juris-calculus 提供逻辑、审计链、DDL 模态门控。不管理文书、邮件或日程。
+*Not a legal app. A legal reasoning kernel.*
 
 ---
 
-## v2.0.0 新特性
+## What It Does
 
-### DDL 模态引擎
-- **2,117 条全量 norm_modality 标注**：825 条 LLM 确认 + 633 条关键词 + 18 条正文匹配 + 641 条 fallback
-- **evaluator 模态门控**：`OBLIGATION` 缺事实 → Negative Spec 缺口报告；`PROHIBITION` 命中 → 阻断结论链
-- **DDL preclassifier**：关键词 + 结构 + 概念 + 命名空间 + LLM 确认五层分类
-- **DDL 100% 高置信度**：0 UNKNOWN，0 需外部标注
+juris-calculus compiles statutory law into executable Horn rules, then reasons over them through a **four-stage pipeline** with evidence-calibrated trust labels.
 
-### L1-L2 护栏模块（14 文件）
-- **L1 证据链**：`evidence_chain_validator.py` — 推理前证据完整性校验
-- **L2 跨法域**：`cross_jurisdiction_compare.py` / `multi_solver_router.py`
-- **L2 De Jure 审计**：`de_jure_auditor.py` — 推理后法定合规审计
-- **L2 不变性度量**：`invariance_metrics.py` / `validity_state_machine.py`
-- **L2 可废止优先级**：`defeasible_priority.py` / `proleg_translator.py`
-- **L2 实体匿名化**：`entity_anonymizer.py` / `kg_recall.py`
+```
+Stage 1: Monotone Horn Closure (proved: 82,836 fixtures)
+    ↓
+Stage 2: Dung AAF Attack Graph (proved: 66,066 graphs)
+    ↓
+Stage 3: Grounded Extension (deterministic, finite convergence)
+    ↓
+Stage 4: Trust Label Projection + allowed/forbidden marking
+```
 
-### 神经网络守卫层
-- **contracts/**：输入特征白名单/黑名单、输出约束（禁止法律结论）、晋升策略（默认 SHADOW_ONLY）
-- **registry/**：模型注册表 + DDL 确认查找表（825 条 zh_CN + 64 条 HK）
-- **neural_leaf.py / neural_yaml_sync.py / step_verifier.py**：6/6 测试全绿
+**Three jurisdictions, one engine:**
 
-### LLM 批处理自动化
-- 5 批次 IR 迁移 + DDL 标注 → 无人值守闭环
-- `tools/llm_batch_acceptor.py` / `llm_batch_orchestrator.py` / `llm_bridge.py`
+| Jurisdiction | Rules | Source | Role |
+|-------------|-------|--------|------|
+| CN (China) | 21,144 | 20 books (8,712 pages, 727万字) | Primary jurisdiction |
+| HK (Hong Kong) | 104 | HK legislation | US↔CN bridge layer |
+| US (Federal) | 123 | US Code + UCC + Restatement | Cross-border disputes |
+
+**Cross-border architecture (obstruction-first):**
+
+```
+US Terms ──→ L0 Primitives ←── HK Terms ──→ L0 Primitives ←── CN Terms
+              (Status/Act/Defect/Power/Agent/Asset)
+
+Obstruction Registry:
+  MATCH       → allow mapping (preserve jurisdiction tag)
+  COLLISION   → block automatic mapping
+  ASYMMETRY   → block automatic mapping
+  UNVERIFIED  → human review only
+```
 
 ---
 
-## 架构
+## Architecture
 
 ```
 juris-calculus/
-├── compiler_core/                    # 推理内核
-│   ├── evaluator.py                  #   FixpointEvaluator + DDL 模态门控 + 例外链 + 熔断
-│   ├── types.py                      #   LegalRule / LegalFact / LegalClaim / NormModality / IRState
-│   ├── domain_config.py              #   民刑双域路由 + 自由裁量概念检测
-│   ├── classifier.py                 #   EvidenceClassifier（A/B/C 载体等级）
-│   ├── batch_processor.py            #   批量处理 + JSON 审计导出
-│   ├── ddl_preclassifier.py          #   DDL 五层模态分类器
-│   ├── evidence_chain_validator.py   #   L1 证据链验证器
-│   ├── de_jure_auditor.py            #   L2 法定审计器
-│   ├── cross_jurisdiction_compare.py #   L2 跨法域比较
-│   ├── multi_solver_router.py        #   L2 多求解器路由（CN/CBL/SPC）
-│   ├── validity_state_machine.py     #   L2 有效性状态机
-│   ├── neural_leaf.py                #   神经网络叶子节点
-│   └── step_verifier.py              #   神经网络步骤验证器
-│
-├── pipeline/                         # 端到端推理管线
-│   ├── pipeline.py                   #   案卷 → 事实 → 证据链校验 → DDL 推理 → 法定审计 → 报告
-│   ├── prc_us_alignment.py           #   PRC-US 对齐看门狗
-│   ├── guardian.py                   #   白名单校验 + 5 级强度门控
-│   └── llm_client.py                 #   LLM API 客户端
-│
-├── configs/
-│   ├── zh_CN/                        #   中国民法：2,117 条 Horn 规则（含 norm_modality）
-│   ├── en_US/                        #   美国联邦：81 条 Horn + 86 条约束
-│   ├── hk/                           #   香港：93 条 Horn
-│   ├── prc_us_alignment/             #   PRC-US 桥接：60 CBL + 23 SPC + 10 程序正义
-│   └── core_ontology.yaml            #   L0 本体（6 原语）
-│
-├── neural/
-│   ├── contracts/                    #   输入/输出/晋升策略契约
-│   └── registry/                     #   模型注册表 + DDL 确认查找表
-│
+├── compiler_core/                    # Reasoning kernel (68 modules)
+│   ├── evaluator.py                  #   FixpointEvaluator + evaluate_horn() + DDL modal gate
+│   ├── stratified_evaluator.py       #   Four-stage pipeline (Horn → AAF → GE → Trust Labels)
+│   ├── argumentation.py              #   Dung AAF grounded extension + attack graph builder
+│   ├── types.py                      #   LegalRule / LegalClaim / IRState / DataQuality
+│   ├── trust_labels.py               #   7-level TrustLabel + EpistemicStatus + RuleMaturity
+│   ├── constraint_validator.py       #   Absolute/Conditional rebuttal + L0 constraints
+│   ├── domain_config.py              #   Weight/threshold config per domain
+│   ├── dp_policy_loader.py           #   Differential privacy policy (epsilon from config, not law)
+│   ├── source_manifest.py            #   Source verification (20 books + statutes registered)
+│   ├── evidence_evaluation.py        #   Evidence credibility: S(e) = reliability × independence × authenticity
+│   ├── burden_of_proof.py            #   Burden allocation and completion tracking
+│   ├── legal_reasoning.py            #   Analogical, precedent, interpretation, interest balancing
+│   ├── cross_jurisdiction_router.py  #   Obstruction-first routing (no universal functor)
+│   ├── proof_trace_renderer.py       #   Proof trace → Chinese natural language
+│   ├── invariance_metrics.py         #   Inv(f)/Align(f) + ContextualOverlapScore (NOT a metric)
+│   └── ... (15 more modules)
 ├── addons/
-│   ├── us/                           #   美国法 addon（lookup + adapter + alignment）
-│   ├── hk/                           #   香港法 addon
-│   └── federation/                   #   法系联邦路由
-│
-├── tools/                            # 审计 + 构建 + LLM 批处理
-│   ├── rule_quality_auditor.py       #   规则质量审计器
-│   ├── llm_batch_acceptor.py         #   LLM 批量验收
-│   ├── llm_batch_orchestrator.py     #   LLM 批量编排
-│   ├── llm_bridge.py                 #   LLM 桥接（隐私门控）
-│   ├── smt_evaluator_compare.py      #   SMT 求值器对比
-│   ├── rule_to_ir_migrator.py        #   规则→Typed IR 迁移
-│   └── semantic_compile_batch.py     #   语义编译批处理
-│
-├── mcp_server.py                     # MCP 双通道服务端
-└── tests/                            # 154 个测试全绿
+│   ├── cn/                           #   China addon
+│   ├── hk/                           #   Hong Kong addon (bridge layer)
+│   └── us/                           #   US Federal addon
+├── configs/
+│   ├── zh_CN/rules.yaml              #   21,144 CN rules (20 books auto-distilled)
+│   ├── zh_CN/concept_registry.yaml   #   31,749 unique legal concepts
+│   ├── zh_CN/dp_policy.yaml          #   DP privacy policies
+│   ├── zh_CN/source_manifest.yaml    #   Registered sources (20 books + statutes)
+│   ├── obstruction_registry.yaml     #   CN↔HK↔US concept mapping status
+│   └── ...
+├── tools/                            #   67 analysis and quality tools
+└── tests/                            #   243 tests, all passing
 ```
 
 ---
 
-## 法域覆盖
+## Key Metrics
 
-| 法域 | 规则数 | DDL 状态 |
-|------|:------:|:--------:|
-| 中国（13 领域） | 2,117 | 100% 高置信度 |
-| 美国联邦 | 81 Horn + 86 约束 | 部分 |
-| 香港 | 93 | 64 DDL |
-| PRC-US 对齐 | 60 CBL + 23 SPC + 10 程序 | — |
-| 英国 | 5 候选 | — |
-
----
-
-## 快速开始
-
-```bash
-# 安装
-git clone https://github.com/laubeing-droid/juris-calculus.git
-cd juris-calculus
-pip install -r requirements.txt
-
-# 运行推理
-python -c "
-from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.types import IRState, LegalFact, LegalDomain
-from compiler_core.domain_config import get_domain_config
-
-rules = load_rules_from_yaml('configs/zh_CN/rules.yaml')
-config = get_domain_config(LegalDomain.CIVIL)
-engine = FixpointEvaluator(rules, config)
-state = IRState()
-state.facts['loan_contract'] = LegalFact(id='loan_contract')
-state.facts['breach_alleged'] = LegalFact(id='breach_alleged')
-result = engine.evaluate(state)
-print(f'Claims: {len(result.claims)}')
-print(f'Negative specs: {len(result.negative_specs)}')
-"
-
-# 运行测试
-python -m pytest tests/ -q
-# 154 passed
-```
+| Metric | Value |
+|--------|-------|
+| CN Rules | 21,144 |
+| Tests | 243 passed |
+| Core Modules | 68 |
+| MCP Tools | 18 |
+| Unique Concepts | 31,749 |
+| Source Anchor Coverage | 97.1% |
+| Mathematical Proofs | 10 proved, 3 refuted, 4 pending |
+| Audit Rounds | 5 rounds Codex (14 findings, all fixed) |
 
 ---
 
-## DDL 模态行为
+## Quick Start
 
 ```python
-# OBLIGATION 规则：缺事实 → Negative Spec
-# "应当承担损害赔偿责任" 但没有 damages_suffered 事实
-# → 系统标记 OBLIGATION_GAP，记录 missing premises
+from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
+from compiler_core.types import IRState, LegalFact
 
-# PROHIBITION 规则：命中 → 阻断结论链
-# "不得强制执行" 且强制执行事实存在
-# → 结论链切断，记录 PROHIBITION_BLOCK
+# Load Chinese law rules
+rules = load_rules_from_yaml("configs/zh_CN/rules.yaml")
+ev = FixpointEvaluator(rules)
 
-# PERMISSION 规则：正常推理
-# "可以要求赔偿" → 正常推理，不特殊处理
+# Run inference
+state = IRState()
+state.facts["contract_formed"] = LegalFact(id="contract_formed", description="合同成立")
+state.facts["breach_alleged"] = LegalFact(id="breach_alleged", description="违约事实")
+result = ev.evaluate(state)
 
-# CONSTITUTIVE 规则：构成性规则
-# "法人成立应当具备..." → 正常推理
+# Output: claims with confidence, trust labels, proof traces
+for cid, claim in result.claims.items():
+    print(f"{cid}: conf={claim.confidence:.2f}, trust={claim.get_trust_label()}")
 ```
 
 ---
 
-## 测试
+## Four-Stage Pipeline
+
+```python
+from compiler_core.stratified_evaluator import StratifiedEvaluator
+
+se = StratifiedEvaluator("configs/zh_CN/rules.yaml")
+state = IRState()
+state.facts["breach"] = LegalFact(id="breach", description="违约")
+
+claims = se.evaluate(state)
+# Each claim has: allowed_claim, forbidden_claim, agent_instruction, epistemic_status
+```
+
+**Stage 1** (Horn): Pure forward-chain, monotone (Tarski fixpoint exists).
+**Stage 2** (AAF): Build attack graph from rules, exceptions, rebuttals, prohibitions.
+**Stage 3** (GE): Dung grounded extension — deterministic acceptance/rejection.
+**Stage 4** (Labels): Trust label projection + allowed/forbidden marking.
+
+---
+
+## MCP Tools (18)
+
+| Tool | Function |
+|------|----------|
+| search_rules | Concept-aware rule search |
+| evaluate_facts | Four-stage pipeline inference |
+| calculate_damages | LPR-based damage calculation |
+| analyze_strategy | Strategy analysis with adversarial pipeline |
+| evaluate_dp_policy | DP privacy policy check |
+| validate_source | Source manifest verification |
+| evaluate_evidence | Evidence credibility scoring |
+| track_burden | Burden of proof tracking |
+| analyze_analogy | Analogical similarity + precedent force |
+| predict_sentence | Criminal sentencing prediction |
+| estimate_ip_value | IP valuation |
+| check_compliance | Compliance monitoring |
+| analyze_arbitration | Arbitration clause analysis |
+| route_cross_jurisdiction | Obstruction-first routing |
+| check_obstruction | Obstruction registry lookup |
+| format_proof_trace | Proof trace → Chinese text |
+| extract_elements | Legal element extraction |
+| juris_query | Unified query entry point |
+
+---
+
+## Mathematical Foundation
+
+Backed by the [legal-math-modeling](https://github.com/laubeing-droid/legal-math-modeling) companion repository:
+
+| Claim | Status | Evidence |
+|-------|--------|----------|
+| Horn closure is monotone | **PROVED** | 82,836 fixtures |
+| Dung grounded extension exists + unique | **PROVED** | 66,066 graphs |
+| Evaluator is non-monotonic | **REFUTED** (counterexample) | A={a}, B={a,b} |
+| Bounded operational termination | **PROVED** | 5 operational bounds |
+| Graph similarity is a metric | **REFUTED** | CE-001, CE-002 |
+| DP epsilon derivable from law | **REFUTED** | two-model witness |
+| Cross-jurisdiction universal functor | **REFUTED** | obstruction witnesses |
+
+**Trust Label System (7 levels):**
+UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
+
+---
+
+## Installation
 
 ```bash
-python -m pytest tests/ -q
-# 154 passed in 21s
+pip install -r requirements.txt
+python -m pytest tests/ -v
 ```
-
----
-
-## 版本演进
-
-| 版本 | 日期 | 核心 |
-|------|------|------|
-| v1.0.0 | 2026-06-02 | 开源版，35 文件 |
-| v1.0.1 | 2026-06-02 | 导入修复 + 5 测试 |
-| v1.0.2 | 2026-06-02 | YAML 规则加载 + 批量并行化 |
-| v1.0.3 | 2026-06-04 | SPC 桥接 + 概念注入 + 2,117 条 |
-| v1.1.0 | 2026-06-04 | HK-US 分歧矩阵 |
-| v1.2.0 | 2026-06-04 | 三轨对撞 + PRC-US 对齐 |
-| **v2.0.0** | **2026-06-14** | **DDL 模态 + L1-L2 护栏 + 神经守卫** |
 
 ---
 

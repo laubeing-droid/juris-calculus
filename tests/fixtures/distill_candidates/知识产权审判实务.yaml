@@ -1,0 +1,198 @@
+# 知识产权审判实务 — 蒸馏候选规则
+# 来源: 知识产权审判实务_ocr.json
+# 当前规则: 63 条 (SJ-001 ~ SJ-063)
+# 新增候选: 从 SJ-064 开始
+
+rules:
+
+# ═══ 第一章 著作权案件 ═══
+
+- id: SJ-064
+  premise_atoms: [unauthorized_publication, author_objection]
+  head_claim: 未经许可擅自将他人作品公之于众的构成侵害发表权
+  exception_chain: []
+  concepts: [发表权, 著作权侵权, 未经许可]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第一章/第二节
+
+- id: SJ-065
+  premise_atoms: [work_distortion, no_reputation_damage_required]
+  head_claim: 保护作品完整权的侵害不要求以有损作者声誉为必要条件
+  exception_chain: []
+  concepts: [保护作品完整权, 歪曲篡改, 著作权]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第一章/第二节
+
+- id: SJ-066
+  premise_atoms: [network_service_provider, hot_works_known_infringement]
+  head_claim: 网络服务提供者明知或应知热播影视作品侵权仍提供传播的，构成帮助侵权
+  exception_chain: [SJ-066-exc]
+  concepts: [信息网络传播权, 帮助侵权, 网络服务提供者]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第一章/第三节
+
+# ═══ 第二章 专利案件 ═══
+
+- id: SJ-067
+  premise_atoms: [patent_claim_ambiguity, no_definition_in_specification]
+  head_claim: 权利要求术语无明确定义时以本领域技术人员通常理解为准，明显错误可依据说明书修正
+  exception_chain: []
+  concepts: [权利要求解释, 内部证据优先, 本领域技术人员]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第二章/第一节
+
+- id: SJ-068
+  premise_atoms: [multiple_claims_same_patent, same_protection_scope]
+  head_claim: 不同权利要求推定保护范围不同，但表述实质相同时可相同
+  exception_chain: []
+  concepts: [权利要求区别解释, 独立权利要求, 从属权利要求]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第二章/第一节
+
+- id: SJ-069
+  premise_atoms: [dependent_claim_analysis, independent_claim_scope]
+  head_claim: 从属权利要求附加技术特征不应视为对独立权利要求保护范围的限定
+  exception_chain: []
+  concepts: [从属权利要求, 限缩解释禁止, 专利侵权]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: PROHIBITION
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第二章/第一节
+
+- id: SJ-070
+  premise_atoms: [invalidation_procedure, claimant_narrowed_interpretation]
+  head_claim: 专利权人在无效宣告程序中为维持有效性对权利要求作出限缩解释的，该限缩及于从属权利要求
+  exception_chain: []
+  concepts: [无效宣告, 限缩解释, 禁反言]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第二章/第一节
+
+# ═══ 第五章 商标案件 ═══
+
+- id: SJ-071
+  premise_atoms: [unregistered_trademark_prior_use, certain_influence, bad_faith_registration]
+  head_claim: 在先使用且有一定影响的未注册商标被他人以不正当手段抢注的不予注册，但申请人可举证推翻恶意推定
+  exception_chain: [SJ-071-exc]
+  concepts: [商标抢注, 在先使用, 一定影响, 恶意推定]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第五章
+
+- id: SJ-072
+  premise_atoms: [agent_or_representative, unauthorized_registration]
+  head_claim: 代理人或代表人未经授权以自己名义注册被代理人商标的不予注册并禁止使用，亲属关系可推定恶意串通
+  exception_chain: []
+  concepts: [代理人抢注, 代表人抢注, 商标法第15条]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第五章
+
+# ═══ 第六章 反不正当竞争案件 ═══
+
+- id: SJ-073
+  premise_atoms: [commercial_puffery, no_objective_standard]
+  head_claim: 对艺术作品优劣的主观评价缺乏客观标准时不构成商业诋毁
+  exception_chain: []
+  concepts: [商业诋毁, 主观评价, 客观标准]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.85
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第六章/第四节
+
+- id: SJ-074
+  premise_atoms: [traffic_hijacking, insert_link_without_consent]
+  head_claim: 未经其他经营者和用户同意插入链接并强制目标跳转的构成流量劫持型不正当竞争
+  exception_chain: []
+  concepts: [流量劫持, 互联网专条, 不正当竞争]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第六章/第五节
+
+# ═══ 第七章 商业秘密案件 ═══
+
+- id: SJ-075
+  premise_atoms: [trade_secret_still_confidential, ongoing_risk_of_disclosure]
+  head_claim: 技术秘密尚未因公开丧失秘密性的，侵权人仍须承担停止侵权责任
+  exception_chain: []
+  concepts: [商业秘密, 停止侵权, 秘密性]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: OBLIGATION
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第七章/第一节
+
+- id: SJ-076
+  premise_atoms: [trade_secret_infringement, damage_calculation]
+  head_claim: 商业秘密侵权赔偿按实际损失→侵权获利→许可费→法定赔偿的顺序计算，可适用1-5倍惩罚性赔偿
+  exception_chain: []
+  concepts: [商业秘密赔偿, 惩罚性赔偿, 赔偿计算顺序]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第七章/第二节
+
+- id: SJ-077
+  premise_atoms: [trade_secret_disclosed_by_infringement, commercial_value]
+  head_claim: 因侵权行为导致商业秘密为公众所知悉的可按商业价值确定赔偿，考虑研发成本、收益、竞争优势持续时间
+  exception_chain: []
+  concepts: [商业秘密公开, 商业价值评估, 赔偿]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: ip
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 知识产权审判实务/第七章/第二节

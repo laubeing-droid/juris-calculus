@@ -1,0 +1,82 @@
+# US Federal Law DDL Modal Mapping
+# US Code modality markers → DDL standard modality
+
+version: "v2.1.0"
+jurisdiction: "US"
+legal_family: "common_law"
+
+# ── Obligation (shall / must) ──
+obligation_markers:
+  - word: "shall"
+    confidence: 0.95
+    note: "Most common obligation marker in US Code"
+  - word: "must"
+    confidence: 0.95
+    note: "Strong obligation"
+  - word: "is required to"
+    confidence: 0.90
+    note: "Explicit requirement"
+  - word: "shall not"
+    confidence: 0.95
+    note: "Prohibition (overlaps with PROHIBITION)"
+  - word: "is obligated to"
+    confidence: 0.90
+    note: "Explicit obligation"
+
+# ── Prohibition (shall not / may not) ──
+prohibition_markers:
+  - word: "shall not"
+    confidence: 0.95
+    note: "Strongest prohibition in US Code"
+  - word: "may not"
+    confidence: 0.90
+    note: "Prohibition by denial of permission"
+  - word: "must not"
+    confidence: 0.90
+    note: "Direct prohibition"
+  - word: "is prohibited"
+    confidence: 0.95
+    note: "Explicit prohibition"
+  - word: "is unlawful"
+    confidence: 0.90
+    note: "Conduct declared illegal"
+
+# ── Permission (may) ──
+permission_markers:
+  - word: "may"
+    confidence: 0.90
+    note: "Most common permission marker"
+  - word: "is entitled to"
+    confidence: 0.90
+    note: "Right/entitlement"
+  - word: "is authorized to"
+    confidence: 0.85
+    note: "Authorization"
+  - word: "has the power to"
+    confidence: 0.85
+    note: "Power grant"
+
+# ── Constitutive (means / is defined as) ──
+constitutive_markers:
+  - word: "means"
+    confidence: 0.85
+    note: "Definition"
+  - word: "is defined as"
+    confidence: 0.90
+    note: "Explicit definition"
+  - word: "refers to"
+    confidence: 0.85
+    note: "Reference definition"
+  - word: "includes"
+    confidence: 0.80
+    note: "Inclusive definition"
+  - word: "shall have the meaning"
+    confidence: 0.90
+    note: "Statutory definition"
+
+# ── Civil Law equivalents (for bridge) ──
+civil_law_equivalents:
+  OBLIGATION: ["应当", "必须", "有义务"]
+  PROHIBITION: ["不得", "禁止", "不可以"]
+  PERMISSION: ["可以", "有权", "允许"]
+  CONSTITUTIVE: ["属于", "视为", "是指"]

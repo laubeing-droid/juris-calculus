@@ -862,3 +862,644 @@ rules:
   legal_basis: HK普通法 恢复原状原则
   note: 合同无效后的返还责任——独立于合同效力
   output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 57 — 雇佣条例 (Employment Ordinance)
+# ║ 跨境雇佣核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C57-S5-EmploymentContractDuration
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - No_Contrary_Agreement
+  head_claim: Employment_Deemed_Monthly
+  concepts:
+  - Employment
+  - Contract
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_employment
+  legal_basis: Cap 57 s.5 连续性雇佣合约当作为期1个月并可按月续期
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S6-TerminationByNotice
+  premise_atoms:
+  - Employment_Relationship_Exists
+  head_claim: Either_Party_MayTerminate_ByNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain:
+  - HK-C57-S6-X1-MinNoticePeriod
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.6 以通知终止合约
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S6-X1-MinNoticePeriod
+  premise_atoms:
+  - Notice_Period_LessThan_1Month
+  head_claim: NoticePeriod_MustBe_AtLeast1Month
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.6(2)(a) 通知期不得少于1个月
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S7-PaymentInLieuOfNotice
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Either_Party_Waives_Notice
+  head_claim: PaymentInLieu_Acceptable
+  concepts:
+  - Employment
+  - Termination
+  - Payment
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.7 以代通知金终止合约
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S8A-WrongfulTerminationDamages
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Termination_NotPer_S6orS7
+  head_claim: WrongfulTermination_Damages_Due
+  concepts:
+  - Employment
+  - Damages
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.8A 不当地终止合约的损害赔偿
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S9-EmployerSummaryDismissal
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Employee_WilfulDisobedience_Or_Misconduct_Or_Fraud_Or_Negligence
+  head_claim: Employer_MayDismiss_WithoutNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.9 雇主不给予通知而终止合约（故意不服从/行为不当/欺诈/惯常疏忽）
+  output_type: Terminal_Output_Node
+
+- id: HK-C57-S10-EmployeeSummaryTermination
+  premise_atoms:
+  - Employment_Relationship_Exists
+  - Employee_Fears_Violence_Or_IllHealth_Or_Mistreatment
+  head_claim: Employee_MayTerminate_WithoutNotice
+  concepts:
+  - Employment
+  - Termination
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_employment
+  legal_basis: Cap 57 s.10 雇员不给予通知而终止合约（暴力/疾病/苛待）
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 179 — 婚姻法律程序与财产条例
+# ║ 跨境家事法核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C179-S3-DivorceJurisdiction
+  premise_atoms:
+  - Marriage_Exists
+  - Either_Party_Domiciled_In_HK_Or_Ordinarily_Resident_3Years_Or_CloseConnection
+  head_claim: HK_Court_HasDivorceJurisdiction
+  concepts:
+  - Divorce
+  - Jurisdiction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.3 对离婚案的司法管辖权（居籍/惯常居所3年/密切联系）
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S11-BreakdownGround
+  premise_atoms:
+  - Marriage_Exists
+  - Marriage_Irretrievably_Broken_Down
+  head_claim: Divorce_Ground_Established
+  concepts:
+  - Divorce
+  - Ground
+  exception_chain:
+  - HK-C179-S12-OneYearBar
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.11 离婚唯一理由：婚姻已破裂至无可挽救
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S12-OneYearBar
+  premise_atoms:
+  - Marriage_LessThan_1Year
+  head_claim: Divorce_Petition_Barred
+  concepts:
+  - Divorce
+  - Procedure
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.12 对结婚后1年内提出呈请的限制
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S20-MarriageVoid
+  premise_atoms:
+  - Marriage_Exists
+  - Ground_For_Nullity_Exists
+  head_claim: Marriage_MayBe_Declared_Void
+  concepts:
+  - Marriage
+  - Nullity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.20 批出婚姻无效判令的理由
+  output_type: Terminal_Output_Node
+
+- id: HK-C179-S18-RemarriageAfterAbsoluteDecree
+  premise_atoms:
+  - Divorce_Absolute_Decree_Granted
+  - No_Pending_Appeal
+  head_claim: Either_Party_MayRemarry
+  concepts:
+  - Divorce
+  - Remarriage
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_family
+  legal_basis: Cap 179 s.18 离婚者再婚
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 219 — 物业转易及财产条例
+# ║ 跨境财产法核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C219-S3-WritingRequirement
+  premise_atoms:
+  - Land_Sale_Contract_Exists
+  head_claim: Contract_MustBe_InWriting_Signed
+  concepts:
+  - Property
+  - Contract
+  - Writing
+  exception_chain:
+  - HK-C219-S3-X1-PartPerformance
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.3 土地合约须以书面作出并由被告签署
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S3-X1-PartPerformance
+  premise_atoms:
+  - Part_Performance_Established
+  head_claim: WritingRequirement_Waived
+  concepts:
+  - Property
+  - Exception
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.3(2) 部分履行例外
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S4-DeedRequirement
+  premise_atoms:
+  - Legal_Estate_Disposition
+  head_claim: MustBe_ByDeed
+  concepts:
+  - Property
+  - Deed
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.4 法定产业权的处置须以契据作出
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S8-JointTenancySeverance
+  premise_atoms:
+  - Joint_Tenancy_Exists
+  - Notice_Served_To_Other_CoOwner
+  head_claim: JointTenancy_Severed
+  concepts:
+  - Property
+  - CoOwnership
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.8 联权共有的划分
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S9-TenancyInCommonPresumption
+  premise_atoms:
+  - Property_Transferred_To_TwoOrMore_By_Instrument
+  head_claim: Presumed_TenancyInCommon_NotJoint
+  concepts:
+  - Property
+  - CoOwnership
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.9 有利于分权共有的推定
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S17-FullTitleTransfer
+  premise_atoms:
+  - Conveyance_Executed
+  head_claim: All_Estates_Rights_Interests_Transferred
+  concepts:
+  - Property
+  - Transfer
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: true
+  namespace: hk_property
+  legal_basis: Cap 219 s.17 转让即全部产业权转移
+  output_type: Terminal_Output_Node
+
+- id: HK-C219-S22-CapacityPresumption
+  premise_atoms:
+  - Person_Is_Party_To_Instrument
+  head_claim: Presumed_FullLegalCapacity
+  concepts:
+  - Property
+  - Capacity
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_property
+  legal_basis: Cap 219 s.22 关于行为能力的推定
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 622 — 公司条例 (Companies Ordinance)
+# ║ 跨境公司治理核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C622-S465-DirectorDutyOfCare
+  premise_atoms:
+  - Person_Is_Director
+  - Company_Is_HKIncorporated
+  head_claim: Director_HasDutyOfCare_Skill_Diligence
+  concepts:
+  - Director
+  - Duty
+  - Care
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.465 谨慎、技巧及勤勉的行事责任
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S465-X1-BusinessJudgment
+  premise_atoms:
+  - Director_Acted_InGoodFaith
+  - Director_Had_RationalBasis
+  - Director_No_MaterialPersonalInterest
+  head_claim: BusinessJudgmentRule_Applies
+  concepts:
+  - Director
+  - Defence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.465 商业判断规则
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S461-FiduciaryDuty
+  premise_atoms:
+  - Person_Is_Director
+  - Company_Is_HKIncorporated
+  head_claim: Director_HasFiduciaryDuty
+  concepts:
+  - Director
+  - Fiduciary
+  - Duty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.461 信讬责任
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S463-DutyToAvoidConflict
+  premise_atoms:
+  - Director_HasFiduciaryDuty
+  - Conflict_Of_Interest_Exists
+  head_claim: Director_MustAvoidConflict
+  concepts:
+  - Director
+  - Conflict
+  - Fiduciary
+  exception_chain:
+  - HK-C622-S463-X1-BoardApproval
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.463 避免利益冲突的责任
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S463-X1-BoardApproval
+  premise_atoms:
+  - Board_Unanimous_Consent
+  head_claim: Conflict_Approved
+  concepts:
+  - Director
+  - Conflict
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.463(4) 董事会一致同意
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S472-RelatedPartyTransaction
+  premise_atoms:
+  - Company_Is_HKIncorporated
+  - Transaction_With_RelatedParty
+  - Transaction_Material
+  head_claim: RelatedPartyTransaction_RequiresApproval
+  concepts:
+  - RelatedParty
+  - Transaction
+  - Director
+  exception_chain:
+  - HK-C622-S472-X1-DeMinimis
+  - HK-C622-S472-X2-ShareholderApproval
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.472 关连交易须予披露及批准
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S472-X1-DeMinimis
+  premise_atoms:
+  - Transaction_Value_Below_Threshold
+  head_claim: Transaction_ExemptFromApproval
+  concepts:
+  - RelatedParty
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S472-X2-ShareholderApproval
+  premise_atoms:
+  - Shareholders_Approve_Disinterested_Majority
+  head_claim: Transaction_Approved
+  concepts:
+  - RelatedParty
+  - Shareholder
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S724-UnfairlyPrejudicial
+  premise_atoms:
+  - Company_Is_HKIncorporated
+  - Member_Acts_UnfairlyPrejudicial
+  - Petitioner_Is_Member
+  head_claim: Court_May_Grant_Relief
+  concepts:
+  - Shareholder
+  - UnfairPrejudice
+  - Remedy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.724 公正合理补偿条文
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S731-DerivativeAction
+  premise_atoms:
+  - Company_Is_HKIncorporated
+  - Director_Breach_Of_Duty
+  - Company_Fails_To_Act
+  - Member_Applies_To_Court
+  head_claim: Court_May_Authorise_DerivativeAction
+  concepts:
+  - Director
+  - Shareholder
+  - DerivativeAction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.731 代表公司提起法律程序
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S740-JustAndEquitableWindingUp
+  premise_atoms:
+  - Company_Is_HKIncorporated
+  - Just_And_Equitable_Grounds_Exist
+  head_claim: Court_May_Order_WindingUp
+  concepts:
+  - WindingUp
+  - Shareholder
+  - Remedy
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.740 以公正合理理由将公司清盘
+  output_type: Terminal_Output_Node
+
+- id: HK-C622-S275-PersonalLiabilityForFraud
+  premise_atoms:
+  - Person_Is_Officer
+  - Business_Carried_On_With_Intent_To_Defraud
+  head_claim: Officer_PersonallyLiable_For_Fraud
+  concepts:
+  - Fraud
+  - Director
+  - Liability
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_corporate
+  legal_basis: Cap 622 s.275 以欺诈营商方式营商的法律责任
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 528 — 版权条例 (Copyright Ordinance)
+# ║ 知识产权核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C528-S35-CopyrightInfringement
+  premise_atoms:
+  - Work_Is_CopyrightProtected
+  - Person_Does_RestrictedAct
+  - No_Licence_Or_FairDealing
+  head_claim: Copyright_Infringement_Established
+  concepts:
+  - Copyright
+  - Infringement
+  exception_chain:
+  - HK-C528-S38-FairDealing
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_ip
+  legal_basis: Cap 528 s.35 版权的侵犯
+  output_type: Terminal_Output_Node
+
+- id: HK-C528-S38-FairDealing
+  premise_atoms:
+  - Use_For_Research_Study_Or_Criticism
+  - Use_Is_Fair
+  head_claim: FairDealing_Defence_Applies
+  concepts:
+  - Copyright
+  - Defence
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_ip
+  legal_basis: Cap 528 s.38 公平处理
+  output_type: Terminal_Output_Node
+
+- id: HK-C528-S108-Remedies
+  premise_atoms:
+  - Copyright_Infringement_Established
+  head_claim: Owner_MaySeek_Injunction_Damages_Account
+  concepts:
+  - Copyright
+  - Remedy
+  - Damages
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_ip
+  legal_basis: Cap 528 s.108 民事补救
+  output_type: Terminal_Output_Node
+
+- id: HK-C528-S93M-MoralRight
+  premise_atoms:
+  - Person_Is_Author
+  - Work_Is_CopyrightProtected
+  head_claim: Author_Has_MoralRight_Of_Attribution
+  concepts:
+  - Copyright
+  - MoralRight
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_ip
+  legal_basis: Cap 528 s.93M 署名权
+  output_type: Terminal_Output_Node
+
+# ═══════════════════════════════════════════════════════════════
+# Cap 609 — 仲裁条例 (Arbitration Ordinance)
+# ║ 跨境仲裁执行核心规则
+# ═══════════════════════════════════════════════════════════════
+
+- id: HK-C609-S19-ArbitralTribunal
+  premise_atoms:
+  - Arbitration_Agreement_Exists
+  - Dispute_Arises
+  head_claim: Tribunal_May_Be_Appointed
+  concepts:
+  - Arbitration
+  - Tribunal
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_arbitration
+  legal_basis: Cap 609 s.19 仲裁庭的组成
+  output_type: Terminal_Output_Node
+
+- id: HK-C609-S73-ForeignAwardEnforcement
+  premise_atoms:
+  - Foreign_Arbitral_Award_Exists
+  - Award_Is_NYC_Convention_Award
+  head_claim: Award_Enforceable_In_HK
+  concepts:
+  - Arbitration
+  - Enforcement
+  - ForeignAward
+  exception_chain:
+  - HK-C609-S73-X1-RefusalGrounds
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_arbitration
+  legal_basis: Cap 609 s.73 纽约公约裁决的强制执行
+  output_type: Terminal_Output_Node
+
+- id: HK-C609-S73-X1-RefusalGrounds
+  premise_atoms:
+  - Award_Subject_To_Refusal_Grounds
+  head_claim: Enforcement_May_Be_Refused
+  concepts:
+  - Arbitration
+  - Enforcement
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_arbitration
+  legal_basis: Cap 609 s.73(3) 拒绝强制执行的理由
+  output_type: Terminal_Output_Node
+
+- id: HK-C609-S20-InterimMeasures
+  premise_atoms:
+  - Arbitral_Proceedings_Pending
+  - Interim_Measure_Necessary
+  head_claim: Tribunal_May_Order_InterimMeasures
+  concepts:
+  - Arbitration
+  - InterimMeasures
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_arbitration
+  legal_basis: Cap 609 s.20 临时措施
+  output_type: Terminal_Output_Node
+
+- id: HK-C609-S81-AntiSuitInjunction
+  premise_atoms:
+  - Arbitration_Agreement_Exists
+  - Party_Commences_Proceedings_Elsewhere
+  head_claim: Court_May_Grant_AntiSuit_Injunction
+  concepts:
+  - Arbitration
+  - AntiSuit
+  - Injunction
+  exception_chain: []
+  head_type: HORN
+  mechanical_exception: false
+  namespace: hk_arbitration
+  legal_basis: Cap 609 s.81 反诉禁令
+  output_type: Terminal_Output_Node

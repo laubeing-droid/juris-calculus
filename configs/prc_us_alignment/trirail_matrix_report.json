@@ -30,7 +30,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_002_Litigation_Discovery": {
@@ -96,7 +96,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_004_Plea_Bargaining_CrossBorder": {
@@ -129,7 +129,7 @@
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 14,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_005_Chapter11_Director_Conflict": {
@@ -166,7 +166,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_006_Factoring_CrossBorder": {
@@ -200,7 +200,7 @@
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_007_Crypto_Transaction_Conflict": {
@@ -234,7 +234,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_008_VIE_Structure_Review": {
@@ -268,7 +268,7 @@
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 40,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_009_Algorithm_Filing_Block": {
@@ -300,7 +300,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 14,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_010_AtWill_Employment_Conflict": {
@@ -332,7 +332,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_011_Pure_Domestic_CN": {
@@ -364,7 +364,7 @@
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   },
   "TRI_012_CN_Bridge_Verification": {
@@ -397,7 +397,7 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 66,
-      "cn_rules_total": 2117
+      "cn_rules_total": 21145
     }
   }
 }

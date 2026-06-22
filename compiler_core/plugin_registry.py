@@ -24,6 +24,7 @@ class PluginRegistry:
             "overrides_path": overrides_path,
             "blocking_path": blocking_path,
             "label": label or code.upper(),
+            "legal_family": legal_family,
         }
 
     def get(self, code: str) -> Optional[Any]:

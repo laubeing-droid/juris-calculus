@@ -1,0 +1,26 @@
+# 民商事审判实务6 candidate rules
+rules:
+- id: CM-614
+  premise_atoms: ['insurance_subrogation_identical_subject']
+  head_claim: 保险代位求偿要求赔偿标的与保险填补损害一致
+  exception_chain: []
+  concepts: ['insurance_subrogation_identical_subject']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务6
+- id: CM-615
+  premise_atoms: ['securities_false_statement_damages']
+  head_claim: 证券虚假陈述赔偿含投资差额佣金印花税
+  exception_chain: []
+  concepts: ['securities_false_statement_damages']
+  mechanical_exception: false
+  head_type: HORN
+  namespace: civil
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 民商事审判实务6

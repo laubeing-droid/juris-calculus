@@ -1,0 +1,38 @@
+# 刑事审判实务下册
+rules:
+- id: XS-416
+  premise_atoms: [refusal_to_execute_judgment, multiple_crimes]
+  head_claim: 拒执罪同时构成虚假诉讼罪等应认定情节特别严重
+  exception_chain: []
+  concepts: [拒执罪, 情节特别严重]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: CONSTITUTIVE
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 刑事审判实务下册
+- id: XS-417
+  premise_atoms: [drug_crime_death_penalty_threshold, mitigating_circumstances]
+  head_claim: 毒品数量达死刑标准但有法定从宽情节可不判处死刑
+  exception_chain: []
+  concepts: [毒品犯罪, 死刑适用]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: PERMISSION
+  modality_confidence: 0.9
+  modality_source: deep_distill_v2
+  source_anchor: 刑事审判实务下册
+- id: XS-418
+  premise_atoms: [witness_contradiction, cross_examination]
+  head_claim: 证人证言矛盾应经法庭质证查证未质证不能定案
+  exception_chain: []
+  concepts: [证人证言, 质证]
+  mechanical_exception: false
+  head_type: HORN
+  namespace: criminal
+  norm_modality: OBLIGATION
+  modality_confidence: 0.95
+  modality_source: deep_distill_v2
+  source_anchor: 刑事审判实务下册
