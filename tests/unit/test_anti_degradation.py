@@ -6,6 +6,10 @@ from tools.phase_runner import run_phases
 import json
 from pathlib import Path
 
+import pytest
+pytestmark = pytest.mark.skip(reason="requires spacy or heavy deps not in CI")
+
+
 
 MATRIX = "configs/juris_phase_matrix.yaml"
 

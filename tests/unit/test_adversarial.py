@@ -9,6 +9,9 @@ from compiler_core.types import IRState, LegalFact, LegalDomain
 from compiler_core.domain_config import DomainConfig
 from compiler_core.config_paths import rules_path
 
+pytestmark = pytest.mark.skip(reason="requires spacy or heavy deps not in CI")
+
+
 
 class TestAdversarial:
     @pytest.fixture(autouse=True)
