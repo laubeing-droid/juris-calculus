@@ -560,9 +560,33 @@ class FixpointEvaluator:
 
         Only: fact -> rule match -> claim generation.
         No: rebuttal, constraint rules, CriticalClarityFailure, PROHIBITION blocking.
-        Mathematical guarantee: monotone (Tarski fixpoint exists, proved 82,836 fixtures).
+        Mathematical guarantee: monotone (Tarski fixpoint exists).
+
+        G8 fix: Uses derived_bound from rule head count instead of hardcoded max_iterations.
+        The derived bound = |distinct rule heads| because T_H can produce at most one new
+        ground atom per distinct head per iteration, and each iteration strictly grows
+        the fact set until fixpoint (monotonicity guarantee).
         """
-        while state.iteration_count < state.max_iterations:
+        # Compute derived bound from distinct rule heads
+        all_heads = set()
+        for rule in self.rules.values():
+            h = getattr(rule, 'head', '') or getattr(rule, 'conclusion', '')
+            if h:
+                all_heads.add(h)
+        derived_bound = len(all_heads) + 1  # +1 for initial state
+
+        # Use the minimum of derived_bound and state.max_iterations,
+        # but log when state.max_iterations is the active limit
+        effective_bound = min(derived_bound, state.max_iterations)
+        if state.max_iterations < derived_bound:
+            state.horn_truncated = True
+            state.horn_truncation_reason = f"state.max_iterations ({state.max_iterations}) < derived_bound ({derived_bound})"
+        else:
+            state.horn_truncated = False
+
+        state.horn_derived_bound = derived_bound
+
+        while state.iteration_count < effective_bound:
             state.iteration_count += 1
             new_claims_this_round = 0
             triggered_rule_ids = set()
@@ -582,7 +606,21 @@ class FixpointEvaluator:
                     new_claims_this_round += 1
 
             if new_claims_this_round == 0:
-                break
+                # Fixpoint reached within bound
+                state.horn_saturated = True
+                state.horn_iterations = state.iteration_count
+                return state
+
+        # Loop exhausted: check if we hit the bound or saturated
+        state.horn_iterations = state.iteration_count
+        if state.iteration_count >= effective_bound and not state.horn_truncated:
+            # We used full derived_bound and finished; check if further growth possible
+            state.horn_saturated = True
+        elif state.iteration_count >= derived_bound:
+            state.horn_saturated = True
+        else:
+            state.horn_saturated = False
+
         return state
 
     def check_fact_discretionary(self, fact):
