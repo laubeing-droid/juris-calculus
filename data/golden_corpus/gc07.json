@@ -15,5 +15,16 @@
   "derived_bound": 5,
   "converged": true,
   "truncated": false,
-  "note": "No facts, Horn closure empty"
+  "note": "No facts, Horn closure empty",
+  "trust_projection": {
+    "因果关系": "TRUSTED",
+    "损害事实": "TRUSTED",
+    "赔偿请求成立": "TRUSTED",
+    "过错行为": "TRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 4,
+    "untrusted": 0,
+    "contested": 0
+  }
 }

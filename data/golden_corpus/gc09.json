@@ -22,5 +22,15 @@
   "derived_bound": 4,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "US_fiduciary_duty不适用": "TRUSTED",
+    "中国信托关系": "TRUSTED",
+    "US_fiduciary_duty适用": "UNTRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 2,
+    "untrusted": 1,
+    "contested": 0
+  }
 }

@@ -27,5 +27,16 @@
   "derived_bound": 5,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "不可抗力例外不适用": "TRUSTED",
+    "不可抗力例外适用": "TRUSTED",
+    "合同已签": "TRUSTED",
+    "合同有效": "UNTRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 3,
+    "untrusted": 1,
+    "contested": 0
+  }
 }

@@ -24,5 +24,16 @@
   "derived_bound": 5,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "一般法规定": "TRUSTED",
+    "特别法规定": "TRUSTED",
+    "适用一般法": "TRUSTED",
+    "适用特别法": "UNTRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 3,
+    "untrusted": 1,
+    "contested": 0
+  }
 }

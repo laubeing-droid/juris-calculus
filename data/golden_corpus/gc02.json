@@ -27,5 +27,16 @@
   "derived_bound": 5,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "原告证据A": "TRUSTED",
+    "被告证据B": "TRUSTED",
+    "原告证据A不成立": "UNTRUSTED",
+    "被告证据B不成立": "UNTRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 2,
+    "untrusted": 2,
+    "contested": 0
+  }
 }

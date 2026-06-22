@@ -29,5 +29,15 @@
   "derived_bound": 4,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "鉴定A为真": "CONTESTED",
+    "鉴定B结论": "CONTESTED",
+    "鉴定C结论": "CONTESTED"
+  },
+  "trust_summary": {
+    "trusted": 0,
+    "untrusted": 0,
+    "contested": 3
+  }
 }

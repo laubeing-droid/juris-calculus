@@ -22,5 +22,14 @@
   "derived_bound": 3,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "原告主张成立": "CONTESTED",
+    "被告反诉成立": "CONTESTED"
+  },
+  "trust_summary": {
+    "trusted": 0,
+    "untrusted": 0,
+    "contested": 2
+  }
 }

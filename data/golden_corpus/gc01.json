@@ -33,5 +33,17 @@
   "derived_bound": 6,
   "converged": true,
   "truncated": false,
-  "note": ""
+  "note": "",
+  "trust_projection": {
+    "买方已付款": "TRUSTED",
+    "卖方交货迟延": "TRUSTED",
+    "卖方违约": "TRUSTED",
+    "买方索赔可成立": "UNTRUSTED",
+    "卖方应交货": "UNTRUSTED"
+  },
+  "trust_summary": {
+    "trusted": 3,
+    "untrusted": 2,
+    "contested": 0
+  }
 }
