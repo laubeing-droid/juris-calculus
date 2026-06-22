@@ -1,13 +1,17 @@
-﻿"""SMT formal verification of Dung grounded extension.
+﻿"""SMT consistency checker for Dung grounded extension labelling.
 
-Encodes attack graphs as Z3 constraints and verifies that the grounded
-extension labelling (accepted/rejected/undecided) is logically consistent
-with Dung's 1995 definition.
+Encodes attack graphs as Z3 constraints to verify that a proposed
+labelling is logically consistent with Dung 1995 semantics
+for a SPECIFIC test case. This is a CONSISTENCY CHECK,
+not a proof of least-fixed-point semantics.
 
-Unlike engine testing (which runs the algorithm on examples), this provides
-theorem-prover-level verification: Z3 checks that the labelling satisfies
-the semantic conditions of the grounded extension for each test case.
-"""
+For proofs of least-fixed-point semantics, uniqueness, and
+monotonicity see Lean inductive proofs in legal-math-modeling.
+For bounded exhaustive counterexample search see
+compiler_core/universal_grounded_smt.py.
+
+Status: CONSISTENCY CHECKER only. Do not claim PROVED for
+arbitrary-scale conclusions from this module."""
 
 from __future__ import annotations
 
