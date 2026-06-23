@@ -71,3 +71,8 @@ tests/results/
 下载存放区/
 源码/
 过程文件/
+
+ # Build artifacts (Lean cross-ref)
+*.olean
+*.ilean
+*.trace
