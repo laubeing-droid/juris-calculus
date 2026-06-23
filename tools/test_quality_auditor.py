@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import ast, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
@@ -8,7 +8,7 @@ def audit_test_quality(test_dir="tests"):
     test_files = list(Path(test_dir).rglob("test_*.py"))
     for tf in test_files:
         try:
-            for node in ast.walk(ast.parse(tf.read_text(encoding="utf-8"))):
+            for node in ast.walk(ast.parse(tf.read_text(encoding="utf-8-sig"))):
                 if isinstance(node, ast.Assert) and isinstance(node.test, ast.Constant) and node.test.value is False:
                     findings.append({"file":str(tf),"line":node.lineno,"severity":"WARN"})
         except SyntaxError:
@@ -19,3 +19,4 @@ def main(argv=None):
     print(f"status={r['status']} files={r['files_checked']} findings={len(r['findings'])}")
     return 0 if r["status"]=="PASS" else 1
 if __name__=="__main__": sys.exit(main())
+
