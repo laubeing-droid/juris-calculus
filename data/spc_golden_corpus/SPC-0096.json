@@ -1,0 +1,32 @@
+{
+  "rule_id": "SPC-0096",
+  "source": "刑事审判实务上册_ocr.json",
+  "source_page": 280,
+  "rule_type": "obligation",
+  "rule_text": "第2款的规定，缴纳税款后，又以假报出口或者其他欺骗手段，骗取所缴纳的税款的，按照逃税罪处罚。（二）不申报的认定逃税罪是故意犯罪。既可以通过前述虚假纳税申报方式实现逃税目的，也可以通过不申报方式实现逃税目的。但以不申报方式逃税的，应以纳税人明知应当申报纳税而故意不申报为前提。《办理危害税收征管案件解释》",
+  "claims": [
+    {
+      "id": "PREMISE",
+      "text": "第2款的规定，缴纳税款后，又以假报出口或者其他欺骗手段，骗取所缴纳的税款的，按照逃税罪处罚。（二）不申报的认定逃税罪是故意犯罪。既可以通过前述虚假纳税申报方式实现逃税目的，也可以通过不申报方式实现逃税"
+    },
+    {
+      "id": "CONCLUSION",
+      "text": "[OBLIGATION] 第2款的规定，缴纳税款后，又以假报出口或者其他欺骗手段，骗取所缴纳的税款的，按照逃税罪处罚。（二）不申报的认定逃税罪是故意犯罪。既可以通过前述虚假纳税申报方式实"
+    }
+  ],
+  "attacks": [],
+  "grounded_in": [
+    "CONCLUSION",
+    "PREMISE"
+  ],
+  "grounded_out": [],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 3,
+  "converged": true,
+  "truncated": false,
+  "trust_projection": {
+    "PREMISE": "TRUSTED",
+    "CONCLUSION": "TRUSTED"
+  }
+}

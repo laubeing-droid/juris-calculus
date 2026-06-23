@@ -1,0 +1,32 @@
+{
+  "rule_id": "SPC-0058",
+  "source": "刑事审判实务上册_ocr.json",
+  "source_page": 206,
+  "rule_type": "permission",
+  "rule_text": "的规定，“足以造成严重食物中毒事故或者其他严重食源性疾病”“有毒、有害的非食品原料”等专门性问题难以确定的，司法机关可以依据鉴定意见、检验报告、地市级以上相关行政主管部门组织出具的书面意见，结合其他证据作出认定。必要时，专门性问题由省级以上相关行政主管部门组织出具书面意见。（二）超范围滥用添加行为的认定超范围滥用添加行为是生产、销售不符合安全标准的食品罪的典型行为。《办理危害食品安全案件解释》",
+  "claims": [
+    {
+      "id": "PREMISE",
+      "text": "的规定，“足以造成严重食物中毒事故或者其他严重食源性疾病”“有毒、有害的非食品原料”等专门性问题难以确定的，司法机关可以依据鉴定意见、检验报告、地市级以上相关行政主管部门组织出具的书面意见，结合其他证"
+    },
+    {
+      "id": "CONCLUSION",
+      "text": "[PERMISSION] 的规定，“足以造成严重食物中毒事故或者其他严重食源性疾病”“有毒、有害的非食品原料”等专门性问题难以确定的，司法机关可以依据鉴定意见、检验报告、地市级以上相关行"
+    }
+  ],
+  "attacks": [],
+  "grounded_in": [
+    "CONCLUSION",
+    "PREMISE"
+  ],
+  "grounded_out": [],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 3,
+  "converged": true,
+  "truncated": false,
+  "trust_projection": {
+    "PREMISE": "TRUSTED",
+    "CONCLUSION": "TRUSTED"
+  }
+}

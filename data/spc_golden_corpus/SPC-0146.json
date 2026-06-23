@@ -1,0 +1,32 @@
+{
+  "rule_id": "SPC-0146",
+  "source": "刑事审判实务上册_ocr.json",
+  "source_page": 409,
+  "rule_type": "permission",
+  "rule_text": "第二编实体篇／第十二章侵犯财产罪（385理或者可以免予刑事处罚：具有法定从宽处罚情节的；没有参与分赃或者获赃较少且不是主犯的；被害人谅解的；其他情节轻微、危害不大的。（三）偷拿家庭成员或者近亲属财物的根据《办理盗窃案件解释》",
+  "claims": [
+    {
+      "id": "PREMISE",
+      "text": "第二编实体篇／第十二章侵犯财产罪（385理或者可以免予刑事处罚：具有法定从宽处罚情节的；没有参与分赃或者获赃较少且不是主犯的；被害人谅解的；其他情节轻微、危害不大的。（三）偷拿家庭成员或者近亲属财物的"
+    },
+    {
+      "id": "CONCLUSION",
+      "text": "[PERMISSION] 第二编实体篇／第十二章侵犯财产罪（385理或者可以免予刑事处罚：具有法定从宽处罚情节的；没有参与分赃或者获赃较少且不是主犯的；被害人谅解的；其他情节轻微、危害不"
+    }
+  ],
+  "attacks": [],
+  "grounded_in": [
+    "CONCLUSION",
+    "PREMISE"
+  ],
+  "grounded_out": [],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 3,
+  "converged": true,
+  "truncated": false,
+  "trust_projection": {
+    "PREMISE": "TRUSTED",
+    "CONCLUSION": "TRUSTED"
+  }
+}

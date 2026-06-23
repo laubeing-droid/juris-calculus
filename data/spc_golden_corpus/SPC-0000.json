@@ -1,0 +1,32 @@
+{
+  "rule_id": "SPC-0000",
+  "source": "刑事审判实务上册_ocr.json",
+  "source_page": 30,
+  "rule_type": "obligation",
+  "rule_text": "规定：“下列涉及国家安全和利益的事项，泄露后可能损害国家在政治、经济、国防、外交等领域的安全和利益的，应当确定为国家秘密：…·（六）维护国家安全活动和追查刑事犯罪中的秘密事项..”该法",
+  "claims": [
+    {
+      "id": "PREMISE",
+      "text": "规定：“下列涉及国家安全和利益的事项，泄露后可能损害国家在政治、经济、国防、外交等领域的安全和利益的，应当确定为国家秘密：…·（六）维护国家安全活动和追查刑事犯罪中的秘密事项..”该法"
+    },
+    {
+      "id": "CONCLUSION",
+      "text": "[OBLIGATION] 规定：“下列涉及国家安全和利益的事项，泄露后可能损害国家在政治、经济、国防、外交等领域的安全和利益的，应当确定为国家秘密：…·（六）维护国家安全活动和追查刑事犯"
+    }
+  ],
+  "attacks": [],
+  "grounded_in": [
+    "CONCLUSION",
+    "PREMISE"
+  ],
+  "grounded_out": [],
+  "grounded_undec": [],
+  "iterations": 2,
+  "derived_bound": 3,
+  "converged": true,
+  "truncated": false,
+  "trust_projection": {
+    "PREMISE": "TRUSTED",
+    "CONCLUSION": "TRUSTED"
+  }
+}
