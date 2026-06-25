@@ -15,6 +15,21 @@ from typing import Any
 
 from compiler_core.argumentation import grounded_extension, scc_decomposition
 
+MAX_INCREMENTAL_AFFECTED_SCCS = 1
+
+
+def _fallback_full_recompute(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+    affected_sccs: list[list[str]],
+    reason: str,
+) -> dict[str, Any]:
+    full = grounded_extension(claims, attacks)
+    full["incremental"] = False
+    full["affected_sccs"] = affected_sccs
+    full["fallback_reason"] = reason
+    return full
+
 
 def incremental_grounded_add_argument(
     claims: list[dict[str, Any]],
@@ -54,8 +69,8 @@ def incremental_grounded_add_argument(
         if src in cids and tgt in cids:
             attackers_of.setdefault(tgt, set()).add(src)
 
-    # New argument with no attackers: trivially IN
-    if not attackers_of.get(arg_id, set()):
+    # New argument with no attackers and no outgoing attacks: trivially IN
+    if not attackers_of.get(arg_id, set()) and not new_attacks:
         full = grounded_extension(all_claims, all_attacks)
         full["incremental"] = True
         full["affected_sccs"] = [[arg_id]]
@@ -104,22 +119,36 @@ def incremental_grounded_add_argument(
 
     # MVM boundary: if more than one SCC is affected (beyond the new argument's SCC),
     # fall back to full recompute
-    if len(affected_scc_indices) > 2:
-        full = grounded_extension(all_claims, all_attacks)
-        full["incremental"] = False
-        full["affected_sccs"] = [
-            sccs[i] for i in sorted(affected_scc_indices)
-        ]
-        full["fallback_reason"] = (
-            f"MVM boundary exceeded: {len(affected_scc_indices)} SCCs affected "
-            f"(limit: 2). Full recompute performed."
+    if len(affected_scc_indices) > MAX_INCREMENTAL_AFFECTED_SCCS:
+        return _fallback_full_recompute(
+            all_claims,
+            all_attacks,
+            [sccs[i] for i in sorted(affected_scc_indices)],
+            (
+                f"MVM boundary exceeded: {len(affected_scc_indices)} SCCs affected "
+                f"(limit: {MAX_INCREMENTAL_AFFECTED_SCCS}). Full recompute performed."
+            ),
         )
-        return full
 
     # Partial recompute: only affected SCCs + their arguments
     affected_args: set[str] = set()
     for si in affected_scc_indices:
         affected_args.update(sccs[si])
+
+    external_attackers = sorted({
+        src for src, tgt in all_attacks
+        if tgt in affected_args and src not in affected_args
+    })
+    if external_attackers:
+        return _fallback_full_recompute(
+            all_claims,
+            all_attacks,
+            [sccs[i] for i in sorted(affected_scc_indices)],
+            (
+                "External attackers reach the affected region; "
+                "partial recompute would silently drop outside labels. Full recompute performed."
+            ),
+        )
 
     # Collect all arguments needed: affected SCCs + incoming attackers
     # from non-affected regions (whose labels are already fixed)
@@ -184,10 +213,14 @@ def incremental_grounded_add_attack(
         for v in scc:
             scc_map[v] = i
 
-    # Affected: the SCC of the target (since it gets a new attacker)
+    # Affected: both the target SCC and the source SCC of the new edge.
+    # If the source sits outside the recompute window, the new edge is silently
+    # filtered out by grounded_extension's local cids check.
     affected_scc_indices: set[int] = set()
     if tgt in scc_map:
         affected_scc_indices.add(scc_map[tgt])
+    if src in scc_map:
+        affected_scc_indices.add(scc_map[src])
 
     # Close under successors
     adj_scc: dict[int, set[int]] = {}
@@ -206,21 +239,35 @@ def incremental_grounded_add_attack(
                     affected_scc_indices.add(ti)
                     changed = True
 
-    if len(affected_scc_indices) > 2:
-        full = grounded_extension(claims, all_attacks)
-        full["incremental"] = False
-        full["affected_sccs"] = [
-            sccs[i] for i in sorted(affected_scc_indices)
-        ]
-        full["fallback_reason"] = (
-            f"MVM boundary exceeded: {len(affected_scc_indices)} SCCs affected. "
-            f"Full recompute performed."
+    if len(affected_scc_indices) > MAX_INCREMENTAL_AFFECTED_SCCS:
+        return _fallback_full_recompute(
+            claims,
+            all_attacks,
+            [sccs[i] for i in sorted(affected_scc_indices)],
+            (
+                f"MVM boundary exceeded: {len(affected_scc_indices)} SCCs affected "
+                f"(limit: {MAX_INCREMENTAL_AFFECTED_SCCS}). Full recompute performed."
+            ),
         )
-        return full
 
     affected_args: set[str] = set()
     for si in affected_scc_indices:
         affected_args.update(sccs[si])
+
+    external_attackers = sorted({
+        s for s, t in all_attacks
+        if t in affected_args and s not in affected_args
+    })
+    if external_attackers:
+        return _fallback_full_recompute(
+            claims,
+            all_attacks,
+            [sccs[i] for i in sorted(affected_scc_indices)],
+            (
+                "External attackers reach the affected region; "
+                "partial recompute would silently drop outside labels. Full recompute performed."
+            ),
+        )
 
     partial_claims = [c for c in claims if c["id"] in affected_args]
     partial_attacks = [(s, t) for s, t in all_attacks if t in affected_args]

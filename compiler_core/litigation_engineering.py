@@ -121,6 +121,107 @@ class LabelCertificate:
     witnesses: list[str]               # argument IDs supporting this label
     verifiable: bool                   # can be independently verified
     verification_payload: dict[str, Any]  # data needed for verification
+    attackers: list[str] = field(default_factory=list)
+    minimal_witnesses: list[str] = field(default_factory=list)
+    defense_paths: list[dict[str, Any]] = field(default_factory=list)
+    proof_depth: int = 0
+
+
+def _build_attackers_index(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+) -> dict[str, set[str]]:
+    cids = {c["id"] for c in claims}
+    attackers_of: dict[str, set[str]] = {}
+    for src, tgt in attacks:
+        if src in cids and tgt in cids:
+            attackers_of.setdefault(tgt, set()).add(src)
+    return attackers_of
+
+
+def _select_minimal_defenders(
+    defenders_by_attacker: dict[str, set[str]],
+) -> tuple[list[str], dict[str, list[str]], list[str]]:
+    remaining = {attacker for attacker, defenders in defenders_by_attacker.items() if defenders}
+    chosen: list[str] = []
+    chosen_set: set[str] = set()
+
+    while remaining:
+        best_defender = ""
+        best_cover: set[str] = set()
+        defender_pool = sorted({
+            defender
+            for attacker in remaining
+            for defender in defenders_by_attacker.get(attacker, set())
+        })
+        for defender in defender_pool:
+            cover = {
+                attacker
+                for attacker in remaining
+                if defender in defenders_by_attacker.get(attacker, set())
+            }
+            if len(cover) > len(best_cover):
+                best_defender = defender
+                best_cover = cover
+        if not best_defender:
+            break
+        chosen.append(best_defender)
+        chosen_set.add(best_defender)
+        remaining -= best_cover
+
+    coverage: dict[str, list[str]] = {}
+    unresolved: list[str] = []
+    for attacker, defenders in defenders_by_attacker.items():
+        selected = sorted(defenders & chosen_set)
+        if selected:
+            coverage[attacker] = selected
+        elif defenders:
+            fallback = sorted(defenders)[:1]
+            coverage[attacker] = fallback
+            if fallback[0] not in chosen_set:
+                chosen.append(fallback[0])
+                chosen_set.add(fallback[0])
+        else:
+            unresolved.append(attacker)
+
+    return sorted(chosen), coverage, sorted(unresolved)
+
+
+def _accepted_proof_depth(
+    cid: str,
+    attackers_of: dict[str, set[str]],
+    accepted: set[str],
+    memo: dict[str, int],
+    active: set[str] | None = None,
+) -> int:
+    if cid in memo:
+        return memo[cid]
+
+    active = active or set()
+    if cid in active:
+        return 0
+
+    attackers = attackers_of.get(cid, set())
+    if not attackers:
+        memo[cid] = 0
+        return 0
+
+    active.add(cid)
+    branch_depths: list[int] = []
+    for attacker in attackers:
+        defenders = attackers_of.get(attacker, set()) & accepted
+        if not defenders:
+            branch_depths.append(0)
+            continue
+        branch_depths.append(
+            1 + min(
+                _accepted_proof_depth(defender, attackers_of, accepted, memo, active)
+                for defender in defenders
+            )
+        )
+    active.remove(cid)
+    memo[cid] = max(branch_depths) if branch_depths else 0
+    return memo[cid]
 
 def generate_certificate(
     argument_id: str,
@@ -133,24 +234,52 @@ def generate_certificate(
     reason_data = reasons.get(argument_id, {})
     label = reason_data.get("label", "UNDEC")
     reason_text = reason_data.get("reason", "unknown")
-    witnesses = reason_data.get("witnesses", [])
+    witnesses = list(reason_data.get("witnesses", []))
 
     # Build verification payload
-    cids = {c["id"] for c in claims}
-    attackers_of: dict[str, set[str]] = {}
-    for src, tgt in attacks:
-        if src in cids and tgt in cids:
-            attackers_of.setdefault(tgt, set()).add(src)
-
+    attackers_of = _build_attackers_index(claims, attacks)
+    attackers = sorted(attackers_of.get(argument_id, set()))
     accepted = set(result["accepted"])
     rejected = set(result["rejected"])
+    minimal_witnesses: list[str] = []
+    defense_paths: list[dict[str, Any]] = []
+    proof_depth = 0
+
+    if label == "IN":
+        defenders_by_attacker = {
+            attacker: attackers_of.get(attacker, set()) & accepted
+            for attacker in attackers
+        }
+        minimal_witnesses, coverage, unresolved = _select_minimal_defenders(defenders_by_attacker)
+        if minimal_witnesses:
+            witnesses = minimal_witnesses
+        depth_cache: dict[str, int] = {}
+        proof_depth = _accepted_proof_depth(argument_id, attackers_of, accepted, depth_cache)
+        for attacker in attackers:
+            defense_paths.append({
+                "target": argument_id,
+                "attacker": attacker,
+                "defenders": coverage.get(attacker, []),
+            })
+        if unresolved:
+            defense_paths.append({
+                "target": argument_id,
+                "unresolved_attackers": unresolved,
+            })
+    elif label == "OUT":
+        proof_depth = 1 if witnesses else 0
+    else:
+        witnesses = list(reason_data.get("witnesses", attackers))
 
     verification_payload = {
         "argument": argument_id,
-        "attackers": sorted(attackers_of.get(argument_id, set())),
+        "attackers": attackers,
         "accepted": sorted(accepted),
         "rejected": sorted(rejected),
         "witnesses": witnesses,
+        "minimal_witnesses": minimal_witnesses,
+        "defense_paths": defense_paths,
+        "proof_depth": proof_depth,
     }
 
     # Verify: ensure the label is consistent with Dung semantics
@@ -165,6 +294,10 @@ def generate_certificate(
         witnesses=witnesses,
         verifiable=verifiable,
         verification_payload=verification_payload,
+        attackers=attackers,
+        minimal_witnesses=minimal_witnesses,
+        defense_paths=defense_paths,
+        proof_depth=proof_depth,
     )
 
 

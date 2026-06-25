@@ -241,15 +241,14 @@ def label_reasons(
             if not atts:
                 reasons[cid] = {"label": "IN", "reason": "no attackers", "witnesses": []}
             else:
-                defeated_by = set()
+                defenders = set()
                 for a in atts:
                     a_atts = attackers_of.get(a, set())
-                    if a_atts & accepted:
-                        defeated_by.add(a)
+                    defenders.update(a_atts & accepted)
                 reasons[cid] = {
                     "label": "IN",
                     "reason": f"all attackers defeated by accepted arguments",
-                    "witnesses": sorted(defeated_by),
+                    "witnesses": sorted(defenders),
                 }
         elif cid in rejected:
             atts = attackers_of.get(cid, set())
@@ -273,10 +272,11 @@ def label_reasons(
                 }
             else:
                 # Depends on another undecided argument
+                undecided_attackers = sorted(attackers_of.get(cid, set()) & undecided)
                 reasons[cid] = {
                     "label": "UNDEC",
                     "reason": "depends on undecided argument(s)",
-                    "witnesses": sorted(undecided & {cid} if undecided else []),
+                    "witnesses": undecided_attackers,
                 }
 
     return reasons
