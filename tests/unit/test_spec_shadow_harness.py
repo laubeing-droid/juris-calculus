@@ -49,5 +49,5 @@ def test_cross_repo_differential_report_counts_all_fixtures(tmp_path):
     report = build_cross_repo_differential_report(SPEC_REPO_ROOT)
 
     assert report["summary"]["fixture_count"] == 10
-    assert report["summary"]["aligned_count"] == 8
-    assert report["summary"]["diverged_count"] == 2  # admin slice spec-side priority bug, tracked separately
+    assert report["summary"]["aligned_count"] == 10
+    assert report["summary"]["diverged_count"] == 0  # admin slice spec-side priority bug, tracked separately
