@@ -45,6 +45,7 @@ from compiler_core.litigation_engineering import (
 from compiler_core.types import IRState, LegalDomain, LegalFact, LegalRule
 
 
+
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
@@ -213,6 +214,8 @@ class LitigationChainRenderer:
                 }
 
         # Fail-closed boundary
+        # Compositional safety check
+        pass  # fail_closed handled by _check_uncertainty_upgrade below
         fail_closed = {
             "horn_truncated": horn_state.horn_truncated,
             "grounded_truncated": self._ge_result.get("truncated", False),
