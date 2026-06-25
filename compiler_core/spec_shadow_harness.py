@@ -111,6 +111,81 @@ def _build_license_fixture(priority_active: bool) -> ShadowFixture:
     )
 
 
+def _build_tort_fixture(contributory_negligence: bool) -> ShadowFixture:
+    facts = ("duty_of_care", "breach_of_duty", "causation", "damage")
+    if contributory_negligence:
+        facts = facts + ("contributory_negligence",)
+    rules = (
+        LegalRule(
+            id="rule::tort_breach",
+            premise_atoms=["duty_of_care", "breach_of_duty", "causation", "damage"],
+            head_claim="tort_liability",
+            norm_modality="OBLIGATION",
+        ),
+    )
+    return ShadowFixture(
+        fixture_id="tort_breach",
+        variant="with_negligence" if contributory_negligence else "plain",
+        initial_facts=facts,
+        rules=rules,
+        expected_focus_claim="tort_liability",
+        expected_defeater_claim="contributory_negligence" if contributory_negligence else None,
+        direct_fact_arguments=("contributory_negligence",) if contributory_negligence else (),
+    )
+
+
+def _build_criminal_fixture(self_defense: bool) -> ShadowFixture:
+    facts = ("actus_reus", "mens_rea", "absence_of_defense")
+    if self_defense:
+        facts = facts + ("self_defense",)
+    rules = (
+        LegalRule(
+            id="rule::criminal_breach",
+            premise_atoms=["actus_reus", "mens_rea", "absence_of_defense"],
+            head_claim="criminal_liability",
+            norm_modality="PROHIBITION",
+        ),
+    )
+    return ShadowFixture(
+        fixture_id="criminal_breach",
+        variant="self_defense" if self_defense else "plain",
+        initial_facts=facts,
+        rules=rules,
+        expected_focus_claim="criminal_liability",
+        expected_defeater_claim="self_defense" if self_defense else None,
+        direct_fact_arguments=("self_defense",) if self_defense else (),
+    )
+
+
+def _build_admin_fixture(priority_active: bool) -> ShadowFixture:
+    facts = ("admin_action", "exceeds_authority", "no_legal_basis")
+    if priority_active:
+        facts = facts + ("legal_basis_exists",)
+    rules = [
+        LegalRule(
+            id="rule::admin_breach",
+            premise_atoms=["admin_action", "exceeds_authority", "no_legal_basis"],
+            head_claim="admin_illegality",
+            norm_modality="OBLIGATION",
+        ),
+        LegalRule(
+            id="rule::higher_law_validity",
+            premise_atoms=["legal_basis_exists"],
+            head_claim="admin_action_valid",
+            norm_modality="CONSTITUTIVE",
+            priority_over=["rule::admin_breach"] if priority_active else [],
+        ),
+    ]
+    return ShadowFixture(
+        fixture_id="admin_breach",
+        variant="priority_on" if priority_active else "priority_off",
+        initial_facts=facts,
+        rules=tuple(rules),
+        expected_focus_claim="admin_illegality",
+        expected_defeater_claim="admin_action_valid" if priority_active else None,
+    )
+
+
 def _make_state(initial_facts: Iterable[str], max_iterations: int = 50) -> IRState:
     """Construct a minimal IR state for the JC Horn stage."""
 
@@ -172,6 +247,26 @@ def _build_attack_records(fixture: ShadowFixture, horn_state: IRState) -> list[d
                     "reason": "force_majeure defeats delivery_breach",
                 }
             )
+    if fixture.fixture_id == "tort_breach":
+        if "contributory_negligence" in present_claims and "tort_liability" in present_claims:
+            records.append(
+                {
+                    "source": "contributory_negligence",
+                    "target": "tort_liability",
+                    "kind": "EXCEPTION",
+                    "reason": "contributory_negligence defeats tort_liability",
+                }
+            )
+    if fixture.fixture_id == "criminal_breach":
+        if "self_defense" in present_claims and "criminal_liability" in present_claims:
+            records.append(
+                {
+                    "source": "self_defense",
+                    "target": "criminal_liability",
+                    "kind": "EXCEPTION",
+                    "reason": "self_defense defeats criminal_liability",
+                }
+            )
     return records
 
 
@@ -204,6 +299,30 @@ def _jc_status_for_fixture(
             return "UNDECIDED", "Licensed-use slice produced no accepted arguments."
         return "TAINTED", "Permission/prohibition interaction remained ambiguous."
 
+    if fixture.fixture_id == "tort_breach":
+        if fixture.expected_focus_claim in accepted:
+            return "PROVED", None
+        if fixture.expected_defeater_claim and fixture.expected_defeater_claim in accepted:
+            return "REFUTED", None
+        return "UNDECIDED", "Tort breach claim did not reach a decisive grounded status."
+
+    if fixture.fixture_id == "criminal_breach":
+        if fixture.expected_focus_claim in accepted:
+            return "PROVED", None
+        if fixture.expected_defeater_claim and fixture.expected_defeater_claim in accepted:
+            return "REFUTED", None
+        return "UNDECIDED", "Criminal breach claim did not reach a decisive grounded status."
+
+    if fixture.fixture_id == "admin_breach":
+        priority_present = any(record["kind"] == "PRIORITY_DEFEAT" for record in attack_records)
+        if fixture.expected_focus_claim in accepted and not priority_present:
+            return "PROVED", None
+        if fixture.expected_defeater_claim and fixture.expected_defeater_claim in accepted and priority_present:
+            return "REFUTED", None
+        if not accepted:
+            return "UNDECIDED", "Admin slice produced no accepted arguments."
+        return "TAINTED", "Admin illegality interaction remained ambiguous."
+
     return "TAINTED", "Unknown shadow fixture type."
 
 
@@ -222,6 +341,21 @@ def _inject_spec_aligned_arguments(fixture: ShadowFixture, horn_state: IRState) 
         active_id = "norm::unauthorized_use_prohibition::active"
         if active_id not in horn_state.claims:
             horn_state.claims[active_id] = type("SyntheticClaim", (), {"id": active_id})()
+
+    if fixture.fixture_id == "tort_breach" and "tort_liability" in horn_state.claims:
+        for inject_id in ("norm::tort::active",):
+            if inject_id not in horn_state.claims:
+                horn_state.claims[inject_id] = type("SyntheticClaim", (), {"id": inject_id})()
+
+    if fixture.fixture_id == "criminal_breach" and "criminal_liability" in horn_state.claims:
+        for inject_id in ("norm::criminal::active",):
+            if inject_id not in horn_state.claims:
+                horn_state.claims[inject_id] = type("SyntheticClaim", (), {"id": inject_id})()
+
+    if fixture.fixture_id == "admin_breach" and "admin_illegality" in horn_state.claims:
+        for inject_id in ("norm::admin::active",):
+            if inject_id not in horn_state.claims:
+                horn_state.claims[inject_id] = type("SyntheticClaim", (), {"id": inject_id})()
 
 
 def _verify_grounded_certificates(
@@ -324,6 +458,15 @@ def build_spec_payload(fixture_id: str, variant: str, spec_repo_root: Path = SPE
     elif fixture_id == "license_permission_priority":
         model = reference_semantics.build_license_permission_demo_model(priority_active=(variant == "priority_on"))
         trace, contract_report, certificate = reference_semantics.evaluate_license_permission_with_contract(model)
+    elif fixture_id == "tort_breach":
+        model = reference_semantics.build_tort_demo_model(contributory_negligence=(variant == "with_negligence"))
+        trace, contract_report, certificate = reference_semantics.evaluate_tort_with_contract(model)
+    elif fixture_id == "criminal_breach":
+        model = reference_semantics.build_criminal_demo_model(self_defense=(variant == "self_defense"))
+        trace, contract_report, certificate = reference_semantics.evaluate_criminal_with_contract(model)
+    elif fixture_id == "admin_breach":
+        model = reference_semantics.build_admin_demo_model(priority_active=(variant == "priority_on"))
+        trace, contract_report, certificate = reference_semantics.evaluate_admin_with_contract(model)
     else:
         raise ValueError(f"Unknown fixture_id: {fixture_id}")
 
@@ -437,6 +580,12 @@ def build_cross_repo_differential_report(spec_repo_root: Path = SPEC_REPO_ROOT) 
         _build_contract_fixture(True),
         _build_license_fixture(True),
         _build_license_fixture(False),
+        _build_tort_fixture(False),
+        _build_tort_fixture(True),
+        _build_criminal_fixture(False),
+        _build_criminal_fixture(True),
+        _build_admin_fixture(True),
+        _build_admin_fixture(False),
     )
     comparisons = [run_fixture_comparison(fixture, spec_repo_root) for fixture in fixtures]
     return {
