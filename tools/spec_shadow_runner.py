@@ -1,5 +1,10 @@
-#!/usr/bin/env python3
-"""Run the JC-vs-spec shadow harness and write the first differential report."""
+﻿#!/usr/bin/env python3
+"""Run the JC-vs-spec shadow harness and write the differential report.
+
+Supports two modes:
+- default: always exits 0, writes report files
+- --ci: CI gate mode, exits non-zero when any fixture diverges or has blockers
+"""
 
 from __future__ import annotations
 
@@ -32,6 +37,12 @@ def main() -> int:
         "--output-md",
         default=str(ROOT / "过程文件" / f"{date.today().isoformat()}-spec-shadow-differential-report.md"),
         help="Output path for the human-readable summary report.",
+    )
+    parser.add_argument(
+        "--ci",
+        action="store_true",
+        default=False,
+        help="CI gate mode: exit non-zero when any fixture diverges or has blockers.",
     )
     args = parser.parse_args()
 
@@ -75,7 +86,18 @@ def main() -> int:
     md_path.write_text("\n".join(lines), encoding="utf-8")
 
     print(json.dumps({"output_json": str(json_path), "output_md": str(md_path)}, ensure_ascii=False, indent=2))
-    return 0
+
+    exit_code = 0
+    if args.ci:
+        diverged = report["summary"]["diverged_count"]
+        if diverged > 0:
+            exit_code = 1
+        for item in report["fixtures"]:
+            blockers = item["report"].get("blockers", [])
+            if blockers and len(blockers) > 0:
+                exit_code = 1
+
+    return exit_code
 
 
 if __name__ == "__main__":
