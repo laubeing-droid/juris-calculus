@@ -14,9 +14,8 @@ Mathematical basis:
 from typing import List, Dict, Optional
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
 from compiler_core.argumentation import (
-    build_attack_edges_from_rules,
     build_attack_graph_from_evaluator,
-    grounded_extension,
+    grounded_extension, find_cycles,
 )
 from compiler_core.trust_labels import TrustLabel, EpistemicStatus, DataOrigin, RuleMaturity
 from compiler_core.domain_config import DomainConfig

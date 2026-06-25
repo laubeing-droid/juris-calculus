@@ -351,3 +351,69 @@ def proof_trace(
         "rejected": result["rejected"],
         "undecided": result["undecided"],
     }
+
+
+def build_attack_graph_from_evaluator(
+    rules: list[dict[str, Any]],
+    evaluator_result: dict[str, Any],
+) -> list[tuple[str, str]]:
+    """Build attack graph edges from Horn rules and evaluator output.
+
+    For each rule with an explicit priority_over or exception relationship,
+    generate an attack edge from the overriding rule's head to the
+    overridden rule's head.
+
+    This serves as the Stage 2 AAF bridge in the stratified evaluator.
+    """
+    attacks: list[tuple[str, str]] = []
+    labels: dict[str, str] = evaluator_result.get("labels", {})
+
+    for rule in rules:
+        rhead = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
+        if not rhead:
+            continue
+
+        # Priority-based attacks
+        priority_over = rule.get("priority_over", []) if isinstance(rule, dict) else getattr(rule, "priority_over", [])
+        for target in priority_over:
+            if target in labels or any(r.get("head") == target or getattr(r, "head_claim", "") == target for r in rules):
+                attacks.append((rhead, target))
+
+        # Exception-based attacks (defeaters)
+        exceptions = rule.get("exception_to", []) if isinstance(rule, dict) else getattr(rule, "exception_to", [])
+        for target in exceptions:
+            attacks.append((rhead, target))
+
+    # Rebuttal: conflicting heads (same head drawn from different rules)
+    seen_heads: dict[str, str] = {}
+    for rule in rules:
+        head = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
+        r_id = rule.get("id", head) if isinstance(rule, dict) else getattr(rule, "id", head)
+        if head and head in seen_heads and head in labels:
+            attacks.append((r_id, seen_heads[head]))
+        elif head:
+            seen_heads[head] = r_id
+
+    return attacks
+
+
+def build_attack_edges_from_rules(
+    rules: list[dict[str, Any]],
+) -> list[tuple[str, str]]:
+    """Build attack edges from Horn rules alone (no evaluator context).
+
+    Extracts priority and exception relationships from rules and
+    returns them as attack pairs.
+    """
+    attacks: list[tuple[str, str]] = []
+    for rule in rules:
+        rhead = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
+        if not rhead:
+            continue
+        priority_over = rule.get("priority_over", []) if isinstance(rule, dict) else getattr(rule, "priority_over", [])
+        for target in priority_over:
+            attacks.append((rhead, target))
+        exceptions = rule.get("exception_to", []) if isinstance(rule, dict) else getattr(rule, "exception_to", [])
+        for target in exceptions:
+            attacks.append((rhead, target))
+    return attacks
