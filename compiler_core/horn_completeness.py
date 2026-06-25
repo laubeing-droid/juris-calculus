@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from collections import defaultdict
 
 
 # ---------------------------------------------------------------------------
@@ -185,3 +186,221 @@ class ConclusionProvenance:
             minimal_support_set=minimal_support,
             rule_chain=rule_chain,
         )
+
+# ---------------------------------------------------------------------------
+# D7: Minimal support set — backward dependency closure
+# ---------------------------------------------------------------------------
+
+def _new_facts_closure(
+    initial_facts: set[str],
+    rules: list[dict[str, Any]],
+    completeness: HornCompletenessResult,
+) -> set[str]:
+    facts = set(initial_facts)
+    for witness in completeness.proof_witnesses:
+        facts.add(witness['fact'])
+    return facts
+
+
+def compute_minimal_support(
+    conclusion: str,
+    initial_facts: set[str],
+    rules: list[dict[str, Any]],
+    completeness: HornCompletenessResult | None = None,
+) -> set[str]:
+    if completeness is None:
+        _, completeness = horn_fixpoint_with_completeness(
+            {f: True for f in initial_facts}, rules
+        )
+    closure = _new_facts_closure(initial_facts, rules, completeness)
+    if conclusion not in closure:
+        return set()
+
+    cache: dict[str, set[str] | None] = {}
+
+    def _min_support(fact: str, visited: set[str]) -> set[str] | None:
+        if fact in cache:
+            return cache[fact]
+        if fact in initial_facts:
+            result = {fact}
+            cache[fact] = result
+            return result
+        if fact in visited:
+            return None
+        candidate_rules = [r for r in rules if r.get('head') == fact]
+        if not candidate_rules:
+            cache[fact] = None
+            return None
+        best: set[str] | None = None
+        visited.add(fact)
+        for rule in candidate_rules:
+            body = rule.get('body', [])
+            if not body:
+                visited.discard(fact)
+                cache[fact] = set()
+                return set()
+            body_supports: list[set[str]] = []
+            all_ok = True
+            for atom in body:
+                atom_support = _min_support(atom, visited)
+                if atom_support is None:
+                    all_ok = False
+                    break
+                body_supports.append(atom_support)
+            if not all_ok:
+                continue
+            union: set[str] = set()
+            for bs in body_supports:
+                union.update(bs)
+            if best is None or len(union) < len(best):
+                best = union
+        visited.discard(fact)
+        cache[fact] = best
+        return best
+
+    result = _min_support(conclusion, set())
+    return result or set()
+
+
+# ---------------------------------------------------------------------------
+# D7: Minimal rebuttal set — hitting set of all proof paths
+# ---------------------------------------------------------------------------
+
+def compute_minimal_rebuttal(
+    conclusion: str,
+    initial_facts: set[str],
+    rules: list[dict[str, Any]],
+    completeness: HornCompletenessResult | None = None,
+) -> list[str]:
+    if completeness is None:
+        _, completeness = horn_fixpoint_with_completeness(
+            {f: True for f in initial_facts}, rules
+        )
+    closure = _new_facts_closure(initial_facts, rules, completeness)
+    if conclusion not in closure:
+        return []
+
+    proof_paths: list[set[str]] = []
+    for witness in completeness.proof_witnesses:
+        fact = witness['fact']
+        for rule in rules:
+            if rule.get('head') == fact:
+                body = set(rule.get('body', []))
+                body &= closure
+                if body:
+                    proof_paths.append(body)
+
+    remaining = [set(p) for p in proof_paths]
+    chosen: list[str] = []
+    while remaining:
+        counts: dict[str, int] = {}
+        for path in remaining:
+            for fid in path:
+                counts[fid] = counts.get(fid, 0) + 1
+        if not counts:
+            break
+        best = max(counts, key=lambda f: (counts[f], f))
+        chosen.append(best)
+        remaining = [p for p in remaining if best not in p]
+
+    return chosen
+
+
+# ---------------------------------------------------------------------------
+# D7: Missing evidence checklist — open-world assumption
+# ---------------------------------------------------------------------------
+
+def compute_missing_evidence(
+    target_conclusion: str,
+    initial_facts: set[str],
+    rules: list[dict[str, Any]],
+) -> dict[str, Any]:
+    relevant = [r for r in rules if r.get('head') == target_conclusion]
+    if not relevant:
+        return {
+            'conclusion': target_conclusion,
+            'derivable': False,
+            'missing_facts': [],
+            'checklist': 'no applicable rule found',
+        }
+    all_missing: set[str] = set()
+    any_complete = False
+    for rule in relevant:
+        body = rule.get('body', [])
+        missing = [atom for atom in body if atom not in initial_facts]
+        if missing:
+            all_missing.update(missing)
+        else:
+            any_complete = True
+    return {
+        'conclusion': target_conclusion,
+        'derivable': any_complete or bool(all_missing),
+        'missing_facts': sorted(all_missing),
+        'checklist': 'evidence sufficient' if any_complete and not all_missing
+                     else 'partial: at least one path complete' if any_complete
+                     else 'evidence insufficient: no complete derivation path',
+    }
+
+
+# ---------------------------------------------------------------------------
+# D7: Rule change impact analysis
+# ---------------------------------------------------------------------------
+
+def analyze_rule_impact(
+    rule_id: str,
+    rules: list[dict[str, Any]],
+    initial_facts: set[str],
+    completeness: HornCompletenessResult | None = None,
+) -> dict[str, Any]:
+    if completeness is None:
+        _, completeness = horn_fixpoint_with_completeness(
+            {f: True for f in initial_facts}, rules
+        )
+
+    target_rule = None
+    for r in rules:
+        if r.get('id') == rule_id or r.get('head') == rule_id:
+            target_rule = r
+            break
+
+    if target_rule is None:
+        return {
+            'rule_id': rule_id,
+            'directly_affected': [],
+            'downstream_affected': [],
+            'total_affected': 0,
+            'severity': 'trivial',
+        }
+
+    rule_head = target_rule.get('head', '')
+    directly: set[str] = {rule_head} if rule_head else set()
+    for witness in completeness.proof_witnesses:
+        if rule_head in witness.get('body_atoms', []):
+            directly.add(witness['fact'])
+
+    # Build reverse index: fact -> consuming rules
+    fact_to_rules: dict[str, list[dict[str, Any]]] = {}
+    for r in rules:
+        for atom in r.get('body', []):
+            fact_to_rules.setdefault(atom, []).append(r)
+
+    downstream: set[str] = set(directly)
+    queue = list(directly)
+    while queue:
+        fact = queue.pop(0)
+        for consuming_rule in fact_to_rules.get(fact, []):
+            head = consuming_rule.get('head', '')
+            if head and head not in downstream:
+                downstream.add(head)
+                queue.append(head)
+
+    total = len(downstream)
+    severity = 'trivial' if total == 0 else 'minor' if total <= 3 else 'moderate' if total <= 10 else 'major'
+
+    return {
+        'rule_id': rule_id,
+        'directly_affected': sorted(directly),
+        'downstream_affected': sorted(downstream),
+        'total_affected': total,
+        'severity': severity,
+    }
