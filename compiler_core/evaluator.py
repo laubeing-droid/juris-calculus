@@ -570,7 +570,11 @@ class FixpointEvaluator:
         # Compute derived bound from distinct rule heads
         all_heads = set()
         for rule in self.rules.values():
-            h = getattr(rule, 'head', '') or getattr(rule, 'conclusion', '')
+            h = (
+                getattr(rule, 'head', '')
+                or getattr(rule, 'conclusion', '')
+                or getattr(rule, 'head_claim', '')
+            )
             if h:
                 all_heads.add(h)
         derived_bound = len(all_heads) + 1  # +1 for initial state

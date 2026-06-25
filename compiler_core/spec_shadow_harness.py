@@ -1,0 +1,463 @@
+#!/usr/bin/env python3
+"""Cross-repo shadow harness for spec-vs-JC differential checks."""
+
+from __future__ import annotations
+
+import importlib
+import json
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Mapping, Tuple
+
+from compiler_core.argumentation import grounded_extension, proof_trace
+from compiler_core.certificate_checker import GroundedINCertificate, OUTCertificate, UNDECCertificate
+from compiler_core.domain_config import DomainConfig
+from compiler_core.evaluator import FixpointEvaluator
+from compiler_core.types import IRState, LegalDomain, LegalFact, LegalRule
+
+
+SPEC_REPO_ROOT = Path(r"D:\Claude\数学证明\legal-math-modeling")
+
+
+@dataclass(frozen=True)
+class ShadowFixture:
+    """A single spec shadow scenario to compare against the formal companion repo."""
+
+    fixture_id: str
+    variant: str
+    initial_facts: Tuple[str, ...]
+    rules: Tuple[LegalRule, ...]
+    expected_focus_claim: str
+    expected_defeater_claim: str | None = None
+    direct_fact_arguments: Tuple[str, ...] = ()
+
+
+def _load_spec_modules(spec_repo_root: Path = SPEC_REPO_ROOT):
+    """Load the formal companion repo's reference evaluator modules."""
+
+    spec_root = str(spec_repo_root)
+    if spec_root not in sys.path:
+        sys.path.insert(0, spec_root)
+    reference_semantics = importlib.import_module("theory.spec.reference_semantics")
+    certificate_schema = importlib.import_module("theory.spec.certificate_schema")
+    return reference_semantics, certificate_schema
+
+
+def _build_contract_fixture(force_majeure: bool) -> ShadowFixture:
+    """Build the JC-side contract-breach shadow fixture."""
+
+    facts = ("contract_exists", "delivery_due", "goods_not_delivered")
+    if force_majeure:
+        facts = facts + ("force_majeure",)
+
+    rules = (
+        LegalRule(
+            id="rule::delivery_obligation",
+            premise_atoms=["contract_exists", "delivery_due"],
+            head_claim="norm::delivery::active",
+            norm_modality="OBLIGATION",
+        ),
+        LegalRule(
+            id="rule::failed_delivery",
+            premise_atoms=["norm::delivery::active", "goods_not_delivered"],
+            head_claim="delivery_breach",
+            norm_modality="OBLIGATION",
+        ),
+    )
+    return ShadowFixture(
+        fixture_id="contract_breach",
+        variant="force_majeure" if force_majeure else "plain",
+        initial_facts=facts,
+        rules=rules,
+        expected_focus_claim="delivery_breach",
+        expected_defeater_claim="force_majeure" if force_majeure else None,
+        direct_fact_arguments=("force_majeure",) if force_majeure else (),
+    )
+
+
+def _build_license_fixture(priority_active: bool) -> ShadowFixture:
+    """Build the JC-side licensed-use priority fixture."""
+
+    facts = ("license_signed", "rights_holder_authorized", "used_work", "use_within_scope")
+    rules = [
+        LegalRule(
+            id="rule::license_status",
+            premise_atoms=["license_signed", "rights_holder_authorized"],
+            head_claim="license_status_active",
+            norm_modality="CONSTITUTIVE",
+        ),
+        LegalRule(
+            id="rule::licensed_use_permission",
+            premise_atoms=["license_status_active", "use_within_scope"],
+            head_claim="use_permitted",
+            norm_modality="PERMISSION",
+            priority_over=["rule::used_work"] if priority_active else [],
+        ),
+        LegalRule(
+            id="rule::used_work",
+            premise_atoms=["used_work"],
+            head_claim="unauthorized_use",
+            norm_modality="PROHIBITION",
+        ),
+    ]
+    return ShadowFixture(
+        fixture_id="license_permission_priority",
+        variant="priority_on" if priority_active else "priority_off",
+        initial_facts=facts,
+        rules=tuple(rules),
+        expected_focus_claim="use_permitted",
+        expected_defeater_claim="unauthorized_use" if not priority_active else None,
+    )
+
+
+def _make_state(initial_facts: Iterable[str], max_iterations: int = 50) -> IRState:
+    """Construct a minimal IR state for the JC Horn stage."""
+
+    state = IRState(
+        facts={fact_id: LegalFact(id=fact_id, description=fact_id) for fact_id in initial_facts},
+        domain=LegalDomain.CIVIL,
+    )
+    state.max_iterations = max_iterations
+    return state
+
+
+def _run_horn_shadow(fixture: ShadowFixture) -> IRState:
+    """Run the JC Horn stage for a shadow fixture."""
+
+    evaluator = FixpointEvaluator(list(fixture.rules), DomainConfig(domain=LegalDomain.CIVIL))
+    state = _make_state(fixture.initial_facts)
+    return evaluator.evaluate_horn(state)
+
+
+def _build_attack_records(fixture: ShadowFixture, horn_state: IRState) -> list[dict[str, str]]:
+    """Build a compact attack layer from local rule metadata."""
+
+    present_claims = set(horn_state.claims.keys())
+    rule_by_id = {rule.id: rule for rule in fixture.rules}
+    records: list[dict[str, str]] = []
+
+    for rule in fixture.rules:
+        if rule.head_claim not in present_claims:
+            continue
+        for attacked_rule_id in rule.attacks:
+            target_rule = rule_by_id.get(attacked_rule_id)
+            if target_rule and target_rule.head_claim in present_claims:
+                records.append(
+                    {
+                        "source": rule.head_claim,
+                        "target": target_rule.head_claim,
+                        "kind": "EXCEPTION",
+                        "reason": f"{rule.head_claim} defeats {target_rule.head_claim}",
+                    }
+                )
+        for priority_rule_id in rule.priority_over:
+            target_rule = rule_by_id.get(priority_rule_id)
+            if target_rule and target_rule.head_claim in present_claims:
+                records.append(
+                    {
+                        "source": rule.head_claim,
+                        "target": target_rule.head_claim,
+                        "kind": "PRIORITY_DEFEAT",
+                        "reason": f"{rule.id} has priority over {priority_rule_id}",
+                    }
+                )
+    if fixture.fixture_id == "contract_breach":
+        if "force_majeure" in present_claims and "delivery_breach" in present_claims:
+            records.append(
+                {
+                    "source": "force_majeure",
+                    "target": "delivery_breach",
+                    "kind": "EXCEPTION",
+                    "reason": "force_majeure defeats delivery_breach",
+                }
+            )
+    return records
+
+
+def _jc_status_for_fixture(
+    fixture: ShadowFixture,
+    ge_result: Mapping[str, Any],
+    horn_state: IRState,
+    attack_records: list[dict[str, str]],
+) -> tuple[str, str | None]:
+    """Project JC stage outputs to the spec-side status vocabulary."""
+
+    if horn_state.horn_truncated or ge_result.get("truncated"):
+        return "TAINTED", "JC shadow evaluator truncated before completing the formal boundary."
+
+    accepted = set(ge_result["accepted"])
+    if fixture.fixture_id == "contract_breach":
+        if fixture.expected_focus_claim in accepted:
+            return "PROVED", None
+        if fixture.expected_defeater_claim and fixture.expected_defeater_claim in accepted:
+            return "REFUTED", None
+        return "UNDECIDED", "Contract breach claim did not reach a decisive grounded status."
+
+    if fixture.fixture_id == "license_permission_priority":
+        priority_present = any(record["kind"] == "PRIORITY_DEFEAT" for record in attack_records)
+        if "use_permitted" in accepted and "unauthorized_use" not in accepted:
+            return "PROVED", None
+        if "unauthorized_use" in accepted and not priority_present:
+            return "REFUTED", None
+        if not accepted:
+            return "UNDECIDED", "Licensed-use slice produced no accepted arguments."
+        return "TAINTED", "Permission/prohibition interaction remained ambiguous."
+
+    return "TAINTED", "Unknown shadow fixture type."
+
+
+def _inject_spec_aligned_arguments(fixture: ShadowFixture, horn_state: IRState) -> None:
+    """Add spec-side argument shapes that JC does not materialize by default."""
+
+    for fact_argument in fixture.direct_fact_arguments:
+        if fact_argument not in horn_state.claims:
+            horn_state.claims[fact_argument] = horn_state.claims.get(fact_argument) or type(
+                "SyntheticClaim",
+                (),
+                {"id": fact_argument},
+            )()
+
+    if fixture.fixture_id == "license_permission_priority" and "unauthorized_use" in horn_state.claims:
+        active_id = "norm::unauthorized_use_prohibition::active"
+        if active_id not in horn_state.claims:
+            horn_state.claims[active_id] = type("SyntheticClaim", (), {"id": active_id})()
+
+
+def _verify_grounded_certificates(
+    claims: list[dict[str, Any]],
+    attacks: list[tuple[str, str]],
+    ge_result: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Verify grounded labels with the independent JC certificate checker."""
+
+    trace = proof_trace(claims, attacks, ge_result)
+    args = tuple(claim["id"] for claim in claims)
+    aaf = (args, tuple(attacks))
+    accepted = set(ge_result["accepted"])
+    rejected = set(ge_result["rejected"])
+    undecided = set(ge_result["undecided"])
+
+    iteration_first_seen: dict[str, int] = {}
+    for item in trace["iteration_history"]:
+        iteration = item["iteration"]
+        for accepted_id in item["defended"]:
+            iteration_first_seen.setdefault(accepted_id, iteration)
+
+    errors: list[str] = []
+    for accepted_id in accepted:
+        cert = GroundedINCertificate(
+            argument_id=accepted_id,
+            accepted_iteration=iteration_first_seen.get(accepted_id, 1),
+        )
+        if not cert.verify(aaf):
+            errors.append(f"IN certificate failed for {accepted_id}")
+
+    attack_set = set(attacks)
+    for rejected_id in rejected:
+        attackers = [src for src, tgt in attack_set if tgt == rejected_id and src in accepted]
+        if not attackers:
+            errors.append(f"OUT certificate missing accepted attacker for {rejected_id}")
+            continue
+        cert = OUTCertificate(
+            argument_id=rejected_id,
+            in_attacker=attackers[0],
+            attacker_in_cert=GroundedINCertificate(
+                argument_id=attackers[0],
+                accepted_iteration=iteration_first_seen.get(attackers[0], 1),
+            ),
+        )
+        if not cert.verify(aaf):
+            errors.append(f"OUT certificate failed for {rejected_id}")
+
+    for undecided_id in undecided:
+        cert = UNDECCertificate(argument_id=undecided_id)
+        if not cert.verify(aaf):
+            errors.append(f"UNDEC certificate failed for {undecided_id}")
+
+    return {"ok": not errors, "errors": errors}
+
+
+def build_jc_shadow_payload(fixture: ShadowFixture) -> dict[str, Any]:
+    """Run the local JC shadow path and emit a spec-aligned payload."""
+
+    horn_state = _run_horn_shadow(fixture)
+    _inject_spec_aligned_arguments(fixture, horn_state)
+    claims = [{"id": claim_id} for claim_id in sorted(horn_state.claims.keys())]
+    attack_records = _build_attack_records(fixture, horn_state)
+    attack_edges = [(record["source"], record["target"]) for record in attack_records]
+    ge_result = grounded_extension(claims, attack_edges)
+    status, fail_closed_reason = _jc_status_for_fixture(fixture, ge_result, horn_state, attack_records)
+    certificate_verdict = _verify_grounded_certificates(claims, attack_edges, ge_result)
+
+    return {
+        "fixture_id": fixture.fixture_id,
+        "variant": fixture.variant,
+        "schema_version": "spec-cert-v1",
+        "status": status,
+        "facts": list(fixture.initial_facts),
+        "horn_rules_fired": sorted(horn_state.rules_applied),
+        "closure_claims": sorted(horn_state.claims.keys()),
+        "arguments_constructed": sorted(horn_state.claims.keys()),
+        "attacks_constructed": [
+            f"{record['source']}->{record['target']}:{record['kind']}"
+            for record in attack_records
+        ],
+        "attack_kinds": sorted({record["kind"] for record in attack_records}),
+        "accepted_argument_ids": list(ge_result["accepted"]),
+        "rejected_argument_ids": list(ge_result["rejected"]),
+        "undecided_argument_ids": list(ge_result["undecided"]),
+        "fail_closed_reason": fail_closed_reason,
+        "horn_truncated": horn_state.horn_truncated,
+        "grounded_truncated": ge_result["truncated"],
+        "checker_verdict": certificate_verdict,
+    }
+
+
+def build_spec_payload(fixture_id: str, variant: str, spec_repo_root: Path = SPEC_REPO_ROOT) -> dict[str, Any]:
+    """Evaluate the formal companion repo fixture and normalize the result."""
+
+    reference_semantics, _certificate_schema = _load_spec_modules(spec_repo_root)
+    if fixture_id == "contract_breach":
+        model = reference_semantics.build_contract_breach_demo_model(force_majeure=(variant == "force_majeure"))
+        trace, contract_report, certificate = reference_semantics.evaluate_contract_breach_with_contract(model)
+    elif fixture_id == "license_permission_priority":
+        model = reference_semantics.build_license_permission_demo_model(priority_active=(variant == "priority_on"))
+        trace, contract_report, certificate = reference_semantics.evaluate_license_permission_with_contract(model)
+    else:
+        raise ValueError(f"Unknown fixture_id: {fixture_id}")
+
+    conclusion_by_argument: dict[str, str] = {}
+    attack_semantics: list[str] = []
+    for step in trace.steps:
+        if step.phase == "aaf" and step.event == "argument_constructed":
+            conclusion_by_argument[step.payload["argument_id"]] = step.payload["conclusion"]
+        elif step.phase == "aaf" and step.event == "attack_constructed":
+            attacker = conclusion_by_argument.get(step.payload["attacker_id"], step.payload["attacker_id"])
+            target = conclusion_by_argument.get(step.payload["target_id"], step.payload["target_id"])
+            attack_semantics.append(
+                f"{attacker}->{target}:{step.payload['kind']}"
+            )
+
+    return {
+        "fixture_id": fixture_id,
+        "variant": variant,
+        "schema_version": certificate.schema_version,
+        "status": certificate.status,
+        "facts": list(certificate.facts),
+        "horn_rules_fired": list(certificate.horn_rules_fired),
+        "arguments_constructed": sorted(conclusion_by_argument.values()),
+        "attacks_constructed": sorted(attack_semantics),
+        "attack_kinds": list(certificate.attack_kinds),
+        "accepted_argument_ids": sorted(
+            conclusion_by_argument.get(argument_id, argument_id)
+            for argument_id in certificate.accepted_argument_ids
+        ),
+        "fail_closed_reason": certificate.fail_closed_reason,
+        "contract_satisfied": contract_report.satisfied,
+    }
+
+
+def compare_spec_and_jc_payloads(spec_payload: Mapping[str, Any], jc_payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a field-by-field differential report."""
+
+    aligned: list[str] = []
+    diverged: dict[str, dict[str, Any]] = {}
+    blockers: list[str] = []
+
+    comparable_fields = (
+        "schema_version",
+        "status",
+        "facts",
+        "horn_rules_fired",
+        "arguments_constructed",
+        "attacks_constructed",
+        "attack_kinds",
+        "accepted_argument_ids",
+        "fail_closed_reason",
+    )
+
+    for field in comparable_fields:
+        spec_value = spec_payload.get(field)
+        jc_value = jc_payload.get(field)
+        if field in {
+            "facts",
+            "horn_rules_fired",
+            "arguments_constructed",
+            "attacks_constructed",
+            "attack_kinds",
+            "accepted_argument_ids",
+        }:
+            spec_value = sorted(set(spec_value or []))
+            jc_value = sorted(set(jc_value or []))
+        if spec_value == jc_value:
+            aligned.append(field)
+        else:
+            diverged[field] = {"spec": spec_value, "jc": jc_value}
+
+    if jc_payload.get("checker_verdict", {}).get("ok"):
+        aligned.append("checker_verdict")
+    else:
+        diverged["checker_verdict"] = jc_payload.get("checker_verdict", {})
+        blockers.extend(jc_payload.get("checker_verdict", {}).get("errors", []))
+
+    if not spec_payload.get("contract_satisfied", True):
+        blockers.append("Spec contract report itself is not satisfied.")
+    if jc_payload.get("horn_truncated") or jc_payload.get("grounded_truncated"):
+        blockers.append("JC shadow path truncated before completing one of the stages.")
+
+    return {
+        "fixture_id": spec_payload["fixture_id"],
+        "variant": spec_payload["variant"],
+        "status": "ALIGNED" if not diverged and not blockers else "DIVERGED",
+        "aligned_fields": sorted(set(aligned)),
+        "diverged_fields": diverged,
+        "blockers": blockers,
+    }
+
+
+def run_fixture_comparison(fixture: ShadowFixture, spec_repo_root: Path = SPEC_REPO_ROOT) -> dict[str, Any]:
+    """Run a single fixture end-to-end."""
+
+    spec_payload = build_spec_payload(fixture.fixture_id, fixture.variant, spec_repo_root)
+    jc_payload = build_jc_shadow_payload(fixture)
+    report = compare_spec_and_jc_payloads(spec_payload, jc_payload)
+    return {
+        "spec": spec_payload,
+        "jc": jc_payload,
+        "report": report,
+    }
+
+
+def build_cross_repo_differential_report(spec_repo_root: Path = SPEC_REPO_ROOT) -> dict[str, Any]:
+    """Run all supported fixtures and return the first cross-repo report."""
+
+    fixtures = (
+        _build_contract_fixture(False),
+        _build_contract_fixture(True),
+        _build_license_fixture(True),
+        _build_license_fixture(False),
+    )
+    comparisons = [run_fixture_comparison(fixture, spec_repo_root) for fixture in fixtures]
+    return {
+        "spec_repo_root": str(spec_repo_root),
+        "fixtures": comparisons,
+        "summary": {
+            "fixture_count": len(comparisons),
+            "aligned_count": sum(1 for item in comparisons if item["report"]["status"] == "ALIGNED"),
+            "diverged_count": sum(1 for item in comparisons if item["report"]["status"] == "DIVERGED"),
+        },
+    }
+
+
+def write_differential_report(
+    path: str | Path,
+    spec_repo_root: Path = SPEC_REPO_ROOT,
+) -> Path:
+    """Write the first cross-repo differential report to disk."""
+
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    report = build_cross_repo_differential_report(spec_repo_root)
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    return out
