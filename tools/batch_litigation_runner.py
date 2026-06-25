@@ -38,6 +38,24 @@ def make_tort_rules() -> list[LegalRule]:
     ]
 
 
+def make_criminal_rules() -> list[LegalRule]:
+    return [
+        LegalRule(id="rule::theft_act", premise_atoms=["taking_property", "without_consent", "intent_to_deprive"], head_claim="actus_reus::theft", norm_modality="CONSTITUTIVE"),
+        LegalRule(id="rule::theft_mens_rea", premise_atoms=["actus_reus::theft", "knowingly"], head_claim="crime::theft", norm_modality="CONSTITUTIVE"),
+        LegalRule(id="rule::self_defense", premise_atoms=["imminent_threat", "proportional_force"], head_claim="defense::self_defense", norm_modality="PERMISSION", priority_over=["crime::assault"]),
+        LegalRule(id="rule::assault_basic", premise_atoms=["physical_contact", "without_consent", "harm_caused"], head_claim="crime::assault", norm_modality="CONSTITUTIVE"),
+    ]
+
+
+def make_admin_rules() -> list[LegalRule]:
+    return [
+        LegalRule(id="rule::license_required", premise_atoms=["regulated_activity", "no_license_held"], head_claim="admin_violation::unlicensed", norm_modality="PROHIBITION"),
+        LegalRule(id="rule::license_granted", premise_atoms=["application_approved", "fees_paid", "conditions_met"], head_claim="license::active", norm_modality="CONSTITUTIVE"),
+        LegalRule(id="rule::license_defense", premise_atoms=["admin_violation::unlicensed", "license::active"], head_claim="license::active", norm_modality="PERMISSION", priority_over=["admin_violation::unlicensed"]),
+        LegalRule(id="rule::environmental_harm", premise_atoms=["discharge_above_limit", "protected_area"], head_claim="admin_violation::environmental", norm_modality="PROHIBITION"),
+    ]
+
+
 BATCH_CASES: list[dict[str, Any]] = [
     {
         "case_id": "batch::contract_plain",
@@ -69,6 +87,30 @@ BATCH_CASES: list[dict[str, Any]] = [
         "facts": ["duty_of_care", "breach_of_duty", "causation", "damage"],
         "rules_fn": "make_tort_rules",
     },
+    {
+        "case_id": "batch::criminal_theft",
+        "domain": "criminal",
+        "facts": ["taking_property", "without_consent", "intent_to_deprive", "knowingly"],
+        "rules_fn": "make_criminal_rules",
+    },
+    {
+        "case_id": "batch::criminal_self_defense",
+        "domain": "criminal",
+        "facts": ["physical_contact", "without_consent", "harm_caused", "imminent_threat", "proportional_force"],
+        "rules_fn": "make_criminal_rules",
+    },
+    {
+        "case_id": "batch::admin_unlicensed",
+        "domain": "administrative",
+        "facts": ["regulated_activity", "no_license_held"],
+        "rules_fn": "make_admin_rules",
+    },
+    {
+        "case_id": "batch::admin_licensed",
+        "domain": "administrative",
+        "facts": ["regulated_activity", "application_approved", "fees_paid", "conditions_met"],
+        "rules_fn": "make_admin_rules",
+    },
 ]
 
 
@@ -78,6 +120,8 @@ def run_batch(output_dir: str | None = None) -> Dict[str, Any]:
         "make_contract_rules": make_contract_rules,
         "make_license_rules": make_license_rules,
         "make_tort_rules": make_tort_rules,
+        "make_criminal_rules": make_criminal_rules,
+        "make_admin_rules": make_admin_rules,
     }
 
     results: list[Dict[str, Any]] = []
