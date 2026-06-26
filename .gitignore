@@ -42,7 +42,6 @@
 .DS_Store
 .audit-*.md
 .audit-version.json
-.claude/
 .env
 .env.*
 .github/converge-briefing.md
