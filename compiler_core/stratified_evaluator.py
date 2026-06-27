@@ -64,10 +64,9 @@ class StratifiedEvaluator:
             return []
 
         # Stage 2: Build complete attack graph
+        evaluator_result = {"labels": {cid: cid for cid in horn_state.claims}}
         attacks = build_attack_graph_from_evaluator(
-            horn_state.claims, self.rules,
-            self.evaluator.constraint_validator,
-            horn_state, horn_state.blocked_claims
+            self.rules, evaluator_result
         )
 
         # Stage 2b: Run rebuttal checks (non-monotone part) — O(claims) with reverse index
