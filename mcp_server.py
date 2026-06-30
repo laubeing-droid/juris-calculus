@@ -32,6 +32,62 @@ from typing import Dict, Any, List, Optional
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
 
+from compiler_core.post_freeze_surface import SURFACE_TOOLS, envelope as make_envelope
+
+
+MCP_ENVELOPE_KEYS = {
+    "status",
+    "decision_status",
+    "trace",
+    "certificate",
+    "risk_labels",
+    "semantic_boundary",
+    "public_private_classification",
+    "evidence",
+}
+
+
+QUERY_TOOL_MODES = {
+    "search_rules": "search_rules",
+    "evaluate_facts": "evaluate_facts",
+    "calculate_damages": "calculate_damages",
+    "analyze_strategy": "analyze_strategy",
+    "extract_elements": "extract_elements",
+}
+
+
+LLM_TOOL_NAMES = {"evaluate_facts_llm", "align_concepts_llm", "generate_nlni_llm"}
+
+
+def _is_envelope(value: Any) -> bool:
+    """Return True when a tool already produced the public MCP envelope."""
+
+    return isinstance(value, dict) and MCP_ENVELOPE_KEYS.issubset(value.keys())
+
+
+def _wrap_tool_result(tool_name: str, raw: Any, *, evidence: List[str] | None = None) -> Dict[str, Any]:
+    """Wrap legacy tool output without upgrading any legal decision state."""
+
+    if _is_envelope(raw):
+        return raw
+    payload = raw if isinstance(raw, dict) else {"value": raw}
+    status = "error" if isinstance(payload, dict) and "error" in payload else "ok"
+    risk_labels = []
+    decision_status = None
+    if tool_name in LLM_TOOL_NAMES or payload.get("tainted"):
+        status = "blocked" if status == "ok" else status
+        decision_status = "TAINTED"
+        risk_labels.append("LLM_CANDIDATE_ONLY")
+    if payload.get("trust") in {"UNVERIFIED", "ENGINEERING_BASELINE"}:
+        risk_labels.append(str(payload["trust"]))
+    return make_envelope(
+        payload,
+        status=status,
+        decision_status=decision_status,
+        risk_labels=risk_labels,
+        evidence=evidence or [f"mcp_server:{tool_name}"],
+    )
+
 
 # ═══════════════════════════════════════════════
 # MCP 协议层 (轻量实现，无需外部依赖)
@@ -63,6 +119,8 @@ def _juris_evaluate_core(domain, facts_json, dry_run=False, source_law="CN"):
         }
     try:
         cfg = DomainConfig(domain=LegalDomain.CIVIL)
+        blocked = []
+        facts_text = " ".join(str(v) for v in facts.values()).lower()
 
         # ?? ???: US ???? CN ??????? ??
         us_keywords = [
@@ -81,8 +139,6 @@ def _juris_evaluate_core(domain, facts_json, dry_run=False, source_law="CN"):
                     blocked.append("USC_BLUEPRINT_MISMATCH: " + cit.get("citation","?") + " -> Title " + str(cit.get("title","?")) + " not found")
         except Exception:
             pass
-        blocked = []
-        facts_text = " ".join(str(v) for v in facts.values()).lower()
         for kw in us_keywords:
             if kw in facts_text:
                 blocked.append(f"US ????: '{kw}' ?????????")
@@ -133,6 +189,7 @@ class MCPServer:
         from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
         from compiler_core.domain_config import DomainConfig, LegalDomain
         from compiler_core.types import LegalFact, IRState
+        from compiler_core.prc_collision_engine import PRCCollisionEngine
         from tools.distill_jurisdiction import FastPathInterceptor, route_state_law_to_backbone
         from tools.action_agent.compiler import MemoCompiler
         from tools.action_agent.state_to_text import get_citation as _get_citation
@@ -148,7 +205,7 @@ class MCPServer:
         self._route_state = route_state_law_to_backbone
         self._MemoCompiler = MemoCompiler
         self._get_citation = _get_citation
-        self._PRCAdapter = PRCAdapter
+        self._PRCAdapter = PRCCollisionEngine
 
         # 预加载引擎
         from compiler_core.plugin_registry import registry
@@ -242,37 +299,136 @@ class MCPServer:
 
         # legal://operator-schemas (动态生成 — 算子自文档化)
         if path == "operator-schemas":
-            from tools.operator_registry import get_all_schemas
-            return json.dumps(get_all_schemas(), ensure_ascii=False, indent=2)
+            from tools.operator_registry import OperatorRegistry
+            return json.dumps(OperatorRegistry.get_all_schemas(), ensure_ascii=False, indent=2)
 
         # legal://task-schema (动态生成 — Codex 任务协议)
         if path == "task-schema":
-            from tools.operator_registry import generate_task_schema
-            return json.dumps(generate_task_schema(), ensure_ascii=False, indent=2)
+            from tools.operator_registry import OperatorRegistry
+            return json.dumps(OperatorRegistry.generate_legal_task_schema(), ensure_ascii=False, indent=2)
 
         return None
 
     # ── 工具端点 ──
     def _call_tool(self, tool_name: str, arguments: Dict) -> Dict:
         """工具调用分发"""
-        self._lazy_init()
+        if tool_name not in self.manifest.get("tools", {}):
+            return make_envelope(
+                {"error": f"Unknown tool: {tool_name}"},
+                status="error",
+                risk_labels=["UNKNOWN_TOOL"],
+                evidence=["mcp_manifest.json"],
+            )
 
-        if tool_name == "trirail_collide":
-            return self._tool_trirail_collide(arguments)
-        elif tool_name == "check_threat":
-            return self._tool_check_threat(arguments)
-        elif tool_name == "generate_memo":
-            return self._tool_generate_memo(arguments)
-        elif tool_name == "route_state":
-            return self._tool_route_state(arguments)
-        elif tool_name == "get_citation":
-            return self._tool_get_citation(arguments)
-        elif tool_name == "get_operator_schemas":
-            return self._tool_get_operator_schemas(arguments)
-        elif tool_name == "generate_task_schema":
-            return self._tool_generate_task_schema(arguments)
-        else:
-            return {"error": f"Unknown tool: {tool_name}"}
+        try:
+            if tool_name in SURFACE_TOOLS:
+                return SURFACE_TOOLS[tool_name](arguments)
+
+            if tool_name in QUERY_TOOL_MODES:
+                raw = juris_query(
+                    QUERY_TOOL_MODES[tool_name],
+                    arguments.get("query", arguments.get("fact_text", "")),
+                    dict(arguments),
+                )
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "trirail_collide":
+                self._lazy_init()
+                return _wrap_tool_result(tool_name, self._tool_trirail_collide(arguments))
+
+            if tool_name == "check_threat":
+                self._lazy_init()
+                facts = arguments.get("facts", [])
+                threat = self._threat.intercept(facts)
+                raw = {"hit": bool(threat), "threat": threat or {}, "facts_checked": facts}
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "generate_memo":
+                raw = {
+                    "case_id": arguments.get("case_id", "unknown"),
+                    "memo_markdown": "PUBLIC TOY MEMO\n\nChecker-backed kernel output only; no private strategy.",
+                    "source": "public_kernel_template",
+                }
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "route_state":
+                self._lazy_init()
+                raw_fact = arguments.get("raw_fact", "")
+                state_code = arguments.get("state_code", "")
+                raw = self._route_state(raw_fact, state_code) if state_code else self._route_state(raw_fact)
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "get_citation":
+                self._lazy_init()
+                rule_id = arguments.get("rule_id", "")
+                raw = {"rule_id": rule_id, "citation": self._get_citation(rule_id)}
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "get_operator_schemas":
+                from tools.operator_registry import OperatorRegistry
+
+                return _wrap_tool_result(tool_name, {"schemas": OperatorRegistry.get_all_schemas()})
+
+            if tool_name == "generate_task_schema":
+                from tools.operator_registry import OperatorRegistry
+
+                focus = arguments.get("jurisdiction_focus")
+                return _wrap_tool_result(tool_name, OperatorRegistry.generate_legal_task_schema(focus))
+
+            if tool_name == "evaluate_facts_llm":
+                return _wrap_tool_result(tool_name, evaluate_facts_llm(arguments.get("fact_text", "")))
+
+            if tool_name == "align_concepts_llm":
+                return _wrap_tool_result(
+                    tool_name,
+                    align_concepts_llm(arguments.get("cn_concept", ""), arguments.get("us_concept", "")),
+                )
+
+            if tool_name == "generate_nlni_llm":
+                return _wrap_tool_result(tool_name, generate_nlni_llm(arguments.get("case_description", "")))
+
+            if tool_name == "rule_router":
+                from compiler_core.rule_router import RuleRouter
+
+                raw = RuleRouter().route(arguments.get("fact_texts", []), arguments.get("top_k"))
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "stratified_evaluate":
+                from compiler_core.config_paths import rules_path
+                from compiler_core.stratified_evaluator import StratifiedEvaluator
+                from compiler_core.types import IRState, LegalFact
+
+                state = IRState()
+                for fact_id, description in (arguments.get("facts", {}) or {}).items():
+                    state.facts[fact_id] = LegalFact(id=fact_id, description=str(description))
+                claims = StratifiedEvaluator(rules_path("zh_CN")).evaluate(state)
+                raw = {
+                    "claim_count": len(claims),
+                    "claims": [
+                        {"id": claim.id, "trust": claim.get_trust_label(), "confidence": claim.confidence}
+                        for claim in claims[:20]
+                    ],
+                }
+                return _wrap_tool_result(tool_name, raw)
+
+            if tool_name == "neural_leaf_status":
+                from compiler_core.neural_leaf import NeuralLeafRegistry
+
+                return _wrap_tool_result(tool_name, NeuralLeafRegistry().cold_start_status())
+
+            return make_envelope(
+                {"error": f"Manifest tool has no handler: {tool_name}"},
+                status="error",
+                risk_labels=["MISSING_HANDLER"],
+                evidence=["mcp_manifest.json", "mcp_server.py"],
+            )
+        except Exception as exc:
+            return make_envelope(
+                {"error": str(exc), "tool": tool_name},
+                status="error",
+                risk_labels=["TOOL_EXCEPTION"],
+                evidence=["mcp_server.py"],
+            )
 
     # ── 工具实现 ──
     def _tool_trirail_collide(self, args: Dict) -> Dict:

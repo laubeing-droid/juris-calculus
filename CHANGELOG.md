@@ -1,5 +1,15 @@
 # juris-calculus Changelog
 
+## Unreleased (2026-07-01)
+
+### Playbook closure: differential gate + public kernel surface
+
+- Added `compiler_core/post_freeze_surface.py` for Playbook F1-F14 public-kernel outputs: certificate report, missing-evidence suggestions, attack graph trace, spec differential, batch audit, candidate gate, governance, impact, route guard, engineering damages baseline, sample-deviation guard, stress fixtures, and private-layer boundary contract.
+- Expanded MCP manifest to 28 tools and aligned every manifest tool with `mcp_server.py` dispatch.
+- Standardized MCP/API responses with the public envelope required by the Playbook.
+- Added `runtime/spec_shadow_report.json` and `runtime/spec_shadow_report.md` differential evidence: 10 aligned fixtures, 0 divergences.
+- Updated formal runtime conformance wording to the current legal-math four-slice boundary and removed stale theorem-count and ghost-file wording.
+
 ## v3.0.0 (2026-06-18)
 
 ### Full Math Model Landing + 21,144 Rules + 100 Optimization Tools

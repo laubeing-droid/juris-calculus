@@ -1,0 +1,965 @@
+{
+  "spec_repo_root": "D:\\Codex\\数学证明\\legal-math-modeling",
+  "legal_math_head": "2ab6cda38f2392cd048bc0643e56fb5f9fc46708",
+  "jc_head": "5fa342d2edb6b06b6bdb97b1265f3a8d63484b71",
+  "status": "PASS",
+  "fixtures": [
+    {
+      "spec": {
+        "fixture_id": "contract_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "contract_exists",
+          "delivery_due",
+          "goods_not_delivered"
+        ],
+        "horn_rules_fired": [
+          "rule::delivery_obligation",
+          "rule::failed_delivery"
+        ],
+        "arguments_constructed": [
+          "delivery_breach",
+          "norm::delivery::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "delivery_breach",
+          "norm::delivery::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "contract_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "contract_exists",
+          "delivery_due",
+          "goods_not_delivered"
+        ],
+        "horn_rules_fired": [
+          "rule::delivery_obligation",
+          "rule::failed_delivery"
+        ],
+        "closure_claims": [
+          "delivery_breach",
+          "norm::delivery::active"
+        ],
+        "arguments_constructed": [
+          "delivery_breach",
+          "norm::delivery::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "delivery_breach",
+          "norm::delivery::active"
+        ],
+        "rejected_argument_ids": [],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "contract_breach",
+        "variant": "plain",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "contract_breach",
+        "variant": "force_majeure",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "contract_exists",
+          "delivery_due",
+          "force_majeure",
+          "goods_not_delivered"
+        ],
+        "horn_rules_fired": [
+          "rule::delivery_obligation",
+          "rule::failed_delivery"
+        ],
+        "arguments_constructed": [
+          "delivery_breach",
+          "force_majeure",
+          "norm::delivery::active"
+        ],
+        "attacks_constructed": [
+          "force_majeure->delivery_breach:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "force_majeure",
+          "norm::delivery::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "contract_breach",
+        "variant": "force_majeure",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "contract_exists",
+          "delivery_due",
+          "goods_not_delivered",
+          "force_majeure"
+        ],
+        "horn_rules_fired": [
+          "rule::delivery_obligation",
+          "rule::failed_delivery"
+        ],
+        "closure_claims": [
+          "delivery_breach",
+          "force_majeure",
+          "norm::delivery::active"
+        ],
+        "arguments_constructed": [
+          "delivery_breach",
+          "force_majeure",
+          "norm::delivery::active"
+        ],
+        "attacks_constructed": [
+          "force_majeure->delivery_breach:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "force_majeure",
+          "norm::delivery::active"
+        ],
+        "rejected_argument_ids": [
+          "delivery_breach"
+        ],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "contract_breach",
+        "variant": "force_majeure",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_on",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "license_signed",
+          "rights_holder_authorized",
+          "use_within_scope",
+          "used_work"
+        ],
+        "horn_rules_fired": [
+          "rule::license_status",
+          "rule::licensed_use_permission",
+          "rule::used_work"
+        ],
+        "arguments_constructed": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "attacks_constructed": [
+          "use_permitted->unauthorized_use:PRIORITY_DEFEAT",
+          "use_permitted->unauthorized_use:PRIORITY_DEFEAT"
+        ],
+        "attack_kinds": [
+          "PRIORITY_DEFEAT",
+          "PRIORITY_DEFEAT"
+        ],
+        "accepted_argument_ids": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "use_permitted"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_on",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "license_signed",
+          "rights_holder_authorized",
+          "used_work",
+          "use_within_scope"
+        ],
+        "horn_rules_fired": [
+          "rule::license_status",
+          "rule::licensed_use_permission",
+          "rule::used_work"
+        ],
+        "closure_claims": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "arguments_constructed": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "attacks_constructed": [
+          "use_permitted->unauthorized_use:PRIORITY_DEFEAT"
+        ],
+        "attack_kinds": [
+          "PRIORITY_DEFEAT"
+        ],
+        "accepted_argument_ids": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "use_permitted"
+        ],
+        "rejected_argument_ids": [
+          "unauthorized_use"
+        ],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_on",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_off",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "license_signed",
+          "rights_holder_authorized",
+          "use_within_scope",
+          "used_work"
+        ],
+        "horn_rules_fired": [
+          "rule::license_status",
+          "rule::licensed_use_permission",
+          "rule::used_work"
+        ],
+        "arguments_constructed": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_off",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "license_signed",
+          "rights_holder_authorized",
+          "used_work",
+          "use_within_scope"
+        ],
+        "horn_rules_fired": [
+          "rule::license_status",
+          "rule::licensed_use_permission",
+          "rule::used_work"
+        ],
+        "closure_claims": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "arguments_constructed": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "license_status_active",
+          "norm::unauthorized_use_prohibition::active",
+          "unauthorized_use",
+          "use_permitted"
+        ],
+        "rejected_argument_ids": [],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "license_permission_priority",
+        "variant": "priority_off",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "tort_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "breach_of_duty",
+          "causation",
+          "damage",
+          "duty_of_care"
+        ],
+        "horn_rules_fired": [
+          "rule::tort_breach"
+        ],
+        "arguments_constructed": [
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "tort_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "duty_of_care",
+          "breach_of_duty",
+          "causation",
+          "damage"
+        ],
+        "horn_rules_fired": [
+          "rule::tort_breach"
+        ],
+        "closure_claims": [
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "arguments_constructed": [
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "rejected_argument_ids": [],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "tort_breach",
+        "variant": "plain",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "tort_breach",
+        "variant": "with_negligence",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "breach_of_duty",
+          "causation",
+          "contributory_negligence",
+          "damage",
+          "duty_of_care"
+        ],
+        "horn_rules_fired": [
+          "rule::tort_breach"
+        ],
+        "arguments_constructed": [
+          "contributory_negligence",
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "attacks_constructed": [
+          "contributory_negligence->tort_liability:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "contributory_negligence",
+          "norm::tort::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "tort_breach",
+        "variant": "with_negligence",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "duty_of_care",
+          "breach_of_duty",
+          "causation",
+          "damage",
+          "contributory_negligence"
+        ],
+        "horn_rules_fired": [
+          "rule::tort_breach"
+        ],
+        "closure_claims": [
+          "contributory_negligence",
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "arguments_constructed": [
+          "contributory_negligence",
+          "norm::tort::active",
+          "tort_liability"
+        ],
+        "attacks_constructed": [
+          "contributory_negligence->tort_liability:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "contributory_negligence",
+          "norm::tort::active"
+        ],
+        "rejected_argument_ids": [
+          "tort_liability"
+        ],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "tort_breach",
+        "variant": "with_negligence",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "criminal_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "absence_of_defense",
+          "actus_reus",
+          "mens_rea"
+        ],
+        "horn_rules_fired": [
+          "rule::criminal_breach"
+        ],
+        "arguments_constructed": [
+          "criminal_liability",
+          "norm::criminal::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "criminal_liability",
+          "norm::criminal::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "criminal_breach",
+        "variant": "plain",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "actus_reus",
+          "mens_rea",
+          "absence_of_defense"
+        ],
+        "horn_rules_fired": [
+          "rule::criminal_breach"
+        ],
+        "closure_claims": [
+          "criminal_liability",
+          "norm::criminal::active"
+        ],
+        "arguments_constructed": [
+          "criminal_liability",
+          "norm::criminal::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "criminal_liability",
+          "norm::criminal::active"
+        ],
+        "rejected_argument_ids": [],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "criminal_breach",
+        "variant": "plain",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "criminal_breach",
+        "variant": "self_defense",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "absence_of_defense",
+          "actus_reus",
+          "mens_rea",
+          "self_defense"
+        ],
+        "horn_rules_fired": [
+          "rule::criminal_breach"
+        ],
+        "arguments_constructed": [
+          "criminal_liability",
+          "norm::criminal::active",
+          "self_defense"
+        ],
+        "attacks_constructed": [
+          "self_defense->criminal_liability:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "norm::criminal::active",
+          "self_defense"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "criminal_breach",
+        "variant": "self_defense",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "actus_reus",
+          "mens_rea",
+          "absence_of_defense",
+          "self_defense"
+        ],
+        "horn_rules_fired": [
+          "rule::criminal_breach"
+        ],
+        "closure_claims": [
+          "criminal_liability",
+          "norm::criminal::active",
+          "self_defense"
+        ],
+        "arguments_constructed": [
+          "criminal_liability",
+          "norm::criminal::active",
+          "self_defense"
+        ],
+        "attacks_constructed": [
+          "self_defense->criminal_liability:EXCEPTION"
+        ],
+        "attack_kinds": [
+          "EXCEPTION"
+        ],
+        "accepted_argument_ids": [
+          "norm::criminal::active",
+          "self_defense"
+        ],
+        "rejected_argument_ids": [
+          "criminal_liability"
+        ],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "criminal_breach",
+        "variant": "self_defense",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_on",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "admin_action",
+          "exceeds_authority",
+          "legal_basis_exists",
+          "no_legal_basis"
+        ],
+        "horn_rules_fired": [
+          "rule::admin_breach",
+          "rule::higher_law_validity"
+        ],
+        "arguments_constructed": [
+          "admin_action_valid",
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "attacks_constructed": [
+          "admin_action_valid->admin_illegality:PRIORITY_DEFEAT"
+        ],
+        "attack_kinds": [
+          "PRIORITY_DEFEAT"
+        ],
+        "accepted_argument_ids": [
+          "admin_action_valid",
+          "norm::admin::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_on",
+        "schema_version": "spec-cert-v1",
+        "status": "REFUTED",
+        "facts": [
+          "admin_action",
+          "exceeds_authority",
+          "no_legal_basis",
+          "legal_basis_exists"
+        ],
+        "horn_rules_fired": [
+          "rule::admin_breach",
+          "rule::higher_law_validity"
+        ],
+        "closure_claims": [
+          "admin_action_valid",
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "arguments_constructed": [
+          "admin_action_valid",
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "attacks_constructed": [
+          "admin_action_valid->admin_illegality:PRIORITY_DEFEAT"
+        ],
+        "attack_kinds": [
+          "PRIORITY_DEFEAT"
+        ],
+        "accepted_argument_ids": [
+          "admin_action_valid",
+          "norm::admin::active"
+        ],
+        "rejected_argument_ids": [
+          "admin_illegality"
+        ],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_on",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    },
+    {
+      "spec": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_off",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "admin_action",
+          "exceeds_authority",
+          "no_legal_basis"
+        ],
+        "horn_rules_fired": [
+          "rule::admin_breach"
+        ],
+        "arguments_constructed": [
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "fail_closed_reason": null,
+        "contract_satisfied": true
+      },
+      "jc": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_off",
+        "schema_version": "spec-cert-v1",
+        "status": "PROVED",
+        "facts": [
+          "admin_action",
+          "exceeds_authority",
+          "no_legal_basis"
+        ],
+        "horn_rules_fired": [
+          "rule::admin_breach"
+        ],
+        "closure_claims": [
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "arguments_constructed": [
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "attacks_constructed": [],
+        "attack_kinds": [],
+        "accepted_argument_ids": [
+          "admin_illegality",
+          "norm::admin::active"
+        ],
+        "rejected_argument_ids": [],
+        "undecided_argument_ids": [],
+        "fail_closed_reason": null,
+        "horn_truncated": false,
+        "grounded_truncated": false,
+        "checker_verdict": {
+          "ok": true,
+          "errors": []
+        }
+      },
+      "report": {
+        "fixture_id": "admin_breach",
+        "variant": "priority_off",
+        "status": "ALIGNED",
+        "aligned_fields": [
+          "accepted_argument_ids",
+          "arguments_constructed",
+          "attack_kinds",
+          "attacks_constructed",
+          "checker_verdict",
+          "facts",
+          "fail_closed_reason",
+          "horn_rules_fired",
+          "schema_version",
+          "status"
+        ],
+        "diverged_fields": {},
+        "blockers": []
+      }
+    }
+  ],
+  "summary": {
+    "fixture_count": 10,
+    "aligned_count": 10,
+    "diverged_count": 0
+  }
+}

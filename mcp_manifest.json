@@ -1,6 +1,6 @@
 {
   "name": "juris-calculus",
-  "version": "2.0.0",
+  "version": "2.1.0-local",
   "description": "Tri-Rail Cross-Jurisdictional Legal Collision Engine — HK × US × PRC",
   "vendor": "laubeing-droid",
   "protocol_version": "2024-11-05",
@@ -375,6 +375,46 @@
           }
         }
       }
+    },
+    "evaluate": {
+      "description": "Public kernel certified litigation report over toy fixtures",
+      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}}}
+    },
+    "route": {
+      "description": "Cross-jurisdiction routing guard; does not alter legal conclusions",
+      "inputSchema": {"type": "object", "properties": {"concept": {"type": "string"}, "source": {"type": "string"}, "target": {"type": "string"}}}
+    },
+    "trace": {
+      "description": "Attack graph trace with rebuttal, cycle, self-attack, and priority witness shapes",
+      "inputSchema": {"type": "object", "properties": {"graph_kind": {"type": "string", "enum": ["cycle", "self_attack", "priority"]}}}
+    },
+    "check": {
+      "description": "Fail-closed certificate boundary check for public toy reports",
+      "inputSchema": {"type": "object", "properties": {"malformed_certificate": {"type": "boolean"}}}
+    },
+    "batch": {
+      "description": "Batch case audit over public toy fixtures; single-case failures stay local",
+      "inputSchema": {"type": "object", "properties": {"count": {"type": "integer"}, "cases": {"type": "array"}}}
+    },
+    "render": {
+      "description": "Render a public toy certificate-backed litigation report",
+      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}}}
+    },
+    "diff": {
+      "description": "Run spec shadow differential against legal-math reference semantics",
+      "inputSchema": {"type": "object", "properties": {"spec_root": {"type": "string"}}}
+    },
+    "governance": {
+      "description": "Public rule-governance report with source-anchor and provenance risk queue",
+      "inputSchema": {"type": "object", "properties": {"rules": {"type": "array"}}}
+    },
+    "impact": {
+      "description": "Rule-change impact analysis without changing the original decision",
+      "inputSchema": {"type": "object", "properties": {"rule_id": {"type": "string"}, "facts": {"type": "array", "items": {"type": "string"}}}}
+    },
+    "ingest_candidate": {
+      "description": "LLM/source candidate ingestion gate; candidates cannot enter the kernel directly",
+      "inputSchema": {"type": "object", "properties": {"raw_text": {"type": "string"}, "source_span": {}, "provenance": {"type": "string"}}}
     }
   },
   "icon": "⚖️",

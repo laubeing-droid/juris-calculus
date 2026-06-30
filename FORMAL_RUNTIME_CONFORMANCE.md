@@ -1,8 +1,8 @@
-# Formal-to-Runtime Conformance — juris-calculus
+# Formal-to-Runtime Conformance - juris-calculus
 
-**Date:** 2026-06-30
+**Date:** 2026-07-01
 **Upstream formal specs:** `legal-math-modeling` (Lean 4, mathlib)
-**Control repo:** `deli-autoresearch` (specs, evidence, release boundary)
+**Control repo:** `deli-autoresearch` (source-bounded orchestration and evidence gates)
 
 ---
 
@@ -10,119 +10,75 @@
 
 | Layer | Source | Evidence |
 |-------|--------|----------|
-| Formal semantics | `legal-math-modeling/proofs/lean/juris_lean/` | `lake build JurisLean` (2954 jobs, 0 errors) |
-| Theorem manifest | `legal-math-modeling/docs/formal-release/theorem_manifest.json` | 100 entries / 94 unique theorem names / 43 core unique names |
-| Release boundary | `legal-math-modeling/docs/formal-release/FORBIDDEN_CLAIMS.md` + `ALLOWED_CLAIMS.md` | Python runtime is not Lean-proven end-to-end |
-| Runtime conformance | This document + test suite below | 296 passed, 38 skipped |
+| Formal semantics | `legal-math-modeling/proofs/lean/juris_lean/` | GitHub Actions run `28465952314` on SHA `2ab6cda38f2392cd048bc0643e56fb5f9fc46708` completed successfully with `lake build --rehash` and scan |
+| Theorem manifest | `legal-math-modeling/docs/formal-release/theorem_manifest.json` | `formal-core-v1-plus-four-slices`: 32 Lean files, 42 formal-core module theorems, 84 supporting results, 126 total checked results, 32 four-slice vertical results |
+| Release boundary | `legal-math-modeling/docs/formal-release/ALLOWED_CLAIMS.md` and release reports | legal-math provides a formal specification boundary and checked vertical slices; it does not certify the full Python runtime end to end |
+| Runtime conformance | `runtime/spec_shadow_report.json`, `runtime/spec_shadow_report.md`, and pytest | Spec shadow differential status `PASS`: 10 aligned fixtures, 0 divergences; full local pytest `312 passed, 38 skipped` |
+| MCP/API contract | `mcp_manifest.json`, `mcp_server.py`, `tests/unit/test_mcp_manifest_dispatch.py` | Manifest tools and dispatch handlers are one-to-one and return the required public envelope |
 
 ---
 
-## 2. Four Canonical Claims
+## 2. Current Canonical Claims
 
-### Claim 1: Lean proves the mathematical specification
+### Claim 1: Lean checks the formal specification boundary
 
-- 94 unique theorem names across 100 manifest entries
-- 43 core unique theorem names in the released finite monotone / Horn / Dung / weighted-norm boundary
-- Umbrella build `lake build JurisLean` succeeds (2954 jobs)
-- `AxiomAudit` discloses only Lean built-in axiom dependencies (`propext`, `Classical.choice`, `Quot.sound`)
-- Planned ghost files such as `LegalSyntax.lean`, `DDLDefinitions.lean`, and `CertificateChecker.lean` do not exist and are not claimed as built
+- The current formal release boundary is `formal-core-v1-plus-four-slices`.
+- The checked Lean surface includes the prior formal core plus contract breach, license, permission, and priority vertical slices.
+- `LegalSyntax.lean`, `DDLDefinitions.lean`, `CertificateChecker.lean`, `HornAAFContract.lean`, `AttackDecision.lean`, `SafetyTheorems.lean`, and `EndToEnd.lean` are real checked modules in the upstream repo.
+- Custom-axiom disclosure remains a release boundary item; Lean built-in axioms are disclosed separately from project-level assumptions.
 
-### Claim 2: JC runtime passes differential, checker, and refinement tests
+### Claim 2: JC runtime passes differential, checker, and MCP contract tests
 
-| Test Suite | Tests | Status |
-|------------|-------|--------|
-| `test_canonical_serialization.py` | 8 | PASS |
-| `test_independent_checker.py` | 10 | PASS |
-| `test_stratified_evaluator.py` | 4 | PASS |
-| Full suite (`pytest tests`) | 296 | PASS (38 skipped: spacy deps) |
+| Test Suite | Status |
+|------------|--------|
+| `tests/unit/test_spec_shadow_harness.py` | PASS |
+| `tests/unit/test_post_freeze_surface.py` | PASS |
+| `tests/unit/test_mcp_manifest_dispatch.py` | PASS |
+| `runtime/spec_shadow_report.json` | PASS, 10 aligned fixtures |
 
-The StratifiedEvaluator's 4-stage pipeline (Horn closure → AAF construction → grounded extension → trust labels) is operational as of commit `8c802df`.
+The StratifiedEvaluator pipeline remains an engineering runtime implementation: Horn closure -> AAF construction -> grounded extension -> trust-label projection.
 
-### Claim 3: Three deferred domain axioms are retained, not proven
+### Claim 3: Trust-label and LLM gates fail closed
 
-The following are planned non-blocking domain axioms in `legal-math-modeling/SORRY_LEDGER.md`. `DDLDefinitions.lean` does not yet exist, so JC must not describe these as built or Lean-proven:
+- LLM outputs are candidates only; they are marked `TAINTED`/`CANDIDATE_ONLY` and do not enter the kernel directly.
+- Engineering estimates such as damages baselines use `ENGINEERING_BASELINE` and do not modify `DecisionStatus`.
+- Cross-jurisdiction routing guards can block or mark risk, but they do not prove legal equivalence and do not change the formal kernel semantics.
 
-1. `violation_implies_norm_active`
-2. `permission_no_direct_violation`
-3. `constitutive_no_direct_violation`
+### Claim 4: MCP/API outputs use the public envelope
 
-Registered upstream as planned domain gaps. JC must NOT claim these are Lean-proven.
+Every manifest tool returns:
 
-### Claim 4: Trust-label layer is fail-closed
-
-The `DecisionStatus` enum (`PROVED`, `REFUTED`, `UNDECIDED`, `TAINTED`) follows a no-upgrade contract:
-- TAINTED decisions always fail the certificate checker (returns false)
-- Grounded extension only accepts arguments with confidence > 0
-- The independent grounded checker (`independent_grounded_checker.py`) cross-validates JC's evaluator output
-
-Fail-closed test: `tests/unit/test_litigation_renderer.py::test_fail_closed_boundary`
-
----
-
-## 3. Runtime Contract Boundaries
-
-### 3.1 Canonical Serialization
-
-Module: `compiler_core/canonical_serialization.py`
-
-- AAF: deterministic JSON with sorted arguments and attacks
-- Horn: deterministic JSON with sorted rules
-- Round-trip: serialize → deserialize → serialize produces identical output
-- Tests: `tests/test_canonical_serialization.py` (8 tests)
-
-### 3.2 Independent Grounded Checker
-
-Module: `compiler_core/independent_grounded_checker.py`
-
-- Reimplements Dung grounded extension from scratch (not importing JC evaluator)
-- Cross-checks JC evaluator output against its own computation
-- Detects wrong labels (IN/OUT/UNDEC mismatch)
-- Tests: `tests/test_independent_checker.py` (10 tests)
-
-### 3.3 Certificate Emission
-
-Module: `compiler_core/certificate_checker.py`
-
-- 4 certificate types: `HornCertificate`, `GroundedINCertificate`, `OUTCertificate`, `UNDECCertificate`
-- Each embeds input hash, decision, and derivation witnesses
-- Designed for independent verification (checker does not call production evaluator)
-
-### 3.4 StratifiedEvaluator Pipeline
-
-Module: `compiler_core/stratified_evaluator.py`
-
-- Stage 1: `evaluate_horn()` — pure monotone Horn closure
-- Stage 2: `build_attack_graph_from_evaluator()` — AAF attack edges from priority/exception
-- Stage 3: `grounded_extension()` — Dung deterministic fixed-point
-- Stage 4: Trust label projection + allowed/forbidden marking
-- Returns `List[LegalClaim]`
+```json
+{
+  "status": "ok|error|blocked",
+  "decision_status": "PROVED|REFUTED|UNDECIDED|TAINTED|null",
+  "trace": {},
+  "certificate": {},
+  "risk_labels": [],
+  "semantic_boundary": "ENGINEERING_ONLY|SEMANTIC_BOUNDARY",
+  "public_private_classification": "PUBLIC_KERNEL|PRIVATE_LAYER|BLOCKED",
+  "evidence": [],
+  "payload": {}
+}
+```
 
 ---
 
-## 4. What JC Does NOT Claim
+## 3. What JC Does Not Claim
 
-1. JC runtime is NOT "fully Lean-proven." Lean proves the mathematical specification; JC implements it in Python with runtime tests.
-2. The 3 deferred domain axioms are NOT proven. They are model structural gaps.
-3. `UnifiedModel.lean` is a standalone composition proof (Kripke → Horn → AAF → Banach). It is not part of the JC runtime contract.
-4. Safety conjuncts in `certified_end_to_end_refinement` are caller-provided premises, not derived from the checker.
+1. JC does not claim the full Python runtime is Lean-checked end to end.
+2. JC does not let LLM confidence, case similarity, or empirical damages estimation override symbolic status.
+3. JC does not treat cross-jurisdiction routing as a proof of legal equivalence.
+4. JC does not publish customer evidence, private rule assets, lawyer workflow templates, or litigation strategy.
 
 ---
 
-## 5. Verification Commands
+## 4. Verification Commands
 
-```bash
-# Lean formal proof chain
-cd legal-math-modeling/proofs/lean/juris_lean && lake build JurisLean
-
-# JC full test suite
-cd juris-calculus && python -m pytest tests -q -ra
-
-# JC StratifiedEvaluator specifically
-cd juris-calculus && python -m pytest tests/unit/test_stratified_evaluator.py -v
-
-# JC canonical serialization
-cd juris-calculus && python -m pytest tests/test_canonical_serialization.py -v
-
-# JC independent checker
-cd juris-calculus && python -m pytest tests/test_independent_checker.py -v
+```powershell
+$env:LEGAL_MATH_MODELING_ROOT = "D:\Codex\数学证明\legal-math-modeling"
+python -m pytest tests\unit\test_spec_shadow_harness.py -q
+python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+python -m compiler_core.spec_shadow_harness --spec-root "$env:LEGAL_MATH_MODELING_ROOT" --output .\runtime\spec_shadow_report.json --markdown-output .\runtime\spec_shadow_report.md
 ```

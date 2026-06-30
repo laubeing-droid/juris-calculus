@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import importlib
+import argparse
 import json
 import os
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +42,20 @@ def _default_spec_repo_root() -> Path:
 
 
 SPEC_REPO_ROOT = _default_spec_repo_root()
+JC_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _git_head(path: Path) -> str:
+    """Return the git HEAD for a repo, or UNKNOWN when unavailable."""
+
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "UNKNOWN"
 
 
 @dataclass(frozen=True)
@@ -606,6 +622,7 @@ def run_fixture_comparison(fixture: ShadowFixture, spec_repo_root: Path = SPEC_R
 def build_cross_repo_differential_report(spec_repo_root: Path = SPEC_REPO_ROOT) -> dict[str, Any]:
     """Run all supported fixtures and return the first cross-repo report."""
 
+    spec_repo_root = Path(spec_repo_root).resolve()
     fixtures = (
         _build_contract_fixture(False),
         _build_contract_fixture(True),
@@ -619,13 +636,17 @@ def build_cross_repo_differential_report(spec_repo_root: Path = SPEC_REPO_ROOT) 
         _build_admin_fixture(False),
     )
     comparisons = [run_fixture_comparison(fixture, spec_repo_root) for fixture in fixtures]
+    diverged = sum(1 for item in comparisons if item["report"]["status"] == "DIVERGED")
     return {
         "spec_repo_root": str(spec_repo_root),
+        "legal_math_head": _git_head(spec_repo_root),
+        "jc_head": _git_head(JC_REPO_ROOT),
+        "status": "PASS" if diverged == 0 else "FAIL",
         "fixtures": comparisons,
         "summary": {
             "fixture_count": len(comparisons),
             "aligned_count": sum(1 for item in comparisons if item["report"]["status"] == "ALIGNED"),
-            "diverged_count": sum(1 for item in comparisons if item["report"]["status"] == "DIVERGED"),
+            "diverged_count": diverged,
         },
     }
 
@@ -641,3 +662,60 @@ def write_differential_report(
     report = build_cross_repo_differential_report(spec_repo_root)
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return out
+
+
+def write_differential_markdown(
+    path: str | Path,
+    report: Mapping[str, Any],
+) -> Path:
+    """Write a human-readable differential summary."""
+
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    summary = report.get("summary", {})
+    lines = [
+        "# JC Spec Shadow Differential Report",
+        "",
+        f"- status: {report.get('status')}",
+        f"- legal_math_head: {report.get('legal_math_head')}",
+        f"- jc_head: {report.get('jc_head')}",
+        f"- fixture_count: {summary.get('fixture_count')}",
+        f"- aligned_count: {summary.get('aligned_count')}",
+        f"- diverged_count: {summary.get('diverged_count')}",
+        "",
+        "## Fixtures",
+    ]
+    for item in report.get("fixtures", []):
+        fixture_report = item.get("report", {})
+        lines.append(
+            f"- {fixture_report.get('fixture_id')}::{fixture_report.get('variant')} "
+            f"=> {fixture_report.get('status')}"
+        )
+        blockers = fixture_report.get("blockers", [])
+        if blockers:
+            lines.append(f"  blockers: {', '.join(blockers)}")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry point for Playbook differential verification."""
+
+    parser = argparse.ArgumentParser(description="Run JC spec shadow differential checks.")
+    parser.add_argument("--spec-root", default=str(SPEC_REPO_ROOT), help="Path to legal-math-modeling root.")
+    parser.add_argument("--output", required=True, help="JSON output path.")
+    parser.add_argument("--markdown-output", default=None, help="Markdown output path.")
+    args = parser.parse_args(argv)
+
+    spec_root = Path(args.spec_root).resolve()
+    report = build_cross_repo_differential_report(spec_root)
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    md_out = Path(args.markdown_output) if args.markdown_output else out.with_suffix(".md")
+    write_differential_markdown(md_out, report)
+    return 0 if report.get("status") == "PASS" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

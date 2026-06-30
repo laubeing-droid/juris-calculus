@@ -50,12 +50,12 @@ US 术语 ──→ L0 原语 ←── HK 术语 ──→ L0 原语 ←── 
 | 指标 | 数值 |
 |------|------|
 | CN 规则 | 21,144 |
-| 测试 | 296 passed, 38 skipped |
+| 测试 | 312 passed, 38 skipped |
 | 核心模块 | 68 |
-| MCP 工具 | 18 |
+| MCP 工具 | 28 |
 | 唯一概念 | 31,749 |
 | 来源锚定覆盖率 | 97.1% |
-| 形式化规格边界 | legal-math-modeling 中 94 个唯一 Lean theorem name；Python runtime 未被 Lean 端到端证明 |
+| 形式化规格边界 | legal-math-modeling 中 126 个 checked Lean result，包含 32 个四竖切结果；Python runtime 未被 Lean 端到端核验 |
 | Codex 审计 | 5 轮（14 发现，全部修复） |
 
 ---
@@ -111,6 +111,7 @@ claims = se.evaluate(state)
 |------|------|------|
 | Horn 闭包单调性/最小模型 | **Lean 规格已证明** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
 | Dung grounded extension 存在/最小不动点 | **Lean 规格已证明** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
+| contract/license/permission/priority 四竖切 | **Lean 竖切已核验** | legal-math-modeling `LegalSyntax`、`DDLDefinitions`、`CertificateChecker`、`HornAAFContract`、`AttackDecision`、`SafetyTheorems`、`EndToEnd` |
 | JC spec shadow fixtures | **runtime 对齐** | `tests/unit/test_spec_shadow_harness.py`，10 个 fixture 对齐 |
 | 独立 checker-backed certificates | **runtime 已测试** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
 | Graph similarity 作为度量 | **禁止作为形式化声明** | legal-math-modeling forbidden-claim boundary |

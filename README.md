@@ -88,12 +88,12 @@ juris-calculus/
 | Metric | Value |
 |--------|-------|
 | CN Rules | 21,144 |
-| Tests | 296 passed, 38 skipped |
+| Tests | 312 passed, 38 skipped |
 | Core Modules | 68 |
-| MCP Tools | 18 |
+| MCP Tools | 28 |
 | Unique Concepts | 31,749 |
 | Source Anchor Coverage | 97.1% |
-| Formal Spec Boundary | 94 unique Lean theorem names in legal-math-modeling; Python runtime is not Lean-proven end-to-end |
+| Formal Spec Boundary | 126 checked Lean results in legal-math-modeling, including 32 four-slice vertical results; Python runtime is not Lean-checked end to end |
 | Audit Rounds | 5 rounds Codex (14 findings, all fixed) |
 
 ---
@@ -141,28 +141,38 @@ claims = se.evaluate(state)
 
 ---
 
-## MCP Tools (18)
+## MCP Tools (28)
 
 | Tool | Function |
 |------|----------|
+| evaluate | Public kernel certified litigation report |
+| route | Cross-jurisdiction routing guard |
+| trace | Attack graph trace and grounded witness |
+| check | Fail-closed certificate boundary check |
+| batch | Batch case audit over public toy fixtures |
+| render | Render certificate-backed public report |
+| diff | Spec shadow differential gate |
+| governance | Public rule-governance report |
+| impact | Rule-change impact analysis |
+| ingest_candidate | Candidate-only ingestion gate |
+| trirail_collide | HK/US/PRC collision wrapper |
+| check_threat | Threat signature check |
+| generate_memo | Public toy memo wrapper |
+| route_state | US state route query |
+| get_citation | Citation lookup |
+| get_operator_schemas | Operator schema export |
+| generate_task_schema | Task schema export |
+| rule_router | Expert-shard router |
+| stratified_evaluate | Four-stage runtime evaluator |
+| neural_leaf_status | Neural leaf cold-start/kill-switch status |
 | search_rules | Concept-aware rule search |
 | evaluate_facts | Four-stage pipeline inference |
 | calculate_damages | LPR-based damage calculation |
 | analyze_strategy | Strategy analysis with adversarial pipeline |
-| evaluate_dp_policy | DP privacy policy check |
-| validate_source | Source manifest verification |
-| evaluate_evidence | Evidence credibility scoring |
-| track_burden | Burden of proof tracking |
-| analyze_analogy | Analogical similarity + precedent force |
-| predict_sentence | Criminal sentencing prediction |
-| estimate_ip_value | IP valuation |
-| check_compliance | Compliance monitoring |
-| analyze_arbitration | Arbitration clause analysis |
-| route_cross_jurisdiction | Obstruction-first routing |
-| check_obstruction | Obstruction registry lookup |
-| format_proof_trace | Proof trace → Chinese text |
 | extract_elements | Legal element extraction |
-| juris_query | Unified query entry point |
+| evaluate_facts_llm | Privacy-gated LLM candidate output |
+| align_concepts_llm | Privacy-gated LLM concept candidate |
+| generate_nlni_llm | Privacy-gated LLM training-data candidate |
 
 ---
 
@@ -174,6 +184,7 @@ Backed by the [legal-math-modeling](https://github.com/laubeing-droid/legal-math
 |-------|--------|----------|
 | Horn closure monotonicity/minimality | **Lean specification proved** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
 | Dung grounded extension existence/least fixed point | **Lean specification proved** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
+| Contract/license/permission/priority slices | **Lean vertical slices checked** | legal-math-modeling `LegalSyntax`, `DDLDefinitions`, `CertificateChecker`, `HornAAFContract`, `AttackDecision`, `SafetyTheorems`, `EndToEnd` |
 | JC spec shadow fixtures | **Runtime aligned** | `tests/unit/test_spec_shadow_harness.py`, 10 aligned fixtures |
 | Independent checker-backed certificates | **Runtime tested** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
 | Graph similarity as a metric | **Forbidden as a formal claim** | legal-math-modeling forbidden-claim boundary |
