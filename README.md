@@ -2,7 +2,7 @@
 
 **Deterministic Symbolic Legal Reasoning Engine — Four-Stage Pipeline + Multi-Jurisdiction + Evidence-Calibrated Trust Labels**
 
-A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Defeasible Deontic Logic (DDL) modal classification, cross-jurisdiction obstruction-first routing, and a 7-level trust label system backed by formal mathematical proofs.
+A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Defeasible Deontic Logic (DDL) modal classification, cross-jurisdiction obstruction-first routing, and a 7-level trust label system backed by a formal specification boundary.
 
 *Not a legal app. A legal reasoning kernel.*
 
@@ -13,9 +13,9 @@ A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Def
 juris-calculus compiles statutory law into executable Horn rules, then reasons over them through a **four-stage pipeline** with evidence-calibrated trust labels.
 
 ```
-Stage 1: Monotone Horn Closure (proved: 82,836 fixtures)
+Stage 1: Monotone Horn Closure (Lean-spec-backed + runtime-tested)
     ↓
-Stage 2: Dung AAF Attack Graph (proved: 66,066 graphs)
+Stage 2: Dung AAF Attack Graph (Lean-spec-backed + runtime-tested)
     ↓
 Stage 3: Grounded Extension (deterministic, finite convergence)
     ↓
@@ -78,7 +78,7 @@ juris-calculus/
 │   ├── obstruction_registry.yaml     #   CN↔HK↔US concept mapping status
 │   └── ...
 ├── tools/                            #   67 analysis and quality tools
-└── tests/                            #   243 tests, all passing
+└── tests/                            #   296 passing tests, 38 skipped in the latest local run
 ```
 
 ---
@@ -88,12 +88,12 @@ juris-calculus/
 | Metric | Value |
 |--------|-------|
 | CN Rules | 21,144 |
-| Tests | 243 passed |
+| Tests | 296 passed, 38 skipped |
 | Core Modules | 68 |
 | MCP Tools | 18 |
 | Unique Concepts | 31,749 |
 | Source Anchor Coverage | 97.1% |
-| Mathematical Proofs | 10 proved, 3 refuted, 4 pending |
+| Formal Spec Boundary | 94 unique Lean theorem names in legal-math-modeling; Python runtime is not Lean-proven end-to-end |
 | Audit Rounds | 5 rounds Codex (14 findings, all fixed) |
 
 ---
@@ -172,13 +172,12 @@ Backed by the [legal-math-modeling](https://github.com/laubeing-droid/legal-math
 
 | Claim | Status | Evidence |
 |-------|--------|----------|
-| Horn closure is monotone | **PROVED** | 82,836 fixtures |
-| Dung grounded extension exists + unique | **PROVED** | 66,066 graphs |
-| Evaluator is non-monotonic | **REFUTED** (counterexample) | A={a}, B={a,b} |
-| Bounded operational termination | **PROVED** | 5 operational bounds |
-| Graph similarity is a metric | **REFUTED** | CE-001, CE-002 |
-| DP epsilon derivable from law | **REFUTED** | two-model witness |
-| Cross-jurisdiction universal functor | **REFUTED** | obstruction witnesses |
+| Horn closure monotonicity/minimality | **Lean specification proved** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
+| Dung grounded extension existence/least fixed point | **Lean specification proved** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
+| JC spec shadow fixtures | **Runtime aligned** | `tests/unit/test_spec_shadow_harness.py`, 10 aligned fixtures |
+| Independent checker-backed certificates | **Runtime tested** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
+| Graph similarity as a metric | **Forbidden as a formal claim** | legal-math-modeling forbidden-claim boundary |
+| DP/privacy guarantees | **Not established** | epsilon is config/policy input, not a theorem |
 
 **Trust Label System (7 levels):**
 UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION

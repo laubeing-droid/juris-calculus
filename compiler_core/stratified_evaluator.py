@@ -7,9 +7,9 @@ Stage 3: grounded_extension() — Dung deterministic extension
 Stage 4: Trust label projection + allowed/forbidden marking
 
 Mathematical basis:
-- Stage 1 monotone: bounded_horn_correctness.py (3,965 fixtures)
-- Stage 3 deterministic: dung_grounded_extension.py (66,066 graphs)
-- Termination: production_bounded_termination.py (5 operational bounds, NOT Tarski)
+- Stage 1 specification: legal-math-modeling HornFixedPoint.lean.
+- Stage 3 specification: legal-math-modeling DungFixedPoint.lean.
+- Runtime evidence: local pytest, spec shadow fixtures, and independent checker tests.
 """
 from typing import List, Dict, Optional
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml

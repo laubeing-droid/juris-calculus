@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,7 +18,28 @@ from compiler_core.evaluator import FixpointEvaluator
 from compiler_core.types import IRState, LegalDomain, LegalFact, LegalRule
 
 
-SPEC_REPO_ROOT = Path(r"D:\Claude\数学证明\legal-math-modeling")
+SPEC_REPO_ENV = "LEGAL_MATH_MODELING_ROOT"
+
+
+def _default_spec_repo_root() -> Path:
+    """Resolve the companion spec repo without falling back to stale paths."""
+
+    env_root = os.environ.get(SPEC_REPO_ENV, "").strip()
+    if env_root:
+        return Path(env_root).resolve()
+
+    jc_root = Path(__file__).resolve().parents[1]
+    candidates = (
+        jc_root.parent / "数学证明" / "legal-math-modeling",
+        jc_root.parent / "legal-math-modeling",
+    )
+    for candidate in candidates:
+        if (candidate / "theory" / "spec" / "reference_semantics.py").exists():
+            return candidate.resolve()
+    return candidates[0].resolve()
+
+
+SPEC_REPO_ROOT = _default_spec_repo_root()
 
 
 @dataclass(frozen=True)
@@ -36,9 +58,18 @@ class ShadowFixture:
 def _load_spec_modules(spec_repo_root: Path = SPEC_REPO_ROOT):
     """Load the formal companion repo's reference evaluator modules."""
 
+    spec_repo_root = Path(spec_repo_root).resolve()
+    reference_path = spec_repo_root / "theory" / "spec" / "reference_semantics.py"
+    certificate_path = spec_repo_root / "theory" / "spec" / "certificate_schema.py"
+    if not reference_path.exists() or not certificate_path.exists():
+        raise FileNotFoundError(
+            f"spec modules not found under {spec_repo_root}; set {SPEC_REPO_ENV}"
+        )
+
     spec_root = str(spec_repo_root)
     if spec_root not in sys.path:
         sys.path.insert(0, spec_root)
+    importlib.invalidate_caches()
     reference_semantics = importlib.import_module("theory.spec.reference_semantics")
     certificate_schema = importlib.import_module("theory.spec.certificate_schema")
     return reference_semantics, certificate_schema

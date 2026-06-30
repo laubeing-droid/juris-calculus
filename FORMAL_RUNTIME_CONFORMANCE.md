@@ -1,6 +1,6 @@
 # Formal-to-Runtime Conformance — juris-calculus
 
-**Date:** 2026-06-27
+**Date:** 2026-06-30
 **Upstream formal specs:** `legal-math-modeling` (Lean 4, mathlib)
 **Control repo:** `deli-autoresearch` (specs, evidence, release boundary)
 
@@ -10,9 +10,9 @@
 
 | Layer | Source | Evidence |
 |-------|--------|----------|
-| Formal semantics | `legal-math-modeling/proofs/lean/juris_lean/` | `lake build JurisLean` (2966 jobs, 0 errors) |
-| Theorem manifest | `deli-autoresearch/specs/290-formal-release/evidence/theorem-manifest.md` | 46 total / 19 blocking / 3 deferred |
-| Release boundary | `deli-autoresearch/specs/290-formal-release/evidence/red-team-verdict.json` | PASS, 0 blocking issues |
+| Formal semantics | `legal-math-modeling/proofs/lean/juris_lean/` | `lake build JurisLean` (2954 jobs, 0 errors) |
+| Theorem manifest | `legal-math-modeling/docs/formal-release/theorem_manifest.json` | 100 entries / 94 unique theorem names / 43 core unique names |
+| Release boundary | `legal-math-modeling/docs/formal-release/FORBIDDEN_CLAIMS.md` + `ALLOWED_CLAIMS.md` | Python runtime is not Lean-proven end-to-end |
 | Runtime conformance | This document + test suite below | 296 passed, 38 skipped |
 
 ---
@@ -21,10 +21,11 @@
 
 ### Claim 1: Lean proves the mathematical specification
 
-- 19 blocking-path theorems with 0 sorry and 0 custom axioms
-- Umbrella build `lake build JurisLean` succeeds (2966 jobs)
-- Individual module builds all pass (HornCanonical, DDLDefinitions, ArgumentCompiler, AttackDecision, CertificateChecker, SafetyTheorems, EndToEnd)
-- `UnifiedModel.lean` excluded from umbrella due to `Argument` type name collision with `LegalSyntax.lean`; standalone file preserved
+- 94 unique theorem names across 100 manifest entries
+- 43 core unique theorem names in the released finite monotone / Horn / Dung / weighted-norm boundary
+- Umbrella build `lake build JurisLean` succeeds (2954 jobs)
+- `AxiomAudit` discloses only Lean built-in axiom dependencies (`propext`, `Classical.choice`, `Quot.sound`)
+- Planned ghost files such as `LegalSyntax.lean`, `DDLDefinitions.lean`, and `CertificateChecker.lean` do not exist and are not claimed as built
 
 ### Claim 2: JC runtime passes differential, checker, and refinement tests
 
@@ -39,13 +40,13 @@ The StratifiedEvaluator's 4-stage pipeline (Horn closure → AAF construction �
 
 ### Claim 3: Three deferred domain axioms are retained, not proven
 
-The following are `sorry`-bearing domain axioms in `DDLDefinitions.lean`. They represent model structural gaps (RuleId != NormId), not engineering failures:
+The following are planned non-blocking domain axioms in `legal-math-modeling/SORRY_LEDGER.md`. `DDLDefinitions.lean` does not yet exist, so JC must not describe these as built or Lean-proven:
 
 1. `violation_implies_norm_active`
 2. `permission_no_direct_violation`
 3. `constitutive_no_direct_violation`
 
-Registered in `legal-math-modeling/SORRY_LEDGER.md`. JC must NOT claim these are Lean-proven.
+Registered upstream as planned domain gaps. JC must NOT claim these are Lean-proven.
 
 ### Claim 4: Trust-label layer is fail-closed
 

@@ -2,7 +2,7 @@
 
 **确定性符号法律推理引擎 — 四阶段 Pipeline + 跨法域 + 证据校准信任标签**
 
-法域无关的 Horn 子句引擎，支持 Dung AAF 扩展、可废止道义逻辑（DDL）模态分类、跨法域障碍优先路由、7 级信任标签系统，背后有严格数学证明支撑。
+法域无关的 Horn 子句引擎，支持 Dung AAF 扩展、可废止道义逻辑（DDL）模态分类、跨法域障碍优先路由、7 级信任标签系统，并由上游形式化规格边界支撑。
 
 *不是法律 App，是法律推理内核。*
 
@@ -13,9 +13,9 @@
 juris-calculus 将成文法编译为可执行 Horn 规则，通过**四阶段 pipeline** 进行推理，输出携带信任标签的法律结论。
 
 ```
-Stage 1: 单调 Horn 闭包（已证明：82,836 fixtures）
+Stage 1: 单调 Horn 闭包（Lean 规格支撑 + runtime 测试）
     ↓
-Stage 2: Dung AAF 攻击图（已证明：66,066 图）
+Stage 2: Dung AAF 攻击图（Lean 规格支撑 + runtime 测试）
     ↓
 Stage 3: 扩展集计算（确定性，有限收敛）
     ↓
@@ -50,12 +50,12 @@ US 术语 ──→ L0 原语 ←── HK 术语 ──→ L0 原语 ←── 
 | 指标 | 数值 |
 |------|------|
 | CN 规则 | 21,144 |
-| 测试 | 243 passed |
+| 测试 | 296 passed, 38 skipped |
 | 核心模块 | 68 |
 | MCP 工具 | 18 |
 | 唯一概念 | 31,749 |
 | 来源锚定覆盖率 | 97.1% |
-| 数学证明 | 10 proved, 3 refuted, 4 pending |
+| 形式化规格边界 | legal-math-modeling 中 94 个唯一 Lean theorem name；Python runtime 未被 Lean 端到端证明 |
 | Codex 审计 | 5 轮（14 发现，全部修复） |
 
 ---
@@ -109,13 +109,12 @@ claims = se.evaluate(state)
 
 | 命题 | 状态 | 证据 |
 |------|------|------|
-| Horn 闭包单调 | **已证明** | 82,836 fixtures |
-| Dung 扩展存在+唯一 | **已证明** | 66,066 图 |
-| Evaluator 非单调 | **已反证** | A={a}, B={a,b} |
-| 有界操作终止 | **已证明** | 5 个操作边界 |
-| Graph similarity 是度量 | **已反证** | CE-001, CE-002 |
-| DP epsilon 可从法律推导 | **已反证** | two-model witness |
-| 跨法域全函子存在 | **已反证** | obstruction witnesses |
+| Horn 闭包单调性/最小模型 | **Lean 规格已证明** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
+| Dung grounded extension 存在/最小不动点 | **Lean 规格已证明** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
+| JC spec shadow fixtures | **runtime 对齐** | `tests/unit/test_spec_shadow_harness.py`，10 个 fixture 对齐 |
+| 独立 checker-backed certificates | **runtime 已测试** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
+| Graph similarity 作为度量 | **禁止作为形式化声明** | legal-math-modeling forbidden-claim boundary |
+| DP/privacy guarantees | **未建立** | epsilon 是配置/策略输入，不是定理 |
 
 **信任标签系统（7 级）：**
 UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
