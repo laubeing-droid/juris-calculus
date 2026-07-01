@@ -53,9 +53,9 @@ def test_manifest_tools_all_return_public_envelope():
     assert set(SURFACE_TOOLS) <= set(manifest["tools"])
     for tool_name in manifest["tools"]:
         result = server._call_tool(tool_name, SAMPLE_ARGS[tool_name])
-        assert MCP_ENVELOPE_KEYS <= set(result), tool_name
-        assert "MISSING_HANDLER" not in result["risk_labels"], tool_name
-        assert "TOOL_EXCEPTION" not in result["risk_labels"], tool_name
+        assert MCP_ENVELOPE_KEYS <= set(result), f"{tool_name}: {result}"
+        assert "MISSING_HANDLER" not in result["risk_labels"], f"{tool_name}: {result}"
+        assert "TOOL_EXCEPTION" not in result["risk_labels"], f"{tool_name}: {result}"
 
 
 def test_unknown_tool_fails_closed():
