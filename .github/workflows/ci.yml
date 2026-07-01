@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest hypothesis
+
+      - name: Run full pytest suite
+        run: python -m pytest tests/ -q
+
+      - name: Run MCP manifest smoke
+        run: python mcp_server.py --test
+
+      - name: Lint primary rules YAML
+        run: |
+          python - <<'PY'
+          import yaml
+          with open("configs/zh_CN/rules.yaml", "r", encoding="utf-8") as fh:
+              yaml.safe_load(fh)
+          print("configs/zh_CN/rules.yaml OK")
+          PY
