@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from compiler_core.post_freeze_surface import SURFACE_TOOLS
 from mcp_server import MCPServer, MCP_ENVELOPE_KEYS
 
 
@@ -36,6 +37,11 @@ SAMPLE_ARGS = {
     "governance": {},
     "impact": {"rule_id": "rule::delivery_obligation"},
     "ingest_candidate": {"raw_text": "candidate only"},
+    "minimum_evidence": {"facts": ["contract_exists"], "target": "delivery_breach"},
+    "damages_baseline": {"principal": 1000, "lpr_rate": 3.45, "interest_days": 30},
+    "case_deviation": {"samples": []},
+    "stress_fixtures": {},
+    "private_layer_contract": {},
 }
 
 
@@ -44,6 +50,7 @@ def test_manifest_tools_all_return_public_envelope():
     server = MCPServer()
 
     assert set(SAMPLE_ARGS) == set(manifest["tools"])
+    assert set(SURFACE_TOOLS) <= set(manifest["tools"])
     for tool_name in manifest["tools"]:
         result = server._call_tool(tool_name, SAMPLE_ARGS[tool_name])
         assert MCP_ENVELOPE_KEYS <= set(result), tool_name

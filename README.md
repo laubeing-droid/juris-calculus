@@ -90,7 +90,7 @@ juris-calculus/
 | CN Rules | 21,144 |
 | Tests | 312 passed, 38 skipped |
 | Core Modules | 68 |
-| MCP Tools | 28 |
+| MCP Tools | 33 |
 | Unique Concepts | 31,749 |
 | Source Anchor Coverage | 97.1% |
 | Formal Spec Boundary | 126 checked Lean results in legal-math-modeling, including 32 four-slice vertical results; Python runtime is not Lean-checked end to end |
@@ -141,7 +141,7 @@ claims = se.evaluate(state)
 
 ---
 
-## MCP Tools (28)
+## MCP Tools (33)
 
 | Tool | Function |
 |------|----------|
@@ -155,6 +155,11 @@ claims = se.evaluate(state)
 | governance | Public rule-governance report |
 | impact | Rule-change impact analysis |
 | ingest_candidate | Candidate-only ingestion gate |
+| minimum_evidence | Source-bounded missing-evidence checklist |
+| damages_baseline | Engineering-baseline damages estimate |
+| case_deviation | Public toy sample-deviation detector |
+| stress_fixtures | Red/green stress fixture export |
+| private_layer_contract | Public/private boundary contract |
 | trirail_collide | HK/US/PRC collision wrapper |
 | check_threat | Threat signature check |
 | generate_memo | Public toy memo wrapper |

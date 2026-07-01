@@ -52,7 +52,7 @@ US 术语 ──→ L0 原语 ←── HK 术语 ──→ L0 原语 ←── 
 | CN 规则 | 21,144 |
 | 测试 | 312 passed, 38 skipped |
 | 核心模块 | 68 |
-| MCP 工具 | 28 |
+| MCP 工具 | 33 |
 | 唯一概念 | 31,749 |
 | 来源锚定覆盖率 | 97.1% |
 | 形式化规格边界 | legal-math-modeling 中 126 个 checked Lean result，包含 32 个四竖切结果；Python runtime 未被 Lean 端到端核验 |

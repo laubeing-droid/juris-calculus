@@ -415,6 +415,26 @@
     "ingest_candidate": {
       "description": "LLM/source candidate ingestion gate; candidates cannot enter the kernel directly",
       "inputSchema": {"type": "object", "properties": {"raw_text": {"type": "string"}, "source_span": {}, "provenance": {"type": "string"}}}
+    },
+    "minimum_evidence": {
+      "description": "Source-bounded missing-evidence checklist; suggestions only, never verified facts",
+      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}, "target": {"type": "string"}}}
+    },
+    "damages_baseline": {
+      "description": "Engineering-baseline damages estimate; does not alter DecisionStatus",
+      "inputSchema": {"type": "object", "properties": {"principal": {"type": "number"}, "lpr_rate": {"type": "number"}, "interest_days": {"type": "integer"}}}
+    },
+    "case_deviation": {
+      "description": "Public toy sample-deviation detector with low-evidence fail-closed behavior",
+      "inputSchema": {"type": "object", "properties": {"samples": {"type": "array"}}}
+    },
+    "stress_fixtures": {
+      "description": "Red/green stress fixtures for attack, exception, priority, taint, and certificate boundaries",
+      "inputSchema": {"type": "object", "properties": {}}
+    },
+    "private_layer_contract": {
+      "description": "Public/private boundary contract for auditable kernel versus private lawyer workflow layers",
+      "inputSchema": {"type": "object", "properties": {}}
     }
   },
   "icon": "⚖️",
