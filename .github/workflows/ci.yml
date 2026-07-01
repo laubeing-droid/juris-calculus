@@ -11,10 +11,18 @@ jobs:
     name: Python Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      LEGAL_MATH_MODELING_ROOT: ${{ github.workspace }}/legal-math-modeling
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout legal-math-modeling spec repo
+        uses: actions/checkout@v4
+        with:
+          repository: laubeing-droid/legal-math-modeling
+          path: legal-math-modeling
 
       - name: Setup Python
         uses: actions/setup-python@v5
