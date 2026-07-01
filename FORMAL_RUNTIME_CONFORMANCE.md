@@ -1,84 +1,51 @@
-# Formal-to-Runtime Conformance - juris-calculus
+# Formal Runtime Conformance
 
-**Date:** 2026-07-01
-**Upstream formal specs:** `legal-math-modeling` (Lean 4, mathlib)
-**Control repo:** `deli-autoresearch` (source-bounded orchestration and evidence gates)
+This document states what JC can and cannot claim about formal conformance.
 
----
+## Scope Split
 
-## 1. Provenance
+| Repository | Responsibility |
+|---|---|
+| legal-math-modeling | canonical Lean specification, DDL core, Horn-to-AAF contract, certificate checker theorem statements |
+| juris-calculus | Python runtime, MCP/API exposure, deterministic tests, differential harnesses, auditable reports |
 
-| Layer | Source | Evidence |
-|-------|--------|----------|
-| Formal semantics | `legal-math-modeling/proofs/lean/juris_lean/` | GitHub Actions run `28465952314` on SHA `2ab6cda38f2392cd048bc0643e56fb5f9fc46708` completed successfully with `lake build --rehash` and scan |
-| Theorem manifest | `legal-math-modeling/docs/formal-release/theorem_manifest.json` | `formal-core-v1-plus-four-slices`: 32 Lean files, 42 formal-core module theorems, 84 supporting results, 126 total checked results, 32 four-slice vertical results |
-| Release boundary | `legal-math-modeling/docs/formal-release/ALLOWED_CLAIMS.md` and release reports | legal-math provides a formal specification boundary and checked vertical slices; it does not certify the full Python runtime end to end |
-| Runtime conformance | `runtime/spec_shadow_report.json`, `runtime/spec_shadow_report.md`, and pytest | Spec shadow differential status `PASS`: 10 aligned fixtures, 0 divergences; full local pytest `312 passed, 38 skipped` |
-| MCP/API contract | `mcp_manifest.json`, `mcp_server.py`, `tests/unit/test_mcp_manifest_dispatch.py` | Manifest tools and dispatch handlers are one-to-one and return the required public envelope |
+JC does not claim machine-checked coverage for every Python execution path. It claims runtime conformance only where deterministic tests, finite checks, or spec-shadow fixtures support that claim.
 
----
+## Current Runtime Evidence
 
-## 2. Current Canonical Claims
+| Evidence | Current result | Claim supported |
+|---|---|---|
+| full Python tests | 312 passed, 38 skipped | regression suite passes locally |
+| MCP manifest dispatch | 33 tools | public tool manifest and dispatch are aligned |
+| spec-shadow fixtures | 10 aligned, 0 diverged | selected runtime fixtures match upstream boundary expectations |
+| post-freeze surface tests | pass in local targeted run | public-kernel tools keep required envelope behavior |
 
-### Claim 1: Lean checks the formal specification boundary
+## Non-Claims
 
-- The current formal release boundary is `formal-core-v1-plus-four-slices`.
-- The checked Lean surface includes the prior formal core plus contract breach, license, permission, and priority vertical slices.
-- `LegalSyntax.lean`, `DDLDefinitions.lean`, `CertificateChecker.lean`, `HornAAFContract.lean`, `AttackDecision.lean`, `SafetyTheorems.lean`, and `EndToEnd.lean` are real checked modules in the upstream repo.
-- Custom-axiom disclosure remains a release boundary item; Lean built-in axioms are disclosed separately from project-level assumptions.
+JC does not claim:
 
-### Claim 2: JC runtime passes differential, checker, and MCP contract tests
+- machine-checked proof for every Python implementation path;
+- direct legal correctness for real client cases;
+- DP guarantee from diagnostics-only privacy metrics;
+- graph similarity is a metric or PSD kernel;
+- robust regression heuristic has a formal breakdown guarantee after clipping;
+- LLM output is verified evidence.
 
-| Test Suite | Status |
-|------------|--------|
-| `tests/unit/test_spec_shadow_harness.py` | PASS |
-| `tests/unit/test_post_freeze_surface.py` | PASS |
-| `tests/unit/test_mcp_manifest_dispatch.py` | PASS |
-| `runtime/spec_shadow_report.json` | PASS, 10 aligned fixtures |
+## Conformance Workflow
 
-The StratifiedEvaluator pipeline remains an engineering runtime implementation: Horn closure -> AAF construction -> grounded extension -> trust-label projection.
+1. Upstream specification defines the canonical behavior.
+2. JC implements deterministic runtime behavior.
+3. Spec-shadow fixtures compare selected runtime outcomes against the upstream boundary.
+4. Reports disclose aligned and diverged cases.
+5. Divergences remain evidence, not something to delete or rename.
 
-### Claim 3: Trust-label and LLM gates fail closed
-
-- LLM outputs are candidates only; they are marked `TAINTED`/`CANDIDATE_ONLY` and do not enter the kernel directly.
-- Engineering estimates such as damages baselines use `ENGINEERING_BASELINE` and do not modify `DecisionStatus`.
-- Cross-jurisdiction routing guards can block or mark risk, but they do not prove legal equivalence and do not change the formal kernel semantics.
-
-### Claim 4: MCP/API outputs use the public envelope
-
-Every manifest tool returns:
-
-```json
-{
-  "status": "ok|error|blocked",
-  "decision_status": "PROVED|REFUTED|UNDECIDED|TAINTED|null",
-  "trace": {},
-  "certificate": {},
-  "risk_labels": [],
-  "semantic_boundary": "ENGINEERING_ONLY|SEMANTIC_BOUNDARY",
-  "public_private_classification": "PUBLIC_KERNEL|PRIVATE_LAYER|BLOCKED",
-  "evidence": [],
-  "payload": {}
-}
-```
-
----
-
-## 3. What JC Does Not Claim
-
-1. JC does not claim the full Python runtime is Lean-checked end to end.
-2. JC does not let LLM confidence, case similarity, or empirical damages estimation override symbolic status.
-3. JC does not treat cross-jurisdiction routing as a proof of legal equivalence.
-4. JC does not publish customer evidence, private rule assets, lawyer workflow templates, or litigation strategy.
-
----
-
-## 4. Verification Commands
+## Commands
 
 ```powershell
-$env:LEGAL_MATH_MODELING_ROOT = "<path-to-legal-math-modeling>"
 python -m pytest tests\unit\test_spec_shadow_harness.py -q
-python -m pytest tests\unit\test_post_freeze_surface.py -q
 python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
-python -m compiler_core.spec_shadow_harness --spec-root "$env:LEGAL_MATH_MODELING_ROOT" --output .\runtime\spec_shadow_report.json --markdown-output .\runtime\spec_shadow_report.md
+python -m pytest tests\ -q
+python mcp_server.py --test
 ```
+
+If any command cannot run, conformance reporting must say blocked and include the error.

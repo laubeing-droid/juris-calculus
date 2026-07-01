@@ -1,27 +1,43 @@
-# S6: Graph Similarity Mathematical Contract
+# Graph Similarity Contract
 
-**Baseline Evidence:**
-- Range [0,1]: Z3 + Dafny SMT verified (SMT_PROVED_FINITE)
-- Strict reflexivity: REFUTED — counterexample G=(v=1, e=0, features=∅) gives sim(G,G)=0.4
-- Empty feature policy: conservative (jaccard=0.0)
+Current classification: bounded task-specific engineering score.
 
-## 12 Property Audit
+The graph similarity routine is useful for ranking and comparison. It must not be described as a mathematical metric or PSD kernel unless those properties are separately proven.
+
+## Current Evidence
 
 | Property | Status | Evidence |
-|----------|--------|----------|
-| boundedness | PROVED | Z3 + Dafny: sim ∈ [0,1] |
-| non-negativity | PROVED | Follows from boundedness proof |
-| symmetry | EMPIRICAL_ONLY | jaccard + size_ratio are symmetric |
-| strict reflexivity | REFUTED | Counterexample: empty features → sim=0.4 |
-| weak reflexivity | PROVED | Non-empty features: sim(G,G)=1.0 |
-| identity of indiscernibles | REFUTED | Same as strict reflexivity |
-| shared-feature monotonicity | EMPIRICAL_ONLY | Feature count increases sim |
-| triangle inequality (d=1-sim) | UNKNOWN | Not proven or refuted |
-| PSD kernel property | UNKNOWN | Not verified |
-| graph relabelling invariance | PROVED | By construction |
-| deterministic ranking | PROVED | Fixed weights, deterministic |
-| threshold stability | EMPIRICAL_ONLY | OAT analysis needed |
+|---|---|---|
+| boundedness in `[0, 1]` | supported | finite Z3/Dafny-style bounded check |
+| non-negativity | supported | follows from boundedness check |
+| deterministic ranking | supported | fixed inputs and deterministic weights |
+| relabeling invariance | supported by construction | graph labels do not affect score |
+| strict reflexivity | refuted | empty-feature self-pair can score below 1 |
+| identity of indiscernibles | refuted | follows from strict-reflexivity counterexample |
+| triangle inequality | unknown | not proven |
+| PSD kernel property | unknown | not proven |
+| threshold stability | empirical only | requires OAT or held-out analysis |
 
-## Final Classification
+## Allowed Wording
 
-**Bounded symmetric similarity** — not a metric (triangle inequality unproven), not a kernel (PSD unproven), not a similarity measure in the strict sense (strict reflexivity refuted). This is a task-specific engineering score with known limitations.
+- "bounded graph similarity score"
+- "task-specific engineering score"
+- "deterministic ranking feature"
+- "finite check supports range bounds"
+
+## Prohibited Wording
+
+- "metric"
+- "kernel"
+- "formally proved similarity measure"
+- "distance function" unless a distance-specific proof is added
+
+## Closure Requirement
+
+To upgrade the claim, add:
+
+- exact formula and domain;
+- theorem target;
+- proof artifact or finite bound scope;
+- regression tests preserving the property;
+- disclosure of counterexamples that remain unresolved.

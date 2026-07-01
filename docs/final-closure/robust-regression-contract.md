@@ -1,18 +1,49 @@
-# S9: Robust Regression Estimator Contract
+# Robust Regression Contract
 
-Current implementation: Theil-Sen with [0.01, 10.0] slope clipping.
+Current classification: empirical engineering heuristic.
 
-## Analysis Required
-- Translation equivariance: YES
-- Scale equivariance: NO (clipping breaks it)
-- Clipping bias: PRESENT; true slopes outside [0.01, 10.0] are pulled toward bounds
-- Breakdown point: Original Theil-Sen is 29.3%%. Clipped version is a DIFFERENT estimator
-- Comparison: Siegel repeated median has 50%% breakdown point — recommended replacement
+The current estimator uses a clipped Theil-Sen-style path. Clipping changes the estimator's theoretical behavior, so claims about the unclipped estimator cannot be transferred silently.
 
-## Status: HEURISTIC
-The clipped Theil-Sen is an engineering heuristic, not a theoretically-grounded estimator.
-Production upgrade requires held-out data comparison between:
-- Unclipped Theil-Sen
-- Clipped Theil-Sen (current)
-- Siegel repeated median
-Metrics: MAE, median absolute error, tail error, runtime, determinism.
+## Current Position
+
+| Property | Status |
+|---|---|
+| deterministic output | expected for fixed inputs |
+| translation behavior | supported by estimator structure |
+| scale equivariance | broken by clipping |
+| clipping bias | present |
+| formal breakdown guarantee | not claimed for clipped variant |
+| production optimality | not established |
+
+## Allowed Wording
+
+- "robust-regression heuristic"
+- "clipped estimator"
+- "empirical baseline"
+- "deterministic comparison feature"
+
+## Prohibited Wording
+
+- "formally robust estimator"
+- "50 percent breakdown point" for the clipped current estimator
+- "unbiased"
+- "proved production estimator"
+
+## Required Upgrade Path
+
+Before stronger claims, compare at least:
+
+- unclipped Theil-Sen;
+- clipped Theil-Sen;
+- Siegel repeated median or another explicitly defined robust estimator.
+
+Metrics:
+
+- MAE;
+- median absolute error;
+- tail error;
+- runtime;
+- determinism;
+- behavior under outliers and scaling.
+
+Any chosen estimator then needs a runtime contract, fixtures, and disclosure of its mathematical limits.

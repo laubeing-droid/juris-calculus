@@ -1,25 +1,46 @@
-# S8: Tuple-Level Differential Privacy Boundary
+# DP Trust Boundary
 
-## Current Status: PRIVACY_DIAGNOSTICS_ONLY
+Current classification: `PRIVACY_DIAGNOSTICS_ONLY`.
 
-The dp_diagnostics module currently instruments privacy metrics but makes no formal DP guarantee.
+JC contains privacy diagnostics and policy plumbing. It does not currently make a formal differential privacy guarantee.
 
-## Required Definitions (Not Yet Implemented)
-- Dataset space: unspecified
-- Adjacency: add/remove-one or replace-one — not defined
-- Protection unit: tuple-level (not person-level)
-- Query sensitivity: not computed
-- Clipping: floor clipping introduces bias; bias formula derived: Bias(x0) ~= (0.7*x0*b)/2 * exp(-0.7*x0/b)
-- Mechanism: no Laplace/Gaussian mechanism implemented
-- epsilon/delta: not specified
-- Composition: not tracked
-- Privacy accountant: not implemented
+## What Can Be Claimed
 
-## Minimum Artifact Required
-At least one of:
-- Sensitivity theorem
-- Clipping bias bound (formula exists, needs formal statement)
-- Laplace mechanism tuple-level DP theorem
-- Gaussian mechanism theorem
+- The runtime can carry privacy-related policy fields.
+- Diagnostics can report configured values and boundary conditions.
+- Public documentation can identify missing DP components.
 
-Status: DATA_BLOCKED — no real DP guarantee exists yet.
+## What Cannot Be Claimed
+
+- tuple-level DP guarantee;
+- person-level DP guarantee;
+- epsilon/delta accounting;
+- composition guarantee;
+- Laplace or Gaussian mechanism proof;
+- unbiased estimator guarantee after clipping.
+
+## Missing Formal Components
+
+| Component | Status |
+|---|---|
+| dataset space | not specified |
+| adjacency relation | not fixed |
+| protection unit | not formalized |
+| query sensitivity | not computed |
+| clipping bias theorem | not formalized in this repo |
+| mechanism | no DP mechanism implemented |
+| privacy accountant | not implemented |
+| composition theorem | not implemented |
+
+## Safe Runtime Behavior
+
+Privacy diagnostics may inform engineering review, but they must not be promoted into a public DP claim. A failed or missing privacy check must be reported as blocked or diagnostics-only.
+
+## Closure Requirement
+
+At least one formal mechanism path must exist before any DP guarantee is claimed:
+
+- sensitivity theorem plus mechanism theorem;
+- clipping bias bound plus disclosed estimator limits;
+- privacy accountant and composition rule;
+- deterministic tests showing runtime values follow the formal contract.

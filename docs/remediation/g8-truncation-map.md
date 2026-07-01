@@ -1,49 +1,40 @@
- # G8 Truncation Map: evaluator.py Hardcoded Cutoff Points
+# G8 Truncation Map
 
- **Created**: 2026-06-23
- **Base Commit**: ab2ac6f
- **Goal**: Identify every truncation source that could silently cut Horn closure short.
+This remediation note identifies runtime locations where iteration limits can truncate reasoning. The public goal is fail-closed signaling, not silent completeness claims.
 
- ## Truncation Sources
+## Truncation Sources
 
- | # | Line | Code | Semantic Stage | Pure Horn? | Can Cause Missed Derivation? | Has TRUNCATED Signal? | Fixed? |
- |---|------|------|---------------|------------|------|------|------|
- | 1 | 360 | `while state.iteration_count < state.max_iterations` | Full fixpoint evaluation | Mixed | YES - silent cutoff | No (only external wrapper) | **No (separate Horn path fixed, see #2)** |
- | 2 | 565 | `while state.iteration_count < state.max_iterations` | `evaluate_horn()` Horn closure | Pure Horn | YES - if max_iterations < derived_bound | No | **FIXED: uses min(derived_bound, max_iterations); sets horn_truncated when max_iterations < derived_bound** |
- | 3 | 514 | `if depth > self.config.k_max: return None` | Exception-chain traversal | No (non-monotonic) | NO - depth limit on exception chains, not Horn closure | No | No (intentional non-monotonic guard) |
- | 4 | 482 | `if low_streak >= self.config.critical_streak_max` | Streak-based early exit | No (non-monotonic) | YES - if triggered in Horn-only mode | No | No (separate concern: non-monotonic safety) |
+| Source | Semantic stage | Pure Horn | Risk | Current handling |
+|---|---|---|---|---|
+| full evaluator loop | mixed runtime evaluation | no | safety ceiling may stop mixed reasoning | retain ceiling; disclose truncation risk |
+| `evaluate_horn()` loop | pure Horn closure | yes | missed derivation if bound too low | derived bound plus truncation signal |
+| exception-chain depth | non-monotonic exception traversal | no | cuts exception exploration | intentional guard |
+| critical-streak early exit | non-monotonic safety behavior | no | can stop heuristic path | not a Horn-completeness claim |
 
- ## Horn-Specific Analysis
+## Horn Path Rule
 
- ### evaluate_horn() (line 555, now fixed)
+For pure Horn closure, a derived bound is available:
 
- Before fix: Used hardcoded `state.max_iterations` (default 100) as the only loop bound.
- After fix: Uses `min(derived_bound, state.max_iterations)` where `derived_bound = |distinct rule heads| + 1`.
- New signals: `horn_saturated`, `horn_truncated`, `horn_truncation_reason`, `horn_derived_bound`, `horn_iterations`.
+```text
+derived_bound = number_of_distinct_rule_heads + 1
+```
 
- Derived bound formula:
- ```
- U = initial facts Union all possible ground rule heads
- max_strict_growth_steps = |distinct heads|
- derived_bound = max_strict_growth_steps + 1
- ```
+The `+1` permits a no-growth saturation iteration. The pure Horn path should report whether it saturated or truncated.
 
- Guarantee: In pure Horn closure, T_H can produce at most one new ground atom per distinct head. If a rule has head H, once H is derived, it cannot be derived again. Therefore at most |distinct heads| growth steps before fixpoint. The +1 accounts for the initial iteration that may produce nothing new (empty rule set).
+## Required Signals
 
- ### evaluate() (line 347, not yet fixed for pure Horn)
+Reports and state objects should expose:
 
- The full evaluator mixes Horn forward-chaining with non-monotonic rebuttal/constraint logic.
- For the pure Horn path, this should ideally also use derived_bound. However, because rebuttal
- and constraint rules can add complexity, the conservative approach is to keep max_iterations
- as a safety ceiling but add TRUNCATED signaling when it's hit before saturation.
+- `horn_saturated`;
+- `horn_truncated`;
+- `horn_truncation_reason`;
+- `horn_derived_bound`;
+- `horn_iterations`.
 
- ## Resolution
+## Disclosure
 
- - evaluate_horn(): Fixed to use derived bound. If state.max_iterations is lower, it signals horn_truncated.
- - evaluate(): Retains max_iterations as safety ceiling, but the evaluate_horn path is the authoritative Horn closure.
- - config.k_max: Separate concern (non-Horn exception chain depth). Not a Horn completeness issue.
- - critical_streak_max: Separate concern (non-monotonic safety). Not a Horn completeness issue.
+`evaluate_horn()` is the authoritative pure-Horn completeness path. The full evaluator mixes Horn reasoning with non-monotonic rebuttal and constraint behavior, so it must not reuse pure-Horn proof language unless the mixed semantics have been specified and verified.
 
- ## Lean Verification
+## Upstream Boundary
 
- The 8 G8 Horn Lean theorems (horn_operator_monotone, horn_iteration_monotone, finite_horn_termination, etc.) are in legal-math-modeling under `proofs/lean/juris_lean/JurisLean/HornCompleteness.lean`.
+Formal Horn completeness theorem work belongs in legal-math-modeling. JC should cite it only as upstream specification evidence and should still keep runtime truncation signals observable.

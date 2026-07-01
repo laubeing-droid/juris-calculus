@@ -1,53 +1,90 @@
-# Execution Roadmap
+# P0-P2 Execution Roadmap
 
-> Updated: 2026-06-15
+Updated: 2026-07-01
 
-## P0: Symbolic chain measurable and auditable ✅
+This roadmap records the public-kernel closure line for JC. It is not a promise that private client workflows, commercial rules, or litigation strategy are part of this repository.
 
-- [x] Relevance-sensitive fixtures
-- [x] Proof trace
-- [x] AAF attack edges
-- [x] Rule quality audit
-- [x] LLM batch acceptance
+## P0 - Auditable Runtime Chain
 
-## P1: Typed Legal IR + constraint sidecar ✅
+Status: closed for the current public-kernel baseline.
 
-- [x] IR schema, type checker, SMT sidecar
-- [x] Semantic compiler contract
+Closed items:
 
-## P2: Cross-jurisdiction architecture ✅
+- deterministic Horn closure path;
+- proof trace rendering;
+- AAF attack-edge construction;
+- rule quality audit hooks;
+- LLM batch acceptance as candidate-only ingestion;
+- candidate gate and verified-fact boundary;
+- certificate-style public reports;
+- fail-closed red-light behavior.
 
-- [x] ProofTree output
-- [x] Language renderer (ChineseRenderer / EnglishRenderer)
-- [x] Three-track collision engine (CBL + SPC + CN)
-- [x] JurisdictionAdapter base
-- [x] Plugin registry auto-discovery
-- [x] Conflict of laws module
-- [x] Multi-jurisdiction orchestrator
+Required continuing checks:
 
-## P3: Three jurisdictions complete ✅
+```powershell
+python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\ -q
+```
 
-- [x] CN: 2,117 rules, 13 domains, 106 L0, 60 CBL blocking
-- [x] HK: 104 rules, 7 namespaces, 1,687 L0, 21 blocking rules
-- [x] US: 123 rules, 9 namespaces, 567 L0, 18 blocking rules
+## P1 - Typed IR and Constraint Sidecars
 
-## P4: Debug pass ✅ (2026-06-15)
+Status: closed for smoke-level public sidecars; promotion remains gated.
 
-- [x] PROHIBITION blocking fix
-- [x] Deterministic execution order
-- [x] Dead code cleanup (~20% removed)
-- [x] L0 degradation fix
-- [x] PERMISSION hypothetical marking
-- [x] Source anchor warnings
-- [x] CN atom standardization (dot.notation → snake_case)
-- [x] Tests: 159 → 209
+Closed items:
 
-## P5: Next steps (not started)
+- typed-IR sidecar area;
+- dry-run migrator policy;
+- schema and source-anchor checks;
+- no direct LLM write to curated sidecars;
+- migration findings reported without silent promotion.
 
-- [ ] IRAC renderer (ProofTree → legal memorandum)
-- [ ] NLP fact extraction (natural language → structured atoms)
-- [ ] UCC full compilation (Articles 2 + 9 complete text)
-- [ ] Restatement Contracts full compilation
-- [ ] FRCivP full integration
-- [ ] Confidence score calibration against real case outcomes
-- [ ] HK coverage expansion (Tort, Landlord/Tenant, Trust)
+Promotion requirements:
+
+- deterministic schema validation;
+- source anchor availability;
+- regression tests;
+- public/private boundary review.
+
+## P2 - Cross-Jurisdiction Runtime
+
+Status: closed for public runtime architecture.
+
+Closed items:
+
+- jurisdiction-neutral proof tree;
+- post-hoc language renderer;
+- plugin registry and adapters;
+- conflict-of-laws module;
+- multi-jurisdiction orchestrator;
+- obstruction-first routing where applicable;
+- public MCP/API exposure of runtime kernel outputs.
+
+## Current Post-Freeze Surface
+
+The post-freeze public surface is exposed through MCP and tested through manifest dispatch. Current manifest-dispatched tool count: 33.
+
+Validation:
+
+```powershell
+python mcp_server.py --test
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+```
+
+## Not in Public Scope
+
+- private client data;
+- commercial rule libraries;
+- lawyer workflow automation;
+- litigation strategy;
+- private benchmark sets;
+- unverified LLM output as reasoning input.
+
+## Next Work Gate
+
+New functionality should enter only when it preserves:
+
+- candidate-only LLM ingestion;
+- `verified_fact` gate;
+- attack/exception/permission/priority semantics;
+- manifest-dispatch alignment;
+- disclosure of failed or blocked evidence.

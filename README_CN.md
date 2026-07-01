@@ -1,136 +1,93 @@
 # juris-calculus
 
-**确定性符号法律推理引擎 — 四阶段 Pipeline + 跨法域 + 证据校准信任标签**
+juris-calculus 是公开、可审计的法律推理运行时内核。它提供确定性规则求值、论证图、证书式报告、与上游规格的差分验证，以及 MCP/API 可审计接口。
 
-法域无关的 Horn 子句引擎，支持 Dung AAF 扩展、可废止道义逻辑（DDL）模态分类、跨法域障碍优先路由、7 级信任标签系统，并由上游形式化规格边界支撑。
+它不是客户案件系统。客户数据、商业规则库、律师工作流、诉讼策略、私有 benchmark 默认不进入本公开仓库。
 
-*不是法律 App，是法律推理内核。*
+## 当前公开状态
 
----
+| 项目 | 当前状态 |
+|---|---|
+| MCP 工具 | 33 个 manifest-dispatched tools |
+| Python 测试 | 最近一次全量本地运行：312 passed, 38 skipped |
+| 规格差分 fixture | 10 aligned, 0 diverged |
+| 公开边界 | 只放 auditable runtime kernel |
+| 私有边界 | 客户数据、商业规则、工作流、策略、私有 benchmark 全部排除 |
 
-## 做什么
+## 核心边界
 
-juris-calculus 将成文法编译为可执行 Horn 规则，通过**四阶段 pipeline** 进行推理，输出携带信任标签的法律结论。
+安全模型固定为：
 
-```
-Stage 1: 单调 Horn 闭包（Lean 规格支撑 + runtime 测试）
-    ↓
-Stage 2: Dung AAF 攻击图（Lean 规格支撑 + runtime 测试）
-    ↓
-Stage 3: 扩展集计算（确定性，有限收敛）
-    ↓
-Stage 4: 信任标签投影 + allowed/forbidden 标记
-```
-
-**三个法域，一个引擎：**
-
-| 法域 | 规则数 | 来源 | 角色 |
-|------|--------|------|------|
-| CN（中国） | 21,144 | 20 本书（8,712 页，727 万字） | 主法域 |
-| HK（香港） | 104 | 香港法例 | US↔CN 转换层 |
-| US（美国联邦） | 123 | US Code + UCC + Restatement | 跨境争议 |
-
-**跨法域架构（障碍优先）：**
-
-```
-US 术语 ──→ L0 原语 ←── HK 术语 ──→ L0 原语 ←── CN 术语
-          (Status/Act/Defect/Power/Agent/Asset)
-
-障碍注册表：
-  MATCH       → 允许映射（保留法域标签）
-  COLLISION   → 禁止自动映射
-  ASYMMETRY   → 禁止自动映射
-  UNVERIFIED  → 仅人工审核
+```text
+LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
----
+LLM 输出只能是 candidate。它不能直接进入 `verified_fact`，不能绕过确定性验证器，也不能被描述为形式证明。
 
-## 核心指标
+不得削弱：
 
-| 指标 | 数值 |
-|------|------|
-| CN 规则 | 21,144 |
-| 测试 | 312 passed, 38 skipped |
-| 核心模块 | 68 |
-| MCP 工具 | 33 |
-| 唯一概念 | 31,749 |
-| 来源锚定覆盖率 | 97.1% |
-| 形式化规格边界 | legal-math-modeling 中 126 个 checked Lean result，包含 32 个四竖切结果；Python runtime 未被 Lean 端到端核验 |
-| Codex 审计 | 5 轮（14 发现，全部修复） |
+- `DecisionStatus`
+- checker 接受标准
+- `verified_fact` 准入门
+- attack / exception 语义
+- permission / priority 语义
+- 红灯 fail-closed 行为
 
----
+## 仓库结构
 
-## 快速开始
+| 路径 | 用途 |
+|---|---|
+| `compiler_core/` | 确定性运行时内核与 post-freeze public surface |
+| `mcp_server.py` | JSON-RPC/MCP dispatch 入口 |
+| `mcp_manifest.json` | 公开工具 manifest |
+| `configs/` | 公开规则、配置 fixture、typed-IR sidecar 区 |
+| `runtime/` | 运行时差分证据与 spec-shadow 输出 |
+| `tests/` | Python 回归、契约、surface 测试 |
+| `docs/` | 公开契约、路线图、闭环证据、整改说明 |
+| `reports/` | 审计报告与分析输出 |
 
-```python
-from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.types import IRState, LegalFact
+本地可以有被 `.gitignore` 排除的下载区、源码暂存区、私有过程文件，但它们不属于公开内核。
 
-# 加载中国法规则
-rules = load_rules_from_yaml("configs/zh_CN/rules.yaml")
-ev = FixpointEvaluator(rules)
+## 本地验证命令
 
-# 推理
-state = IRState()
-state.facts["contract_formed"] = LegalFact(id="contract_formed", description="合同成立")
-state.facts["breach_alleged"] = LegalFact(id="breach_alleged", description="违约事实")
-result = ev.evaluate(state)
+推荐基线：
 
-# 输出：含置信度、信任标签、推理轨迹的 claims
-for cid, claim in result.claims.items():
-    print(f"{cid}: conf={claim.confidence:.2f}, trust={claim.get_trust_label()}")
+```powershell
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\unit\test_spec_shadow_harness.py -q
+python -m pytest tests\ -q
+python mcp_server.py --test
+git diff --check
 ```
 
----
+发布或推送前应运行供应链审计。若 PyPI 或 OSV 因代理、TLS、网络阻断无法访问，必须记录具体命令和错误，不得把阻断当成通过。
 
-## 四阶段 Pipeline
+## 证据等级
 
-```python
-from compiler_core.stratified_evaluator import StratifiedEvaluator
+| 标签 | 含义 |
+|---|---|
+| runtime regression evidence | pytest 或确定性本地命令输出 |
+| differential evidence | 与 legal-math 规格边界的 fixture 对比 |
+| finite SMT check | 有界求解器对特定性质的检查 |
+| upstream formal proof | legal-math 规格仓中的 Lean theorem |
+| empirical heuristic | 工程可用但无形式保证的经验机制 |
 
-se = StratifiedEvaluator("configs/zh_CN/rules.yaml")
-state = IRState()
-state.facts["breach"] = LegalFact(id="breach", description="违约")
+公开文档只能声称证据能支撑的内容。
 
-claims = se.evaluate(state)
-# 每个 claim 携带：allowed_claim, forbidden_claim, agent_instruction, epistemic_status
+## MCP Surface
+
+MCP surface 由 `mcp_manifest.json` 驱动，并由 `mcp_server.py` dispatch。测试要求 post-freeze public surface 中的每个工具都在 manifest 中可见并能被 dispatch。
+
+验证：
+
+```powershell
+python mcp_server.py --test
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
 ```
 
-**Stage 1**（Horn）：纯前向链，单调（Tarski 不动点存在）。
-**Stage 2**（AAF）：从规则、例外、反驳、禁止构建攻击图。
-**Stage 3**（GE）：Dung 扩展集 — 确定性接受/拒绝。
-**Stage 4**（标签）：信任标签投影 + allowed/forbidden 标记。
+## 与 legal-math-modeling 的关系
 
----
+legal-math-modeling 负责 canonical Lean specification。JC 负责运行时实现、MCP 暴露、差分 harness、可审计证据报告。
 
-## 数学基础
-
-由 [legal-math-modeling](https://github.com/laubeing-droid/legal-math-modeling) 仓库支撑：
-
-| 命题 | 状态 | 证据 |
-|------|------|------|
-| Horn 闭包单调性/最小模型 | **Lean 规格已证明** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
-| Dung grounded extension 存在/最小不动点 | **Lean 规格已证明** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
-| contract/license/permission/priority 四竖切 | **Lean 竖切已核验** | legal-math-modeling `LegalSyntax`、`DDLDefinitions`、`CertificateChecker`、`HornAAFContract`、`AttackDecision`、`SafetyTheorems`、`EndToEnd` |
-| JC spec shadow fixtures | **runtime 对齐** | `tests/unit/test_spec_shadow_harness.py`，10 个 fixture 对齐 |
-| 独立 checker-backed certificates | **runtime 已测试** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
-| Graph similarity 作为度量 | **禁止作为形式化声明** | legal-math-modeling forbidden-claim boundary |
-| DP/privacy guarantees | **未建立** | epsilon 是配置/策略输入，不是定理 |
-
-**信任标签系统（7 级）：**
-UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
-
----
-
-## 安装
-
-```bash
-pip install -r requirements.txt
-python -m pytest tests/ -v
-```
-
----
-
-## 许可证
-
-MIT
+凡是会改变 attack、exception、permission、priority、checker acceptance、verified_fact 准入的事项，先回到 legal-math-modeling 明确规格，再改 JC。

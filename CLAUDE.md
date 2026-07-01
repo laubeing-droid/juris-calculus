@@ -1,61 +1,47 @@
-# CLAUDE.md — juris-calculus 项目规范
+# CLAUDE.md - juris-calculus assistant rules
 
-> 本文件在每次 CCD 会话启动时自动加载，所有 AI 助手必须遵守。
+This file mirrors the repository-facing assistant rules in `AGENTS.md`. The repository is a public auditable kernel, not a container for private client material or commercial workflow logic.
 
-## 一、用户画像
+## Hard Boundaries
 
-- 刘伟彬，漳州民商事诉讼律师，独立执业
-- 非程序员出身，AI 编程学习中
-- 直接说技术结论，不要用法学本科话术，不要铺垫
+- Work in the repository root unless a task names a different path.
+- Keep private data, lawyer workflows, litigation strategy, private benchmarks, and commercial rule libraries outside this public repository.
+- Do not push, tag, release, or change repository visibility unless the user explicitly asks in the current turn.
+- Do not weaken runtime gates, checker acceptance, `DecisionStatus`, `verified_fact`, attack, exception, permission, or priority semantics.
+- Red-light cases must fail closed.
 
-## 二、目录结构（强制）
+## Runtime Contract
 
+The safe architecture is:
+
+`LLM proposes -> verification gates decide -> formal kernel reasons`
+
+LLM-generated content can be recorded as a candidate only. It cannot directly become `verified_fact`, cannot bypass deterministic validators, and cannot be described as formal evidence.
+
+## Development Practice
+
+- Read the relevant code and tests before editing.
+- Prefer existing patterns over new abstractions.
+- Keep edits scoped to the requested closure.
+- Use deterministic ordering for outputs that become evidence.
+- Preserve failing artifacts and report them honestly.
+- Avoid stale project numbers in documentation; verify counts from the tree.
+
+## Verification Baseline
+
+Common local checks:
+
+```powershell
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\unit\test_spec_shadow_harness.py -q
+python -m pytest tests\ -q
+python mcp_server.py --test
+git diff --check
 ```
-<juris-calculus-root>\
-├── 源码\              ← git 拉下来的源代码，所有代码读写修改在此目录内操作
-├── 下载存放区\        ← git clone 的其他仓库、下载的第三方产品/工具
-├── 过程文件\          ← 编程中生成的 md/文档/报告/日志等过程文件
-│   └── （强制命名：yyyy-mm-dd-简述.md，如 2026-06-14-跨法域审计方案.md）
-└── CLAUDE.md          ← 本文件（项目规范，每次会话自动加载）
-```
 
-### 目录规则
+When a check cannot run, record the exact command, error, and impact. Do not replace a blocked check with a weaker conclusion.
 
-1. **源码目录是工作区**：所有代码的读取、编写、修改、测试必须在 `源码\` 内进行
-2. **下载存放区是只读的**：其他仓库/产品的源码放这里供参考，不在此目录内做代码修改
-3. **过程文件必须命名**：任何生成的 md 文档、审计报告、方案文件，必须以 `yyyy-mm-dd-` 开头
-4. **根目录不放散文件**：根目录只保留 CLAUDE.md，其他一切放入对应子目录
+## Commit Practice
 
-## 三、架构决策（已确认）
-
-| 决策 | 结论 | 来源 |
-|------|------|------|
-| 法域架构 | addons 模式，本体不含法域特定代码 | 豆包+Gemini 双重审计确认 |
-| 优先级 | 中文法（zh_CN）先行，跨法域保留骨架 | 6/13 跨法域审计结论 |
-| DDL 模态 | 跨法域通用元语言，偏序权重法域定制 | Gemini 审计结论 |
-| 语言控制 | 编译器出 Proof Tree，语言映射是后置渲染层 | Gemini 审计结论 |
-| 旧三轨代码 | 不恢复物理代码，提炼设计思想重构 | 两家共识 |
-
-## 四、编码规范
-
-1. **改代码前先跑测试**：`python -m pytest tests/ -v`，确认全绿再动手
-2. **删文件前确认**：任何删除操作必须先说明原因，经用户确认后执行
-3. **不引入未测试的功能**：写完代码必须跑通测试才算完成
-4. **不破坏已有测试**：修改后 154 个测试必须全绿
-5. **编码用英文**：代码、变量名、注释用英文；文档、对话用中文
-
-## 五、交流规范
-
-1. **说人话**：不铺垫、不卖关子、不写"让我来分析一下"
-2. **结论先行**：先给结论，再说理由
-3. **不确定的直接说**：不知道就说不知道，不要编
-4. **中文回复**：除非用户用英文提问
-5. **技术决策等用户确认**：涉及架构改动、文件删除、git 操作，先说方案等用户说"好"再执行
-
-## 六、版本与 Git
-
-- 当前版本：v2.0.0（commit db2b21b）
-- 主分支：main
-- Git 用户：laubeing-droid
-- 远程仓库：github.com/laubeing-droid/juris-calculus
-- 推送前必须确认
+Local commits should close one verifiable unit. Commit messages should identify changed files, root cause, new project knowledge, impact scope, validation, and remaining risk.

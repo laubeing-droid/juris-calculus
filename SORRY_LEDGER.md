@@ -1,23 +1,45 @@
-# SORRY_LEDGER.md — juris-calculus
+# SORRY_LEDGER.md - placeholder and proof-gap ledger
 
-> Track all `sorry`/placeholder usage in JC runtime.
->
-> **Rule 1**: Every placeholder or stub must have a ledger entry.
-> **Rule 2**: Production code SHALL NOT contain stubs on the critical path.
+JC is a Python runtime repository. Lean `sorry` terms belong in the upstream legal-math specification repository, not in this runtime tree. This ledger tracks runtime placeholders, stubs, and proof-gap wording that could affect public-kernel claims.
 
-## Critical-Path Stubs (ZERO stub tolerance)
+## Critical-Path Rule
 
-| # | Component | SPEC |
-|---|-----------|------|
-| 1 | canonical_adapter | 260 |
-| 2 | grounded_evaluator | 260 |
-| 3 | certificate_producer | 250 |
-| 4 | certificate_checker | 250 |
-| 5 | decision_projection | 240 |
+Production-critical paths must not contain silent placeholders. Any intentional incomplete path must:
 
-## Non-Blocking Stub Entries
+- be outside the acceptance-critical path, or fail closed;
+- have a named ledger entry;
+- have a closing task and verification command;
+- avoid being described as formal proof.
 
-| component | SPEC | reason | closing_task | status |
+## Critical-Path Components
+
+| Component | Boundary | Placeholder tolerance |
+|---|---|---|
+| candidate gate | raw LLM and proposed facts | zero silent acceptance |
+| verified fact gate | reasoning-eligible facts | zero silent acceptance |
+| certificate checker | report/certificate acceptance | fail closed |
+| MCP manifest dispatch | public tool exposure | zero undocumented dispatch |
+| spec shadow harness | legal-math differential fixtures | divergences reported, not hidden |
+| attack and priority semantics | exception/defeat ordering | no semantic weakening |
+
+## Current Runtime Placeholder Entries
+
+| Component | Location | Reason | Closing task | Status |
 |---|---|---|---|---|
+| none recorded | n/a | n/a | keep scans and tests current | closed |
 
-*No entries yet.*
+## Non-Proof Evidence Registry
+
+These items are useful engineering evidence but must not be represented as full formal proof:
+
+| Evidence | Current classification | Disclosure requirement |
+|---|---|---|
+| Python pytest suite | runtime regression evidence | report command and result |
+| spec-shadow fixtures | differential runtime evidence | report aligned/diverged counts |
+| graph similarity checks | bounded task-specific score evidence | do not call it a metric or kernel |
+| DP diagnostics | diagnostics only | do not claim DP guarantee |
+| robust regression heuristic | empirical estimator evidence | disclose clipping and comparison limits |
+
+## Scan Expectations
+
+Search terms for this ledger include `sorry`, `TODO`, `stub`, `placeholder`, `NotImplemented`, `pass`, `formal proof`, `mathematically proved`, and equivalent Chinese overclaims.

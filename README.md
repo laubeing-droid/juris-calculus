@@ -1,214 +1,105 @@
 # juris-calculus
 
-**Deterministic Symbolic Legal Reasoning Engine — Four-Stage Pipeline + Multi-Jurisdiction + Evidence-Calibrated Trust Labels**
+juris-calculus is a public, auditable legal-reasoning runtime kernel. It exposes deterministic rule evaluation, argumentation, certificate-style reporting, differential checks against upstream specifications, and MCP/API surfaces for inspection.
 
-A jurisdiction-agnostic Horn clause engine with Dung AAF grounded extension, Defeasible Deontic Logic (DDL) modal classification, cross-jurisdiction obstruction-first routing, and a 7-level trust label system backed by a formal specification boundary.
+It is not a private case-management system. Client data, commercial rule libraries, lawyer workflows, litigation strategy, and private benchmarks belong outside this public repository.
 
-*Not a legal app. A legal reasoning kernel.*
+## Current Public Surface
 
----
+| Area | Current status |
+|---|---|
+| MCP tools | 33 manifest-dispatched tools |
+| Python tests | 312 passed, 38 skipped in the latest full local run |
+| Spec shadow fixtures | 10 aligned, 0 diverged |
+| Public boundary | auditable runtime kernel only |
+| Private boundary | client data, business rules, workflows, strategy, private benchmarks excluded |
 
-## What It Does
+## Core Runtime Boundary
 
-juris-calculus compiles statutory law into executable Horn rules, then reasons over them through a **four-stage pipeline** with evidence-calibrated trust labels.
+The project follows this safety model:
 
-```
-Stage 1: Monotone Horn Closure (Lean-spec-backed + runtime-tested)
-    ↓
-Stage 2: Dung AAF Attack Graph (Lean-spec-backed + runtime-tested)
-    ↓
-Stage 3: Grounded Extension (deterministic, finite convergence)
-    ↓
-Stage 4: Trust Label Projection + allowed/forbidden marking
-```
-
-**Three jurisdictions, one engine:**
-
-| Jurisdiction | Rules | Source | Role |
-|-------------|-------|--------|------|
-| CN (China) | 21,144 | 20 books (8,712 pages, 727万字) | Primary jurisdiction |
-| HK (Hong Kong) | 104 | HK legislation | US↔CN bridge layer |
-| US (Federal) | 123 | US Code + UCC + Restatement | Cross-border disputes |
-
-**Cross-border architecture (obstruction-first):**
-
-```
-US Terms ──→ L0 Primitives ←── HK Terms ──→ L0 Primitives ←── CN Terms
-              (Status/Act/Defect/Power/Agent/Asset)
-
-Obstruction Registry:
-  MATCH       → allow mapping (preserve jurisdiction tag)
-  COLLISION   → block automatic mapping
-  ASYMMETRY   → block automatic mapping
-  UNVERIFIED  → human review only
+```text
+LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
----
+Raw LLM output is candidate material only. It cannot directly become `verified_fact`, cannot bypass deterministic validators, and cannot be represented as formal proof.
 
-## Architecture
+Do not weaken:
 
-```
-juris-calculus/
-├── compiler_core/                    # Reasoning kernel (68 modules)
-│   ├── evaluator.py                  #   FixpointEvaluator + evaluate_horn() + DDL modal gate
-│   ├── stratified_evaluator.py       #   Four-stage pipeline (Horn → AAF → GE → Trust Labels)
-│   ├── argumentation.py              #   Dung AAF grounded extension + attack graph builder
-│   ├── types.py                      #   LegalRule / LegalClaim / IRState / DataQuality
-│   ├── trust_labels.py               #   7-level TrustLabel + EpistemicStatus + RuleMaturity
-│   ├── constraint_validator.py       #   Absolute/Conditional rebuttal + L0 constraints
-│   ├── domain_config.py              #   Weight/threshold config per domain
-│   ├── dp_policy_loader.py           #   Differential privacy policy (epsilon from config, not law)
-│   ├── source_manifest.py            #   Source verification (20 books + statutes registered)
-│   ├── evidence_evaluation.py        #   Evidence credibility: S(e) = reliability × independence × authenticity
-│   ├── burden_of_proof.py            #   Burden allocation and completion tracking
-│   ├── legal_reasoning.py            #   Analogical, precedent, interpretation, interest balancing
-│   ├── cross_jurisdiction_router.py  #   Obstruction-first routing (no universal functor)
-│   ├── proof_trace_renderer.py       #   Proof trace → Chinese natural language
-│   ├── invariance_metrics.py         #   Inv(f)/Align(f) + ContextualOverlapScore (NOT a metric)
-│   └── ... (15 more modules)
-├── addons/
-│   ├── cn/                           #   China addon
-│   ├── hk/                           #   Hong Kong addon (bridge layer)
-│   └── us/                           #   US Federal addon
-├── configs/
-│   ├── zh_CN/rules.yaml              #   21,144 CN rules (20 books auto-distilled)
-│   ├── zh_CN/concept_registry.yaml   #   31,749 unique legal concepts
-│   ├── zh_CN/dp_policy.yaml          #   DP privacy policies
-│   ├── zh_CN/source_manifest.yaml    #   Registered sources (20 books + statutes)
-│   ├── obstruction_registry.yaml     #   CN↔HK↔US concept mapping status
-│   └── ...
-├── tools/                            #   67 analysis and quality tools
-└── tests/                            #   312 passing tests, 38 skipped in the latest local run
-```
+- `DecisionStatus`
+- checker acceptance criteria
+- `verified_fact` eligibility
+- attack and exception semantics
+- permission and priority semantics
+- fail-closed behavior for red-light cases
 
----
+## Repository Layout
 
-## Key Metrics
+| Path | Purpose |
+|---|---|
+| `compiler_core/` | deterministic runtime kernel and post-freeze public surface |
+| `mcp_server.py` | JSON-RPC/MCP dispatch entrypoint |
+| `mcp_manifest.json` | public tool manifest |
+| `configs/` | public rule/configuration fixtures and typed-IR sidecar area |
+| `runtime/` | runtime differential evidence and generated spec-shadow outputs |
+| `tests/` | Python regression, contract, and surface tests |
+| `docs/` | public contracts, roadmap, closure evidence, and remediation notes |
+| `reports/` | audit reports and analysis outputs |
 
-| Metric | Value |
-|--------|-------|
-| CN Rules | 21,144 |
-| Tests | 312 passed, 38 skipped |
-| Core Modules | 68 |
-| MCP Tools | 33 |
-| Unique Concepts | 31,749 |
-| Source Anchor Coverage | 97.1% |
-| Formal Spec Boundary | 126 checked Lean results in legal-math-modeling, including 32 four-slice vertical results; Python runtime is not Lean-checked end to end |
-| Audit Rounds | 5 rounds Codex (14 findings, all fixed) |
+Ignored local folders may exist for downloads, raw source drops, and private workspace material. They are not part of the public kernel.
 
----
+## Verification Commands
 
-## Quick Start
+Recommended local baseline:
 
-```python
-from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.types import IRState, LegalFact
-
-# Load Chinese law rules
-rules = load_rules_from_yaml("configs/zh_CN/rules.yaml")
-ev = FixpointEvaluator(rules)
-
-# Run inference
-state = IRState()
-state.facts["contract_formed"] = LegalFact(id="contract_formed", description="合同成立")
-state.facts["breach_alleged"] = LegalFact(id="breach_alleged", description="违约事实")
-result = ev.evaluate(state)
-
-# Output: claims with confidence, trust labels, proof traces
-for cid, claim in result.claims.items():
-    print(f"{cid}: conf={claim.confidence:.2f}, trust={claim.get_trust_label()}")
+```powershell
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\unit\test_spec_shadow_harness.py -q
+python -m pytest tests\ -q
+python mcp_server.py --test
+git diff --check
 ```
 
----
+Supply-chain audits should be run before release or push when network access permits. If PyPI or OSV access is blocked by proxy or TLS failure, record the exact blocked command and error.
 
-## Four-Stage Pipeline
+## Evidence Levels
 
-```python
-from compiler_core.stratified_evaluator import StratifiedEvaluator
+| Label | Meaning |
+|---|---|
+| runtime regression evidence | pytest or local deterministic command output |
+| differential evidence | fixture comparison against legal-math specification boundary |
+| finite SMT check | bounded solver check for a stated property |
+| upstream formal proof | Lean theorem in the legal-math specification repository |
+| empirical heuristic | useful engineering behavior without formal guarantee |
 
-se = StratifiedEvaluator("configs/zh_CN/rules.yaml")
-state = IRState()
-state.facts["breach"] = LegalFact(id="breach", description="违约")
+This repository must not claim more than the evidence supports.
 
-claims = se.evaluate(state)
-# Each claim has: allowed_claim, forbidden_claim, agent_instruction, epistemic_status
+## MCP Surface
+
+The MCP surface is manifest-driven. `mcp_manifest.json` and `mcp_server.py` must stay aligned. Tests require every post-freeze public surface tool to appear in the manifest and dispatch successfully.
+
+Use:
+
+```powershell
+python mcp_server.py --test
+python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
 ```
 
-**Stage 1** (Horn): Pure forward-chain, monotone (Tarski fixpoint exists).
-**Stage 2** (AAF): Build attack graph from rules, exceptions, rebuttals, prohibitions.
-**Stage 3** (GE): Dung grounded extension — deterministic acceptance/rejection.
-**Stage 4** (Labels): Trust label projection + allowed/forbidden marking.
+## Formal-Spec Relationship
 
----
+legal-math-modeling owns canonical Lean specification work. JC owns runtime implementation, manifest exposure, differential harnesses, and auditable evidence reports.
 
-## MCP Tools (33)
+When a requested change would alter attack, exception, permission, priority, acceptance, or verified-fact semantics, route it upstream to legal-math-modeling before changing the runtime.
 
-| Tool | Function |
-|------|----------|
-| evaluate | Public kernel certified litigation report |
-| route | Cross-jurisdiction routing guard |
-| trace | Attack graph trace and grounded witness |
-| check | Fail-closed certificate boundary check |
-| batch | Batch case audit over public toy fixtures |
-| render | Render certificate-backed public report |
-| diff | Spec shadow differential gate |
-| governance | Public rule-governance report |
-| impact | Rule-change impact analysis |
-| ingest_candidate | Candidate-only ingestion gate |
-| minimum_evidence | Source-bounded missing-evidence checklist |
-| damages_baseline | Engineering-baseline damages estimate |
-| case_deviation | Public toy sample-deviation detector |
-| stress_fixtures | Red/green stress fixture export |
-| private_layer_contract | Public/private boundary contract |
-| trirail_collide | HK/US/PRC collision wrapper |
-| check_threat | Threat signature check |
-| generate_memo | Public toy memo wrapper |
-| route_state | US state route query |
-| get_citation | Citation lookup |
-| get_operator_schemas | Operator schema export |
-| generate_task_schema | Task schema export |
-| rule_router | Expert-shard router |
-| stratified_evaluate | Four-stage runtime evaluator |
-| neural_leaf_status | Neural leaf cold-start/kill-switch status |
-| search_rules | Concept-aware rule search |
-| evaluate_facts | Four-stage pipeline inference |
-| calculate_damages | LPR-based damage calculation |
-| analyze_strategy | Strategy analysis with adversarial pipeline |
-| extract_elements | Legal element extraction |
-| evaluate_facts_llm | Privacy-gated LLM candidate output |
-| align_concepts_llm | Privacy-gated LLM concept candidate |
-| generate_nlni_llm | Privacy-gated LLM training-data candidate |
+## Disclosure
 
----
+Public reports should disclose:
 
-## Mathematical Foundation
+- command run;
+- commit or working-tree context when available;
+- pass/fail result;
+- skipped or blocked checks;
+- remaining risks.
 
-Backed by the [legal-math-modeling](https://github.com/laubeing-droid/legal-math-modeling) companion repository:
-
-| Claim | Status | Evidence |
-|-------|--------|----------|
-| Horn closure monotonicity/minimality | **Lean specification proved** | legal-math-modeling `HornFixedPoint.lean` + theorem manifest |
-| Dung grounded extension existence/least fixed point | **Lean specification proved** | legal-math-modeling `DungFixedPoint.lean` + theorem manifest |
-| Contract/license/permission/priority slices | **Lean vertical slices checked** | legal-math-modeling `LegalSyntax`, `DDLDefinitions`, `CertificateChecker`, `HornAAFContract`, `AttackDecision`, `SafetyTheorems`, `EndToEnd` |
-| JC spec shadow fixtures | **Runtime aligned** | `tests/unit/test_spec_shadow_harness.py`, 10 aligned fixtures |
-| Independent checker-backed certificates | **Runtime tested** | `tests/test_independent_checker.py` + `compiler_core/certificate_checker.py` |
-| Graph similarity as a metric | **Forbidden as a formal claim** | legal-math-modeling forbidden-claim boundary |
-| DP/privacy guarantees | **Not established** | epsilon is config/policy input, not a theorem |
-
-**Trust Label System (7 levels):**
-UNVERIFIED → ENGINEERING_BASELINE → DATA_INSUFFICIENT → TOY_SYNTHETIC → TESTED_PROPERTY → SMT_PROVED → PROVED_FORMAL → PROVED_BY_EXHAUSTIVE_ENUMERATION
-
----
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-python -m pytest tests/ -v
-```
-
----
-
-## License
-
-MIT
+Do not remove failed evidence, bypass tests, or convert empirical output into proof language.
