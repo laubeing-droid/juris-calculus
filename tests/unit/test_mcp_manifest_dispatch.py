@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from compiler_core.post_freeze_surface import SURFACE_TOOLS
@@ -6,6 +7,7 @@ from mcp_server import MCPServer, MCP_ENVELOPE_KEYS
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SPEC_ROOT = Path(os.environ.get("LEGAL_MATH_MODELING_ROOT", ROOT.parent / "数学证明" / "legal-math-modeling"))
 
 
 SAMPLE_ARGS = {
@@ -33,7 +35,7 @@ SAMPLE_ARGS = {
     "check": {"malformed_certificate": True},
     "batch": {"count": 1},
     "render": {},
-    "diff": {"spec_root": str(ROOT.parent / "数学证明" / "legal-math-modeling")},
+    "diff": {"spec_root": str(SPEC_ROOT)},
     "governance": {},
     "impact": {"rule_id": "rule::delivery_obligation"},
     "ingest_candidate": {"raw_text": "candidate only"},
