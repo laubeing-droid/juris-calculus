@@ -16,9 +16,9 @@
 
 **Rules: 2,117 → 21,144** (20 books, 8,712 pages, 727万字全量蒸馏)
 
-**Four-Stage Pipeline (mathematically proved):**
-- Stage 1: `evaluate_horn()` — pure monotone Horn closure (proved: 82,836 fixtures)
-- Stage 2: `build_attack_graph_from_evaluator()` — Dung AAF attack graph (proved: 66,066 graphs)
+**Four-Stage Pipeline (runtime evidence + formal-spec boundary):**
+- Stage 1: `evaluate_horn()` — pure monotone Horn closure (runtime fixture evidence: 82,836 fixtures)
+- Stage 2: `build_attack_graph_from_evaluator()` — Dung AAF attack graph (runtime fixture evidence: 66,066 graphs)
 - Stage 3: `grounded_extension()` — deterministic acceptance/rejection
 - Stage 4: Trust label projection + `allowed_claim`/`forbidden_claim` marking
 

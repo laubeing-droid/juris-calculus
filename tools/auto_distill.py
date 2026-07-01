@@ -7,10 +7,13 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+
 import yaml
 
-BASE_DIR = r'D:\同步网盘\软件开发\权威裁判规则数据库\output\全文json'
-OUTPUT_DIR = r'D:\Codex\juris-calculus\源码\tests\fixtures\distill_candidates'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+BASE_DIR = os.environ.get("JC_DISTILL_SOURCE_ROOT", str(REPO_ROOT / "下载存放区" / "全文json"))
+OUTPUT_DIR = os.environ.get("JC_DISTILL_OUTPUT_DIR", str(REPO_ROOT / "tests" / "fixtures" / "distill_candidates"))
 
 # Book → prefix mapping
 BOOK_PREFIX = {

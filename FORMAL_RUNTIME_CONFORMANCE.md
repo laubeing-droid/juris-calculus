@@ -76,7 +76,7 @@ Every manifest tool returns:
 ## 4. Verification Commands
 
 ```powershell
-$env:LEGAL_MATH_MODELING_ROOT = "D:\Codex\数学证明\legal-math-modeling"
+$env:LEGAL_MATH_MODELING_ROOT = "<path-to-legal-math-modeling>"
 python -m pytest tests\unit\test_spec_shadow_harness.py -q
 python -m pytest tests\unit\test_post_freeze_surface.py -q
 python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q

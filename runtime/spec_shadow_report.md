@@ -1,8 +1,8 @@
 # JC Spec Shadow Differential Report
 
 - status: PASS
-- legal_math_head: 2ab6cda38f2392cd048bc0643e56fb5f9fc46708
-- jc_head: 5fa342d2edb6b06b6bdb97b1265f3a8d63484b71
+- legal_math_head: 0f37aea2a7c9740374d27a07ad9b59b3266fce24
+- jc_head: 63a7ecfc89df9d1263d0714faa3acbdfd2ddf52a
 - fixture_count: 10
 - aligned_count: 10
 - diverged_count: 0

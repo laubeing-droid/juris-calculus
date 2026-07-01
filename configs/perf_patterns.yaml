@@ -47,6 +47,6 @@ patterns:
   threshold_error: 0.2
   threshold_warn: 0.13
   value: 0.1
-source: C:\Users\being\AppData\Local\Temp\tmpupcbb523\baseline.json
+source: <local-baseline-json>
 updated: '2026-06-12T18:49:00.152276+00:00'
 version: 2.0.0

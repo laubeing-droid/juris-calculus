@@ -5,12 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 
-BATCH_ROOT = Path("D:/juris_llm_batches")
+BATCH_ROOT = Path(os.environ.get("JC_LLM_BATCH_ROOT", ".llm_batches"))
 ALLOWED_TASKS = {
     "rule_extraction",
     "ir_migration_repair",

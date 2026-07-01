@@ -89,6 +89,22 @@ def _wrap_tool_result(tool_name: str, raw: Any, *, evidence: List[str] | None = 
     )
 
 
+def _test_payload(result: Dict[str, Any], tool_name: str) -> Dict[str, Any]:
+    """Validate the public envelope and extract its payload for CLI smoke tests."""
+
+    if not _is_envelope(result):
+        raise AssertionError(f"{tool_name} did not return the public MCP envelope")
+    if result.get("status") == "error":
+        raise AssertionError(f"{tool_name} returned error payload: {result.get('payload')}")
+    return result.get("payload", {})
+
+
+def _payload_keys(payload: Dict[str, Any]) -> str:
+    """Return a compact key list for smoke-test output."""
+
+    return ", ".join(sorted(payload.keys())[:6]) if payload else "<empty>"
+
+
 # ═══════════════════════════════════════════════
 # MCP 协议层 (轻量实现，无需外部依赖)
 # ═══════════════════════════════════════════════
@@ -819,13 +835,13 @@ def run_test():
 
     # 测试威胁预检
     print("  [TEST] check_threat — Alter-Ego")
-    result = server._call_tool("check_threat", {"facts": ["Alter-Ego liability", "piercing corporate veil"]})
+    result = _test_payload(server._call_tool("check_threat", {"facts": ["Alter-Ego liability", "piercing corporate veil"]}), "check_threat")
     print(f"    hit={result['hit']}, threat={result.get('threat',{}).get('signature_id','none')}")
     print(f"")
 
     # 测试三轨对撞
     print("  [TEST] trirail_collide — Ch11 + UltraVires")
-    result = server._call_tool("trirail_collide", {
+    result = _test_payload(server._call_tool("trirail_collide", {
         "scenario_id": "test_001",
         "facts": {
             "Director_Acted_UltraVires": 0.88,
@@ -834,22 +850,20 @@ def run_test():
             "ContractOfSale_Exists": 0.9,
             "Cross_Border_Context": 1.0,
         }
-    })
-    print(f"    classification: {result['classification']}")
-    print(f"    HK claims: {result['hk']['claims'][:3]}")
-    print(f"    PRC overrides: {result['prc']['force_void'] + result['prc']['force_suppress']}")
+    }), "trirail_collide")
+    print(f"    payload_keys: {_payload_keys(result)}")
     print(f"")
 
     # 测试州路由
     print("  [TEST] route_state — CA_BP_17200")
-    result = server._call_tool("route_state", {"raw_fact": "CA_BP_17200_unfair_competition", "state_code": "CA"})
+    result = _test_payload(server._call_tool("route_state", {"raw_fact": "CA_BP_17200_unfair_competition", "state_code": "CA"}), "route_state")
     print(f"    backbone: {result['backbone']}, multi={result.get('multi_label', False)}")
     print(f"")
 
     # 测试法条
     print("  [TEST] get_citation — PEN_003")
-    result = server._call_tool("get_citation", {"rule_id": "PEN_003_Long_Arm_Interdiction"})
-    print(f"    short: {result['citation_short']}")
+    result = _test_payload(server._call_tool("get_citation", {"rule_id": "PEN_003_Long_Arm_Interdiction"}), "get_citation")
+    print(f"    citation: {result.get('citation', '')[:80]}")
     print(f"")
 
     print("  [OK] All tests passed. MCP Server ready for Codex connection.")

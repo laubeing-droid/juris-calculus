@@ -131,4 +131,3 @@ def test_surface_outputs_are_json_serializable():
     ]
 
     json.dumps(outputs, ensure_ascii=False)
-

@@ -78,7 +78,7 @@ juris-calculus/
 │   ├── obstruction_registry.yaml     #   CN↔HK↔US concept mapping status
 │   └── ...
 ├── tools/                            #   67 analysis and quality tools
-└── tests/                            #   296 passing tests, 38 skipped in the latest local run
+└── tests/                            #   312 passing tests, 38 skipped in the latest local run
 ```
 
 ---

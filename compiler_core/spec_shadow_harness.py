@@ -638,7 +638,7 @@ def build_cross_repo_differential_report(spec_repo_root: Path = SPEC_REPO_ROOT) 
     comparisons = [run_fixture_comparison(fixture, spec_repo_root) for fixture in fixtures]
     diverged = sum(1 for item in comparisons if item["report"]["status"] == "DIVERGED")
     return {
-        "spec_repo_root": str(spec_repo_root),
+        "spec_repo_root": f"<{SPEC_REPO_ENV}>",
         "legal_math_head": _git_head(spec_repo_root),
         "jc_head": _git_head(JC_REPO_ROOT),
         "status": "PASS" if diverged == 0 else "FAIL",

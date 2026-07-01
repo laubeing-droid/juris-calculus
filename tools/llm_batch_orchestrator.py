@@ -98,7 +98,7 @@ Previous batch:
 
 Important:
 
-- Do not read or write D:\\Codex\\juris-calculus.
+- Do not read or write the juris-calculus repository checkout.
 - Use only files under this batch directory plus embedded request data.
 - Write normalized candidates to:
   {next_root}\\output\\candidates.jsonl
