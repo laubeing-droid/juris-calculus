@@ -565,26 +565,27 @@ class FastPathInterceptor:
             return None
 
         # 将所有事实名拼接为一个可搜索的字符串
-         # v2.0: US Code citation validation against blueprint
+        fact_blob = " | ".join(fact_names)
+
+        # v2.0: US Code citation validation against blueprint
         try:
             from compiler_core.us_lookup import validate_usc_citation
             citations = validate_usc_citation(fact_blob)
             for cit in citations:
                 if not cit.get("valid"):
+                    title = cit.get("title", "?")
                     return {
                         "intercepted": True,
                         "signature_id": "USC_INVALID_TITLE",
                         "threat_level": "HIGH",
                         "action": "FORCE_SUPPRESS",
                         "target_rule": cit.get("citation", ""),
-                        "reason": f"Invalid US Code: Title {cit.get("title","?")}",
+                        "reason": f"Invalid US Code: Title {title}",
                         "method": "USC_VALIDATION",
                         "source_file": "blueprint:united_states_code",
                     }
         except Exception:
             pass
-
-        fact_blob = " | ".join(fact_names)
 
         for sig in self.signatures:
             for pat in sig.get("pattern", []):
