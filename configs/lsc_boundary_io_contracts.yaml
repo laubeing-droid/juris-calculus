@@ -1,0 +1,26 @@
+schema_version: lsc-boundary-io-v1
+description: >
+  Cross-module IO declarations for LSC boundary absorption. These declarations
+  describe engineering handoff slots only; they do not alter JC formal semantics.
+contracts:
+  - module_id: fact_trust_intake
+    consumed_keys: []
+    produced_keys:
+      - fact_trust_envelope
+    allowed_output_kinds:
+      - machine_packet
+  - module_id: boundary_result_classifier
+    consumed_keys:
+      - fact_trust_envelope
+    produced_keys:
+      - lsc_boundary_result
+    allowed_output_kinds:
+      - machine_packet
+      - review_packet
+  - module_id: renderer_firewall
+    consumed_keys:
+      - lsc_boundary_result
+    produced_keys:
+      - renderer_firewall_metadata
+    allowed_output_kinds:
+      - machine_packet

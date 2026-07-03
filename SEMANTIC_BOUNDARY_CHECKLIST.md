@@ -54,3 +54,11 @@ At minimum, run the targeted test and record:
 - remaining risk.
 
 For public surface changes, also run MCP manifest-dispatch tests and `python mcp_server.py --test`.
+
+## LSC Boundary Absorption Note
+
+LSC absorption is safe in JC only when it adds engineering aliases, audit fields, renderer warnings, IO declarations, review packets, or tests while preserving existing semantics.
+
+Do not use LSC `USER_ASSUMED`, `DISPUTED`, `UNKNOWN`, `HYPOTHETICAL_RESULT`, `DEGRADED_TO_AUXILIARY`, or `CONFLICT` to change `DecisionStatus`, `verified_fact`, Horn closure, attack, exception, priority, permission, certificate acceptance, formal proof claims, or fail-closed behavior.
+
+Any such semantic change must route back to `D:\Codex\数学证明\legal-math-modeling`.
