@@ -5,11 +5,13 @@
 github_actions_status: passed
 workflow: ci.yml
 branch: codex/lsc-boundary-absorption
-run_id: 28636003678
-run_url: https://github.com/laubeing-droid/juris-calculus/actions/runs/28636003678
+run_id: 28636199941
+run_url: https://github.com/laubeing-droid/juris-calculus/actions/runs/28636199941
 conclusion: success
 
-Local engineering phases 0-10 were implemented and locally validated. Phase 11 was manually triggered with `gh workflow run ci.yml --ref codex/lsc-boundary-absorption` because `ci.yml` only auto-runs on `main` push. `gh run watch 28636003678 --exit-status` completed successfully.
+Local engineering phases 0-10 were implemented and locally validated. Phase 11 was manually triggered with `gh workflow run ci.yml --ref codex/lsc-boundary-absorption` because `ci.yml` only auto-runs on `main` push. `gh run watch 28636199941 --exit-status` completed successfully for head SHA `2ae038a7b3ab995d1406944ff889d8ee2e04a223`.
+
+Run-id fixed-point note: writing a post-CI run id into this report creates a later report commit. Therefore this report records the latest CI run known at report-write time, and the authoritative final-head proof is the newest GitHub Actions `ci.yml` run whose `headSha` equals the pushed branch HEAD.
 
 ## Phase Results
 
@@ -26,7 +28,7 @@ Local engineering phases 0-10 were implemented and locally validated. Phase 11 w
 | Phase 8 conflict certificate / review packet | validated | `compiler_core/review_packet.py`, conflict/review tests |
 | Phase 9 test matrix | validated | 8 `test_lsc_boundary*.py` files, 35 assertions |
 | Phase 10 final report / Deli status log | validated | this report records Deli task statuses; no Deli runtime dependency was added |
-| Phase 11 GitHub Actions CI | validated | run `28636003678`, conclusion `success` |
+| Phase 11 GitHub Actions CI | validated | run `28636199941`, conclusion `success` |
 
 ## Modified Files
 
@@ -132,12 +134,13 @@ The 8 boundary files cover at least these 24 scenarios:
 | `python -m pytest tests/unit/test_mcp_manifest_dispatch.py tests/unit/test_post_freeze_surface.py -v --tb=short` | 16 passed |
 | `python mcp_server.py --test` | passed; 33 tools, 12 resources |
 | `git diff --check` | no whitespace errors; line-ending warnings only |
-| `gh run watch 28636003678 --exit-status` | passed |
-| `gh run view 28636003678 --json databaseId,status,conclusion,url,headBranch,workflowName,event` | completed / success |
+| `gh run watch 28636003678 --exit-status` | passed for main migration commit `d81024b2682768ea6e2f44a6055ff238367ee1f8` |
+| `gh run watch 28636199941 --exit-status` | passed for report-updated head `2ae038a7b3ab995d1406944ff889d8ee2e04a223` |
+| `gh run view 28636199941 --json databaseId,status,conclusion,url,headBranch,workflowName,event,headSha` | completed / success |
 
 Baseline note: direct `pytest tests/unit/test_agent_protocol.py tests/unit/test_anti_degradation.py` failed before migration changes with `ModuleNotFoundError: No module named 'tools'`. The same tests collect correctly under `python -m pytest`.
 
-CI note: initial `gh auth status` reported an invalid keyring token, and an initial `gh run list` attempt failed through proxy `127.0.0.1:10808`. Clearing `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` for the `gh` commands allowed workflow dispatch, watch, and view to complete.
+CI note: initial `gh auth status` reported an invalid keyring token, and an initial `gh run list` attempt failed through proxy `127.0.0.1:10808`. Subsequent GitHub checks used the corrected proxy `http://127.0.0.1:20808` and completed successfully.
 
 ## Route-Back Assessment
 
