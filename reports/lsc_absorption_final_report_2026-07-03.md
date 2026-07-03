@@ -2,14 +2,14 @@
 
 ## Status
 
-github_actions_status: blocked_auth_required
+github_actions_status: passed
 workflow: ci.yml
 branch: codex/lsc-boundary-absorption
-run_id: unavailable
-run_url: unavailable
-conclusion: not_run
+run_id: 28636003678
+run_url: https://github.com/laubeing-droid/juris-calculus/actions/runs/28636003678
+conclusion: success
 
-Local engineering phases 0-10 were implemented and locally validated. Phase 11 is blocked because `gh auth status` reports an invalid GitHub token in the keyring for `laubeing-droid`. This report does not claim CI success or completed migration.
+Local engineering phases 0-10 were implemented and locally validated. Phase 11 was manually triggered with `gh workflow run ci.yml --ref codex/lsc-boundary-absorption` because `ci.yml` only auto-runs on `main` push. `gh run watch 28636003678 --exit-status` completed successfully.
 
 ## Phase Results
 
@@ -26,7 +26,7 @@ Local engineering phases 0-10 were implemented and locally validated. Phase 11 i
 | Phase 8 conflict certificate / review packet | validated | `compiler_core/review_packet.py`, conflict/review tests |
 | Phase 9 test matrix | validated | 8 `test_lsc_boundary*.py` files, 35 assertions |
 | Phase 10 final report / Deli status log | validated | this report records Deli task statuses; no Deli runtime dependency was added |
-| Phase 11 GitHub Actions CI | needs_more_evidence | blocked by invalid `gh` authentication |
+| Phase 11 GitHub Actions CI | validated | run `28636003678`, conclusion `success` |
 
 ## Modified Files
 
@@ -132,9 +132,12 @@ The 8 boundary files cover at least these 24 scenarios:
 | `python -m pytest tests/unit/test_mcp_manifest_dispatch.py tests/unit/test_post_freeze_surface.py -v --tb=short` | 16 passed |
 | `python mcp_server.py --test` | passed; 33 tools, 12 resources |
 | `git diff --check` | no whitespace errors; line-ending warnings only |
-| `gh auth status` | blocked: invalid token in keyring |
+| `gh run watch 28636003678 --exit-status` | passed |
+| `gh run view 28636003678 --json databaseId,status,conclusion,url,headBranch,workflowName,event` | completed / success |
 
 Baseline note: direct `pytest tests/unit/test_agent_protocol.py tests/unit/test_anti_degradation.py` failed before migration changes with `ModuleNotFoundError: No module named 'tools'`. The same tests collect correctly under `python -m pytest`.
+
+CI note: initial `gh auth status` reported an invalid keyring token, and an initial `gh run list` attempt failed through proxy `127.0.0.1:10808`. Clearing `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` for the `gh` commands allowed workflow dispatch, watch, and view to complete.
 
 ## Route-Back Assessment
 
@@ -155,15 +158,13 @@ No legal-math-modeling route-back was triggered. The work did not change `verifi
 | LSC-JC-08 Conflict certificate and review packet | validated |
 | LSC-JC-09 Test matrix | validated |
 | LSC-JC-10 Final report | validated |
-| LSC-JC-11 GitHub Actions CI | needs_more_evidence: auth blocked |
+| LSC-JC-11 GitHub Actions CI | validated |
 
 ## Remaining Risks
 
-- Phase 11 cannot be completed until GitHub CLI authentication is repaired.
 - This implementation is an engineering boundary layer. It deliberately does not prove new formal semantics.
 - Existing source-anchor warnings remain in MCP smoke output and were not modified by this migration.
 
 ## [我违规之处]
 
 无。
-
