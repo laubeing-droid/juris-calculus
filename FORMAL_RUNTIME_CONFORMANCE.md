@@ -49,3 +49,11 @@ python mcp_server.py --test
 ```
 
 If any command cannot run, conformance reporting must say blocked and include the error.
+
+## LSC Boundary Absorption Note
+
+LSC boundary mechanisms are absorbed as runtime conformance guardrails: fact-trust envelopes, taint propagation, review packets, renderer firewalls, IO contracts, and provenance fields.
+
+These additions do not expand JC's formal-runtime claims. `USER_ASSUMED`, `DISPUTED`, `UNKNOWN`, `HYPOTHETICAL_RESULT`, `DEGRADED_TO_AUXILIARY`, and `CONFLICT` are disclosure and routing states unless legal-math-modeling changes the canonical specification.
+
+If an implementation change would make a previously rejected certificate accepted, upgrade candidate material into formal proof, or alter upstream specification semantics, conformance must be marked blocked and routed upstream.

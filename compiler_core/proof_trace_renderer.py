@@ -1,5 +1,7 @@
 """Proof trace renderer — converts JSON proof traces to Chinese natural language."""
 
+from typing import Any, Mapping
+
 
 def format_proof_trace_cn(trace: list) -> str:
     """Format proof trace as readable Chinese text.
@@ -43,3 +45,21 @@ def format_proof_trace_cn(trace: list) -> str:
             lines.append(f"[{event_type}] {rule_id}: {claim_id}")
 
     return "\n".join(lines) if lines else "无推理轨迹。"
+
+
+def format_boundary_result_cn(result: Mapping[str, Any]) -> str:
+    """Render a boundary result without turning it into legal advice."""
+
+    status = str(result.get("result_status", "unknown"))
+    used_facts = ", ".join(result.get("used_fact_keys", [])[:5]) or "无"
+    if status == "hypothetical_result":
+        return f"边界状态：假设结果；使用事实：{used_facts}；不得作为正式法律意见。"
+    if status == "review_only_result":
+        return f"边界状态：仅供复核；使用事实：{used_facts}；需要人工确认替代路径。"
+    if status == "missing_required_fact":
+        return f"边界状态：缺少必要事实；使用事实：{used_facts}；不得输出确定结论。"
+    if status == "conflict_certificate":
+        return f"边界状态：冲突证书；使用事实：{used_facts}；不自动裁判优先级。"
+    if status == "engine_error":
+        return "边界状态：运行错误；不得转换为法律建议。"
+    return f"边界状态：{status}；使用事实：{used_facts}。"

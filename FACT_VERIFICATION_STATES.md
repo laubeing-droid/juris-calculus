@@ -58,3 +58,11 @@ Reports should disclose:
 - whether the fact is eligible for runtime reasoning.
 
 Do not describe `candidate_fact`, `normalized_fact`, or `source_bound_fact` as verified.
+
+## LSC Boundary Absorption Note
+
+LSC terms are engineering boundary aliases only. `ADMITTED`, `VERIFIED`, `COURT_FIXED`, `USER_ASSUMED`, `DISPUTED`, and `UNKNOWN` can be mapped into JC fact-trust envelopes, but the formal meaning of `verified_fact` remains the one defined in this document.
+
+`USER_ASSUMED`, `DISPUTED`, and `UNKNOWN` do not create formal proof. They trigger hypothetical, review-only, or missing-fact outputs unless a deterministic JC gate promotes the material under the existing verified-fact rules.
+
+If an LSC absorption change would alter `verified_fact` eligibility, checker acceptance, Horn closure, or fail-closed behavior, the change must route back to `D:\Codex\数学证明\legal-math-modeling` before JC implementation.

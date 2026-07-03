@@ -2,7 +2,9 @@
 import json
 import csv
 import io
-from typing import List, Any
+from typing import Any, Mapping
+
+from compiler_core.lsc_boundary_status import ensure_required_audit_fields
 
 
 def export_json(claims: list) -> str:
@@ -25,3 +27,11 @@ def export_markdown(claims: list) -> str:
     for c in claims:
         lines.append(f"| {c.id} | {c.confidence:.2f} | {c.get_trust_label()} | {c.description[:60]} |")
     return "\n".join(lines)
+
+
+def export_boundary_json(result: Mapping[str, Any]) -> str:
+    """Export an LSC boundary result only when audit fields are present."""
+
+    if not ensure_required_audit_fields(result):
+        raise ValueError("boundary result is missing required audit fields")
+    return json.dumps(dict(result), ensure_ascii=False, sort_keys=True, indent=2)

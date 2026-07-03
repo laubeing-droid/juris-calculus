@@ -80,6 +80,18 @@ def _wrap_tool_result(tool_name: str, raw: Any, *, evidence: List[str] | None = 
         risk_labels.append("LLM_CANDIDATE_ONLY")
     if payload.get("trust") in {"UNVERIFIED", "ENGINEERING_BASELINE"}:
         risk_labels.append(str(payload["trust"]))
+    if isinstance(payload, dict) and "lsc_boundary" not in payload:
+        payload["lsc_boundary"] = {
+            "result_status": "engine_error" if status == "error" else "review_only_result",
+            "used_fact_keys": [],
+            "used_rule_ids": [],
+            "source_snapshot_ids": [],
+            "provenance": {"summary_only": True, "source": f"mcp_server:{tool_name}"},
+            "taint": list(risk_labels),
+            "review_required": status != "ok",
+            "formal_kernel_used": False,
+            "renderer_output_kind": "machine_packet",
+        }
     return make_envelope(
         payload,
         status=status,

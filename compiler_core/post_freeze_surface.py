@@ -16,6 +16,7 @@ from compiler_core.argumentation import grounded_extension, proof_trace
 from compiler_core.cross_jurisdiction_router import CrossJurisdictionRouter
 from compiler_core.horn_completeness import analyze_rule_impact, compute_missing_evidence
 from compiler_core.litigation_renderer import LitigationChainRenderer
+from compiler_core.output_firewall import renderer_firewall_metadata
 from compiler_core.types import LegalDomain, LegalRule
 
 
@@ -118,6 +119,20 @@ def certified_litigation_report(args: Mapping[str, Any]) -> dict[str, Any]:
     )
     payload = {
         "case_id": report.case_id,
+        "lsc_boundary": {
+            "result_status": "accepted_formal_result" if checker_verdict["accepted"] else "review_only_result",
+            "used_fact_keys": facts,
+            "used_rule_ids": list(report.rules_applied),
+            "source_snapshot_ids": ["toy://contract"],
+            "provenance": {"summary_only": True, "source": "public toy fixture"},
+            "taint": risk_labels,
+            "review_required": bool(risk_labels),
+            "formal_kernel_used": checker_verdict["accepted"],
+            "renderer_output_kind": "kernel_explanation",
+        },
+        "renderer_firewall": renderer_firewall_metadata(
+            "accepted_formal_result" if checker_verdict["accepted"] else "review_only_result"
+        ),
         "fact_table": fact_table,
         "triggered_rules": [
             {"rule_id": rule_id, "source_anchor": next((r.source_anchor for r in toy_contract_rules() if r.id == rule_id), "")}
@@ -245,6 +260,17 @@ def ingest_candidate(args: Mapping[str, Any]) -> dict[str, Any]:
         "provenance": args.get("provenance", "candidate://unverified"),
         "verification_state": "CANDIDATE_ONLY",
         "enters_kernel": False,
+        "lsc_boundary": {
+            "result_status": "review_only_result",
+            "used_fact_keys": [],
+            "used_rule_ids": [],
+            "source_snapshot_ids": [],
+            "provenance": {"summary_only": True, "source": "candidate ingestion"},
+            "taint": ["candidate_only"],
+            "review_required": True,
+            "formal_kernel_used": False,
+            "renderer_output_kind": "review_packet",
+        },
     }
     return envelope(candidate, status="blocked", decision_status="TAINTED", risk_labels=["CANDIDATE_ONLY"], evidence=["LLM_INGESTION_CONTRACT.md"])
 

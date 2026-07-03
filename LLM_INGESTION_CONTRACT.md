@@ -60,3 +60,11 @@ Use precise wording:
 - prohibited: "LLM verified the fact"
 - prohibited: "the system proves every runtime path"
 - prohibited: "experience output is equivalent to formal proof"
+
+## LSC Boundary Absorption Note
+
+LSC `FactCoordinate` language may be used as an engineering wrapper around candidate material, but it does not weaken this ingestion contract. LLM-origin material remains candidate-only until deterministic gates promote it.
+
+LSC `USER_ASSUMED`, `DISPUTED`, and `UNKNOWN` states must not be converted into `verified_fact`, accepted certificates, or formal proof claims by narrative output. They may only produce hypothetical, review-only, missing-fact, or review-packet responses in JC.
+
+If LSC absorption requires changing the gate that decides whether LLM-derived material can affect reasoning, the work belongs in `D:\Codex\数学证明\legal-math-modeling` first.
