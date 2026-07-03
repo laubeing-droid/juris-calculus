@@ -5,11 +5,11 @@
 github_actions_status: passed
 workflow: ci.yml
 branch: codex/lsc-boundary-absorption
-run_id: 28636528135
-run_url: https://github.com/laubeing-droid/juris-calculus/actions/runs/28636528135
+run_id: 28648135682
+run_url: https://github.com/laubeing-droid/juris-calculus/actions/runs/28648135682
 conclusion: success
 
-Local engineering phases 0-10 were implemented and locally validated. Phase 11 was manually triggered with `gh workflow run ci.yml --ref codex/lsc-boundary-absorption` because `ci.yml` only auto-runs on `main` push. `gh run view 28636528135` completed successfully for branch head SHA `c079b7555bc5e8892701d7a8e40ed13f408cdc21`.
+Local engineering phases 0-10 were implemented and locally validated. Phase 11 was manually triggered with `gh workflow run ci.yml --ref codex/lsc-boundary-absorption` because `ci.yml` only auto-runs on `main` push. `gh run watch 28648135682 --exit-status` completed successfully for branch head SHA `ac61a30e7fa615914a9c159dc44022af14072745`.
 
 Run-id fixed-point note: writing a post-CI run id into this report creates a later report commit. Therefore this report records the latest CI run known at report-write time, and the authoritative final-head proof is the newest GitHub Actions `ci.yml` run whose `headSha` equals the pushed branch HEAD.
 
@@ -18,10 +18,10 @@ Run-id fixed-point note: writing a post-CI run id into this report creates a lat
 | Repository | Current state | Evidence |
 |---|---|---|
 | `legal-math-modeling` | default branch and only remote branch is `main` at `a3a015941f75091c87d57aa956e712f1546dd7d4` | `gh api repos/laubeing-droid/legal-math-modeling/branches` returned only `main`; local `HEAD == origin/main` |
-| `legal-math-modeling` Lake build | `Lake Build + Scan` for `main` is still in progress and must not be treated as passed yet | run `28645132034`, `headBranch=main`, `headSha=a3a015941f75091c87d57aa956e712f1546dd7d4`; job is in `Lake Clean + Build (full from 0, no Mathlib cache)` |
+| `legal-math-modeling` Lake build | `Lake Build + Scan` for `main` passed | run `28645132034`, `headBranch=main`, `headSha=a3a015941f75091c87d57aa956e712f1546dd7d4`, conclusion `success`, duration about 1h07m43s |
 | `legal-math-modeling` Banach proof build | passed for the same source commit before branch consolidation | run `28639836004`, conclusion `success`, head SHA `a3a015941f75091c87d57aa956e712f1546dd7d4` |
 | `Deli` / `D:\Codex\数学证明自动研究` | no source changes in this absorption path | local `main...origin/main`, latest commit `742300a Rewrite Deli support documentation` |
-| `juris-calculus` branch | pushed branch CI passed before PR/main landing | run `28636528135`, conclusion `success`, head SHA `c079b7555bc5e8892701d7a8e40ed13f408cdc21` |
+| `juris-calculus` branch | pushed branch CI passed before PR/main landing | run `28648135682`, conclusion `success`, head SHA `ac61a30e7fa615914a9c159dc44022af14072745`; PR `https://github.com/laubeing-droid/juris-calculus/pull/2` |
 
 Legal-math route-back remains active. Runtime metadata imported from LSC remains engineering metadata only; it is not a Lean proof, does not add a canonical legal type, and does not change `verified_fact`, `DecisionStatus`, Horn closure, attack/exception/priority/permission semantics, certificate checker acceptance, or any formal proof claim.
 
@@ -40,7 +40,7 @@ Legal-math route-back remains active. Runtime metadata imported from LSC remains
 | Phase 8 conflict certificate / review packet | validated | `compiler_core/review_packet.py`, conflict/review tests |
 | Phase 9 test matrix | validated | 8 `test_lsc_boundary*.py` files, 35 assertions |
 | Phase 10 final report / Deli status log | validated | this report records Deli task statuses; no Deli runtime dependency was added |
-| Phase 11 GitHub Actions CI | validated | run `28636528135`, conclusion `success` |
+| Phase 11 GitHub Actions CI | validated | branch run `28648135682`, conclusion `success`; legal-math Lake run `28645132034`, conclusion `success` |
 
 ## Modified Files
 
@@ -151,7 +151,8 @@ The 8 boundary files cover at least these 24 scenarios:
 | `git diff --check` | no whitespace errors; line-ending warnings only |
 | `gh run watch 28636003678 --exit-status` | passed for main migration commit `d81024b2682768ea6e2f44a6055ff238367ee1f8` |
 | `gh run watch 28636199941 --exit-status` | passed for report-updated head `2ae038a7b3ab995d1406944ff889d8ee2e04a223` |
-| `gh run view 28636528135 --json databaseId,status,conclusion,url,headBranch,workflowName,event,headSha` | completed / success for final pushed branch head `c079b7555bc5e8892701d7a8e40ed13f408cdc21` |
+| `gh run watch 28648135682 --exit-status` | completed / success for pushed branch head `ac61a30e7fa615914a9c159dc44022af14072745` |
+| `gh run watch 28645132034 --repo laubeing-droid/legal-math-modeling --exit-status` | completed / success for legal-math `main` head `a3a015941f75091c87d57aa956e712f1546dd7d4` |
 
 Baseline note: direct `pytest tests/unit/test_agent_protocol.py tests/unit/test_anti_degradation.py` failed before migration changes with `ModuleNotFoundError: No module named 'tools'`. The same tests collect correctly under `python -m pytest`.
 
