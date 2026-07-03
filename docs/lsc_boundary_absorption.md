@@ -6,6 +6,8 @@ JC absorbs LSC boundary mechanisms, not LSC legal tools. The absorbed layer is a
 
 JC does not absorb LSC's 36 legal objects, business calculators, AgentSkill wrapper, CLI/API, China-law concrete rules, or P1/P2 substantive judgment.
 
+The companion `legal-math-modeling` repository is the specification boundary and is now consolidated on `main`. Its public docs and manifest record this absorption as runtime metadata governance, not as a new Lean theorem family. JC may consume that boundary as a route-back rule, but it must not claim that Lean proves the LSC-derived runtime metadata.
+
 ## Terminology Mapping
 
 | LSC term | JC boundary alias | Meaning in JC |
@@ -35,4 +37,4 @@ P1/P2 material can appear in review packets, provenance summaries, or renderer w
 - Do not let renderer output final legal advice for hypothetical, disputed, unknown, conflict, or engine-error results.
 - Do not treat LSC fixtures as JC jurisdictional law.
 - Do not change certificate checker acceptance or verified-fact eligibility in JC. Route such work back to `D:\Codex\数学证明\legal-math-modeling`.
-
+- Do not treat legal-math CI success as proof of JC runtime metadata. CI only proves the checked sources for the referenced commit; runtime conformance still requires JC tests and certificates.
