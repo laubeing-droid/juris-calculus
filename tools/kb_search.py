@@ -13,17 +13,21 @@ tools/kb_search.py — 知识库检索 (Contextual Memory Tier)
 
 import yaml
 import re
+import os
 from pathlib import Path
 from typing import List, Dict
 
 BASE = Path(__file__).resolve().parents[1]
-HK_LIB = BASE / "configs" / "knowledge_base" / "hk_library" / "critical_annotations.yaml"
 
 
 def _load_hk() -> List[Dict]:
-    if not HK_LIB.exists():
+    override = os.environ.get("JURIS_HK_LIBRARY_PATH", "").strip()
+    if not override:
         return []
-    with open(HK_LIB, "r", encoding="utf-8") as f:
+    hk_lib = Path(override).expanduser().resolve()
+    if not hk_lib.exists():
+        return []
+    with open(hk_lib, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data.get("entries", [])
 

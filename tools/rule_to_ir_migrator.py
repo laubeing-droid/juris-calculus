@@ -99,7 +99,6 @@ def discover_rule_sources() -> List[Dict[str, str]]:
         "hk_expanded": "configs/hk/rules_expanded.yaml",
         "en_US": "configs/en_US/rules.yaml",
         "us_adapter": "configs/en_US/US_Adapter.yaml",
-        "uk_candidates": "configs/uk/rules_candidates.yaml",
     }.items():
         path = ROOT / rel
         if path.exists():
