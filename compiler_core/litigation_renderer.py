@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from compiler_core.argumentation import grounded_extension, proof_trace
+from compiler_core.canonical_serialization import content_id
 from compiler_core.certificate_checker import (
     GroundedINCertificate,
     OUTCertificate,
@@ -223,7 +224,7 @@ class LitigationChainRenderer:
         }
 
         report = LitigationReport(
-            case_id=f"case::{hash(tuple(self.facts)) & 0xFFFF:04x}",
+            case_id=content_id("case", {"facts": sorted(self.facts)}),
             facts=list(self.facts),
             rules_applied=sorted(horn_state.rules_applied),
             horn_closure=sorted(horn_state.claims.keys()),

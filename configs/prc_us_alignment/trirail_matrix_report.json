@@ -12,12 +12,10 @@
       }
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -104,20 +102,16 @@
     "description": "美国诉前证据开示 + 关联公司资产混同 → 横向否认+数据阻断",
     "classification": "HK_CN_ASYMMETRY",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 2,
@@ -235,20 +229,16 @@
     "description": "OFAC制裁 vs 反外国制裁法第12条强制对撞",
     "classification": "CHINA_US_COLLISION",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 2,
@@ -343,20 +333,16 @@
     "description": "美国辩诉交易 → PRC认罪认罚从宽映射 + 数据出境",
     "classification": "HK_CN_ASYMMETRY",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 2,
@@ -469,11 +455,10 @@
       }
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
       "state_tracker": {
-        "Contract_Validity": "VALID",
         "Creditor_Collect": "SUPPRESSED"
       }
     },
@@ -563,20 +548,16 @@
     "description": "保理合同独立成章 vs US应收账款转让",
     "classification": "HK_CN_ASYMMETRY",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -666,20 +647,16 @@
     "description": "US加密货币交易 vs PRC强制禁止",
     "classification": "CHINA_US_COLLISION",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -769,20 +746,16 @@
     "description": "VIE架构 vs 外商投资负面清单穿透审查",
     "classification": "CHINA_US_COLLISION",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 2,
@@ -917,20 +890,16 @@
     "description": "算法未备案 + 数据出境 → PRC双阻断",
     "classification": "CHINA_US_COLLISION",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -1039,12 +1008,10 @@
       }
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -1129,20 +1096,16 @@
     "description": "纯中国大陆境内保理合同——不应触发任何跨境阻断",
     "classification": "HK_CN_ASYMMETRY",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 1,
@@ -1231,20 +1194,16 @@
     "description": "跨境合同违约 + 损害赔偿 → CN 正式准入规则触发验证",
     "classification": "TRI_RESONANCE",
     "hk": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "us": {
-      "state": "VALID",
+      "state": "?",
       "claims": [],
       "rebuttals": 0,
-      "state_tracker": {
-        "Contract_Validity": "VALID"
-      }
+      "state_tracker": {}
     },
     "prc": {
       "overrides_count": 0,

@@ -55,7 +55,7 @@
 
 ## 规则、来源与报告文件快照
 
-[计算生成的][高等] 规范字节来自Git index blob，避免Windows工作树换行过滤造成漂移。行格式为`相对路径<TAB>字节数<TAB>SHA-256`，按路径排序、以UTF-8无BOM和LF连接并保留末尾LF。下列36行均为实际index结果；整体SHA-256为`3f9f2dc12bca5eb8d397ff100921159e58e52770bb5ed53abb030131f395db64`。
+[计算生成的][高等] 规范字节来自基线起点`6a281a3eef1f7f3649020435fbe916f24caac564`的Git blob，避免后续提交或Windows工作树换行过滤造成漂移。行格式为`相对路径<TAB>字节数<TAB>SHA-256`，按路径排序、以UTF-8无BOM和LF连接并保留末尾LF。下列36行均为实际基线blob结果；整体SHA-256为`3f9f2dc12bca5eb8d397ff100921159e58e52770bb5ed53abb030131f395db64`。
 
 ```text
 configs/en_US/L0_overrides_us.yaml	31117	c23439c50b8e85666f664ee264eca3548f4f8ff5c36983cdc53d46d854cccecf

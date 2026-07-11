@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from compiler_core.canonical_serialization import content_id
+
 
 @dataclass
 class EvidenceGap:
@@ -93,7 +95,7 @@ def build_enhanced_checklist(
     )
 
     return EnhancedEvidenceChecklist(
-        case_id="checklist::" + str(hash(tuple(facts)) & 0xFFFF),
+        case_id=content_id("checklist", {"facts": sorted(facts)}),
         gaps=gaps,
         total_critical=total_critical,
         total_high=total_high,

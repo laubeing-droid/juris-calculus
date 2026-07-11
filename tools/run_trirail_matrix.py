@@ -646,9 +646,9 @@ h1 {{ color:#f8fafc; font-size:24px; margin-bottom:4px; }}
   {_build_stats(results)}
 </div>
 <div class="grid">
-  {''.join(cards)}
+{''.join(cards)}
 </div>
-<div class="footer">juris-calculus v1.2.0-TriRail | Laupinco & WorkBuddy | {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}</div>
+<div class="footer">juris-calculus v1.2.0-TriRail | Laupinco & WorkBuddy | deterministic harness output</div>
 </body>
 </html>"""
 

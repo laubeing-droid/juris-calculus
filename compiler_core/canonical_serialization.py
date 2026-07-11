@@ -9,8 +9,22 @@ verification agents receive identical byte strings.
 """
 from __future__ import annotations
 
+from copy import deepcopy
+import hashlib
 import json
-from typing import Any
+from typing import Any, Mapping
+
+
+NON_SEMANTIC_FIELDS = frozenset({
+    "created_at",
+    "generated_at",
+    "output_path",
+    "pid",
+    "result_digest",
+    "semantic_digest",
+    "temp_dir",
+    "timestamp",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -22,7 +36,7 @@ def _make_aaf_canonical(
 ) -> dict[str, Any]:
     """Build the canonical AAF dict with sorted internal ordering."""
     # Sort claims by 'id' for deterministic output
-    sorted_claims = sorted(claims, key=lambda c: c.get("id", ""))
+    sorted_claims = sorted((deepcopy(claim) for claim in claims), key=lambda c: c.get("id", ""))
     # Sort attacks lexicographically
     sorted_attacks = sorted(attacks, key=lambda t: (t[0], t[1]))
     return {"claims": sorted_claims, "attacks": sorted_attacks}
@@ -68,8 +82,9 @@ def _make_horn_canonical(
 ) -> dict[str, Any]:
     """Build the canonical Horn dict with sorted internal ordering."""
     # Sort rules by head, then by body for deterministic output
+    copied_rules = [deepcopy(rule) for rule in rules]
     sorted_rules = sorted(
-        rules,
+        copied_rules,
         key=lambda r: (r.get("head", ""), tuple(sorted(r.get("body", [])))),
     )
     # Within each rule, sort the body list
@@ -79,6 +94,49 @@ def _make_horn_canonical(
     # Sort facts
     sorted_facts = sorted(facts)
     return {"rules": sorted_rules, "facts": sorted_facts}
+
+
+def semantic_projection(value: Any) -> Any:
+    """深度构造仅含语义字段的规范投影，不修改调用者对象。"""
+
+    if isinstance(value, Mapping):
+        return {
+            str(key): semantic_projection(nested)
+            for key, nested in sorted(value.items(), key=lambda item: str(item[0]))
+            if str(key) not in NON_SEMANTIC_FIELDS
+        }
+    if isinstance(value, (set, frozenset)):
+        projected = [semantic_projection(item) for item in value]
+        return sorted(projected, key=_canonical_sort_key)
+    if isinstance(value, (list, tuple)):
+        return [semantic_projection(item) for item in value]
+    return deepcopy(value)
+
+
+def semantic_digest(value: Any) -> str:
+    """计算排除运行环境字段和摘要自身的SHA-256语义摘要。"""
+
+    encoded = json.dumps(
+        semantic_projection(value),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def content_id(prefix: str, value: Any, *, length: int = 16) -> str:
+    """用规范内容生成跨进程稳定公共ID。"""
+
+    if not prefix or length < 8 or length > 64:
+        raise ValueError("prefix is required and length must be between 8 and 64")
+    return f"{prefix}::{semantic_digest(value)[:length]}"
+
+
+def _canonical_sort_key(value: Any) -> str:
+    """把集合元素转为稳定排序键。"""
+
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def serialize_horn(rules: list[dict[str, Any]], facts: set[str]) -> str:

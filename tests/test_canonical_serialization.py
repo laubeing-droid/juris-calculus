@@ -4,10 +4,12 @@ deterministic output, and format validation."""
 import json
 import pytest
 from compiler_core.canonical_serialization import (
+    content_id,
     serialize_aaf,
     deserialize_aaf,
     serialize_horn,
     deserialize_horn,
+    semantic_digest,
 )
 
 
@@ -129,3 +131,38 @@ def test_empty_inputs_round_trip():
     r, f = deserialize_horn(j_h)
     assert r == []
     assert f == set()
+
+
+def test_horn_serialization_does_not_modify_rule_bodies():
+    """规范化只能构造深拷贝，不能在调用者规则上原地排序。"""
+
+    rules = [{"head": "h", "body": ["b", "a"], "metadata": {"items": [2, 1]}}]
+
+    serialize_horn(rules, {"a"})
+
+    assert rules == [{"head": "h", "body": ["b", "a"], "metadata": {"items": [2, 1]}}]
+
+
+def test_aaf_serialization_does_not_expose_nested_claim_objects():
+    claims = [{"id": "A", "metadata": {"tags": ["original"]}}]
+    encoded = serialize_aaf(claims, [])
+    decoded, _ = deserialize_aaf(encoded)
+    decoded[0]["metadata"]["tags"].append("changed")
+
+    assert claims[0]["metadata"]["tags"] == ["original"]
+
+
+def test_semantic_digest_excludes_environment_fields_and_digest_itself():
+    first = {
+        "claims": ["A"],
+        "timestamp": "2026-01-01T00:00:00Z",
+        "nested": {"output_path": "one", "result_digest": "old"},
+    }
+    second = {
+        "claims": ["A"],
+        "timestamp": "2030-01-01T00:00:00Z",
+        "nested": {"output_path": "two", "result_digest": "new"},
+    }
+
+    assert semantic_digest(first) == semantic_digest(second)
+    assert content_id("case", first) == content_id("case", second)

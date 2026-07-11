@@ -5,6 +5,7 @@ from typing import List,Dict
 from dataclasses import dataclass,asdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from compiler_core.canonical_serialization import semantic_digest
 from compiler_core.types import LegalRule,LegalFact,IRState
 from compiler_core.evaluator import FixpointEvaluator,CriticalClarityFailure
 
@@ -34,7 +35,7 @@ class BatchProcessor:
             tnt=sum(1 for c in cl if c.requires_human_review and c.confidence>=0.2)
             cri=sum(1 for c in cl if c.confidence<0.2)
             total=len(cl); cov=round(det/max(1,total),2)
-            rr=ContractReviewResult(contract_id=cid,claims_found=total,deterministic=det,tainted=tnt,critical=cri,coverage=cov,halted=halted,trace_id=f"TRACE-{hash(cid)&0xFFFFFFFF:08X}",claims_detail=[{"id":c.id,"confidence":c.confidence,"taint":c.taint_summary(),"human":c.requires_human_review} for c in cl])
+            rr=ContractReviewResult(contract_id=cid,claims_found=total,deterministic=det,tainted=tnt,critical=cri,coverage=cov,halted=halted,trace_id=_trace_id(cid),claims_detail=[{"id":c.id,"confidence":c.confidence,"taint":c.taint_summary(),"human":c.requires_human_review} for c in cl])
             self.results.append(rr)
     def process_parallel(self, contracts: Dict[str, Dict[str, str]], max_workers: int = 8) -> List['ContractReviewResult']:
         """Process contracts in parallel using ThreadPoolExecutor."""
@@ -72,7 +73,7 @@ class BatchProcessor:
             contract_id=cid, claims_found=total,
             deterministic=det, tainted=tnt, critical=cri,
             coverage=cov, halted=halted,
-            trace_id=f"TRACE-{hash(cid) & 0xFFFFFFFF:08X}",
+            trace_id=_trace_id(cid),
             claims_detail=[{"id": c.id, "confidence": c.confidence,
                            "taint": c.taint_summary(), "human": c.requires_human_review}
                           for c in cl]
@@ -83,3 +84,9 @@ class BatchProcessor:
         return {"total_contracts":n,"avg_coverage":round(ac,2),"halted_count":hn,"details":[asdict(r) for r in self.results]}
     def export_json(self,path:str):
         with open(path,'w',encoding='utf-8') as f: json.dump(self.summary(),f,indent=2,ensure_ascii=False)
+
+
+def _trace_id(contract_id: str) -> str:
+    """根据合同ID生成跨进程稳定trace ID。"""
+
+    return f"TRACE-{semantic_digest({'contract_id': contract_id})[:8].upper()}"

@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List
 
 from compiler_core.argumentation import grounded_extension
+from compiler_core.canonical_serialization import content_id
 from compiler_core.certificate_checker import (
     GroundedINCertificate,
     OUTCertificate,
@@ -64,7 +65,7 @@ def run_automated_pipeline(
     rejected = set(ge_result["rejected"])
     undecided = set(ge_result["undecided"])
 
-    result = PipelineResult(case_id=case_id or f"pipeline::{hash(tuple(facts)) & 0xFFFF:04x}")
+    result = PipelineResult(case_id=case_id or content_id("pipeline", {"facts": sorted(facts)}))
 
     # Build claim queue: what needs resolution
     priority = 1

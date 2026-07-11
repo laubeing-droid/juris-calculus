@@ -261,12 +261,12 @@ class IRState:
     negative_facts: Dict[str, LegalFact] = field(default_factory=dict)
     claims: Dict[str, LegalClaim] = field(default_factory=dict)
     rules_applied: Set[str] = field(default_factory=set)
-    temporal_scope: dict = field(default_factory=lambda: {"fact_date": "2021-03-15", "governing_law": "PRC_CivilCode_2021"})
-    world_id: str = "W1"; iteration_count: int = 0; max_iterations: int = 100; horn_saturated: bool = False; horn_truncated: bool = False; horn_truncation_reason: str = ""; horn_derived_bound: int = 0; horn_iterations: int = 0
+    temporal_scope: dict = field(default_factory=dict)
+    world_id: str = ""; iteration_count: int = 0; max_iterations: int = 100; horn_saturated: bool = False; horn_truncated: bool = False; horn_truncation_reason: str = ""; horn_derived_bound: int = 0; horn_iterations: int = 0
     domain: LegalDomain = LegalDomain.CIVIL
     rebuttal_log: list = field(default_factory=list)
     jurisdiction: str = ""
-    state_tracker: dict = field(default_factory=lambda: {"Contract_Validity": "VALID"})
+    state_tracker: dict = field(default_factory=dict)
     negative_specs: list = field(default_factory=list)
     blocked_claims: set = field(default_factory=set)
 

@@ -3,7 +3,7 @@
 import pytest
 
 import tools.press_long_tail as press_long_tail
-from tools.run_trirail_matrix import TriRailCollider
+from tools.run_trirail_matrix import TriRailCollider, generate_heatmap_html
 
 
 @pytest.fixture(scope="module")
@@ -47,3 +47,16 @@ def test_long_tail_reuses_shared_collider(monkeypatch, collider):
     engine = press_long_tail.LongTailPressEngine()
 
     assert engine.collider is collider
+
+
+def test_heatmap_generation_is_timestamp_free_and_deterministic(tmp_path):
+    """当前HTML报告不得因运行时间产生无意义diff。"""
+
+    first = tmp_path / "first.html"
+    second = tmp_path / "second.html"
+
+    generate_heatmap_html({}, first)
+    generate_heatmap_html({}, second)
+
+    assert first.read_bytes() == second.read_bytes()
+    assert "deterministic harness output" in first.read_text(encoding="utf-8")
