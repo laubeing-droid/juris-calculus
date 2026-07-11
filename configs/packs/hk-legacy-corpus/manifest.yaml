@@ -1,0 +1,26 @@
+schema_version: '1.0'
+pack_id: hk-legacy-corpus
+version: 3.0.0a1
+kind: legacy_corpus
+status: candidate
+jurisdiction: HK
+governing_law: HKSAR
+effective_from: '2026-07-11'
+effective_to: ''
+rule_files:
+- path: hk/rules.yaml
+  sha256: 4b984a5728f3e80929bf3c5f81b431f2e6a5bd7cd16f2890890d80a20fcb66ae
+- path: hk/extended_rules.yaml
+  sha256: df2dffc39c4932d24206c752120c524f68dcfa41aa20cd573387f4b1dea0b3b2
+source_files:
+- path: hk/provenance.yaml
+  sha256: 7997a3559552d285a1beb3af095fd7dbbe7e4d43e0462a5371ef96a3480bbb92
+config_files:
+- path: L0_overrides_hk.yaml
+  sha256: 48761a4bcc65a09693d9d8a15154a03a77bb8761367719b3ab38ba208ab644cf
+inventory:
+  corpus_total: 133
+  reasoning_eligible_total: 0
+  candidate_only_total: 133
+content_digest: ab26406a0afb1159e4dea687781c6936e32805b0d19d4f8d505b930f12fd2143
+build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

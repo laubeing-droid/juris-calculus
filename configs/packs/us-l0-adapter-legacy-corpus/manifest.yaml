@@ -1,0 +1,22 @@
+schema_version: '1.0'
+pack_id: us-l0-adapter-legacy-corpus
+version: 3.0.0a1
+kind: legacy_corpus
+status: candidate
+jurisdiction: US-FEDERAL
+governing_law: US-FEDERAL
+effective_from: '2026-07-11'
+effective_to: ''
+rule_files:
+- path: en_US/US_Adapter.yaml
+  sha256: 08cfb6145d9fd185ac8c664f24bb4c611fd784f8d672e146d3cf3f2dd8b9e920
+source_files: []
+config_files:
+- path: en_US/L0_overrides_us.yaml
+  sha256: e948eec9bff63b7446ea3ea2688d22ab3246f08cef082151d64a5b8f8016da78
+inventory:
+  corpus_total: 81
+  reasoning_eligible_total: 0
+  candidate_only_total: 81
+content_digest: 593b7b20ad741e14045dcd60e2528dc6e0c092f2a89e3b66c339c1ee3aaf65ec
+build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

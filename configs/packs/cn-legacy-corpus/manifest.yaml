@@ -1,0 +1,26 @@
+schema_version: '1.0'
+pack_id: cn-legacy-corpus
+version: 3.0.0a1
+kind: legacy_corpus
+status: candidate
+jurisdiction: CN
+governing_law: PRC
+effective_from: '2026-07-11'
+effective_to: ''
+rule_files:
+- path: zh_CN/rules.yaml
+  sha256: 2182e4f4fdac5aa5ba673cb4df624bc09782902d1d8313566d48c939f83f6cd0
+source_files:
+- path: zh_CN/source_manifest.yaml
+  sha256: 92a002fd9e992f4a3c7b2710af66e1279129f7344706d32365093da8c48c50b7
+config_files:
+- path: zh_CN/domain_config.example.yaml
+  sha256: 34fd0a890d90694bd9eff37eb9cb87b71db541d8fca283fce8c6aa4b7cab9671
+- path: zh_CN/ontology_map.yaml
+  sha256: db0700c3414715e36dca36be94cced84d5655ea0f4cbe9770d253c66c7b85572
+inventory:
+  corpus_total: 21144
+  reasoning_eligible_total: 0
+  candidate_only_total: 21144
+content_digest: 6ad83ec4016198c03f6c360b680dbb59e98e68ee99f062390ee74db02faf2491
+build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

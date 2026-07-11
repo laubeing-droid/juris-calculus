@@ -1,0 +1,18 @@
+schema_version: '1.0'
+pack_id: cn-official
+version: 3.0.0a1
+kind: official
+status: blocked
+jurisdiction: CN
+governing_law: PRC
+effective_from: '2026-07-11'
+effective_to: ''
+rule_files: []
+source_files: []
+config_files: []
+inventory:
+  corpus_total: 0
+  reasoning_eligible_total: 0
+  candidate_only_total: 0
+content_digest: 2080ca703b2f671def179602e3e994e84556891a16deb7fb9ac1090eff2bb357
+build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

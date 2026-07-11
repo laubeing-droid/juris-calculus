@@ -1,0 +1,20 @@
+schema_version: '1.0'
+pack_id: us-federal-legacy-corpus
+version: 3.0.0a1
+kind: legacy_corpus
+status: candidate
+jurisdiction: US-FEDERAL
+governing_law: US-FEDERAL
+effective_from: '2026-07-11'
+effective_to: ''
+rule_files:
+- path: us/rules.yaml
+  sha256: a9166e515437a6f02a9800c21daaf80e4fac8a7a5c0e336383d6a4eaaf86a8e9
+source_files: []
+config_files: []
+inventory:
+  corpus_total: 123
+  reasoning_eligible_total: 0
+  candidate_only_total: 123
+content_digest: c304d34f2af98ba614913fc0b90387502478415feee8234882e1efd7ace1551f
+build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

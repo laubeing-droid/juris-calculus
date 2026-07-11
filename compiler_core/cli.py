@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any, Sequence
@@ -11,6 +12,7 @@ from typing import Any, Sequence
 import yaml
 
 from compiler_core.resources import configs_root, neutral_profile_path, schemas_root
+from compiler_core.rule_packs import RulePackError, RulePackRegistry
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
 from compiler_core.version import __version__
 
@@ -90,6 +92,20 @@ def build_parser() -> argparse.ArgumentParser:
     doctor = commands.add_parser("doctor", help="check the installed core resources")
     doctor.add_argument("--json", action="store_true", dest="json_output")
     doctor.set_defaults(handler=_handle_doctor)
+
+    packs = commands.add_parser("packs", help="inspect and verify versioned rule packs")
+    pack_commands = packs.add_subparsers(dest="packs_command", required=True)
+    list_packs = pack_commands.add_parser("list", help="list installed pack manifests")
+    _add_pack_root_options(list_packs)
+    list_packs.add_argument("--json", action="store_true", dest="json_output")
+    list_packs.set_defaults(handler=_handle_packs_list)
+    verify = pack_commands.add_parser("verify", help="verify pack files, digest, inventory, and admission")
+    selection = verify.add_mutually_exclusive_group()
+    selection.add_argument("pack_id", nargs="?", help="pack ID; defaults to all installed packs")
+    selection.add_argument("--all", action="store_true", dest="verify_all")
+    _add_pack_root_options(verify)
+    verify.add_argument("--json", action="store_true", dest="json_output")
+    verify.set_defaults(handler=_handle_packs_verify)
     return parser
 
 
@@ -100,8 +116,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
     try:
         payload = args.handler(args)
+        exit_code = int(payload.pop("_exit_code", EXIT_OK))
         _write_success(payload, json_output=bool(getattr(args, "json_output", False)))
-        return EXIT_OK
+        return exit_code
     except CLIError as exc:
         _write_error(exc, json_output=bool(getattr(args, "json_output", False)))
         return exc.exit_code
@@ -175,13 +192,53 @@ def _handle_doctor(_args: argparse.Namespace) -> dict[str, Any]:
         name: {"present": path.is_file(), "resource": _public_resource_name(path)}
         for name, path in resources.items()
     }
-    healthy = all(check["present"] for check in checks.values())
+    official = RulePackRegistry(configs_root()).verify("cn-official")
+    checks["cn_official"] = {
+        "present": official.integrity_valid,
+        "reasoning_ready": official.reasoning_ready,
+        "resource": "configs/packs/cn-official/manifest.yaml",
+    }
+    healthy = all(check["present"] for check in checks.values()) and official.reasoning_ready
     return {
         "command": "doctor",
         "status": "ok" if healthy else "blocked",
         "version": __version__,
         "python_supported": (3, 11) <= sys.version_info[:2] < (3, 13),
         "checks": checks,
+        "_exit_code": EXIT_OK if healthy else EXIT_ADMISSION_BLOCKED,
+    }
+
+
+def _handle_packs_list(args: argparse.Namespace) -> dict[str, Any]:
+    """列出已安装manifest声明；完整hash验证只由packs verify执行。"""
+
+    registry = _pack_registry(args)
+    packs = list(registry.list_installed())
+    return {
+        "command": "packs.list",
+        "status": "ok",
+        "pack_count": len(packs),
+        "development_override": registry.development_override,
+        "packs": packs,
+    }
+
+
+def _handle_packs_verify(args: argparse.Namespace) -> dict[str, Any]:
+    """验证指定或全部pack；任何完整性或正式准入问题返回退出码3。"""
+
+    registry = _pack_registry(args)
+    try:
+        results = registry.verify_all() if args.verify_all or not args.pack_id else (registry.verify(args.pack_id),)
+    except RulePackError as exc:
+        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "PACK_NOT_INSTALLED" else EXIT_ADMISSION_BLOCKED
+        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
+    passed = all(result.integrity_valid and (result.kind != "official" or result.reasoning_ready) for result in results)
+    return {
+        "command": "packs.verify",
+        "status": "ok" if passed else "blocked",
+        "development_override": registry.development_override,
+        "results": [result.to_dict() for result in results],
+        "_exit_code": EXIT_OK if passed else EXIT_ADMISSION_BLOCKED,
     }
 
 
@@ -215,7 +272,15 @@ def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
             print(f"- {item['rule_id']}: {item['head_claim']} [{item['admission']}]")
     elif payload["command"] == "doctor":
         for name, check in sorted(payload["checks"].items()):
-            print(f"- {name}: {'PASS' if check['present'] else 'BLOCKED'}")
+            ready = check.get("reasoning_ready", check["present"])
+            print(f"- {name}: {'PASS' if check['present'] and ready else 'BLOCKED'}")
+    elif payload["command"] == "packs.list":
+        for item in payload["packs"]:
+            print(f"- {item['pack_id']} {item['version']}: {item['declared_status']} (not verified)")
+    elif payload["command"] == "packs.verify":
+        for item in payload["results"]:
+            state = "PASS" if item["integrity_valid"] and (item["kind"] != "official" or item["reasoning_ready"]) else "BLOCKED"
+            print(f"- {item['pack_id']}: {state}")
 
 
 def _write_error(error: CLIError, *, json_output: bool) -> None:
@@ -235,6 +300,31 @@ def _public_resource_name(path: Path) -> str:
         if marker in parts:
             return "/".join(parts[parts.index(marker):])
     return path.name
+
+
+def _add_pack_root_options(parser: argparse.ArgumentParser) -> None:
+    """为pack命令增加显式development override参数。"""
+
+    parser.add_argument("--development", action="store_true", help="allow an explicit non-bundled config root")
+    parser.add_argument("--config-root", help="development configs root; requires --development")
+
+
+def _pack_registry(args: argparse.Namespace) -> RulePackRegistry:
+    """构造pack registry；环境变量本身永远不能静默换包。"""
+
+    development = bool(getattr(args, "development", False))
+    explicit_root = getattr(args, "config_root", None)
+    if explicit_root and not development:
+        raise CLIError("DEVELOPMENT_FLAG_REQUIRED", "--config-root requires --development")
+    if development:
+        selected = explicit_root or os.environ.get("JURIS_CONFIG_DIR")
+        if not selected:
+            raise CLIError("DEVELOPMENT_ROOT_REQUIRED", "development mode requires --config-root")
+        root = Path(selected)
+        if not root.is_dir():
+            raise CLIError("DEVELOPMENT_ROOT_NOT_FOUND", "development config root does not exist")
+        return RulePackRegistry(root, development_override=True)
+    return RulePackRegistry(configs_root())
 
 
 if __name__ == "__main__":
