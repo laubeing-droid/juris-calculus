@@ -578,7 +578,7 @@ constraint_rules:
   new_state: SUPPRESSED
   source_edge_case: FifthAmendment_Invoked → Testimony only with Immunity
   reason: US Grand jury subpoena edge case trigger
-- id: US-CONSTRAINT-US-Immunity
+- id: US-CONSTRAINT-US-Immunity-Transactional
   description: Edge case for Immunity (Transactional)
   trigger_fact: Perjury_Exception
   action: force_state
@@ -586,7 +586,7 @@ constraint_rules:
   new_state: SUPPRESSED
   source_edge_case: Perjury_Exception → Immunity_does_not_cover_perjury
   reason: US Immunity (Transactional) edge case trigger
-- id: US-CONSTRAINT-US-Immunity
+- id: US-CONSTRAINT-US-Immunity-Use
   description: Edge case for Immunity (Use)
   trigger_fact: Independent_Source
   action: force_state

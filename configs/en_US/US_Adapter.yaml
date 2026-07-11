@@ -1834,7 +1834,7 @@ rules:
   mechanical_exception: true
   namespace: us_formation
   output_type: Terminal_Output_Node
-- id: US-Immunity
+- id: US-Immunity-Transactional
   term: Immunity (Transactional)
   origin: justice.gov
   perspective: Prosecutorial
@@ -1854,7 +1854,7 @@ rules:
   mechanical_exception: true
   namespace: us_remedy
   output_type: Terminal_Output_Node
-- id: US-Immunity
+- id: US-Immunity-Use
   term: Immunity (Use)
   origin: justice.gov
   perspective: Prosecutorial

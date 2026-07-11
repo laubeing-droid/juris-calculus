@@ -1,1 +1,5 @@
+_meta:
+  status: TOMBSTONE
+  reason: The empty legacy default was ambiguous with US_Adapter.yaml.
+  replacement_pack: us-l0-adapter-legacy-corpus
 rules: []
