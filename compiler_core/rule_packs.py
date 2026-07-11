@@ -81,6 +81,18 @@ class LoadedRulePack:
     resource_paths: tuple[Path, ...]
 
 
+@dataclass(frozen=True)
+class LoadedCorpusPack:
+    """通过manifest完整性门禁、但不具备正式推理资格的语料材料。"""
+
+    verification: PackVerification
+    manifest: Mapping[str, Any]
+    manifest_path: Path
+    rule_paths: tuple[Path, ...]
+    source_paths: tuple[Path, ...]
+    config_root: Path
+
+
 class RulePackRegistry:
     """扫描单一configs根下的pack manifests并拒绝重复pack ID。"""
 
@@ -186,6 +198,36 @@ class RulePackRegistry:
             manifest_path=manifest_path,
             config_root=self.config_root,
             resource_paths=tuple(resources),
+        )
+
+    def load_corpus_pack(self, pack_id: str) -> LoadedCorpusPack:
+        """加载完整性有效的语料pack，且不把candidate晋升为reasoning-ready。"""
+
+        verification = self.verify(pack_id)
+        if not verification.integrity_valid:
+            raise RulePackError("PACK_INTEGRITY_INVALID", pack_id)
+        manifest_path = self.manifests()[pack_id]
+        document = _load_yaml_mapping(manifest_path)
+        rule_paths = tuple(
+            (self.config_root / str(entry["path"])).resolve()
+            for entry in document.get("rule_files", ())
+        )
+        source_paths = tuple(
+            (self.config_root / str(entry["path"])).resolve()
+            for entry in document.get("source_files", ())
+        )
+        for path in (*rule_paths, *source_paths):
+            try:
+                path.relative_to(self.config_root)
+            except ValueError as exc:
+                raise RulePackError("PACK_PATH_ESCAPE", path.name) from exc
+        return LoadedCorpusPack(
+            verification=verification,
+            manifest=document,
+            manifest_path=manifest_path,
+            rule_paths=rule_paths,
+            source_paths=source_paths,
+            config_root=self.config_root,
         )
 
 

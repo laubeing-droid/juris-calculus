@@ -261,6 +261,17 @@ def _presentation(
         "rule_ids": list(result.used_rule_ids),
         "source_refs": list(result.source_ids),
         "missing_ids": list(result.missing_fact_ids),
+        "missing_items": [
+            {
+                "fact": item.fact_id,
+                "rule_ids": list(item.impacted_rule_ids),
+                "claim_ids": list(item.impacted_claim_ids),
+                "reason_value": item.reason,
+                "answer_types": list(item.allowed_answer_types),
+                "source_need": item.source_requirement,
+            }
+            for item in result.missing_fact_review
+        ],
         "risk_values": list(result.risk_labels),
         "taint_values": list(result.taint),
         "review_value": result.review_required,
@@ -314,6 +325,7 @@ def _render_markdown(presentation: Mapping[str, Any], profile: RendererProfile) 
             f"- review_required: `{str(presentation['review_value']).lower()}`",
             "### missing_fact_ids",
             *_items(presentation["missing_ids"], "无缺失事实"),
+            *_missing_review_lines(presentation["missing_items"]),
         ],
         "graph": [
             f"- nodes: `{presentation['graph_summary'].get('node_count', 0)}`",
@@ -389,6 +401,22 @@ def _branch_lines(branches: Any) -> list[str]:
             f"taint={','.join(branch.get('taint_values', ())) or 'none'}"
         )
     return lines or ["- 无分支"]
+
+
+def _missing_review_lines(items: Any) -> list[str]:
+    """渲染UNKNOWN事实的影响范围和可接受回答类型。"""
+
+    lines: list[str] = []
+    for item in items:
+        lines.extend([
+            f"### `{item['fact']}`",
+            f"- reason: `{item['reason_value']}`",
+            f"- impacted_rule_ids: `{','.join(item['rule_ids']) or 'none'}`",
+            f"- impacted_claim_ids: `{','.join(item['claim_ids']) or 'none'}`",
+            f"- allowed_answer_types: `{','.join(item['answer_types'])}`",
+            f"- source_requirement: {item['source_need']}",
+        ])
+    return lines
 
 
 def _clean_heading(value: Any) -> str:

@@ -414,6 +414,54 @@
       ],
       "type": "object"
     },
+    "CaseIndex": {
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "fixture": {
+          "type": "boolean"
+        },
+        "index_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "index_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "jurisdiction": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "source_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "cases",
+        "fixture",
+        "index_digest",
+        "index_id",
+        "jurisdiction",
+        "schema_version",
+        "source_id",
+        "version"
+      ],
+      "type": "object"
+    },
     "CaseRequest": {
       "additionalProperties": false,
       "properties": {
@@ -576,7 +624,9 @@
             "provenance",
             "taint",
             "checker_validation",
-            "branch_of"
+            "branch_of",
+            "missing_premise",
+            "potential_conclusion"
           ],
           "type": "string"
         }
@@ -754,13 +804,92 @@
     "MISSING_FACT_RECORDEDDetails": {
       "additionalProperties": false,
       "properties": {
+        "allowed_answer_types": {
+          "items": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "impacted_claim_ids": {
+          "items": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "impacted_rule_ids": {
+          "items": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
         "reason": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "source_requirement": {
           "maxLength": 4096,
           "type": "string"
         }
       },
       "required": [
-        "reason"
+        "allowed_answer_types",
+        "impacted_claim_ids",
+        "impacted_rule_ids",
+        "reason",
+        "source_requirement"
+      ],
+      "type": "object"
+    },
+    "MissingFactReview": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_answer_types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "fact_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "impacted_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "impacted_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "reason": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_requirement": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "fact_id",
+        "impacted_rule_ids",
+        "impacted_claim_ids",
+        "reason",
+        "allowed_answer_types",
+        "source_requirement"
       ],
       "type": "object"
     },
@@ -1053,6 +1182,116 @@
       ],
       "type": "object"
     },
+    "RuleGovernanceReport": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "candidate_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "duplicate_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "file_reports": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "finding_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "integrity_valid": {
+          "type": "boolean"
+        },
+        "inventory": {
+          "type": "object"
+        },
+        "jurisdiction": {
+          "type": "string"
+        },
+        "pack_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pack_id": {
+          "type": "string"
+        },
+        "pack_version": {
+          "type": "string"
+        },
+        "promotion": {
+          "type": "object"
+        },
+        "promotion_blocking_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reasoning_ready": {
+          "type": "boolean"
+        },
+        "report_kind": {
+          "const": "RULE_GOVERNANCE"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "source_snapshots": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL"
+          ],
+          "type": "string"
+        },
+        "test_coverage": {
+          "type": "object"
+        },
+        "validity": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "report_kind",
+        "pack_id",
+        "pack_version",
+        "pack_digest",
+        "jurisdiction",
+        "integrity_valid",
+        "reasoning_ready",
+        "inventory",
+        "candidate_rule_ids",
+        "duplicate_rule_ids",
+        "validity",
+        "source_snapshots",
+        "test_coverage",
+        "finding_count",
+        "blocking_count",
+        "promotion_blocking_count",
+        "status",
+        "promotion",
+        "file_reports"
+      ],
+      "type": "object"
+    },
     "RulePackDescriptor": {
       "additionalProperties": false,
       "properties": {
@@ -1131,6 +1370,12 @@
           },
           "type": "array",
           "uniqueItems": true
+        },
+        "missing_fact_review": {
+          "items": {
+            "$ref": "#/$defs/MissingFactReview"
+          },
+          "type": "array"
         },
         "pack_digest": {
           "pattern": "^[0-9a-f]{64}$",
@@ -1223,8 +1468,133 @@
         "used_rule_ids",
         "source_ids",
         "missing_fact_ids",
+        "missing_fact_review",
         "taint",
         "risk_labels"
+      ],
+      "type": "object"
+    },
+    "SimilarCasesAdvisory": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_kind": {
+          "const": "SIMILAR_CASES"
+        },
+        "analysis_status": {
+          "const": "ADVISORY"
+        },
+        "formal_certificate_generated": {
+          "const": false
+        },
+        "index": {
+          "type": "object"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "matches": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "quality_status": {
+          "enum": [
+            "FIXTURE_ONLY",
+            "OPERATOR_DECLARED_INDEX"
+          ],
+          "type": "string"
+        },
+        "result_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "review_required": {
+          "const": true
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        }
+      },
+      "required": [
+        "schema_version",
+        "analysis_kind",
+        "analysis_status",
+        "quality_status",
+        "run_id",
+        "result_digest",
+        "review_required",
+        "formal_certificate_generated",
+        "index",
+        "matches",
+        "limitations"
+      ],
+      "type": "object"
+    },
+    "StrategyAdvisory": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_kind": {
+          "const": "LITIGATION_STRATEGY"
+        },
+        "analysis_status": {
+          "const": "ADVISORY"
+        },
+        "basis": {
+          "type": "object"
+        },
+        "formal_certificate_generated": {
+          "const": false
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "paths": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "result_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "result_status": {
+          "type": "string"
+        },
+        "review_required": {
+          "const": true
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        }
+      },
+      "required": [
+        "schema_version",
+        "analysis_kind",
+        "analysis_status",
+        "run_id",
+        "result_digest",
+        "result_status",
+        "review_required",
+        "formal_certificate_generated",
+        "basis",
+        "paths",
+        "limitations"
       ],
       "type": "object"
     },
@@ -1238,6 +1608,87 @@
       },
       "required": [
         "taint_source"
+      ],
+      "type": "object"
+    },
+    "TrainingExportManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_only_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "corpus_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dataset_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pack_digest": {
+          "type": "string"
+        },
+        "pack_id": {
+          "type": "string"
+        },
+        "pack_version": {
+          "type": "string"
+        },
+        "private_case_facts_included": {
+          "const": false
+        },
+        "promotion": {
+          "type": "object"
+        },
+        "reasoning_eligible_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "split_date": {
+          "type": "string"
+        },
+        "split_hashes": {
+          "type": "object"
+        },
+        "split_mode": {
+          "type": "string"
+        },
+        "split_seed": {
+          "type": "integer"
+        },
+        "splits": {
+          "type": "object"
+        },
+        "status": {
+          "const": "PASS"
+        },
+        "total_items": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "status",
+        "total_items",
+        "corpus_total",
+        "reasoning_eligible_total",
+        "candidate_only_total",
+        "splits",
+        "split_seed",
+        "split_mode",
+        "split_date",
+        "split_hashes",
+        "dataset_hash",
+        "pack_id",
+        "pack_version",
+        "pack_digest",
+        "private_case_facts_included",
+        "promotion"
       ],
       "type": "object"
     }

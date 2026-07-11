@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "index_id": "fixture::structural-cases",
+  "version": "1.0.0",
+  "index_digest": "768100942725bfa588522da61f3e8e94cd0b24872d006de76c79c61e16de4f9c",
+  "jurisdiction": "CN",
+  "source_id": "fixture://synthetic-cases",
+  "fixture": true,
+  "cases": [
+    {
+      "case_id": "fixture::close",
+      "jurisdiction": "CN",
+      "decision_date": "2026-01-01",
+      "source_ref": "fixture://synthetic-cases/close",
+      "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fact_ids": ["fact::a"],
+      "rule_ids": ["R-ANCHORED"],
+      "claim_ids": ["claim::a"],
+      "edge_types": ["checker_validation", "premise", "provenance", "support"]
+    },
+    {
+      "case_id": "fixture::distant",
+      "jurisdiction": "CN",
+      "decision_date": "2025-01-01",
+      "source_ref": "fixture://synthetic-cases/distant",
+      "source_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "fact_ids": ["fact::other"],
+      "rule_ids": ["R-OTHER"],
+      "claim_ids": ["claim::other"],
+      "edge_types": ["attack"]
+    }
+  ]
+}

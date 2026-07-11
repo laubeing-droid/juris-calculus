@@ -13,6 +13,7 @@ from compiler_core.contracts import (
     CaseRequest,
     ContractValidationError,
     ExecutionStatus,
+    MissingFactReview,
     RenderedArtifact,
     ResultStatus,
     RulePackDescriptor,
@@ -87,6 +88,7 @@ def _semantic(status=ResultStatus.REVIEW_ONLY_RESULT, **overrides):
         values["taint"] = ("assumption",)
     elif status == ResultStatus.MISSING_REQUIRED_FACT:
         values["missing_fact_ids"] = ("fact::missing",)
+        values["missing_fact_review"] = (MissingFactReview("fact::missing"),)
     elif status == ResultStatus.CONFLICT_CERTIFICATE:
         values["certificate_kind"] = CertificateKind.CONFLICT
     elif status == ResultStatus.ENGINE_ERROR:
@@ -238,6 +240,14 @@ def test_committed_schema_is_generated_from_contracts():
     assert committed["$defs"]["CanonicalResult"]["additionalProperties"] is False
     assert committed["$defs"]["CanonicalResult"]["properties"]["semantic"] == {"$ref": "#/$defs/SemanticResult"}
     assert committed["$defs"]["LegalFact"]["properties"]["reasoning_tier"]["enum"] == ["P0", "P1", "P2"]
+    assert {
+        "MissingFactReview",
+        "RuleGovernanceReport",
+        "TrainingExportManifest",
+        "StrategyAdvisory",
+        "SimilarCasesAdvisory",
+        "CaseIndex",
+    } <= set(committed["$defs"])
 
 
 def test_unknown_result_enums_fail_closed():

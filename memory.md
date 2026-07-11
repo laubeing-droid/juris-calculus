@@ -92,3 +92,15 @@
 - HTML只在用户明确调用时生成，转义全部文本并以CSP禁用脚本和网络资源；Mermaid只映射现有Graph JSON中的节点和显式边。
 - 个人profile机制已完成，但个人风格内容因缺少5至10份用户确认样例而保持BLOCKED；不得从聊天记忆猜测风格。
 - Phase 5验证基线：Python 3.11.15与3.12.5均为486 passed、38 skipped。wheel为3,219,692字节，仓库外安装后从site-packages成功加载renderer/neutral profile并注册`jc render`。
+
+## 2026-07-11 JC v3 Phase 6 Governance and Advisory
+
+- `MissingFactReview`是SemanticResult的一部分：UNKNOWN事实记录受影响rule/claim、允许回答类型和verified fact来源要求；Graph使用`missing_premise`/`potential_conclusion`边，绝不把潜在结论当作已推导。
+- `compiler_core/rule_governance.py`是唯一规则质量实现，旧tool只是wrapper。Pack治理复用manifest hash/inventory/source准入；candidate finding阻断promotion但不阻断candidate corpus留存，自动promotion永远为false。
+- 真实`cn-legacy-corpus`治理为21,144/0/21,144，runtime blocking=0，promotion blocking=2,067：2,004条悬空exception引用与63条缺来源。不得猜测修复；它们继续candidate-only，完整artifact约434KB。
+- `compiler_core/training.py`是唯一训练导出实现。真实CN corpus以seed 42导出16,915 train/2,114 dev/2,115 test，总约17.2MB；dataset hash为`01deb2b047d9133d90d7004b9ffce07aec035d878776d95e1b62bbf44f0bb4cc`，不含案件事实且不能写回config root。
+- `compiler_core/analysis.py`只读完整审计run，策略与类案输出固定为ADVISORY、review required、无formal certificate，并写独立analysis artifact。策略路径只来自missing/attack/branch/claim/source结构。
+- 类案初版使用fact/rule/claim/edge集合的确定性Jaccard加权和带digest/source hash的JSON index，不使用数据库、向量或网络。仓库只含synthetic fixture；真实类案实务质量因无授权index保持BLOCKED。
+- Tri-Rail保留为explicit engineering harness。它记录HK/US/PRC legacy pack/config digest，但由于三套official reasoning-ready packs不存在，普通与fast-path均formal_kernel_used=false；低层分类不具备案件结论资格。
+- 修复`build_attack_edges_from_rules()`仅测试时依赖顺序掩盖的缺陷：现在显式attacks/priority/exception引用统一解析rule ID到claim ID并稳定排序；正式application的受保护attack算法未改变。
+- Phase 6最终双版本基线：Python 3.11.15和3.12.5均495 passed、38 skipped。wheel为3,236,396字节、SHA-256=`bf4e20a36ee2197692cb757e36a5251650c1846f73fd69ec9ad5ac35288b6c21`；仓库外安装从site-packages加载analysis/governance/training并注册四组Phase 6 CLI。

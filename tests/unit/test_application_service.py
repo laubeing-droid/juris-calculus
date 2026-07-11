@@ -165,6 +165,14 @@ def test_unknown_and_assumed_have_distinct_non_formal_results() -> None:
     assert unknown.result_status is ResultStatus.MISSING_REQUIRED_FACT
     assert unknown.execution_status is ExecutionStatus.ADMISSION_BLOCKED
     assert unknown.missing_fact_ids == ("fact::trigger",)
+    assert unknown.missing_fact_review[0].to_dict() == {
+        "fact_id": "fact::trigger",
+        "impacted_rule_ids": ["R1"],
+        "impacted_claim_ids": ["claim::result"],
+        "reason": "UNKNOWN",
+        "allowed_answer_types": ["DISPUTED_ALTERNATIVES", "REMAIN_UNKNOWN", "VERIFIED_FACT"],
+        "source_requirement": "source_ids and human_reviewed are required for VERIFIED_FACT",
+    }
     assert unknown.certificate_kind is CertificateKind.NONE
     assert assumed.result_status is ResultStatus.HYPOTHETICAL_RESULT
     assert assumed.claims == ("claim::result",)

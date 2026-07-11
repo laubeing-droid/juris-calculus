@@ -405,15 +405,28 @@ def build_attack_edges_from_rules(
     Extracts priority and exception relationships from rules and
     returns them as attack pairs.
     """
-    attacks: list[tuple[str, str]] = []
+    def value(rule: Any, name: str, default: Any) -> Any:
+        """统一读取dict或LegalRule字段。"""
+
+        return rule.get(name, default) if isinstance(rule, dict) else getattr(rule, name, default)
+
+    by_id = {str(value(rule, "id", "")): rule for rule in rules if str(value(rule, "id", ""))}
+    attacks: set[tuple[str, str]] = set()
     for rule in rules:
-        rhead = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
+        rhead = value(rule, "head", "") if isinstance(rule, dict) else value(rule, "head_claim", "")
+        if isinstance(rule, dict) and not rhead:
+            rhead = value(rule, "head_claim", "")
         if not rhead:
             continue
-        priority_over = rule.get("priority_over", []) if isinstance(rule, dict) else getattr(rule, "priority_over", [])
-        for target in priority_over:
-            attacks.append((rhead, target))
-        exceptions = rule.get("exception_to", []) if isinstance(rule, dict) else getattr(rule, "exception_to", [])
-        for target in exceptions:
-            attacks.append((rhead, target))
-    return attacks
+        for field_name in ("attacks", "priority_over", "exception_to"):
+            for target in value(rule, field_name, ()) or ():
+                target_rule = by_id.get(str(target))
+                target_head = value(target_rule, "head_claim", "") if target_rule is not None else str(target)
+                if target_head:
+                    attacks.add((str(rhead), str(target_head)))
+        for exception_id in value(rule, "exception_chain", ()) or ():
+            exception_rule = by_id.get(str(exception_id))
+            exception_head = value(exception_rule, "head_claim", "") if exception_rule is not None else ""
+            if exception_head:
+                attacks.add((str(exception_head), str(rhead)))
+    return sorted(attacks)

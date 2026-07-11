@@ -21,7 +21,10 @@ from compiler_core.audit_bundle import (
     state_root_diagnostics,
 )
 from compiler_core.contracts import CaseRequest, ResultStatus
+from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze_strategy
 from compiler_core.rendering import RendererError, render_run
+from compiler_core.rule_governance import audit_pack, write_governance_report
+from compiler_core.training import export_corpus_pack
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
 from compiler_core.version import __version__
 
@@ -97,6 +100,14 @@ def build_parser() -> argparse.ArgumentParser:
     lookup.add_argument("--limit", type=int, default=10)
     lookup.add_argument("--json", action="store_true", dest="json_output")
     lookup.set_defaults(handler=_handle_rules_lookup)
+    audit = rule_commands.add_parser("audit", help="audit a versioned rule corpus without promoting candidates")
+    audit.add_argument("pack_id")
+    audit.add_argument("--tests-root", metavar="PATH", help="explicit tests directory for rule-ID coverage")
+    audit.add_argument("--audit-out", metavar="PATH", help="state root for the complete governance artifact")
+    audit.add_argument("--include-candidate-ids", action="store_true")
+    _add_pack_root_options(audit)
+    audit.add_argument("--json", action="store_true", dest="json_output")
+    audit.set_defaults(handler=_handle_rules_audit)
 
     doctor = commands.add_parser("doctor", help="check the installed core resources")
     doctor.add_argument("--audit-out", metavar="PATH", help="explicit state root to diagnose")
@@ -138,6 +149,31 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--profile", metavar="PATH", help="explicit declarative profile; defaults to neutral")
     render.add_argument("--json", action="store_true", dest="json_output")
     render.set_defaults(handler=_handle_render)
+
+    training = commands.add_parser("training", help="export governed candidate rule corpora")
+    training_commands = training.add_subparsers(dest="training_command", required=True)
+    training_export = training_commands.add_parser("export", help="export a verified corpus manifest to JSONL splits")
+    training_export.add_argument("pack_id")
+    training_export.add_argument("--out", required=True, metavar="DIR")
+    training_export.add_argument("--seed", type=int, default=42)
+    _add_pack_root_options(training_export)
+    training_export.add_argument("--json", action="store_true", dest="json_output")
+    training_export.set_defaults(handler=_handle_training_export)
+
+    analyze = commands.add_parser("analyze", help="derive advisory artifacts from a completed audit run")
+    analyze_commands = analyze.add_subparsers(dest="analyze_command", required=True)
+    strategy = analyze_commands.add_parser("strategy", help="derive machine litigation strategy paths")
+    strategy.add_argument("--run", required=True, dest="run_id")
+    strategy.add_argument("--audit-out", metavar="PATH")
+    strategy.add_argument("--json", action="store_true", dest="json_output")
+    strategy.set_defaults(handler=_handle_analyze_strategy)
+    similar = analyze_commands.add_parser("similar-cases", help="compare a run to a verified structural case index")
+    similar.add_argument("--run", required=True, dest="run_id")
+    similar.add_argument("--index", required=True, metavar="PATH")
+    similar.add_argument("--limit", type=int, default=10)
+    similar.add_argument("--audit-out", metavar="PATH")
+    similar.add_argument("--json", action="store_true", dest="json_output")
+    similar.set_defaults(handler=_handle_analyze_similar_cases)
     return parser
 
 
@@ -280,6 +316,80 @@ def _handle_packs_verify(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _handle_rules_audit(args: argparse.Namespace) -> dict[str, Any]:
+    """执行完整规则治理并把大候选列表写入artifact。"""
+
+    registry = _pack_registry(args)
+    try:
+        report = audit_pack(
+            registry,
+            args.pack_id,
+            tests_root=Path(args.tests_root).resolve() if args.tests_root else None,
+        )
+    except RulePackError as exc:
+        raise CLIError(exc.code, str(exc), exit_code=EXIT_ADMISSION_BLOCKED) from exc
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        raise CLIError("RULE_GOVERNANCE_FAILED", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
+    root = Path(args.audit_out).resolve() if args.audit_out else default_state_root()
+    diagnostics = state_root_diagnostics(root)
+    if diagnostics["in_repository"]:
+        raise CLIError("AUDIT_PATH_IN_REPOSITORY", "governance artifacts cannot be written inside a Git worktree")
+    relative = Path("governance") / report["pack_digest"] / "audit.json"
+    report_hash = write_governance_report(report, root / relative)
+    payload = {
+        "command": "rules.audit",
+        "status": report["status"].lower(),
+        "pack_id": report["pack_id"],
+        "pack_version": report["pack_version"],
+        "pack_digest": report["pack_digest"],
+        "inventory": report["inventory"],
+        "candidate_rule_count": len(report["candidate_rule_ids"]),
+        "duplicate_rule_ids": report["duplicate_rule_ids"],
+        "finding_count": report["finding_count"],
+        "blocking_count": report["blocking_count"],
+        "promotion_blocking_count": report["promotion_blocking_count"],
+        "test_coverage": report["test_coverage"],
+        "automatic_promotion": False,
+        "artifact_ref": relative.as_posix(),
+        "artifact_sha256": report_hash,
+        "_exit_code": EXIT_OK if report["status"] == "PASS" else EXIT_ADMISSION_BLOCKED,
+    }
+    if args.include_candidate_ids:
+        payload["candidate_rule_ids"] = report["candidate_rule_ids"]
+    return payload
+
+
+def _handle_training_export(args: argparse.Namespace) -> dict[str, Any]:
+    """导出candidate训练语料，禁止写回pack配置目录。"""
+
+    registry = _pack_registry(args)
+    try:
+        report = export_corpus_pack(registry, args.pack_id, Path(args.out), seed=args.seed)
+    except RulePackError as exc:
+        raise CLIError(exc.code, str(exc), exit_code=EXIT_ADMISSION_BLOCKED) from exc
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        raise CLIError("TRAINING_EXPORT_FAILED", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
+    return {
+        "command": "training.export",
+        "status": "ok",
+        "pack_id": report["pack_id"],
+        "pack_version": report["pack_version"],
+        "pack_digest": report["pack_digest"],
+        "inventory": {
+            "corpus_total": report["corpus_total"],
+            "reasoning_eligible_total": report["reasoning_eligible_total"],
+            "candidate_only_total": report["candidate_only_total"],
+        },
+        "splits": report["splits"],
+        "split_seed": report["split_seed"],
+        "dataset_hash": report["dataset_hash"],
+        "artifact_files": report["artifact_files"],
+        "manifest_sha256": report["manifest_sha256"],
+        "private_case_facts_included": False,
+        "automatic_promotion": False,
+    }
+
+
 def _handle_evaluate(args: argparse.Namespace) -> dict[str, Any]:
     """从显式JSON输入运行正式application并强制生成审计包。"""
 
@@ -357,6 +467,67 @@ def _handle_render(args: argparse.Namespace) -> dict[str, Any]:
     return {"command": "render", "status": "ok", **output.public_dict()}
 
 
+def _handle_analyze_strategy(args: argparse.Namespace) -> dict[str, Any]:
+    """从审计run生成紧凑策略ADVISORY引用。"""
+
+    report = _run_analysis(
+        lambda: analyze_strategy(
+            args.run_id,
+            state_root=Path(args.audit_out).resolve() if args.audit_out else None,
+        )
+    )
+    return {
+        "command": "analyze.strategy",
+        "status": "ok",
+        "analysis_status": report["analysis_status"],
+        "run_id": report["run_id"],
+        "result_digest": report["result_digest"],
+        "review_required": report["review_required"],
+        "path_count": len(report["paths"]),
+        "risk_labels": report["basis"]["risk_labels"],
+        "artifact_ref": report["artifact_ref"],
+        "artifact_sha256": report["artifact_sha256"],
+    }
+
+
+def _handle_analyze_similar_cases(args: argparse.Namespace) -> dict[str, Any]:
+    """从显式index生成紧凑类案ADVISORY引用。"""
+
+    report = _run_analysis(
+        lambda: analyze_similar_cases(
+            args.run_id,
+            Path(args.index),
+            state_root=Path(args.audit_out).resolve() if args.audit_out else None,
+            limit=args.limit,
+        )
+    )
+    return {
+        "command": "analyze.similar-cases",
+        "status": "ok",
+        "analysis_status": report["analysis_status"],
+        "quality_status": report["quality_status"],
+        "run_id": report["run_id"],
+        "result_digest": report["result_digest"],
+        "review_required": report["review_required"],
+        "match_count": len(report["matches"]),
+        "artifact_ref": report["artifact_ref"],
+        "artifact_sha256": report["artifact_sha256"],
+        "limitations": report["limitations"],
+    }
+
+
+def _run_analysis(callback) -> dict[str, Any]:
+    """统一分析错误到CLI退出码，禁止traceback和绝对路径泄漏。"""
+
+    try:
+        return callback()
+    except AuditBundleError as exc:
+        raise CLIError(exc.code, str(exc), exit_code=EXIT_REPLAY_MISMATCH) from exc
+    except AnalysisError as exc:
+        input_codes = {"INVALID_LIMIT", "CASE_INDEX_UNAVAILABLE", "INVALID_CASE_INDEX", "CASE_INDEX_DIGEST_MISMATCH"}
+        raise CLIError(exc.code, str(exc), exit_code=EXIT_INPUT_ERROR if exc.code in input_codes else EXIT_ENGINE_ERROR) from exc
+
+
 def _read_query(query: str | None, input_path: str | None) -> str:
     """从显式文本、stdin或UTF-8文件读取非空查询。"""
 
@@ -407,6 +578,17 @@ def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
         print(f"- format: {payload['format']}")
         print(f"- artifact_ref: {payload['artifact_ref']}")
         print(f"- content_sha256: {payload['content_sha256']}")
+    elif payload["command"] == "rules.audit":
+        print(f"- pack_id: {payload['pack_id']}")
+        print(f"- candidate_rule_count: {payload['candidate_rule_count']}")
+        print(f"- artifact_ref: {payload['artifact_ref']}")
+    elif payload["command"] == "training.export":
+        print(f"- pack_id: {payload['pack_id']}")
+        print(f"- dataset_hash: {payload['dataset_hash']}")
+    elif payload["command"] in {"analyze.strategy", "analyze.similar-cases"}:
+        print(f"- run_id: {payload['run_id']}")
+        print(f"- analysis_status: {payload['analysis_status']}")
+        print(f"- artifact_ref: {payload['artifact_ref']}")
 
 
 def _write_error(error: CLIError, *, json_output: bool) -> None:

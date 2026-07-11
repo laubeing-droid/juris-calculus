@@ -162,6 +162,12 @@ def test_missing_fact_graph_has_no_fabricated_checker_node() -> None:
 
     assert any(node.node_type == "missing_fact" for node in graph.nodes)
     assert all(node.node_type != "checker" for node in graph.nodes)
+    assert ("fact::trigger", "R1", "missing_premise") in {
+        (edge.source, edge.target, edge.edge_type) for edge in graph.edges
+    }
+    assert ("R1", "claim::result", "potential_conclusion") in {
+        (edge.source, edge.target, edge.edge_type) for edge in graph.edges
+    }
 
 
 def test_disputed_graph_has_stable_branch_nodes_and_edges() -> None:

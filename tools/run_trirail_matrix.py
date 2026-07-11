@@ -4,12 +4,12 @@ run_trirail_matrix.py — 三轨对撞机 v1.2.0
 ══════════════════════════════════════════════════════════════
 Tri-Rail Collider: HK × US × PRC 三法域并发对撞
 
-                       ┌──> HK Engine (65 rules) ───────> State_HK
+                       ┌──> HK engineering track ───────> State_HK
                        │
-[Shared Fact Pool] ────┼──> US Engine (81 rules) ───────> State_US
+[Shared Fact Pool] ────┼──> US engineering track ───────> State_US
                        │
                        └──> PRC-Alignment Engine ───────> State_PRC
-                                (55 constraint rules)
+                                (runtime inventory)
 
 分类维度:
   CHINA_US_COLLISION   — US VALID, PRC FORCE_VOID
@@ -32,6 +32,7 @@ from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, Cri
 from compiler_core.domain_config import DomainConfig, LegalDomain
 from compiler_core.prc_collision_engine import PRCCollisionEngine
 from compiler_core.proof_tree import ProofTree
+from compiler_core.rule_packs import RulePackRegistry, sha256_file
 
 # ── 威胁拦截器 (Gemini审计: 下沉至TriRailCollider主路径最前端) ──
 from tools.distill_jurisdiction import FastPathInterceptor
@@ -286,6 +287,14 @@ class TriRailCollider:
             "US": self._summarize_rules(us_rules),
             "PRC": self.prc_engine.rule_inventory,
         }
+        registry = RulePackRegistry(base / "configs")
+        self.pack_digests = {
+            "HK": registry.verify("hk-legacy-corpus").content_digest,
+            "US": registry.verify("us-l0-adapter-legacy-corpus").content_digest,
+            "PRC_CN": registry.verify("cn-legacy-corpus").content_digest,
+            "PRC_CBL": sha256_file(base / "configs" / "prc_us_alignment" / "blocking_rules.yaml"),
+            "PRC_SPC": sha256_file(base / "configs" / "prc_us_alignment" / "spc_rules.yaml"),
+        }
 
     @staticmethod
     def _summarize_rules(rules: List) -> Dict[str, int]:
@@ -409,6 +418,7 @@ class TriRailCollider:
                 "threat_signature": threat_hit.get("signature_id", ""),
                 "threat_level": threat_hit.get("threat_level", ""),
                 "rule_inventory": self.rule_inventory,
+                "pack_digests": self.pack_digests,
                 "lsc_boundary": {
                     "result_status": "review_only_result",
                     "used_fact_keys": fact_names,
@@ -419,6 +429,8 @@ class TriRailCollider:
                     "review_required": True,
                     "formal_kernel_used": False,
                     "renderer_output_kind": "machine_packet",
+                    "execution_mode": "ENGINEERING_HARNESS",
+                    "pack_digests": self.pack_digests,
                 },
             }
 
@@ -467,16 +479,19 @@ class TriRailCollider:
             },
             "fast_path": False,
             "rule_inventory": self.rule_inventory,
+            "pack_digests": self.pack_digests,
             "lsc_boundary": {
                 "result_status": "review_only_result",
                 "used_fact_keys": fact_names,
                 "used_rule_ids": used_rules,
                 "source_snapshot_ids": source_snapshots,
                 "provenance": {"summary_only": True, "source": "TriRailCollider"},
-                "taint": ["UNVERIFIED_INPUT_FACTS"],
+                "taint": ["ENGINEERING_HARNESS", "NO_REASONING_READY_TRIRAIL_PACKS", "UNVERIFIED_INPUT_FACTS"],
                 "review_required": True,
-                "formal_kernel_used": True,
+                "formal_kernel_used": False,
                 "renderer_output_kind": "machine_packet",
+                "execution_mode": "ENGINEERING_HARNESS",
+                "pack_digests": self.pack_digests,
             },
         }
 

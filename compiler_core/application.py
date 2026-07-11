@@ -14,6 +14,7 @@ from compiler_core.contracts import (
     CertificateKind,
     CaseRequest,
     ExecutionStatus,
+    MissingFactReview,
     ResultStatus,
     RulePackDescriptor,
     SCHEMA_VERSION,
@@ -85,11 +86,17 @@ def evaluate_case(
             })
         unknown = tuple(sorted(fact.id for fact in request.facts if fact.status == FactTrustStatus.UNKNOWN))
         if unknown:
+            reviews = tuple(_missing_fact_review(fact_id, prepared_rules) for fact_id in unknown)
             for fact_id in unknown:
+                review = next(item for item in reviews if item.fact_id == fact_id)
                 emit_audit_event(recorder, {
                     "event_type": "MISSING_FACT",
                     "fact_id": fact_id,
                     "reason": "UNKNOWN",
+                    "impacted_rule_ids": review.impacted_rule_ids,
+                    "impacted_claim_ids": review.impacted_claim_ids,
+                    "allowed_answer_types": review.allowed_answer_types,
+                    "source_requirement": review.source_requirement,
                 })
             return _result(
                 request,
@@ -98,6 +105,7 @@ def evaluate_case(
                 execution_status=ExecutionStatus.ADMISSION_BLOCKED,
                 review_required=True,
                 missing_fact_ids=unknown,
+                missing_fact_review=reviews,
                 risk_labels=("MISSING_REQUIRED_FACT",),
                 audit_sink=recorder,
             )
@@ -504,6 +512,7 @@ def _result(
     used_rule_ids: tuple[str, ...] = (),
     source_ids: tuple[str, ...] = (),
     missing_fact_ids: tuple[str, ...] = (),
+    missing_fact_review: tuple[MissingFactReview, ...] = (),
     taint: tuple[str, ...] = (),
     risk_labels: tuple[str, ...] = (),
     audit_sink=None,
@@ -529,6 +538,7 @@ def _result(
         "used_rule_ids": used_rule_ids,
         "source_ids": source_ids,
         "missing_fact_ids": missing_fact_ids,
+        "missing_fact_review": missing_fact_review,
         "taint": taint,
         "risk_labels": risk_labels,
     }
@@ -538,6 +548,8 @@ def _result(
             if isinstance(value, (ExecutionStatus, ResultStatus, CertificateKind))
             else [branch.to_dict() for branch in value]
             if key == "branches"
+            else [item.to_dict() for item in value]
+            if key == "missing_fact_review"
             else value
         )
         for key, value in values.items()
@@ -549,6 +561,18 @@ def _result(
         "result_digest": result.result_digest,
     })
     return result
+
+
+def _missing_fact_review(fact_id: str, rules: tuple[LegalRule, ...]) -> MissingFactReview:
+    """从已准入规则构建UNKNOWN事实的确定性影响范围。"""
+
+    impacted = tuple(sorted(rule.id for rule in rules if fact_id in rule.premise_atoms))
+    claims = tuple(sorted({rule.head_claim for rule in rules if rule.id in impacted and rule.head_claim}))
+    return MissingFactReview(
+        fact_id=fact_id,
+        impacted_rule_ids=impacted,
+        impacted_claim_ids=claims,
+    )
 
 
 def _without_runtime_fields(event: Mapping[str, Any]) -> dict[str, Any]:

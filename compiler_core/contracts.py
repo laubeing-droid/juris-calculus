@@ -227,6 +227,41 @@ class BranchResult:
 
 
 @dataclass(frozen=True)
+class MissingFactReview:
+    """UNKNOWN事实的机器复核数据，不包含律师工作流或猜测答案。"""
+
+    fact_id: str
+    impacted_rule_ids: tuple[str, ...] = field(default_factory=tuple)
+    impacted_claim_ids: tuple[str, ...] = field(default_factory=tuple)
+    reason: str = "UNKNOWN"
+    allowed_answer_types: tuple[str, ...] = (
+        "VERIFIED_FACT",
+        "DISPUTED_ALTERNATIVES",
+        "REMAIN_UNKNOWN",
+    )
+    source_requirement: str = "source_ids and human_reviewed are required for VERIFIED_FACT"
+
+    def __post_init__(self) -> None:
+        if not self.fact_id.strip() or not self.reason.strip() or not self.source_requirement.strip():
+            raise ContractValidationError("INVALID_MISSING_FACT_REVIEW", "fact, reason, and source requirement are required")
+        object.__setattr__(self, "impacted_rule_ids", _sorted_unique(self.impacted_rule_ids))
+        object.__setattr__(self, "impacted_claim_ids", _sorted_unique(self.impacted_claim_ids))
+        object.__setattr__(self, "allowed_answer_types", _sorted_unique(self.allowed_answer_types))
+
+    def to_dict(self) -> dict[str, Any]:
+        """返回确定性机器复核对象。"""
+
+        return {
+            "fact_id": self.fact_id,
+            "impacted_rule_ids": list(self.impacted_rule_ids),
+            "impacted_claim_ids": list(self.impacted_claim_ids),
+            "reason": self.reason,
+            "allowed_answer_types": list(self.allowed_answer_types),
+            "source_requirement": self.source_requirement,
+        }
+
+
+@dataclass(frozen=True)
 class SemanticResult:
     """不含artifact refs的不可变正式语义投影。"""
 
@@ -249,6 +284,7 @@ class SemanticResult:
     used_rule_ids: tuple[str, ...] = field(default_factory=tuple)
     source_ids: tuple[str, ...] = field(default_factory=tuple)
     missing_fact_ids: tuple[str, ...] = field(default_factory=tuple)
+    missing_fact_review: tuple[MissingFactReview, ...] = field(default_factory=tuple)
     taint: tuple[str, ...] = field(default_factory=tuple)
     risk_labels: tuple[str, ...] = field(default_factory=tuple)
 
@@ -281,6 +317,12 @@ class SemanticResult:
         ):
             object.__setattr__(self, name, _sorted_unique(getattr(self, name)))
         object.__setattr__(self, "branches", tuple(sorted(tuple(self.branches), key=lambda item: item.branch_id)))
+        reviews = tuple(sorted(tuple(self.missing_fact_review), key=lambda item: item.fact_id))
+        if len({item.fact_id for item in reviews}) != len(reviews):
+            raise ContractValidationError("DUPLICATE_MISSING_FACT_REVIEW", "missing fact review IDs must be unique")
+        if reviews and {item.fact_id for item in reviews} != set(self.missing_fact_ids):
+            raise ContractValidationError("INVALID_MISSING_FACT_REVIEW", "review facts must equal missing_fact_ids")
+        object.__setattr__(self, "missing_fact_review", reviews)
         _validate_result_state(self)
 
     def to_dict(self) -> dict[str, Any]:
@@ -306,6 +348,7 @@ class SemanticResult:
             "used_rule_ids": list(self.used_rule_ids),
             "source_ids": list(self.source_ids),
             "missing_fact_ids": list(self.missing_fact_ids),
+            "missing_fact_review": [item.to_dict() for item in self.missing_fact_review],
             "taint": list(self.taint),
             "risk_labels": list(self.risk_labels),
         }
@@ -318,12 +361,19 @@ class SemanticResult:
             "schema_version", "run_id", "result_digest", "execution_status", "result_status",
             "formal_kernel_used", "review_required", "checker_accepted", "certificate_kind",
             "engine_version", "pack_id", "pack_version", "pack_digest", "claims", "branches",
-            "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "taint", "risk_labels",
+            "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "missing_fact_review", "taint", "risk_labels",
         }
         _reject_unknown(payload, allowed, "semantic result")
         missing = sorted(allowed - set(payload))
         if missing:
             raise ContractValidationError("MISSING_RESULT_FIELD", ", ".join(missing))
+        review_fields = {
+            "fact_id", "impacted_rule_ids", "impacted_claim_ids", "reason",
+            "allowed_answer_types", "source_requirement",
+        }
+        for item in payload["missing_fact_review"]:
+            if not isinstance(item, Mapping) or set(item) != review_fields:
+                raise ContractValidationError("INVALID_MISSING_FACT_REVIEW", "review fields mismatch")
         return cls(
             schema_version=str(payload["schema_version"]),
             run_id=str(payload["run_id"]),
@@ -352,6 +402,17 @@ class SemanticResult:
             used_rule_ids=tuple(payload["used_rule_ids"]),
             source_ids=tuple(payload["source_ids"]),
             missing_fact_ids=tuple(payload["missing_fact_ids"]),
+            missing_fact_review=tuple(
+                MissingFactReview(
+                    fact_id=str(item["fact_id"]),
+                    impacted_rule_ids=tuple(item.get("impacted_rule_ids", ())),
+                    impacted_claim_ids=tuple(item.get("impacted_claim_ids", ())),
+                    reason=str(item.get("reason", "UNKNOWN")),
+                    allowed_answer_types=tuple(item.get("allowed_answer_types", ())),
+                    source_requirement=str(item.get("source_requirement", "")),
+                )
+                for item in payload["missing_fact_review"]
+            ),
             taint=tuple(payload["taint"]),
             risk_labels=tuple(payload["risk_labels"]),
         )
@@ -491,6 +552,7 @@ PROTECTED_RESULT_FIELDS = frozenset({
     "used_rule_ids",
     "source_ids",
     "missing_fact_ids",
+    "missing_fact_review",
     "taint",
     "risk_labels",
 })
@@ -590,6 +652,22 @@ def schema_document() -> dict[str, Any]:
                     "taint": string_array,
                 },
             },
+            "MissingFactReview": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "fact_id", "impacted_rule_ids", "impacted_claim_ids", "reason",
+                    "allowed_answer_types", "source_requirement",
+                ],
+                "properties": {
+                    "fact_id": {"type": "string", "minLength": 1},
+                    "impacted_rule_ids": string_array,
+                    "impacted_claim_ids": string_array,
+                    "reason": {"type": "string", "minLength": 1},
+                    "allowed_answer_types": string_array,
+                    "source_requirement": {"type": "string", "minLength": 1},
+                },
+            },
             "SemanticResult": {
                 "type": "object",
                 "additionalProperties": False,
@@ -597,7 +675,8 @@ def schema_document() -> dict[str, Any]:
                     "schema_version", "run_id", "result_digest", "execution_status", "result_status",
                     "formal_kernel_used", "review_required", "checker_accepted", "certificate_kind",
                     "engine_version", "pack_id", "pack_version", "pack_digest", "claims", "branches",
-                    "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "taint", "risk_labels",
+                    "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "missing_fact_review",
+                    "taint", "risk_labels",
                 ],
                 "properties": {
                     "schema_version": {"const": SCHEMA_VERSION},
@@ -619,6 +698,7 @@ def schema_document() -> dict[str, Any]:
                     "used_rule_ids": string_array,
                     "source_ids": string_array,
                     "missing_fact_ids": string_array,
+                    "missing_fact_review": {"type": "array", "items": {"$ref": "#/$defs/MissingFactReview"}},
                     "taint": string_array,
                     "risk_labels": string_array,
                 },
@@ -678,9 +758,15 @@ def schema_document() -> dict[str, Any]:
     }
     from compiler_core.audit import audit_schema_document
     from compiler_core.audit_bundle import audit_bundle_schema_document
+    from compiler_core.analysis import analysis_schema_document
+    from compiler_core.rule_governance import governance_schema_document
+    from compiler_core.training import training_schema_document
 
     document["$defs"].update(audit_schema_document()["$defs"])
     document["$defs"].update(audit_bundle_schema_document()["$defs"])
+    document["$defs"].update(analysis_schema_document()["$defs"])
+    document["$defs"].update(governance_schema_document()["$defs"])
+    document["$defs"].update(training_schema_document()["$defs"])
     return document
 
 
@@ -725,7 +811,12 @@ def _validate_result_state(result: SemanticResult) -> None:
         if not result.review_required or result.certificate_kind != CertificateKind.NONE or result.checker_accepted:
             raise ContractValidationError("INVALID_REVIEW_RESULT", "review-only result cannot be checker accepted")
     elif status == ResultStatus.MISSING_REQUIRED_FACT:
-        if not result.review_required or not result.missing_fact_ids or result.certificate_kind != CertificateKind.NONE:
+        if (
+            not result.review_required
+            or not result.missing_fact_ids
+            or not result.missing_fact_review
+            or result.certificate_kind != CertificateKind.NONE
+        ):
             raise ContractValidationError("INVALID_MISSING_RESULT", "missing result requires missing facts")
     elif status == ResultStatus.CONFLICT_CERTIFICATE:
         if not result.review_required or result.certificate_kind != CertificateKind.CONFLICT:

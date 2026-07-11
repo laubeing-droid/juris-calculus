@@ -12,9 +12,11 @@ from compiler_core.audit_bundle import (
 from compiler_core.contracts import (
     CanonicalResult,
     CaseRequest,
+    MissingFactReview,
     ResultStatus,
     SemanticResult,
 )
+from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze_strategy
 from compiler_core.rendering import (
     RenderOutput,
     RendererError,
@@ -29,10 +31,14 @@ __all__ = (
     "AuditBundleError",
     "CanonicalResult",
     "CaseRequest",
+    "MissingFactReview",
     "ResultStatus",
     "RenderOutput",
     "RendererError",
     "SemanticResult",
+    "AnalysisError",
+    "analyze_similar_cases",
+    "analyze_strategy",
     "evaluate_case",
     "evaluate_registered_case",
     "evaluate_to_audit_bundle",

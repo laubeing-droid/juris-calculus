@@ -91,7 +91,9 @@ def test_unknown_fact_records_missing_event_and_never_starts_checker() -> None:
     result = evaluate_case(request, _pack(), (_rule(),), source_manifest=_manifest(), audit_sink=recorder)
 
     assert result.result_status is ResultStatus.MISSING_REQUIRED_FACT
-    assert any(event.event_type == "MISSING_FACT_RECORDED" for event in recorder.events)
+    missing = next(event for event in recorder.events if event.event_type == "MISSING_FACT_RECORDED")
+    assert missing.details["impacted_rule_ids"] == ("R1",)
+    assert missing.details["impacted_claim_ids"] == ("claim::result",)
     assert all(event.event_type != "CHECKER_STARTED" for event in recorder.events)
     assert recorder.events[-1].event_type == "RESULT_FINALIZED"
 

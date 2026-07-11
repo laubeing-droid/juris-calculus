@@ -30,7 +30,13 @@ _DETAIL_FIELDS = {
     "PRIORITY_RESOLVED": {"source_claim_id", "target_claim_id"},
     "PERMISSION_EVALUATED": {"disposition"},
     "TAINT_PROPAGATED": {"taint_source"},
-    "MISSING_FACT_RECORDED": {"reason"},
+    "MISSING_FACT_RECORDED": {
+        "reason",
+        "impacted_rule_ids",
+        "impacted_claim_ids",
+        "allowed_answer_types",
+        "source_requirement",
+    },
     "BRANCH_CREATED": {"branch_index", "assumptions_digest"},
     "CHECKER_STARTED": {"theorem_refs_digest"},
     "CHECKER_VERDICT": {"accepted", "violations"},
@@ -405,7 +411,13 @@ class AuditRecorder:
             or self._parents("INPUT_VALIDATED"),
             fact_ids=(fact_id,),
             outcome="missing",
-            details={"reason": str(raw.get("reason", "UNKNOWN"))},
+            details={
+                "reason": str(raw.get("reason", "UNKNOWN")),
+                "impacted_rule_ids": tuple(raw.get("impacted_rule_ids", ())),
+                "impacted_claim_ids": tuple(raw.get("impacted_claim_ids", ())),
+                "allowed_answer_types": tuple(raw.get("allowed_answer_types", ())),
+                "source_requirement": str(raw.get("source_requirement", "")),
+            },
         )
 
     def _record_branch(self, raw: Mapping[str, Any]) -> None:
@@ -596,6 +608,22 @@ def build_reasoning_graph(result: SemanticResult, events: Iterable[AuditEvent]) 
         for claim_id in branch.claims:
             add_node(claim_id, "claim", branch.result_status.value)
             add_edge(branch.branch_id, claim_id, "branch_of", _last_event_id(material, "BRANCH_CREATED"))
+    missing_event_ids = {
+        fact_id: event.event_id
+        for event in material
+        if event.event_type == "MISSING_FACT_RECORDED"
+        for fact_id in event.fact_ids
+    }
+    for review in result.missing_fact_review:
+        add_node(review.fact_id, "missing_fact", review.reason)
+        event_id = missing_event_ids.get(review.fact_id, "")
+        for rule_id in review.impacted_rule_ids:
+            add_node(rule_id, "rule", "blocked_by_missing_fact")
+            add_edge(review.fact_id, rule_id, "missing_premise", event_id)
+        for claim_id in review.impacted_claim_ids:
+            add_node(claim_id, "claim", "potential_only")
+            for rule_id in review.impacted_rule_ids:
+                add_edge(rule_id, claim_id, "potential_conclusion", event_id)
 
     ordered_nodes = tuple(sorted(nodes.values(), key=lambda item: (item.node_type, item.node_id)))
     ordered_edges = tuple(sorted(edges.values(), key=lambda item: (item.edge_type, item.source, item.target, item.event_id)))
@@ -715,6 +743,7 @@ def audit_schema_document() -> dict[str, Any]:
                         "enum": [
                             "premise", "support", "attack", "exception", "priority", "permission",
                             "prohibition", "provenance", "taint", "checker_validation", "branch_of",
+                            "missing_premise", "potential_conclusion",
                         ],
                     },
                     "event_id": {"type": "string"},
@@ -750,7 +779,7 @@ def _detail_schema(event_type: str) -> dict[str, Any]:
             properties[field_name] = {"type": "integer", "minimum": 0}
         elif field_name == "confidence":
             properties[field_name] = {"type": "number"}
-        elif field_name == "violations":
+        elif field_name == "violations" or field_name.endswith("_ids") or field_name == "allowed_answer_types":
             properties[field_name] = {
                 "type": "array",
                 "items": {"type": "string", "maxLength": MAX_DETAIL_TEXT},
