@@ -72,3 +72,13 @@
 - Verified official pack material is copied once to `packs/<content-digest>/configs/...` and revalidated from its own cached manifest. Replay is offline, distinguishes missing material from mismatch, and compares exact event sequences, semantic results, and graph documents after integrity verification.
 - Default state is `%LOCALAPPDATA%/juris-calculus` on Windows and XDG/local state on POSIX. Git-worktree state roots are rejected. POSIX permissions are narrowed; Windows ACL strength remains explicitly unverified rather than claimed.
 - Commit 8 baseline on Python 3.11.15 is 489 passed, 38 skipped (464.33s); Python 3.12.5 is 489 passed, 38 skipped (431.97s). A 3,214,530-byte wheel independently completed evaluate/replay on both supported versions from outside the repository.
+
+## 2026-07-11 JC v3 Phase 4 Entrypoint Migration
+
+- `compiler_core`包根只导出正式application、audit bundle和contracts；CLI和MCP通过`evaluate_registered_case()`共享显式pack解析与完整审计落包。
+- 旧MCP `_juris_evaluate_core/_sync`、自由文本求值和独立stratified执行体已删除。迁移期旧工具名只接受完整`CaseRequest`；strategy只接受审计run ID，Phase 7将删除旧33工具表。
+- 无消费者的automated/batch/multi-jurisdiction/multi-solver/parallax/federation重复执行模块已删除。法域adapter不再返回裸evaluator。
+- `pipeline/pipeline.py`只负责案卷摄取并输出`CANDIDATE_ONLY`事实；它不得自动晋升事实或执行正式规则。正式求值要求调用`jc evaluate`。
+- 旧`LitigationChainRenderer.evaluate()`已删除；迁移期renderer只可渲染调用方已有报告对象。`post_freeze_surface` toy report不再求值并返回`AUDITED_RUN_REQUIRED`。
+- `tests/unit/test_v3_entrypoint_boundary.py`以AST固定唯一正式入口，并仅允许application、底层语义stage和明确CLI/CI harness直接构造evaluator。新增或恢复生产绕行会直接失败。
+- Phase 4提交9验证基线：Python 3.11.15与3.12.5均为486 passed、38 skipped；两版本进程内MCP smoke均通过。旧33工具/12 resources仍存在但已无独立正式求值体，按Phase 7删除，不能把当前smoke表述为v3 MCP surface完成。

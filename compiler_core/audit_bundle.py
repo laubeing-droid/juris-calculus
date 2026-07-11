@@ -146,6 +146,18 @@ def evaluate_to_audit_bundle(
     return AuditBundle(canonical, graph, recorder.events, run_directory, bundle_digest)
 
 
+def evaluate_registered_case(
+    request: CaseRequest,
+    registry: RulePackRegistry,
+    *,
+    state_root: Path | None = None,
+) -> AuditBundle:
+    """从显式registry解析pack，并通过唯一application生成完整审计包。"""
+
+    loaded_pack = registry.load_reasoning_pack(request.rule_pack_id)
+    return evaluate_to_audit_bundle(request, loaded_pack, state_root=state_root)
+
+
 def audit_safe_request(request: CaseRequest) -> CaseRequest:
     """移除原始文本/说明/任意provenance，只保留重放所需结构事实。"""
 

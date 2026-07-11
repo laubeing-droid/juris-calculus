@@ -122,76 +122,30 @@ def _payload_keys(payload: Dict[str, Any]) -> str:
 # ═══════════════════════════════════════════════
 
 
-# --- v2.0 backward-compat wrappers for smoke tests ---
-def _juris_evaluate_core(domain, facts_json, dry_run=False, source_law="CN"):
-    """Legacy wrapper: evaluate legal facts through FixpointEvaluator."""
-    from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-    from compiler_core.types import IRState, LegalFact, LegalDomain
-    from compiler_core.domain_config import DomainConfig
-    from compiler_core.config_paths import rules_path as _cp_rules
-    try:
-        facts = json.loads(facts_json) if isinstance(facts_json, str) else facts_json
-    except (json.JSONDecodeError, TypeError):
-        facts = {}
-    state = IRState()
-    for k, v in facts.items():
-        if isinstance(k, str) and k != "_source_law":
-            state.facts[k] = LegalFact(id=k, description=str(v)[:200], formalizable=1.0)
-    if dry_run:
-        return {
-            "dry_run": True,
-            "total_claims": 0, "top_claims": [], "domain": domain,
-            "validated_facts": list(facts.keys()),
-            "blocked_reasons": [],
-            "status": "DRY_RUN",
-        }
-    try:
-        cfg = DomainConfig(domain=LegalDomain.CIVIL)
-        blocked = []
-        facts_text = " ".join(str(v) for v in facts.values()).lower()
+def _evaluate_case_request(arguments: Dict[str, Any]) -> Dict[str, Any]:
+    """把完整CaseRequest交给正式application；MCP不得自行装配事实或规则。"""
 
-        # ?? ???: US ???? CN ??????? ??
-        us_keywords = [
-            "punitive damages", "punitive_damages", "exemplary damages",
-            "jury trial", "habeas corpus", "class action",
-            "treble damages", "constitutional tort", "federal question",
+    from compiler_core.audit_bundle import evaluate_registered_case
+    from compiler_core.contracts import CaseRequest
+    from compiler_core.resources import configs_root
+    from compiler_core.rule_packs import RulePackRegistry
 
-        ]
-
-        # v2.0: blueprint-backed US Code citation validation (via US addon)
-        try:
-            from addons.us.us_lookup import validate_usc_citation
-            usc_cits = validate_usc_citation(facts_text)
-            for cit in usc_cits:
-                if not cit.get("valid"):
-                    blocked.append("USC_BLUEPRINT_MISMATCH: " + cit.get("citation","?") + " -> Title " + str(cit.get("title","?")) + " not found")
-        except Exception:
-            pass
-        for kw in us_keywords:
-            if kw in facts_text:
-                blocked.append(f"US ????: '{kw}' ?????????")
-
-        if blocked and source_law == "CN":
-            return {"dry_run": False, "total_claims": 0, "top_claims": [],
-                    "domain": domain, "blocked_reasons": blocked, "status": "BLOCKED"}
-
-        rules = load_rules_from_yaml(_cp_rules("zh_CN"))
-        evaluator = FixpointEvaluator(rules, cfg)
-        claims = evaluator.evaluate(state)
-        return {
-            "dry_run": False,
-            "total_claims": len(claims.claims) if hasattr(claims, "claims") else 0,
-            "top_claims": [{"id": c.id, "confidence": c.confidence, "trust_label": c.get_trust_label() if hasattr(c, "get_trust_label") else "UNVERIFIED"} for c in list(claims.claims.values())[:10]] if hasattr(claims, "claims") else [],
-            "domain": domain,
-            "blocked_reasons": blocked,
-            "status": "OK",
-        }
-    except Exception as e:
-        return {"dry_run": dry_run, "total_claims": 0, "top_claims": [], "domain": domain, "blocked_reasons": [str(e)], "status": "ERROR"}
-
-def _juris_evaluate_sync(domain, facts_json):
-    """Legacy wrapper: synchronous evaluate with error handling."""
-    return _juris_evaluate_core(domain, facts_json, dry_run=False)
+    payload = arguments.get("case_request")
+    if not isinstance(payload, dict):
+        raise ValueError("case_request is required; legacy free-text evaluation was removed")
+    request = CaseRequest.from_dict(payload)
+    registry = RulePackRegistry(configs_root())
+    bundle = evaluate_registered_case(request, registry)
+    semantic = bundle.result.semantic
+    return {
+        "run_id": semantic.run_id,
+        "result_status": semantic.result_status.value,
+        "review_required": semantic.review_required,
+        "formal_kernel_used": semantic.formal_kernel_used,
+        "claims": list(semantic.claims),
+        "risk_labels": list(semantic.risk_labels),
+        "artifact_refs": list(bundle.result.artifact_refs),
+    }
 
 
 class MCPServer:
@@ -395,22 +349,12 @@ class MCPServer:
                 return _wrap_tool_result(tool_name, raw)
 
             if tool_name == "stratified_evaluate":
-                from compiler_core.config_paths import rules_path
-                from compiler_core.stratified_evaluator import StratifiedEvaluator
-                from compiler_core.types import IRState, LegalFact
-
-                state = IRState()
-                for fact_id, description in (arguments.get("facts", {}) or {}).items():
-                    state.facts[fact_id] = LegalFact(id=fact_id, description=str(description))
-                claims = StratifiedEvaluator(rules_path("zh_CN")).evaluate(state)
-                raw = {
-                    "claim_count": len(claims),
-                    "claims": [
-                        {"id": claim.id, "trust": claim.get_trust_label(), "confidence": claim.confidence}
-                        for claim in claims[:20]
-                    ],
-                }
-                return _wrap_tool_result(tool_name, raw)
+                if not isinstance(arguments.get("case_request"), dict):
+                    return _wrap_tool_result(tool_name, {
+                        "error": "legacy facts input was removed; case_request is required",
+                        "code": "CASE_REQUEST_REQUIRED",
+                    })
+                return _wrap_tool_result(tool_name, _evaluate_case_request(arguments))
 
             if tool_name == "neural_leaf_status":
                 from compiler_core.neural_leaf import NeuralLeafRegistry
@@ -555,22 +499,12 @@ def juris_query(mode: str, query: str = "", params: dict = None):
         top_k = params.get("top_k", 5)
         return {"query": query, "total_rules": len(items) if isinstance(items, list) else 0, "results": results[:top_k]}
     elif mode == "evaluate_facts":
-        from compiler_core.evaluator import load_rules_from_yaml, FixpointEvaluator
-        from compiler_core.types import IRState, LegalFact, LegalDomain
-        from compiler_core.domain_config import DomainConfig
-        from compiler_core.config_paths import rules_path
-        loaded = load_rules_from_yaml(rules_path("zh_CN"))
-        ev = FixpointEvaluator(loaded, DomainConfig(domain=LegalDomain.CIVIL))
-        st = IRState()
-        facts = params.get("fact_items", None) or {"f1": query}
-        for k, v in facts.items():
-            st.facts[k] = LegalFact(id=k, description=str(v)[:200], formalizable=1.0)
-        result = ev.evaluate(st)
-        raw = list(result.claims.values()) if hasattr(result, "claims") else []
-        claims = sorted(raw, key=lambda x: -x.confidence)
-        top = claims[0] if claims else None
-        if not top: return {"prediction": "N/A", "confidence": 0, "trust": "UNVERIFIED", "total_claims": 0}
-        return {"prediction": top.description[:200], "confidence": round(top.confidence, 2), "trust": top.get_trust_label(), "total_claims": len(claims)}
+        if not isinstance(params.get("case_request"), dict):
+            return {
+                "error": "legacy free-text evaluation was removed; case_request is required",
+                "code": "CASE_REQUEST_REQUIRED",
+            }
+        return _evaluate_case_request(params)
     elif mode == "calculate_damages":
         principal = float(params.get("principal", 100000))
         lpr_rate = float(params.get("lpr_rate", 3.45))
@@ -582,23 +516,16 @@ def juris_query(mode: str, query: str = "", params: dict = None):
         lpr_exceeded = (lpr_rate * 100) > lpr_4x if params.get("agreed_rate") else False
         return {"principal": principal, "max_legal_interest": max_interest, "lpr_exceeded": lpr_exceeded, "total_estimate": round(principal + max_interest, 2)}
     elif mode == "analyze_strategy":
-        from compiler_core.evaluator import load_rules_from_yaml, FixpointEvaluator
-        from compiler_core.types import IRState, LegalFact, LegalDomain
-        from compiler_core.domain_config import DomainConfig
-        from compiler_core.config_paths import rules_path
-        from pipeline.adversarial_pipeline import AdversarialPipeline
-        loaded = load_rules_from_yaml(rules_path("zh_CN"))
-        ev = FixpointEvaluator(loaded, DomainConfig(domain=LegalDomain.CIVIL))
-        st = IRState(); st.facts["case"] = LegalFact(id="case", description=query[:200], formalizable=1.0)
-        result = ev.evaluate(st)
-        raw = list(result.claims.values()) if hasattr(result, "claims") else []
-        claims = sorted(raw, key=lambda x: -x.confidence)
-        top = [{"id": c.id, "confidence": c.confidence, "trust": c.get_trust_label()} for c in claims[:5]]
-        adv = AdversarialPipeline()
-        reasoner = adv.run_reasoner([{"id": c.id, "confidence": c.confidence} for c in claims], list(result.rules_applied)[:5])
-        strengths = [c["id"] for c in top if c["confidence"] >= 0.7]
-        weaknesses = [c["id"] for c in top if c["confidence"] < 0.3]
-        return {"top_claims": top, "strengths": strengths or ["none"], "weaknesses": weaknesses or ["none"], "recommended": "offense" if len(strengths) >= len(weaknesses) else "defense", "reasoner_issues": reasoner.issues[:5]}
+        if not params.get("run_id"):
+            return {
+                "error": "run_id is required; strategy may only consume an audited result",
+                "code": "AUDITED_RUN_REQUIRED",
+            }
+        return {
+            "error": "strategy analysis is unavailable until the governed advisory module is installed",
+            "code": "OPTIONAL_COMPONENT_MISSING",
+            "run_id": params["run_id"],
+        }
     elif mode == "extract_elements":
         from compiler_core.evaluator import load_rules_from_yaml
         from compiler_core.config_paths import rules_path

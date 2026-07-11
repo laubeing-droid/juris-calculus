@@ -90,17 +90,21 @@ class TestMultiDomainEvaluation:
     """End-to-end litigation across multiple domains."""
 
     def test_contract_and_tort_joint_evaluation(self):
-        from compiler_core.litigation_renderer import LitigationChainRenderer
+        from compiler_core.domain_config import DomainConfig
+        from compiler_core.evaluator import FixpointEvaluator
+        from compiler_core.types import IRState, LegalDomain, LegalFact
         all_rules = make_contract_rules() + make_tort_rules()
         shared_facts = ["contract_exists", "delivery_due", "duty_of_care", "breach_of_duty", "damage"]
-        renderer = LitigationChainRenderer(rules=all_rules, facts=shared_facts)
-        report = renderer.evaluate()
-        assert report is not None
+        state = IRState(facts={fact: LegalFact(id=fact) for fact in shared_facts})
+        evaluated = FixpointEvaluator(all_rules, DomainConfig(domain=LegalDomain.CIVIL)).evaluate(state)
+        assert evaluated is not None
 
     def test_criminal_and_admin_joint_evaluation(self):
-        from compiler_core.litigation_renderer import LitigationChainRenderer
+        from compiler_core.domain_config import DomainConfig
+        from compiler_core.evaluator import FixpointEvaluator
+        from compiler_core.types import IRState, LegalDomain, LegalFact
         all_rules = make_criminal_rules() + make_admin_rules()
         shared_facts = ["regulated_activity", "taking_property", "without_consent", "intent_to_deprive"]
-        renderer = LitigationChainRenderer(rules=all_rules, facts=shared_facts)
-        report = renderer.evaluate()
-        assert report is not None
+        state = IRState(facts={fact: LegalFact(id=fact) for fact in shared_facts})
+        evaluated = FixpointEvaluator(all_rules, DomainConfig(domain=LegalDomain.CIVIL)).evaluate(state)
+        assert evaluated is not None

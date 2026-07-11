@@ -10,10 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from compiler_core.adapter_base import JurisdictionAdapter
-from compiler_core.types import LegalFact, IRState, LegalDomain
-from compiler_core.domain_config import DomainConfig
-from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
-from compiler_core.legal_compiler import LegalCompiler
+from compiler_core.types import LegalFact, IRState
 from compiler_core.constraint_validator import ConstraintValidator
 from compiler_core.proof_tree import ProofTree
 
@@ -185,14 +182,3 @@ class USAdapter(JurisdictionAdapter):
             "issues": issues,
             "blocked": blocked,
         }
-
-    def load_evaluator(self, route_request: Optional[List[str]] = None) -> FixpointEvaluator:
-        compiler = LegalCompiler(self.rules_path, overrides_path=self.overrides_path)
-        rules = compiler.compile_rules(route_request)
-        self._ensure_loaded()
-        return FixpointEvaluator(
-            rules,
-            DomainConfig(domain=LegalDomain.CIVIL),
-            overrides_path=self.overrides_path,
-            l0_map=self._l0_map,
-        )

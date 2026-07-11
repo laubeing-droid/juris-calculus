@@ -1,125 +1,52 @@
-"""Tests for litigation_renderer.py -- end-to-end reasoning chain."""
+"""旧报告renderer必须保持纯展示并与正式求值隔离。"""
 
 import json
-from pathlib import Path
-
-import pytest
+from dataclasses import asdict
 
 from compiler_core.litigation_renderer import (
+    ClaimAnalysis,
     LitigationChainRenderer,
     LitigationReport,
-    ClaimAnalysis,
 )
-from compiler_core.types import LegalRule
 
 
-def _contract_rules() -> list[LegalRule]:
-    return [
-        LegalRule(
-            id="rule::delivery_obligation",
-            premise_atoms=["contract_exists", "delivery_due"],
-            head_claim="norm::delivery::active",
-            norm_modality="OBLIGATION",
-        ),
-        LegalRule(
-            id="rule::failed_delivery",
-            premise_atoms=["norm::delivery::active", "goods_not_delivered"],
-            head_claim="delivery_breach",
-            norm_modality="OBLIGATION",
-        ),
-    ]
+def _report() -> LitigationReport:
+    """构造不需要规则或求值器的最小展示fixture。"""
 
-
-def test_renderer_evaluates_simple_contract_breach():
-    renderer = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
+    return LitigationReport(
+        case_id="run::fixture",
+        facts=["fact::a"],
+        rules_applied=["rule::a"],
+        grounded_summary={"accepted_count": 1, "rejected_count": 0, "undecided_count": 0},
+        claim_analyses=[ClaimAnalysis("claim::a", "PROVED", "IN")],
+        fail_closed_boundary={
+            "horn_truncated": False,
+            "grounded_truncated": False,
+            "no_uncertainty_upgrade": True,
+        },
     )
-    report = renderer.evaluate()
-
-    assert isinstance(report, LitigationReport)
-    assert report.facts == ["contract_exists", "delivery_due", "goods_not_delivered"]
-    assert "rule::delivery_obligation" in report.rules_applied
-    assert "rule::failed_delivery" in report.rules_applied
-
-    # delivery_breach should be IN
-    breach_analysis = next(a for a in report.claim_analyses if a.claim_id == "delivery_breach")
-    assert breach_analysis.status == "PROVED"
-    assert breach_analysis.label == "IN"
-
-    # norm::delivery::active should also be IN
-    norm_analysis = next(a for a in report.claim_analyses if a.claim_id == "norm::delivery::active")
-    assert norm_analysis.status == "PROVED"
 
 
-def test_renderer_handles_missing_facts():
-    renderer = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists"],  # missing delivery_due and goods_not_delivered
-    )
-    report = renderer.evaluate()
+def test_renderer_has_no_evaluation_entrypoint():
+    """展示层不得接受facts/rules后重新推理。"""
 
-    assert report.truncation_warning is None  # No actual truncation, just fewer claims
-    assert len(report.claim_analyses) == 0  # No rules fired
+    renderer = LitigationChainRenderer()
+    assert not hasattr(renderer, "evaluate")
+    assert not hasattr(renderer, "evaluate_with_impact")
 
 
-def test_renderer_produces_valid_json():
-    renderer = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
-    )
-    report = renderer.evaluate()
-    from dataclasses import asdict
+def test_renderer_produces_deterministic_markdown_from_existing_report():
+    """同一报告结构产生相同Markdown。"""
 
-    d = asdict(report)
-    assert json.dumps(d, default=str)  # Must not raise
-
-
-def test_renderer_produces_markdown():
-    renderer = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
-    )
-    report = renderer.evaluate()
-    md = renderer.render_markdown(report)
-
-    assert "# Litigation Reasoning Report" in md
-    assert "delivery_breach" in md
-    assert "PROVED" in md
+    renderer = LitigationChainRenderer()
+    first = renderer.render_markdown(_report())
+    second = renderer.render_markdown(_report())
+    assert first == second
+    assert "claim::a" in first
+    assert "PROVED" in first
 
 
-def test_renderer_with_impact_analysis():
-    renderer_old = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
-    )
-    baseline = renderer_old.evaluate()
+def test_legacy_report_contract_remains_json_serializable():
+    """迁移期数据契约仍可被旧离线报告读取。"""
 
-    new_rules = _contract_rules() + [
-        LegalRule(
-            id="rule::extra_delivery",
-            premise_atoms=["contract_exists", "contract_exists"],
-            head_claim="extra_delivery_due",
-            norm_modality="OBLIGATION",
-        ),
-    ]
-    renderer_new = LitigationChainRenderer(
-        rules=new_rules,
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
-    )
-    report = renderer_new.evaluate_with_impact(baseline)
-
-    assert report.impact_analysis is not None
-    assert "rule::extra_delivery" in report.impact_analysis["rules_added"]
-
-
-def test_fail_closed_boundary():
-    renderer = LitigationChainRenderer(
-        rules=_contract_rules(),
-        facts=["contract_exists", "delivery_due", "goods_not_delivered"],
-    )
-    report = renderer.evaluate()
-
-    assert not report.fail_closed_boundary["horn_truncated"]
-    assert not report.fail_closed_boundary["grounded_truncated"]
-    assert report.fail_closed_boundary["no_uncertainty_upgrade"]
+    assert json.dumps(asdict(_report()), sort_keys=True)

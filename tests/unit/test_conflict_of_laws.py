@@ -1,4 +1,4 @@
-"""Tests for conflict_of_laws and multi_jurisdiction_orchestrator (#10, #11)."""
+"""法域选择规则测试；跨法域正式求值统一交给application逐案执行。"""
 import unittest
 from compiler_core.types import LegalFact
 from compiler_core.conflict_of_laws import select_jurisdiction
@@ -47,16 +47,5 @@ class TestConflictOfLaws(unittest.TestCase):
         """Default can be overridden."""
         result = select_jurisdiction({}, default_jurisdiction="HK")
         self.assertEqual(result, "HK")
-
-
-class TestMultiJurisdictionOrchestrator(unittest.TestCase):
-
-    def test_orchestrator_imports(self):
-        """Module imports without error."""
-        from compiler_core.multi_jurisdiction_orchestrator import MultiJurisdictionOrchestrator
-        mjo = MultiJurisdictionOrchestrator()
-        self.assertIsNotNone(mjo)
-
-
 if __name__ == "__main__":
     unittest.main()

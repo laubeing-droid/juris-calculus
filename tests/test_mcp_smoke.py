@@ -1,49 +1,31 @@
-"""MCP Server 烟雾测试 — dry_run + evaluate + 错误码。"""
-import sys, os, json
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+"""MCP旧求值入口移除与审计准入烟雾测试。"""
 
-def test_dry_run():
-    """dry_run=true: 仅预检，不跑 Fixpoint"""
-    from mcp_server import _juris_evaluate_core
-    facts = json.dumps({"contract_formed": "合同成立", "payment_due": "到期未还"})
-    result = _juris_evaluate_core("contract", facts, dry_run=True)
-    assert result.get("dry_run") is True, f"应为dry_run模式: {result}"
-    assert "validated_facts" in result
-    assert "blocked_reasons" in result
-    print("  ✅ dry_run=true 预检通过")
+import mcp_server
 
-def test_full_evaluate():
-    """dry_run=false: 完整 Fixpoint 推理"""
-    from mcp_server import _juris_evaluate_core
-    facts = json.dumps({"contract_formed": "合同成立", "payment_due": "到期未还"})
-    result = _juris_evaluate_core("contract", facts, dry_run=False)
-    assert result.get("total_claims", 0) > 0, f"推理应产生结论: {result}"
-    assert "top_claims" in result
-    assert "domain" in result
-    print(f"  ✅ evaluate: {result['total_claims']} 条结论, domain={result['domain']}")
 
-def test_watchdog_violation():
-    """US文本在CN模式下触发看门狗阻断"""
-    from mcp_server import _juris_evaluate_core
-    facts = json.dumps({"punitive_damages": "seeks punitive damages"})
-    result = _juris_evaluate_core("contract", facts, source_law="CN", dry_run=False)
-    blocked = result.get("blocked_reasons", [])
-    assert len(blocked) > 0, "应触发US概念阻断"
-    print(f"  ✅ 看门狗阻断: {len(blocked)}条")
+def test_legacy_mcp_evaluation_wrappers_are_removed():
+    """旧wrapper不得绕过CaseRequest、pack准入和审计包。"""
 
-def test_error_response():
-    """非法 facts_json 返回错误"""
-    from mcp_server import _juris_evaluate_sync
-    try:
-        _juris_evaluate_sync(domain="contract", facts_json="not-json")
-        assert False, "应抛异常"
-    except Exception as e:
-        print(f"  ✅ 非法输入正确报错: {type(e).__name__}")
+    assert not hasattr(mcp_server, "_juris_evaluate_core")
+    assert not hasattr(mcp_server, "_juris_evaluate_sync")
 
-if __name__ == "__main__":
-    print("=== MCP Smoke Test ===")
-    test_dry_run()
-    test_full_evaluate()
-    test_watchdog_violation()
-    test_error_response()
-    print("=== 4/4 通过 ===")
+
+def test_legacy_free_text_evaluation_is_rejected():
+    """自由文本或裸fact_items不能被静默升级为正式推理输入。"""
+
+    result = mcp_server.juris_query(
+        "evaluate_facts",
+        "合同成立",
+        {"fact_items": {"f1": "合同成立"}},
+    )
+    assert result == {
+        "error": "legacy free-text evaluation was removed; case_request is required",
+        "code": "CASE_REQUEST_REQUIRED",
+    }
+
+
+def test_strategy_requires_an_audited_run():
+    """策略只能消费审计run ID，不能重新推理自由文本。"""
+
+    result = mcp_server.juris_query("analyze_strategy", "合同违约")
+    assert result["code"] == "AUDITED_RUN_REQUIRED"

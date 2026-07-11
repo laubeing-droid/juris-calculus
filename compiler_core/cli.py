@@ -16,7 +16,7 @@ from compiler_core.rule_packs import RulePackError, RulePackRegistry
 from compiler_core.audit_bundle import (
     AuditBundleError,
     default_state_root,
-    evaluate_to_audit_bundle,
+    evaluate_registered_case,
     replay_audit_bundle,
     state_root_diagnostics,
 )
@@ -280,16 +280,14 @@ def _handle_evaluate(args: argparse.Namespace) -> dict[str, Any]:
         raise CLIError("INVALID_CASE_REQUEST", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
     registry = _pack_registry(args)
     try:
-        loaded = registry.load_reasoning_pack(request.rule_pack_id)
+        bundle = evaluate_registered_case(
+            request,
+            registry,
+            state_root=Path(args.audit_out) if args.audit_out else None,
+        )
     except RulePackError as exc:
         exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "PACK_NOT_INSTALLED" else EXIT_ADMISSION_BLOCKED
         raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
-    try:
-        bundle = evaluate_to_audit_bundle(
-            request,
-            loaded,
-            state_root=Path(args.audit_out) if args.audit_out else None,
-        )
     except AuditBundleError as exc:
         exit_code = (
             EXIT_INPUT_ERROR

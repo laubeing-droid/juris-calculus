@@ -8,16 +8,14 @@ changing DecisionStatus, the certificate checker, or attack/priority semantics.
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping
 
 from compiler_core.argumentation import grounded_extension, proof_trace
 from compiler_core.cross_jurisdiction_router import CrossJurisdictionRouter
 from compiler_core.horn_completeness import analyze_rule_impact, compute_missing_evidence
-from compiler_core.litigation_renderer import LitigationChainRenderer
 from compiler_core.output_firewall import renderer_firewall_metadata
-from compiler_core.types import LegalDomain, LegalRule
+from compiler_core.types import LegalRule
 
 
 PUBLIC_KERNEL = "PUBLIC_KERNEL"
@@ -90,68 +88,21 @@ def toy_contract_rules() -> list[LegalRule]:
 
 
 def certified_litigation_report(args: Mapping[str, Any]) -> dict[str, Any]:
-    """Build F1 certificate-backed litigation report on public toy fixtures."""
+    """拒绝旧toy evaluate；正式报告只能消费已完成的审计run。"""
 
-    facts = list(args.get("facts") or ["contract_exists", "delivery_due", "goods_not_delivered"])
-    malformed = bool(args.get("malformed_certificate", False))
-    renderer = LitigationChainRenderer(toy_contract_rules(), facts, LegalDomain.CIVIL)
-    report = renderer.evaluate()
-    data = asdict(report)
-    fact_table = [
-        {
-            "fact": fact,
-            "source": f"toy://facts/{fact}",
-            "verification_state": "VERIFIED_FACT" if not fact.startswith("candidate::") else "CANDIDATE_ONLY",
-        }
-        for fact in facts
-    ]
-    checker_verdict = {
-        "accepted": not malformed and not any(item["verification_state"] == "CANDIDATE_ONLY" for item in fact_table),
-        "reason": "malformed certificate rejected" if malformed else "toy checker boundary accepted",
-    }
-    risk_labels = []
-    if malformed:
-        risk_labels.append("MALFORMED_CERTIFICATE")
-    if any(item["verification_state"] == "CANDIDATE_ONLY" for item in fact_table):
-        risk_labels.append("TAINTED")
-    decision = "TAINTED" if risk_labels else (
-        "PROVED" if any(item["status"] == "PROVED" for item in data["claim_analyses"]) else "UNDECIDED"
-    )
     payload = {
-        "case_id": report.case_id,
-        "lsc_boundary": {
-            "result_status": "accepted_formal_result" if checker_verdict["accepted"] else "review_only_result",
-            "used_fact_keys": facts,
-            "used_rule_ids": list(report.rules_applied),
-            "source_snapshot_ids": ["toy://contract"],
-            "provenance": {"summary_only": True, "source": "public toy fixture"},
-            "taint": risk_labels,
-            "review_required": bool(risk_labels),
-            "formal_kernel_used": checker_verdict["accepted"],
-            "renderer_output_kind": "kernel_explanation",
-        },
-        "renderer_firewall": renderer_firewall_metadata(
-            "accepted_formal_result" if checker_verdict["accepted"] else "review_only_result"
-        ),
-        "fact_table": fact_table,
-        "triggered_rules": [
-            {"rule_id": rule_id, "source_anchor": next((r.source_anchor for r in toy_contract_rules() if r.id == rule_id), "")}
-            for rule_id in report.rules_applied
-        ],
-        "horn_derivation": data["horn_closure"],
-        "attack_graph": data["attacks"],
-        "grounded_result": report.grounded_summary,
-        "checker_verdict": checker_verdict,
-        "risk_labels": risk_labels,
-        "report": data,
+        "error": "toy report evaluation was removed; use jc evaluate and then jc render",
+        "code": "AUDITED_RUN_REQUIRED",
+        "run_id": args.get("run_id", ""),
+        "checker_verdict": {"accepted": False, "reason": "no audited run supplied"},
+        "renderer_firewall": renderer_firewall_metadata("review_only_result"),
     }
     return envelope(
         payload,
-        status="blocked" if malformed else "ok",
-        decision_status=decision,
-        certificate=checker_verdict,
-        risk_labels=risk_labels,
-        evidence=["compiler_core.litigation_renderer", "toy://contract"],
+        status="blocked",
+        decision_status="UNDECIDED",
+        risk_labels=["AUDITED_RUN_REQUIRED"],
+        evidence=["compiler_core.application", "compiler_core.audit_bundle"],
     )
 
 

@@ -18,12 +18,12 @@ from compiler_core.post_freeze_surface import (
 )
 
 
-def test_f1_report_rejects_malformed_certificate():
+def test_f1_report_requires_a_canonical_audited_run():
     result = certified_litigation_report({"malformed_certificate": True})
 
     assert result["status"] == "blocked"
-    assert result["decision_status"] == "TAINTED"
-    assert "MALFORMED_CERTIFICATE" in result["risk_labels"]
+    assert result["decision_status"] == "UNDECIDED"
+    assert "AUDITED_RUN_REQUIRED" in result["risk_labels"]
     assert result["payload"]["checker_verdict"]["accepted"] is False
 
 

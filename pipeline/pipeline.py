@@ -14,25 +14,11 @@ from dataclasses import dataclass, field, asdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from compiler_core.types import LegalFact, IRState, LegalDomain
-from compiler_core.evaluator import FixpointEvaluator, CriticalClarityFailure, load_rules_from_yaml
-from compiler_core.domain_config import get_domain_config
-
 # ── 配置 ──
-RULES_YAML = os.path.join(os.path.dirname(__file__), '..', 'configs', 'zh_CN', 'rules.yaml')
 REPORT_DIR = os.path.join(os.path.dirname(__file__), '..', 'reports')
 os.makedirs(REPORT_DIR, exist_ok=True)
 
-# 加载引擎（全局单例）
-ZH_RULES = load_rules_from_yaml(RULES_YAML)
 import yaml
-_cfg_path = os.path.join(os.path.dirname(__file__), '..', 'configs', 'zh_CN', 'domain_config.yaml')
-ZH_CONFIG = get_domain_config(LegalDomain.CIVIL)
-if os.path.exists(_cfg_path):
-    _cfg = yaml.safe_load(open(_cfg_path, encoding='utf-8'))
-    if 'alpha_calibrated' in _cfg:
-        ZH_CONFIG.alpha = _cfg['alpha_calibrated']
-ENGINE = FixpointEvaluator(ZH_RULES, ZH_CONFIG)
 
 
 # ── 多租户动态路由器 ──
@@ -51,32 +37,10 @@ def load_isolated_ontology(case_text: str) -> tuple:
     cc = _ONTOLOGY.get('civil_contract', {})
     return 'civil_contract', cc.get('fact_atoms', {})
 
-def filter_rules_by_namespace(facts: dict, case_text: str = "") -> list:
-    """按案卷文本匹配 ontology 的 regex_triggers 锁定规则域"""
-    domain, _ = load_isolated_ontology(case_text)
-    NS_MAP = {
-        'contract': ['contract'],
-        'tort': ['tort'],
-        'criminal': ['criminal'],
-        'administrative': ['admin'],
-        'corporate': ['corporate'],
-        'intellectual_property': ['ip'],
-        'family': ['family'],
-        'property': ['tort'],
-        'state_compensation': ['admin'],
-        'enforcement': ['enforcement'],
-        'procedure': ['procedure'],
-        'juvenile': ['juvenile'],
-        'international': ['contract'],
-    }
-    allowed = NS_MAP.get(domain, ['general']) + ['general']
-    return [r for r in ZH_RULES if getattr(r, 'namespace', 'general') in allowed]
-
-
 @dataclass
 class PipelineResult:
     case_id: str
-    status: str = "OK"  # OK / HALTED / ERROR
+    status: str = "CANDIDATE_ONLY"  # CANDIDATE_ONLY / ERROR
     claims_found: int = 0
     deterministic: int = 0
     tainted: int = 0
@@ -90,6 +54,7 @@ class PipelineResult:
     blocked_reasons: List[str] = field(default_factory=list)
     trace: str = ""
     error: str = ""
+    candidate_facts: Dict[str, str] = field(default_factory=dict)
 
 
 def extract_text_from_case(case_path: str) -> str:
@@ -322,13 +287,13 @@ def search_ocr(query: str, top_k: int = 3) -> list:
 
 
 def process_case(case_path: str) -> PipelineResult:
-    """处理单个案卷"""
+    """摄取案卷并输出candidate facts；正式求值必须显式调用``jc evaluate``。"""
+
     case_dir = Path(case_path)
     case_id = case_dir.name if case_dir.exists() else "unknown"
     result = PipelineResult(case_id=case_id)
 
     try:
-        # 1. 提取文本
         t0 = time.time()
         text = extract_text_from_case(case_path)
         if not text.strip():
@@ -336,7 +301,6 @@ def process_case(case_path: str) -> PipelineResult:
             result.error = "无有效文本"
             return result
 
-        # 2. 提取事实谓词（先过正规化看门狗）
         text = normalize_legal_text(text)
         facts = fact_predicates_from_text(text)
         if not facts:
@@ -344,40 +308,24 @@ def process_case(case_path: str) -> PipelineResult:
             result.error = "未提取到事实谓词"
             return result
 
-        # 3.5. 前置看门狗 — 0.1ms 硬编码扫射（双向统一注册表）
         try:
             from .prc_us_alignment import run_alignment_watchdog
-            # 默认中国人审美国合同：source="US", target="CN"
             wd = run_alignment_watchdog(text, source="US", target="CN")
             if wd["is_blocked"]:
-                print(f"  [WATCHDOG] 触发绝对阻断: {wd['block_reasons']}")
                 result.blocked_reasons = wd["block_reasons"]
             if wd["pre_triggered_atoms"]:
                 facts.update(wd["pre_triggered_atoms"])
         except ImportError:
             pass
 
-        # 3.6. 断言守卫：白名单校验 + 非法原子熔断
         try:
             from .guardian import assert_atoms
             facts, rejected = assert_atoms(facts)
             for rej in rejected:
-                print(f"  [GUARDIAN] {rej}")
+                result.blocked_reasons.append(str(rej))
         except ImportError:
             pass
 
-        # 3. 构建 IRState 并推理（Namespace 路由：合同案卷只看合同规则）
-        state = IRState(world_id=case_id)
-        for fid, desc in facts.items():
-            state.facts[fid] = LegalFact(fid, str(desc)[:200])
-
-        # Namespace 过滤规则
-        engine = ENGINE
-        filtered_rules = filter_rules_by_namespace(facts, text)
-        if len(filtered_rules) < len(ZH_RULES):
-            engine = FixpointEvaluator(filtered_rules, ZH_CONFIG)
-
-        # ── L1 护栏：证据链验证 ──
         try:
             from compiler_core.evidence_chain_validator import validate_evidence_chain
             chain_report = validate_evidence_chain(facts)
@@ -386,90 +334,33 @@ def process_case(case_path: str) -> PipelineResult:
         except ImportError:
             pass
 
-        halted = False
-        try:
-            state = engine.evaluate(state)
-        except CriticalClarityFailure:
-            halted = True
-
-        # ── L2 护栏：De Jure 法定审计 ──
-        try:
-            from compiler_core.de_jure_auditor import audit_claims
-            audit_report = audit_claims(state.claims, facts)
-            for finding in audit_report.get('findings', []):
-                if finding.get('severity') == 'BLOCK':
-                    result.blocked_reasons.append(finding['reason'])
-        except ImportError:
-            pass
-
-        elapsed = round((time.time() - t0) * 1000, 1)
-        claims = list(state.claims.values()) if state.claims else []
-        det = sum(1 for c in claims if not c.requires_human_review)
-        tnt = sum(1 for c in claims if c.requires_human_review and c.confidence >= 0.2)
-        cri = sum(1 for c in claims if c.confidence < 0.2)
-        max_depth = max((len(c.taint_chain) for c in claims), default=0)
-
-        # 4. 精算
-        try:
-            from compiler_core.evaluator import load_rules_from_yaml
-            pricing_rules = load_rules_from_yaml(os.path.join(os.path.dirname(__file__), '..', 'configs', 'zh_CN', 'rules.yaml'))
-            ne = max(len(state.facts) + len(claims), 1)
-            pred_hours = round(ne * 1.43, 2)  # alpha from calibrated Theil-Sen
-        except Exception:
-            pred_hours = 0.0
-
-        # 5. 整理
-        top = []
-        for c in sorted(claims, key=lambda x: -x.confidence)[:10]:
-            top.append({
-                "id": c.id[:80],
-                "confidence": round(c.confidence, 2),
-                "human_review": c.requires_human_review,
-                "taint": c.taint_summary()[:100],
-            })
-
-        # 6. OCR 语义兜底（结论偏少时补充原文参考）
-        ocr_refs = []
-        if len(claims) < 30:
-            try:
-                ocr_refs = search_ocr(text)
-            except Exception:
-                ocr_refs = []
-
-        result.top_claims = top
-        result.ocr_refs = ocr_refs
-
-        result.status = "HALTED" if halted else "OK"
-        result.claims_found = len(claims)
-        result.deterministic = det
-        result.tainted = tnt
-        result.critical = cri
-        result.convergence = not halted
-        result.taint_depth = max_depth
-        result.elapsed_ms = elapsed
-        result.pred_hours = pred_hours
-        result.top_claims = top
-        result.trace = f"HALTED after {len(claims)} claims" if halted else f"CONVERGED: {len(claims)} claims"
+        result.candidate_facts = {
+            str(fact_id): str(description)[:200]
+            for fact_id, description in sorted(facts.items())
+        }
+        result.status = "CANDIDATE_ONLY"
+        result.elapsed_ms = round((time.time() - t0) * 1000, 1)
+        result.trace = "NO_FORMAL_EVALUATION: pass a verified CaseRequest to jc evaluate"
+        result.blocked_reasons.append("FACT_PROMOTION_REQUIRED")
 
     except Exception as e:
         result.status = "ERROR"
         result.error = str(e)
-        import traceback
-        result.trace = traceback.format_exc()
+        result.trace = type(e).__name__
 
     return result
 
 
 def export_report(result: PipelineResult, output_path: str):
-    """导出推理报告（Markdown）"""
+    """导出candidate摄取报告；不得描述为正式推理结果。"""
     lines = [
-        f"# 案卷推理报告 — {result.case_id}",
+        f"# 案卷候选事实摄取报告 — {result.case_id}",
         "",
         f"生成时间: {time.strftime('%Y-%m-%d %H:%M')}",
         f"状态: **{result.status}**",
-        f"引擎: juris-calculus ({len(ZH_RULES)}条规则)",
+        "正式求值: 未执行；需经事实与规则包准入后调用 jc evaluate",
         "",
-        "## 推理结果",
+        "## 摄取结果",
         "",
         f"| 指标 | 数值 |",
         f"|------|-----:|",
@@ -487,12 +378,10 @@ def export_report(result: PipelineResult, output_path: str):
     if result.error:
         lines += ["## 错误", "", f"```\n{result.error}\n```", ""]
 
-    if result.top_claims:
-        lines += ["## TOP 10 结论", ""]
-        for i, c in enumerate(result.top_claims, 1):
-            review = "🔴需人工复核" if c["human_review"] else "✅"
-            taint = f" | 审计: {c['taint']}" if c["taint"] != "CLEAR" else ""
-            lines.append(f"{i}. [{review}] **{c['id'][:60]}** conf={c['confidence']}{taint}")
+    if result.candidate_facts:
+        lines += ["## 候选事实（不得直接进入正式内核）", ""]
+        for fact_id, description in sorted(result.candidate_facts.items()):
+            lines.append(f"- `{fact_id}`: {description}")
 
     if result.ocr_refs:
         lines += ["", "## OCR 原文参考", ""]
@@ -542,8 +431,7 @@ def run_batch(batch_dir: str):
 
     # 汇总
     total = len(results)
-    ok = sum(1 for r in results if r.status == "OK")
-    halted = sum(1 for r in results if r.status == "HALTED")
+    candidates = sum(1 for r in results if r.status == "CANDIDATE_ONLY")
     errors = sum(1 for r in results if r.status == "ERROR")
     avg_claims = sum(r.claims_found for r in results) / max(total, 1)
     avg_hours = sum(r.pred_hours for r in results) / max(total, 1)
@@ -557,8 +445,7 @@ def run_batch(batch_dir: str):
         "",
         f"| 指标 | 数值 |",
         f"|------|-----:|",
-        f"| 成功 | {ok} |",
-        f"| 诚实拒算 | {halted} |",
+        f"| 候选摄取 | {candidates} |",
         f"| 错误 | {errors} |",
         f"| 平均结论数 | {avg_claims:.1f} |",
         f"| 平均预测工时 | {avg_hours:.1f}h |",
@@ -572,7 +459,7 @@ def run_batch(batch_dir: str):
     Path(summary_path).write_text('\n'.join(lines), encoding='utf-8')
     print(f"\n{'='*60}")
     print(f"批量汇总: {summary_path}")
-    print(f"  总计: {total} | 成功: {ok} | 拒算: {halted} | 错误: {errors}")
+    print(f"  总计: {total} | 候选摄取: {candidates} | 错误: {errors}")
     print(f"  平均: {avg_claims:.1f}结论/案 | {avg_hours:.1f}h/案")
 
 

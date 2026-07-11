@@ -12,9 +12,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from compiler_core.litigation_renderer import LitigationChainRenderer, LitigationReport
-from compiler_core.evidence_checklist import build_enhanced_checklist
-from compiler_core.types import LegalRule
+from compiler_core.argumentation import grounded_extension
+from compiler_core.domain_config import DomainConfig
+from compiler_core.evaluator import FixpointEvaluator
+from compiler_core.types import IRState, LegalDomain, LegalFact, LegalRule
 
 
 def make_contract_rules() -> list[LegalRule]:
@@ -115,7 +116,7 @@ BATCH_CASES: list[dict[str, Any]] = [
 
 
 def run_batch(output_dir: str | None = None) -> Dict[str, Any]:
-    """Run all batch cases and return aggregate results."""
+    """运行明确标记为engineering fixture的低层差分批次。"""
     fn_map = {
         "make_contract_rules": make_contract_rules,
         "make_license_rules": make_license_rules,
@@ -128,34 +129,51 @@ def run_batch(output_dir: str | None = None) -> Dict[str, Any]:
     for case in BATCH_CASES:
         rules_fn = fn_map[case["rules_fn"]]
         rules = rules_fn()
-        renderer = LitigationChainRenderer(rules=rules, facts=case["facts"])
-        report = renderer.evaluate()
-
-        checklist = build_enhanced_checklist(
-            report.claim_analyses,
-            report.facts,
-            report.rules_applied,
+        state = IRState(
+            facts={fact_id: LegalFact(id=fact_id, description=fact_id) for fact_id in case["facts"]},
+            domain=LegalDomain.CIVIL,
         )
+        evaluated = FixpointEvaluator(rules, DomainConfig(domain=LegalDomain.CIVIL)).evaluate_horn(state)
+        claims = [{"id": claim_id} for claim_id in sorted(evaluated.claims)]
+        present = {claim["id"] for claim in claims}
+        by_id = {rule.id: rule for rule in rules}
+        attacks = []
+        for rule in rules:
+            if rule.head_claim not in present:
+                continue
+            for target_id in (*rule.attacks, *rule.priority_over):
+                target = by_id.get(target_id)
+                if target and target.head_claim in present:
+                    attacks.append((rule.head_claim, target.head_claim))
+        grounded = grounded_extension(claims, attacks)
 
         case_result = {
             "case_id": case["case_id"],
             "domain": case["domain"],
-            "claims_count": len(report.claim_analyses),
-            "proved": sum(1 for a in report.claim_analyses if a.status == "PROVED"),
-            "refuted": sum(1 for a in report.claim_analyses if a.status == "REFUTED"),
-            "undecided": sum(1 for a in report.claim_analyses if a.status == "UNDECIDED"),
-            "critical_gaps": checklist.total_critical,
-            "high_gaps": checklist.total_high,
-            "fail_closed_ok": report.fail_closed_boundary.get("no_uncertainty_upgrade", False),
+            "claims_count": len(claims),
+            "proved": len(grounded["accepted"]),
+            "refuted": len(grounded["rejected"]),
+            "undecided": len(grounded["undecided"]),
+            "critical_gaps": 0,
+            "high_gaps": 0,
+            "fail_closed_ok": not grounded.get("truncated", False),
+            "engineering_fixture": True,
         }
         results.append(case_result)
 
         if output_dir:
             out = Path(output_dir) / f"{case['case_id']}.md"
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(renderer.render_markdown(report), encoding="utf-8")
+            out.write_text(
+                "# Engineering fixture\n\n"
+                "This is a low-level CI harness, not a CanonicalResult.\n\n"
+                f"- claims: {len(claims)}\n"
+                f"- accepted: {len(grounded['accepted'])}\n",
+                encoding="utf-8",
+            )
 
     return {
+        "engineering_fixture": True,
         "total_cases": len(results),
         "total_claims": sum(r["claims_count"] for r in results),
         "total_proved": sum(r["proved"] for r in results),

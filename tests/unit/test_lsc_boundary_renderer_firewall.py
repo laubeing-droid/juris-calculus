@@ -27,11 +27,12 @@ def test_engine_error_rendering_is_not_legal_advice():
     assert "不得转换为法律建议" in text
 
 
-def test_mcp_render_payload_preserves_renderer_firewall():
+def test_removed_mcp_render_path_requires_an_audited_run():
     result = certified_litigation_report({"facts": ["candidate::unverified"]})
 
     assert result["payload"]["renderer_firewall"]["formal_legal_opinion"] is False
-    assert result["payload"]["lsc_boundary"]["result_status"] == "review_only_result"
+    assert result["payload"]["code"] == "AUDITED_RUN_REQUIRED"
+    assert result["status"] == "blocked"
 
 
 def test_renderer_recursively_rejects_protected_and_final_fields_without_mutation():
