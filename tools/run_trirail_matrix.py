@@ -286,16 +286,6 @@ class TriRailCollider:
             "US": self._summarize_rules(us_rules),
             "PRC": self.prc_engine.rule_inventory,
         }
-        print(
-            "[TriRail] "
-            f"HK={self.rule_inventory['HK']['reasoning_eligible_total']}/"
-            f"{self.rule_inventory['HK']['corpus_total']} eligible | "
-            f"US={self.rule_inventory['US']['reasoning_eligible_total']}/"
-            f"{self.rule_inventory['US']['corpus_total']} eligible | "
-            f"PRC={self.rule_inventory['PRC']['reasoning_eligible_total']}/"
-            f"{self.rule_inventory['PRC']['corpus_total']} eligible | "
-            f"Threats={len(self.threat_interceptor.signatures)} sigs"
-        )
 
     @staticmethod
     def _summarize_rules(rules: List) -> Dict[str, int]:

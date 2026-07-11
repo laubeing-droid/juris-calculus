@@ -103,3 +103,49 @@ def test_stdio_errors_are_protocol_correct_and_server_survives():
         -32601,
     ]
     assert responses[2]["id"] == 2
+
+
+def test_stdio_business_call_keeps_stdout_json_only():
+    """验证首次业务调用的惰性初始化不会向协议 stdout 注入诊断文本。"""
+    proc = _start_server()
+    try:
+        _send(proc, {
+            "jsonrpc": "2.0",
+            "id": 51,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "pytest", "version": "1"},
+            },
+        })
+        initialize = json.loads(_read_one_async(proc).get(timeout=10))
+        assert initialize["id"] == 51
+
+        _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
+        _send(proc, {
+            "jsonrpc": "2.0",
+            "id": 52,
+            "method": "tools/call",
+            "params": {
+                "name": "check_threat",
+                "arguments": {"facts": ["ordinary contract facts"]},
+            },
+        })
+        response = json.loads(_read_one_async(proc).get(timeout=90))
+
+        assert response["id"] == 52
+        assert "error" not in response
+        tool_payload = json.loads(response["result"]["content"][0]["text"])
+        assert tool_payload["status"] == "ok"
+        assert tool_payload["payload"]["facts_checked"] == ["ordinary contract facts"]
+
+        # 响应结束后 stdout 必须保持安静，否则下一条协议消息会被污染。
+        extra_line = _read_one_async(proc)
+        with pytest.raises(Empty):
+            extra_line.get(timeout=0.2)
+    finally:
+        if proc.stdin and not proc.stdin.closed:
+            proc.stdin.close()
+        proc.wait(timeout=10)
+        assert proc.returncode == 0
