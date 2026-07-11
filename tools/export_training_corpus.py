@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from compiler_core.dacl_graph import build_dacl_graph
-from compiler_core.types import LegalRule
+from compiler_core.types import build_rule_inventory, normalize_rule_admission
 
 
 def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_train: float = 0.8, split_dev: float = 0.1, split_test: float = 0.1, seed: int = 42, split_mode: str = 'random', split_date: str = '2024-01-01') -> Dict[str, Any]:
@@ -28,6 +28,7 @@ def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_t
         raw_rules = data.get("rules", []) if isinstance(data, dict) else []
         for rule in raw_rules:
             if isinstance(rule, dict):
+                rule = normalize_rule_admission(rule)
                 rid = str(rule.get('id',''))
                 valid_from = str(rule.get('valid_from',''))
                 premise_sig = hashlib.sha256('|'.join(sorted(rule.get('premise_atoms',[]))).encode()).hexdigest()[:8]
@@ -48,6 +49,8 @@ def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_t
                     "attacks": rule.get("attacks", []),
                     "priority_over": rule.get("priority_over", []),
                     "source_anchor": rule.get("source_anchor", ""),
+                    "trust_label": rule.get("trust_label", "UNVERIFIED"),
+                    "data_quality": rule.get("data_quality", "CLEAN"),
                     "jurisdiction": rule.get("jurisdiction", ""),
                     "authority_rank": rule.get("authority_rank", ""),
                     "valid_from": rule.get("valid_from", ""),
@@ -66,6 +69,7 @@ def export_rules_as_jsonl(rule_paths: List[str | Path], out: str | Path, split_t
         split_path.write_text("".join(json.dumps(item, ensure_ascii=False) + "\n" for item in items), encoding="utf-8")
     return {
         "total_items": total,
+        **build_rule_inventory(all_items),
         "splits": {name: len(items) for name, items in splits.items()},
         "out": str(out_path.parent),
         "dataset_hash": hashlib.sha256(json.dumps(all_items, sort_keys=True, ensure_ascii=False).encode()).hexdigest(),

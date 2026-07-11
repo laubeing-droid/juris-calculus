@@ -15,7 +15,10 @@ from typing import List, Dict, Set, Tuple, Optional
 from compiler_core.constraint_validator import ConstraintValidator
 import logging
 
-from compiler_core.types import LegalRule, LegalFact, LegalClaim, TaintNode, IRState
+from compiler_core.types import (
+    LegalRule, LegalFact, LegalClaim, TaintNode, IRState,
+    build_rule_inventory, is_rule_reasoning_eligible, normalize_rule_admission,
+)
 from compiler_core.proof_trace import ProofEvent, make_trace_id
 from compiler_core.trust_labels import DataOrigin, EpistemicStatus, RuleMaturity, TrustLabel
 
@@ -96,6 +99,11 @@ class FixpointEvaluator:
         from compiler_core.transformer import auto_patch
         rules = auto_patch(rules)
 
+        # corpus 保留全部规则供审计与训练计数；正式索引只接纳已通过来源门槛的规则。
+        self.corpus_rules = tuple(rules)
+        self.inventory = build_rule_inventory(self.corpus_rules)
+        rules = [rule for rule in self.corpus_rules if is_rule_reasoning_eligible(rule)]
+
         # #9: Temporal validity — filter rules by case_date
         if case_date:
             rules = [r for r in rules if self._is_valid_at(r, case_date)]
@@ -115,7 +123,7 @@ class FixpointEvaluator:
 
         # Reverse index: fact_id → [rule_ids] for O(1) triggering
         self.fact_to_rules: Dict[str, List[str]] = {}
-        for r in rules:
+        for r in self.rules.values():
             self.rule_depths[r.id] = self._compute_depth(r.id)
             for premise in r.premise_atoms:
                 self.fact_to_rules.setdefault(premise, []).append(r.id)
@@ -663,7 +671,8 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
     rules = []
     missing_anchors = []
     for r in data.get('rules', []):
-        anchor = r.get('source_anchor', '')
+        admitted = normalize_rule_admission(r)
+        anchor = admitted['source_anchor']
         if not anchor:
             missing_anchors.append(r.get('id', '?'))
         rules.append(LegalRule(
@@ -676,7 +685,7 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             mechanical_exception=r.get('mechanical_exception', True),
             attacks=r.get('attacks', []),
             priority_over=r.get('priority_over', []),
-            source_anchor=r.get('source_anchor', ''),
+            source_anchor=anchor,
             norm_modality=r.get('norm_modality', 'UNKNOWN'),
             modality_confidence=r.get('modality_confidence', 0.0),
             modality_source=r.get('modality_source', ''),
@@ -684,8 +693,8 @@ def load_rules_from_yaml(filepath: str) -> List[LegalRule]:
             valid_to=str(r.get('valid_to', '') or ''),
             jurisdiction=str(r.get('jurisdiction', '') or ''),
             authority_rank=str(r.get('authority_rank', '') or ''),
-            trust_label=r.get('trust_label', 'UNVERIFIED'),
-            data_quality=r.get('data_quality', 'CLEAN'),
+            trust_label=admitted.get('trust_label', 'UNVERIFIED'),
+            data_quality=admitted.get('data_quality', 'CLEAN'),
         ))
     if missing_anchors:
         logger.warning(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -11,6 +12,12 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from compiler_core.types import build_rule_inventory, resolve_rule_source_anchor
+
+
 REQUIRED_FIELDS = {"id", "premise_atoms", "head_claim", "head_type"}
 
 
@@ -24,6 +31,9 @@ def audit_rules(path: str | Path, strict_source_anchor: bool = False, tests_root
         return {
             "path": str(rule_path),
             "rule_count": 0,
+            "corpus_total": 0,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 0,
             "status": "FAIL",
             "findings": [{"rule_id": "<file>", "blocking_issue": True, "issue": "RULES_NOT_LIST"}],
         }
@@ -57,9 +67,10 @@ def audit_rules(path: str | Path, strict_source_anchor: bool = False, tests_root
         for ref in rule.get("attacks", []) or []:
             if ref not in ids and ref not in claims:
                 findings.append(_finding(index, rid, f"UNKNOWN_ATTACK_TARGET:{ref}", True))
-        if rule.get("source_anchor") is None:
+        source_anchor = resolve_rule_source_anchor(rule)
+        if not source_anchor and rule.get("source_anchor") is None:
             findings.append(_finding(index, rid, "SOURCE_ANCHOR_MISSING", strict_source_anchor))
-        elif not str(rule.get("source_anchor", "")).strip():
+        elif not source_anchor:
             findings.append(_finding(index, rid, "SOURCE_ANCHOR_EMPTY", strict_source_anchor))
         if rule.get("valid_from") and rule.get("valid_to") and str(rule["valid_from"]) > str(rule["valid_to"]):
             findings.append(_finding(index, rid, "INVALID_VALIDITY_INTERVAL", True))
@@ -84,9 +95,11 @@ def audit_rules(path: str | Path, strict_source_anchor: bool = False, tests_root
                 findings.append(_finding(index, rid, "DEAD_RULE_NO_PREMISES_OR_REFERENCES", False))
 
     blocking = [f for f in findings if f["blocking_issue"]]
+    inventory = build_rule_inventory(rule for rule in rules if isinstance(rule, dict))
     return {
         "path": str(rule_path),
         "rule_count": len(rules),
+        **inventory,
         "finding_count": len(findings),
         "blocking_count": len(blocking),
         "status": "PASS" if not blocking else "FAIL",
