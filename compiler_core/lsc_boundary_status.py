@@ -1,30 +1,22 @@
-"""LSC boundary result statuses for JC engineering outputs."""
+"""迁移期边界结果适配；权威状态和准入来自v3 contracts与LegalFact。"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Iterable, Mapping
 
-from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
+from compiler_core.contracts import CertificateKind, ResultStatus
+from compiler_core.types import FactTrustStatus, LegalFact
 
 
-class BoundaryResultStatus(str, Enum):
-    """Result states that disclose boundary conditions without changing JC semantics."""
-
-    ACCEPTED_FORMAL_RESULT = "accepted_formal_result"
-    HYPOTHETICAL_RESULT = "hypothetical_result"
-    REVIEW_ONLY_RESULT = "review_only_result"
-    MISSING_REQUIRED_FACT = "missing_required_fact"
-    CONFLICT_CERTIFICATE = "conflict_certificate"
-    ENGINE_ERROR = "engine_error"
+BoundaryResultStatus = ResultStatus
 
 
 @dataclass(frozen=True)
 class BoundaryResult:
-    """Uniform output packet carrying status, provenance, taint, and review data."""
+    """旧调用者使用的机器packet；不得作为CanonicalResult的第二套定义。"""
 
-    result_status: BoundaryResultStatus
+    result_status: ResultStatus
     used_fact_keys: tuple[str, ...] = field(default_factory=tuple)
     used_rule_ids: tuple[str, ...] = field(default_factory=tuple)
     source_snapshot_ids: tuple[str, ...] = field(default_factory=tuple)
@@ -36,7 +28,7 @@ class BoundaryResult:
     payload: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-ready result packet with required audit fields."""
+        """返回新的JSON-ready packet并保留旧审计字段。"""
 
         return {
             "result_status": self.result_status.value,
@@ -53,17 +45,20 @@ class BoundaryResult:
 
 
 def classify_boundary_result(
-    used_facts: Iterable[FactTrustEnvelope],
+    used_facts: Iterable[LegalFact],
     *,
     used_rule_ids: Iterable[str] = (),
     source_snapshot_ids: Iterable[str] = (),
     conflict_nodes: Iterable[str] = (),
     engine_error: str | None = None,
+    checker_accepted: bool = False,
+    certificate_kind: CertificateKind | str = CertificateKind.NONE,
+    formal_kernel_used: bool = False,
 ) -> BoundaryResult:
-    """Classify a boundary result from used facts and non-semantic conditions."""
+    """按唯一事实准入和显式checker证据分类；任何缺省组合均fail closed。"""
 
     facts = tuple(used_facts)
-    used_fact_keys = tuple(fact.fact_key for fact in facts)
+    used_fact_keys = tuple(sorted(fact.id for fact in facts))
     taint = _taint_from_facts(facts)
     provenance = {
         "summary_only": True,
@@ -72,57 +67,80 @@ def classify_boundary_result(
     }
     common = {
         "used_fact_keys": used_fact_keys,
-        "used_rule_ids": tuple(used_rule_ids),
-        "source_snapshot_ids": tuple(source_snapshot_ids),
+        "used_rule_ids": tuple(sorted({str(item) for item in used_rule_ids})),
+        "source_snapshot_ids": tuple(sorted({str(item) for item in source_snapshot_ids})),
         "provenance": provenance,
         "taint": taint,
     }
+    try:
+        certificate = certificate_kind if isinstance(certificate_kind, CertificateKind) else CertificateKind(certificate_kind)
+    except ValueError:
+        certificate = CertificateKind.NONE
     if engine_error:
         return BoundaryResult(
-            BoundaryResultStatus.ENGINE_ERROR,
+            ResultStatus.ENGINE_ERROR,
             review_required=True,
             payload={"error": engine_error},
             **common,
         )
-    conflict_tuple = tuple(conflict_nodes)
+    conflict_tuple = tuple(sorted({str(item) for item in conflict_nodes}))
     if conflict_tuple:
         return BoundaryResult(
-            BoundaryResultStatus.CONFLICT_CERTIFICATE,
+            ResultStatus.CONFLICT_CERTIFICATE,
             review_required=True,
             payload={"conflict_nodes": list(conflict_tuple), "auto_resolved": False},
             **common,
         )
     if any(fact.status == FactTrustStatus.UNKNOWN for fact in facts):
-        missing = [fact.fact_key for fact in facts if fact.status == FactTrustStatus.UNKNOWN]
+        missing = sorted(fact.id for fact in facts if fact.status == FactTrustStatus.UNKNOWN)
         return BoundaryResult(
-            BoundaryResultStatus.MISSING_REQUIRED_FACT,
+            ResultStatus.MISSING_REQUIRED_FACT,
             review_required=True,
             payload={"missing_fact_keys": missing},
             **common,
         )
     if any(fact.status == FactTrustStatus.DISPUTED for fact in facts):
         return BoundaryResult(
-            BoundaryResultStatus.REVIEW_ONLY_RESULT,
+            ResultStatus.REVIEW_ONLY_RESULT,
             review_required=True,
             payload={"alternative_paths": _alternatives(facts)},
             **common,
         )
     if "assumption" in taint:
         return BoundaryResult(
-            BoundaryResultStatus.HYPOTHETICAL_RESULT,
+            ResultStatus.HYPOTHETICAL_RESULT,
             review_required=True,
+            formal_kernel_used=formal_kernel_used,
             payload={"hypothetical": True},
             **common,
         )
+    inadmissible = sorted(fact.id for fact in facts if not fact.can_enter_formal_kernel())
+    if inadmissible:
+        return BoundaryResult(
+            ResultStatus.REVIEW_ONLY_RESULT,
+            review_required=True,
+            formal_kernel_used=formal_kernel_used,
+            payload={"inadmissible_fact_keys": inadmissible},
+            **common,
+        )
+    if not facts or not checker_accepted or certificate != CertificateKind.FORMAL or not formal_kernel_used:
+        return BoundaryResult(
+            ResultStatus.REVIEW_ONLY_RESULT,
+            review_required=True,
+            formal_kernel_used=formal_kernel_used,
+            payload={"formal_acceptance_incomplete": True},
+            **common,
+        )
     return BoundaryResult(
-        BoundaryResultStatus.ACCEPTED_FORMAL_RESULT,
+        ResultStatus.ACCEPTED_FORMAL_RESULT,
         formal_kernel_used=True,
+        payload={"checker_accepted": True, "certificate_kind": CertificateKind.FORMAL.value},
         **common,
     )
 
 
 def ensure_required_audit_fields(result: Mapping[str, Any]) -> bool:
-    """Return True when a result exposes all LSC-derived audit fields."""
+    """检查迁移期packet是否暴露全部审计字段。"""
 
     required = {
         "result_status",
@@ -138,7 +156,9 @@ def ensure_required_audit_fields(result: Mapping[str, Any]) -> bool:
     return required <= set(result)
 
 
-def _taint_from_facts(facts: Iterable[FactTrustEnvelope]) -> tuple[str, ...]:
+def _taint_from_facts(facts: Iterable[LegalFact]) -> tuple[str, ...]:
+    """汇总实际使用事实的类型化边界污染。"""
+
     labels: set[str] = set()
     for fact in facts:
         if fact.status == FactTrustStatus.USER_ASSUMED:
@@ -156,10 +176,12 @@ def _taint_from_facts(facts: Iterable[FactTrustEnvelope]) -> tuple[str, ...]:
     return tuple(sorted(labels))
 
 
-def _alternatives(facts: Iterable[FactTrustEnvelope]) -> list[dict[str, Any]]:
-    paths: list[dict[str, Any]] = []
-    for fact in facts:
-        if fact.status == FactTrustStatus.DISPUTED:
-            paths.append({"fact_key": fact.fact_key, "alternatives": [dict(item) for item in fact.alternatives]})
-    return paths
+def _alternatives(facts: Iterable[LegalFact]) -> list[dict[str, Any]]:
+    """按事实键稳定输出争议分支，不修改LegalFact中的候选值。"""
 
+    paths = [
+        {"fact_key": fact.id, "alternatives": [dict(item) for item in fact.alternatives]}
+        for fact in facts
+        if fact.status == FactTrustStatus.DISPUTED
+    ]
+    return sorted(paths, key=lambda item: item["fact_key"])

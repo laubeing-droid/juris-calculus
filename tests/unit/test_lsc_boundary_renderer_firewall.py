@@ -33,3 +33,19 @@ def test_mcp_render_payload_preserves_renderer_firewall():
     assert result["payload"]["renderer_firewall"]["formal_legal_opinion"] is False
     assert result["payload"]["lsc_boundary"]["result_status"] == "review_only_result"
 
+
+def test_renderer_recursively_rejects_protected_and_final_fields_without_mutation():
+    payload = {
+        "sections": [
+            {"analysis": {"final_conclusion": "certain"}},
+            {"machine_override": {"result_status": "accepted_formal_result"}},
+        ]
+    }
+
+    result = validate_output_contract(payload, result_status="review_only_result")
+
+    assert not result["ok"]
+    assert "$.sections[0].analysis.final_conclusion" in result["errors"][0]
+    assert "$.sections[1].machine_override.result_status" in result["errors"][0]
+    assert payload["sections"][0]["analysis"]["final_conclusion"] == "certain"
+

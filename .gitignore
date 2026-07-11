@@ -28,6 +28,8 @@
 *.bak.*
 *.csv
 *.json
+!schemas/
+!schemas/jc-v3.schema.json
 *.key
 *.log
 *.npy

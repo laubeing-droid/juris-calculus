@@ -1,3 +1,4 @@
+from compiler_core.contracts import CertificateKind
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
 from compiler_core.lsc_boundary_status import classify_boundary_result
 from compiler_core.taint import TaintLabel, TaintSet, propagate_taint, taint_from_statuses
@@ -22,8 +23,14 @@ def test_user_assumed_optional_fact_pollutes_when_used():
 
 def test_unused_optional_fact_does_not_pollute():
     result = classify_boundary_result([
-        FactTrustEnvelope("fact.required", True, FactTrustStatus.VERIFIED_FACT)
-    ])
+        FactTrustEnvelope(
+            "fact.required",
+            True,
+            FactTrustStatus.VERIFIED_FACT,
+            source_ids=("source::1",),
+            human_reviewed=True,
+        )
+    ], checker_accepted=True, certificate_kind=CertificateKind.FORMAL, formal_kernel_used=True)
 
     assert result.result_status.value == "accepted_formal_result"
     assert result.taint == ()

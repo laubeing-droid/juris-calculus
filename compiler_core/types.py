@@ -40,15 +40,114 @@ class ValidityState(str, Enum):
     TERMINATED = "TERMINATED"    # 有效→解除，向前失效
 
 
+class FactTrustStatus(str, Enum):
+    """事实从候选到可进入正式内核的机器状态。"""
+
+    CANDIDATE_FACT = "candidate_fact"
+    NORMALIZED_FACT = "normalized_fact"
+    SOURCE_BOUND_FACT = "source_bound_fact"
+    CHECKED_FACT = "checked_fact"
+    VERIFIED_FACT = "verified_fact"
+    REJECTED_FACT = "rejected_fact"
+    STALE_FACT = "stale_fact"
+    USER_ASSUMED = "user_assumed"
+    DISPUTED = "disputed"
+    UNKNOWN = "unknown"
+
+
+class FactCreator(str, Enum):
+    """事实创建者类型；该字段只参与准入审计，不代表事实为真。"""
+
+    LLM = "llm"
+    HUMAN = "human"
+    SYSTEM = "system"
+    COURT = "court"
+    IMPORT = "import"
+
+
 @dataclass
 class LegalFact:
-    id: str; description: str = ""; source: str = ""; formalizable: float = 1.0
+    """JC唯一事实对象，同时承载来源、状态、污染和人工复核元数据。"""
+
+    id: str
+    description: str = ""
+    source: str = ""
+    formalizable: float = 1.0
     # V6: 污染追踪扩展
     taint_status: str = "CLEAR"
     extraction_confidence: float = 1.0
     carrier_level: str = ""  # A/B/C 证据载体分级（由规则引擎判定，严禁大模型填写）
     raw_text: str = ""  # 原始文本（用于源锚定验证）
     source_anchor: str = ""  # 源锚定：上下文签名(context_prefix||raw_text||context_suffix)
+    value: Any = None
+    status: FactTrustStatus = FactTrustStatus.CANDIDATE_FACT
+    source_ids: Tuple[str, ...] = field(default_factory=tuple)
+    alternatives: Tuple[Dict[str, Any], ...] = field(default_factory=tuple)
+    provenance: Dict[str, Any] = field(default_factory=dict)
+    human_reviewed: bool = False
+    created_by: FactCreator = FactCreator.SYSTEM
+    reasoning_tier: str = "P0"
+
+    def __post_init__(self) -> None:
+        """规范化边界字段，拒绝未知状态和会混淆准入含义的路由层级。"""
+
+        if not isinstance(self.status, FactTrustStatus):
+            self.status = FactTrustStatus(str(self.status))
+        if not isinstance(self.created_by, FactCreator):
+            self.created_by = FactCreator(str(self.created_by))
+        if self.reasoning_tier not in {"P0", "P1", "P2"}:
+            raise ValueError(f"unknown reasoning_tier: {self.reasoning_tier}")
+        self.source_ids = tuple(sorted({str(item) for item in self.source_ids if str(item)}))
+        self.alternatives = tuple(dict(item) for item in self.alternatives)
+        self.provenance = dict(self.provenance)
+
+    @property
+    def fact_key(self) -> str:
+        """提供旧边界payload使用的只读事实键名称。"""
+
+        return self.id
+
+    @property
+    def reasoning_eligible_by_default(self) -> bool:
+        """状态层只承认verified；正式准入仍须调用完整门禁。"""
+
+        return self.status == FactTrustStatus.VERIFIED_FACT
+
+    @property
+    def requires_review_packet(self) -> bool:
+        """标记必须进入缺失事实或争议复核数据的状态。"""
+
+        return self.status in {FactTrustStatus.DISPUTED, FactTrustStatus.UNKNOWN}
+
+    @property
+    def assumption_tainted(self) -> bool:
+        """标记只能支持假设结果的用户假定事实。"""
+
+        return self.status == FactTrustStatus.USER_ASSUMED
+
+    def can_enter_formal_kernel(self) -> bool:
+        """执行唯一事实准入门禁；reasoning_tier不得改变结果。"""
+
+        if self.status != FactTrustStatus.VERIFIED_FACT:
+            return False
+        if self.created_by == FactCreator.COURT:
+            return True
+        return bool(self.human_reviewed and self.source_ids)
+
+    def trust_dict(self) -> Dict[str, Any]:
+        """返回新的稳定字典，供边界转换和审计摘要使用。"""
+
+        return {
+            "fact_key": self.id,
+            "value": self.value,
+            "status": self.status.value,
+            "source_ids": list(self.source_ids),
+            "alternatives": [dict(item) for item in self.alternatives],
+            "provenance": dict(self.provenance),
+            "human_reviewed": self.human_reviewed,
+            "created_by": self.created_by.value,
+            "reasoning_tier": self.reasoning_tier,
+        }
 
 
 @dataclass

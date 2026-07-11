@@ -1,9 +1,18 @@
+import pytest
+
+from compiler_core.contracts import CertificateKind
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
 from compiler_core.lsc_boundary_status import BoundaryResultStatus, classify_boundary_result
 
 
 def _fact(key, status):
-    return FactTrustEnvelope(fact_key=key, value=True, status=status, source_ids=("snapshot://1",))
+    return FactTrustEnvelope(
+        fact_key=key,
+        value=True,
+        status=status,
+        source_ids=("snapshot://1",),
+        human_reviewed=True,
+    )
 
 
 def test_clean_verified_facts_classify_as_accepted_formal_result():
@@ -11,6 +20,9 @@ def test_clean_verified_facts_classify_as_accepted_formal_result():
         [_fact("f.clean", FactTrustStatus.VERIFIED_FACT)],
         used_rule_ids=["r.clean"],
         source_snapshot_ids=["snapshot://1"],
+        checker_accepted=True,
+        certificate_kind=CertificateKind.FORMAL,
+        formal_kernel_used=True,
     )
 
     assert result.result_status == BoundaryResultStatus.ACCEPTED_FORMAL_RESULT
@@ -53,6 +65,25 @@ def test_engine_error_does_not_emit_final_success():
     result = classify_boundary_result([], engine_error="boom")
 
     assert result.result_status == BoundaryResultStatus.ENGINE_ERROR
+    assert not result.formal_kernel_used
+    assert result.review_required
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        FactTrustStatus.CANDIDATE_FACT,
+        FactTrustStatus.NORMALIZED_FACT,
+        FactTrustStatus.SOURCE_BOUND_FACT,
+        FactTrustStatus.CHECKED_FACT,
+        FactTrustStatus.REJECTED_FACT,
+        FactTrustStatus.STALE_FACT,
+    ],
+)
+def test_nonverified_facts_never_fall_through_to_formal_success(status):
+    result = classify_boundary_result([_fact(f"fact::{status.value}", status)])
+
+    assert result.result_status == BoundaryResultStatus.REVIEW_ONLY_RESULT
     assert not result.formal_kernel_used
     assert result.review_required
 

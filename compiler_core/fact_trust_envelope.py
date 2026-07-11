@@ -1,40 +1,10 @@
-"""LSC-inspired fact trust envelope for JC engineering boundaries.
-
-This module is intentionally outside the formal kernel. It maps LSC fact-state
-language into JC fact trust metadata without changing verified_fact eligibility,
-Horn closure, certificate acceptance, or DecisionStatus semantics.
-"""
+"""旧FactCoordinate payload到唯一LegalFact对象的保守转换。"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Mapping
 
-
-class FactTrustStatus(str, Enum):
-    """Machine-readable fact states used by the engineering boundary layer."""
-
-    CANDIDATE_FACT = "candidate_fact"
-    NORMALIZED_FACT = "normalized_fact"
-    SOURCE_BOUND_FACT = "source_bound_fact"
-    CHECKED_FACT = "checked_fact"
-    VERIFIED_FACT = "verified_fact"
-    REJECTED_FACT = "rejected_fact"
-    STALE_FACT = "stale_fact"
-    USER_ASSUMED = "user_assumed"
-    DISPUTED = "disputed"
-    UNKNOWN = "unknown"
-
-
-class FactCreator(str, Enum):
-    """Origin class for a fact-trust envelope."""
-
-    LLM = "llm"
-    HUMAN = "human"
-    SYSTEM = "system"
-    COURT = "court"
-    IMPORT = "import"
+from compiler_core.types import FactCreator, FactTrustStatus, LegalFact
 
 
 LSC_STATUS_MAP = {
@@ -49,89 +19,60 @@ LSC_STATUS_MAP = {
 }
 
 
-@dataclass(frozen=True)
-class FactTrustEnvelope:
-    """Status-wrapped fact value that preserves trust and audit metadata."""
+def FactTrustEnvelope(
+    fact_key: str,
+    value: Any = None,
+    status: FactTrustStatus = FactTrustStatus.CANDIDATE_FACT,
+    source_ids: tuple[str, ...] = (),
+    alternatives: tuple[dict[str, Any], ...] = (),
+    provenance: Mapping[str, Any] | None = None,
+    human_reviewed: bool = False,
+    created_by: FactCreator = FactCreator.SYSTEM,
+) -> LegalFact:
+    """迁移期工厂：接受旧构造签名，但只创建LegalFact，不保留平行业务对象。"""
 
-    fact_key: str
-    value: Any = None
-    status: FactTrustStatus = FactTrustStatus.CANDIDATE_FACT
-    source_ids: tuple[str, ...] = field(default_factory=tuple)
-    alternatives: tuple[dict[str, Any], ...] = field(default_factory=tuple)
-    provenance: dict[str, Any] = field(default_factory=dict)
-    human_reviewed: bool = False
-    created_by: FactCreator = FactCreator.SYSTEM
-
-    def to_dict(self) -> dict[str, Any]:
-        """Return a stable JSON-ready representation of the envelope."""
-
-        return {
-            "fact_key": self.fact_key,
-            "value": self.value,
-            "status": self.status.value,
-            "source_ids": list(self.source_ids),
-            "alternatives": [dict(item) for item in self.alternatives],
-            "provenance": dict(self.provenance),
-            "human_reviewed": self.human_reviewed,
-            "created_by": self.created_by.value,
-        }
-
-    @property
-    def reasoning_eligible_by_default(self) -> bool:
-        """Return True only for already verified facts."""
-
-        return self.status == FactTrustStatus.VERIFIED_FACT
-
-    @property
-    def requires_review_packet(self) -> bool:
-        """Return True when the fact must be surfaced for human review."""
-
-        return self.status in {FactTrustStatus.DISPUTED, FactTrustStatus.UNKNOWN}
-
-    @property
-    def assumption_tainted(self) -> bool:
-        """Return True when use of this fact can only support hypothetical output."""
-
-        return self.status == FactTrustStatus.USER_ASSUMED
+    return LegalFact(
+        id=fact_key,
+        description="" if value is None else str(value),
+        value=value,
+        status=status,
+        source_ids=source_ids,
+        alternatives=alternatives,
+        provenance=dict(provenance or {}),
+        human_reviewed=human_reviewed,
+        created_by=created_by,
+    )
 
 
-def from_lsc_fact_coordinate(payload: Mapping[str, Any]) -> FactTrustEnvelope:
-    """Map an LSC FactCoordinate-shaped payload into a JC envelope.
-
-    The mapping is conservative: LSC VERIFIED is represented as verified-state
-    metadata, but callers still need the existing JC verified_fact gate before
-    letting the fact affect formal reasoning.
-    """
+def from_lsc_fact_coordinate(payload: Mapping[str, Any]) -> LegalFact:
+    """把旧FactCoordinate形payload保守转换为LegalFact，不推断或晋升事实。"""
 
     raw_state = str(payload.get("determination_state") or payload.get("truth_status") or "")
     status = LSC_STATUS_MAP.get(raw_state, FactTrustStatus.CANDIDATE_FACT)
     provenance = dict(payload.get("provenance") or {})
-    creator = _creator_from_payload(raw_state, provenance)
-    source_ids = tuple(_source_ids(provenance))
-    alternatives = tuple(dict(item) for item in payload.get("alternatives") or ())
-    return FactTrustEnvelope(
-        fact_key=str(payload.get("fact_key") or ""),
+    return LegalFact(
+        id=str(payload.get("fact_key") or ""),
+        description=str(payload.get("description") or ""),
         value=payload.get("value"),
         status=status,
-        source_ids=source_ids,
-        alternatives=alternatives,
+        source_ids=tuple(_source_ids(provenance)),
+        alternatives=tuple(dict(item) for item in payload.get("alternatives") or ()),
         provenance=provenance,
         human_reviewed=bool(payload.get("human_reviewed") or raw_state == "HUMAN_REVIEWED"),
-        created_by=creator,
+        created_by=_creator_from_payload(raw_state, provenance),
+        reasoning_tier=str(payload.get("reasoning_tier") or "P0"),
     )
 
 
-def can_enter_formal_kernel(envelope: FactTrustEnvelope) -> bool:
-    """Check the boundary-layer precondition for formal-kernel entry."""
+def can_enter_formal_kernel(fact: LegalFact) -> bool:
+    """兼容函数只委托LegalFact的唯一准入逻辑。"""
 
-    if envelope.status != FactTrustStatus.VERIFIED_FACT:
-        return False
-    if envelope.created_by == FactCreator.COURT:
-        return True
-    return bool(envelope.human_reviewed and envelope.source_ids)
+    return fact.can_enter_formal_kernel()
 
 
 def _creator_from_payload(raw_state: str, provenance: Mapping[str, Any]) -> FactCreator:
+    """从显式创建者字段解析来源；未知值降为system，不作事实晋升。"""
+
     created_by = str(provenance.get("created_by") or provenance.get("source_agent") or "").lower()
     if raw_state == "COURT_FIXED" or created_by == "court":
         return FactCreator.COURT
@@ -143,6 +84,8 @@ def _creator_from_payload(raw_state: str, provenance: Mapping[str, Any]) -> Fact
 
 
 def _source_ids(provenance: Mapping[str, Any]) -> list[str]:
+    """只复制payload中已有的结构化来源ID，不从说明文字猜测。"""
+
     values: list[str] = []
     for key in ("source_id", "source_ref", "source_document_id"):
         value = provenance.get(key)
@@ -150,3 +93,12 @@ def _source_ids(provenance: Mapping[str, Any]) -> list[str]:
             values.append(str(value))
     return values
 
+
+__all__ = [
+    "FactCreator",
+    "FactTrustEnvelope",
+    "FactTrustStatus",
+    "LSC_STATUS_MAP",
+    "can_enter_formal_kernel",
+    "from_lsc_fact_coordinate",
+]

@@ -1,5 +1,6 @@
 import json
 
+from compiler_core.contracts import CertificateKind
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
 from compiler_core.lsc_boundary_status import ensure_required_audit_fields, classify_boundary_result
 from compiler_core.result_exporter import export_boundary_json
@@ -10,6 +11,9 @@ def test_boundary_result_contains_required_audit_fields():
         [FactTrustEnvelope("fact.a", True, FactTrustStatus.VERIFIED_FACT, source_ids=("src://a",))],
         used_rule_ids=["rule.a"],
         source_snapshot_ids=["snapshot.a"],
+        checker_accepted=True,
+        certificate_kind=CertificateKind.FORMAL,
+        formal_kernel_used=True,
     ).to_dict()
 
     assert ensure_required_audit_fields(result)
@@ -37,8 +41,14 @@ def test_provenance_is_summary_not_repeated_source_text():
 
 def test_boundary_json_export_is_stable_and_sorted():
     result = classify_boundary_result([
-        FactTrustEnvelope("fact.a", True, FactTrustStatus.VERIFIED_FACT)
-    ]).to_dict()
+        FactTrustEnvelope(
+            "fact.a",
+            True,
+            FactTrustStatus.VERIFIED_FACT,
+            source_ids=("src://a",),
+            human_reviewed=True,
+        )
+    ], checker_accepted=True, certificate_kind=CertificateKind.FORMAL, formal_kernel_used=True).to_dict()
 
     first = export_boundary_json(result)
     second = export_boundary_json(result)

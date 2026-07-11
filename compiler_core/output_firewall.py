@@ -1,8 +1,10 @@
-"""Renderer and output firewall for LSC boundary packets."""
+"""CanonicalResult到RenderedArtifact单向边界的基础输出防火墙。"""
 
 from __future__ import annotations
 
 from typing import Any, Mapping
+
+from compiler_core.contracts import PROTECTED_RESULT_FIELDS
 
 BLOCKED_FINAL_OPINION_STATUSES = {
     "hypothetical_result",
@@ -13,6 +15,7 @@ BLOCKED_FINAL_OPINION_STATUSES = {
 }
 
 FORBIDDEN_OUTPUT_FIELDS = {
+    "final_conclusion",
     "final_legal_opinion",
     "court_will_rule",
     "formal_proof_claim",
@@ -34,18 +37,44 @@ def renderer_firewall_metadata(result_status: str) -> dict[str, Any]:
 
 
 def validate_output_contract(payload: Mapping[str, Any], *, result_status: str) -> dict[str, Any]:
-    """Validate that rendered output does not overclaim boundary results."""
+    """递归拒绝渲染层伪造或覆盖正式字段，且不修改输入payload。"""
 
-    forbidden = sorted(FORBIDDEN_OUTPUT_FIELDS.intersection(payload.keys()))
+    forbidden = _forbidden_paths(payload)
     firewall = renderer_firewall_metadata(result_status)
     errors = []
     if forbidden:
         errors.append(f"forbidden output fields: {', '.join(forbidden)}")
-    if result_status in BLOCKED_FINAL_OPINION_STATUSES and payload.get("final_conclusion"):
+    if result_status in BLOCKED_FINAL_OPINION_STATUSES and _contains_truthy_key(payload, "final_conclusion"):
         errors.append("blocked boundary result cannot carry final_conclusion")
     return {
         "ok": not errors,
         "errors": errors,
         "renderer_firewall": firewall,
     }
+
+
+def _forbidden_paths(value: Any, path: str = "$") -> list[str]:
+    """递归定位越权字段路径；受保护结果字段不得由renderer重新声明。"""
+
+    found: list[str] = []
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            child = f"{path}.{key}"
+            if key in FORBIDDEN_OUTPUT_FIELDS or key in PROTECTED_RESULT_FIELDS:
+                found.append(child)
+            found.extend(_forbidden_paths(nested, child))
+    elif isinstance(value, (list, tuple)):
+        for index, nested in enumerate(value):
+            found.extend(_forbidden_paths(nested, f"{path}[{index}]"))
+    return sorted(found)
+
+
+def _contains_truthy_key(value: Any, target: str) -> bool:
+    """检查任意嵌套层是否声明非空结论字段。"""
+
+    if isinstance(value, Mapping):
+        return any((key == target and bool(nested)) or _contains_truthy_key(nested, target) for key, nested in value.items())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_truthy_key(item, target) for item in value)
+    return False
 
