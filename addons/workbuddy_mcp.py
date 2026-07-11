@@ -417,10 +417,16 @@ def _load_manifest(path: Path | None) -> dict[str, Any]:
             raise AdapterError("INVALID_MCP_MANIFEST", type(exc).__name__) from exc
     if not isinstance(document, dict):
         raise AdapterError("INVALID_MCP_MANIFEST", "manifest must be an object")
-    if tuple(document.get("tools", {})) != TOOL_NAMES or document.get("resources") != {}:
+    tools = document.get("tools", {})
+    if (
+        not isinstance(tools, dict)
+        or set(tools) != set(TOOL_NAMES)
+        or len(tools) != len(TOOL_NAMES)
+        or document.get("resources") != {}
+    ):
         raise AdapterError("INVALID_MCP_MANIFEST", "manifest must expose exactly four tools and zero resources")
     for name in TOOL_NAMES:
-        tool = document["tools"].get(name)
+        tool = tools.get(name)
         if not isinstance(tool, dict) or "inputSchema" not in tool or "outputSchema" not in tool:
             raise AdapterError("INVALID_MCP_MANIFEST", "every tool requires input and output schemas")
     return document
