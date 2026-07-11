@@ -18,6 +18,75 @@
       ],
       "type": "object"
     },
+    "AuditBundleManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "engine_version": {
+          "type": "string"
+        },
+        "events_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "graph_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pack_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pack_id": {
+          "type": "string"
+        },
+        "pack_version": {
+          "type": "string"
+        },
+        "request_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "result_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "run_id",
+        "request_digest",
+        "result_digest",
+        "events_digest",
+        "graph_digest",
+        "engine_version",
+        "pack_id",
+        "pack_version",
+        "pack_digest",
+        "source_ids",
+        "files"
+      ],
+      "type": "object"
+    },
     "AuditEvent": {
       "additionalProperties": false,
       "properties": {
@@ -187,6 +256,36 @@
         "taint",
         "outcome",
         "details"
+      ],
+      "type": "object"
+    },
+    "AuditResultEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_refs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "events_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "graph_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "semantic": {
+          "$ref": "#/$defs/SemanticResult"
+        }
+      },
+      "required": [
+        "semantic",
+        "events_digest",
+        "graph_digest",
+        "artifact_refs"
       ],
       "type": "object"
     },

@@ -68,6 +68,19 @@ class PackVerification:
         return payload
 
 
+@dataclass(frozen=True)
+class LoadedRulePack:
+    """通过完整门禁后可交给application和离线缓存的规则包材料。"""
+
+    descriptor: Any
+    rules: tuple[Any, ...]
+    source_manifest: Any
+    verification: PackVerification
+    manifest_path: Path
+    config_root: Path
+    resource_paths: tuple[Path, ...]
+
+
 class RulePackRegistry:
     """扫描单一configs根下的pack manifests并拒绝重复pack ID。"""
 
@@ -131,6 +144,49 @@ class RulePackRegistry:
         """按pack ID排序验证全部已安装manifest。"""
 
         return tuple(self.verify(pack_id) for pack_id in sorted(self.manifests()))
+
+    def load_reasoning_pack(self, pack_id: str) -> LoadedRulePack:
+        """加载已验证且非空的official pack；candidate pack不得进入application。"""
+
+        verification = self.verify(pack_id)
+        if not verification.integrity_valid or not verification.reasoning_ready:
+            raise RulePackError("PACK_NOT_REASONING_READY", pack_id)
+        manifest_path = self.manifests()[pack_id]
+        document = _load_yaml_mapping(manifest_path)
+        from compiler_core.contracts import RulePackDescriptor
+        from compiler_core.evaluator import load_rules_from_yaml
+        from compiler_core.source_manifest import SourceManifest
+
+        rules: list[Any] = []
+        resources: list[Path] = [manifest_path]
+        for entry in document["rule_files"]:
+            path = self.config_root / entry["path"]
+            rules.extend(load_rules_from_yaml(str(path)))
+            resources.append(path)
+        source_manifest = SourceManifest()
+        for entry in document["source_files"]:
+            path = self.config_root / entry["path"]
+            source_manifest.load(str(path))
+            resources.append(path)
+        for entry in document["config_files"]:
+            resources.append(self.config_root / entry["path"])
+        candidate_ids = set(verification.candidate_rule_ids)
+        verified_ids = tuple(sorted(rule.id for rule in rules if rule.id not in candidate_ids))
+        descriptor = RulePackDescriptor(
+            pack_id=verification.pack_id,
+            version=verification.version,
+            content_digest=verification.content_digest,
+            verified_rule_ids=verified_ids,
+        )
+        return LoadedRulePack(
+            descriptor=descriptor,
+            rules=tuple(rules),
+            source_manifest=source_manifest,
+            verification=verification,
+            manifest_path=manifest_path,
+            config_root=self.config_root,
+            resource_paths=tuple(resources),
+        )
 
 
 def verify_pack_manifest(

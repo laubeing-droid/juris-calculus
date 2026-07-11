@@ -109,6 +109,39 @@ class AuditEvent:
             },
         }
 
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "AuditEvent":
+        """严格恢复事件，并核对派生event ID与schema。"""
+
+        if payload.get("schema_version") != AUDIT_SCHEMA_VERSION:
+            raise AuditValidationError("unsupported audit schema")
+        allowed = {
+            "schema_version", "event_id", "run_id", "seq", "event_type", "parent_event_ids",
+            "fact_ids", "premise_ids", "rule_id", "claim_id", "before_status", "after_status",
+            "source_ids", "taint", "outcome", "details",
+        }
+        if set(payload) != allowed:
+            raise AuditValidationError("audit event fields mismatch")
+        event = cls(
+            run_id=str(payload["run_id"]),
+            seq=int(payload["seq"]),
+            event_type=str(payload["event_type"]),
+            parent_event_ids=tuple(payload["parent_event_ids"]),
+            fact_ids=tuple(payload["fact_ids"]),
+            premise_ids=tuple(payload["premise_ids"]),
+            rule_id=str(payload["rule_id"]),
+            claim_id=str(payload["claim_id"]),
+            before_status=str(payload["before_status"]),
+            after_status=str(payload["after_status"]),
+            source_ids=tuple(payload["source_ids"]),
+            taint=tuple(payload["taint"]),
+            outcome=str(payload["outcome"]),
+            details=dict(payload["details"]),
+        )
+        if payload["event_id"] != event.event_id:
+            raise AuditValidationError("audit event_id mismatch")
+        return event
+
 
 class AuditRecorder:
     """每案唯一、串行递增的审计记录器；可接收application原始回调。"""

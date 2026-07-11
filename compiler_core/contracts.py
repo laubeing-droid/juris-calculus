@@ -310,6 +310,52 @@ class SemanticResult:
             "risk_labels": list(self.risk_labels),
         }
 
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "SemanticResult":
+        """严格恢复语义结果；状态矩阵会在构造时重新验证。"""
+
+        allowed = {
+            "schema_version", "run_id", "result_digest", "execution_status", "result_status",
+            "formal_kernel_used", "review_required", "checker_accepted", "certificate_kind",
+            "engine_version", "pack_id", "pack_version", "pack_digest", "claims", "branches",
+            "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "taint", "risk_labels",
+        }
+        _reject_unknown(payload, allowed, "semantic result")
+        missing = sorted(allowed - set(payload))
+        if missing:
+            raise ContractValidationError("MISSING_RESULT_FIELD", ", ".join(missing))
+        return cls(
+            schema_version=str(payload["schema_version"]),
+            run_id=str(payload["run_id"]),
+            result_digest=str(payload["result_digest"]),
+            execution_status=ExecutionStatus(str(payload["execution_status"])),
+            result_status=ResultStatus(str(payload["result_status"])),
+            formal_kernel_used=bool(payload["formal_kernel_used"]),
+            review_required=bool(payload["review_required"]),
+            checker_accepted=bool(payload["checker_accepted"]),
+            certificate_kind=CertificateKind(str(payload["certificate_kind"])),
+            engine_version=str(payload["engine_version"]),
+            pack_id=str(payload["pack_id"]),
+            pack_version=str(payload["pack_version"]),
+            pack_digest=str(payload["pack_digest"]),
+            claims=tuple(payload["claims"]),
+            branches=tuple(
+                BranchResult(
+                    branch_id=str(branch["branch_id"]),
+                    result_status=ResultStatus(str(branch["result_status"])),
+                    claims=tuple(branch.get("claims", ())),
+                    taint=tuple(branch.get("taint", ())),
+                )
+                for branch in payload["branches"]
+            ),
+            used_fact_ids=tuple(payload["used_fact_ids"]),
+            used_rule_ids=tuple(payload["used_rule_ids"]),
+            source_ids=tuple(payload["source_ids"]),
+            missing_fact_ids=tuple(payload["missing_fact_ids"]),
+            taint=tuple(payload["taint"]),
+            risk_labels=tuple(payload["risk_labels"]),
+        )
+
 
 @dataclass(frozen=True)
 class CanonicalResult:
@@ -578,8 +624,10 @@ def schema_document() -> dict[str, Any]:
         },
     }
     from compiler_core.audit import audit_schema_document
+    from compiler_core.audit_bundle import audit_bundle_schema_document
 
     document["$defs"].update(audit_schema_document()["$defs"])
+    document["$defs"].update(audit_bundle_schema_document()["$defs"])
     return document
 
 

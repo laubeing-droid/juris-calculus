@@ -13,6 +13,14 @@ import yaml
 
 from compiler_core.resources import configs_root, neutral_profile_path, schemas_root
 from compiler_core.rule_packs import RulePackError, RulePackRegistry
+from compiler_core.audit_bundle import (
+    AuditBundleError,
+    default_state_root,
+    evaluate_to_audit_bundle,
+    replay_audit_bundle,
+    state_root_diagnostics,
+)
+from compiler_core.contracts import CaseRequest, ResultStatus
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
 from compiler_core.version import __version__
 
@@ -90,6 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
     lookup.set_defaults(handler=_handle_rules_lookup)
 
     doctor = commands.add_parser("doctor", help="check the installed core resources")
+    doctor.add_argument("--audit-out", metavar="PATH", help="explicit state root to diagnose")
     doctor.add_argument("--json", action="store_true", dest="json_output")
     doctor.set_defaults(handler=_handle_doctor)
 
@@ -106,6 +115,19 @@ def build_parser() -> argparse.ArgumentParser:
     _add_pack_root_options(verify)
     verify.add_argument("--json", action="store_true", dest="json_output")
     verify.set_defaults(handler=_handle_packs_verify)
+
+    evaluate = commands.add_parser("evaluate", help="evaluate a CaseRequest and write a complete audit bundle")
+    evaluate.add_argument("--input", required=True, metavar="PATH", help="CaseRequest JSON path or '-' for stdin")
+    evaluate.add_argument("--audit-out", metavar="PATH", help="explicit state root; defaults to the user state directory")
+    _add_pack_root_options(evaluate)
+    evaluate.add_argument("--json", action="store_true", dest="json_output")
+    evaluate.set_defaults(handler=_handle_evaluate)
+
+    replay = commands.add_parser("replay", help="verify and semantically replay a completed run")
+    replay.add_argument("run_id")
+    replay.add_argument("--audit-out", metavar="PATH", help="state root containing runs/ and packs/")
+    replay.add_argument("--json", action="store_true", dest="json_output")
+    replay.set_defaults(handler=_handle_replay)
     return parser
 
 
@@ -180,7 +202,7 @@ def _handle_rules_lookup(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def _handle_doctor(_args: argparse.Namespace) -> dict[str, Any]:
+def _handle_doctor(args: argparse.Namespace) -> dict[str, Any]:
     """检查独立安装所需的核心schema、profile和候选语料。"""
 
     resources = {
@@ -197,6 +219,12 @@ def _handle_doctor(_args: argparse.Namespace) -> dict[str, Any]:
         "present": official.integrity_valid,
         "reasoning_ready": official.reasoning_ready,
         "resource": "configs/packs/cn-official/manifest.yaml",
+    }
+    state = state_root_diagnostics(Path(args.audit_out) if args.audit_out else None)
+    checks["audit_state"] = {
+        "present": state["writable"] and not state["in_repository"] and not state["dangerous_permissions"],
+        "resource": state["resource"],
+        **{key: value for key, value in state.items() if key != "resource"},
     }
     healthy = all(check["present"] for check in checks.values()) and official.reasoning_ready
     return {
@@ -242,6 +270,56 @@ def _handle_packs_verify(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _handle_evaluate(args: argparse.Namespace) -> dict[str, Any]:
+    """从显式JSON输入运行正式application并强制生成审计包。"""
+
+    request_payload = _read_json_input(args.input)
+    try:
+        request = CaseRequest.from_dict(request_payload)
+    except (TypeError, ValueError) as exc:
+        raise CLIError("INVALID_CASE_REQUEST", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
+    registry = _pack_registry(args)
+    try:
+        loaded = registry.load_reasoning_pack(request.rule_pack_id)
+    except RulePackError as exc:
+        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "PACK_NOT_INSTALLED" else EXIT_ADMISSION_BLOCKED
+        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
+    try:
+        bundle = evaluate_to_audit_bundle(
+            request,
+            loaded,
+            state_root=Path(args.audit_out) if args.audit_out else None,
+        )
+    except AuditBundleError as exc:
+        exit_code = (
+            EXIT_INPUT_ERROR
+            if exc.code in {"AUDIT_PRIVACY_VIOLATION", "AUDIT_PATH_IN_REPOSITORY", "INVALID_RUN_ID"}
+            else EXIT_ENGINE_ERROR
+        )
+        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
+    payload = {
+        "command": "evaluate",
+        "status": "engine_error" if bundle.result.semantic.result_status is ResultStatus.ENGINE_ERROR else "ok",
+        **bundle.public_dict(),
+        "_exit_code": EXIT_ENGINE_ERROR if bundle.result.semantic.result_status is ResultStatus.ENGINE_ERROR else EXIT_OK,
+    }
+    return payload
+
+
+def _handle_replay(args: argparse.Namespace) -> dict[str, Any]:
+    """验证并离线重放一个COMPLETE审计包。"""
+
+    try:
+        replayed = replay_audit_bundle(
+            Path(args.audit_out).resolve() if args.audit_out else default_state_root(),
+            args.run_id,
+        )
+    except AuditBundleError as exc:
+        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "REPLAY_MATERIAL_MISSING" else EXIT_REPLAY_MISMATCH
+        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
+    return {"command": "replay", **replayed}
+
+
 def _read_query(query: str | None, input_path: str | None) -> str:
     """从显式文本、stdin或UTF-8文件读取非空查询。"""
 
@@ -281,6 +359,13 @@ def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
         for item in payload["results"]:
             state = "PASS" if item["integrity_valid"] and (item["kind"] != "official" or item["reasoning_ready"]) else "BLOCKED"
             print(f"- {item['pack_id']}: {state}")
+    elif payload["command"] == "evaluate":
+        print(f"- run_id: {payload['run_id']}")
+        print(f"- result_status: {payload['canonical_result']['semantic']['result_status']}")
+        print(f"- bundle_digest: {payload['bundle_digest']}")
+    elif payload["command"] == "replay":
+        print(f"- run_id: {payload['run_id']}")
+        print(f"- replay: {payload['status']}")
 
 
 def _write_error(error: CLIError, *, json_output: bool) -> None:
@@ -325,6 +410,21 @@ def _pack_registry(args: argparse.Namespace) -> RulePackRegistry:
             raise CLIError("DEVELOPMENT_ROOT_NOT_FOUND", "development config root does not exist")
         return RulePackRegistry(root, development_override=True)
     return RulePackRegistry(configs_root())
+
+
+def _read_json_input(input_path: str) -> dict[str, Any]:
+    """从stdin或显式UTF-8文件读取单一JSON对象。"""
+
+    try:
+        text = sys.stdin.read() if input_path == "-" else Path(input_path).read_text(encoding="utf-8")
+        payload = json.loads(text)
+    except OSError as exc:
+        raise CLIError("INPUT_READ_ERROR", "input JSON cannot be read", details={"error_type": type(exc).__name__}) from exc
+    except json.JSONDecodeError as exc:
+        raise CLIError("INVALID_JSON", "input is not valid JSON", details={"line": exc.lineno, "column": exc.colno}) from exc
+    if not isinstance(payload, dict):
+        raise CLIError("INVALID_JSON", "input JSON must be an object")
+    return payload
 
 
 if __name__ == "__main__":
