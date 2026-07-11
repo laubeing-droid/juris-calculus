@@ -147,7 +147,6 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--audit-out", metavar="PATH", help="state root containing the completed run")
     render.add_argument("--format", choices=("markdown", "mermaid", "html"), default="markdown")
     render.add_argument("--audience", choices=("agent", "lawyer"), default="agent")
-    render.add_argument("--profile", metavar="PATH", help="explicit declarative profile; defaults to neutral")
     render.add_argument("--json", action="store_true", dest="json_output")
     render.set_defaults(handler=_handle_render)
 
@@ -456,7 +455,6 @@ def _handle_render(args: argparse.Namespace) -> dict[str, Any]:
             state_root=Path(args.audit_out).resolve() if args.audit_out else None,
             output_format=args.format,
             audience=args.audience,
-            profile_path=Path(args.profile).resolve() if args.profile else None,
         )
     except AuditBundleError as exc:
         raise CLIError(exc.code, str(exc), exit_code=EXIT_REPLAY_MISMATCH) from exc
@@ -465,6 +463,7 @@ def _handle_render(args: argparse.Namespace) -> dict[str, Any]:
             "INVALID_RENDERER_PROFILE",
             "PROFILE_HASH_MISMATCH",
             "PROFILE_UNAVAILABLE",
+            "PROFILE_OVERRIDE_DISABLED",
             "INVALID_RENDER_FORMAT",
             "INVALID_AUDIENCE",
         }

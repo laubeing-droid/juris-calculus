@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import hashlib
 import html
 import json
-import os
 from pathlib import Path
 import tempfile
 from typing import Any, Mapping
@@ -50,7 +49,7 @@ PROFILE_FIELDS = frozenset({
 
 
 class RendererError(RuntimeError):
-    """profile、firewall、格式或写入失败的稳定错误。"""
+    """neutral renderer、firewall、格式或写入失败的稳定错误。"""
 
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
@@ -85,7 +84,7 @@ class RenderOutput:
 
 
 def load_renderer_profile(path: Path | None = None) -> RendererProfile:
-    """加载严格声明式profile并验证其规范hash。"""
+    """只加载内置neutral profile并验证其规范hash。"""
 
     selected = resolve_renderer_profile_path(path)
     try:
@@ -134,23 +133,12 @@ def load_renderer_profile(path: Path | None = None) -> RendererProfile:
         raise RendererError("INVALID_RENDERER_PROFILE", str(exc)) from exc
 
 
-def default_private_profile_path() -> Path:
-    """返回用户私有默认profile路径，不在公共仓库创建文件。"""
-
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-        return base / "juris-calculus" / "profiles" / "default.yaml"
-    base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "juris-calculus" / "profiles" / "default.yaml"
-
-
 def resolve_renderer_profile_path(explicit_path: Path | None = None) -> Path:
-    """按显式请求、私有默认、公共neutral的顺序选择profile。"""
+    """JC 公共内核固定只接受包内 neutral profile。"""
 
     if explicit_path is not None:
-        return Path(explicit_path)
-    private_default = default_private_profile_path()
-    return private_default if private_default.is_file() else neutral_profile_path()
+        raise RendererError("PROFILE_OVERRIDE_DISABLED", "JC render is fixed to the packaged neutral profile")
+    return neutral_profile_path()
 
 
 def render_run(

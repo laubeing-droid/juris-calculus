@@ -13,7 +13,7 @@ The CLI is the primary interface for humans, Codex, automation, and downstream l
 | `jc rules audit` | Produce governance findings and promotion blockers. |
 | `jc evaluate` | Evaluate one explicit `CaseRequest` and write a complete audit bundle. |
 | `jc replay` | Verify and semantically replay a complete bundle. |
-| `jc render` | Render a verified run; never evaluates facts. |
+| `jc render` | Render a verified run with the packaged neutral renderer; never evaluates facts. |
 | `jc training export` | Export governed corpus splits without private case facts. |
 | `jc analyze strategy` | Produce review-required strategy advisory from a verified run. |
 | `jc analyze similar-cases` | Compare a verified run with an explicit versioned case index. |
@@ -29,4 +29,4 @@ The CLI is the primary interface for humans, Codex, automation, and downstream l
 | 5 | Replay or integrity mismatch. |
 | 6 | Optional pack/component missing. |
 
-Non-bundled rule roots require both `--development` and `--config-root`. Environment variables alone cannot silently replace packaged rules.
+Non-bundled rule roots require both `--development` and `--config-root`. Environment variables alone cannot silently replace packaged rules. `jc render` is fixed to the packaged neutral profile; personal style overrides are not part of the public kernel.

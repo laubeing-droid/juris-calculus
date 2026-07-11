@@ -87,10 +87,10 @@
 
 - `compiler_core/rendering.py`是唯一展示实现。它先验证完整审计包，只消费`SemanticResult`与`graph.json`，生成Markdown、Mermaid或显式HTML；任何格式都不能调用evaluator或修改canonical bytes。
 - 展示产物写入独立`renders/<run>/<result-digest>/<profile-hash>/`，每份正文带不重复正文的`.render.json`旁车，绑定result/profile/renderer/audience/format/content SHA-256并只返回逻辑引用。
-- Profile优先级为显式`--profile`、用户私有`default.yaml`、包内neutral。Profile严格声明式，不能省略状态/结论/来源/风险/复核章节，不能覆盖正式字段或包含断言式终局措辞。
+- `jc render` 固定只接受包内neutral profile。展示层不得接受命令行、私有目录或环境变量的个人profile覆盖；如有个人文风需求，只能在JC公共内核之外做后处理。
 - 旧litigation、ProofTree语言和任意trace renderer均已删除。MCP旧`format_proof_trace`只返回`AUDITED_RUN_REQUIRED`，Phase 7将删除该工具名。
 - HTML只在用户明确调用时生成，转义全部文本并以CSP禁用脚本和网络资源；Mermaid只映射现有Graph JSON中的节点和显式边。
-- 个人profile机制已完成，但个人风格内容因缺少5至10份用户确认样例而保持BLOCKED；不得从聊天记忆猜测风格。
+- JC 公共内核的展示层固定为 neutral、stable、auditable 输出；个人律师文风不属于当前内核范围，不再维护个人 profile 机制或样例阻断项。
 - Phase 5验证基线：Python 3.11.15与3.12.5均为486 passed、38 skipped。wheel为3,219,692字节，仓库外安装后从site-packages成功加载renderer/neutral profile并注册`jc render`。
 
 ## 2026-07-11 JC v3 Phase 6 Governance and Advisory

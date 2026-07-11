@@ -2,7 +2,7 @@
 
 juris-calculus (JC) is a public, auditable legal-reasoning kernel. Its primary interface is the `jc` CLI. It accepts explicit structured facts, applies only integrity-checked and reasoning-eligible rules, writes a complete audit bundle, and returns machine-readable results.
 
-JC is not a case-management system or a replacement for lawyer judgment. Private case data, commercial rule packs, drafting workflows, litigation operations, and personal style profiles stay outside the public repository.
+JC is not a case-management system or a replacement for lawyer judgment. Private case data, commercial rule packs, drafting workflows, litigation operations, and lawyer-specific style overlays stay outside the public repository. The public kernel is fixed to neutral, stable, auditable output.
 
 ## Safety boundary
 

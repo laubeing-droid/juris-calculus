@@ -20,7 +20,6 @@ from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze
 from compiler_core.rendering import (
     RenderOutput,
     RendererError,
-    default_private_profile_path,
     load_renderer_profile,
     render_run,
     resolve_renderer_profile_path,
@@ -42,7 +41,6 @@ __all__ = (
     "evaluate_case",
     "evaluate_registered_case",
     "evaluate_to_audit_bundle",
-    "default_private_profile_path",
     "load_renderer_profile",
     "render_run",
     "resolve_renderer_profile_path",

@@ -72,7 +72,7 @@
 
 - [计算生成的][高等] WorkBuddy 产品 UI 内四工具 E2E：BLOCKED；当前未识别到可供自动化核验的实际 WorkBuddy 安装/版本。真实 stdio 已通过，但不等于产品验证。
 - [计算生成的][高等] 真实类案质量：BLOCKED；仓库只有明确标记的 synthetic index，没有合法授权、版本化的真实案例索引。
-- [计算生成的][高等] 个人律师文风 profile：BLOCKED；尚缺 5—10 份用户确认样例与禁用表达清单。neutral profile 和 no-drift 机制已完成。
+- [计算生成的][高等] 个人律师文风：不属于当前 JC 公共内核范围；内核固定为 neutral、stable、auditable 输出，不再把个人风格样例收集视为本里程碑阻断项。
 - [计算生成的][高等] bundled 正式 CN 推理：BLOCKED；`cn-official` 尚无一手来源快照规则。候选语料没有被猜测晋升。
 - [计算生成的][高等] 远端 Ubuntu/Windows CI：NOT_EXECUTED；未 push、未 tag、未 release。
 

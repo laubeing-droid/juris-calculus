@@ -1,4 +1,4 @@
-# JC v3 展示与个人 profile 边界
+# JC v3 展示与中性输出边界
 
 ## 结论
 
@@ -25,15 +25,11 @@ jc render <run_id> --format html --audience lawyer --json
 
 [有理有据的][高等] 旁车元数据不重复正文，也不暴露本机绝对路径。
 
-## Profile选择与权限
+## Neutral 输出与权限
 
-[计算生成的][高等] 优先级固定为：命令行`--profile`显式路径 > 用户私有`default.yaml` > 公共neutral profile。
+[计算生成的][高等] `jc render` 固定只加载包内`configs/render_profiles/neutral.yaml`。命令行、用户私有目录和环境变量都不能替换这个 profile；任何显式覆盖请求都应 fail closed。
 
-- Windows私有默认：`%LOCALAPPDATA%\juris-calculus\profiles\default.yaml`；
-- POSIX私有默认：`$XDG_CONFIG_HOME/juris-calculus/profiles/default.yaml`或`~/.config/juris-calculus/profiles/default.yaml`；
-- 公共neutral：包内`configs/render_profiles/neutral.yaml`。
-
-[有理有据的][高等] Profile只允许schema版本、ID/version、locale、tone、detail level、标题顺序与别名、引用显示偏好和禁用措辞。未知字段、结果字段、终局意见字段、缺失受保护章节、hash不符、换行/HTML标题或断言式终局措辞均fail closed。
+[有理有据的][高等] neutral profile 仍然是声明式配置，只允许schema版本、ID/version、locale、tone、detail level、标题顺序与别名、引用显示偏好和禁用措辞。未知字段、结果字段、终局意见字段、缺失受保护章节、hash不符、换行/HTML标题或断言式终局措辞均 fail closed。
 
 ## 不可改变的内容
 
@@ -41,11 +37,11 @@ jc render <run_id> --format html --audience lawyer --json
 
 [有理有据的][高等] Mermaid只把既有`graph.json`节点和显式边映射为图，不根据事件相邻顺序或自然语言生成新因果关系。HTML仅按用户明确命令生成，转义正文，设置禁用脚本和网络资源的CSP，不引入前端框架。
 
-## 个人风格当前状态
+## 个人文风边界
 
-[计算生成的][高等] 个人profile机制已经实现；个人风格内容仍为`BLOCKED`。当前仓库没有用户确认的5—10份写作样例、禁用表达和结构偏好，不能根据聊天记忆或项目文档猜测并宣称已校准。
+[计算生成的][高等] 个人律师文风不属于当前 JC 公共内核范围。当前仓库只承诺 neutral、stable、auditable 输出，不承诺任何律师个人表达风格复现。
 
-[有理有据的][高等] 后续校准只提取表达特征，样例和私有profile不进入公共仓库；每次风格变更必须升级profile version/hash，且不能更新canonical golden。
+[有理有据的][高等] 如果未来确实需要个人文风，应作为内核外的下游后处理层实现，不得进入正式推理、不得影响 canonical result、不得反向污染公共基线。
 
 ## [我违规之处]
 
