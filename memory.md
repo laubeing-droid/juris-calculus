@@ -79,6 +79,16 @@
 - 旧MCP `_juris_evaluate_core/_sync`、自由文本求值和独立stratified执行体已删除。迁移期旧工具名只接受完整`CaseRequest`；strategy只接受审计run ID，Phase 7将删除旧33工具表。
 - 无消费者的automated/batch/multi-jurisdiction/multi-solver/parallax/federation重复执行模块已删除。法域adapter不再返回裸evaluator。
 - `pipeline/pipeline.py`只负责案卷摄取并输出`CANDIDATE_ONLY`事实；它不得自动晋升事实或执行正式规则。正式求值要求调用`jc evaluate`。
-- 旧`LitigationChainRenderer.evaluate()`已删除；迁移期renderer只可渲染调用方已有报告对象。`post_freeze_surface` toy report不再求值并返回`AUDITED_RUN_REQUIRED`。
+- 旧`LitigationChainRenderer`、ProofTree语言renderer和任意trace renderer均已删除；`post_freeze_surface` toy report不再求值并返回`AUDITED_RUN_REQUIRED`。展示只允许从完整审计run进入`compiler_core/rendering.py`。
 - `tests/unit/test_v3_entrypoint_boundary.py`以AST固定唯一正式入口，并仅允许application、底层语义stage和明确CLI/CI harness直接构造evaluator。新增或恢复生产绕行会直接失败。
 - Phase 4提交9验证基线：Python 3.11.15与3.12.5均为486 passed、38 skipped；两版本进程内MCP smoke均通过。旧33工具/12 resources仍存在但已无独立正式求值体，按Phase 7删除，不能把当前smoke表述为v3 MCP surface完成。
+
+## 2026-07-11 JC v3 Phase 5 Rendering Boundary
+
+- `compiler_core/rendering.py`是唯一展示实现。它先验证完整审计包，只消费`SemanticResult`与`graph.json`，生成Markdown、Mermaid或显式HTML；任何格式都不能调用evaluator或修改canonical bytes。
+- 展示产物写入独立`renders/<run>/<result-digest>/<profile-hash>/`，每份正文带不重复正文的`.render.json`旁车，绑定result/profile/renderer/audience/format/content SHA-256并只返回逻辑引用。
+- Profile优先级为显式`--profile`、用户私有`default.yaml`、包内neutral。Profile严格声明式，不能省略状态/结论/来源/风险/复核章节，不能覆盖正式字段或包含断言式终局措辞。
+- 旧litigation、ProofTree语言和任意trace renderer均已删除。MCP旧`format_proof_trace`只返回`AUDITED_RUN_REQUIRED`，Phase 7将删除该工具名。
+- HTML只在用户明确调用时生成，转义全部文本并以CSP禁用脚本和网络资源；Mermaid只映射现有Graph JSON中的节点和显式边。
+- 个人profile机制已完成，但个人风格内容因缺少5至10份用户确认样例而保持BLOCKED；不得从聊天记忆猜测风格。
+- Phase 5验证基线：Python 3.11.15与3.12.5均为486 passed、38 skipped。wheel为3,219,692字节，仓库外安装后从site-packages成功加载renderer/neutral profile并注册`jc render`。

@@ -3,10 +3,13 @@ profile_id: neutral
 version: "1.0.0"
 locale: zh-CN
 tone: concise
+detail_level: standard
 heading_order:
   - status
   - claims
   - sources
   - risks
   - review
+heading_aliases: {}
+show_citations: true
 forbidden_phrases: []

@@ -631,9 +631,10 @@ def juris_query(mode: str, query: str = "", params: dict = None):
             result = router.route(concept, src, tgt)
             return {"concept": concept, "source": src, "target": tgt, "status": result.get("status", "UNMAPPED"), "allowed": result.get("allowed", False)}
         elif mode == "format_proof_trace":
-            from compiler_core.proof_trace_renderer import format_proof_trace_cn
-            trace = params.get("trace", [])
-            return {"rendered": format_proof_trace_cn(trace)}
+            return {
+                "error": "raw trace rendering was removed; use jc render with an audited run_id",
+                "code": "AUDITED_RUN_REQUIRED",
+            }
     except Exception as e:
         return {"error": f"{mode}: {str(e)}"}
     return {"error": "unknown mode: " + mode}

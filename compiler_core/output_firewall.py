@@ -22,6 +22,14 @@ FORBIDDEN_OUTPUT_FIELDS = {
     "legal_advice",
 }
 
+FORBIDDEN_CONCLUSION_PHRASES = (
+    "court will rule",
+    "definitive legal advice",
+    "最终法律意见",
+    "必然胜诉",
+    "法院必然支持",
+)
+
 
 def renderer_firewall_metadata(result_status: str) -> dict[str, Any]:
     """Return machine metadata describing what a renderer may claim."""
@@ -46,6 +54,9 @@ def validate_output_contract(payload: Mapping[str, Any], *, result_status: str) 
         errors.append(f"forbidden output fields: {', '.join(forbidden)}")
     if result_status in BLOCKED_FINAL_OPINION_STATUSES and _contains_truthy_key(payload, "final_conclusion"):
         errors.append("blocked boundary result cannot carry final_conclusion")
+    phrase_paths = _forbidden_phrase_paths(payload)
+    if phrase_paths:
+        errors.append(f"forbidden conclusion phrases: {', '.join(phrase_paths)}")
     return {
         "ok": not errors,
         "errors": errors,
@@ -77,4 +88,21 @@ def _contains_truthy_key(value: Any, target: str) -> bool:
     if isinstance(value, (list, tuple)):
         return any(_contains_truthy_key(item, target) for item in value)
     return False
+
+
+def _forbidden_phrase_paths(value: Any, path: str = "$") -> list[str]:
+    """递归定位断言式终局措辞；这是字段门禁之外的附加防线。"""
+
+    found: list[str] = []
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            found.extend(_forbidden_phrase_paths(nested, f"{path}.{key}"))
+    elif isinstance(value, (list, tuple)):
+        for index, nested in enumerate(value):
+            found.extend(_forbidden_phrase_paths(nested, f"{path}[{index}]"))
+    elif isinstance(value, str):
+        normalized = value.casefold()
+        if any(phrase.casefold() in normalized for phrase in FORBIDDEN_CONCLUSION_PHRASES):
+            found.append(path)
+    return sorted(found)
 

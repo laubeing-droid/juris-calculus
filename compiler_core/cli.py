@@ -21,6 +21,7 @@ from compiler_core.audit_bundle import (
     state_root_diagnostics,
 )
 from compiler_core.contracts import CaseRequest, ResultStatus
+from compiler_core.rendering import RendererError, render_run
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
 from compiler_core.version import __version__
 
@@ -128,6 +129,15 @@ def build_parser() -> argparse.ArgumentParser:
     replay.add_argument("--audit-out", metavar="PATH", help="state root containing runs/ and packs/")
     replay.add_argument("--json", action="store_true", dest="json_output")
     replay.set_defaults(handler=_handle_replay)
+
+    render = commands.add_parser("render", help="render an existing audited run without re-evaluation")
+    render.add_argument("run_id")
+    render.add_argument("--audit-out", metavar="PATH", help="state root containing the completed run")
+    render.add_argument("--format", choices=("markdown", "mermaid", "html"), default="markdown")
+    render.add_argument("--audience", choices=("agent", "lawyer"), default="agent")
+    render.add_argument("--profile", metavar="PATH", help="explicit declarative profile; defaults to neutral")
+    render.add_argument("--json", action="store_true", dest="json_output")
+    render.set_defaults(handler=_handle_render)
     return parser
 
 
@@ -318,6 +328,35 @@ def _handle_replay(args: argparse.Namespace) -> dict[str, Any]:
     return {"command": "replay", **replayed}
 
 
+def _handle_render(args: argparse.Namespace) -> dict[str, Any]:
+    """只从已验证审计run生成按需展示文件和绑定元数据。"""
+
+    try:
+        output = render_run(
+            args.run_id,
+            state_root=Path(args.audit_out).resolve() if args.audit_out else None,
+            output_format=args.format,
+            audience=args.audience,
+            profile_path=Path(args.profile).resolve() if args.profile else None,
+        )
+    except AuditBundleError as exc:
+        raise CLIError(exc.code, str(exc), exit_code=EXIT_REPLAY_MISMATCH) from exc
+    except RendererError as exc:
+        input_codes = {
+            "INVALID_RENDERER_PROFILE",
+            "PROFILE_HASH_MISMATCH",
+            "PROFILE_UNAVAILABLE",
+            "INVALID_RENDER_FORMAT",
+            "INVALID_AUDIENCE",
+        }
+        raise CLIError(
+            exc.code,
+            str(exc),
+            exit_code=EXIT_INPUT_ERROR if exc.code in input_codes else EXIT_ENGINE_ERROR,
+        ) from exc
+    return {"command": "render", "status": "ok", **output.public_dict()}
+
+
 def _read_query(query: str | None, input_path: str | None) -> str:
     """从显式文本、stdin或UTF-8文件读取非空查询。"""
 
@@ -364,6 +403,10 @@ def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
     elif payload["command"] == "replay":
         print(f"- run_id: {payload['run_id']}")
         print(f"- replay: {payload['status']}")
+    elif payload["command"] == "render":
+        print(f"- format: {payload['format']}")
+        print(f"- artifact_ref: {payload['artifact_ref']}")
+        print(f"- content_sha256: {payload['content_sha256']}")
 
 
 def _write_error(error: CLIError, *, json_output: bool) -> None:

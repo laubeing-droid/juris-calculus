@@ -59,6 +59,21 @@ def test_cli_evaluate_writes_bundle_then_replay_passes(tmp_path) -> None:
     assert replay_payload["status"] == "PASS"
     assert replay_payload["bundle_digest"] == payload["bundle_digest"]
 
+    rendered = _run(
+        "render",
+        payload["run_id"],
+        "--audit-out", str(state_root),
+        "--format", "mermaid",
+        "--audience", "agent",
+        "--json",
+    )
+    render_payload = json.loads(rendered.stdout)
+    assert rendered.returncode == 0
+    assert rendered.stderr == ""
+    assert render_payload["format"] == "mermaid"
+    assert render_payload["artifact_ref"].startswith("renders/")
+    assert "content" not in render_payload
+
     pack_digest = payload["canonical_result"]["semantic"]["pack_digest"]
     shutil.rmtree(state_root / "packs" / pack_digest)
     missing = _run("replay", payload["run_id"], "--audit-out", str(state_root), "--json")

@@ -210,12 +210,13 @@ def test_rule_pack_and_rendered_artifact_are_declarative_and_immutable():
         locale="zh-CN",
         format="markdown",
         content="review only",
+        content_sha256=DIGEST,
     )
 
     assert pack.verified_rule_ids == ("r1", "r2")
     assert set(artifact.to_dict()) == {
         "result_digest", "renderer_id", "renderer_version", "profile_id", "profile_version",
-        "profile_hash", "audience", "locale", "format", "content", "warnings",
+        "profile_hash", "audience", "locale", "format", "content", "content_sha256", "warnings",
     }
 
 

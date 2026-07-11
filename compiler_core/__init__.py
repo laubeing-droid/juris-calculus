@@ -15,6 +15,14 @@ from compiler_core.contracts import (
     ResultStatus,
     SemanticResult,
 )
+from compiler_core.rendering import (
+    RenderOutput,
+    RendererError,
+    default_private_profile_path,
+    load_renderer_profile,
+    render_run,
+    resolve_renderer_profile_path,
+)
 
 __all__ = (
     "AuditBundle",
@@ -22,10 +30,16 @@ __all__ = (
     "CanonicalResult",
     "CaseRequest",
     "ResultStatus",
+    "RenderOutput",
+    "RendererError",
     "SemanticResult",
     "evaluate_case",
     "evaluate_registered_case",
     "evaluate_to_audit_bundle",
+    "default_private_profile_path",
+    "load_renderer_profile",
+    "render_run",
+    "resolve_renderer_profile_path",
     "replay_audit_bundle",
     "verify_audit_bundle",
 )

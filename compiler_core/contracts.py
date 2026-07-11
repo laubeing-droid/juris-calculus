@@ -378,19 +378,53 @@ class CanonicalResult:
 
 @dataclass(frozen=True)
 class RendererProfile:
-    """Phase 1最小声明式profile描述；不得包含可执行模板。"""
+    """声明式展示profile；字段只能改变表达，不能覆盖正式结果。"""
 
     profile_id: str
     version: str
     profile_hash: str
     locale: str = "zh-CN"
+    tone: str = "concise"
+    detail_level: str = "standard"
+    heading_order: tuple[str, ...] = ("status", "claims", "sources", "risks", "review")
+    heading_aliases: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    show_citations: bool = True
     forbidden_phrases: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.profile_id.strip() or not self.version.strip():
             raise ContractValidationError("INVALID_RENDERER_PROFILE", "profile id and version are required")
         _require_digest(self.profile_hash, "profile_hash")
+        if self.tone not in {"concise", "formal", "plain"}:
+            raise ContractValidationError("INVALID_RENDERER_PROFILE", "unsupported tone")
+        if self.detail_level not in {"compact", "standard", "detailed"}:
+            raise ContractValidationError("INVALID_RENDERER_PROFILE", "unsupported detail level")
+        allowed_headings = {"status", "claims", "branches", "sources", "risks", "review", "graph"}
+        if not self.heading_order or set(self.heading_order) - allowed_headings:
+            raise ContractValidationError("INVALID_RENDERER_PROFILE", "unsupported heading")
+        if not {"status", "claims", "sources", "risks", "review"}.issubset(self.heading_order):
+            raise ContractValidationError("INVALID_RENDERER_PROFILE", "protected headings cannot be omitted")
+        aliases = tuple(sorted((str(key), str(value)) for key, value in self.heading_aliases))
+        if len({key for key, _ in aliases}) != len(aliases) or any(key not in allowed_headings for key, _ in aliases):
+            raise ContractValidationError("INVALID_RENDERER_PROFILE", "invalid heading aliases")
+        object.__setattr__(self, "heading_aliases", aliases)
         object.__setattr__(self, "forbidden_phrases", _sorted_unique(self.forbidden_phrases))
+
+    def to_dict(self) -> dict[str, Any]:
+        """返回不含可执行内容的profile投影。"""
+
+        return {
+            "profile_id": self.profile_id,
+            "version": self.version,
+            "profile_hash": self.profile_hash,
+            "locale": self.locale,
+            "tone": self.tone,
+            "detail_level": self.detail_level,
+            "heading_order": list(self.heading_order),
+            "heading_aliases": dict(self.heading_aliases),
+            "show_citations": self.show_citations,
+            "forbidden_phrases": list(self.forbidden_phrases),
+        }
 
 
 @dataclass(frozen=True)
@@ -407,13 +441,17 @@ class RenderedArtifact:
     locale: str
     format: str
     content: str
+    content_sha256: str
     warnings: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         _require_digest(self.result_digest, "result_digest")
         _require_digest(self.profile_hash, "profile_hash")
+        _require_digest(self.content_sha256, "content_sha256")
         if self.audience not in {"agent", "lawyer"}:
             raise ContractValidationError("INVALID_AUDIENCE", self.audience)
+        if self.format not in {"markdown", "mermaid", "html"}:
+            raise ContractValidationError("INVALID_RENDER_FORMAT", self.format)
         object.__setattr__(self, "warnings", _sorted_unique(self.warnings))
 
     def to_dict(self) -> dict[str, Any]:
@@ -430,8 +468,14 @@ class RenderedArtifact:
             "locale": self.locale,
             "format": self.format,
             "content": self.content,
+            "content_sha256": self.content_sha256,
             "warnings": list(self.warnings),
         }
+
+    def metadata_dict(self) -> dict[str, Any]:
+        """返回旁车元数据，不重复保存展示正文。"""
+
+        return {key: value for key, value in self.to_dict().items() if key != "content"}
 
 
 PROTECTED_RESULT_FIELDS = frozenset({
@@ -591,12 +635,20 @@ def schema_document() -> dict[str, Any]:
             "RendererProfile": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["profile_id", "version", "profile_hash", "locale", "forbidden_phrases"],
+                "required": [
+                    "profile_id", "version", "profile_hash", "locale", "tone", "detail_level",
+                    "heading_order", "heading_aliases", "show_citations", "forbidden_phrases",
+                ],
                 "properties": {
                     "profile_id": {"type": "string", "minLength": 1},
                     "version": {"type": "string", "minLength": 1},
                     "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
                     "locale": {"type": "string"},
+                    "tone": {"type": "string", "enum": ["concise", "formal", "plain"]},
+                    "detail_level": {"type": "string", "enum": ["compact", "standard", "detailed"]},
+                    "heading_order": string_array,
+                    "heading_aliases": {"type": "object", "additionalProperties": {"type": "string"}},
+                    "show_citations": {"type": "boolean"},
                     "forbidden_phrases": string_array,
                 },
             },
@@ -605,7 +657,7 @@ def schema_document() -> dict[str, Any]:
                 "additionalProperties": False,
                 "required": [
                     "result_digest", "renderer_id", "renderer_version", "profile_id", "profile_version",
-                    "profile_hash", "audience", "locale", "format", "content", "warnings",
+                    "profile_hash", "audience", "locale", "format", "content", "content_sha256", "warnings",
                 ],
                 "properties": {
                     "result_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
@@ -618,6 +670,7 @@ def schema_document() -> dict[str, Any]:
                     "locale": {"type": "string"},
                     "format": {"type": "string"},
                     "content": {"type": "string"},
+                    "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
                     "warnings": string_array,
                 },
             },

@@ -927,6 +927,10 @@
         "content": {
           "type": "string"
         },
+        "content_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
         "format": {
           "type": "string"
         },
@@ -972,6 +976,7 @@
         "locale",
         "format",
         "content",
+        "content_sha256",
         "warnings"
       ],
       "type": "object"
@@ -979,7 +984,28 @@
     "RendererProfile": {
       "additionalProperties": false,
       "properties": {
+        "detail_level": {
+          "enum": [
+            "compact",
+            "standard",
+            "detailed"
+          ],
+          "type": "string"
+        },
         "forbidden_phrases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "heading_aliases": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "heading_order": {
           "items": {
             "type": "string"
           },
@@ -997,6 +1023,17 @@
           "minLength": 1,
           "type": "string"
         },
+        "show_citations": {
+          "type": "boolean"
+        },
+        "tone": {
+          "enum": [
+            "concise",
+            "formal",
+            "plain"
+          ],
+          "type": "string"
+        },
         "version": {
           "minLength": 1,
           "type": "string"
@@ -1007,6 +1044,11 @@
         "version",
         "profile_hash",
         "locale",
+        "tone",
+        "detail_level",
+        "heading_order",
+        "heading_aliases",
+        "show_citations",
         "forbidden_phrases"
       ],
       "type": "object"

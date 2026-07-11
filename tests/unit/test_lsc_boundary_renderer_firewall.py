@@ -1,5 +1,4 @@
 from compiler_core.output_firewall import renderer_firewall_metadata, validate_output_contract
-from compiler_core.proof_trace_renderer import format_boundary_result_cn
 from compiler_core.post_freeze_surface import certified_litigation_report
 
 
@@ -19,12 +18,6 @@ def test_renderer_shows_degraded_alternative_role():
 
     assert metadata["rendering_role"] == "review_packet"
     assert metadata["machine_state_preserved"] is True
-
-
-def test_engine_error_rendering_is_not_legal_advice():
-    text = format_boundary_result_cn({"result_status": "engine_error"})
-
-    assert "不得转换为法律建议" in text
 
 
 def test_removed_mcp_render_path_requires_an_audited_run():
@@ -49,4 +42,14 @@ def test_renderer_recursively_rejects_protected_and_final_fields_without_mutatio
     assert "$.sections[0].analysis.final_conclusion" in result["errors"][0]
     assert "$.sections[1].machine_override.result_status" in result["errors"][0]
     assert payload["sections"][0]["analysis"]["final_conclusion"] == "certain"
+
+
+def test_renderer_rejects_nested_assertive_conclusion_phrases():
+    result = validate_output_contract(
+        {"sections": [{"analysis": "法院必然支持该请求"}]},
+        result_status="review_only_result",
+    )
+
+    assert not result["ok"]
+    assert "$.sections[0].analysis" in result["errors"][0]
 

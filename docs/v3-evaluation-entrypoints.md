@@ -20,7 +20,7 @@
 | `compiler_core/post_freeze_surface.py::certified_litigation_report` | 不再求值；明确返回`AUDITED_RUN_REQUIRED` | MCP旧surface tests | Phase 7随旧surface删除 |
 | `mcp_server.py::_lazy_init/_tool_trirail_collide` | scenario/facts；惰性持有`TriRailCollider`；输出三轨envelope | MCP trirail工具及stdio/dispatch tests | 删除MCP；三轨保留CLI/CI harness |
 | `compiler_core/automated_pipeline.py::run_automated_pipeline` | 已删除 | 无 | queue DTO与重复Horn/AAF/certificate一并删除 |
-| `compiler_core/litigation_renderer.py::evaluate` | 已删除；模块仅保留迁移期纯展示数据契约 | 纯Markdown fixture测试 | Phase 5由CanonicalResult/run ID renderer替换 |
+| `compiler_core/litigation_renderer.py::evaluate` | 已删除 | 无 | Phase 5由`compiler_core/rendering.py`的CanonicalResult/run ID renderer替换 |
 | `pipeline/pipeline.py::ENGINE` | 已删除 | 无 | 导入时不再加载规则或建立全局案件状态 |
 | `pipeline/pipeline.py::process_case/run_single/run_batch` | 只摄取并输出`CANDIDATE_ONLY`事实，不生成claim | 本文件single/batch CLI、LLM fallback摄取 | 正式求值仅由`jc evaluate`接收已验证CaseRequest |
 | `compiler_core/adapter_base.py::load_evaluator` | 已删除 | 无 | adapter只保留法域映射、护栏和外围元数据 |
