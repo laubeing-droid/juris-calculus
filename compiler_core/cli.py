@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -272,6 +273,13 @@ def _handle_doctor(args: argparse.Namespace) -> dict[str, Any]:
         "resource": state["resource"],
         **{key: value for key, value in state.items() if key != "resource"},
     }
+    optional_components = {
+        "workbuddy_adapter": {
+            "installed": importlib.util.find_spec("addons.workbuddy_mcp") is not None,
+            "registered_by_default": False,
+            "required_for_core": False,
+        }
+    }
     healthy = all(check["present"] for check in checks.values()) and official.reasoning_ready
     return {
         "command": "doctor",
@@ -279,6 +287,7 @@ def _handle_doctor(args: argparse.Namespace) -> dict[str, Any]:
         "version": __version__,
         "python_supported": (3, 11) <= sys.version_info[:2] < (3, 13),
         "checks": checks,
+        "optional_components": optional_components,
         "_exit_code": EXIT_OK if healthy else EXIT_ADMISSION_BLOCKED,
     }
 

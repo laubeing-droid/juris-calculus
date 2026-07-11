@@ -1,448 +1,118 @@
 {
-  "name": "juris-calculus",
-  "version": "2.1.0-local",
-  "description": "Tri-Rail Cross-Jurisdictional Legal Collision Engine — HK × US × PRC",
-  "vendor": "laubeing-droid",
-  "protocol_version": "2024-11-05",
-  "resources": {
-    "legal://threat-intel/{state}": {
-      "description": "威胁情报签名库 — WI/NJ 州级程序黑话与对抗策略",
-      "parameters": {
-        "state": "WI | NJ | all"
-      },
-      "mimeType": "application/yaml",
-      "examples": [
-        "legal://threat-intel/NJ",
-        "legal://threat-intel/all"
-      ]
-    },
-    "legal://blocking-rules": {
-      "description": "中华人民共和国成文法强制阻断规则；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://spc-rules": {
-      "description": "最高法裁判倾向 Horn 规则；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://term-mappings": {
-      "description": "三法域术语 L0 语义对齐矩阵；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://hk-rules": {
-      "description": "香港特别行政区 Horn 规则 (Cap26/32/622/571/4A)；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://us-rules": {
-      "description": "美国联邦法域 Horn 规则与 L0 约束规则；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://cn-rules": {
-      "description": "中国成文法 Horn 规则；实际 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://glossary/{jurisdiction}": {
-      "description": "合并术语库",
-      "parameters": {
-        "jurisdiction": "us | hk | cn"
-      },
-      "mimeType": "application/json",
-      "examples": [
-        "legal://glossary/us"
-      ]
-    },
-    "legal://state-router": {
-      "description": "美国州级拓扑路由器；实际模型 inventory 以运行时加载结果为准",
-      "mimeType": "application/yaml"
-    },
-    "legal://operator-schemas": {
-      "description": "算子注册表 — 全部已注册法律算子的自文档化JSON Schema (动态生成)",
-      "mimeType": "application/json"
-    },
-    "legal://task-schema": {
-      "description": "Codex法律对抗任务定义Schema — 基于当前内核能力动态生成",
-      "mimeType": "application/json"
-    },
-    "legal://blueprint": {
-      "description": "v2.0 unified legal inference blueprint; actual inventory is determined at runtime",
-      "mimeType": "application/json"
-    }
-  },
+  "schema_version": "1.0",
+  "description": "Optional WorkBuddy adapter for the auditable JC CLI/application core",
+  "resources": {},
   "tools": {
-    "trirail_collide": {
-      "description": "执行 HK×US×PRC 三轨并发对撞 — 输入事实流，输出分类+风险矩阵+法条引用",
+    "jc_evaluate": {
+      "description": "Evaluate an explicit CaseRequest file and return a compact audited run reference.",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "scenario_id": {
-            "type": "string",
-            "description": "场景标识符"
-          },
-          "facts": {
-            "type": "object",
-            "description": "事实流: {fact_id: confidence (0.0-1.0)}",
-            "additionalProperties": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
-            }
-          },
-          "context": {
-            "type": "string",
-            "enum": [
-              "cross_border",
-              "domestic"
-            ],
-            "description": "跨境/境内上下文"
-          }
-        },
-        "required": [
-          "facts"
-        ]
+        "additionalProperties": false,
+        "properties": {"input_path": {"type": "string", "minLength": 1}},
+        "required": ["input_path"]
       },
-      "examples": [
-        {
-          "scenario_id": "custom_case_001",
-          "facts": {
-            "Director_Acted_UltraVires": 0.88,
-            "Cross_Border_Context": 1.0,
-            "ContractOfSale_Exists": 0.9
-          }
-        }
-      ]
-    },
-    "check_threat": {
-      "description": "检查事实流是否命中 WI/NJ 威胁签名 — 返回 threat_level + 建议CBL规则",
-      "inputSchema": {
+      "outputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "facts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "事实ID列表"
-          }
+          "schema_version": {"const": "1.0"},
+          "status": {"type": "string"},
+          "run_id": {"type": "string"},
+          "result_status": {"type": "string"},
+          "review_required": {"type": "boolean"},
+          "formal_kernel_used": {"type": "boolean"},
+          "claim_count": {"type": "integer"},
+          "risk_labels": {"type": "array", "items": {"type": "string"}},
+          "artifact_refs": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": "object"}
         },
-        "required": [
-          "facts"
-        ]
+        "required": ["schema_version", "status"]
       }
     },
-    "generate_memo": {
-      "description": "生成合伙人可签字的涉外商事争议跨境处置备忘录 (Markdown)",
+    "jc_lookup_rule": {
+      "description": "Look up a bounded rule summary in one integrity-checked rule pack.",
       "inputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "case_id": {
-            "type": "string",
-            "description": "案件编号"
-          },
-          "trirail_result": {
-            "type": "object",
-            "description": "trirail_collide 的输出结果"
-          }
+          "pack_id": {"type": "string", "minLength": 1},
+          "rule_id": {"type": "string", "minLength": 1},
+          "query": {"type": "string", "minLength": 1},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 10}
         },
-        "required": [
-          "case_id",
-          "trirail_result"
-        ]
-      }
-    },
-    "route_state": {
-      "description": "查询美国州级法律术语的拓扑路由 — 返回骨干模型+触发事实+对接轨道",
-      "inputSchema": {
+        "required": ["pack_id"]
+      },
+      "outputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "raw_fact": {
-            "type": "string",
-            "description": "州法术语或事实名 (e.g. CA_BP_17200)"
-          },
-          "state_code": {
-            "type": "string",
-            "description": "两字母州代码 (e.g. CA, TX, DE)"
-          }
+          "schema_version": {"const": "1.0"},
+          "status": {"type": "string"},
+          "pack_id": {"type": "string"},
+          "pack_version": {"type": "string"},
+          "pack_digest": {"type": "string"},
+          "inventory": {"type": "object"},
+          "match_count": {"type": "integer"},
+          "results": {"type": "array", "items": {"type": "object"}},
+          "error": {"type": "object"}
         },
-        "required": [
-          "raw_fact"
-        ]
+        "required": ["schema_version", "status"]
       }
     },
-    "get_citation": {
-      "description": "查询 CBL/SPC 规则ID对应的中国法条全文引用",
+    "jc_analyze_strategy": {
+      "description": "Create an advisory strategy artifact from a verified completed run.",
       "inputSchema": {
         "type": "object",
+        "additionalProperties": false,
+        "properties": {"run_id": {"type": "string", "minLength": 1}},
+        "required": ["run_id"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "rule_id": {
-            "type": "string",
-            "description": "CBL/SPC 规则ID (e.g. PEN_003_Long_Arm_Interdiction)"
-          }
+          "schema_version": {"const": "1.0"},
+          "status": {"type": "string"},
+          "analysis_status": {"type": "string"},
+          "run_id": {"type": "string"},
+          "review_required": {"type": "boolean"},
+          "path_count": {"type": "integer"},
+          "risk_labels": {"type": "array", "items": {"type": "string"}},
+          "artifact_refs": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": "object"}
         },
-        "required": [
-          "rule_id"
-        ]
+        "required": ["schema_version", "status"]
       }
     },
-    "get_operator_schemas": {
-      "description": "获取全部已注册算子的JSON Schema — Codex消费此接口获取内核能力边界",
+    "jc_analyze_similar_cases": {
+      "description": "Create a deterministic advisory comparison from a verified run and explicit case index.",
       "inputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "filter": {
-            "type": "string",
-            "enum": [
-              "all",
-              "critical",
-              "sovereignty",
-              "by_type"
-            ],
-            "description": "过滤条件"
-          },
-          "type_filter": {
-            "type": "string",
-            "description": "按算子类型过滤 (配合 filter=by_type)"
-          }
-        }
-      }
-    },
-    "generate_task_schema": {
-      "description": "动态生成Codex可消费的法律对抗任务定义Schema",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "jurisdiction_focus": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "PRC",
-                "HK",
-                "US"
-              ]
-            },
-            "description": "聚焦法域"
-          }
-        }
-      }
-    },
-    "rule_router": {
-      "description": "v2.0 domain routing - map legal facts to the runtime expert-shard inventory",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fact_texts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
+          "run_id": {"type": "string", "minLength": 1},
+          "index_path": {"type": "string", "minLength": 1},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 10}
         },
-        "required": [
-          "fact_texts"
-        ]
-      }
-    },
-    "stratified_evaluate": {
-      "description": "v2.0 4-stage Horn+AAF stratified evaluator with trust labels",
-      "inputSchema": {
+        "required": ["run_id", "index_path"]
+      },
+      "outputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "facts": {
-            "type": "object"
-          }
-        }
+          "schema_version": {"const": "1.0"},
+          "status": {"type": "string"},
+          "analysis_status": {"type": "string"},
+          "quality_status": {"type": "string"},
+          "run_id": {"type": "string"},
+          "review_required": {"type": "boolean"},
+          "match_count": {"type": "integer"},
+          "limitations": {"type": "array", "items": {"type": "string"}},
+          "artifact_refs": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": "object"}
+        },
+        "required": ["schema_version", "status"]
       }
-    },
-    "neural_leaf_status": {
-      "description": "v2.0 neural leaf node registry status and kill switch",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "node_id": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "search_rules": {
-      "description": "Search the loaded CN legal-rule inventory by keyword with fuzzy matching",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "query": {
-            "type": "string"
-          },
-          "top_k": {
-            "type": "integer",
-            "default": 5
-          }
-        }
-      }
-    },
-    "evaluate_facts": {
-      "description": "Evaluate legal facts through Horn evaluator, return top claims with confidence and trust labels",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fact_text": {
-            "type": "string"
-          },
-          "fact_items": {
-            "type": "object"
-          }
-        }
-      }
-    },
-    "calculate_damages": {
-      "description": "Calculate itemized damages with LPR/penalty/deposit/limitation checks",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "principal": {
-            "type": "number"
-          },
-          "lpr_rate": {
-            "type": "number"
-          },
-          "interest_days": {
-            "type": "integer"
-          },
-          "contract_value": {
-            "type": "number"
-          },
-          "actual_loss": {
-            "type": "number"
-          },
-          "deposit_paid": {
-            "type": "number"
-          }
-        }
-      }
-    },
-    "analyze_strategy": {
-      "description": "Adversarial SWOT analysis: strengths, weaknesses, recommended strategy",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fact_text": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "extract_elements": {
-      "description": "Extract matched Horn rule premise atoms from fact text",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fact_text": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "evaluate_facts_llm": {
-      "description": "LLM-enhanced fact evaluation (privacy-gated, TAINTED output)",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fact_text": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "align_concepts_llm": {
-      "description": "LLM cross-jurisdiction concept alignment (privacy-gated)",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "cn_concept": {
-            "type": "string"
-          },
-          "us_concept": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "generate_nlni_llm": {
-      "description": "LLM NLNI training data generation for cold start",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "case_description": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "evaluate": {
-      "description": "Public kernel certified litigation report over toy fixtures",
-      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}}}
-    },
-    "route": {
-      "description": "Cross-jurisdiction routing guard; does not alter legal conclusions",
-      "inputSchema": {"type": "object", "properties": {"concept": {"type": "string"}, "source": {"type": "string"}, "target": {"type": "string"}}}
-    },
-    "trace": {
-      "description": "Attack graph trace with rebuttal, cycle, self-attack, and priority witness shapes",
-      "inputSchema": {"type": "object", "properties": {"graph_kind": {"type": "string", "enum": ["cycle", "self_attack", "priority"]}}}
-    },
-    "check": {
-      "description": "Fail-closed certificate boundary check for public toy reports",
-      "inputSchema": {"type": "object", "properties": {"malformed_certificate": {"type": "boolean"}}}
-    },
-    "batch": {
-      "description": "Batch case audit over public toy fixtures; single-case failures stay local",
-      "inputSchema": {"type": "object", "properties": {"count": {"type": "integer"}, "cases": {"type": "array"}}}
-    },
-    "render": {
-      "description": "Render a public toy certificate-backed litigation report",
-      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}}}
-    },
-    "diff": {
-      "description": "Run spec shadow differential against legal-math reference semantics",
-      "inputSchema": {"type": "object", "properties": {"spec_root": {"type": "string"}}}
-    },
-    "governance": {
-      "description": "Public rule-governance report with source-anchor and provenance risk queue",
-      "inputSchema": {"type": "object", "properties": {"rules": {"type": "array"}}}
-    },
-    "impact": {
-      "description": "Rule-change impact analysis without changing the original decision",
-      "inputSchema": {"type": "object", "properties": {"rule_id": {"type": "string"}, "facts": {"type": "array", "items": {"type": "string"}}}}
-    },
-    "ingest_candidate": {
-      "description": "LLM/source candidate ingestion gate; candidates cannot enter the kernel directly",
-      "inputSchema": {"type": "object", "properties": {"raw_text": {"type": "string"}, "source_span": {}, "provenance": {"type": "string"}}}
-    },
-    "minimum_evidence": {
-      "description": "Source-bounded missing-evidence checklist; suggestions only, never verified facts",
-      "inputSchema": {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "string"}}, "target": {"type": "string"}}}
-    },
-    "damages_baseline": {
-      "description": "Engineering-baseline damages estimate; does not alter DecisionStatus",
-      "inputSchema": {"type": "object", "properties": {"principal": {"type": "number"}, "lpr_rate": {"type": "number"}, "interest_days": {"type": "integer"}}}
-    },
-    "case_deviation": {
-      "description": "Public toy sample-deviation detector with low-evidence fail-closed behavior",
-      "inputSchema": {"type": "object", "properties": {"samples": {"type": "array"}}}
-    },
-    "stress_fixtures": {
-      "description": "Red/green stress fixtures for attack, exception, priority, taint, and certificate boundaries",
-      "inputSchema": {"type": "object", "properties": {}}
-    },
-    "private_layer_contract": {
-      "description": "Public/private boundary contract for auditable kernel versus private lawyer workflow layers",
-      "inputSchema": {"type": "object", "properties": {}}
     }
-  },
-  "icon": "⚖️",
-  "tags": [
-    "legal",
-    "compliance",
-    "cross-border",
-    "sanctions",
-    "bankruptcy"
-  ]
+  }
 }

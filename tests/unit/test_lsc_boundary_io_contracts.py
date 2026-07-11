@@ -1,5 +1,4 @@
-from compiler_core.io_contracts import IORegistry, ModuleIOContract, validate_mcp_machine_status
-from mcp_server import MCPServer
+from compiler_core.io_contracts import IORegistry, ModuleIOContract
 
 
 def test_pipeline_step_cannot_read_undeclared_fact():
@@ -36,11 +35,4 @@ def test_output_key_ownership_collision_is_blocked():
         assert "collision" in str(exc)
     else:
         raise AssertionError("output collision should fail")
-
-
-def test_mcp_api_returns_machine_readable_lsc_status():
-    result = MCPServer()._call_tool("search_rules", {"query": "合同"})
-
-    assert validate_mcp_machine_status(result["payload"])
-    assert "result_status" in result["payload"]["lsc_boundary"]
 

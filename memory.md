@@ -104,3 +104,15 @@
 - Tri-Rail保留为explicit engineering harness。它记录HK/US/PRC legacy pack/config digest，但由于三套official reasoning-ready packs不存在，普通与fast-path均formal_kernel_used=false；低层分类不具备案件结论资格。
 - 修复`build_attack_edges_from_rules()`仅测试时依赖顺序掩盖的缺陷：现在显式attacks/priority/exception引用统一解析rule ID到claim ID并稳定排序；正式application的受保护attack算法未改变。
 - Phase 6最终双版本基线：Python 3.11.15和3.12.5均495 passed、38 skipped。wheel为3,236,396字节、SHA-256=`bf4e20a36ee2197692cb757e36a5251650c1846f73fd69ec9ad5ac35288b6c21`；仓库外安装从site-packages加载analysis/governance/training并注册四组Phase 6 CLI。
+
+## 2026-07-11 JC v3 Phase 7 CLI-First WorkBuddy Adapter
+
+- CLI/application remains the primary JC interface. WorkBuddy is the only current reason to retain MCP: official WorkBuddy documentation supports custom MCP connectors and also describes Skill + CLI, so the adapter stays dormant until explicitly registered.
+- The production MCP surface is exactly `jc_evaluate`, `jc_lookup_rule`, `jc_analyze_strategy`, and `jc_analyze_similar_cases`. The old 33 tools and 12 whole-corpus resources have no runtime compatibility layer.
+- `addons/workbuddy_mcp.py` is transport-only. It calls the existing audit application, bounded pack lookup, and read-only analysis services; it may not construct evaluators, load a parallel rule set, render lawyer prose, expose full event streams, or return absolute paths.
+- Adapter artifacts use `run://<encoded-run-id>/...` logical references. Tool errors are compact, fail-closed, traceback-free, and do not terminate the stdio process.
+- The stdio contract remains startup-silent, notification-silent, initialization-gated, and error-surviving. Resource lists are empty; `python mcp_server.py --test` is an in-process surface smoke and explicitly does not claim readiness.
+- The obsolete `post_freeze_surface`, fixed Action Agent memo generator/template, and stale agent methodology table were deleted because they had no valid production consumer after the four-tool cut.
+- Phase 7 closure baseline on Python 3.11.15 and 3.12.5 is 479 passed, 38 skipped on each version. The reduction is the deleted legacy surface test suite; protected semantics, application, audit, replay, graph, render, governance, training, and advisory gates remain in the full run.
+- A wheel built over a stale `build/lib` directory can resurrect deleted Python modules even when the source tree and tests are correct. Local and CI packaging gates must remove verified generated `build`/egg-info directories first, then inspect the wheel archive for forbidden legacy modules before installation.
+- The clean Phase 7 wheel is 3,218,675 bytes with SHA-256 `c78bdc86996311e81229e9e641db515d4782cf7ebf1ed1ddaaa7f298dcc5b657`; an outside-repository target install loaded the four-tool adapter from site-packages and reported zero resources.

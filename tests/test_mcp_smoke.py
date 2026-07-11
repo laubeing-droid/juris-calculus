@@ -1,31 +1,28 @@
-"""MCP旧求值入口移除与审计准入烟雾测试。"""
+"""默认core与可选WorkBuddy协议面的最小烟雾测试。"""
 
-import mcp_server
+from pathlib import Path
 
-
-def test_legacy_mcp_evaluation_wrappers_are_removed():
-    """旧wrapper不得绕过CaseRequest、pack准入和审计包。"""
-
-    assert not hasattr(mcp_server, "_juris_evaluate_core")
-    assert not hasattr(mcp_server, "_juris_evaluate_sync")
+from addons.workbuddy_mcp import TOOL_NAMES, manifest_document, run_smoke
 
 
-def test_legacy_free_text_evaluation_is_rejected():
-    """自由文本或裸fact_items不能被静默升级为正式推理输入。"""
-
-    result = mcp_server.juris_query(
-        "evaluate_facts",
-        "合同成立",
-        {"fact_items": {"f1": "合同成立"}},
-    )
-    assert result == {
-        "error": "legacy free-text evaluation was removed; case_request is required",
-        "code": "CASE_REQUEST_REQUIRED",
-    }
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_strategy_requires_an_audited_run():
-    """策略只能消费审计run ID，不能重新推理自由文本。"""
+def test_default_distribution_registers_only_the_jc_cli() -> None:
+    """默认wheel不得自动注册MCP server或33项工具入口。"""
 
-    result = mcp_server.juris_query("analyze_strategy", "合同违约")
-    assert result["code"] == "AUDITED_RUN_REQUIRED"
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert '[project.scripts]\njc = "compiler_core.cli:main"' in pyproject
+    assert "jc-workbuddy" not in pyproject
+    assert "mcp_server" not in pyproject
+
+
+def test_optional_adapter_smoke_is_explicitly_not_readiness(capsys) -> None:
+    """进程内smoke只核对协议面，不宣称WorkBuddy或stdio已就绪。"""
+
+    assert run_smoke(ROOT / "mcp_manifest.json") == 0
+    output = capsys.readouterr().out
+
+    assert '"readiness_claimed": false' in output
+    assert tuple(manifest_document(ROOT / "mcp_manifest.json")["tools"]) == TOOL_NAMES

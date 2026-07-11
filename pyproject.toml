@@ -27,9 +27,8 @@ pipeline = [
 render = [
   "Jinja2>=3.1.0",
 ]
-mcp = [
-  "mcp>=1.0.0",
-]
+# 适配器使用标准库stdio协议，不给默认core引入MCP运行时依赖。
+workbuddy = []
 
 [project.scripts]
 jc = "compiler_core.cli:main"

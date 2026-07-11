@@ -1,5 +1,4 @@
 from compiler_core.output_firewall import renderer_firewall_metadata, validate_output_contract
-from compiler_core.post_freeze_surface import certified_litigation_report
 
 
 def test_renderer_does_not_turn_hypothetical_into_final_opinion():
@@ -18,14 +17,6 @@ def test_renderer_shows_degraded_alternative_role():
 
     assert metadata["rendering_role"] == "review_packet"
     assert metadata["machine_state_preserved"] is True
-
-
-def test_removed_mcp_render_path_requires_an_audited_run():
-    result = certified_litigation_report({"facts": ["candidate::unverified"]})
-
-    assert result["payload"]["renderer_firewall"]["formal_legal_opinion"] is False
-    assert result["payload"]["code"] == "AUDITED_RUN_REQUIRED"
-    assert result["status"] == "blocked"
 
 
 def test_renderer_recursively_rejects_protected_and_final_fields_without_mutation():
