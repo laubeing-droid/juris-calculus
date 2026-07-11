@@ -15,8 +15,8 @@ JC does not claim machine-checked coverage for every Python execution path. It c
 
 | Evidence | Current result | Claim supported |
 |---|---|---|
-| full Python tests | pre-remediation verified baseline: 347 passed, 38 skipped | regression baseline before remediation |
-| real MCP stdio gate | required for post-remediation acceptance; not covered by the baseline | client/server transport must work outside the manifest self-test |
+| full Python tests | post-remediation verified baseline: 359 passed, 38 skipped | full local regression suite passes |
+| real MCP stdio gate | passed | subprocess client/server lifecycle, notification and error handling verified |
 | MCP manifest dispatch | 33 tools | public tool manifest and dispatch are aligned |
 | spec-shadow fixtures | 10 aligned, 0 diverged | selected runtime fixtures match upstream boundary expectations |
 | post-freeze surface tests | pass in local targeted run | public-kernel tools keep required envelope behavior |
@@ -51,7 +51,7 @@ python mcp_server.py --test
 
 If any command cannot run, conformance reporting must say blocked and include the error.
 
-The real MCP client/server stdio exchange is a post-remediation admission gate. `python mcp_server.py --test` remains useful evidence, but cannot satisfy that gate by itself.
+The real MCP client/server stdio exchange passed as a subprocess regression gate. `python mcp_server.py --test` remains useful in-process evidence, but cannot satisfy that gate by itself.
 
 ## LSC Boundary Absorption Note
 

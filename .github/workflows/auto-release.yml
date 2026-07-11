@@ -40,6 +40,9 @@ jobs:
       - name: Run supply-chain gate
         run: python tools/supply_chain_gate.py
 
+      - name: Run real MCP stdio lifecycle gate
+        run: python -m pytest tests/unit/test_mcp_stdio_protocol.py -q
+
       - name: Run tests
         run: python -m pytest tests/ -v
 

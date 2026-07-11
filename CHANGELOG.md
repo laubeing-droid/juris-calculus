@@ -24,9 +24,12 @@
 
 ### Verification Snapshot
 
-- Pre-remediation verified full local Python baseline: `347 passed, 38 skipped`.
+- Post-remediation verified full local Python baseline: `359 passed, 38 skipped`.
 - MCP manifest-dispatch self-test: 33 tools exposed.
-- Post-remediation acceptance requires a real MCP client/server stdio exchange; the manifest self-test alone does not satisfy this gate.
+- Real MCP client/server stdio lifecycle regression passed; the manifest self-test remains a separate in-process smoke.
+- Rule admission now preserves unanchored rules as training candidates while excluding them from reasoning-eligible indexes.
+- Tri-Rail MCP, matrix, and long-tail entrypoints now share one PRCCollisionEngine-backed runtime.
+- Supply-chain audit now fails closed as PASS, FAIL, or BLOCKED; the verified local run found zero known vulnerabilities.
 - Supply-chain audit remains environment-dependent when external OSV/PyPI access is blocked by proxy or TLS failure; blocked commands must be reported instead of treated as passed.
 
 ## v3.0.0 (2026-06-18)

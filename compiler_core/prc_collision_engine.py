@@ -2,12 +2,12 @@
 """PRC Collision Engine — three-track collision for Chinese jurisdiction.
 
 三轨架构 (v2.1 重构):
-  Track 1 (CBL): 成文法阻断 — blocking_rules.yaml (60条)
+  Track 1 (CBL): 成文法阻断 — blocking_rules.yaml（数量运行时计算）
     FORCE_VOID / FORCE_SUPPRESS / MAPPING_OVERRIDE
     一票否决，最高优先级
-  Track 2 (SPC): 最高法裁判倾向 — spc_rules.yaml (25条)
+  Track 2 (SPC): 最高法裁判倾向 — spc_rules.yaml（数量运行时计算）
     Horn 规则推导，non-blocking，仅倾向
-  Track 3 (CN):  中国成文法全量 — configs/zh_CN/rules.yaml (2,117条)
+  Track 3 (CN):  中国成文法全量 — configs/zh_CN/rules.yaml（数量运行时计算）
     13领域 Horn 规则引擎
 
 设计来源:
@@ -22,7 +22,7 @@ import yaml
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from compiler_core.types import LegalFact, IRState, LegalDomain, NormModality
+from compiler_core.types import LegalClaim, LegalFact, IRState, LegalDomain, NormModality
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 from compiler_core.domain_config import DomainConfig
 from compiler_core.proof_tree import ProofTree, ProofNode
@@ -85,6 +85,8 @@ class PRCCollisionEngine:
 
         self._blocking_rules: List[Dict] = []
         self._meta_rules: List[Dict] = []
+        self._spc_rules: List = []
+        self._cn_rules: List = []
         self._spc_evaluator: Optional[FixpointEvaluator] = None
         self._cn_evaluator: Optional[FixpointEvaluator] = None
         self._cn_rule_count: int = 0
@@ -109,6 +111,7 @@ class PRCCollisionEngine:
         if self.spc_rules_path.exists():
             try:
                 spc_rules = load_rules_from_yaml(str(self.spc_rules_path))
+                self._spc_rules = spc_rules
                 self._spc_evaluator = FixpointEvaluator(
                     spc_rules, DomainConfig(domain=LegalDomain.CIVIL)
                 )
@@ -118,6 +121,7 @@ class PRCCollisionEngine:
         if self.cn_rules_path.exists():
             try:
                 cn_rules = load_rules_from_yaml(str(self.cn_rules_path))
+                self._cn_rules = cn_rules
                 self._cn_evaluator = FixpointEvaluator(
                     cn_rules, DomainConfig(domain=LegalDomain.CIVIL)
                 )
@@ -136,6 +140,61 @@ class PRCCollisionEngine:
     @property
     def cn_loaded(self) -> bool:
         return self._cn_evaluator is not None
+
+    @property
+    def constraint_rules(self) -> tuple[Dict, ...]:
+        """返回阻断规则只读快照，避免调用方依赖内部可变列表。"""
+        return tuple(dict(rule) for rule in self._blocking_rules)
+
+    @property
+    def cn_rule_count(self) -> int:
+        """返回中国法主规则语料总数，供旧调用方平滑迁移。"""
+        return self._cn_rule_count
+
+    @property
+    def blocking_action_types(self) -> Dict[str, str]:
+        """按规则 ID 返回阻断动作类型，供三轨分类器消费既有语义。"""
+        return {
+            str(rule.get("id", "")): str((rule.get("action") or {}).get("type", ""))
+            for rule in self._blocking_rules
+            if rule.get("id")
+        }
+
+    @property
+    def rule_inventory(self) -> Dict[str, Dict]:
+        """报告三条 PRC 轨道的语料、正式准入与候选数量。
+
+        阻断规则不经过通用 YAML LegalRule 加载器，当前均属于人工维护的
+        PRC 边界规则；SPC/CN 则依据加载器写入的 CANDIDATE_ONLY 标记计数。
+        """
+
+        def summarize(rules: List) -> Dict[str, int]:
+            candidate = sum(
+                1 for rule in rules
+                if getattr(rule, "data_quality", "") == "CANDIDATE_ONLY"
+            )
+            return {
+                "corpus_total": len(rules),
+                "reasoning_eligible_total": len(rules) - candidate,
+                "candidate_only_total": candidate,
+            }
+
+        blocking = {
+            "corpus_total": len(self._blocking_rules),
+            "reasoning_eligible_total": len(self._blocking_rules),
+            "candidate_only_total": 0,
+        }
+        tracks = {
+            "blocking": blocking,
+            "spc": summarize(self._spc_rules),
+            "cn": summarize(self._cn_rules),
+        }
+        return {
+            "corpus_total": sum(item["corpus_total"] for item in tracks.values()),
+            "reasoning_eligible_total": sum(item["reasoning_eligible_total"] for item in tracks.values()),
+            "candidate_only_total": sum(item["candidate_only_total"] for item in tracks.values()),
+            "tracks": tracks,
+        }
 
     def run(self, shared_facts: Dict[str, LegalFact]) -> ProofTree:
         """执行三轨对撞，返回 ProofTree。
@@ -189,6 +248,7 @@ class PRCCollisionEngine:
                 children=[],
                 source_anchor=rule.get("description", ""),
                 modality="PROHIBITION",
+                rule_id=rule_id,
             )
             tree.add_node(node)
             tree.blocked_claims.append(rule_id)
@@ -223,6 +283,7 @@ class PRCCollisionEngine:
                         children=[],
                         source_anchor=claim.source_anchor or "",
                         modality="PERMISSION",
+                        rule_id=self._claim_rule_id(claim),
                     )
                     tree.add_node(node)
                     tree.spc_tendencies.append(node_id)
@@ -238,6 +299,7 @@ class PRCCollisionEngine:
                             confidence=claim.confidence,
                             children=[],
                             source_anchor=claim.source_anchor or "",
+                            rule_id=self._claim_rule_id(claim),
                         )
                         tree.add_node(node)
                         tree.spc_tendencies.append(node_id)
@@ -268,6 +330,7 @@ class PRCCollisionEngine:
                         children=[],
                         source_anchor=claim.source_anchor or "",
                         modality=getattr(claim, "modality", ""),
+                        rule_id=self._claim_rule_id(claim),
                     )
                     tree.add_node(node)
                     tree.cn_claims.append(node_id)
@@ -283,9 +346,19 @@ class PRCCollisionEngine:
                             confidence=claim.confidence,
                             children=[],
                             source_anchor=claim.source_anchor or "",
+                            rule_id=self._claim_rule_id(claim),
                         )
                         tree.add_node(node)
                         tree.cn_claims.append(node_id)
+
+    @staticmethod
+    def _claim_rule_id(claim: LegalClaim) -> str:
+        """从确定性证明轨迹提取实际规则 ID，禁止按 claim 名称反推。"""
+        for event in reversed(getattr(claim, "proof_trace", []) or []):
+            rule_id = event.get("rule_id") if isinstance(event, dict) else None
+            if rule_id:
+                return str(rule_id)
+        return ""
 
     def _check_conditions(self, rule: Dict, facts: Dict[str, LegalFact]) -> bool:
         """检查阻断规则的附加条件。

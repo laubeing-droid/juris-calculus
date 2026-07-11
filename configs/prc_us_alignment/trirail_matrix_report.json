@@ -5,9 +5,7 @@
     "classification": "CHINA_US_COLLISION",
     "hk": {
       "state": "SUPPRESSED",
-      "claims": [
-        "Parties_Duties_Defined"
-      ],
+      "claims": [],
       "rebuttals": 0,
       "state_tracker": {
         "Contract_Validity": "SUPPRESSED"
@@ -30,37 +28,207 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "PEN_001_Data_CrossBorder_Security"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 1,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "ContractOfSale_Exists",
+        "Cross_Border_Context",
+        "Cross_Border_Data_Transfer_To_US",
+        "Director_Acted_UltraVires",
+        "US_Cloud_Act_Data_Request"
+      ],
+      "used_rule_ids": [
+        "PEN_001_Data_CrossBorder_Security"
+      ],
+      "source_snapshot_ids": [
+        "依据《数据安全法》第36条，未经批准向外国司法机构提供数据属于绝对无效Act。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_002_Litigation_Discovery": {
     "scenario_id": "TRI_002_Litigation_Discovery",
     "description": "美国诉前证据开示 + 关联公司资产混同 → 横向否认+数据阻断",
-    "classification": "CHINA_US_COLLISION",
+    "classification": "HK_CN_ASYMMETRY",
     "hk": {
-      "state": "?",
+      "state": "VALID",
       "claims": [],
-      "claims_count": 0
+      "rebuttals": 0,
+      "state_tracker": {
+        "Contract_Validity": "VALID"
+      }
     },
     "us": {
-      "state": "?",
+      "state": "VALID",
       "claims": [],
-      "claims_count": 0
+      "rebuttals": 0,
+      "state_tracker": {
+        "Contract_Validity": "VALID"
+      }
     },
     "prc": {
-      "overrides_count": 1,
-      "force_void": [
-        "BLK_021_Discovery_Fishing"
-      ],
+      "overrides_count": 2,
+      "force_void": [],
       "force_suppress": [],
-      "mapping_override": [],
+      "mapping_override": [
+        "BLK_021_Discovery_Fishing",
+        "CN_SPEC_001_Horizontal_Veil_Piercing"
+      ],
       "spc_claims_count": 0,
-      "cn_claims_count": 0,
-      "cn_rules_total": 0
+      "cn_claims_count": 23,
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "BLK_021_Discovery_Fishing",
+        "CN_SPEC_001_Horizontal_Veil_Piercing"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
     },
-    "fast_path": true,
-    "threat_signature": "WI_ENF_005_Discovery_Abuse",
-    "threat_level": "MEDIUM"
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Affiliated_Companies_Asset_Confusion",
+        "Contract_Validity",
+        "Cross_Border_Context",
+        "US_Pre_Trial_Discovery"
+      ],
+      "used_rule_ids": [
+        "BLK_021_Discovery_Fishing",
+        "CN_SPEC_001_Horizontal_Veil_Piercing",
+        "HJ-152",
+        "HS-008",
+        "HS-100",
+        "HS-102",
+        "HS-114",
+        "HS-115",
+        "HS-116",
+        "HS-132",
+        "HS-136",
+        "MS-02-163",
+        "MS-02-174",
+        "MS-02-175",
+        "MS-02-184",
+        "MS-02-187",
+        "MS-04-144",
+        "MS-06-062",
+        "MS-06-070",
+        "MS-06-080",
+        "MS-06-089",
+        "MS-06-125",
+        "WCNR-015",
+        "XS-A-012",
+        "XS-A-255"
+      ],
+      "source_snapshot_ids": [
+        "2024年《公司法》第23条第3款——横向公司人格否认。全球独有。",
+        "依据民诉法第68条，替换为证据交换，范围远小于美式discovery。",
+        "刑事审判实务",
+        "未成年人审判实务",
+        "民商事审判实务",
+        "涉外商事海事审判实务",
+        "涉港澳民商事审判实务"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
+    }
   },
   "TRI_003_OFAC_Sanction_Deadlock": {
     "scenario_id": "TRI_003_OFAC_Sanction_Deadlock",
@@ -68,10 +236,7 @@
     "classification": "CHINA_US_COLLISION",
     "hk": {
       "state": "VALID",
-      "claims": [
-        "Parties_Duties_Defined",
-        "Contract_Validity"
-      ],
+      "claims": [],
       "rebuttals": 0,
       "state_tracker": {
         "Contract_Validity": "VALID"
@@ -86,17 +251,91 @@
       }
     },
     "prc": {
-      "overrides_count": 3,
+      "overrides_count": 2,
       "force_void": [],
       "force_suppress": [
-        "BLK_001_Consideration_Shield",
         "PEN_002_Secondary_Sanction_Block",
         "PEN_004_OFAC_CounterCollision"
       ],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "PEN_002_Secondary_Sanction_Block",
+        "PEN_004_OFAC_CounterCollision"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Consideration_Provided",
+        "ContractOfSale_Exists",
+        "Cross_Border_Context",
+        "OFAC_Sanctions_Imposed",
+        "US_Secondary_Sanction_Enforcement"
+      ],
+      "used_rule_ids": [
+        "HS-136",
+        "MS-02-163",
+        "PEN_002_Secondary_Sanction_Block",
+        "PEN_004_OFAC_CounterCollision"
+      ],
+      "source_snapshot_ids": [
+        "中国反外国制裁法第12条——OFAC制裁触发强制反制。",
+        "民商事审判实务",
+        "涉外商事海事审判实务",
+        "阻断反外国制裁法第12条规定的不当域外适用。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_004_Plea_Bargaining_CrossBorder": {
@@ -128,8 +367,93 @@
         "OVR_006_Wrongful_Omission_Fill"
       ],
       "spc_claims_count": 0,
-      "cn_claims_count": 14,
-      "cn_rules_total": 21145
+      "cn_claims_count": 10,
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "OVR_001_Plea_Bargaining_Restruct",
+        "OVR_006_Wrongful_Omission_Fill"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Cross_Border_Context",
+        "Cross_Border_Data_Transfer_To_US",
+        "US_Plea_Bargaining_Act",
+        "Wrongful_Omission"
+      ],
+      "used_rule_ids": [
+        "GA-006",
+        "GA-018",
+        "GL-015",
+        "GL-033",
+        "HS-055",
+        "MS-02-169",
+        "MS-06-053",
+        "OVR_001_Plea_Bargaining_Restruct",
+        "OVR_006_Wrongful_Omission_Fill",
+        "XS-A-172",
+        "XS-A-201",
+        "ZS-228"
+      ],
+      "source_snapshot_ids": [
+        "刑事审判实务",
+        "填补跨法系映射缺口——中国法视角下不作为不构成独立Defect，但涉及数据安全或国有资产时上升为安全违规或背信。",
+        "审判监督实务",
+        "审判管理实务",
+        "民商事审判实务",
+        "涉外商事海事审判实务",
+        "环境资源审判实务"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_005_Chapter11_Director_Conflict": {
@@ -138,9 +462,7 @@
     "classification": "CHINA_US_COLLISION",
     "hk": {
       "state": "SUPPRESSED",
-      "claims": [
-        "Parties_Duties_Defined"
-      ],
+      "claims": [],
       "rebuttals": 0,
       "state_tracker": {
         "Contract_Validity": "SUPPRESSED"
@@ -148,9 +470,7 @@
     },
     "us": {
       "state": "VALID",
-      "claims": [
-        "DIP_Status → Business_Operations_Continue"
-      ],
+      "claims": [],
       "rebuttals": 0,
       "state_tracker": {
         "Contract_Validity": "VALID",
@@ -166,13 +486,82 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "BLK_001_Consideration_Shield"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 1,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Bankruptcy_Petition_Filed",
+        "Chapter11_Filed",
+        "Consideration_Provided",
+        "ContractOfSale_Exists",
+        "Cross_Border_Context",
+        "Director_Acted_UltraVires"
+      ],
+      "used_rule_ids": [
+        "BLK_001_Consideration_Shield"
+      ],
+      "source_snapshot_ids": [
+        "Gemini R3: 三重门控(跨境 + (涉外主体 OR 代持 OR Ch11破产))。Ch11破产本身即为高风险信号——即使无显式外方标识，代持/隐名结构常见于跨境重组。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_006_Factoring_CrossBorder": {
     "scenario_id": "TRI_006_Factoring_CrossBorder",
     "description": "保理合同独立成章 vs US应收账款转让",
-    "classification": "CHINA_US_COLLISION",
+    "classification": "HK_CN_ASYMMETRY",
     "hk": {
       "state": "VALID",
       "claims": [],
@@ -190,17 +579,86 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 1,
       "force_void": [],
-      "force_suppress": [
-        "BLK_001_Consideration_Shield"
-      ],
+      "force_suppress": [],
       "mapping_override": [
         "CN_SPEC_002_Factoring_Chapter"
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "CN_SPEC_002_Factoring_Chapter"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Consideration_Provided",
+        "Contract_Validity",
+        "Cross_Border_Context",
+        "Factoring_Account_Receivable_Transfer"
+      ],
+      "used_rule_ids": [
+        "CN_SPEC_002_Factoring_Chapter",
+        "HS-136",
+        "MS-02-163"
+      ],
+      "source_snapshot_ids": [
+        "保理合同独立成章——《民法典》合同编第十六章。全球首创。",
+        "民商事审判实务",
+        "涉外商事海事审判实务"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_007_Crypto_Transaction_Conflict": {
@@ -224,17 +682,86 @@
       }
     },
     "prc": {
-      "overrides_count": 2,
+      "overrides_count": 1,
       "force_void": [
         "PEN_005_Crypto_Prohibition"
       ],
-      "force_suppress": [
-        "BLK_001_Consideration_Shield"
-      ],
+      "force_suppress": [],
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "PEN_005_Crypto_Prohibition"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Consideration_Provided",
+        "Contract_Validity",
+        "Cross_Border_Context",
+        "Cryptocurrency_Transaction"
+      ],
+      "used_rule_ids": [
+        "HS-136",
+        "MS-02-163",
+        "PEN_005_Crypto_Prohibition"
+      ],
+      "source_snapshot_ids": [
+        "中国全面禁止加密货币交易——2021年《通知》。",
+        "民商事审判实务",
+        "涉外商事海事审判实务"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_008_VIE_Structure_Review": {
@@ -267,8 +794,122 @@
         "CN_SPEC_001_Horizontal_Veil_Piercing"
       ],
       "spc_claims_count": 0,
-      "cn_claims_count": 40,
-      "cn_rules_total": 21145
+      "cn_claims_count": 36,
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "CN_SPEC_001_Horizontal_Veil_Piercing",
+        "PEN_003_Long_Arm_Interdiction"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Affiliated_Companies_Asset_Confusion",
+        "Cross_Border_Context",
+        "Cross_Border_Data_Transfer_To_US",
+        "US_Long_Arm_Jurisdiction_Asserted"
+      ],
+      "used_rule_ids": [
+        "CN_SPEC_001_Horizontal_Veil_Piercing",
+        "GA-006",
+        "GA-018",
+        "GL-015",
+        "GL-033",
+        "HJ-152",
+        "HS-008",
+        "HS-055",
+        "HS-100",
+        "HS-102",
+        "HS-114",
+        "HS-115",
+        "HS-116",
+        "HS-132",
+        "MS-02-169",
+        "MS-02-174",
+        "MS-02-175",
+        "MS-02-184",
+        "MS-02-187",
+        "MS-02-189",
+        "MS-04-142",
+        "MS-04-144",
+        "MS-06-053",
+        "MS-06-055",
+        "MS-06-056",
+        "MS-06-062",
+        "MS-06-069",
+        "MS-06-070",
+        "MS-06-080",
+        "MS-06-089",
+        "MS-06-125",
+        "PEN_003_Long_Arm_Interdiction",
+        "WCNR-015",
+        "XS-A-012",
+        "XS-A-172",
+        "XS-A-201",
+        "XS-A-255",
+        "ZS-228"
+      ],
+      "source_snapshot_ids": [
+        "2024年《公司法》第23条第3款——横向公司人格否认。全球独有。",
+        "刑事审判实务",
+        "审判监督实务",
+        "审判管理实务",
+        "未成年人审判实务",
+        "民商事审判实务",
+        "涉外商事海事审判实务",
+        "涉港澳民商事审判实务",
+        "环境资源审判实务",
+        "阻断办法第9条——美国长臂管辖在境内事实集中传导被强制抑制。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_009_Algorithm_Filing_Block": {
@@ -299,8 +940,90 @@
       ],
       "mapping_override": [],
       "spc_claims_count": 0,
-      "cn_claims_count": 14,
-      "cn_rules_total": 21145
+      "cn_claims_count": 10,
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "CN_SPEC_003_Algorithm_Filing"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "CN_Deployment_Without_Filing",
+        "Cross_Border_Context",
+        "Cross_Border_Data_Transfer_To_US"
+      ],
+      "used_rule_ids": [
+        "CN_SPEC_003_Algorithm_Filing",
+        "GA-006",
+        "GA-018",
+        "GL-015",
+        "GL-033",
+        "HS-055",
+        "MS-02-169",
+        "MS-06-053",
+        "XS-A-172",
+        "XS-A-201",
+        "ZS-228"
+      ],
+      "source_snapshot_ids": [
+        "刑事审判实务",
+        "审判监督实务",
+        "审判管理实务",
+        "民商事审判实务",
+        "涉外商事海事审判实务",
+        "环境资源审判实务",
+        "算法未备案前，相关商业运营Act之Power处于挂起阻断状态。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_010_AtWill_Employment_Conflict": {
@@ -332,7 +1055,73 @@
       "mapping_override": [],
       "spc_claims_count": 0,
       "cn_claims_count": 0,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "BLK_019_AtWillEmployment"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 1,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "At_Will_Employment",
+        "Cross_Border_Context",
+        "Director_Acted_UltraVires"
+      ],
+      "used_rule_ids": [
+        "BLK_019_AtWillEmployment"
+      ],
+      "source_snapshot_ids": [
+        "中国无任意雇佣。以劳动合同法解雇保护制度替代。"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_011_Pure_Domestic_CN": {
@@ -364,19 +1153,86 @@
       ],
       "spc_claims_count": 0,
       "cn_claims_count": 2,
-      "cn_rules_total": 21145
+      "cn_rules_total": 21144,
+      "blocked_claims": [
+        "CN_SPEC_002_Factoring_Chapter"
+      ],
+      "bridge_health": {
+        "cn_zero_streak": 0,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Consideration_Provided",
+        "Contract_Validity",
+        "Factoring_Account_Receivable_Transfer"
+      ],
+      "used_rule_ids": [
+        "CN_SPEC_002_Factoring_Chapter",
+        "HS-136",
+        "MS-02-163"
+      ],
+      "source_snapshot_ids": [
+        "保理合同独立成章——《民法典》合同编第十六章。全球首创。",
+        "民商事审判实务",
+        "涉外商事海事审判实务"
+      ],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   },
   "TRI_012_CN_Bridge_Verification": {
     "scenario_id": "TRI_012_CN_Bridge_Verification",
-    "description": "跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证",
+    "description": "跨境合同违约 + 损害赔偿 → CN 正式准入规则触发验证",
     "classification": "TRI_RESONANCE",
     "hk": {
       "state": "VALID",
-      "claims": [
-        "Parties_Duties_Defined",
-        "Contract_Validity"
-      ],
+      "claims": [],
       "rebuttals": 0,
       "state_tracker": {
         "Contract_Validity": "VALID"
@@ -396,8 +1252,72 @@
       "force_suppress": [],
       "mapping_override": [],
       "spc_claims_count": 0,
-      "cn_claims_count": 66,
-      "cn_rules_total": 21145
+      "cn_claims_count": 0,
+      "cn_rules_total": 21144,
+      "blocked_claims": [],
+      "bridge_health": {
+        "cn_zero_streak": 1,
+        "status": "HEALTHY"
+      }
+    },
+    "fast_path": false,
+    "rule_inventory": {
+      "HK": {
+        "corpus_total": 133,
+        "reasoning_eligible_total": 40,
+        "candidate_only_total": 93
+      },
+      "US": {
+        "corpus_total": 81,
+        "reasoning_eligible_total": 0,
+        "candidate_only_total": 81
+      },
+      "PRC": {
+        "corpus_total": 21209,
+        "reasoning_eligible_total": 21123,
+        "candidate_only_total": 86,
+        "tracks": {
+          "blocking": {
+            "corpus_total": 42,
+            "reasoning_eligible_total": 42,
+            "candidate_only_total": 0
+          },
+          "spc": {
+            "corpus_total": 23,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": 23
+          },
+          "cn": {
+            "corpus_total": 21144,
+            "reasoning_eligible_total": 21081,
+            "candidate_only_total": 63
+          }
+        }
+      }
+    },
+    "lsc_boundary": {
+      "result_status": "review_only_result",
+      "used_fact_keys": [
+        "Breach_Established",
+        "Buyer_FailsToPay",
+        "ContractOfSale_Exists",
+        "Cross_Border_Context",
+        "Damages_Awarded",
+        "Goods_Defective",
+        "Loss_Occurred"
+      ],
+      "used_rule_ids": [],
+      "source_snapshot_ids": [],
+      "provenance": {
+        "summary_only": true,
+        "source": "TriRailCollider"
+      },
+      "taint": [
+        "UNVERIFIED_INPUT_FACTS"
+      ],
+      "review_required": true,
+      "formal_kernel_used": true,
+      "renderer_output_kind": "machine_packet"
     }
   }
 }

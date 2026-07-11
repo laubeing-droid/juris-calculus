@@ -21,7 +21,6 @@ Tri-Rail Collider: HK × US × PRC 三法域并发对撞
 
 import sys
 import json
-import copy
 from pathlib import Path
 from typing import Dict, List, Any
 from collections import Counter, defaultdict
@@ -31,6 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from compiler_core.types import LegalFact, IRState, LegalClaim
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 from compiler_core.domain_config import DomainConfig, LegalDomain
+from compiler_core.prc_collision_engine import PRCCollisionEngine
+from compiler_core.proof_tree import ProofTree
 
 # ── 威胁拦截器 (Gemini审计: 下沉至TriRailCollider主路径最前端) ──
 from tools.distill_jurisdiction import FastPathInterceptor
@@ -156,7 +157,7 @@ TRI_SCENARIOS = {
     },
     # ── CN 桥接验收: 港美事实 → 中国法规则触发 ──
     "TRI_012_CN_Bridge_Verification": {
-        "description": "跨境合同违约 + 损害赔偿 → CN 2,117条规则触发验证",
+        "description": "跨境合同违约 + 损害赔偿 → CN 正式准入规则触发验证",
         "context": "cross_border",
         "facts": {
             "ContractOfSale_Exists": 0.95,
@@ -178,7 +179,8 @@ TRI_SCENARIOS = {
 def classify_tri_state(
     hk_state: IRState,
     us_state: IRState,
-    prc_state: Dict[str, Dict[str, Any]]
+    prc_tree: ProofTree,
+    blocking_action_types: Dict[str, str],
 ) -> str:
     """
     四分类判定 — 三轨并发结果。
@@ -186,7 +188,8 @@ def classify_tri_state(
     底层接口消费:
       - IRState.claims: Dict[str, LegalClaim]
       - IRState.state_tracker: Dict[str, str]
-      - PRC State: Dict[rule_id, {type, status, ...}]
+      - PRC ProofTree: 已触发阻断规则与中国法/SPC 推理节点
+      - blocking_action_types: PRC 引擎公开的规则 ID → 动作类型只读映射
     """
     # 提取 HK/US 的终态签名
     hk_claims_set = set(hk_state.claims.keys())
@@ -200,18 +203,15 @@ def classify_tri_state(
     us_is_active = len(us_claims_set) > 0
     hk_is_suppressed = "SUPPRESSED" in hk_tracker_vals
 
-    # PRC 覆写提取 — v1.2.0: 消费三轨格式 {blocking_overrides, spc, cn}
-    blocking = prc_state.get("blocking_overrides", {})
-    has_prc_force_void = any(
-        v.get("type") == "FORCE_VOID" for v in blocking.values()
-    )
-    has_prc_force_suppress = any(
-        v.get("type") == "FORCE_SUPPRESS" for v in blocking.values()
-    )
-    has_prc_override = any(
-        v.get("type") == "MAPPING_OVERRIDE" for v in blocking.values()
-    )
-    has_prc_any = len(blocking) > 0
+    # 仅按 PRCCollisionEngine 实际触发的规则分类，禁止从输出文案反推动作。
+    triggered_actions = {
+        blocking_action_types.get(rule_id, "")
+        for rule_id in prc_tree.blocked_claims
+    }
+    has_prc_force_void = "FORCE_VOID" in triggered_actions
+    has_prc_force_suppress = "FORCE_SUPPRESS" in triggered_actions
+    has_prc_override = "MAPPING_OVERRIDE" in triggered_actions
+    has_prc_any = bool(prc_tree.blocked_claims)
 
     # 🎯 CHINA_US_COLLISION: PRC 强制否决 (不论US是否触发)
     # 关键修正: US引擎无匹配规则不代表"静默"，PRC的FORCE_VOID本身就是
@@ -259,6 +259,7 @@ class TriRailCollider:
         # 追加扩展规则 (Cap 32/622/571/4A)
         hk_extended = load_rules_from_yaml(str(hk_extended_path))
         hk_rules += hk_extended
+        self.hk_rules = hk_rules
         self.hk_engine = FixpointEvaluator(
             hk_rules, DomainConfig(domain=LegalDomain.CIVIL),
             overrides_path=str(hk_overrides_path)
@@ -268,18 +269,46 @@ class TriRailCollider:
         us_rules_path = base / "configs" / "en_US" / "US_Adapter.yaml"
         us_overrides_path = base / "configs" / "en_US" / "L0_overrides_us.yaml"
         us_rules = load_rules_from_yaml(str(us_rules_path))
+        self.us_rules = us_rules
         self.us_engine = FixpointEvaluator(
             us_rules, DomainConfig(domain=LegalDomain.CIVIL),
             overrides_path=str(us_overrides_path)
         )
 
-        # ── PRC 约束引擎 ──
-        self.prc_engine = PRCAdapter()
+        # ── PRC 约束引擎：当前唯一正式实现为 PRCCollisionEngine ──
+        self.prc_engine = PRCCollisionEngine()
 
         # ── 威胁拦截器 (Gemini审计: First Gatekeeper) ──
         self.threat_interceptor = FastPathInterceptor()
 
-        print(f"[TriRail] HK={len(hk_rules)} rules | US={len(us_rules)} rules | PRC CBL={len(self.prc_engine.constraint_rules)} | SPC={22 if self.prc_engine.spc_loaded else 0} | CN={self.prc_engine.cn_rule_count} | Threats={len(self.threat_interceptor.signatures)} sigs")
+        self.rule_inventory = {
+            "HK": self._summarize_rules(hk_rules),
+            "US": self._summarize_rules(us_rules),
+            "PRC": self.prc_engine.rule_inventory,
+        }
+        print(
+            "[TriRail] "
+            f"HK={self.rule_inventory['HK']['reasoning_eligible_total']}/"
+            f"{self.rule_inventory['HK']['corpus_total']} eligible | "
+            f"US={self.rule_inventory['US']['reasoning_eligible_total']}/"
+            f"{self.rule_inventory['US']['corpus_total']} eligible | "
+            f"PRC={self.rule_inventory['PRC']['reasoning_eligible_total']}/"
+            f"{self.rule_inventory['PRC']['corpus_total']} eligible | "
+            f"Threats={len(self.threat_interceptor.signatures)} sigs"
+        )
+
+    @staticmethod
+    def _summarize_rules(rules: List) -> Dict[str, int]:
+        """按加载器写入的候选标记统计语料与正式准入规则。"""
+        candidate = sum(
+            1 for rule in rules
+            if getattr(rule, "data_quality", "") == "CANDIDATE_ONLY"
+        )
+        return {
+            "corpus_total": len(rules),
+            "reasoning_eligible_total": len(rules) - candidate,
+            "candidate_only_total": candidate,
+        }
 
     def build_fact_state(self, facts_dict: Dict[str, float]) -> Dict[str, LegalFact]:
         """将 {fact_id: confidence} → {fact_id: LegalFact}"""
@@ -288,13 +317,87 @@ class TriRailCollider:
             for k, v in facts_dict.items()
         }
 
+    @staticmethod
+    def _evaluate_track(evaluator: FixpointEvaluator, facts: Dict[str, LegalFact]) -> IRState:
+        """执行单法域轨道；清晰度熔断时只保留高置信部分状态。"""
+        state = IRState(facts=facts)
+        try:
+            return evaluator.evaluate(state)
+        except CriticalClarityFailure as exc:
+            partial = getattr(exc, "partial_state", None)
+            if partial is None:
+                return state
+            partial.claims = {
+                key: claim for key, claim in partial.claims.items()
+                if claim.confidence > 0.8
+            }
+            return partial
+
+    @staticmethod
+    def _terminal_state(state: IRState) -> str:
+        """提取合同终态；无显式状态时只按是否产生主张给出兼容值。"""
+        terminal = state.state_tracker.get("Contract_Validity", "?")
+        return terminal or ("VALID" if state.claims else "?")
+
+    def _split_blocking_actions(self, tree: ProofTree) -> Dict[str, List[str]]:
+        """把已触发阻断规则按引擎声明的动作类型确定性分组。"""
+        groups = {"FORCE_VOID": [], "FORCE_SUPPRESS": [], "MAPPING_OVERRIDE": []}
+        actions = self.prc_engine.blocking_action_types
+        for rule_id in sorted(tree.blocked_claims):
+            action = actions.get(rule_id, "")
+            if action in groups:
+                groups[action].append(rule_id)
+        return groups
+
+    @staticmethod
+    def _used_rules(*states_or_tree: Any) -> List[str]:
+        """汇总真实规则 ID；缺失规则标识的节点不参与审计清单。"""
+        used = set()
+        for item in states_or_tree:
+            if isinstance(item, IRState):
+                used.update(str(rule_id) for rule_id in item.rules_applied)
+            elif isinstance(item, ProofTree):
+                used.update(
+                    node.rule_id for node in item.nodes.values()
+                    if node.rule_id
+                )
+        return sorted(used)
+
+    @staticmethod
+    def _source_snapshots(*states_or_tree: Any) -> List[str]:
+        """汇总实际产出节点携带的来源锚，不使用描述文本补齐。"""
+        anchors = set()
+        for item in states_or_tree:
+            if isinstance(item, IRState):
+                anchors.update(
+                    claim.source_anchor for claim in item.claims.values()
+                    if claim.source_anchor
+                )
+            elif isinstance(item, ProofTree):
+                anchors.update(
+                    node.source_anchor for node in item.nodes.values()
+                    if node.source_anchor
+                )
+        return sorted(anchors)
+
     def run_scenario(self, scenario_id: str, scenario: Dict) -> Dict:
         """运行单个三轨场景"""
 
+        facts_raw = scenario.get("facts", {})
+        if not isinstance(facts_raw, dict) or any(
+            not isinstance(key, str)
+            or not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not 0.0 <= float(value) <= 1.0
+            for key, value in facts_raw.items()
+        ):
+            raise ValueError("facts must be a {string: confidence} mapping with confidence in [0, 1]")
+
         # ═══ 哨兵: 威胁签名预检 (Gemini审计: First Gatekeeper) ═══
-        fact_names = list(scenario.get("facts", {}).keys())
+        fact_names = sorted(facts_raw)
         threat_hit = self.threat_interceptor.intercept(fact_names)
         if threat_hit:
+            target_rule = str(threat_hit.get("target_rule", ""))
             return {
                 "scenario_id": scenario_id,
                 "description": scenario.get("description", ""),
@@ -303,83 +406,87 @@ class TriRailCollider:
                 "us": {"state": "?", "claims": [], "claims_count": 0},
                 "prc": {
                     "overrides_count": 1,
-                    "force_void": [threat_hit["target_rule"]],
+                    "force_void": [target_rule] if target_rule else [],
                     "force_suppress": [],
                     "mapping_override": [],
                     "spc_claims_count": 0,
                     "cn_claims_count": 0,
-                    "cn_rules_total": 0,
+                    "cn_rules_total": self.rule_inventory["PRC"]["tracks"]["cn"]["corpus_total"],
+                    "blocked_claims": [target_rule] if target_rule else [],
+                    "bridge_health": {"status": "NOT_RUN"},
                 },
                 "fast_path": True,
                 "threat_signature": threat_hit.get("signature_id", ""),
                 "threat_level": threat_hit.get("threat_level", ""),
+                "rule_inventory": self.rule_inventory,
+                "lsc_boundary": {
+                    "result_status": "review_only_result",
+                    "used_fact_keys": fact_names,
+                    "used_rule_ids": [target_rule] if target_rule else [],
+                    "source_snapshot_ids": [],
+                    "provenance": {"summary_only": True, "source": "deterministic threat interceptor"},
+                    "taint": ["FAST_PATH_INTERCEPT", "UNVERIFIED_INPUT_FACTS"],
+                    "review_required": True,
+                    "formal_kernel_used": False,
+                    "renderer_output_kind": "machine_packet",
+                },
             }
 
-        # 防御性深拷贝 — 三轨独立内存空间
-        facts_hk = self.build_fact_state(scenario["facts"])
-        facts_us = self.build_fact_state(scenario["facts"])
-        facts_prc = self.build_fact_state(scenario["facts"])
-
-        # ── 三轨并发 ──
-        hk_state = IRState(facts=facts_hk)
-        try:
-            hk_state = self.hk_engine.evaluate(hk_state)
-        except CriticalClarityFailure as e:
-            # GEMINI审计修正: 原子性降级——仅保留 confidence>0.8 的安全主张
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                ps = e.partial_state
-                ps.claims = {k: v for k, v in ps.claims.items() if v.confidence > 0.8}
-                hk_state = ps
-            # 否则保持初始空态
-
-        us_state = IRState(facts=facts_us)
-        try:
-            us_state = self.us_engine.evaluate(us_state)
-        except CriticalClarityFailure as e:
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                ps = e.partial_state
-                ps.claims = {k: v for k, v in ps.claims.items() if v.confidence > 0.8}
-                us_state = ps
-
-        prc_state = self.prc_engine.execute_prc_first_override(facts_prc)
+        # 三轨分别构建事实对象，防止任一 evaluator 修改其他轨输入。
+        hk_state = self._evaluate_track(self.hk_engine, self.build_fact_state(facts_raw))
+        us_state = self._evaluate_track(self.us_engine, self.build_fact_state(facts_raw))
+        prc_tree = self.prc_engine.run(self.build_fact_state(facts_raw))
 
         # ── 分类 ──
-        classification = classify_tri_state(hk_state, us_state, prc_state)
-
-        # ── 终端状态提取 ──
-        hk_terminal = hk_state.state_tracker.get("Contract_Validity", "?")
-        us_terminal = us_state.state_tracker.get("Contract_Validity", "?")
-        if not hk_terminal:
-            hk_terminal = "VALID" if hk_state.claims else "?"
-        if not us_terminal:
-            us_terminal = "VALID" if us_state.claims else "?"
+        classification = classify_tri_state(
+            hk_state,
+            us_state,
+            prc_tree,
+            self.prc_engine.blocking_action_types,
+        )
+        blocking = self._split_blocking_actions(prc_tree)
+        used_rules = self._used_rules(hk_state, us_state, prc_tree)
+        source_snapshots = self._source_snapshots(hk_state, us_state, prc_tree)
 
         return {
             "scenario_id": scenario_id,
             "description": scenario["description"],
             "classification": classification,
             "hk": {
-                "state": hk_terminal,
-                "claims": list(hk_state.claims.keys()),
+                "state": self._terminal_state(hk_state),
+                "claims": sorted(hk_state.claims),
                 "rebuttals": len(hk_state.rebuttal_log),
-                "state_tracker": dict(hk_state.state_tracker),
+                "state_tracker": dict(sorted(hk_state.state_tracker.items())),
             },
             "us": {
-                "state": us_terminal,
-                "claims": list(us_state.claims.keys()),
+                "state": self._terminal_state(us_state),
+                "claims": sorted(us_state.claims),
                 "rebuttals": len(us_state.rebuttal_log),
-                "state_tracker": dict(us_state.state_tracker),
+                "state_tracker": dict(sorted(us_state.state_tracker.items())),
             },
             "prc": {
-                "overrides_count": len(prc_state.get("blocking_overrides", {})),
-                "force_void": self.prc_engine.get_force_void_triggers(prc_state),
-                "force_suppress": self.prc_engine.get_force_suppress_triggers(prc_state),
-                "mapping_override": [
-                    m["id"] for m in self.prc_engine.get_mapping_overrides(prc_state)
-                ],
-                "spc_claims_count": prc_state.get("spc_claims_count", 0),
-                "cn_claims_count": prc_state.get("cn_claims_count", 0),
-                "cn_rules_total": prc_state.get("cn_rules_total", 0),
+                "overrides_count": len(prc_tree.blocked_claims),
+                "force_void": blocking["FORCE_VOID"],
+                "force_suppress": blocking["FORCE_SUPPRESS"],
+                "mapping_override": blocking["MAPPING_OVERRIDE"],
+                "spc_claims_count": len(prc_tree.spc_tendencies),
+                "cn_claims_count": len(prc_tree.cn_claims),
+                "cn_rules_total": self.rule_inventory["PRC"]["tracks"]["cn"]["corpus_total"],
+                "blocked_claims": sorted(prc_tree.blocked_claims),
+                "bridge_health": dict(sorted(prc_tree.bridge_health.items())),
+            },
+            "fast_path": False,
+            "rule_inventory": self.rule_inventory,
+            "lsc_boundary": {
+                "result_status": "review_only_result",
+                "used_fact_keys": fact_names,
+                "used_rule_ids": used_rules,
+                "source_snapshot_ids": source_snapshots,
+                "provenance": {"summary_only": True, "source": "TriRailCollider"},
+                "taint": ["UNVERIFIED_INPUT_FACTS"],
+                "review_required": True,
+                "formal_kernel_used": True,
+                "renderer_output_kind": "machine_packet",
             },
         }
 
@@ -412,10 +519,18 @@ class TriRailCollider:
 
     def generate_report(self, results: Dict) -> str:
         """生成三轨对撞报告"""
+        hk_count = self.rule_inventory["HK"]["reasoning_eligible_total"]
+        us_count = self.rule_inventory["US"]["reasoning_eligible_total"]
+        prc_tracks = self.rule_inventory["PRC"]["tracks"]
         lines = [
             "=" * 70,
             "  Tri-Rail Collider Report — v1.2.0",
-            "  HK (64) x US (81) x PRC (CBL=41 + SPC=23 + CN=21145)",
+            (
+                f"  HK ({hk_count}) x US ({us_count}) x PRC "
+                f"(CBL={prc_tracks['blocking']['reasoning_eligible_total']} + "
+                f"SPC={prc_tracks['spc']['reasoning_eligible_total']} + "
+                f"CN={prc_tracks['cn']['reasoning_eligible_total']})"
+            ),
             "=" * 70,
             "",
         ]
@@ -571,7 +686,10 @@ def _build_stats(results: Dict) -> str:
 # ═══════════════════════════════════════════
 
 if __name__ == "__main__":
-    import webbrowser
+    import argparse
+    parser = argparse.ArgumentParser(description="Run the deterministic Tri-Rail matrix harness")
+    parser.add_argument("--open", action="store_true", help="Open the generated HTML report in a browser")
+    args = parser.parse_args()
     print("=" * 60)
     print("  Tri-Rail Collider v1.2.0")
     print("  HK x US x PRC Cross-Jurisdictional Concurrency")
@@ -607,7 +725,6 @@ if __name__ == "__main__":
     generate_heatmap_html(results, html_path)
     print(f"[OK] Heatmap -> {html_path} ({os.path.getsize(html_path):,} bytes)")
 
-    try:
+    if args.open:
+        import webbrowser
         webbrowser.open(str(html_path))
-    except:
-        pass

@@ -214,42 +214,15 @@ class MCPServer:
             return
         self._init_lazy = False
 
-        from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
-        from compiler_core.domain_config import DomainConfig, LegalDomain
-        from compiler_core.types import LegalFact, IRState
-        from compiler_core.prc_collision_engine import PRCCollisionEngine
-        from tools.distill_jurisdiction import FastPathInterceptor, route_state_law_to_backbone
-        from tools.action_agent.compiler import MemoCompiler
+        from tools.distill_jurisdiction import route_state_law_to_backbone
         from tools.action_agent.state_to_text import get_citation as _get_citation
+        from tools.run_trirail_matrix import TriRailCollider
 
-        self._CriticalClarityFailure = CriticalClarityFailure
-        self._LegalFact = LegalFact
-        self._IRState = IRState
-        self._DomainConfig = DomainConfig
-        self._LegalDomain = LegalDomain
-        self._FixpointEvaluator = FixpointEvaluator
-        self._load_rules_from_yaml = load_rules_from_yaml
-        self._FastPathInterceptor = FastPathInterceptor
+        # 三轨核心统一持有 HK/US/PRC 规则，避免 MCP 再加载一份重复规则集。
+        self._trirail = TriRailCollider()
+        self._threat = self._trirail.threat_interceptor
         self._route_state = route_state_law_to_backbone
-        self._MemoCompiler = MemoCompiler
         self._get_citation = _get_citation
-        self._PRCAdapter = PRCCollisionEngine
-
-        # 预加载引擎
-        from compiler_core.plugin_registry import registry
-        self._addon_adapters = {}
-        for code in ["hk", "us"]:
-            adapter = registry.get(code)
-            if adapter is not None:
-                self._addon_adapters[code] = adapter
-        self._hk_rules = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "rules.yaml")) if registry.is_installed("hk") else []
-        self._hk_extended = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "extended_rules.yaml")) if registry.is_installed("hk") else []
-        self._us_rules = self._load_rules_from_yaml(str(BASE / "configs" / "en_US" / "US_Adapter.yaml")) if registry.is_installed("us") else []
-        self._hk_extended = self._load_rules_from_yaml(str(BASE / "configs" / "hk" / "extended_rules.yaml"))
-        self._us_rules = self._load_rules_from_yaml(str(BASE / "configs" / "en_US" / "US_Adapter.yaml"))
-        self._threat = self._FastPathInterceptor()
-        self._memo_compiler = self._MemoCompiler()
-        self._prc_adapter = self._PRCAdapter()
 
     # ── 资源端点 ──
     def _read_resource(self, uri: str) -> Optional[str]:
@@ -460,29 +433,25 @@ class MCPServer:
 
     # ── 工具实现 ──
     def _tool_trirail_collide(self, args: Dict) -> Dict:
-        """三轨对撞"""
+        """执行共享三轨核心，并按事实准入状态返回可审计 MCP envelope。"""
         facts_dict = args.get("facts", {})
         scenario_id = args.get("scenario_id", "custom")
-
-        # 构建 HK 引擎
-        hk_all = self._hk_rules + self._hk_extended
-        hk_eng = self._FixpointEvaluator(
-            hk_all, self._DomainConfig(domain=self._LegalDomain.CIVIL),
-            overrides_path=str(BASE / "configs" / "L0_overrides_hk.yaml")
+        result = self._trirail.run_scenario(
+            scenario_id,
+            {
+                "description": str(args.get("description", "")),
+                "facts": facts_dict,
+            },
         )
-        us_eng = self._FixpointEvaluator(
-            self._us_rules, self._DomainConfig(domain=self._LegalDomain.CIVIL),
-            overrides_path=str(BASE / "configs" / "en_US" / "L0_overrides_us.yaml")
+        boundary = result["lsc_boundary"]
+        risk_labels = list(boundary.get("taint", []))
+        return make_envelope(
+            result,
+            status="blocked" if result["fast_path"] else "ok",
+            decision_status="UNDECIDED",
+            risk_labels=risk_labels,
+            evidence=["mcp_server:trirail_collide", "tools/run_trirail_matrix.py"],
         )
-
-        # 威胁预检
-        threat = self._threat.intercept(list(facts_dict.keys()))
-        if threat:
-            return {
-                "scenario_id": scenario_id,
-                "threat": threat
-            }
-        return {}
 
 
 
@@ -743,102 +712,118 @@ def juris_query(mode: str, query: str = "", params: dict = None):
     return {"error": "unknown mode: " + mode}
 
 
-def run_stdio():
-    """stdio 模式 — MCP 协议标准传输"""
-    server = MCPServer()
-    import json as _json
+def run_stdio(manifest_path: str | None = None, input_stream=None, output_stream=None):
+    """运行客户端驱动的 MCP stdio JSON-RPC 生命周期。
 
-    # 握手: 发送初始化响应
-    init_response = {
-        "jsonrpc": "2.0",
-        "id": 0,
-        "result": {
-            "protocolVersion": "2024-11-05",
-            "serverInfo": {
-                "name": server.manifest["name"],
-                "version": server.manifest["version"],
-            },
-            "capabilities": {
-                "resources": {uri: True for uri in server.manifest.get("resources", {}).keys()},
-                "tools": {name: True for name in server.manifest.get("tools", {}).keys()},
-            }
+    服务端在收到 initialize 前绝不输出；通知没有响应；错误响应使用当前
+    请求 ID，避免异常后误用上一条请求的标识。
+    """
+    server = MCPServer(manifest_path)
+    input_stream = input_stream or sys.stdin
+    output_stream = output_stream or sys.stdout
+    initialized = False
+
+    def write_message(message: Dict[str, Any]) -> None:
+        """写出单行 JSON-RPC 消息并立即刷新，满足 stdio 时序要求。"""
+        output_stream.write(json.dumps(message, ensure_ascii=False) + "\n")
+        output_stream.flush()
+
+    def error(req_id: Any, code: int, message: str) -> Dict[str, Any]:
+        """构造统一 JSON-RPC 错误响应。"""
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": code, "message": message},
         }
-    }
-    sys.stdout.write(_json.dumps(init_response) + "\n")
-    sys.stdout.flush()
 
-    # 请求循环
-    for line in sys.stdin:
-        line = line.strip()
+    for raw_line in input_stream:
+        line = raw_line.strip()
         if not line:
             continue
         try:
-            request = _json.loads(line)
-            req_id = request.get("id", 0)
-            method = request.get("method", "")
-            params = request.get("params", {})
+            request = json.loads(line)
+        except json.JSONDecodeError as exc:
+            write_message(error(None, -32700, f"Parse error: {exc.msg}"))
+            continue
 
-            if method == "resources/read":
+        if not isinstance(request, dict) or request.get("jsonrpc") != "2.0" or not isinstance(request.get("method"), str):
+            req_id = request.get("id") if isinstance(request, dict) else None
+            write_message(error(req_id, -32600, "Invalid Request"))
+            continue
+
+        req_id = request.get("id")
+        is_notification = "id" not in request
+        method = request["method"]
+        params = request.get("params", {})
+        if not isinstance(params, dict):
+            if not is_notification:
+                write_message(error(req_id, -32602, "Invalid params"))
+            continue
+
+        if method == "initialize":
+            if is_notification:
+                continue
+            if initialized:
+                write_message(error(req_id, -32600, "Server already initialized"))
+                continue
+            initialized = True
+            write_message({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "protocolVersion": server.manifest.get("protocol_version", "2024-11-05"),
+                    "serverInfo": {
+                        "name": server.manifest["name"],
+                        "version": server.manifest["version"],
+                    },
+                    "capabilities": {"resources": {}, "tools": {}},
+                },
+            })
+            continue
+
+        # MCP 通知不产生 JSON-RPC 响应；initialized 通知只确认客户端阶段。
+        if is_notification:
+            continue
+        if not initialized:
+            write_message(error(req_id, -32002, "Server not initialized"))
+            continue
+
+        try:
+            if method == "ping":
+                result = {}
+            elif method == "resources/read":
                 uri = params.get("uri", "")
                 content = server._read_resource(uri)
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"contents": [{"uri": uri, "text": content}]} if content else {"error": "Resource not found"}
-                }
+                result = {"contents": [{"uri": uri, "text": content}]} if content else {"error": "Resource not found"}
             elif method == "tools/list":
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"tools": [
-                        {"name": name, **desc}
-                        for name, desc in server.manifest.get("tools", {}).items()
-                    ]}
-                }
+                result = {"tools": [
+                    {"name": name, **desc}
+                    for name, desc in server.manifest.get("tools", {}).items()
+                ]}
             elif method == "tools/call":
                 tool_name = params.get("name", "")
                 arguments = params.get("arguments", {})
-                result = server._call_tool(tool_name, arguments)
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"content": [{"type": "text", "text": _json.dumps(result, ensure_ascii=False, indent=2)}]}
-                }
+                tool_result = server._call_tool(tool_name, arguments)
+                result = {"content": [{"type": "text", "text": json.dumps(tool_result, ensure_ascii=False, indent=2)}]}
             elif method == "resources/list":
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"resources": [
-                        {"uri": uri, "name": uri, **desc}
-                        for uri, desc in server.manifest.get("resources", {}).items()
-                    ]}
-                }
+                result = {"resources": [
+                    {"uri": uri, "name": uri, **desc}
+                    for uri, desc in server.manifest.get("resources", {}).items()
+                ]}
             else:
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32601, "message": f"Method not found: {method}"}
-                }
-
-            sys.stdout.write(_json.dumps(response, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
-
-        except Exception as e:
-            error_response = {
-                "jsonrpc": "2.0",
-                "id": request.get("id", 0) if 'request' in dir() else 0,
-                "error": {"code": -32603, "message": str(e)}
-            }
-            sys.stdout.write(_json.dumps(error_response, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+                write_message(error(req_id, -32601, f"Method not found: {method}"))
+                continue
+            write_message({"jsonrpc": "2.0", "id": req_id, "result": result})
+        except Exception as exc:
+            write_message(error(req_id, -32603, str(exc)))
 
 
-def run_test():
-    """交互式测试模式"""
-    server = MCPServer()
+def run_test(manifest_path: str | None = None):
+    """运行进程内功能 smoke；该模式不替代真实 stdio 握手测试。"""
+    server = MCPServer(manifest_path)
     print("╔══════════════════════════════════════════════╗")
-    print("║  juris-calculus MCP Server — Test Mode       ║")
-    print("║  v1.2.0                                     ║")
+    print("║  juris-calculus MCP Server — In-Process Smoke║")
+    print(f"║  {server.manifest['version']:<43}║")
     print("╚══════════════════════════════════════════════╝")
     print(f"")
     print(f"  Resources: {len(server.manifest['resources'])}")
@@ -878,7 +863,8 @@ def run_test():
     print(f"    citation: {result.get('citation', '')[:80]}")
     print(f"")
 
-    print("  [OK] All tests passed. MCP Server ready for Codex connection.")
+    print("  [OK] In-process functional smoke passed.")
+    print("  [INFO] Readiness requires the subprocess stdio lifecycle test.")
 
 
 if __name__ == "__main__":
@@ -888,6 +874,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.test:
-        run_test()
+        run_test(args.manifest)
     else:
-        run_stdio()
+        run_stdio(args.manifest)

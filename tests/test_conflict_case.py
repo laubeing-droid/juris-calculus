@@ -111,8 +111,10 @@ print(f"HK jurisdiction claims: {len(hk_result.claims)}")
 print(f"Lex Loci merged claims: {len(all_claims)}")
 
 
-def test_conflict_case_runs_and_merges_hk_claims():
+def test_conflict_case_excludes_unanchored_hk_candidates():
+    """无来源锚的 HK 规则只能留在 corpus，不得产生跨法域合并结论。"""
     assert len(us_result.claims) == 0
-    assert len(hk_result.claims) >= 1
-    assert len(all_claims) == len(hk_result.claims)
-    assert "Contract_Validity" in all_claims
+    assert len(hk_result.claims) == 0
+    assert us_ev.inventory["corpus_total"] == 0
+    assert hk_ev.inventory["candidate_only_total"] > 0
+    assert all_claims == {}

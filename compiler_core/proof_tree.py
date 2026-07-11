@@ -20,6 +20,7 @@ class ProofNode:
     children: List[str]    # 子节点 ID 列表
     source_anchor: str     # 法条引用（如 "CivilCode_Art585"，非法域自然语言）
     modality: str = ""     # DDL 模态: OBLIGATION / PROHIBITION / PERMISSION / CONSTITUTIVE
+    rule_id: str = ""      # 生成该节点的规则 ID；为空表示上游未提供可审计规则标识
 
 
 @dataclass

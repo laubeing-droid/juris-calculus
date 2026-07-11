@@ -13,7 +13,6 @@ press_long_tail.py — 美国法长尾术语饱和攻击引擎 v1.2.0
 
 import sys
 import json
-import copy
 import re
 from pathlib import Path
 from typing import Dict, List, Any, Set
@@ -21,9 +20,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from compiler_core.types import LegalFact, IRState
-from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
-from compiler_core.domain_config import DomainConfig, LegalDomain
+from tools.run_trirail_matrix import TriRailCollider
 
 
 # ═══════════════════════════════════════════
@@ -203,122 +200,36 @@ class LongTailPressEngine:
     """242条术语 × 三轨对撞 饱和攻击"""
 
     def __init__(self):
-        base = Path(__file__).resolve().parents[1]
-
-        # HK 引擎
-        hk_rules_path = base / "configs" / "hk" / "rules.yaml"
-        hk_overrides_path = base / "configs" / "L0_overrides_hk.yaml"
-        hk_rules = load_rules_from_yaml(str(hk_rules_path))
-        self.hk_engine = FixpointEvaluator(
-            hk_rules, DomainConfig(domain=LegalDomain.CIVIL),
-            overrides_path=str(hk_overrides_path)
-        )
-
-        # US 引擎
-        us_rules_path = base / "configs" / "en_US" / "US_Adapter.yaml"
-        us_overrides_path = base / "configs" / "en_US" / "L0_overrides_us.yaml"
-        us_rules = load_rules_from_yaml(str(us_rules_path))
-        self.us_engine = FixpointEvaluator(
-            us_rules, DomainConfig(domain=LegalDomain.CIVIL),
-            overrides_path=str(us_overrides_path)
-        )
-
-        # PRC 引擎
-        self.prc_engine = PRCAdapter()
-
-        # 分类器
-        from tools.run_trirail_matrix import classify_tri_state
-        self.classify = classify_tri_state
-
-        # ── 威胁拦截器 (WI/NJ 黑话快速通道) ──
-        from tools.distill_jurisdiction import FastPathInterceptor
-        self.threat_interceptor = FastPathInterceptor()
-
-        print(f"[PressEngine] HK={len(hk_rules)} | US={len(us_rules)} | PRC={len(self.prc_engine.constraint_rules)} | Threats={len(self.threat_interceptor.signatures)} sigs")
+        # 长尾压测只负责输入转换和结果筛选，三轨语义统一交给共享核心。
+        self.collider = TriRailCollider()
 
     def press_term(self, term: str, idx: int) -> Dict:
         """压榨单条术语"""
-        # ═══ 哨兵: 威胁签名预检 ═══
-        threat_hit = self.threat_interceptor.intercept([term])
-        if threat_hit:
-            return {
-                "term_id": f"TAIL_{idx+1:04d}",
-                "term": term,
-                "classification": "CHINA_US_COLLISION",
-                "hk_state": "?",
-                "us_state": "?",
-                "hk_claims": [],
-                "us_claims": [],
-                "prc_overrides": {
-                    "force_void": [threat_hit["target_rule"]],
-                    "force_suppress": [],
-                    "mapping_override": [],
-                },
-                "cn_claims_count": 0,
-                "total_prc_overrides": 1,
-                "fast_path": True,
-                "threat_signature": threat_hit.get("signature_id", ""),
-                "threat_level": threat_hit.get("threat_level", ""),
-            }
-
         fact_dict = term_to_l0_facts(term)
-        facts = {
-            k: LegalFact(id=k, description=f"{term} → {k}", extraction_confidence=v)
-            for k, v in fact_dict.items()
-        }
-
-        # 三轨独立副本
-        f_hk = copy.deepcopy(facts)
-        f_us = copy.deepcopy(facts)
-        f_prc = copy.deepcopy(facts)
-
-        # HK
-        hk_state = IRState(facts=f_hk)
-        try:
-            hk_state = self.hk_engine.evaluate(hk_state)
-        except CriticalClarityFailure as e:
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                hk_state = e.partial_state
-
-        # US
-        us_state = IRState(facts=f_us)
-        try:
-            us_state = self.us_engine.evaluate(us_state)
-        except CriticalClarityFailure as e:
-            if hasattr(e, 'partial_state') and e.partial_state is not None:
-                us_state = e.partial_state
-
-        # PRC
-        prc_state = self.prc_engine.execute_prc_first_override(f_prc)
-
-        # 分类
-        classification = self.classify(hk_state, us_state, prc_state)
-
-        # 状态提取
-        hk_terminal = hk_state.state_tracker.get("Contract_Validity", "?")
-        us_terminal = us_state.state_tracker.get("Contract_Validity", "?")
-        if not hk_terminal:
-            hk_terminal = "VALID" if hk_state.claims else "?"
-        if not us_terminal:
-            us_terminal = "VALID" if us_state.claims else "?"
+        term_id = f"TAIL_{idx+1:04d}"
+        result = self.collider.run_scenario(
+            term_id,
+            {"description": term, "facts": fact_dict},
+        )
+        prc = result["prc"]
 
         return {
-            "term_id": f"TAIL_{idx+1:04d}",
+            "term_id": term_id,
             "term": term,
-            "classification": classification,
-            "hk_state": hk_terminal,
-            "us_state": us_terminal,
-            "hk_claims": list(hk_state.claims.keys()),
-            "us_claims": list(us_state.claims.keys()),
+            "classification": result["classification"],
+            "hk_state": result["hk"]["state"],
+            "us_state": result["us"]["state"],
+            "hk_claims": result["hk"]["claims"],
+            "us_claims": result["us"]["claims"],
             "prc_overrides": {
-                "force_void": self.prc_engine.get_force_void_triggers(prc_state),
-                "force_suppress": self.prc_engine.get_force_suppress_triggers(prc_state),
-                "mapping_override": [
-                    m["id"] for m in self.prc_engine.get_mapping_overrides(prc_state)
-                ],
+                "force_void": prc["force_void"],
+                "force_suppress": prc["force_suppress"],
+                "mapping_override": prc["mapping_override"],
             },
-            "cn_claims_count": prc_state.get("cn_claims_count", 0),
-            "total_prc_overrides": len(prc_state.get("blocking_overrides", {})),
+            "cn_claims_count": prc["cn_claims_count"],
+            "total_prc_overrides": prc["overrides_count"],
+            "fast_path": result["fast_path"],
+            "rule_inventory": result["rule_inventory"],
         }
 
     def run_saturation(self, terms: List[str] = None):

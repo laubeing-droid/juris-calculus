@@ -102,6 +102,8 @@ class MemoCompiler:
         force_suppress = prc_data.get("force_suppress", [])
         mapping_override = prc_data.get("mapping_override", [])
         cn_claims_count = prc_data.get("cn_claims_count", 0)
+        inventory = trirail_result.get("rule_inventory", {})
+        prc_tracks = inventory.get("PRC", {}).get("tracks", {})
 
         # ── 风险矩阵 ──
         risk = render_risk_matrix(
@@ -130,10 +132,10 @@ class MemoCompiler:
             "date": datetime.now().strftime("%Y年%m月%d日"),
             "risk_level": cls_text["risk_level"],
             "signature_phrase": cls_text["signature_phrase"],
-            "hk_rules_count": 93,
-            "us_rules_count": 81,
-            "cn_rules_count": 21145,
-            "cbl_rules_count": 42,
+            "hk_rules_count": inventory.get("HK", {}).get("reasoning_eligible_total", 0),
+            "us_rules_count": inventory.get("US", {}).get("reasoning_eligible_total", 0),
+            "cn_rules_count": prc_tracks.get("cn", {}).get("reasoning_eligible_total", 0),
+            "cbl_rules_count": prc_tracks.get("blocking", {}).get("reasoning_eligible_total", 0),
             "hk_state": hk_data.get("state", "?"),
             "us_state": us_data.get("state", "?"),
             "hk_claims": hk_claims,

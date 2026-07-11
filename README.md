@@ -9,8 +9,8 @@ It is not a private case-management system. Client data, commercial rule librari
 | Area | Current status |
 |---|---|
 | MCP tools | 33 manifest-dispatched tools |
-| Python tests | pre-remediation verified baseline: 347 passed, 38 skipped |
-| Real stdio gate | required for post-remediation acceptance; the baseline does not cover it |
+| Python tests | post-remediation verified baseline: 359 passed, 38 skipped |
+| Real stdio gate | passed by subprocess client/server lifecycle regression |
 | Spec shadow fixtures | 10 aligned, 0 diverged |
 | Public boundary | auditable runtime kernel only |
 | Private boundary | client data, business rules, workflows, strategy, private benchmarks excluded |
@@ -62,7 +62,7 @@ python mcp_server.py --test
 git diff --check
 ```
 
-The `347 passed, 38 skipped` result is the verified pre-remediation baseline. Post-remediation acceptance also requires a real MCP client/server stdio exchange; `python mcp_server.py --test` alone is insufficient for that gate.
+The post-remediation baseline is `359 passed, 38 skipped`. It includes a real MCP client/server stdio exchange; `python mcp_server.py --test` remains an in-process functional smoke and is not a substitute for that gate.
 
 Supply-chain audits should be run before release or push when network access permits. If PyPI or OSV access is blocked by proxy or TLS failure, record the exact blocked command and error.
 
