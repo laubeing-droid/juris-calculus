@@ -1,74 +1,34 @@
 # juris-calculus Changelog
 
-## Unreleased (2026-07-01)
+## 3.0.0a1 - Unreleased
 
-### Public Kernel Closure
+### Breaking architecture change
 
-- Expanded the MCP public surface to 33 manifest-dispatched tools.
-- Added post-freeze public-kernel outputs for certificate reporting, evidence suggestions, attack graph tracing, spec differential evidence, batch audit, candidate gating, governance, impact analysis, route guarding, damages baseline, sample-deviation checks, stress fixtures, and private-layer boundary reporting.
-- Aligned MCP manifest entries with `mcp_server.py` dispatch and added regression tests that require every public surface tool to remain manifest-visible.
-- Standardized API/MCP responses around auditable public envelopes.
-- Preserved the boundary that LLM output is candidate material only and cannot directly become `verified_fact`.
+- Made `jc` the primary public interface and centralized formal evaluation in one application service.
+- Replaced the legacy 33-tool/12-resource MCP surface with an optional four-tool WorkBuddy adapter and zero resources.
+- Removed free-text formal evaluation, hidden legal defaults, duplicate evaluator holders, fixed memo generation, and renderer paths that could re-evaluate facts.
+- Renamed the active engineering boundary to `reasoning_boundary`; the former external framework name remains only in dated migration evidence.
 
-### Differential Evidence
+### Audit and visualization
 
-- Added JC spec-shadow differential evidence against the upstream legal-math boundary.
-- Current local fixture report: 10 aligned fixtures, 0 divergences.
-- Kept the report scoped to runtime conformance evidence; it is not a claim that the whole Python runtime has a machine-checked proof.
+- Added deterministic `CaseRequest`, semantic result, audit event, graph, bundle, checksum, completion, and semantic replay contracts.
+- Added relevant-event-only logs, missing-fact review data, conflict/attack/exception/priority graph edges, and mandatory Graph JSON.
+- Added explicit Markdown/Mermaid/HTML rendering from verified runs only. Profiles may change expression but not canonical fields or hashes.
 
-### Documentation and Disclosure
+### Rules, training, and advisory analysis
 
-- Rewrote public documentation around current repository scope, source boundaries, verification states, LLM ingestion, and runtime/formal conformance.
-- Removed stale version, path, and test-count claims that referred to earlier repository layouts.
-- Clarified that public JC contains the auditable kernel only; private data, commercial rule libraries, lawyer workflows, litigation strategy, and private benchmarks stay outside the public tree.
+- Added versioned rule-pack manifests, file/source hashes, official admission gates, corpus/eligible/candidate inventories, and deterministic lookup.
+- Kept 21,144 CN legacy rules candidate-only; the official CN pack remains empty and blocked pending first-party source snapshots.
+- Added governed training export, missing-fact review, strategy advisory, and deterministic structural similar-case analysis. Advisory output never creates a formal certificate.
 
-### Verification Snapshot
+### Engineering gates
 
-- Post-remediation verified full local Python baseline: `359 passed, 38 skipped`.
-- MCP manifest-dispatch self-test: 33 tools exposed.
-- Real MCP client/server stdio lifecycle regression passed; the manifest self-test remains a separate in-process smoke.
-- Rule admission now preserves unanchored rules as training candidates while excluding them from reasoning-eligible indexes.
-- Tri-Rail MCP, matrix, and long-tail entrypoints now share one PRCCollisionEngine-backed runtime.
-- Supply-chain audit now fails closed as PASS, FAIL, or BLOCKED; the verified local run found zero known vulnerabilities.
-- Supply-chain audit remains environment-dependent when external OSV/PyPI access is blocked by proxy or TLS failure; blocked commands must be reported instead of treated as passed.
+- Supports Python 3.11 and 3.12 only.
+- Added hash-locked core dependencies, fail-closed `pip-audit`, clean-wheel stale-module detection, CycloneDX SBOM generation, build provenance, and a pinned upstream specification commit.
+- Added numeric cold/warm/branch, memory, event-count, and audit-bundle performance budgets without omitting audit or checker work.
+- Local full-test baseline is `484 passed, 38 skipped` on both Python 3.11 and 3.12. Final wheel evidence is recorded in the closure report. Remote CI remains `NOT_EXECUTED` until pushed.
+- Reproducible wheel: 3,218,231 bytes, SHA-256 `2b5a46ff7fad5ed5932f7acc83a18fd2c908137e659f9b0582f6ebc9bb613543` in two independent isolated builds.
 
-## v3.0.0 (2026-06-18)
+## Historical releases
 
-### Math-Model Landing
-
-- Landed the four-stage runtime pipeline:
-  - Horn closure
-  - AAF attack graph construction
-  - grounded extension
-  - trust-label projection and claim marking
-- Added modules for source manifests, evidence evaluation, burden tracking, legal reasoning, cross-jurisdiction routing, sentencing, valuation, compliance, arbitration, proof trace rendering, visualization, inference caching, export, and result diffing.
-- Added public runtime evidence for large fixture runs while keeping the formal proof boundary in the upstream specification repository.
-
-### Public Tooling
-
-- Expanded MCP/API functionality for policy, evidence, analogy, cross-jurisdiction routing, proof trace formatting, and query workflows.
-- Added optimization and audit utilities for rule conflict detection, deduplication, coverage, sampling, freshness, version tracking, distillation, calibration, OCR repair, concept disambiguation, dashboards, knowledge graphs, and model comparison.
-
-## v2.1.x (2026-06-14 to 2026-06-15)
-
-### Cross-Jurisdiction Runtime
-
-- Added ProofTree output and post-hoc language rendering.
-- Added CN, HK, and US adapters with jurisdiction-specific rule loading, L0 mappings, modal mapping, blocking rules, and plugin discovery.
-- Added conflict-of-laws and multi-jurisdiction orchestration modules.
-- Fixed prohibition blocking, deterministic execution order, L0 degradation behavior, source-anchor warnings, and CN atom naming consistency.
-
-## v2.0.0 (2026-06-14)
-
-### DDL and Guardrails
-
-- Added DDL modality classification and runtime modality gates.
-- Added evidence-chain validation, de-jure audit, cross-jurisdiction comparison, multi-solver routing, validity-state tracking, invariance metrics, defeasible priority, PROLEG translation, anonymization, knowledge-graph recall, and LLM batch acceptance.
-- Added neural guardrail contracts and privacy-gated LLM bridge automation.
-
-## v1.x (2026-06-02 to 2026-06-04)
-
-### Early Runtime
-
-- Added the original rule evaluator, PRC/US/HK routing experiments, MCP server, operator registry, long-tail saturation tooling, and shadow runner.
-- Published the first public repository line with requirements, unit tests, and YAML rule loading.
+Versions 1.x through 2.1.x were experimental runtime lines with broader MCP, adapter, renderer, and orchestration surfaces. Their interfaces are not runtime-compatible with v3; see `docs/MIGRATION_V2_TO_V3.md`.

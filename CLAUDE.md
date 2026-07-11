@@ -33,7 +33,7 @@ Common local checks:
 
 ```powershell
 python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
-python -m pytest tests\unit\test_post_freeze_surface.py -q
+python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
 python -m pytest tests\unit\test_spec_shadow_harness.py -q
 python -m pytest tests\ -q
 python mcp_server.py --test

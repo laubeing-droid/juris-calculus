@@ -15,11 +15,11 @@ JC does not claim machine-checked coverage for every Python execution path. It c
 
 | Evidence | Current result | Claim supported |
 |---|---|---|
-| full Python tests | post-remediation verified baseline: 359 passed, 38 skipped | full local regression suite passes |
+| full Python tests | 484 passed, 38 skipped on Python 3.11 and 3.12 | full local regression suite passed on both supported versions |
 | real MCP stdio gate | passed | subprocess client/server lifecycle, notification and error handling verified |
-| MCP manifest dispatch | 33 tools | public tool manifest and dispatch are aligned |
+| optional MCP dispatch | 4 tools, 0 resources | WorkBuddy adapter surface is bounded and manifest-aligned |
 | spec-shadow fixtures | 10 aligned, 0 diverged | selected runtime fixtures match upstream boundary expectations |
-| post-freeze surface tests | pass in local targeted run | public-kernel tools keep required envelope behavior |
+| audit/application boundary tests | pass in local targeted run | formal entrypoints remain centralized and fail closed |
 
 ## Non-Claims
 
@@ -53,10 +53,4 @@ If any command cannot run, conformance reporting must say blocked and include th
 
 The real MCP client/server stdio exchange passed as a subprocess regression gate. `python mcp_server.py --test` remains useful in-process evidence, but cannot satisfy that gate by itself.
 
-## LSC Boundary Absorption Note
-
-LSC boundary mechanisms are absorbed as runtime conformance guardrails: fact-trust envelopes, taint propagation, review packets, renderer firewalls, IO contracts, and provenance fields.
-
-These additions do not expand JC's formal-runtime claims. `USER_ASSUMED`, `DISPUTED`, `UNKNOWN`, `HYPOTHETICAL_RESULT`, `DEGRADED_TO_AUXILIARY`, and `CONFLICT` are disclosure and routing states unless legal-math-modeling changes the canonical specification.
-
-If an implementation change would make a previously rejected certificate accepted, upgrade candidate material into formal proof, or alter upstream specification semantics, conformance must be marked blocked and routed upstream.
+Fact trust, taint, review packets, renderer firewalls, IO contracts, and provenance fields are runtime guardrails. They do not expand JC's formal-runtime claims. Changes that would accept a previously rejected certificate or alter protected semantics must be blocked and routed upstream.

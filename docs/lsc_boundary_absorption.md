@@ -1,4 +1,6 @@
-# LSC Boundary Absorption
+# Historical migration note: former boundary absorption (2026-07-03)
+
+This dated document records the design discussion that led to JC's neutral `reasoning_boundary`. It is not an active runtime contract, module name, JSON key, or dependency. Current contracts are in `compiler_core/contracts.py`, `compiler_core/reasoning_boundary.py`, and the v3 documentation.
 
 ## Position
 
