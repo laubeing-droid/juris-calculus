@@ -4,10 +4,11 @@ Mathematical basis: source_manifest prevents unverified references from
 propagating to legal conclusions.
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 import yaml
 import os
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,15 @@ class SourceEntry:
     source_type: str  # statute / case / commentary / textbook
     title: str
     jurisdiction: str
-    verified: bool = True
+    verified: bool = False
     verification_date: str = ""
+    content_hash: str = ""
+
+    @property
+    def reasoning_eligible(self) -> bool:
+        """只有显式verified且具备SHA-256内容hash的来源可支撑正式结果。"""
+
+        return self.verified and bool(re.fullmatch(r"[0-9a-f]{64}", self.content_hash))
 
 
 @dataclass
@@ -39,8 +47,9 @@ class SourceManifest:
                 source_type=entry.get('source_type', 'unknown'),
                 title=entry.get('title', ''),
                 jurisdiction=entry.get('jurisdiction', ''),
-                verified=entry.get('verified', True),
+                verified=bool(entry.get('verified', False)),
                 verification_date=entry.get('verification_date', ''),
+                content_hash=str(entry.get('content_hash') or ''),
             )
             self.entries[se.source_id] = se
         self.loaded = True
@@ -50,13 +59,17 @@ class SourceManifest:
     def validate_anchor(self, anchor: str) -> dict:
         if not anchor:
             return {"status": "MISSING_ANCHOR", "registered": False}
-        for sid, entry in self.entries.items():
-            if sid in anchor or anchor.startswith(sid):
-                if entry.verified:
-                    return {"status": "VERIFIED", "registered": True, "source": sid}
-                else:
-                    return {"status": "REFERENCE_UNVERIFIED", "registered": True, "source": sid}
-        return {"status": "UNREGISTERED", "registered": False}
+        entry = self.entries.get(anchor)
+        if entry is None:
+            return {"status": "UNREGISTERED", "registered": False}
+        if entry.reasoning_eligible:
+            return {
+                "status": "VERIFIED",
+                "registered": True,
+                "source": entry.source_id,
+                "source_snapshot_id": f"{entry.source_id}@{entry.content_hash}",
+            }
+        return {"status": "REFERENCE_UNVERIFIED", "registered": True, "source": entry.source_id}
 
     def coverage_rate(self, anchors: List[str]) -> float:
         if not anchors:

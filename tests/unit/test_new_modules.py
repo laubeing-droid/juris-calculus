@@ -48,8 +48,9 @@ class TestSourceManifest:
         m = SourceManifest()
         path = os.path.join(CONFIGS_DIR, 'source_manifest.yaml')
         m.load(path)
-        r = m.validate_anchor('刑事审判实务/第一编')
+        r = m.validate_anchor('刑事审判实务')
         assert r['registered']
+        assert r['status'] == 'REFERENCE_UNVERIFIED'
 
     def test_unknown_anchor(self):
         from compiler_core.source_manifest import SourceManifest
@@ -58,6 +59,14 @@ class TestSourceManifest:
         m.load(path)
         r = m.validate_anchor('unknown_source_xyz')
         assert not r['registered']
+
+    def test_partial_anchor_does_not_match_registered_source(self):
+        from compiler_core.source_manifest import SourceManifest
+        m = SourceManifest()
+        path = os.path.join(CONFIGS_DIR, 'source_manifest.yaml')
+        m.load(path)
+
+        assert not m.validate_anchor('刑事审判实务/第一编')['registered']
 
 
 class TestEvidenceEvaluation:

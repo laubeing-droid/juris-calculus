@@ -22,7 +22,14 @@ import yaml
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from compiler_core.types import LegalClaim, LegalFact, IRState, LegalDomain, NormModality
+from compiler_core.types import (
+    IRState,
+    LegalClaim,
+    LegalDomain,
+    LegalFact,
+    NormModality,
+    resolve_rule_source_anchor,
+)
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml, CriticalClarityFailure
 from compiler_core.domain_config import DomainConfig
 from compiler_core.proof_tree import ProofTree, ProofNode
@@ -227,6 +234,9 @@ class PRCCollisionEngine:
         """Track 1: CBL 成文法阻断。返回被阻断的 claim 目标集合。"""
         blocked_targets = set()
         for rule in self._blocking_rules:
+            source_anchor = resolve_rule_source_anchor(rule)
+            if not source_anchor:
+                continue
             trigger = rule.get("trigger_fact", "")
             if trigger not in facts:
                 continue
@@ -246,7 +256,7 @@ class PRCCollisionEngine:
                 head_claim=target,
                 confidence=1.0,
                 children=[],
-                source_anchor=rule.get("description", ""),
+                source_anchor=str(source_anchor),
                 modality="PROHIBITION",
                 rule_id=rule_id,
             )
