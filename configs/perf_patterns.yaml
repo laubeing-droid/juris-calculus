@@ -1,52 +1,13 @@
-name: JC performance knowledge graph patterns (Section 7.1 inspired)
-patterns:
-- id: PERF_RULES_LOAD
-  layer: P2
-  metric: rules_load_sec
-  note: rules.yaml load time; use cached index for hot paths
-  ref_code: compiler_core/config_paths.py
-  threshold_error: 3.0
-  threshold_warn: 1.5
-  value: 1.0
-- claims: 3
-  id: PERF_EVALUATOR_FIXPOINT
-  layer: P3
-  metric: evaluator_fixpoint_sec
-  note: FixpointEvaluator convergence; early-exit threshold can reduce iterations
-  ref_code: compiler_core/evaluator.py
-  threshold_error: 4.5
-  threshold_warn: 2.25
-  trust_label: N/A
-  value: 1.5
-- experts:
-  - ??
-  id: PERF_ROUTER_SCAN
-  layer: P4
-  metric: router_scan_sec
-  note: MoE keyword scan; pre-building domain-to-keyword hash index eliminates O(n*m)
-    scan
-  ref_code: compiler_core/rule_router.py
-  threshold_error: 0.05
-  threshold_warn: 0.02
-  value: 0.01
-- domain_count: 14
-  id: PERF_BLUEPRINT_LOAD
-  layer: P2
-  metric: blueprint_load_sec
-  note: Blueprint JSON load; lazy loading or mmap reduces startup cost
-  ref_code: compiler_core/juris_blueprint.py
-  threshold_error: 1.5
-  threshold_warn: 0.75
-  value: 0.5
-- id: PERF_CROSS_JURISDICTION
-  layer: P9
-  metric: cross_jurisdiction_sec
-  note: Cross-jurisdiction collision; pre-built blocking dictionary replaces O(n^2)
-    pair check (equivalent to CustomAR vs NCCL watershed)
-  ref_code: compiler_core/legal_compiler.py
-  threshold_error: 0.2
-  threshold_warn: 0.13
-  value: 0.1
-source: <local-baseline-json>
-updated: '2026-06-12T18:49:00.152276+00:00'
-version: 2.0.0
+schema_version: "3.0"
+fixture_kind: synthetic_official_pack
+measurement_scope: audited_application
+budgets:
+  cold_start_sec: 2.0
+  warm_run_sec: 1.0
+  branch_run_sec: 2.0
+  peak_memory_bytes: 67108864
+  audit_event_count: 100
+  audit_bundle_bytes: 1048576
+notes:
+  - Budgets are regression ceilings for the fixed synthetic fixture, not throughput claims for the 21144-rule candidate corpus.
+  - Performance must not omit audit events, source checks, or certificate checks.

@@ -1,4 +1,4 @@
-"""Taint propagation helpers for LSC boundary absorption."""
+"""Taint propagation helpers for the neutral reasoning boundary."""
 
 from __future__ import annotations
 

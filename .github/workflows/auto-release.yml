@@ -17,16 +17,17 @@ jobs:
     env:
       LEGAL_MATH_MODELING_ROOT: ${{ github.workspace }}/legal-math-modeling
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Checkout legal-math-modeling spec repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           repository: laubeing-droid/legal-math-modeling
+          ref: a3a015941f75091c87d57aa956e712f1546dd7d4
           path: legal-math-modeling
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -34,11 +35,11 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pytest hypothesis pip-audit
+          python -m pip install --require-hashes -r requirements-core.lock
+          python -m pip install -r requirements-dev.lock
 
       - name: Run supply-chain gate
-        run: python tools/supply_chain_gate.py
+        run: python tools/supply_chain_gate.py --requirements requirements-core.lock
 
       - name: Run real MCP stdio lifecycle gate
         run: python -m pytest tests/unit/test_mcp_stdio_protocol.py -q
@@ -59,7 +60,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
@@ -69,7 +70,7 @@ jobs:
           echo "" >> release_notes.md
           git log --oneline $(git describe --tags --abbrev=0 --always HEAD^)..HEAD >> release_notes.md
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           body_path: release_notes.md
           generate_release_notes: true

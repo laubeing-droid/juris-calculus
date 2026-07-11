@@ -116,3 +116,13 @@
 - Phase 7 closure baseline on Python 3.11.15 and 3.12.5 is 479 passed, 38 skipped on each version. The reduction is the deleted legacy surface test suite; protected semantics, application, audit, replay, graph, render, governance, training, and advisory gates remain in the full run.
 - A wheel built over a stale `build/lib` directory can resurrect deleted Python modules even when the source tree and tests are correct. Local and CI packaging gates must remove verified generated `build`/egg-info directories first, then inspect the wheel archive for forbidden legacy modules before installation.
 - The clean Phase 7 wheel is 3,218,675 bytes with SHA-256 `c78bdc86996311e81229e9e641db515d4782cf7ebf1ed1ddaaa7f298dcc5b657`; an outside-repository target install loaded the four-tool adapter from site-packages and reported zero resources.
+
+## 2026-07-11 JC v3 Phase 8 Engineering Gates
+
+- Core dependency installation is separated from documents, pipeline, render, and WorkBuddy profiles. `requirements-core.lock` pins PyYAML 6.0.3 with hashes for CPython 3.11/3.12 on Windows x86-64 and manylinux x86-64; CI test tooling is version-pinned separately.
+- GitHub CI pins action commits and legal-math-modeling commit `a3a015941f75091c87d57aa956e712f1546dd7d4`. Local implementation does not imply remote verification; Actions remain NOT_EXECUTED until an authorized push.
+- `RulePackRegistry` caches only immutable, digest-bound loaded packs within one registry. It never caches case state, recorder state, or semantic results across runs.
+- The performance gate now measures the audited application rather than legacy toy operations. Fixed synthetic-fixture observations were cold 0.779225s, warm 0.687969s, disputed branch 1.386098s, 1,257,141 peak bytes, 10 audit events, and a 9,218-byte bundle; committed budgets are explicit regression ceilings, not corpus-throughput claims.
+- Clean-wheel verification removes only repository-contained generated build caches, rejects known deleted modules, installs the wheel outside the source tree, and checks the dormant adapter remains four tools/zero resources.
+- Active runtime terminology is `reasoning_boundary` and `FactCoordinate`; the former external framework name is retained only in dated historical migration evidence, not module names, JSON keys, tests, or active configuration.
+- Phase 8 engineering full-suite baseline is 484 passed, 38 skipped on both Python 3.11.15 (215.31s) and 3.12.5 (198.80s). Local supply-chain audit found zero known core vulnerabilities; remote CI remains NOT_EXECUTED.

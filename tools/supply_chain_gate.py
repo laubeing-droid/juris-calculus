@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -106,11 +107,19 @@ def run_supply_chain_gate(
     return report
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """输出单个 JSON 报告，并返回与门禁状态对应的进程退出码。"""
 
-    report = run_supply_chain_gate()
-    print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--requirements", default="requirements-core.lock")
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args(argv)
+    report = run_supply_chain_gate(args.requirements)
+    encoded = json.dumps(report, ensure_ascii=False, sort_keys=True) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(encoded, encoding="utf-8")
+    sys.stdout.write(encoded)
     return EXIT_CODES[report["status"]]
 
 

@@ -148,9 +148,7 @@ ALIGNMENT_REGISTRY = [
     {"from":"US","to":"CN","action":"map","pattern":r"Specific\s*Performance|强制履行|实际履行","atom":"Contract.Relief.SPECIFIC_PERFORMANCE"},
 
     # ═══ CN → US: 阻断中国法独有概念 ═══
-    # US jurisdiction adapter: alignment logic placeholder.
-    # Replace with Federal Rules / UCC / Restatement mappings.
-    # 美国开发者在此追加阻断规则，格式见上面 US→CN 示例
+    # CN概念进入US轨道时仅执行下列显式阻断映射；未列出的概念不得猜测转换。
     {"from":"CN","to":"US","action":"block","pattern":r"民事调解|法院调解|司法调解","atom":"Defense.BLOCKED_CN_JUDICIAL_MEDIATION"},
     {"from":"CN","to":"US","action":"block","pattern":r"执行异议之诉|案外人异议|执行异议","atom":"Defense.BLOCKED_CN_EXECUTION_OBJECTION"},
     {"from":"CN","to":"US","action":"block","pattern":r"先予执行|诉前保全|诉中保全","atom":"Defense.BLOCKED_CN_PRELIMINARY_REMEDY"},
@@ -163,8 +161,7 @@ ALIGNMENT_REGISTRY = [
     {"from":"CN","to":"US","action":"block","pattern":r"公序良俗|社会公共利益","atom":"Defense.BLOCKED_CN_VAGUE_PUBLIC_POLICY"},
 
     # ═══ CN → US: 功能映射（CN 概念 → US 原子）═══
-    # US jurisdiction adapter: alignment logic placeholder.
-    # Replace with Federal Rules / UCC / Restatement mappings.
+    # 功能映射只表达现有工程对齐，不宣称对应法源或结论等价。
     {"from":"CN","to":"US","action":"map","pattern":r"违约金调减|违约金酌减|违约金过高.*调","atom":"USCon.Relief.PENALTY_REDUCTION_UCC"},
     {"from":"CN","to":"US","action":"map","pattern":r"情势变更|情事变更","atom":"USCon.Defense.IMPOSSIBILITY_FRUSTRATION"},
     {"from":"CN","to":"US","action":"map","pattern":r"格式条款无效|格式合同无效|霸王条款","atom":"USCon.Defense.UNCONSCIONABILITY"},

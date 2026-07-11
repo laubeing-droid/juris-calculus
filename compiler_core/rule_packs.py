@@ -104,6 +104,8 @@ class RulePackRegistry:
             if development_override
             else ""
         )
+        # Pack由manifest内容摘要绑定；同一registry内可安全复用只读加载结果，不复用案件状态或recorder。
+        self._reasoning_cache: dict[str, LoadedRulePack] = {}
 
     def manifests(self) -> dict[str, Path]:
         """返回pack ID到manifest路径的稳定映射。"""
@@ -160,6 +162,9 @@ class RulePackRegistry:
     def load_reasoning_pack(self, pack_id: str) -> LoadedRulePack:
         """加载已验证且非空的official pack；candidate pack不得进入application。"""
 
+        if pack_id in self._reasoning_cache:
+            return self._reasoning_cache[pack_id]
+
         verification = self.verify(pack_id)
         if not verification.integrity_valid or not verification.reasoning_ready:
             raise RulePackError("PACK_NOT_REASONING_READY", pack_id)
@@ -190,7 +195,7 @@ class RulePackRegistry:
             content_digest=verification.content_digest,
             verified_rule_ids=verified_ids,
         )
-        return LoadedRulePack(
+        loaded = LoadedRulePack(
             descriptor=descriptor,
             rules=tuple(rules),
             source_manifest=source_manifest,
@@ -199,6 +204,8 @@ class RulePackRegistry:
             config_root=self.config_root,
             resource_paths=tuple(resources),
         )
+        self._reasoning_cache[pack_id] = loaded
+        return loaded
 
     def load_corpus_pack(self, pack_id: str) -> LoadedCorpusPack:
         """加载完整性有效的语料pack，且不把candidate晋升为reasoning-ready。"""

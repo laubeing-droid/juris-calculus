@@ -4,7 +4,7 @@ import csv
 import io
 from typing import Any, Mapping
 
-from compiler_core.lsc_boundary_status import ensure_required_audit_fields
+from compiler_core.reasoning_boundary import ensure_required_audit_fields
 
 
 def export_json(claims: list) -> str:
@@ -30,7 +30,7 @@ def export_markdown(claims: list) -> str:
 
 
 def export_boundary_json(result: Mapping[str, Any]) -> str:
-    """Export an LSC boundary result only when audit fields are present."""
+    """Export a reasoning-boundary result only when audit fields are present."""
 
     if not ensure_required_audit_fields(result):
         raise ValueError("boundary result is missing required audit fields")

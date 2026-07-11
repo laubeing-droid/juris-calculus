@@ -29,7 +29,7 @@ def _adapter_run(tmp_path: Path):
 
 
 def test_manifest_exposes_exactly_four_versioned_tools_and_no_resources() -> None:
-    """33项旧面与12项resources不得重新进入生产manifest。"""
+    """旧工具面与整库resources不得重新进入生产manifest。"""
 
     manifest = manifest_document(ROOT / "mcp_manifest.json")
 

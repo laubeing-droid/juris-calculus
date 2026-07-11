@@ -1,6 +1,6 @@
 from compiler_core.contracts import CertificateKind
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
-from compiler_core.lsc_boundary_status import classify_boundary_result
+from compiler_core.reasoning_boundary import classify_boundary_result
 from compiler_core.taint import TaintLabel, TaintSet, propagate_taint, taint_from_statuses
 
 

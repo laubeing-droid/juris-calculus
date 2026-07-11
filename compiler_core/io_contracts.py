@@ -1,4 +1,4 @@
-"""Cross-module IO declarations for LSC boundary absorption."""
+"""Cross-module declarations for the neutral reasoning boundary."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def validate_mcp_machine_status(payload: Mapping[str, Any]) -> bool:
 
     if "result_status" in payload:
         return True
-    if "lsc_boundary" in payload and isinstance(payload["lsc_boundary"], Mapping):
-        return "result_status" in payload["lsc_boundary"]
+    if "reasoning_boundary" in payload and isinstance(payload["reasoning_boundary"], Mapping):
+        return "result_status" in payload["reasoning_boundary"]
     return False
 

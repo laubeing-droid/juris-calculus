@@ -2,7 +2,7 @@ import json
 
 from compiler_core.contracts import CertificateKind
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
-from compiler_core.lsc_boundary_status import ensure_required_audit_fields, classify_boundary_result
+from compiler_core.reasoning_boundary import ensure_required_audit_fields, classify_boundary_result
 from compiler_core.result_exporter import export_boundary_json
 
 

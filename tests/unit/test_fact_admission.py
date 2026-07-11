@@ -3,7 +3,7 @@ import pytest
 from compiler_core.fact_trust_envelope import (
     FactTrustEnvelope,
     can_enter_formal_kernel,
-    from_lsc_fact_coordinate,
+    from_fact_coordinate,
 )
 from compiler_core.types import FactCreator, FactTrustStatus, LegalFact
 
@@ -31,7 +31,7 @@ def test_verified_fact_still_needs_source_and_review_material():
 
 
 def test_court_fixed_preserves_existing_court_gate():
-    fact = from_lsc_fact_coordinate({
+    fact = from_fact_coordinate({
         "fact_key": "fact::court",
         "determination_state": "COURT_FIXED",
         "provenance": {"created_by": "court", "source_document_id": "judgment::1"},
@@ -44,7 +44,7 @@ def test_court_fixed_preserves_existing_court_gate():
 
 @pytest.mark.parametrize("legacy_status", ["ADMITTED", "HUMAN_REVIEWED", "ENGINE_DERIVED"])
 def test_legacy_review_states_never_upgrade_to_verified(legacy_status):
-    fact = from_lsc_fact_coordinate({
+    fact = from_fact_coordinate({
         "fact_key": f"fact::{legacy_status}",
         "determination_state": legacy_status,
         "provenance": {"source_ref": "source::review"},
@@ -55,20 +55,20 @@ def test_legacy_review_states_never_upgrade_to_verified(legacy_status):
 
 
 def test_unknown_legacy_state_degrades_to_candidate():
-    fact = from_lsc_fact_coordinate({"fact_key": "fact::unknown-state", "determination_state": "MADE_UP"})
+    fact = from_fact_coordinate({"fact_key": "fact::unknown-state", "determination_state": "MADE_UP"})
 
     assert fact.status == FactTrustStatus.CANDIDATE_FACT
     assert not fact.can_enter_formal_kernel()
 
 
 def test_assumed_disputed_and_unknown_keep_boundary_metadata():
-    assumed = from_lsc_fact_coordinate({"fact_key": "fact::assumed", "determination_state": "USER_ASSUMED"})
-    disputed = from_lsc_fact_coordinate({
+    assumed = from_fact_coordinate({"fact_key": "fact::assumed", "determination_state": "USER_ASSUMED"})
+    disputed = from_fact_coordinate({
         "fact_key": "fact::disputed",
         "determination_state": "DISPUTED",
         "alternatives": [{"value": "A"}, {"value": "B"}],
     })
-    unknown = from_lsc_fact_coordinate({"fact_key": "fact::unknown", "determination_state": "UNKNOWN"})
+    unknown = from_fact_coordinate({"fact_key": "fact::unknown", "determination_state": "UNKNOWN"})
 
     assert assumed.assumption_tainted
     assert disputed.requires_review_packet

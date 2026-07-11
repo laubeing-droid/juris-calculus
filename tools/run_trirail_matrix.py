@@ -419,7 +419,7 @@ class TriRailCollider:
                 "threat_level": threat_hit.get("threat_level", ""),
                 "rule_inventory": self.rule_inventory,
                 "pack_digests": self.pack_digests,
-                "lsc_boundary": {
+                "reasoning_boundary": {
                     "result_status": "review_only_result",
                     "used_fact_keys": fact_names,
                     "used_rule_ids": [target_rule] if target_rule else [],
@@ -480,7 +480,7 @@ class TriRailCollider:
             "fast_path": False,
             "rule_inventory": self.rule_inventory,
             "pack_digests": self.pack_digests,
-            "lsc_boundary": {
+            "reasoning_boundary": {
                 "result_status": "review_only_result",
                 "used_fact_keys": fact_names,
                 "used_rule_ids": used_rules,

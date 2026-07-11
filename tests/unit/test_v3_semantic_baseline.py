@@ -6,7 +6,7 @@ from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
 from compiler_core.independent_grounded_checker import check_grounded
-from compiler_core.lsc_boundary_status import BoundaryResultStatus, classify_boundary_result
+from compiler_core.reasoning_boundary import BoundaryResultStatus, classify_boundary_result
 from compiler_core.spec_shadow_harness import (
     _build_contract_fixture,
     _build_license_fixture,

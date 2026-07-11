@@ -1,6 +1,6 @@
 from compiler_core.review_packet import ReviewPacket, build_review_packet
 from compiler_core.fact_trust_envelope import FactTrustEnvelope, FactTrustStatus
-from compiler_core.lsc_boundary_status import classify_boundary_result
+from compiler_core.reasoning_boundary import classify_boundary_result
 
 
 def test_disputed_fact_generates_review_packet_with_alternative_paths():

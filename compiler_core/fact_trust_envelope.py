@@ -1,4 +1,4 @@
-"""旧FactCoordinate payload到唯一LegalFact对象的保守转换。"""
+"""FactCoordinate payload到唯一LegalFact对象的保守转换。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any, Mapping
 from compiler_core.types import FactCreator, FactTrustStatus, LegalFact
 
 
-LSC_STATUS_MAP = {
+FACT_COORDINATE_STATUS_MAP = {
     "ADMITTED": FactTrustStatus.CHECKED_FACT,
     "HUMAN_REVIEWED": FactTrustStatus.CHECKED_FACT,
     "VERIFIED": FactTrustStatus.VERIFIED_FACT,
@@ -44,11 +44,11 @@ def FactTrustEnvelope(
     )
 
 
-def from_lsc_fact_coordinate(payload: Mapping[str, Any]) -> LegalFact:
-    """把旧FactCoordinate形payload保守转换为LegalFact，不推断或晋升事实。"""
+def from_fact_coordinate(payload: Mapping[str, Any]) -> LegalFact:
+    """把FactCoordinate形payload保守转换为LegalFact，不推断或晋升事实。"""
 
     raw_state = str(payload.get("determination_state") or payload.get("truth_status") or "")
-    status = LSC_STATUS_MAP.get(raw_state, FactTrustStatus.CANDIDATE_FACT)
+    status = FACT_COORDINATE_STATUS_MAP.get(raw_state, FactTrustStatus.CANDIDATE_FACT)
     provenance = dict(payload.get("provenance") or {})
     return LegalFact(
         id=str(payload.get("fact_key") or ""),
@@ -98,7 +98,7 @@ __all__ = [
     "FactCreator",
     "FactTrustEnvelope",
     "FactTrustStatus",
-    "LSC_STATUS_MAP",
+    "FACT_COORDINATE_STATUS_MAP",
     "can_enter_formal_kernel",
-    "from_lsc_fact_coordinate",
+    "from_fact_coordinate",
 ]

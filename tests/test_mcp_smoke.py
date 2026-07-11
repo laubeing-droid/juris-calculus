@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_default_distribution_registers_only_the_jc_cli() -> None:
-    """默认wheel不得自动注册MCP server或33项工具入口。"""
+    """默认wheel不得自动注册MCP server或任何旧工具入口。"""
 
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 

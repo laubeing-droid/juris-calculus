@@ -22,15 +22,15 @@ def test_normal_scenario_runs_all_tracks_and_reports_inventory(collider):
     )
 
     assert result["fast_path"] is False
-    assert {"scenario_id", "classification", "hk", "us", "prc", "rule_inventory", "lsc_boundary"} <= set(result)
+    assert {"scenario_id", "classification", "hk", "us", "prc", "rule_inventory", "reasoning_boundary"} <= set(result)
     assert result["prc"]["cn_rules_total"] == 21144
     assert result["rule_inventory"]["PRC"]["tracks"]["cn"]["corpus_total"] == 21144
     assert result["prc"]["cn_claims_count"] > 0
-    assert result["lsc_boundary"]["formal_kernel_used"] is False
-    assert result["lsc_boundary"]["execution_mode"] == "ENGINEERING_HARNESS"
+    assert result["reasoning_boundary"]["formal_kernel_used"] is False
+    assert result["reasoning_boundary"]["execution_mode"] == "ENGINEERING_HARNESS"
     assert set(result["pack_digests"]) == {"HK", "US", "PRC_CN", "PRC_CBL", "PRC_SPC"}
     assert all(len(digest) == 64 for digest in result["pack_digests"].values())
-    assert result["lsc_boundary"]["used_rule_ids"] == sorted(result["lsc_boundary"]["used_rule_ids"])
+    assert result["reasoning_boundary"]["used_rule_ids"] == sorted(result["reasoning_boundary"]["used_rule_ids"])
 
 
 def test_threat_scenario_is_review_only_fast_path(collider):
@@ -40,9 +40,9 @@ def test_threat_scenario_is_review_only_fast_path(collider):
     )
 
     assert result["fast_path"] is True
-    assert result["lsc_boundary"]["formal_kernel_used"] is False
-    assert result["lsc_boundary"]["review_required"] is True
-    assert "FAST_PATH_INTERCEPT" in result["lsc_boundary"]["taint"]
+    assert result["reasoning_boundary"]["formal_kernel_used"] is False
+    assert result["reasoning_boundary"]["review_required"] is True
+    assert "FAST_PATH_INTERCEPT" in result["reasoning_boundary"]["taint"]
 
 
 def test_long_tail_reuses_shared_collider(monkeypatch, collider):
