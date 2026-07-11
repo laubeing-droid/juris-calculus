@@ -19,3 +19,12 @@
 - Rule counts in public descriptions must come from runtime inventory. Static `2,117` / `21,145` literals are forbidden in active files; `configs/zh_CN/rules.yaml` length and `_meta.total` must agree.
 - Supply-chain audit is fail-closed through `tools/supply_chain_gate.py`: PASS=0, FAIL=1, BLOCKED=2. Proxy/TLS/network failures are evidence of BLOCKED, never PASS.
 - Verified local closure on Python 3.11.15 and 3.12.5: 360 passed, 38 skipped on each version; real stdio business calls passed; in-process MCP smoke passed; pip-audit reported zero known vulnerabilities on each version after bypassing a stale process-local proxy.
+
+## 2026-07-11 JC v3 Phase 0 Baseline
+
+- The protected v2 semantic baseline is `tests/unit/test_v3_semantic_baseline.py`; it freezes obligation, prohibition, permission, exception, attack, priority, unresolved conflict, truncation, and independent-checker rejection without retaining timestamps, paths, or random IDs.
+- `docs/v3-evaluation-entrypoints.md` is the deletion/migration ledger for every direct production evaluator constructor plus indirect holders. Product paths migrate to one application service; adapters stop returning evaluators; harnesses stay CLI/CI; low-level semantic tests may still call evaluator stages directly.
+- The v2 MCP migration inventory is exactly 33 tools and 12 resources, with one disposition per name in the full remediation plan. Do not add a runtime compatibility layer when Phase 7 removes them.
+- Cross-platform tracked-file baselines must hash Git index blobs, not raw Windows worktree bytes; CRLF filters otherwise create false file-size and SHA-256 drift.
+- Phase 0 closure baseline on Python 3.11.15 and 3.12.5 is 365 passed, 38 skipped on each version after adding five protected semantic fixtures.
+- Active bug for Phase 1: `classify_boundary_result()` can currently fall through to accepted status for non-verified candidate/checked/rejected/stale facts. Close this by centralizing fact admission and result validation; do not modify Horn, argumentation, or checker semantics.
