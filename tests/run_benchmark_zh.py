@@ -3,7 +3,7 @@
 juris-calculus 中国法基准测试 —— 10 个中文合同案例
 
 目标：
-  用 2,117 条规则测试 FixpointEvaluator 在中国法下的表现
+  用运行时加载的规则 inventory 测试 FixpointEvaluator 在中国法下的表现
   指标：收敛率、诚实拒算率、审计链完整性、精算小时数
 
 使用：
@@ -313,7 +313,7 @@ def export_markdown(results: List[BenchmarkResult], outpath: str):
         "# juris-calculus 中国法基准测试 —— 10 个中文合同案例",
         "",
         f"生成时间: {time.strftime('%Y-%m-%d %H:%M')}",
-        f"规则库: 2,117 条 (configs/zh_CN/rules.yaml)",
+        f"规则库: {len(ZH_RULES)} 条（运行时加载自 configs/zh_CN/rules.yaml）",
         f"领域配置: 权重{list(ZH_CONFIG.weights)} / α={getattr(ZH_CONFIG, 'alpha', 1.0)} / k_max={ZH_CONFIG.k_max}",
         f"评估器: FixpointEvaluator (juris-calculus v1.0.2)",
         "",

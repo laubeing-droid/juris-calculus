@@ -51,5 +51,5 @@ class TestAdversarial:
         state.facts["generic"] = LegalFact(id="generic", description="当事人之间存在纠纷")
         ev = FixpointEvaluator(self.rules, self.config)
         result = ev.evaluate(state)
-        # Should trigger some rules but not all 21,145
+        # Should trigger some rules but not the entire loaded inventory.
         assert len(result.claims) < 100

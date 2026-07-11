@@ -12,7 +12,7 @@ layers:
   L2:
     name: "Specific Jurisdiction Layer"
     specs:
-      CN: { rules: 21145, addon: "addons/cn/" }
+      CN: { rules: "runtime_inventory", addon: "addons/cn/" }
       HK: { rules: 93, addon: "addons/hk/" }
       US: { rules: 81, addon: "addons/us/" }
   L3:

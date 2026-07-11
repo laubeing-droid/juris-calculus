@@ -4,7 +4,7 @@
 三轨对撞:
   Track 1 (CBL): 成文法阻断 (60条, 一票否决)
   Track 2 (SPC): 最高法裁判倾向 (25条, non-blocking)
-  Track 3 (CN):  成文法全量 (2,117条 Horn 规则)
+  Track 3 (CN):  运行时加载的成文法 Horn 规则
 
 Auto-registers on import. Load with:
     import addons.cn

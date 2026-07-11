@@ -24,8 +24,9 @@
 
 ### Verification Snapshot
 
-- Full local Python suite: `312 passed, 38 skipped`.
+- Pre-remediation verified full local Python baseline: `347 passed, 38 skipped`.
 - MCP manifest-dispatch self-test: 33 tools exposed.
+- Post-remediation acceptance requires a real MCP client/server stdio exchange; the manifest self-test alone does not satisfy this gate.
 - Supply-chain audit remains environment-dependent when external OSV/PyPI access is blocked by proxy or TLS failure; blocked commands must be reported instead of treated as passed.
 
 ## v3.0.0 (2026-06-18)

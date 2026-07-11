@@ -17,27 +17,27 @@
       ]
     },
     "legal://blocking-rules": {
-      "description": "中华人民共和国成文法强制阻断规则 (41条 CBL + 6条 MAPPING)",
+      "description": "中华人民共和国成文法强制阻断规则；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://spc-rules": {
-      "description": "最高法裁判倾向 Horn 规则 (23条)",
+      "description": "最高法裁判倾向 Horn 规则；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://term-mappings": {
-      "description": "三法域术语 L0 语义对齐矩阵 (131条)",
+      "description": "三法域术语 L0 语义对齐矩阵；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://hk-rules": {
-      "description": "香港特别行政区 Horn 规则 (Cap26/32/622/571/4A, 93条)",
+      "description": "香港特别行政区 Horn 规则 (Cap26/32/622/571/4A)；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://us-rules": {
-      "description": "美国联邦法域 Horn 规则 (81条) + L0 约束规则 (86条)",
+      "description": "美国联邦法域 Horn 规则与 L0 约束规则；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://cn-rules": {
-      "description": "中国成文法全量 Horn 规则 (2,117条, 13领域)",
+      "description": "中国成文法 Horn 规则；实际 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://glossary/{jurisdiction}": {
@@ -51,7 +51,7 @@
       ]
     },
     "legal://state-router": {
-      "description": "美国50州拓扑路由器 — 4大骨干模型",
+      "description": "美国州级拓扑路由器；实际模型 inventory 以运行时加载结果为准",
       "mimeType": "application/yaml"
     },
     "legal://operator-schemas": {
@@ -63,7 +63,7 @@
       "mimeType": "application/json"
     },
     "legal://blueprint": {
-      "description": "v2.0 unified legal inference blueprint (10MB, 15 domains, 21145 rules)",
+      "description": "v2.0 unified legal inference blueprint; actual inventory is determined at runtime",
       "mimeType": "application/json"
     }
   },
@@ -225,7 +225,7 @@
       }
     },
     "rule_router": {
-      "description": "v2.0 domain routing - map legal facts to 13 expert shards",
+      "description": "v2.0 domain routing - map legal facts to the runtime expert-shard inventory",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -264,7 +264,7 @@
       }
     },
     "search_rules": {
-      "description": "Search 2,117 CN legal rules by keyword with fuzzy matching",
+      "description": "Search the loaded CN legal-rule inventory by keyword with fuzzy matching",
       "inputSchema": {
         "type": "object",
         "properties": {
