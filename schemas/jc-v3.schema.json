@@ -1,5 +1,213 @@
 {
   "$defs": {
+    "ATTACK_ADDEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "source_claim_id": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "target_claim_id": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_claim_id",
+        "target_claim_id"
+      ],
+      "type": "object"
+    },
+    "AuditEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "after_status": {
+          "type": "string"
+        },
+        "before_status": {
+          "type": "string"
+        },
+        "claim_id": {
+          "type": "string"
+        },
+        "details": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ATTACK_ADDEDDetails"
+            },
+            {
+              "$ref": "#/$defs/BRANCH_CREATEDDetails"
+            },
+            {
+              "$ref": "#/$defs/CHECKER_STARTEDDetails"
+            },
+            {
+              "$ref": "#/$defs/CHECKER_VERDICTDetails"
+            },
+            {
+              "$ref": "#/$defs/CLAIM_DERIVEDDetails"
+            },
+            {
+              "$ref": "#/$defs/EXCEPTION_APPLIEDDetails"
+            },
+            {
+              "$ref": "#/$defs/FACT_ADMISSION_DECIDEDDetails"
+            },
+            {
+              "$ref": "#/$defs/INPUT_VALIDATEDDetails"
+            },
+            {
+              "$ref": "#/$defs/MISSING_FACT_RECORDEDDetails"
+            },
+            {
+              "$ref": "#/$defs/PERMISSION_EVALUATEDDetails"
+            },
+            {
+              "$ref": "#/$defs/PRIORITY_RESOLVEDDetails"
+            },
+            {
+              "$ref": "#/$defs/RELEVANCE_SET_BUILTDetails"
+            },
+            {
+              "$ref": "#/$defs/RESULT_FINALIZEDDetails"
+            },
+            {
+              "$ref": "#/$defs/RULE_BLOCKEDDetails"
+            },
+            {
+              "$ref": "#/$defs/RULE_FIREDDetails"
+            },
+            {
+              "$ref": "#/$defs/RULE_MATCHEDDetails"
+            },
+            {
+              "$ref": "#/$defs/RUN_FAILEDDetails"
+            },
+            {
+              "$ref": "#/$defs/RUN_STARTEDDetails"
+            },
+            {
+              "$ref": "#/$defs/TAINT_PROPAGATEDDetails"
+            }
+          ]
+        },
+        "event_id": {
+          "type": "string"
+        },
+        "event_type": {
+          "enum": [
+            "ATTACK_ADDED",
+            "BRANCH_CREATED",
+            "CHECKER_STARTED",
+            "CHECKER_VERDICT",
+            "CLAIM_DERIVED",
+            "EXCEPTION_APPLIED",
+            "FACT_ADMISSION_DECIDED",
+            "INPUT_VALIDATED",
+            "MISSING_FACT_RECORDED",
+            "PERMISSION_EVALUATED",
+            "PRIORITY_RESOLVED",
+            "RELEVANCE_SET_BUILT",
+            "RESULT_FINALIZED",
+            "RULE_BLOCKED",
+            "RULE_FIRED",
+            "RULE_MATCHED",
+            "RUN_FAILED",
+            "RUN_STARTED",
+            "TAINT_PROPAGATED"
+          ],
+          "type": "string"
+        },
+        "fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "parent_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "premise_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "rule_id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "taint": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "seq",
+        "event_type",
+        "parent_event_ids",
+        "fact_ids",
+        "premise_ids",
+        "rule_id",
+        "claim_id",
+        "before_status",
+        "after_status",
+        "source_ids",
+        "taint",
+        "outcome",
+        "details"
+      ],
+      "type": "object"
+    },
+    "BRANCH_CREATEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "assumptions_digest": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "branch_index": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "assumptions_digest",
+        "branch_index"
+      ],
+      "type": "object"
+    },
     "BranchResult": {
       "additionalProperties": false,
       "properties": {
@@ -38,6 +246,52 @@
         "result_status",
         "claims",
         "taint"
+      ],
+      "type": "object"
+    },
+    "CHECKER_STARTEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "theorem_refs_digest": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "theorem_refs_digest"
+      ],
+      "type": "object"
+    },
+    "CHECKER_VERDICTDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "violations": {
+          "items": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "accepted",
+        "violations"
+      ],
+      "type": "object"
+    },
+    "CLAIM_DERIVEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "confidence"
       ],
       "type": "object"
     },
@@ -115,6 +369,195 @@
         "rule_pack_id",
         "rule_pack_version",
         "rule_pack_digest"
+      ],
+      "type": "object"
+    },
+    "EXCEPTION_APPLIEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "exception_rule_id": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "exception_rule_id"
+      ],
+      "type": "object"
+    },
+    "FACT_ADMISSION_DECIDEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "admitted": {
+          "type": "boolean"
+        },
+        "reasoning_tier": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "admitted",
+        "reasoning_tier",
+        "status"
+      ],
+      "type": "object"
+    },
+    "GraphDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "type": "array"
+        },
+        "graph_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "type": "array"
+        },
+        "result_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "summary": {
+          "$ref": "#/$defs/GraphSummary"
+        }
+      },
+      "required": [
+        "schema_version",
+        "run_id",
+        "result_digest",
+        "graph_digest",
+        "summary",
+        "nodes",
+        "edges"
+      ],
+      "type": "object"
+    },
+    "GraphEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "premise",
+            "support",
+            "attack",
+            "exception",
+            "priority",
+            "permission",
+            "prohibition",
+            "provenance",
+            "taint",
+            "checker_validation",
+            "branch_of"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "type",
+        "event_id"
+      ],
+      "type": "object"
+    },
+    "GraphNode": {
+      "additionalProperties": false,
+      "properties": {
+        "details": {
+          "type": "object"
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "fact",
+            "rule",
+            "claim",
+            "source",
+            "missing_fact",
+            "checker",
+            "certificate",
+            "branch"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "status",
+        "details"
+      ],
+      "type": "object"
+    },
+    "GraphSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "event_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "node_count": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "node_count",
+        "edge_count",
+        "event_count"
+      ],
+      "type": "object"
+    },
+    "INPUT_VALIDATEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "request_digest": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_digest"
       ],
       "type": "object"
     },
@@ -206,6 +649,169 @@
       "required": [
         "id",
         "status"
+      ],
+      "type": "object"
+    },
+    "MISSING_FACT_RECORDEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "type": "object"
+    },
+    "PERMISSION_EVALUATEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "disposition": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "disposition"
+      ],
+      "type": "object"
+    },
+    "PRIORITY_RESOLVEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "source_claim_id": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "target_claim_id": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_claim_id",
+        "target_claim_id"
+      ],
+      "type": "object"
+    },
+    "RELEVANCE_SET_BUILTDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm_version": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "candidate_rule_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "rule_ids_digest": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "algorithm_version",
+        "candidate_rule_count",
+        "rule_ids_digest"
+      ],
+      "type": "object"
+    },
+    "RESULT_FINALIZEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "result_digest": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "result_status": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "result_digest",
+        "result_status"
+      ],
+      "type": "object"
+    },
+    "RULE_BLOCKEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "modality": {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "modality",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "RULE_FIREDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "type": "number"
+        },
+        "modality": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "modality"
+      ],
+      "type": "object"
+    },
+    "RULE_MATCHEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "admitted": {
+          "type": "boolean"
+        },
+        "source_status": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "admitted",
+        "source_status"
+      ],
+      "type": "object"
+    },
+    "RUN_FAILEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "error_type": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_type"
+      ],
+      "type": "object"
+    },
+    "RUN_STARTEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "engine_version": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine_version"
       ],
       "type": "object"
     },
@@ -478,6 +1084,19 @@
         "missing_fact_ids",
         "taint",
         "risk_labels"
+      ],
+      "type": "object"
+    },
+    "TAINT_PROPAGATEDDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "taint_source": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "taint_source"
       ],
       "type": "object"
     }

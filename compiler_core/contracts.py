@@ -438,7 +438,7 @@ def schema_document() -> dict[str, Any]:
         "raw_text": {"type": "string"},
         "source_anchor": {"type": "string"},
     }
-    return {
+    document = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://juris-calculus.local/schema/jc-v3.schema.json",
         "title": "juris-calculus v3 public contracts",
@@ -577,6 +577,10 @@ def schema_document() -> dict[str, Any]:
             },
         },
     }
+    from compiler_core.audit import audit_schema_document
+
+    document["$defs"].update(audit_schema_document()["$defs"])
+    return document
 
 
 def write_schema(path: Path | None = None) -> Path:

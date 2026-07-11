@@ -116,10 +116,14 @@ def test_verified_fact_rule_source_and_checker_produce_formal_result() -> None:
     assert result.used_rule_ids == ("R1",)
     assert result.source_ids == (f"source::law@{SOURCE_HASH}",)
     assert [event["event_type"] for event in events] == [
-        "REQUEST_VALIDATED",
-        "RULE_ADMISSION",
-        "FACT_ADMISSION",
-        "RULE_APPLIED",
+        "RUN_STARTED",
+        "INPUT_VALIDATED",
+        "RELEVANCE_SET_BUILT",
+        "RULE_MATCHED",
+        "FACT_ADMISSION_DECIDED",
+        "RULE_FIRED",
+        "CLAIM_DERIVED",
+        "CHECKER_STARTED",
         "CHECKER_VERDICT",
         "RESULT_FINALIZED",
     ]
@@ -339,8 +343,9 @@ def test_priority_attack_is_checked_before_formal_acceptance() -> None:
     assert result.claims == ("claim::winner",)
     assert result.used_rule_ids == ("LOSER", "WINNER")
     assert any(
-        event.get("event_type") == "ATTACK"
-        and event.get("source") == "claim::winner"
-        and event.get("target") == "claim::loser"
+        event.get("event_type") == "ATTACK_ADDED"
+        and event.get("details", {}).get("source_claim_id") == "claim::winner"
+        and event.get("details", {}).get("target_claim_id") == "claim::loser"
         for event in events
     )
+    assert any(event.get("event_type") == "PRIORITY_RESOLVED" for event in events)

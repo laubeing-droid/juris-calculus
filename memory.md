@@ -56,3 +56,13 @@
 - Setting `JURIS_CONFIG_DIR` alone cannot replace bundled resources. A non-bundled config root requires both an explicit development mode and path; machine output records only `development_override=true` and a path hash, never the absolute path.
 - Manifest `build_commit` is the committed source-resource baseline, not a claim that a tracked manifest contains its own commit SHA. The US identity/tombstone source fix is baseline `2053843f397d2ee1c0797831f05f80ba89841e79`; file hashes bind the exact packaged bytes without circular provenance.
 - Phase 3 closure baseline on Python 3.11.15 and 3.12.5 is 449 passed, 38 skipped. The final wheel was 3,195,631 bytes, contained all five manifests, and produced doctor=3/list=0 from clean venvs on both versions as designed.
+
+## 2026-07-11 JC v3 Phase 4 Semantic Audit and Graph Foundation
+
+- `compiler_core/audit.py` is the only semantic event/graph implementation. Each case owns one `AuditRecorder`; it assigns contiguous sequence IDs, validates semantic parent references, strips runtime timestamps/paths, and maps application/evaluator callbacks to the v1 audit vocabulary.
+- Audit details are per-event allowlists with independent JSON Schema definitions. Unknown fields, unsupported values, overlong text, absolute paths, or nonexistent parent event IDs fail closed; a downstream audit sink failure forces an engine-error result with no accepted claims.
+- `RELEVANCE_SET_BUILT` starts from admitted fact keys and recursively includes Horn support, exception, and priority dependencies. Rule admission events are emitted only for this set; unrelated pack rules are not copied into a case log.
+- `build_reasoning_graph()` consumes only `SemanticResult` plus `AuditEvent` objects. It cannot access the evaluator and creates only explicit premise/support/attack/exception/priority/permission/prohibition/provenance/taint/checker/branch edges; event adjacency is never treated as legal causation.
+- Missing-fact runs do not fabricate checker nodes. Formal claims have rule support, checker validation, source provenance, and certificate links; all graph nodes/edges and semantic events are deterministically sorted/hashable.
+- Commit 7 remains an in-memory semantic audit foundation, not a persistent audit chain. Bundle finalization, checksums, default user-state storage, COMPLETE marker, tamper detection, and replay are still Phase 4 commit 8 work.
+- Commit 7 baseline on Python 3.11.15 is 464 passed, 38 skipped (479.21s); Python 3.12.5 is 464 passed, 38 skipped (430.39s).

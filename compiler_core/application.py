@@ -7,6 +7,7 @@ from itertools import product
 from typing import Any, Iterable, Mapping
 
 from compiler_core.argumentation import build_attack_graph_from_evaluator, grounded_extension
+from compiler_core.audit import AuditRecorder
 from compiler_core.canonical_serialization import content_id, semantic_digest, serialize_aaf
 from compiler_core.contracts import (
     BranchResult,
@@ -50,24 +51,46 @@ def evaluate_case(
     """按固定顺序编排事实准入、现有求值器、AAF、独立checker和结果校验。"""
 
     run_id = content_id("run", request.to_dict())
-    emit_audit_event(audit_sink, {"event_type": "REQUEST_VALIDATED", "run_id": run_id})
+    recorder = _audit_recorder(run_id, audit_sink)
     try:
+        emit_audit_event(recorder, {"event_type": "RUN_STARTED", "engine_version": ENGINE_VERSION})
+        emit_audit_event(recorder, {
+            "event_type": "REQUEST_VALIDATED",
+            "request_digest": semantic_digest(request.to_dict()),
+        })
+        all_rules = tuple(rules)
+        relevant_rule_ids = _relevant_rule_ids(request.facts, all_rules)
+        emit_audit_event(recorder, {
+            "event_type": "RELEVANCE_SET_BUILT",
+            "algorithm_version": "premise-closure-v1",
+            "candidate_rule_count": len(relevant_rule_ids),
+            "rule_ids_digest": semantic_digest(relevant_rule_ids),
+        })
         prepared_rules, candidate_rules = _prepare_rules(
             request,
             rule_pack,
-            tuple(rules),
+            all_rules,
+            relevant_rule_ids,
             source_manifest,
-            audit_sink,
+            recorder,
         )
         for fact in request.facts:
-            emit_audit_event(audit_sink, {
+            emit_audit_event(recorder, {
                 "event_type": "FACT_ADMISSION",
                 "fact_id": fact.id,
                 "status": fact.status.value,
                 "admitted": fact.can_enter_formal_kernel(),
+                "source_ids": fact.source_ids,
+                "reasoning_tier": fact.reasoning_tier,
             })
         unknown = tuple(sorted(fact.id for fact in request.facts if fact.status == FactTrustStatus.UNKNOWN))
         if unknown:
+            for fact_id in unknown:
+                emit_audit_event(recorder, {
+                    "event_type": "MISSING_FACT",
+                    "fact_id": fact_id,
+                    "reason": "UNKNOWN",
+                })
             return _result(
                 request,
                 run_id,
@@ -76,7 +99,7 @@ def evaluate_case(
                 review_required=True,
                 missing_fact_ids=unknown,
                 risk_labels=("MISSING_REQUIRED_FACT",),
-                audit_sink=audit_sink,
+                audit_sink=recorder,
             )
         disputed = tuple(fact for fact in request.facts if fact.status == FactTrustStatus.DISPUTED)
         if disputed:
@@ -88,7 +111,7 @@ def evaluate_case(
                     execution_status=ExecutionStatus.ADMISSION_BLOCKED,
                     review_required=True,
                     risk_labels=("BRANCH_LIMIT_EXCEEDED",),
-                    audit_sink=audit_sink,
+                    audit_sink=recorder,
                 )
             return _evaluate_disputed(
                 request,
@@ -97,7 +120,7 @@ def evaluate_case(
                 source_manifest,
                 run_id,
                 disputed,
-                audit_sink,
+                recorder,
             )
         outcome = _evaluate_once(
             request,
@@ -106,11 +129,14 @@ def evaluate_case(
             candidate_rules,
             source_manifest,
             run_id,
-            audit_sink,
+            recorder,
         )
-        return _result_from_outcome(request, run_id, outcome, audit_sink)
+        return _result_from_outcome(request, run_id, outcome, recorder)
     except Exception as exc:
-        emit_audit_event(audit_sink, {"event_type": "ENGINE_ERROR", "error_type": type(exc).__name__})
+        try:
+            emit_audit_event(recorder, {"event_type": "ENGINE_ERROR", "error_type": type(exc).__name__})
+        except Exception:
+            pass
         return _result(
             request,
             run_id,
@@ -118,7 +144,7 @@ def evaluate_case(
             execution_status=ExecutionStatus.ENGINE_ERROR,
             review_required=True,
             risk_labels=("ENGINE_ERROR", type(exc).__name__),
-            audit_sink=audit_sink,
+            audit_sink=None,
         )
 
 
@@ -126,6 +152,7 @@ def _prepare_rules(
     request: CaseRequest,
     rule_pack: RulePackDescriptor,
     rules: tuple[LegalRule, ...],
+    relevant_rule_ids: tuple[str, ...],
     source_manifest: SourceManifest,
     audit_sink,
 ) -> tuple[tuple[LegalRule, ...], tuple[LegalRule, ...]]:
@@ -146,16 +173,23 @@ def _prepare_rules(
         raise ValueError(f"verified rules missing from runtime pack: {missing}")
     admitted: list[LegalRule] = []
     candidates: list[LegalRule] = []
+    relevant = set(relevant_rule_ids)
     for rule_id in rule_pack.verified_rule_ids:
         rule = by_id[rule_id]
         source_verdict = source_manifest.validate_anchor(rule.source_anchor)
         eligible = is_rule_reasoning_eligible(rule) and source_verdict.get("status") == "VERIFIED"
-        emit_audit_event(audit_sink, {
-            "event_type": "RULE_ADMISSION",
-            "rule_id": rule.id,
-            "source_status": source_verdict.get("status", "UNKNOWN"),
-            "admitted": eligible,
-        })
+        if rule.id in relevant:
+            emit_audit_event(audit_sink, {
+                "event_type": "RULE_ADMISSION",
+                "rule_id": rule.id,
+                "source_status": source_verdict.get("status", "UNKNOWN"),
+                "source_ids": (
+                    (str(source_verdict["source_snapshot_id"]),)
+                    if source_verdict.get("source_snapshot_id")
+                    else ()
+                ),
+                "admitted": eligible,
+            })
         (admitted if eligible else candidates).append(rule)
     return tuple(admitted), tuple(candidates)
 
@@ -185,6 +219,12 @@ def _evaluate_disputed(
                 fact.status = FactTrustStatus.USER_ASSUMED
                 fact.value = selected_by_id[fact.id].get("value")
         branch_id = content_id("branch", {"request": request.to_dict(), "alternatives": selected_by_id})
+        emit_audit_event(audit_sink, {
+            "event_type": "BRANCH_CREATED",
+            "branch_id": branch_id,
+            "branch_index": index,
+            "assumptions_digest": semantic_digest(selected_by_id),
+        })
         outcome = _evaluate_once(
             request,
             tuple(branch_facts),
@@ -204,12 +244,6 @@ def _evaluate_disputed(
         used_rules.update(outcome["used_rule_ids"])
         sources.update(outcome["source_ids"])
         formal_kernel_used = formal_kernel_used or outcome["formal_kernel_used"]
-        emit_audit_event(audit_sink, {
-            "event_type": "BRANCH_COMPLETED",
-            "branch_id": branch_id,
-            "branch_index": index,
-            "result_status": outcome["result_status"].value,
-        })
     return _result(
         request,
         run_id,
@@ -270,7 +304,11 @@ def _evaluate_once(
     except CriticalClarityFailure as exc:
         partial = getattr(exc, "partial_state", None)
         evaluated_state = partial if partial is not None else state
-    evaluator_events = tuple(_without_runtime_fields(event) for event in evaluator.audit_log)
+    rules_by_id = {rule.id: rule for rule in rules}
+    evaluator_events = tuple(
+        _enrich_evaluator_event(_without_runtime_fields(event), rules_by_id)
+        for event in evaluator.audit_log
+    )
     for event in evaluator_events:
         emit_audit_event(audit_sink, event)
     active_claims = {
@@ -285,12 +323,31 @@ def _evaluate_once(
     ))
     for source, target in attacks:
         emit_audit_event(audit_sink, {"event_type": "ATTACK", "source": source, "target": target})
+        priority_rule = next(
+            (
+                rule
+                for rule in rules
+                if rule.head_claim == source and target in rule.priority_over
+            ),
+            None,
+        )
+        if priority_rule is not None:
+            emit_audit_event(audit_sink, {
+                "event_type": "PRIORITY",
+                "rule_id": priority_rule.id,
+                "source": source,
+                "target": target,
+            })
     grounded = grounded_extension(claims, attacks)
     labels = {
         claim_id: label
         for label, field in (("IN", "accepted"), ("OUT", "rejected"), ("UNDEC", "undecided"))
         for claim_id in grounded[field]
     }
+    emit_audit_event(audit_sink, {
+        "event_type": "CHECKER_STARTED",
+        "theorem_refs_digest": semantic_digest(THEOREM_REFS),
+    })
     checker = check_grounded(serialize_aaf(claims, attacks), labels, list(THEOREM_REFS))
     emit_audit_event(audit_sink, {
         "event_type": "CHECKER_VERDICT",
@@ -335,10 +392,26 @@ def _evaluate_once(
     )
     if permission_used:
         risk_labels.add("PERMISSION_REQUIRES_REVIEW")
+        for rule in rules:
+            if rule.id in used_rule_ids and rule.norm_modality == "PERMISSION":
+                emit_audit_event(audit_sink, {
+                    "event_type": "PERMISSION",
+                    "rule_id": rule.id,
+                    "claim_id": rule.head_claim,
+                })
     if prohibition_used:
         risk_labels.add("PROHIBITION_APPLIED")
     if claim_tainted:
         risk_labels.add("TAINT_REQUIRES_REVIEW")
+        for claim_id, claim in sorted(active_claims.items()):
+            if claim.taint_chain or claim.requires_human_review:
+                emit_audit_event(audit_sink, {
+                    "event_type": "TAINT",
+                    "claim_id": claim_id,
+                    "rule_id": next((rule.id for rule in rules if rule.head_claim == claim_id), ""),
+                    "taint": ("claim_taint",),
+                    "taint_source": "formalizable_or_review_threshold",
+                })
     if grounded["undecided"]:
         result_status = ResultStatus.CONFLICT_CERTIFICATE
         certificate_kind = CertificateKind.CONFLICT
@@ -482,3 +555,54 @@ def _without_runtime_fields(event: Mapping[str, Any]) -> dict[str, Any]:
     """Phase 2内存事件移除时间戳；持久化seq/run字段留给Phase 4。"""
 
     return {key: deepcopy(value) for key, value in event.items() if key != "timestamp"}
+
+
+def _audit_recorder(run_id: str, audit_sink) -> AuditRecorder:
+    """每次运行只创建一个recorder，并允许测试观察规范事件副本。"""
+
+    if isinstance(audit_sink, AuditRecorder):
+        if audit_sink.run_id != run_id:
+            raise ValueError("audit recorder run_id mismatch")
+        return audit_sink
+    return AuditRecorder(run_id, downstream=audit_sink)
+
+
+def _relevant_rule_ids(facts: tuple[LegalFact, ...], rules: tuple[LegalRule, ...]) -> tuple[str, ...]:
+    """按事实前提及exception/priority可达关系构建稳定相关规则集合。"""
+
+    fact_ids = {fact.id for fact in facts}
+    by_id = {rule.id: rule for rule in rules}
+    by_head = {rule.head_claim: rule.id for rule in rules if rule.head_claim}
+    relevant = {
+        rule.id
+        for rule in rules
+        if not rule.premise_atoms or fact_ids.intersection(rule.premise_atoms)
+    }
+    changed = True
+    while changed:
+        changed = False
+        for rule_id in tuple(sorted(relevant)):
+            rule = by_id[rule_id]
+            dependencies = set(rule.exception_chain)
+            dependencies.update(by_head[target] for target in rule.priority_over if target in by_head)
+            dependencies.update(
+                candidate.id
+                for candidate in rules
+                if rule.head_claim and rule.head_claim in candidate.premise_atoms
+            )
+            before = len(relevant)
+            relevant.update(item for item in dependencies if item in by_id)
+            changed = changed or len(relevant) != before
+    return tuple(sorted(relevant))
+
+
+def _enrich_evaluator_event(
+    event: Mapping[str, Any],
+    rules_by_id: Mapping[str, LegalRule],
+) -> dict[str, Any]:
+    """只补充现有规则对象中的modality，不加工法律内容。"""
+
+    enriched = dict(event)
+    rule = rules_by_id.get(str(event.get("rule_id", "")))
+    enriched["modality"] = rule.norm_modality if rule is not None else ""
+    return enriched
