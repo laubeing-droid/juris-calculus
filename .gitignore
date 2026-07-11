@@ -52,6 +52,9 @@
 .vscode/
 Thumbs.db
 __pycache__/
+build/
+dist/
+*.egg-info/
 chroma_db_ocr/
 configs/en_US/US_complete.json
 configs/en_US/all_glossary_terms.json

@@ -42,3 +42,11 @@
 - `UNKNOWN` returns missing facts without kernel execution; `DISPUTED` produces deterministic branches and an overall review-only result; `USER_ASSUMED` is hypothetical and cannot carry a formal certificate. Relevant candidate facts/rules, permission conclusions, claim taint, source failure, checker failure, or engine exceptions fail closed.
 - PRC CBL rules without an explicit authority field no longer execute. Their narrative descriptions are not source anchors; they stay in corpus/governance data until a real source snapshot is supplied.
 - Phase 2 closure baseline on Python 3.11.15 and 3.12.5 is 429 passed, 38 skipped on each version. The old 33-tool MCP manifest dispatch dominates runtime (231s on 3.11 and 197s on 3.12) and is scheduled for removal in Phase 7, not hidden by skipping the test.
+
+## 2026-07-11 JC v3 Phase 3 Packaging and CLI Foundation
+
+- `pyproject.toml` is the package/dependency authority for v3: Python is restricted to 3.11/3.12, `PyYAML` is the only core dependency, and document/pipeline/render/MCP dependencies are extras. `compiler_core.version.__version__` is the package, CLI, and engine version source.
+- `configs` and `schemas` are package-data packages, so the wheel reuses tracked resources without duplicating the 14MB CN corpus. Every release wheel must contain `schemas/jc-v3.schema.json`, `configs/render_profiles/neutral.yaml`, the published rule resources, and the `jc` console entry point.
+- The default CLI uses stdlib `argparse`. Only implemented commands are registered; at this stage `rules lookup` searches the explicitly labeled `cn-legacy-corpus` and `doctor` validates installed resources. JSON mode keeps stdout to one success document and writes stable four-field errors only to stderr.
+- Wheel smoke tests must run outside the repository in a new venv and prove that `compiler_core`, `configs`, and `schemas` resolve from `site-packages`. A source-tree command is not packaging evidence.
+- Commit 5 baseline on Python 3.11.15 and 3.12.5 is 436 passed, 38 skipped. The universal wheel was 3,185,540 bytes and independently installed/runs on both supported interpreters.

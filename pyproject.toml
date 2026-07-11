@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "juris-calculus"
+dynamic = ["version"]
+description = "Auditable formal legal reasoning kernel"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = "MIT"
+authors = [
+  { name = "laubeing-droid" },
+]
+dependencies = [
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+documents = [
+  "python-docx>=1.1.0",
+  "pdfplumber>=0.10.0",
+]
+pipeline = [
+  "pydantic>=2.0.0",
+]
+render = [
+  "Jinja2>=3.1.0",
+]
+mcp = [
+  "mcp>=1.0.0",
+]
+
+[project.scripts]
+jc = "compiler_core.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "compiler_core.version.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["compiler_core*", "addons*", "pipeline*", "configs*", "schemas*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+configs = ["**/*.yaml", "**/*.json", "**/*.md"]
+schemas = ["*.json"]

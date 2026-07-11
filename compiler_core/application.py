@@ -32,9 +32,10 @@ from compiler_core.types import (
     LegalRule,
     is_rule_reasoning_eligible,
 )
+from compiler_core.version import __version__
 
 
-ENGINE_VERSION = "3.0.0-internal"
+ENGINE_VERSION = __version__
 THEOREM_REFS = ("Lean.Dung1995.Grounded.unique", "Lean.Dung1995.Grounded.lfp")
 
 

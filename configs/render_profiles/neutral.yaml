@@ -1,0 +1,12 @@
+schema_version: "1.0"
+profile_id: neutral
+version: "1.0.0"
+locale: zh-CN
+tone: concise
+heading_order:
+  - status
+  - claims
+  - sources
+  - risks
+  - review
+forbidden_phrases: []
