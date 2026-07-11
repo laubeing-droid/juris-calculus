@@ -8,9 +8,13 @@ on:
 
 jobs:
   python-tests:
-    name: Python Tests
+    name: Python ${{ matrix.python-version }} Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     env:
       LEGAL_MATH_MODELING_ROOT: ${{ github.workspace }}/legal-math-modeling
 
@@ -27,14 +31,17 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          python -m pip install pytest hypothesis
+          python -m pip install pytest hypothesis pip-audit
+
+      - name: Run supply-chain gate
+        run: python tools/supply_chain_gate.py
 
       - name: Run full pytest suite
         run: python -m pytest tests/ -q

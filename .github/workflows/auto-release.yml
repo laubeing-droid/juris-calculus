@@ -6,24 +6,60 @@ on:
       - 'v*'
 
 jobs:
+  verify:
+    name: Verify Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    env:
+      LEGAL_MATH_MODELING_ROOT: ${{ github.workspace }}/legal-math-modeling
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout legal-math-modeling spec repo
+        uses: actions/checkout@v4
+        with:
+          repository: laubeing-droid/legal-math-modeling
+          path: legal-math-modeling
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest hypothesis pip-audit
+
+      - name: Run supply-chain gate
+        run: python tools/supply_chain_gate.py
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+      - name: Run MCP manifest smoke
+        run: python mcp_server.py --test
+
+      - name: Lint rules.yaml
+        run: python -c "import yaml; yaml.safe_load(open('configs/zh_CN/rules.yaml','r',encoding='utf-8')); print('rules.yaml OK')"
+
   release:
+    name: Create GitHub Release
+    needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Install deps
-        run: |
-          pip install -r requirements.txt
-          pip install pytest hypothesis
-      - name: Run tests
-        run: python -m pytest tests/ -v
-      - name: Lint rules.yaml
-        run: python -c "import yaml; yaml.safe_load(open('configs/zh_CN/rules.yaml','r',encoding='utf-8')); print('rules.yaml OK')"
+          fetch-depth: 0
+
       - name: Generate changelog
         run: |
           echo "## juris-calculus $(git describe --tags --abbrev=0)" > release_notes.md
