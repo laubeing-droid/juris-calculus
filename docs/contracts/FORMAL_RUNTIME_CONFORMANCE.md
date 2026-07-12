@@ -1,39 +1,29 @@
-# Formal runtime conformance and placeholder boundary
-
-## Scope
+# Runtime claims and evidence limits
 
 | Repository | Responsibility |
 |---|---|
-| `legal-math-modeling` | canonical Lean specification, DDL core, Horn-to-AAF contracts, certificate-checker theorem statements |
-| `juris-calculus` | Python runtime, deterministic tests, audit/replay, CLI, and optional MCP exposure |
+| `legal-math-modeling` | Formal specification and theorem statements. |
+| `juris-calculus` | Python runtime, deterministic tests, audit/replay, CLI, and optional MCP adapter. |
 
-JC does not claim machine-checked proof for every Python execution path or direct legal correctness for real client cases. Runtime conformance claims require identified deterministic tests, finite checks, or spec-shadow fixtures.
+JC does not claim that every Python path is machine-proved or that it supplies a final legal opinion for a real case.
 
-## Evidence and non-claims
-
-| Evidence | Disclosure |
+| Evidence | Permitted claim |
 |---|---|
-| Python tests | runtime regression evidence; record command and result |
-| spec-shadow fixtures | differential evidence; report aligned and diverged cases |
-| finite SMT checks | bounded check, not a universal theorem |
-| upstream Lean theorem | cite as upstream specification evidence |
-| empirical heuristic or diagnostic | state its task-specific limits |
+| Runtime test | Regression evidence for the executed path. |
+| Spec-shadow fixture | Differential evidence for the covered fixture. |
+| Finite SMT check | Bounded check, not a universal theorem. |
+| Upstream Lean theorem | Specification evidence from the upstream theorem. |
+| Heuristic/diagnostic | Task-specific empirical observation. |
 
-Do not call graph similarity a metric or kernel without proof, diagnostics-only privacy output a DP guarantee, a robust-regression heuristic a formal guarantee, or LLM output verified evidence.
+Acceptance paths must not contain silent placeholders. An intentionally incomplete feature must be outside the acceptance path or fail closed; it must name its limitation and never be presented as a formal proof.
 
-## Placeholder rule
-
-Acceptance-critical paths may not contain silent placeholders. Any intentional incomplete path must be outside the acceptance path or fail closed, name its closing task and verification command, and never be described as formal proof.
-
-Critical paths include candidate admission, verified-fact admission, certificate checking, MCP dispatch, spec-shadow reporting, and attack/priority semantics. Divergences are evidence and must be reported, not deleted or renamed.
-
-## Minimum conformance checks
+Minimum local checks:
 
 ```powershell
 python -m pytest tests\unit\test_spec_shadow_harness.py -q
-python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
+python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
 python -m pytest tests\ -q
 python mcp_server.py --test
 ```
 
-The subprocess stdio protocol test is the transport authority. `python mcp_server.py --test` is only an in-process smoke. If a required command is blocked, the report must say blocked and include the failure mode.
+The real stdio subprocess test is the transport authority. The in-process smoke is not a readiness or product-UI claim. A blocked check must remain blocked in the report.

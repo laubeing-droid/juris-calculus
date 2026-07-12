@@ -1,12 +1,26 @@
-# Rule packs and promotion
+# Rule packs and rule schema
 
-A pack manifest binds pack ID/version, jurisdiction, kind/status, governing dates, rule/source/config file hashes, content digest, source commit, and inventory.
+A rule-pack manifest binds pack ID, version, jurisdiction, kind, status, governing dates, resource hashes, source commit, content digest, and inventory. Query current state; do not copy inventory counts into prose.
 
-The runtime keeps two distinct sets:
+```powershell
+jc packs list --json
+jc packs verify --all --json
+jc rules audit <pack-id> --json
+```
 
-- corpus: all retained rules available for governance, cleaning, lookup, and training export;
-- reasoning-eligible: rules with explicit source anchors that pass pack integrity and official admission.
+## Admission
 
-Rules without an authority field remain `UNVERIFIED + CANDIDATE_ONLY`. JC never guesses a source from a rule name or description. Governance may report promotion blockers but cannot promote automatically.
+JC keeps two sets:
 
-Current bundled inventories are read from manifests/runtime rather than prose. `cn-legacy-corpus` contains 21,144 candidate rules and zero reasoning-eligible rules. `cn-official` contains zero rules and is intentionally not reasoning-ready. HK/US legacy packs are also corpus material, not silent formal fallbacks.
+- **corpus:** retained material for cleaning, lookup, governance, and training export;
+- **reasoning-eligible:** rules with explicit source anchors that pass integrity and admission checks.
+
+Rules without a verified authority remain `UNVERIFIED` and `CANDIDATE_ONLY`. JC never infers a source anchor from a rule name or description. Governance may report blockers; it never promotes a rule automatically.
+
+`cn-official` is intentionally blocked until official first-party source snapshots exist. Legacy CN, HK, and US corpora are not formal fallbacks.
+
+## Rule fields
+
+A rule requires a stable ID, modality, conclusion, premises, source metadata, and admission metadata. Optional attack, exception, permission, priority, dates, and jurisdiction fields must be structurally valid when present. Duplicate IDs, invalid modality, invalid dates, missing required source anchors for admission, and dangling references fail validation.
+
+The authoritative machine schema is the packaged `schemas/jc-v3.schema.json`; the runtime contracts and validation tests are the implementation authority.

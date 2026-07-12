@@ -1,32 +1,31 @@
-# JC CLI contract
+# CLI reference
 
-The CLI is the primary interface for humans, Codex, automation, and downstream legal agents. JSON mode writes one success object to stdout and one stable error object to stderr.
+The CLI is the default JC interface. With `--json`, stdout carries the machine result and diagnostics use stderr.
 
-## Commands
-
-| Command | Purpose |
+| Command | Function |
 |---|---|
-| `jc doctor` | Diagnose packaged resources, audit state, Python support, and optional adapter availability. |
-| `jc packs list` | List declared pack metadata without claiming verification. |
-| `jc packs verify` | Verify manifests, hashes, inventory, dates, and rule admission. |
-| `jc rules lookup` | Bounded lookup in a corpus; lookup does not promote rules. |
-| `jc rules audit` | Produce governance findings and promotion blockers. |
-| `jc evaluate` | Evaluate one explicit `CaseRequest` and write a complete audit bundle. |
-| `jc replay` | Verify and semantically replay a complete bundle. |
-| `jc render` | Render a verified run with the packaged neutral renderer; never evaluates facts. |
-| `jc training export` | Export governed corpus splits without private case facts. |
-| `jc analyze strategy` | Produce review-required strategy advisory from a verified run. |
-| `jc analyze similar-cases` | Compare a verified run with an explicit versioned case index. |
+| `jc doctor` | Check packaged resources and selected audit state. |
+| `jc packs list` / `verify` | Inspect manifests; verify hashes, inventory, and admission. |
+| `jc rules lookup` / `audit` | Search a corpus or emit governance blockers without promotion. |
+| `jc evaluate` | Evaluate an explicit `CaseRequest` and write an audit bundle. |
+| `jc replay` | Verify and semantically replay a completed bundle. |
+| `jc render` | Render a completed bundle without evaluation. |
+| `jc training export` | Export governed rule-corpus splits. |
+| `jc analyze strategy` / `similar-cases` | Create advisory artifacts from a completed bundle. |
 
-## Exit codes
+```powershell
+jc evaluate --input case-request.json --json
+jc replay <run-id> --json
+jc render <run-id> --format markdown --audience agent --json
+```
 
-| Code | Meaning |
+| Exit code | Meaning |
 |---:|---|
-| 0 | Command completed successfully. |
-| 2 | Invalid input or CLI usage. |
+| 0 | Command completed. |
+| 2 | CLI usage or input error. |
 | 3 | Admission or official-pack gate blocked. |
 | 4 | Engine or audit-write error. |
 | 5 | Replay or integrity mismatch. |
 | 6 | Optional pack/component missing. |
 
-Non-bundled rule roots require both `--development` and `--config-root`. Environment variables alone cannot silently replace packaged rules. `jc render` is fixed to the packaged neutral profile; personal style overrides are not part of the public kernel.
+Non-bundled rule roots require both `--development` and `--config-root`; environment variables cannot silently replace packaged rules. See `jc <command> --help` for exact arguments.

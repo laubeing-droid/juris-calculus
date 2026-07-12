@@ -1,89 +1,66 @@
 # juris-calculus
 
-juris-calculus (JC) is a public, auditable legal-reasoning kernel. Its primary interface is the `jc` CLI. It accepts explicit structured facts, applies only integrity-checked and reasoning-eligible rules, writes a complete audit bundle, and returns machine-readable results.
-
-[中文说明](docs/guides/README_CN.md)
-
-JC is not a case-management system or a replacement for lawyer judgment. Private case data, commercial rule packs, drafting workflows, litigation operations, and lawyer-specific style overlays stay outside the public repository. The public kernel is fixed to neutral, stable, auditable output.
-
-## Safety boundary
+JC is a public, auditable legal-reasoning kernel. It receives an explicit structured case request, applies only admitted rules, writes a replayable audit bundle, and returns a canonical machine result.
 
 ```text
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-Candidate, unknown, disputed, and user-assumed facts cannot silently become `verified_fact`. Missing sources cannot silently become reasoning-eligible rules. Rendering and advisory analysis cannot modify a canonical result or generate a formal certificate.
+JC is not a case-management system, a source-document ingestion pipeline, a legal opinion generator, or a lawyer workflow product. Private facts, proprietary rule packs, litigation strategy decisions, and personal writing style stay outside this repository.
 
-## Install and inspect
+## Start
 
-Supported Python versions are 3.11 and 3.12.
+Supported Python: 3.11 and 3.12.
 
 ```powershell
 python -m pip install .
-jc --version
 jc doctor --json
 jc packs list --json
 jc packs verify --all --json
 ```
 
-The bundled `cn-official` pack is intentionally not reasoning-ready until official first-party source snapshots are supplied. Legacy corpora remain available for governance, lookup, and training export, not formal reasoning.
+`cn-official` remains blocked until an official first-party source snapshot is supplied. Legacy corpora are available for inspection, governance, and training export; they are never a silent fallback for formal reasoning.
 
-## Primary workflow
+## Core workflow
 
 ```powershell
 jc evaluate --input case-request.json --json
-jc replay --run <run-id> --json
-jc render --run <run-id> --format markdown --json
-jc analyze strategy --run <run-id> --json
-jc analyze similar-cases --run <run-id> --index case-index.json --json
+jc replay <run-id> --json
+jc render <run-id> --format markdown --audience agent --json
 ```
 
-`evaluate` always writes the semantic result, relevant event log, reasoning graph, checksums, and completion marker. Graph JSON is always produced; HTML is produced only when explicitly requested through `render`.
+`evaluate` always writes a completed audit bundle: sanitized input, relevant semantic events, canonical result, deterministic graph, manifest, hashes, and completion marker. `replay` verifies bytes and semantic output. `render` only reads a completed bundle; it never re-evaluates facts or rules.
 
-## Optional WorkBuddy adapter
+## Interfaces
 
-JC is CLI-first. WorkBuddy may register the optional stdio adapter because WorkBuddy supports custom MCP connectors. The adapter exposes only four tools and zero resources:
+- **CLI:** primary interface for people, local agents, and automation.
+- **Python:** internal application service behind the CLI and adapter.
+- **WorkBuddy MCP:** optional compatibility adapter with four tools and no resources. It is not enabled by the core installation and does not contain another evaluator.
 
-- `jc_evaluate`
-- `jc_lookup_rule`
-- `jc_analyze_strategy`
-- `jc_analyze_similar_cases`
+## Safety rules
 
-The adapter delegates to the same application, audit, lookup, and advisory services. It does not contain another evaluator or rule loader. See [WorkBuddy adapter guide](docs/guides/WORKBUDDY.md).
+- Only `verified_fact` may enter formal reasoning.
+- `UNKNOWN`, `DISPUTED`, and `USER_ASSUMED` remain review-only, branch, or hypothetical states; none produces a formal certificate.
+- A rule needs explicit source admission before it is reasoning-eligible.
+- Rendering and advisory analysis cannot modify the canonical result.
+- Horn, attack, exception, permission, priority, checker, `DecisionStatus`, and fail-closed semantics are protected.
 
-## Auditing and visualization
+## Documentation
 
-Every completed run contains `input.json`, `events.jsonl`, `result.json`, `graph.json`, `manifest.json`, `checksums.sha256`, and `COMPLETE`. Replay verifies both file hashes and semantic digests. Logs include only relevant rules/events and exclude raw case narrative by default.
-
-See:
-
-- [CLI contract](docs/guides/CLI.md)
-- [Audit bundle and replay](docs/contracts/AUDIT_BUNDLE.md)
-- [Rule packs and promotion](docs/contracts/RULE_PACKS.md)
-- [Input and semantic boundary](docs/contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
-- [Formal runtime conformance](docs/contracts/FORMAL_RUNTIME_CONFORMANCE.md)
-- [Rendering and profiles](docs/contracts/rendering-and-profiles.md)
-- [v2 to v3 migration](docs/guides/MIGRATION_V2_TO_V3.md)
+[Documentation index](docs/README.md) · [中文说明](docs/guides/README_CN.md) · [CLI](docs/guides/CLI.md) · [Audit and replay](docs/contracts/AUDIT_BUNDLE.md) · [Rule packs](docs/contracts/RULE_PACKS.md) · [WorkBuddy](docs/guides/WORKBUDDY.md)
 
 ## Local verification
 
 ```powershell
-python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
 python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
-python -m pytest tests\unit\test_spec_shadow_harness.py -q
+python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
 python -m pytest tests\ -q
 python mcp_server.py --test
-python tools\supply_chain_gate.py --requirements requirements/core.lock
+python tools\supply_chain_gate.py --requirements requirements\core.lock
 git diff --check
 ```
 
-`python mcp_server.py --test` is an in-process surface smoke, not a readiness claim. The authoritative transport test launches a real subprocess. Remote GitHub Actions results are not claimed until a branch is pushed and the workflow actually runs.
-
-Record the actual pass/skip result with each local verification run; static counts do not constitute release evidence.
-
-## Evidence levels
-
-Runtime tests, differential fixtures, finite SMT checks, upstream Lean theorems, and empirical heuristics are distinct evidence classes. JC does not present empirical output as a formal proof.
+The subprocess stdio test is the MCP transport authority. `mcp_server.py --test` is only an in-process smoke. Test counts and remote CI status are evidence only when recorded by the corresponding run.
 
 ## License
 

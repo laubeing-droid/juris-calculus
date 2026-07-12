@@ -1,26 +1,16 @@
 # v2 to v3 migration
 
-v3 prioritizes correctness and auditability over runtime compatibility. There is no compatibility dispatcher for the former 33 MCP tools or 12 whole-corpus resources.
+v3 chooses correctness and auditability over compatibility. The old 33-tool/12-resource MCP surface is gone; there is no compatibility dispatcher.
 
-## Tool mapping
-
-| v2 tool group | v3 path |
+| Previous intent | v3 interface |
 |---|---|
-| `stratified_evaluate`, `evaluate_facts`, `evaluate` | `jc evaluate` or `jc_evaluate` with a complete `CaseRequest` file. |
-| `search_rules`, `get_citation` | `jc rules lookup` or `jc_lookup_rule`. |
-| `analyze_strategy` | `jc analyze strategy` or `jc_analyze_strategy` from a verified run. |
-| `case_deviation` | `jc analyze similar-cases` or `jc_analyze_similar_cases`. |
-| `trace`, `check` | `jc replay`; inspect the run's `graph.json` and verified result. |
-| `render`, `generate_memo` | Explicit `jc render`; fixed action memo generation was removed. |
-| `governance` | `jc rules audit`. |
-| `minimum_evidence` | `missing_fact_review` in the canonical evaluation result. |
-| `trirail_collide`, `check_threat`, `batch`, `diff`, `stress_fixtures` | Explicit CLI/CI harnesses only; not public MCP tools. |
-| `route_state`, `rule_router`, `route` | Internal pack/rule resolution or bounded lookup. |
-| `calculate_damages`, `damages_baseline`, `impact` | Advisory/private downstream analysis; no standalone formal MCP result. |
-| `extract_elements`, `ingest_candidate`, `evaluate_facts_llm`, `align_concepts_llm`, `generate_nlni_llm` | Removed from the public kernel; candidate preparation belongs upstream. |
-| `get_operator_schemas`, `generate_task_schema`, `private_layer_contract` | Static schemas and documentation. |
-| `neural_leaf_status` | Removed; no parallel neural-promotion framework remains. |
+| Evaluate structured facts | `jc evaluate` or `jc_evaluate` with a complete `CaseRequest` file. |
+| Search rules/citations | `jc rules lookup` or `jc_lookup_rule`. |
+| Inspect trace/check | `jc replay`, `result.json`, and `graph.json`. |
+| Render/memo | `jc render`; fixed memo generation was removed. |
+| Rule governance | `jc rules audit`. |
+| Missing-evidence output | `missing_fact_review` in the canonical result. |
+| Strategy/similar-case analysis | `jc analyze ...` from a completed run; always advisory. |
+| LLM ingestion, neural promotion, document extraction, batch mutation | Removed from JC; candidate preparation belongs upstream. |
 
-All former `legal://...` resources were removed. Use pack list/verify/lookup for bounded metadata and rules; architecture and schemas are static package documents.
-
-Python callers should construct `CaseRequest`, select a verified `RulePackRegistry`, and call the audit application entrypoint. Renderers accept only completed run IDs. Old hidden dates/governing law/contract-validity defaults and random public identifiers are not migrated.
+Python callers use the versioned contracts and the audited application path. Renderers receive completed run IDs only. Hidden dates, governing-law defaults, contract-validity defaults, and random public identifiers are not migrated.

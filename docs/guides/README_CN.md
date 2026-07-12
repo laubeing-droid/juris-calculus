@@ -1,50 +1,41 @@
-# juris-calculus
+# juris-calculus 中文说明
 
-JC 是一个公开、可审计的法律推理内核，默认入口是 `jc` CLI。它只接受显式结构化事实，只让通过完整性和来源准入的规则进入正式推理，并为每次正式运行生成结果、相关事件日志、Graph JSON、校验和与可重放材料。
-
-JC 不是案件管理系统。客户数据、商业规则包、律师工作流、诉讼执行和律师个人文风层不进入公开仓库；公开内核固定输出中性、稳定、可审计结果。
+JC 是公开、可审计的法律推理内核。输入必须是明确的结构化案件请求；输出是可回放的机器结果与审计包。
 
 ```text
-LLM 提议 -> 确定性门禁决定 -> 正式内核推理
+LLM 提议 -> 验证门禁决定 -> 形式内核推理
 ```
 
-## 主要命令
+它不处理原始卷宗摄取、不代替律师意见、不保存客户数据，也不包含诉讼工作流或个人文风。
+
+## 开始使用
 
 ```powershell
 python -m pip install .
 jc doctor --json
-jc packs verify --all --json
+jc packs list --json
 jc evaluate --input case-request.json --json
-jc replay --run <run-id> --json
-jc render --run <run-id> --format markdown --json
 ```
 
-`UNKNOWN` 生成缺失事实清单，`DISPUTED` 进入分支推理，`USER_ASSUMED` 只能生成假设结果；三者都不能产生正式 certificate。
-
-## WorkBuddy 特例
-
-JC 保持 CLI 优先。只有需要 WorkBuddy 自定义连接器时才注册可选 stdio 适配器。它只暴露 `jc_evaluate`、`jc_lookup_rule`、`jc_analyze_strategy`、`jc_analyze_similar_cases` 四项工具，resources 为零，不包含第二套规则加载或求值逻辑。
-
-## 审计与可视化
-
-正式运行总是生成 `events.jsonl` 和 `graph.json`。日志只记录相关事实、规则和语义事件，不记录整库无关规则；默认不保存原始案情文本或绝对路径。HTML 只有律师明确调用 `jc render --format html` 时才生成。
-
-详细说明见 `CLI.md`、`../contracts/AUDIT_BUNDLE.md`、`../contracts/RULE_PACKS.md`、`../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md`、`../contracts/FORMAL_RUNTIME_CONFORMANCE.md`、`WORKBUDDY.md` 和 `MIGRATION_V2_TO_V3.md`。
-
-## 本地门禁
+`evaluate` 会写入输入快照、相关语义事件、正式结果、图、manifest、校验和与完成标记。之后可执行：
 
 ```powershell
-python -m pytest tests\unit\test_mcp_manifest_dispatch.py -q
-python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
-python -m pytest tests\unit\test_spec_shadow_harness.py -q
-python -m pytest tests\ -q
-python mcp_server.py --test
-python tools\supply_chain_gate.py --requirements requirements/core.lock
-git diff --check
+jc replay <run-id> --json
+jc render <run-id> --format markdown --audience agent --json
 ```
 
-每次本地验证必须记录实际 pass/skip；静态数字不构成发布证据。未实际运行的远端 CI 必须写 `NOT_EXECUTED`，不得写成通过。
+`replay` 校验完整性并重放；`render` 只读取已经完成的审计包，不会重新推理。
 
-## 许可证
+## 边界
 
-[MIT](../../LICENSE) © 2026 laubeing-droid。
+- 只有 `verified_fact` 能进入正式推理。
+- `UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 只能生成缺失事实、分支或假设结果，不能生成正式 certificate。
+- 未具明确来源的规则只能作为候选语料，不会静默进入推理。
+- 当前 `cn-official` 因缺官方一手来源快照而 BLOCKED；legacy 规则包仅供检索、治理和训练导出。
+- Horn、attack、exception、permission、priority、checker、`DecisionStatus` 与 fail-closed 语义不可在本仓库随意弱化。
+
+## 接口
+
+CLI 是默认接口。可选 WorkBuddy MCP 适配器只暴露四项工具、零 resources；它是兼容层，不是第二套推理器。详见 [CLI](CLI.md) 与 [WorkBuddy](WORKBUDDY.md)。
+
+更多内容见 [文档索引](../README.md)。

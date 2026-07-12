@@ -1,33 +1,30 @@
-# juris-calculus Changelog
+# Changelog
 
-## 3.0.0a1 - Unreleased
+## 3.0.0a1 — Unreleased
 
-### Breaking architecture change
+### Public boundary
 
-- Made `jc` the primary public interface and centralized formal evaluation in one application service.
-- Replaced the legacy 33-tool/12-resource MCP surface with an optional four-tool WorkBuddy adapter and zero resources.
-- Removed free-text formal evaluation, hidden legal defaults, duplicate evaluator holders, fixed memo generation, and renderer paths that could re-evaluate facts.
-- Renamed the active engineering boundary to `reasoning_boundary`; the former external framework name remains only in dated migration evidence.
+- CLI is the primary interface.
+- Optional WorkBuddy MCP exposes four tools and zero resources.
+- Legacy 33-tool/12-resource MCP compatibility dispatch was removed.
 
-### Audit and visualization
+### Auditing
 
-- Added deterministic `CaseRequest`, semantic result, audit event, graph, bundle, checksum, completion, and semantic replay contracts.
-- Added relevant-event-only logs, missing-fact review data, conflict/attack/exception/priority graph edges, and mandatory Graph JSON.
-- Added explicit Markdown/Mermaid/HTML rendering from verified runs only. Profiles may change expression but not canonical fields or hashes.
+- Evaluation writes an atomic audit bundle with events, result, graph, manifest, checksums, and replay support.
+- Rendering is read-only, opt-in, and bound to the canonical result.
 
-### Rules, training, and advisory analysis
+### Rule governance
 
-- Added versioned rule-pack manifests, file/source hashes, official admission gates, corpus/eligible/candidate inventories, and deterministic lookup.
-- Kept 21,144 CN legacy rules candidate-only; the official CN pack remains empty and blocked pending first-party source snapshots.
-- Added governed training export, missing-fact review, strategy advisory, and deterministic structural similar-case analysis. Advisory output never creates a formal certificate.
+- Pack manifests bind resources, inventory, source metadata, and content digest.
+- Candidate-only rules remain available for governance and training export but cannot enter formal reasoning.
+- `cn-official` remains blocked until first-party source snapshots are supplied.
 
-### Engineering gates
+### Engineering
 
-- Supports Python 3.11 and 3.12 only.
-- Added hash-locked core dependencies, fail-closed `pip-audit`, clean-wheel stale-module detection, CycloneDX SBOM generation, build provenance, and a pinned upstream specification commit.
-- Added numeric cold/warm/branch, memory, event-count, and audit-bundle performance budgets without omitting audit or checker work.
-- Test and wheel results are release evidence only when recorded by the corresponding verification run; remote CI remains `NOT_EXECUTED` until pushed.
+- Supported Python is 3.11 and 3.12.
+- Core dependency auditing uses the hash-pinned lock profile and fails closed.
+- Public documentation now describes the CLI-first, auditable boundary without static test or rule-count claims.
 
-## Historical releases
+## Earlier lines
 
-Versions 1.x through 2.1.x were experimental runtime lines with broader MCP, adapter, renderer, and orchestration surfaces. Their interfaces are not runtime-compatible with v3; see `docs/guides/MIGRATION_V2_TO_V3.md`.
+Versions 1.x–2.1.x were experimental interfaces. They are not runtime-compatible with v3. See [v2 migration](docs/guides/MIGRATION_V2_TO_V3.md).

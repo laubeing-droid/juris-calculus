@@ -1,28 +1,24 @@
-# WorkBuddy adapter
+# Optional WorkBuddy adapter
 
-JC remains CLI-first. The adapter exists only for WorkBuddy-style clients that need a custom MCP connector. WorkBuddy's official documentation describes custom MCP connectors and also distinguishes MCP + CLI from Skill + CLI.
+JC is CLI-first. This adapter exists only for WorkBuddy clients that require a custom MCP connector. WorkBuddy's connector documentation describes custom MCP services and distinguishes MCP + CLI from Skill + CLI; this repository uses the former.
 
-Install the package, then configure a custom stdio connector to run:
+Run the stdio adapter from an installed JC package:
 
 ```text
 python -m addons.workbuddy_mcp
 ```
 
-Equivalent connector JSON commonly has this shape; enter it through the WorkBuddy custom connector UI for the installed version:
+The adapter exposes exactly four tools and no resources:
 
-```json
-{
-  "mcpServers": {
-    "juris-calculus": {
-      "command": "python",
-      "args": ["-m", "addons.workbuddy_mcp"]
-    }
-  }
-}
-```
+- `jc_evaluate`
+- `jc_lookup_rule`
+- `jc_analyze_strategy`
+- `jc_analyze_similar_cases`
 
-The adapter exposes `jc_evaluate`, `jc_lookup_rule`, `jc_analyze_strategy`, and `jc_analyze_similar_cases`. It returns compact summaries and `run://` references, not full logs, whole rule libraries, tracebacks, or absolute paths. `resources/list` is empty.
+It returns compact structured summaries and logical `run://` references. It does not return full logs, whole corpora, tracebacks, or absolute paths; it delegates to the same application services as the CLI.
 
-For Codex and capable local agents, call the CLI directly to reduce schema/token overhead. For a lawyer without a downstream agent, the same CLI remains usable. WorkBuddy product-level E2E must be reported as BLOCKED unless the actual installed WorkBuddy version is exercised; stdio subprocess tests alone do not prove the product UI integration.
+Use the connector UI of the installed WorkBuddy version to add the local stdio command. The repository verifies MCP stdio lifecycle and the four-tool schema. It does not claim WorkBuddy product-UI E2E until that version and configuration are exercised.
 
-Official references: [WorkBuddy connectors](https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Connector) and [WorkBuddy skills](https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market).
+For Codex and capable local agents, use the CLI directly to avoid MCP schema/token overhead.
+
+Official reference: [WorkBuddy connector documentation](https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Connector).

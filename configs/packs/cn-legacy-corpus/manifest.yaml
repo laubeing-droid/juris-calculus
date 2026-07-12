@@ -15,12 +15,12 @@ source_files:
   sha256: 92a002fd9e992f4a3c7b2710af66e1279129f7344706d32365093da8c48c50b7
 config_files:
 - path: zh_CN/domain_config.example.yaml
-  sha256: 3795444a5e469f84a82249d549af9f892d52cba5c37662b09bc0e8ae1641f965
+  sha256: 2e33cc1b32d4e3b4702f885b53c45a26280f9495ab60579cd97718c47fa7d83c
 - path: zh_CN/ontology_map.yaml
   sha256: db0700c3414715e36dca36be94cced84d5655ea0f4cbe9770d253c66c7b85572
 inventory:
   corpus_total: 21144
   reasoning_eligible_total: 0
   candidate_only_total: 21144
-content_digest: 308214160663f93bef5049b70effb96aedd26fd332212813c4d6f02f5fa02f14
+content_digest: 615e045d1b1ff70ea01508cc8c10d681048f933c2d1042740912d9ff0dc6c3bd
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79
