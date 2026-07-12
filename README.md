@@ -82,3 +82,7 @@ Record the actual pass/skip result with each local verification run; static coun
 ## Evidence levels
 
 Runtime tests, differential fixtures, finite SMT checks, upstream Lean theorems, and empirical heuristics are distinct evidence classes. JC does not present empirical output as a formal proof.
+
+## License
+
+[MIT](LICENSE) © 2026 laubeing-droid.

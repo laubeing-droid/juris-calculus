@@ -44,3 +44,7 @@ git diff --check
 ```
 
 每次本地验证必须记录实际 pass/skip；静态数字不构成发布证据。未实际运行的远端 CI 必须写 `NOT_EXECUTED`，不得写成通过。
+
+## 许可证
+
+[MIT](LICENSE) © 2026 laubeing-droid。
