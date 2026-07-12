@@ -1,9 +1,10 @@
-from compiler_core.legal_ir_v3 import Condition, LegalIRRule, LegalType, RuleType, SourceRef, TypedVariable, Validity
+import yaml
+
+from compiler_core.legal_ir_v3 import Condition, LegalIRRule, LegalType, RuleType, SourceRef, TypedVariable, Validity, legal_ir_rule_from_dict
 from compiler_core.smt_sidecar import SMTSidecar
 from compiler_core.source_anchor import make_source_anchor, validate_source_anchor
 from compiler_core.type_checker import check_legal_ir_rule
 from compiler_core.types import LegalRule
-from tools.ir_v3_checker import check_ir_file
 
 
 def test_legal_rule_converts_to_minimal_ir():
@@ -69,11 +70,12 @@ def test_type_checker_rejects_unknown_refs():
     assert "UNKNOWN_EXCEPTION_REF:R_MISSING" in report.issues
 
 
-def test_ir_v3_checker_accepts_fixture():
-    report = check_ir_file("tests/fixtures/legal_ir_v3_sample.yaml")
+def test_typed_ir_fixture_passes_core_checker():
+    payload = yaml.safe_load(open("tests/fixtures/legal_ir_v3_sample.yaml", encoding="utf-8"))
+    rules = [legal_ir_rule_from_dict(raw) for raw in payload["rules"]]
 
-    assert report["status"] == "PASS"
-    assert report["rule_count"] == 1
+    assert len(rules) == 1
+    assert check_legal_ir_rule(rules[0], known_rule_ids=[rule.rule_id for rule in rules]).status == "PASS"
 
 
 def test_source_anchor_hash_helper():
