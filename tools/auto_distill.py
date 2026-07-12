@@ -13,7 +13,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BASE_DIR = os.environ.get("JC_DISTILL_SOURCE_ROOT", str(REPO_ROOT / "下载存放区" / "全文json"))
-OUTPUT_DIR = os.environ.get("JC_DISTILL_OUTPUT_DIR", str(REPO_ROOT / "tests" / "fixtures" / "distill_candidates"))
+OUTPUT_DIR = os.environ.get("JC_DISTILL_OUTPUT_DIR", str(REPO_ROOT / "过程文件" / "distill_candidates"))
 
 # Book → prefix mapping
 BOOK_PREFIX = {
