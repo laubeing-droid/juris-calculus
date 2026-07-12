@@ -128,3 +128,9 @@
 - Phase 8 engineering full-suite baseline is 484 passed, 38 skipped on both Python 3.11.15 (215.31s) and 3.12.5 (198.80s). Local supply-chain audit found zero known core vulnerabilities; remote CI remains NOT_EXECUTED.
 - Final build backend is pinned to setuptools 83.0.0 and wheel 0.47.0. Binding wheel timestamps to the Git commit epoch produces two identical isolated wheels: 3,218,231 bytes, SHA-256 `2b5a46ff7fad5ed5932f7acc83a18fd2c908137e659f9b0582f6ebc9bb613543`.
 - Core, documents, pipeline, and render dependency profiles each passed pip-audit with zero known vulnerabilities. WorkBuddy adds no dependency beyond core. Product-level WorkBuddy E2E, real authorized case-index quality, personal style samples, official CN rules, and remote CI remain explicitly blocked/not executed.
+
+## 2026-07-12 Repo Slimming: Legacy Config Deletion Boundary
+
+- The following top-level config files were deleted with zero live-code references and no active-harness fallout: `configs/base_ontology.yaml`, `configs/domain_corporate.yaml`, `configs/jurisdiction_spec_template.yaml`, `configs/knowledge_layers.yaml`, `configs/obstruction_registry.yaml`, `configs/reasoning_boundary_io_contracts.yaml`.
+- `configs/__init__.py`, `configs/core_ontology.yaml`, `configs/L0_overrides_cn.yaml`, and `configs/L0_overrides_hk.yaml` remain live runtime/package resources and are not safe deletion candidates.
+- Additional top-level config artifacts can be removed only if the repository is willing to break old audit/tooling chains: `agent_collaboration_protocol.yaml` (agent protocol auditor tests/docs), `domain_mapping.json` (cross-domain test), `juris_blueprint.json` (US lookup + blind reconstruction tooling + config path helper), `juris_contracts.yaml` and `juris_phase_matrix.yaml` (phase runner / KG audit loop / matrix tests), `lexicon_index.json` (distill tool), and `perf_patterns.yaml` (performance baseline/blueprint tools and tests).
