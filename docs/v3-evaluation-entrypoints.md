@@ -2,7 +2,7 @@
 
 ## 判定规则
 
-[有理有据的][高等] 所有正式案件求值迁入唯一application；法域模块和可选MCP只作adapter；三轨、视差、shadow、batch、DACL/SMT对照工具降为CLI/CI；底层evaluator与独立语义校验允许测试直调；重复执行体及无消费者包装删除。
+[有理有据的][高等] 所有正式案件求值迁入唯一application；法域模块和可选MCP只作adapter；三轨、DACL/SMT对照工具降为CLI/CI；底层evaluator与独立语义校验允许测试直调；重复执行体及无消费者包装删除。
 
 [有理有据的][高等] 名称包含`evaluate`、shadow、DACL或SMT并不等于正式产品入口。无差别迁移会把测试支撑误升格为产品路径，因此本台账同时记录正向入口和负向边界。
 
@@ -30,8 +30,7 @@
 | `compiler_core/multi_jurisdiction_orchestrator.py::evaluate` | 已删除 | 无 | 跨法域正式分析必须组合多个canonical run |
 | `addons/federation/common_law.py::FederatedReasoner.run` | 已删除 | 无 | 无消费者旧包装不保留 |
 | `compiler_core/prc_collision_engine.py::PRCCollisionEngine` | CBL/meta/SPC/CN配置；长期持有SPC/CN evaluator；输出ProofTree | CN adapter、TriRail、collision tests | 三轨外围CLI/CI；SPC/CN正式轨改消费application |
-| `tools/run_trirail_matrix.py::TriRailCollider` | HK/US规则+PRC engine；三个隔离state；输出三轨审计dict | MCP、long-tail、自身CLI、runtime tests、Action Agent | 保留CLI/CI，禁止作为正式结论入口 |
-| `tools/press_long_tail.py::LongTailPressureTest` | 生成/蒸馏事实并持有TriRail；输出压力矩阵 | 自身CLI和runtime monkeypatch测试 | CLI/CI |
+| `tools/run_trirail_matrix.py::TriRailCollider` | HK/US规则+PRC engine；三个隔离state；输出三轨审计dict | 自身CLI、runtime tests | 保留CLI/CI，禁止作为正式结论入口 |
 | `compiler_core/parallax_inference.py::ParallaxInference` | 已删除 | 无 | 与矩阵harness重复 |
 | `compiler_core/multi_solver_router.py::route_and_solve` | 已删除 | 无 | SMT低层能力保留 |
 
@@ -41,15 +40,11 @@
 
 | 文件/符号 | 当前形态与消费者 | v3处置 |
 |---|---|---|
-| `tools/run_parallax_matrix.py::ParallaxMatrixEngine` | 固定加载HK/US并持有双evaluator；输出collision/summary/HTML；仅自身CLI | CLI/CI |
-| `tools/shadow_runner.py::ShadowRunner` | baseline/experiment规则→双state→DiffReport；仅自身CLI | CLI/CI |
 | `compiler_core/spec_shadow_harness.py::_run_horn_shadow` | 内建fixture→临时evaluator→JC/spec payload；由spec-shadow工具和测试消费 | 允许低层直调，属于规范差分支撑 |
 | `compiler_core/shadow_state.py` | 不运行evaluator，只隔离candidate或比较claim IDs | CLI/CI候选隔离支撑 |
 | `compiler_core/batch_processor.py::BatchProcessor` | 已删除 | 私有trace测试已迁到规范内容ID |
-| `tools/batch_litigation_runner.py::run_batch` | 明确标记为engineering fixture的低层差分批次 | CLI/CI；不得生成CanonicalResult |
 | `tools/dacl_graph_runner.py::main` | YAML→DACL图；可选模式另建evaluator验证 | CLI/CI |
 | `tools/smt_evaluator_compare.py::compare` | YAML+facts→Horn与SMT并行→差异dict；有CLI和测试 | CLI/CI |
-| `tools/audit_full.py` | 模块级固定evaluator；控制台审计场景 | CLI/CI；不得成为正式审计链 |
 | `tools/calibrate_weights.py` | 每组权重构造evaluator并评分 | CLI/CI |
 | `tools/e2e_evidence_collector.py` | 固定规则/状态→临时evaluator→证据报告 | CLI/CI |
 | `tools/multi_model_comparison.py` | 同一CN规则跑Horn与Stratified并比较耗时/claims | CLI/CI |

@@ -407,8 +407,8 @@ flowchart TD
 3. `compiler_core/automated_pipeline.py`。
 4. `compiler_core/stratified_evaluator.py`公开入口。
 5. `compiler_core/prc_collision_engine.py`。
-6. `tools/run_trirail_matrix.py`与`press_long_tail.py`。
-7. `run_parallax_matrix.py`、shadow、batch、DACL和其他直接evaluator工具。
+6. `tools/run_trirail_matrix.py`。
+7. DACL、SMT和其他保留的直接evaluator对照工具。
 8. `pipeline/pipeline.py`及其全局ENGINE/文档摄取后求值路径。
 
 **最终迁移原则**：工具可循环调用application，但不得直接持有第二套规则加载、IRState默认或checker逻辑。实际切换和删除在WP4.9执行。
@@ -838,9 +838,9 @@ packs/<pack-content-digest>/
 | `route` | 删除MCP；统一由内部`RulePackResolver`处理 |
 | `trace` | 删除MCP；返回run ID，详细信息由`jc replay`读取 |
 | `check` | 合并到evaluate checker与`jc replay` |
-| `batch` | 保留`tools/batch_litigation_runner.py`显式harness，不进入公共`jc`/WorkBuddy面 |
+| `batch` | 删除；旧 toy harness 不进入公共`jc`/WorkBuddy面 |
 | `render` | 删除MCP；律师明确调用`jc render` |
-| `diff` | 保留shadow/spec差分CI工具，不进入公共`jc`/WorkBuddy面 |
+| `diff` | 保留spec差分CI工具，不进入公共`jc`/WorkBuddy面 |
 | `governance` | 迁入`jc rules audit` |
 | `impact` | 删除公共工具；现有toy impact只保留测试fixture |
 | `ingest_candidate` | 只保留`llm_batch_acceptor`离线candidate摄取，不进入正式MCP |

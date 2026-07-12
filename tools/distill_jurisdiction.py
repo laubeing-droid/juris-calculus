@@ -480,7 +480,7 @@ def generate_state_fact_injection(term: str, state_code: str = None, router: dic
     """
     为长尾术语生成骨干模型对齐后的标准事实注入集。
 
-    返回: {fact_name: confidence, ...} 可直接注入 press_long_tail 或 TriRailCollider
+    返回: {fact_name: confidence, ...} 可直接注入 TriRailCollider
     """
     route = route_state_law_to_backbone(term, state_code, router)
 

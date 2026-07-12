@@ -2,7 +2,6 @@
 
 import pytest
 
-import tools.press_long_tail as press_long_tail
 from tools.run_trirail_matrix import TriRailCollider, generate_heatmap_html
 
 
@@ -43,13 +42,6 @@ def test_threat_scenario_is_review_only_fast_path(collider):
     assert result["reasoning_boundary"]["formal_kernel_used"] is False
     assert result["reasoning_boundary"]["review_required"] is True
     assert "FAST_PATH_INTERCEPT" in result["reasoning_boundary"]["taint"]
-
-
-def test_long_tail_reuses_shared_collider(monkeypatch, collider):
-    monkeypatch.setattr(press_long_tail, "TriRailCollider", lambda: collider)
-    engine = press_long_tail.LongTailPressEngine()
-
-    assert engine.collider is collider
 
 
 def test_heatmap_generation_is_timestamp_free_and_deterministic(tmp_path):
