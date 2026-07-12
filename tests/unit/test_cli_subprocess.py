@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -11,7 +12,11 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _run(*arguments: str, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+def _run(
+    *arguments: str,
+    stdin: str | None = None,
+    environment: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     """从仓库根启动模块CLI并完整捕获协议流。"""
 
     return subprocess.run(
@@ -19,7 +24,9 @@ def _run(*arguments: str, stdin: str | None = None) -> subprocess.CompletedProce
         cwd=ROOT,
         input=stdin,
         text=True,
+        encoding="utf-8",
         capture_output=True,
+        env={**os.environ, **(environment or {})},
         check=False,
         timeout=120,
     )
@@ -44,13 +51,23 @@ def test_rules_lookup_accepts_stdin_and_returns_candidate_corpus_result() -> Non
     """--input -消费stdin，且不把legacy语料描述成official pack。"""
 
     completed = _run("rules", "lookup", "--input", "-", "--limit", "1", "--json", stdin="PC-001\n")
-    payload = json.loads(completed.stdout)
-
     assert completed.returncode == 0
     assert completed.stderr == ""
+    payload = json.loads(completed.stdout)
     assert payload["pack_id"] == "cn-legacy-corpus"
     assert payload["match_count"] >= 1
     assert payload["results"][0]["rule_id"] == "PC-001"
+
+
+def test_json_stdout_is_utf8_when_windows_default_encoding_is_not_utf8() -> None:
+    completed = _run(
+        "rules", "lookup", "--input", "-", "--limit", "1", "--json",
+        stdin="PC-001\n",
+        environment={"PYTHONIOENCODING": "cp1252"},
+    )
+
+    assert completed.returncode == 0
+    assert json.loads(completed.stdout)["results"][0]["rule_id"] == "PC-001"
 
 
 def test_json_usage_error_has_exit_2_and_no_stdout() -> None:

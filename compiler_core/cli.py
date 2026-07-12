@@ -180,6 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     """解析并执行CLI；预期错误不向stdout泄漏traceback。"""
 
+    _configure_machine_streams()
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     try:
@@ -606,6 +607,15 @@ def _write_error(error: CLIError, *, json_output: bool) -> None:
         print(json.dumps(error.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")), file=sys.stderr)
     else:
         print(f"{error.code}: {error}", file=sys.stderr)
+
+
+def _configure_machine_streams() -> None:
+    """在Windows非UTF-8代码页下保持JSON协议可解码。"""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure) and getattr(stream, "encoding", "").lower() != "utf-8":
+            reconfigure(encoding="utf-8")
 
 
 def _public_resource_name(path: Path) -> str:
