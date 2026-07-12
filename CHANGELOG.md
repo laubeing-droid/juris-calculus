@@ -26,8 +26,7 @@
 - Supports Python 3.11 and 3.12 only.
 - Added hash-locked core dependencies, fail-closed `pip-audit`, clean-wheel stale-module detection, CycloneDX SBOM generation, build provenance, and a pinned upstream specification commit.
 - Added numeric cold/warm/branch, memory, event-count, and audit-bundle performance budgets without omitting audit or checker work.
-- Local full-test baseline is `484 passed, 38 skipped` on both Python 3.11 and 3.12. Final wheel evidence is recorded in the closure report. Remote CI remains `NOT_EXECUTED` until pushed.
-- Reproducible wheel: 3,218,231 bytes, SHA-256 `2b5a46ff7fad5ed5932f7acc83a18fd2c908137e659f9b0582f6ebc9bb613543` in two independent isolated builds.
+- Test and wheel results are release evidence only when recorded by the corresponding verification run; remote CI remains `NOT_EXECUTED` until pushed.
 
 ## Historical releases
 

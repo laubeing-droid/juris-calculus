@@ -58,6 +58,8 @@ See:
 - [CLI contract](docs/guides/CLI.md)
 - [Audit bundle and replay](docs/contracts/AUDIT_BUNDLE.md)
 - [Rule packs and promotion](docs/contracts/RULE_PACKS.md)
+- [Input and semantic boundary](docs/contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [Formal runtime conformance](docs/contracts/FORMAL_RUNTIME_CONFORMANCE.md)
 - [Rendering and profiles](docs/contracts/rendering-and-profiles.md)
 - [v2 to v3 migration](docs/guides/MIGRATION_V2_TO_V3.md)
 
@@ -75,7 +77,7 @@ git diff --check
 
 `python mcp_server.py --test` is an in-process surface smoke, not a readiness claim. The authoritative transport test launches a real subprocess. Remote GitHub Actions results are not claimed until a branch is pushed and the workflow actually runs.
 
-Current local baseline: `484 passed, 38 skipped` on both supported Python versions.
+Record the actual pass/skip result with each local verification run; static counts do not constitute release evidence.
 
 ## Evidence levels
 
