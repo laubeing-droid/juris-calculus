@@ -96,7 +96,6 @@ def discover_rule_sources() -> List[Dict[str, str]]:
     for jurisdiction, rel in {
         "zh_CN": "configs/zh_CN/rules.yaml",
         "hk": "configs/hk/rules.yaml",
-        "hk_expanded": "configs/hk/rules_expanded.yaml",
         "en_US": "configs/en_US/rules.yaml",
         "us_adapter": "configs/en_US/US_Adapter.yaml",
     }.items():

@@ -374,6 +374,8 @@ def load_state_router(router_path: str = None) -> dict:
     """加载州级路由表"""
     if router_path is None:
         router_path = str(Path(__file__).resolve().parents[1] / "configs" / "en_US" / "state_router.yaml")
+    if not Path(router_path).exists():
+        return {}
     with open(router_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 

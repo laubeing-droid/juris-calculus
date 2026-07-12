@@ -4,32 +4,67 @@ compliance monitoring, arbitration reasoning."""
 import pytest
 import sys
 import os
+import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 CONFIGS_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'configs', 'zh_CN')
 
 
+def _dp_policy_fixture(tmp_path):
+    path = tmp_path / "dp_policy.yaml"
+    payload = {
+        "policies": [
+            {
+                "data_class": "state_secret",
+                "epsilon_range": [0.0, 0.0],
+                "allowed_release_mode": "blocked",
+                "approval_required": True,
+                "audit_log_required": True,
+                "source_id": "fixture:state_secret",
+            },
+            {
+                "data_class": "public_record",
+                "epsilon_range": [0.1, 100.0],
+                "allowed_release_mode": "full",
+                "approval_required": False,
+                "audit_log_required": False,
+                "source_id": "fixture:public_record",
+            },
+            {
+                "data_class": "court_filing",
+                "epsilon_range": [0.0, 10.0],
+                "allowed_release_mode": "aggregated",
+                "approval_required": False,
+                "audit_log_required": True,
+                "source_id": "fixture:court_filing",
+            },
+        ]
+    }
+    path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    return str(path)
+
+
 class TestDPPolicy:
-    def test_load_policies(self):
+    def test_load_policies(self, tmp_path):
         from compiler_core.dp_policy_loader import DPPolicyLoader
         loader = DPPolicyLoader()
-        path = os.path.join(CONFIGS_DIR, 'dp_policy.yaml')
+        path = _dp_policy_fixture(tmp_path)
         assert loader.load(path)
         assert len(loader.policies) >= 3
 
-    def test_state_secret_blocked(self):
+    def test_state_secret_blocked(self, tmp_path):
         from compiler_core.dp_policy_loader import DPPolicyLoader
         loader = DPPolicyLoader()
-        path = os.path.join(CONFIGS_DIR, 'dp_policy.yaml')
+        path = _dp_policy_fixture(tmp_path)
         loader.load(path)
         result = loader.check_release('state_secret', 0.5)
         assert not result['allowed']
 
-    def test_public_record_allowed(self):
+    def test_public_record_allowed(self, tmp_path):
         from compiler_core.dp_policy_loader import DPPolicyLoader
         loader = DPPolicyLoader()
-        path = os.path.join(CONFIGS_DIR, 'dp_policy.yaml')
+        path = _dp_policy_fixture(tmp_path)
         loader.load(path)
         result = loader.check_release('public_record', 50.0)
         assert result['allowed']
