@@ -52,6 +52,12 @@
 .vscode/
 Thumbs.db
 __pycache__/
+**pycache**/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.tox/
+.nox/
 build/
 dist/
 *.egg-info/
