@@ -51,7 +51,6 @@
 | `tools/perf_baseline.py` | 固定CaseRequest→正式审计application→预算/基线性能报告 | CLI/CI |
 | `tools/relevance_sensitivity_runner.py` | fixture rules/facts→claim ID集合 | CLI/CI |
 | `pipeline/pipeline.py::run_batch` | 枚举案卷并调用process_case | 摄取留CLI；求值迁application |
-| `tools/llm_batch_orchestrator.py`、`tools/semantic_compile_batch.py` | 均不构造或持有evaluator；分别管理候选批次和compiler contract | CLI/CI；明确为“batch但非正式求值”负项 |
 
 ## DACL、SMT与底层语义支撑
 

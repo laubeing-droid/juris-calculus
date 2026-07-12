@@ -832,7 +832,7 @@ packs/<pack-content-digest>/
 | `analyze_strategy` | 映射`jc_analyze_strategy` |
 | `extract_elements` | 迁回上游候选事实准备，不进入正式内核MCP |
 | `evaluate_facts_llm` | 删除；LLM输出candidate-only |
-| `align_concepts_llm` | 删除MCP；仅保留离线candidate工具并受promotion gate |
+| `align_concepts_llm` | 删除；候选准备不属于公开 JC 内核 |
 | `generate_nlni_llm` | 删除MCP；不得生成正式推理输入 |
 | `evaluate` | 合并到`jc_evaluate` |
 | `route` | 删除MCP；统一由内部`RulePackResolver`处理 |
@@ -843,7 +843,7 @@ packs/<pack-content-digest>/
 | `diff` | 保留spec差分CI工具，不进入公共`jc`/WorkBuddy面 |
 | `governance` | 迁入`jc rules audit` |
 | `impact` | 删除公共工具；现有toy impact只保留测试fixture |
-| `ingest_candidate` | 只保留`llm_batch_acceptor`离线candidate摄取，不进入正式MCP |
+| `ingest_candidate` | 删除；候选摄取迁至上游准备流程，不进入正式 MCP |
 | `minimum_evidence` | 合并到evaluate的missing facts/review data |
 | `damages_baseline` | 移入strategy advisory，不单独MCP |
 | `case_deviation` | 映射类案分析模块 |
