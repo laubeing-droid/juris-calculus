@@ -6,7 +6,7 @@ from compiler_core.plugin_registry import registry
 class TestPluginRegistry(unittest.TestCase):
 
     def test_discover_finds_addons(self):
-        """discover() finds CN, HK, US addons."""
+        """discover() finds the active CN/HK addons plus the legacy US placeholder slot."""
         installed = registry.list_installed()
         self.assertIn("cn", installed)
         self.assertIn("hk", installed)
@@ -25,7 +25,7 @@ class TestPluginRegistry(unittest.TestCase):
         self.assertEqual(adapter.jurisdiction, "HK")
 
     def test_get_us_adapter(self):
-        """get('us') returns a USAdapter instance."""
+        """get('us') returns the legacy compatibility shell for the historical US slot."""
         adapter = registry.get("us")
         self.assertIsNotNone(adapter)
         self.assertEqual(adapter.jurisdiction, "US")
@@ -36,7 +36,7 @@ class TestPluginRegistry(unittest.TestCase):
         self.assertIsNone(adapter)
 
     def test_is_installed_true(self):
-        """is_installed returns True for registered addons."""
+        """is_installed returns True for registered addons and placeholders."""
         self.assertTrue(registry.is_installed("cn"))
         self.assertTrue(registry.is_installed("hk"))
         self.assertTrue(registry.is_installed("us"))

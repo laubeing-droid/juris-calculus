@@ -1,10 +1,9 @@
-"""US federal law addon for juris-calculus.
+"""Legacy US plugin-registry placeholder for juris-calculus.
 
-Covers: Title 9 (Arbitration), Title 28 (Jurisdiction/FSIA), Title 50 (Sanctions),
-Title 11 (Bankruptcy), Title 15 (Commerce/Antitrust/Securities),
-Title 17 (Copyrights), Title 35 (Patents).
+This module keeps the historical ``us`` registry slot alive for compatibility.
+It is not reasoning-ready US support and does not imply a complete US addon.
 
-Auto-registers on import. Load with:
+Load with:
     import addons.us
     adapter = registry.get("us")
 """
@@ -16,6 +15,6 @@ registry.register(
     adapter_class=USAdapter,
     rules_path="configs/us/rules.yaml",
     overrides_path="configs/L0_overrides_us.yaml",
-    label="US Federal Law",
+    label="US Legacy Placeholder",
     legal_family="common_law",
 )

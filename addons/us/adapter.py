@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Minimal US adapter kept only for plugin-registry compatibility."""
+"""Minimal US adapter kept only for plugin-registry compatibility.
+
+This file preserves the historical ``us`` slot in ``PluginRegistry``.
+It is a legacy compatibility shell, not a reasoning-ready US addon.
+"""
 
 from __future__ import annotations
 
@@ -27,7 +31,7 @@ _US_CORE_L0 = {
 
 
 class USAdapter(JurisdictionAdapter):
-    """Shrunken legacy adapter: registration shell + optional L0 map lookup."""
+    """Legacy compatibility shell for the ``us`` registry slot."""
 
     jurisdiction = "US"
     rules_path = "configs/us/rules.yaml"
