@@ -1,6 +1,6 @@
 schema_version: '1.0'
 pack_id: us-l0-adapter-legacy-corpus
-version: 3.0.0a1
+version: 3.0.2
 kind: legacy_corpus
 status: candidate
 jurisdiction: US-FEDERAL
@@ -18,5 +18,5 @@ inventory:
   corpus_total: 81
   reasoning_eligible_total: 0
   candidate_only_total: 81
-content_digest: 536187043267a16960ad35db9b336dee94cdece243a536af101b291d8da18aa9
+content_digest: 2db754998f1a2e7c88e69d7bae2610877876bf64de93c6d889966e469d1570b4
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

@@ -1,6 +1,6 @@
 schema_version: '1.0'
 pack_id: cn-legacy-corpus
-version: 3.0.0a1
+version: 3.0.2
 kind: legacy_corpus
 status: candidate
 jurisdiction: CN
@@ -22,5 +22,5 @@ inventory:
   corpus_total: 21144
   reasoning_eligible_total: 0
   candidate_only_total: 21144
-content_digest: 615e045d1b1ff70ea01508cc8c10d681048f933c2d1042740912d9ff0dc6c3bd
+content_digest: 3990bb2396879789a86d526df10fb4cfdf8c41b20a032ee994774f568ffa7758
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

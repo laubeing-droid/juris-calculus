@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+import stat
 
 import pytest
 
@@ -63,6 +64,7 @@ def test_tampered_cached_rule_is_not_used_for_replay(tmp_path) -> None:
     bundle = evaluate_to_audit_bundle(request, loaded, state_root=tmp_path / "state")
     cache = tmp_path / "state" / "packs" / loaded.descriptor.content_digest
     rule_path = cache / "configs" / "fixture" / "rules.yaml"
+    rule_path.chmod(rule_path.stat().st_mode | stat.S_IWUSR)
     rule_path.write_text(rule_path.read_text(encoding="utf-8") + "# tampered\n", encoding="utf-8")
 
     with pytest.raises(AuditBundleError) as caught:

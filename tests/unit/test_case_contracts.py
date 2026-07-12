@@ -21,6 +21,7 @@ from compiler_core.contracts import (
     emit_audit_event,
     schema_document,
 )
+from compiler_core.version import __version__
 
 
 DIGEST = "a" * 64
@@ -48,7 +49,7 @@ def _request_payload():
             },
         ],
         "rule_pack_id": "cn-official",
-        "rule_pack_version": "3.0.0",
+        "rule_pack_version": __version__,
         "rule_pack_digest": DIGEST,
         "external_source_refs": ["source::z", "source::a"],
     }
@@ -67,9 +68,9 @@ def _semantic(status=ResultStatus.REVIEW_ONLY_RESULT, **overrides):
         "review_required": True,
         "checker_accepted": False,
         "certificate_kind": CertificateKind.NONE,
-        "engine_version": "3.0.0",
+        "engine_version": __version__,
         "pack_id": "cn-official",
-        "pack_version": "3.0.0",
+        "pack_version": __version__,
         "pack_digest": DIGEST,
         "risk_labels": ("review",),
     }
@@ -200,7 +201,7 @@ def test_semantic_and_canonical_results_are_deeply_copying_on_export():
 
 
 def test_rule_pack_and_rendered_artifact_are_declarative_and_immutable():
-    pack = RulePackDescriptor("cn-official", "3.0.0", DIGEST, ("r2", "r1"))
+    pack = RulePackDescriptor("cn-official", __version__, DIGEST, ("r2", "r1"))
     artifact = RenderedArtifact(
         result_digest=DIGEST,
         renderer_id="neutral",

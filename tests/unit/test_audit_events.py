@@ -11,6 +11,7 @@ from compiler_core.audit import AuditRecorder, AuditValidationError
 from compiler_core.canonical_serialization import content_id, semantic_digest
 from compiler_core.contracts import ResultStatus, schema_document
 from compiler_core.types import FactTrustStatus, LegalRule
+from compiler_core.version import __version__
 from tests.unit.test_application_service import _fact, _manifest, _pack, _request, _rule
 
 
@@ -230,10 +231,10 @@ def test_audit_rejects_unknown_details_absolute_paths_and_missing_parents() -> N
     """details不是任意字典，路径和伪父事件均fail closed。"""
 
     recorder = AuditRecorder("run::fixture")
-    recorder.record("RUN_STARTED", details={"engine_version": "3.0"})
+    recorder.record("RUN_STARTED", details={"engine_version": __version__})
 
     with pytest.raises(AuditValidationError, match="unknown details"):
-        recorder.record("RUN_STARTED", details={"engine_version": "3.0", "extra": "x"})
+        recorder.record("RUN_STARTED", details={"engine_version": __version__, "extra": "x"})
     with pytest.raises(AuditValidationError, match="absolute path"):
         recorder.record("RUN_FAILED", details={"error_type": "D:/private/case.txt"})
     with pytest.raises(AuditValidationError, match="unknown parent"):

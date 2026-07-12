@@ -2,6 +2,7 @@ import pytest
 
 from compiler_core.contracts import CaseRequest, ContractValidationError, SCHEMA_VERSION
 from compiler_core.types import IRState
+from compiler_core.version import __version__
 
 
 DIGEST = "b" * 64
@@ -17,7 +18,7 @@ def _payload():
         "as_of_date": "2026-07-11",
         "facts": [{"id": "fact::contract-validity", "status": "unknown"}],
         "rule_pack_id": "cn-candidate",
-        "rule_pack_version": "3.0.0",
+        "rule_pack_version": __version__,
         "rule_pack_digest": DIGEST,
     }
 

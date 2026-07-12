@@ -1,5 +1,8 @@
 """离线规则包 manifest 维护工具的只读一致性门禁。"""
 
+import yaml
+
+from compiler_core.version import __version__
 from tools.build_rule_pack_manifests import CONFIGS, stale_manifests
 
 
@@ -15,3 +18,7 @@ def test_current_manifests_match_generator_without_writes() -> None:
     assert stale_manifests(BUILD_COMMIT) == ()
 
     assert {path: path.read_bytes() for path in before} == before
+    assert {
+        yaml.safe_load(path.read_text(encoding="utf-8"))["version"]
+        for path in before
+    } == {__version__}

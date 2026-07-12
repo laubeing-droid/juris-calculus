@@ -15,6 +15,7 @@ from compiler_core.contracts import (
 )
 from compiler_core.source_manifest import SourceEntry, SourceManifest
 from compiler_core.types import DataQuality, FactTrustStatus, LegalFact, LegalRule
+from compiler_core.version import __version__
 
 
 PACK_DIGEST = "a" * 64
@@ -49,7 +50,7 @@ def _request(*facts: LegalFact, digest: str = PACK_DIGEST) -> CaseRequest:
         as_of_date="2026-07-11",
         facts=tuple(facts),
         rule_pack_id="official-cn",
-        rule_pack_version="1.0.0",
+        rule_pack_version=__version__,
         rule_pack_digest=digest,
     )
 
@@ -69,7 +70,7 @@ def _rule(*, source_anchor: str = "source::law", data_quality: str = "CLEAN") ->
 def _pack(*rule_ids: str, digest: str = PACK_DIGEST) -> RulePackDescriptor:
     """构造与请求绑定的确定性规则包描述。"""
 
-    return RulePackDescriptor("official-cn", "1.0.0", digest, tuple(rule_ids or ("R1",)))
+    return RulePackDescriptor("official-cn", __version__, digest, tuple(rule_ids or ("R1",)))
 
 
 def _manifest(*, verified: bool = True, content_hash: str = SOURCE_HASH) -> SourceManifest:

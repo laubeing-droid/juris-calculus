@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Generic, TypeVar
 
+from compiler_core.version import __version__
+
 T = TypeVar("T")
 C = TypeVar("C")
 
@@ -25,7 +27,7 @@ class StageResult(Generic[T, C]):
     assumptions: tuple[str, ...] = field(default_factory=tuple)
     limitations: tuple[str, ...] = field(default_factory=tuple)
     input_digest: str = ""
-    producer_version: str = "v3.0"
+    producer_version: str = field(default_factory=lambda: f"v{__version__}")
 
 
 # --- Core Property: no_uncertainty_upgrade ---

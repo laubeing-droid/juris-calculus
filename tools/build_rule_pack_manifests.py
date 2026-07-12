@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from compiler_core.rule_packs import PACK_SCHEMA_VERSION, manifest_content_digest, sha256_file
+from compiler_core.version import __version__
 PACK_SPECS = (
     {
         "pack_id": "cn-official",
@@ -80,7 +81,7 @@ def _manifest_payload(spec: dict[str, Any], build_commit: str) -> str:
     document: dict[str, Any] = {
         "schema_version": PACK_SCHEMA_VERSION,
         "pack_id": spec["pack_id"],
-        "version": "3.0.0a1",
+        "version": __version__,
         "kind": spec["kind"],
         "status": spec["status"],
         "jurisdiction": spec["jurisdiction"],

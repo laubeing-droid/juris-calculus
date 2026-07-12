@@ -1,6 +1,6 @@
 schema_version: '1.0'
 pack_id: hk-legacy-corpus
-version: 3.0.0a1
+version: 3.0.2
 kind: legacy_corpus
 status: candidate
 jurisdiction: HK
@@ -22,5 +22,5 @@ inventory:
   corpus_total: 133
   reasoning_eligible_total: 0
   candidate_only_total: 133
-content_digest: ab26406a0afb1159e4dea687781c6936e32805b0d19d4f8d505b930f12fd2143
+content_digest: 27b87791a17c968091febc31e7a2f2cc96a084f8373a4939d87ee2ea6b353f55
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79
