@@ -6,7 +6,6 @@
 # the target functionality is restored under a compatible import path.
 collect_ignore = [
     # src.evaluator module removed (StratifiedEvaluator, CompletionStatus gone)
-    "test_composition_safety.py",
     "unit/test_p0_auditability.py",
     "unit/test_stratified_evaluator.py",
     # compiler_core.argumentation.ArgumentationFramework does not exist
