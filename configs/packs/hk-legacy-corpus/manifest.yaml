@@ -9,18 +9,18 @@ effective_from: '2026-07-11'
 effective_to: ''
 rule_files:
 - path: hk/rules.yaml
-  sha256: 4b984a5728f3e80929bf3c5f81b431f2e6a5bd7cd16f2890890d80a20fcb66ae
+  sha256: c7f54338904e37369287d39ee193f2d4cb00ff56c0d61a041d38f19262de24a8
 - path: hk/extended_rules.yaml
-  sha256: df2dffc39c4932d24206c752120c524f68dcfa41aa20cd573387f4b1dea0b3b2
+  sha256: ade7552076e2f0fb51e190086e7e9c6647098cac7aad7b7782a1b044fcd7135a
 source_files:
 - path: hk/provenance.yaml
-  sha256: 7997a3559552d285a1beb3af095fd7dbbe7e4d43e0462a5371ef96a3480bbb92
+  sha256: 98e09561c2c057f0f9ec359ece683069faca974239af5a0817edf988949da118
 config_files:
 - path: L0_overrides_hk.yaml
-  sha256: 48761a4bcc65a09693d9d8a15154a03a77bb8761367719b3ab38ba208ab644cf
+  sha256: b46d396e60269f85c756c82919891685cb84da09d64099e8a2bc285dab8b1638
 inventory:
   corpus_total: 133
   reasoning_eligible_total: 0
   candidate_only_total: 133
-content_digest: 27b87791a17c968091febc31e7a2f2cc96a084f8373a4939d87ee2ea6b353f55
+content_digest: 15d8ea41fba3f43ba3e2637f0f56251c589d72bac3145acf58936f950e919cb1
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

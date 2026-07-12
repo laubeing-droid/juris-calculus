@@ -19,6 +19,7 @@ from compiler_core.types import DataQuality, normalize_rule_admission
 PACK_SCHEMA_VERSION = "1.0"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _ALLOWED_MODALITIES = {"OBLIGATION", "PROHIBITION", "PERMISSION", "CONSTITUTIVE", "UNKNOWN", ""}
+_TEXT_HASH_SUFFIXES = {".json", ".yaml", ".yml"}
 
 
 class RulePackError(ValueError):
@@ -370,12 +371,17 @@ def manifest_content_digest(document: Mapping[str, Any]) -> str:
 
 
 def sha256_file(path: Path) -> str:
-    """流式计算文件SHA-256，避免把大规则语料复制到内存。"""
+    """计算文件SHA-256；文本资源规范化CRLF，避免跨平台规则包漂移。"""
 
+    path = Path(path)
     digest = hashlib.sha256()
-    with Path(path).open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
+    with path.open("rb") as stream:
+        if path.suffix.lower() in _TEXT_HASH_SUFFIXES:
+            for line in stream:
+                digest.update(line.replace(b"\r\n", b"\n"))
+        else:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
     return digest.hexdigest()
 
 

@@ -9,18 +9,18 @@ effective_from: '2026-07-11'
 effective_to: ''
 rule_files:
 - path: zh_CN/rules.yaml
-  sha256: 2182e4f4fdac5aa5ba673cb4df624bc09782902d1d8313566d48c939f83f6cd0
+  sha256: 032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44
 source_files:
 - path: zh_CN/source_manifest.yaml
   sha256: 92a002fd9e992f4a3c7b2710af66e1279129f7344706d32365093da8c48c50b7
 config_files:
 - path: zh_CN/domain_config.example.yaml
-  sha256: 2e33cc1b32d4e3b4702f885b53c45a26280f9495ab60579cd97718c47fa7d83c
+  sha256: 97787174df87a6cd15a3c2d2922dbd5e90c669edb3bd9a2375bdbd8920eecbb5
 - path: zh_CN/ontology_map.yaml
-  sha256: db0700c3414715e36dca36be94cced84d5655ea0f4cbe9770d253c66c7b85572
+  sha256: 9b59e1786df451b70113d30aec8a5d65f57e9d6e6cb69acf39e18a7bc5dfe760
 inventory:
   corpus_total: 21144
   reasoning_eligible_total: 0
   candidate_only_total: 21144
-content_digest: 3990bb2396879789a86d526df10fb4cfdf8c41b20a032ee994774f568ffa7758
+content_digest: 1c43bcc41579820c283eaf3a02ede928b61121aed5a089314a865e204189384d
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79

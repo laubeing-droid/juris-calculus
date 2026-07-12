@@ -90,6 +90,16 @@ def _write_pack(
     return manifest_path
 
 
+def test_text_resource_hash_is_stable_across_windows_and_posix_newlines(tmp_path) -> None:
+    path = tmp_path / "rules.yaml"
+    path.write_bytes(b"rules:\n- id: R1\n")
+    expected = sha256_file(path)
+
+    path.write_bytes(b"rules:\r\n- id: R1\r\n")
+
+    assert sha256_file(path) == expected
+
+
 def test_one_anchored_and_one_unsourced_rule_have_separate_inventories(tmp_path) -> None:
     """有hash来源规则可晋升，无来源规则保留候选且不得被丢弃。"""
 

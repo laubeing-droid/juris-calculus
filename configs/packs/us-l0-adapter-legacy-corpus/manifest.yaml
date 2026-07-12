@@ -9,14 +9,14 @@ effective_from: '2026-07-11'
 effective_to: ''
 rule_files:
 - path: en_US/US_Adapter.yaml
-  sha256: 6ec838c60185c21338f769c9f692cd79e1753fd8635246cfd1a6bc1f3ccfd0b3
+  sha256: b9cb0fdda2d3c38b238ea59bb5643634b76b0b3818662166d26cc657bcf5c467
 source_files: []
 config_files:
 - path: en_US/L0_overrides_us.yaml
-  sha256: e4bf891c1076c520a43616656b2a770afb2ff96c0c19e6545ff3ba5c611aff47
+  sha256: 898806d5a8af5c5980ab208c5023e22b5bdb1421b87f46668be016bd4cafd867
 inventory:
   corpus_total: 81
   reasoning_eligible_total: 0
   candidate_only_total: 81
-content_digest: 2db754998f1a2e7c88e69d7bae2610877876bf64de93c6d889966e469d1570b4
+content_digest: 5f22a21925341865a97f5bf528ccbfeb377d414367ea466f162ca803e6542092
 build_commit: 2053843f397d2ee1c0797831f05f80ba89841e79
