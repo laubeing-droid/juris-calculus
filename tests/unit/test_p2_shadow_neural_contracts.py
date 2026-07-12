@@ -52,4 +52,3 @@ def test_shadow_compare_aligned():
     report = compare_shadow_to_official(["A", "B"], ["B", "A"])
 
     assert report["divergence"] is False
-
