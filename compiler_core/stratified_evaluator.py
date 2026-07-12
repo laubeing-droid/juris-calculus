@@ -26,21 +26,8 @@ class StratifiedEvaluator:
 
     @staticmethod
     def _check_damage_limits(claims):
-        """Post-process: validate damage claims against statutory limits."""
-        try:
-            import json
-            from compiler_core.config_paths import blueprint_path
-            bp = json.load(open(blueprint_path(), "r", encoding="utf-8"))
-            rules = bp.get("damage_calculation_rules", [])
-            warnings = []
-            for claim in claims:
-                desc = getattr(claim, "description", "")
-                if any(kw in desc for kw in ["赔偿", "违约金", "利息", "LPR", "damages", "penalty"]):
-                    for rule in rules[:5]:
-                        warnings.append(f"Damage limit: {rule[:100]}")
-            return warnings
-        except Exception:
-            return []
+        """Legacy blueprint damage-limit sidecar has been retired from the public runtime."""
+        return []
 
     def __init__(self, rules_path: str, overrides_path: Optional[str] = None):
         self.rules = load_rules_from_yaml(rules_path)

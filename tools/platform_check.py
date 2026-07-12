@@ -65,15 +65,7 @@ def check_platform(jurisdictions: List[str] | None = None) -> Dict[str, Any]:
                 findings.append({"config": cfg_path, "jurisdiction": jur, "issue": "missing", "severity": "WARN"})
                 results[f"config:{jur}:{cfg_path.split('/')[-1]}"] = "MISSING"
 
-    # Verify cross-jurisdiction collision interfaces
-    try:
-        from compiler_core.juris_blueprint import JurisBlueprint
-        from compiler_core.config_paths import blueprint_path as _bp
-        bp = JurisBlueprint(_bp())
-        collisions = bp.conflict_interfaces
-        results["collision_interfaces"] = f"{len(collisions)} rules"
-    except Exception as e:
-        findings.append({"module": "collision_interfaces", "issue": str(e), "severity": "ERROR"})
+    results["collision_interfaces"] = "SKIPPED_LEGACY_BLUEPRINT_REMOVED"
 
     passed = not any(f["severity"] == "ERROR" for f in findings)
     return {

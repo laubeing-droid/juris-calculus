@@ -35,14 +35,8 @@ class StepVerifier:
 
     @staticmethod
     def _load_gap_methodology():
-        """Load judgment gap analysis from blueprint."""
-        try:
-            import json
-            from compiler_core.config_paths import blueprint_path
-            bp = json.load(open(blueprint_path(), "r", encoding="utf-8"))
-            return bp.get("judgment_gap_methodology", {})
-        except Exception:
-            return {}
+        """Legacy blueprint gap methodology has been retired from the public runtime."""
+        return {}
 
     def verify_with_gap(self, claim, original_request: float = None):
         """Enhanced verify: apply judgment gap methodology to claims."""

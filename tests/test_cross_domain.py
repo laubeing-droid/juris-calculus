@@ -1,6 +1,5 @@
-"""Cross-domain litigation tests: multi-domain batch + domain mapping validation."""
+"""Cross-domain litigation tests: multi-domain batch fixtures remain valid."""
 
-import json
 import sys
 sys.path.insert(0, "..")
 
@@ -11,12 +10,6 @@ from tools.batch_litigation_runner import (
     make_admin_rules,
     BATCH_CASES,
 )
-
-
-def _load_domain_mapping():
-    with open("configs/domain_mapping.json", "r") as f:
-        return json.load(f)
-
 
 class TestBatchTemplateExpansion:
     """Verify new domains (criminal, admin) are properly integrated."""
@@ -56,35 +49,6 @@ class TestBatchTemplateExpansion:
 
     def test_batch_cases_count_is_9(self):
         assert len(BATCH_CASES) == 9
-
-
-class TestDomainMappingSchema:
-    """Cross-domain mapping schema validation."""
-
-    def test_mapping_json_loads(self):
-        mapping = _load_domain_mapping()
-        assert mapping["version"] == "1.0"
-        assert len(mapping["domains"]) == 4
-
-    def test_all_domains_have_overlapping_concepts(self):
-        mapping = _load_domain_mapping()
-        for domain in mapping["domains"]:
-            concepts = mapping["domains"][domain]["overlapping_concepts"]
-            assert len(concepts) >= 1, f"{domain} has no overlapping concepts"
-
-    def test_cross_domain_cases_present(self):
-        mapping = _load_domain_mapping()
-        cases = mapping["cross_domain_cases"]
-        assert len(cases) == 2
-        assert cases[0]["case_id"] == "cross::contract_tort_overlap"
-        assert cases[1]["case_id"] == "cross::criminal_admin_overlap"
-
-    def test_cross_domain_cases_have_shared_facts(self):
-        mapping = _load_domain_mapping()
-        for case in mapping["cross_domain_cases"]:
-            assert len(case["shared_facts"]) >= 3
-            assert case["domain_a"] != case["domain_b"]
-
 
 class TestMultiDomainEvaluation:
     """End-to-end litigation across multiple domains."""

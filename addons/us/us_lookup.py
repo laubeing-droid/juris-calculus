@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v2.0 US legal assets lookup — reads from juris_blueprint.json domain_assets.
+"""v2.0 US legal assets lookup — reads from the bundled addon blueprint domain_assets.
 
 Provides:
   - court_jurisdiction(name) → {level, category} or None

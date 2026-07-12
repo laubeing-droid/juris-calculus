@@ -6,7 +6,7 @@ Formal runtime always resolves bundled resources. A development override must
 be passed explicitly; merely setting JURIS_CONFIG_DIR cannot replace a pack.
 
 Usage:
-    from compiler_core.config_paths import rules_path, blueprint_path
+    from compiler_core.config_paths import rules_path
     rules = load_rules_from_yaml(rules_path("zh_CN"))
 
 Enables "same algorithm, personal YAML" — each lawyer maintains their own
@@ -23,11 +23,6 @@ def config_root(*, development: bool = False, override: str | Path | None = None
     if override is not None and not development:
         raise ValueError("config override requires development=True")
     return Path(override).resolve() if development and override is not None else configs_root()
-
-
-def blueprint_path() -> str:
-    """Path to juris_blueprint.json (Layer 0 truth source)."""
-    return str(config_root() / "juris_blueprint.json")
 
 
 def rules_path(jurisdiction: str = "zh_CN") -> str:

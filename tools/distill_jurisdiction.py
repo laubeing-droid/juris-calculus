@@ -3,11 +3,11 @@
 """
 Juris-Calculus 法域蒸馏工作台 v1.0
 =====================================
-输入: 新法域的法律文本 (PDF/TXT) + L0 Schema + 121K 词典索引
+输入: 新法域的法律文本 (PDF/TXT) + L0 Schema + 可选词典索引
 输出: 候选 Horn 规则集 (configs/{jurisdiction}/rules.yaml)
 
 管线:
-  法律文本 → 术语提取(词典索引) → L0原语映射 → Horn骨架生成 → 本体校验 → 人工审核
+  法律文本 → 术语提取(可选词典索引) → L0原语映射 → Horn骨架生成 → 本体校验 → 人工审核
 
 用法:
   python tools/distill_jurisdiction.py --input uk_sale_of_goods.txt --jurisdiction uk --family common_law
