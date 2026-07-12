@@ -1,5 +1,4 @@
 from tools.fast_path_interceptor import FastPathInterceptor
-from addons.us import us_lookup
 
 
 def test_builtin_alter_ego_signature_triggers_fast_path():
@@ -10,20 +9,8 @@ def test_builtin_alter_ego_signature_triggers_fast_path():
     assert hit["method"] == "FAST_PATH_BYPASS"
 
 
-def test_invalid_usc_title_triggers_intercept(monkeypatch):
-    monkeypatch.setattr(
-        us_lookup,
-        "_BLUEPRINT",
-        {
-            "domain_assets": {
-                "united_states_code": {
-                    "titles": [{"title": "28", "name": "Judiciary and Judicial Procedure"}]
-                }
-            }
-        },
-    )
-    hit = FastPathInterceptor().intercept(["999 U.S.C. § 1"])
+def test_threat_report_lists_matching_builtin_signature():
+    hits = FastPathInterceptor().get_threat_report(["Wis. Stat. 801.05"])
 
-    assert hit is not None
-    assert hit["signature_id"] == "USC_INVALID_TITLE"
-    assert hit["method"] == "USC_VALIDATION"
+    assert len(hits) == 1
+    assert hits[0]["signature_id"] == "THREAT_WI_ENF_001_LongArm"

@@ -6,8 +6,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from addons.us.us_lookup import validate_usc_citation
-
 
 _DEFAULT_SIGNATURES: tuple[dict[str, Any], ...] = (
     {
@@ -53,30 +51,12 @@ class FastPathInterceptor:
         return None
 
     def intercept(self, shared_facts: Any) -> dict[str, Any] | None:
-        """命中内建威胁或非法 USC 引用时，返回 review-only fast-path 指令。"""
+        """命中内建威胁时，返回 review-only fast-path 指令。"""
 
         fact_names = self._fact_names(shared_facts)
         if not fact_names:
             return None
         fact_blob = " | ".join(fact_names)
-
-        try:
-            citations = validate_usc_citation(fact_blob)
-        except OSError:
-            citations = []
-        for citation in citations:
-            if not citation.get("valid"):
-                title = citation.get("title", "?")
-                return {
-                    "intercepted": True,
-                    "signature_id": "USC_INVALID_TITLE",
-                    "threat_level": "HIGH",
-                    "action": "FORCE_SUPPRESS",
-                    "target_rule": citation.get("citation", ""),
-                    "reason": f"Invalid US Code: Title {title}",
-                    "method": "USC_VALIDATION",
-                    "source_file": "addons.us.us_lookup",
-                }
 
         for signature in self.signatures:
             matched = self._matches(tuple(signature.get("pattern", ())), fact_blob)
