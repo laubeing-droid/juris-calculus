@@ -19,12 +19,10 @@ EVALUATOR_CONSTRUCTOR_ALLOWLIST = frozenset(
         "compiler_core/spec_shadow_harness.py",
         "compiler_core/stratified_evaluator.py",
         "tools/calibrate_weights.py",
-        "tools/dacl_graph_runner.py",
         "tools/e2e_evidence_collector.py",
         "tools/multi_model_comparison.py",
         "tools/perf_baseline.py",
         "tools/run_trirail_matrix.py",
-        "tools/smt_evaluator_compare.py",
     }
 )
 CANONICAL_ENTRYPOINTS = {

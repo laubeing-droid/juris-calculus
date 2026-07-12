@@ -6,8 +6,6 @@ from compiler_core.adjudication_draft import (
     HoldingCategory, audit_adjudication_draft,
 )
 from tools.adjudication_draft_runner import mock_draft
-from tools.smt_evaluator_compare import compare, extract_constraints
-from compiler_core.types import LegalRule
 
 
 def test_audit_blocks_final_conclusions():
@@ -47,20 +45,3 @@ def test_mock_draft_with_facts():
 def test_mock_draft_no_facts():
     report = mock_draft("C1", "test")
     assert report["status"] == "BLOCKED"
-
-
-def test_extract_constraints_from_rules():
-    rules = [
-        LegalRule(id="R1", premise_atoms=["p1"], head_claim="c1", valid_from="2025-01-01", valid_to="2024-01-01", authority_rank="statute", priority_over=["R2"]),
-        LegalRule(id="R2", premise_atoms=["p2"], head_claim="c2"),
-    ]
-    constraints = extract_constraints(rules)
-    assert any("temporal_R1" in c["name"] for c in constraints)
-    assert any("priority_R1" in c["name"] for c in constraints)
-
-
-def test_smt_compare_on_sample_fixture():
-    report = compare("tests/fixtures/rule_migration_sample.yaml", jurisdiction="test")
-    assert report["smt_available"] in {True, False}
-    assert "horn_claim_count" in report
-    assert report["status"] in {"PASS", "DIVERGENCE_DETECTED"}

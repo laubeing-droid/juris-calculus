@@ -108,7 +108,7 @@ flowchart TD
 | Boundary status | `compiler_core/lsc_boundary_status.py` | 迁移为无LSC名称的统一ResultStatus，值和语义先保持 |
 | Canonical序列化 | `compiler_core/canonical_serialization.py` | 扩展到CaseResult；先修复原地修改输入 |
 | 输出防火墙 | `compiler_core/output_firewall.py` | 扩展为递归和受保护章节校验 |
-| 图结构 | `compiler_core/dacl_graph.py` | 复用节点/边概念；正式案件图改从事件流构建 |
+| 图结构 | `compiler_core/audit.py` | 从审计事件构建唯一正式GraphDocument |
 | 供应链三态 | `tools/supply_chain_gate.py` | 保留PASS/FAIL/BLOCKED和非零退出语义 |
 
 ### 4.3 删除或迁出的主要实现

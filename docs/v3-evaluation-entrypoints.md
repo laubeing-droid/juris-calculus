@@ -43,26 +43,23 @@
 | `compiler_core/spec_shadow_harness.py::_run_horn_shadow` | 内建fixture→临时evaluator→JC/spec payload；由spec-shadow工具和测试消费 | 允许低层直调，属于规范差分支撑 |
 | `compiler_core/shadow_state.py` | 不运行evaluator，只隔离candidate或比较claim IDs | CLI/CI候选隔离支撑 |
 | `compiler_core/batch_processor.py::BatchProcessor` | 已删除 | 私有trace测试已迁到规范内容ID |
-| `tools/dacl_graph_runner.py::main` | YAML→DACL图；可选模式另建evaluator验证 | CLI/CI |
-| `tools/smt_evaluator_compare.py::compare` | YAML+facts→Horn与SMT并行→差异dict；有CLI和测试 | CLI/CI |
 | `tools/calibrate_weights.py` | 每组权重构造evaluator并评分 | CLI/CI |
 | `tools/e2e_evidence_collector.py` | 固定规则/状态→临时evaluator→证据报告 | CLI/CI |
 | `tools/multi_model_comparison.py` | 同一CN规则跑Horn与Stratified并比较耗时/claims | CLI/CI |
 | `tools/perf_baseline.py` | 固定CaseRequest→正式审计application→预算/基线性能报告 | CLI/CI |
 | `pipeline/pipeline.py::run_batch` | 枚举案卷并调用process_case | 摄取留CLI；求值迁application |
 
-## DACL、SMT与底层语义支撑
+## SMT与底层语义支撑
 
 | 文件/符号 | 当前形态 | v3处置 |
 |---|---|---|
-| `compiler_core/dacl_graph.py::build_dacl_graph` | rules/claims/facts/traces→`DACLGraph`，不运行evaluator | 低层可复用；正式案件图必须改从AuditEvent构建 |
 | `compiler_core/smt_sidecar.py::SMTSidecar.check` | 结构约束→Z3或Python fallback→SAT/UNSAT/UNKNOWN | application内部或测试可直调；不能独立晋升案件结论 |
 | `compiler_core/validity_state_machine.py::smt_backed_validate` | `ValidityPath`→SMT→状态dict；无消费者 | 删除，或有真实application消费者时才迁入 |
 | `compiler_core/grounded_smt_verifier.py::GroundedSMTChecker` | claims/attacks/labels→有限SMT校验；不调用evaluator | 保留为grounded独立校验支撑 |
 | `compiler_core/universal_grounded_smt.py` | 有限规模Z3检查；无调用者 | 研究/CI；不得包装成Lean证明或案件结论 |
 | evaluator、DDL、nonmonotone、rule admission、v3 semantic baseline测试 | 直接构造低层evaluator以冻结正式语义 | 允许低层直调 |
 | stratified、旧renderer、spec-shadow测试 | 锁定迁移前行为 | 保留为差分fixture，不保留旧产品API |
-| trirail、DACL、SMT测试 | 消费低层对象 | 允许低层直调 |
+| trirail、SMT测试 | 消费低层对象 | 允许低层直调 |
 
 ## 闭合结论
 
