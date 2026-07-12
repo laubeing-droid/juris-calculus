@@ -4,7 +4,6 @@ from compiler_core.argumentation import build_attack_edges_from_rules, grounded_
 from compiler_core.evaluator import FixpointEvaluator
 from compiler_core.types import IRState, LegalDomain, LegalFact, LegalRule
 from compiler_core.domain_config import DomainConfig
-from tools.relevance_sensitivity_runner import run_fixture, run_path
 from tools.rule_quality_auditor import audit_rules
 
 
@@ -91,17 +90,3 @@ def test_rule_quality_auditor_flags_duplicate_and_cycles(tmp_path):
     assert any(f["issue"] == "RULE_GRAPH_CYCLE" for f in report["findings"])
 
 
-def test_relevance_sensitivity_fixture_passes():
-    report = run_fixture("tests/relevance_sensitivity/contract_basics.yaml")
-
-    assert report["status"] == "PASS"
-    assert report["case_count"] == 3
-
-
-def test_relevance_sensitivity_directory_metrics_pass():
-    report = run_path("tests/relevance_sensitivity")
-
-    assert report["status"] == "PASS"
-    assert report["fixture_count"] >= 2
-    assert report["metrics"]["invariance"] == 1.0
-    assert report["metrics"]["statute_confusion"] == 1.0

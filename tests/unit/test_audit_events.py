@@ -8,7 +8,7 @@ import pytest
 
 from compiler_core.application import evaluate_case
 from compiler_core.audit import AuditRecorder, AuditValidationError
-from compiler_core.canonical_serialization import content_id
+from compiler_core.canonical_serialization import content_id, semantic_digest
 from compiler_core.contracts import ResultStatus, schema_document
 from compiler_core.types import FactTrustStatus, LegalRule
 from tests.unit.test_application_service import _fact, _manifest, _pack, _request, _rule
@@ -81,6 +81,78 @@ def test_irrelevant_rules_are_not_written_to_case_audit() -> None:
     relevance = next(event for event in recorder.events if event.event_type == "RELEVANCE_SET_BUILT")
     assert relevance.details["candidate_rule_count"] == 1
     assert "R-IRRELEVANT" not in encoded
+
+
+def test_relevance_closure_records_only_reachable_rule_dependencies() -> None:
+    """相关集纳入例外、优先级和下游支持依赖，但排除无关规则。"""
+
+    primary = LegalRule(
+        id="PRIMARY",
+        premise_atoms=["fact::trigger"],
+        head_claim="claim::primary",
+        exception_chain=["EXCEPTION"],
+        priority_over=["claim::loser"],
+        source_anchor="source::law",
+    )
+    exception = LegalRule(
+        id="EXCEPTION",
+        premise_atoms=["fact::exception"],
+        head_claim="claim::exception",
+        source_anchor="source::law",
+    )
+    loser = LegalRule(
+        id="LOSER",
+        premise_atoms=["fact::loser"],
+        head_claim="claim::loser",
+        source_anchor="source::law",
+    )
+    downstream = LegalRule(
+        id="DOWNSTREAM",
+        premise_atoms=["claim::primary"],
+        head_claim="claim::downstream",
+        source_anchor="source::law",
+    )
+    irrelevant = LegalRule(
+        id="IRRELEVANT",
+        premise_atoms=["fact::other"],
+        head_claim="claim::other",
+        source_anchor="source::law",
+    )
+    recorder = _recorder_for(_request(_fact()))
+    evaluate_case(
+        _request(_fact()),
+        _pack("PRIMARY", "EXCEPTION", "LOSER", "DOWNSTREAM", "IRRELEVANT"),
+        (primary, exception, loser, downstream, irrelevant),
+        source_manifest=_manifest(),
+        audit_sink=recorder,
+    )
+
+    relevance = next(event for event in recorder.events if event.event_type == "RELEVANCE_SET_BUILT")
+    matched_ids = {event.rule_id for event in recorder.events if event.event_type == "RULE_MATCHED"}
+    expected_ids = ("DOWNSTREAM", "EXCEPTION", "LOSER", "PRIMARY")
+    assert relevance.details == {
+        "algorithm_version": "premise-closure-v1",
+        "candidate_rule_count": len(expected_ids),
+        "rule_ids_digest": semantic_digest(expected_ids),
+    }
+    assert matched_ids == set(expected_ids)
+
+
+def test_irrelevant_admitted_fact_does_not_change_relevance_or_claims() -> None:
+    """已准入但未命中规则前提的事实不得扩大相关集或改变正式结果。"""
+
+    request = _request(_fact())
+    noisy_request = _request(_fact(), _fact(fact_id="fact::noise"))
+    baseline = _recorder_for(request)
+    noisy = _recorder_for(noisy_request)
+    baseline_result = evaluate_case(request, _pack(), (_rule(),), source_manifest=_manifest(), audit_sink=baseline)
+    noisy_result = evaluate_case(noisy_request, _pack(), (_rule(),), source_manifest=_manifest(), audit_sink=noisy)
+
+    baseline_relevance = next(event for event in baseline.events if event.event_type == "RELEVANCE_SET_BUILT")
+    noisy_relevance = next(event for event in noisy.events if event.event_type == "RELEVANCE_SET_BUILT")
+    assert noisy_result.claims == baseline_result.claims
+    assert noisy_result.used_rule_ids == baseline_result.used_rule_ids
+    assert noisy_relevance.details == baseline_relevance.details
 
 
 def test_unknown_fact_records_missing_event_and_never_starts_checker() -> None:

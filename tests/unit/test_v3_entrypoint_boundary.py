@@ -23,7 +23,6 @@ EVALUATOR_CONSTRUCTOR_ALLOWLIST = frozenset(
         "tools/e2e_evidence_collector.py",
         "tools/multi_model_comparison.py",
         "tools/perf_baseline.py",
-        "tools/relevance_sensitivity_runner.py",
         "tools/run_trirail_matrix.py",
         "tools/smt_evaluator_compare.py",
     }
