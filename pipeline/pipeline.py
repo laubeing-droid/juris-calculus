@@ -9,7 +9,7 @@ juris-calculus 端到端推理管线 v1.0
 """
 import sys, os, json, time, re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dataclasses import dataclass, field, asdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -50,7 +50,6 @@ class PipelineResult:
     elapsed_ms: float = 0.0
     pred_hours: float = 0.0
     top_claims: List[dict] = field(default_factory=list)
-    ocr_refs: List[dict] = field(default_factory=list)
     blocked_reasons: List[str] = field(default_factory=list)
     trace: str = ""
     error: str = ""
@@ -66,31 +65,8 @@ def extract_text_from_case(case_path: str) -> str:
     combined = ""
     seen_texts = set()
     max_chars = 50000  # 每案卷最多取5万字
-    ocr_engine = None  # 惰性加载
-
-    def _ocr(img_path: str) -> str:
-        """惰性加载 OCR + 识别图片文字"""
-        nonlocal ocr_engine
-        if ocr_engine is None:
-            try:
-                from paddleocr import PaddleOCR
-                ocr_engine = PaddleOCR(use_angle_cls=True, lang='ch', show_log=False)
-            except ImportError:
-                return ""
-        try:
-            result = ocr_engine.ocr(img_path, cls=True)
-            texts = []
-            for line in result or []:
-                for word in line or []:
-                    txt = word[1][0] if len(word) > 1 else ""
-                    if txt and txt.strip():
-                        texts.append(txt.strip())
-            return '\n'.join(texts)
-        except Exception:
-            return ""
-
     # 按扩展名优先级扫描
-    ext_priority = ['.docx', '.txt', '.md', '.json', '.pdf', '.doc', '.jpg', '.jpeg', '.png', '.bmp']
+    ext_priority = ['.docx', '.txt', '.md', '.json', '.pdf', '.doc']
 
     for ext in ext_priority:
         for fp in sorted(case_dir.rglob(f'*{ext}')):
@@ -119,20 +95,12 @@ def extract_text_from_case(case_path: str) -> str:
                                 t = page.extract_text() or ""
                                 texts.append(t)
                             text = '\n'.join(texts)
-                        # 如果 pdfplumber 没提取到文字（扫描件），用 OCR
-                        if len(text.strip()) < 50:
-                            ocr_text = _ocr(str(fp))
-                            if ocr_text:
-                                text = ocr_text
                     except ImportError:
                         text = f"[pdfplumber 未安装]"
                     except Exception:
                         text = f"[PDF解析失败: {fp.name}]"
                 elif ext in ('.txt', '.md', '.json'):
                     text = fp.read_text(encoding='utf-8', errors='ignore')
-                elif ext in ('.jpg', '.jpeg', '.png', '.bmp'):
-                    text = _ocr(str(fp))
-
                 if text and len(text.strip()) > 50:
                     sig = text[:200]
                     if sig not in seen_texts:
@@ -239,53 +207,6 @@ def fact_predicates_from_text(text: str) -> Dict[str, str]:
     return facts
 
 
-# ── OCR 语义检索兜底 ──
-_ocr_index = None  # 惰性加载
-
-def _load_ocr_index():
-    """加载 OCR 原文索引"""
-    global _ocr_index
-    if _ocr_index is not None:
-        return _ocr_index
-    import pickle, numpy as np
-    from pathlib import Path
-    idx_dir = Path(os.environ.get("JURIS_OCR_INDEX_DIR", "./data/chroma_db_ocr"))
-    emb_path = idx_dir / "embeddings.npy"
-    chunk_path = idx_dir / "chunks.pkl"
-    if not emb_path.exists() or not chunk_path.exists():
-        print("  [OCR索引未找到，跳过语义兜底]")
-        _ocr_index = None
-        return None
-    embeddings = np.load(str(emb_path))
-    chunks = pickle.loads(chunk_path.read_bytes())
-    _ocr_index = {"embeddings": embeddings, "chunks": chunks}
-    print(f"  [OCR索引已加载: {len(chunks)}段]")
-    return _ocr_index
-
-def search_ocr(query: str, top_k: int = 3) -> list:
-    """用案卷文本搜 OCR 原文"""
-    idx = _load_ocr_index()
-    if idx is None:
-        return []
-    from sentence_transformers import SentenceTransformer
-    import numpy as np
-    model = SentenceTransformer("BAAI/bge-large-zh-v1.5")
-    q_emb = model.encode([query[:512]], normalize_embeddings=True)
-    scores = np.dot(idx["embeddings"], q_emb.T).flatten()
-    top_idx = np.argsort(scores)[-top_k:][::-1]
-    results = []
-    for i in top_idx:
-        chunk = idx["chunks"][i]
-        results.append({
-            "book": chunk["book"],
-            "start_page": chunk["start_page"],
-            "end_page": chunk["end_page"],
-            "text": chunk["text"][:300],
-            "score": round(float(scores[i]), 3),
-        })
-    return results
-
-
 def process_case(case_path: str) -> PipelineResult:
     """摄取案卷并输出candidate facts；正式求值必须显式调用``jc evaluate``。"""
 
@@ -382,13 +303,6 @@ def export_report(result: PipelineResult, output_path: str):
         lines += ["## 候选事实（不得直接进入正式内核）", ""]
         for fact_id, description in sorted(result.candidate_facts.items()):
             lines.append(f"- `{fact_id}`: {description}")
-
-    if result.ocr_refs:
-        lines += ["", "## OCR 原文参考", ""]
-        for i, ref in enumerate(result.ocr_refs, 1):
-            lines.append(f"{i}. **[ {ref['book']} / 第{ref['start_page']}-{ref['end_page']}页 ]** (相似度: {ref['score']})")
-            lines.append(f"   {ref['text'][:200]}")
-            lines.append("")
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     Path(output_path).write_text('\n'.join(lines), encoding='utf-8')

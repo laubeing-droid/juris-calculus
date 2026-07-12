@@ -37,3 +37,7 @@ def test_clean_wheel_gate_rejects_known_deleted_runtime_modules() -> None:
     assert "compiler_core/post_freeze_surface.py" in FORBIDDEN
     assert "compiler_core/litigation_renderer.py" in FORBIDDEN
     assert "compiler_core/automated_pipeline.py" in FORBIDDEN
+    assert "compiler_core/ddl_preclassifier.py" in FORBIDDEN
+    assert "compiler_core/neural_leaf.py" in FORBIDDEN
+    assert "compiler_core/shadow_state.py" in FORBIDDEN
+    assert "pipeline/build_ocr_index.py" in FORBIDDEN

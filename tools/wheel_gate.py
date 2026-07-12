@@ -27,6 +27,10 @@ FORBIDDEN = {
     "compiler_core/parallax_inference.py",
     "compiler_core/proof_trace_renderer.py",
     "compiler_core/lsc_boundary_status.py",
+    "compiler_core/ddl_preclassifier.py",
+    "compiler_core/neural_leaf.py",
+    "compiler_core/shadow_state.py",
+    "pipeline/build_ocr_index.py",
 }
 
 
