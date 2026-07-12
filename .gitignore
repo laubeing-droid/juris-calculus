@@ -71,12 +71,10 @@ configs/en_US/pdf_glossary_terms.json
 configs/zh_CN/rules.yaml.bak.*
 configs/zh_CN/rules_augmented.yaml
 configs/zh_CN/rules_pre_inject.yaml
-findings.md
-progress.md
+/.planning/
 reports/asymmetry_distillation_v1.1.0.json
 reports/parallax_detail_v1.1.0.json
 scripts/
-task_plan.md
 tests/results/
 下载存放区/
 源码/

@@ -2,6 +2,8 @@
 
 juris-calculus (JC) is a public, auditable legal-reasoning kernel. Its primary interface is the `jc` CLI. It accepts explicit structured facts, applies only integrity-checked and reasoning-eligible rules, writes a complete audit bundle, and returns machine-readable results.
 
+[中文说明](docs/guides/README_CN.md)
+
 JC is not a case-management system or a replacement for lawyer judgment. Private case data, commercial rule packs, drafting workflows, litigation operations, and lawyer-specific style overlays stay outside the public repository. The public kernel is fixed to neutral, stable, auditable output.
 
 ## Safety boundary
@@ -71,7 +73,7 @@ python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
 python -m pytest tests\unit\test_spec_shadow_harness.py -q
 python -m pytest tests\ -q
 python mcp_server.py --test
-python tools\supply_chain_gate.py --requirements requirements-core.lock
+python tools\supply_chain_gate.py --requirements requirements/core.lock
 git diff --check
 ```
 

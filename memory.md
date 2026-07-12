@@ -119,7 +119,7 @@
 
 ## 2026-07-11 JC v3 Phase 8 Engineering Gates
 
-- Core dependency installation is separated from documents, pipeline, render, and WorkBuddy profiles. `requirements-core.lock` pins PyYAML 6.0.3 with hashes for CPython 3.11/3.12 on Windows x86-64 and manylinux x86-64; CI test tooling is version-pinned separately.
+- Core dependency installation is separated from documents, pipeline, render, and WorkBuddy profiles. `requirements/core.lock` pins PyYAML 6.0.3 with hashes for CPython 3.11/3.12 on Windows x86-64 and manylinux x86-64; CI test tooling is version-pinned separately.
 - GitHub CI pins action commits and legal-math-modeling commit `a3a015941f75091c87d57aa956e712f1546dd7d4`. Local implementation does not imply remote verification; Actions remain NOT_EXECUTED until an authorized push.
 - `RulePackRegistry` caches only immutable, digest-bound loaded packs within one registry. It never caches case state, recorder state, or semantic results across runs.
 - The performance gate now measures the audited application rather than legacy toy operations. Fixed synthetic-fixture observations were cold 0.779225s, warm 0.687969s, disputed branch 1.386098s, 1,257,141 peak bytes, 10 audit events, and a 9,218-byte bundle; committed budgets are explicit regression ceilings, not corpus-throughput claims.

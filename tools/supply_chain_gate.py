@@ -52,7 +52,7 @@ def _blocked_reason(stderr: str) -> str:
 
 
 def run_supply_chain_gate(
-    requirements: str | Path = "requirements.txt",
+    requirements: str | Path = "requirements/core.lock",
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
     """执行 pip-audit，并将结果严格归类为 PASS、FAIL 或 BLOCKED。"""
@@ -111,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     """输出单个 JSON 报告，并返回与门禁状态对应的进程退出码。"""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--requirements", default="requirements-core.lock")
+    parser.add_argument("--requirements", default="requirements/core.lock")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     report = run_supply_chain_gate(args.requirements)

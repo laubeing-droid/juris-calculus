@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_core_lock_has_target_wheel_hashes_and_matches_runtime_dependency() -> None:
     """All four supported OS/Python wheel variants must be hash-pinned."""
 
-    lock = (ROOT / "requirements-core.lock").read_text(encoding="utf-8")
+    lock = (ROOT / "requirements" / "core.lock").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     assert "PyYAML==6.0.3" in lock

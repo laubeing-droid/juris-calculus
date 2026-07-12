@@ -1,2 +1,0 @@
-# Backward-compatible core install file. Optional features have separate profiles.
--r requirements-core.lock

@@ -46,11 +46,11 @@ jobs:
 
       - name: Install locked core and test tooling
         run: |
-          python -m pip install --require-hashes -r requirements-core.lock
-          python -m pip install -r requirements-dev.lock
+          python -m pip install --require-hashes -r requirements/core.lock
+          python -m pip install -r requirements/dev.lock
 
       - name: Supply-chain gate
-        run: python tools/supply_chain_gate.py --requirements requirements-core.lock --output reports/supply-chain.json
+        run: python tools/supply_chain_gate.py --requirements requirements/core.lock --output reports/supply-chain.json
 
       - name: Full tests
         run: python -m pytest tests/ -q
@@ -62,7 +62,7 @@ jobs:
         run: python tools/wheel_gate.py --out-dir dist --output reports/wheel-gate.json
 
       - name: Generate CycloneDX SBOM
-        run: python -m pip_audit --requirement requirements-core.lock --format cyclonedx-json --output reports/sbom-core.cdx.json --progress-spinner off --strict
+        run: python -m pip_audit --requirement requirements/core.lock --format cyclonedx-json --output reports/sbom-core.cdx.json --progress-spinner off --strict
 
       - name: Generate build provenance
         shell: bash
