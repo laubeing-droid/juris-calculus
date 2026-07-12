@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.0a1 — Unreleased
+## 3.0.2 — Unreleased
 
 ### Public boundary
 

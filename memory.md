@@ -29,6 +29,7 @@
 ## Engineering constraints
 
 - Supported Python: 3.11 and 3.12. Core dependency: PyYAML; optional profiles stay separate.
+- `compiler_core.version.__version__` is the single package, CLI, audit, and MCP version source. Release tags must match it exactly.
 - Supply-chain auditing uses `pip-audit --disable-pip` with hash-pinned lock profiles; vulnerability lookup and fail-closed PASS/FAIL/BLOCKED remain mandatory.
 - Clean wheel checks must remove generated build caches first because stale `build/lib` can resurrect deleted modules.
 - Tri-rail is an engineering harness only; without official reasoning-ready packs it remains review-only with `formal_kernel_used=false`.
