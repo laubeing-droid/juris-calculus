@@ -89,4 +89,3 @@ def test_rule_quality_auditor_flags_duplicate_and_cycles(tmp_path):
     assert any(f["issue"] == "DUPLICATE_RULE_ID" for f in report["findings"])
     assert any(f["issue"] == "RULE_GRAPH_CYCLE" for f in report["findings"])
 
-
