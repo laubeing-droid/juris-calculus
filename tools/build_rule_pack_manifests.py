@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 from typing import Any
 
 import yaml
 
-from compiler_core.rule_packs import PACK_SCHEMA_VERSION, manifest_content_digest, sha256_file
-
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIGS = ROOT / "configs"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from compiler_core.rule_packs import PACK_SCHEMA_VERSION, manifest_content_digest, sha256_file
 PACK_SPECS = (
     {
         "pack_id": "cn-official",
@@ -67,6 +70,38 @@ PACK_SPECS = (
 )
 
 
+def _manifest_payload(spec: dict[str, Any], build_commit: str) -> str:
+    """从固定规格生成一个规范 manifest，不执行写入。"""
+
+    rule_files = [_file_entry(path) for path in spec["rule_files"]]
+    source_files = [_file_entry(path) for path in spec["source_files"]]
+    config_files = [_file_entry(path) for path in spec["config_files"]]
+    corpus_total = sum(_rule_count(CONFIGS / entry["path"]) for entry in rule_files)
+    document: dict[str, Any] = {
+        "schema_version": PACK_SCHEMA_VERSION,
+        "pack_id": spec["pack_id"],
+        "version": "3.0.0a1",
+        "kind": spec["kind"],
+        "status": spec["status"],
+        "jurisdiction": spec["jurisdiction"],
+        "governing_law": spec["governing_law"],
+        "effective_from": "2026-07-11",
+        "effective_to": "",
+        "rule_files": rule_files,
+        "source_files": source_files,
+        "config_files": config_files,
+        "inventory": {
+            "corpus_total": corpus_total,
+            "reasoning_eligible_total": 0,
+            "candidate_only_total": corpus_total,
+        },
+        "content_digest": "",
+        "build_commit": build_commit,
+    }
+    document["content_digest"] = manifest_content_digest(document)
+    return yaml.safe_dump(document, allow_unicode=True, sort_keys=False)
+
+
 def build_manifests(build_commit: str) -> tuple[Path, ...]:
     """按固定spec写出manifest并返回路径。"""
 
@@ -74,40 +109,24 @@ def build_manifests(build_commit: str) -> tuple[Path, ...]:
         raise ValueError("build_commit must be a full lowercase Git SHA")
     written: list[Path] = []
     for spec in PACK_SPECS:
-        rule_files = [_file_entry(path) for path in spec["rule_files"]]
-        source_files = [_file_entry(path) for path in spec["source_files"]]
-        config_files = [_file_entry(path) for path in spec["config_files"]]
-        corpus_total = sum(_rule_count(CONFIGS / entry["path"]) for entry in rule_files)
-        document: dict[str, Any] = {
-            "schema_version": PACK_SCHEMA_VERSION,
-            "pack_id": spec["pack_id"],
-            "version": "3.0.0a1",
-            "kind": spec["kind"],
-            "status": spec["status"],
-            "jurisdiction": spec["jurisdiction"],
-            "governing_law": spec["governing_law"],
-            "effective_from": "2026-07-11",
-            "effective_to": "",
-            "rule_files": rule_files,
-            "source_files": source_files,
-            "config_files": config_files,
-            "inventory": {
-                "corpus_total": corpus_total,
-                "reasoning_eligible_total": 0,
-                "candidate_only_total": corpus_total,
-            },
-            "content_digest": "",
-            "build_commit": build_commit,
-        }
-        document["content_digest"] = manifest_content_digest(document)
         target = CONFIGS / "packs" / spec["pack_id"] / "manifest.yaml"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            yaml.safe_dump(document, allow_unicode=True, sort_keys=False),
-            encoding="utf-8",
-        )
+        target.write_text(_manifest_payload(spec, build_commit), encoding="utf-8")
         written.append(target)
     return tuple(written)
+
+
+def stale_manifests(build_commit: str) -> tuple[Path, ...]:
+    """返回与当前规范不一致的 manifest；全程只读。"""
+
+    if len(build_commit) != 40 or any(character not in "0123456789abcdef" for character in build_commit):
+        raise ValueError("build_commit must be a full lowercase Git SHA")
+    stale: list[Path] = []
+    for spec in PACK_SPECS:
+        target = CONFIGS / "packs" / spec["pack_id"] / "manifest.yaml"
+        if not target.is_file() or target.read_text(encoding="utf-8") != _manifest_payload(spec, build_commit):
+            stale.append(target)
+    return tuple(stale)
 
 
 def _file_entry(relative_path: str) -> dict[str, str]:
@@ -132,7 +151,13 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-commit", required=True)
+    parser.add_argument("--check", action="store_true", help="verify manifests without writing them")
     args = parser.parse_args()
+    if args.check:
+        stale = stale_manifests(args.build_commit)
+        for path in stale:
+            print(path.relative_to(ROOT).as_posix())
+        return 1 if stale else 0
     for path in build_manifests(args.build_commit):
         print(path.relative_to(ROOT).as_posix())
     return 0
