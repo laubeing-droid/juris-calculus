@@ -13,9 +13,9 @@ Juris-Calculus 法域蒸馏工作台 v1.0
   python tools/distill_jurisdiction.py --input uk_sale_of_goods.txt --jurisdiction uk --family common_law
   python tools/distill_jurisdiction.py --input es_codigo_civil.txt --jurisdiction es --family civil_law
 """
-import sys, os, re, json, yaml, argparse
+import sys, re, json, yaml, argparse
 from pathlib import Path
-from typing import List, Dict, Set, Optional
+from typing import List, Dict
 from dataclasses import dataclass, field
 
 # ─── 配置路径 ───
@@ -502,148 +502,6 @@ def generate_state_fact_injection(term: str, state_code: str = None, router: dic
         facts["US_Pre_Trial_Discovery"] = 0.85
 
     return facts
-
-
-# ═══════════════════════════════════════════════════════════
-# FastPathInterceptor — 威胁签名物理降维挂钩
-# ═══════════════════════════════════════════════════════════
-
-class FastPathInterceptor:
-    """
-    威胁情报拦截器——TriRailCollider 的预处理哨兵。
-
-    行为:
-      扫描共享事实池→匹配WI/NJ威胁签名→命中则旁路全部Horn推演
-      → 直接返回 CBL 阻断指令(不经过Fixpoint迭代)
-
-    设计原则:
-      平时: 零开销——无匹配则返回None, 对撞机照常走三轨流程
-      战时: 烧断US轨——检测到高威胁签名, 直接返回PRC CBL指令
-    """
-
-    def __init__(self, signature_dir: str = None):
-        if signature_dir is None:
-            signature_dir = str(Path(__file__).resolve().parents[1] / "configs" / "us" / "threat_signatures")
-        self.signatures = self._load_all_signatures(signature_dir)
-
-    def _load_all_signatures(self, sig_dir: str) -> list:
-        """加载全部威胁签名YAML文件"""
-        all_sigs = []
-        sig_path = Path(sig_dir)
-        if not sig_path.exists():
-            return all_sigs
-
-        for yf in sig_path.glob("*.yaml"):
-            try:
-                with open(yf, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
-                    sigs = data.get("signatures", [])
-                    for s in sigs:
-                        s["_source_file"] = yf.name
-                    all_sigs.extend(sigs)
-            except Exception:
-                pass
-
-        return sorted(all_sigs, key=lambda s: {
-            "CRITICAL": 0, "HIGH": 1, "MEDIUM": 2
-        }.get(s.get("threat_level", ""), 99))
-
-    def intercept(self, shared_facts: list) -> dict or None:
-        """
-        扫描共享事实池, 检测高威胁签名。
-
-        Args:
-            shared_facts: 事实ID列表 (str) 或 Dict[str, LegalFact]
-
-        Returns:
-            None  → 无威胁, 正常走三轨流程
-            dict  → 检测到威胁, 返回CBL旁路指令
-        """
-        if isinstance(shared_facts, dict):
-            fact_names = list(shared_facts.keys())
-        elif isinstance(shared_facts, list):
-            fact_names = shared_facts
-        else:
-            return None
-
-        # 将所有事实名拼接为一个可搜索的字符串
-        fact_blob = " | ".join(fact_names)
-
-        # v2.0: US Code citation validation against blueprint
-        try:
-            from compiler_core.us_lookup import validate_usc_citation
-            citations = validate_usc_citation(fact_blob)
-            for cit in citations:
-                if not cit.get("valid"):
-                    title = cit.get("title", "?")
-                    return {
-                        "intercepted": True,
-                        "signature_id": "USC_INVALID_TITLE",
-                        "threat_level": "HIGH",
-                        "action": "FORCE_SUPPRESS",
-                        "target_rule": cit.get("citation", ""),
-                        "reason": f"Invalid US Code: Title {title}",
-                        "method": "USC_VALIDATION",
-                        "source_file": "blueprint:united_states_code",
-                    }
-        except Exception:
-            pass
-
-        for sig in self.signatures:
-            for pat in sig.get("pattern", []):
-                # 管道分隔的多模式: 逐个匹配而非整体escape
-                sub_patterns = [p.strip() for p in pat.split("|")]
-                for sp in sub_patterns:
-                    if not sp:
-                        continue
-                if re.search(re.escape(sp), fact_blob, re.IGNORECASE):
-                    return {
-                        "intercepted": True,
-                        "signature_id": sig["signature_id"],
-                        "threat_level": sig.get("threat_level", "MEDIUM"),
-                        "action": sig.get("action", "FORCE_SUPPRESS"),
-                        "target_rule": sig.get("target_rule", ""),
-                        "reason": sig.get("description", ""),
-                        "method": "FAST_PATH_BYPASS",
-                        "source_file": sig.get("_source_file", ""),
-                        # P2: sovereignty audit trail
-                        "sovereignty_audit": {
-                            "gate": "FastPathInterceptor",
-                            "bypassed_validation": ["LegalTaskSchema.is_prc_sovereign_boundary"],
-                            "forced_operators": [sig.get("target_rule", "")],
-                            "sovereignty_anchored": True,
-                            "settlement_blocked": True,
-                            "timestamp": __import__('datetime').datetime.now().isoformat(),
-                        },
-                    }
-
-        return None
-
-    def get_threat_report(self, shared_facts: list) -> list:
-        """返回所有匹配的威胁(不阻断, 仅报告)"""
-        hits = []
-        if isinstance(shared_facts, dict):
-            fact_names = list(shared_facts.keys())
-        elif isinstance(shared_facts, list):
-            fact_names = shared_facts
-        else:
-            return hits
-
-        fact_blob = " | ".join(fact_names)
-
-        for sig in self.signatures:
-            for pat in sig.get("pattern", []):
-                if re.search(re.escape(pat), fact_blob, re.IGNORECASE):
-                    hits.append({
-                        "signature_id": sig["signature_id"],
-                        "threat_level": sig.get("threat_level", "MEDIUM"),
-                        "matched_pattern": pat,
-                        "action": sig.get("action", ""),
-                    })
-                    break  # 每条签名只报告一次
-
-        return hits
-
 
 if __name__ == "__main__":
     main()

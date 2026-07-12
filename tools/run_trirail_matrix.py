@@ -35,7 +35,7 @@ from compiler_core.proof_tree import ProofTree
 from compiler_core.rule_packs import RulePackRegistry, sha256_file
 
 # ── 威胁拦截器 (Gemini审计: 下沉至TriRailCollider主路径最前端) ──
-from tools.distill_jurisdiction import FastPathInterceptor
+from tools.fast_path_interceptor import FastPathInterceptor
 
 
 # ═══════════════════════════════════════════
