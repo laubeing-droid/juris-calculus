@@ -62,7 +62,7 @@ jobs:
         run: python tools/wheel_gate.py --out-dir dist --output reports/wheel-gate.json
 
       - name: Generate CycloneDX SBOM
-        run: python -m pip_audit --requirement requirements/core.lock --format cyclonedx-json --output reports/sbom-core.cdx.json --progress-spinner off --strict
+        run: python -m pip_audit --requirement requirements/core.lock --format cyclonedx-json --output reports/sbom-core.cdx.json --progress-spinner off --strict --disable-pip
 
       - name: Generate build provenance
         shell: bash

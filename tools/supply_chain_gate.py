@@ -68,6 +68,7 @@ def run_supply_chain_gate(
         "--progress-spinner",
         "off",
         "--strict",
+        "--disable-pip",
     ]
     try:
         completed = runner(command, capture_output=True, text=True, check=False)

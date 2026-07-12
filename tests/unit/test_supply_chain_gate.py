@@ -60,5 +60,6 @@ def test_gate_classifies_injected_pip_audit_results(
     assert report["return_code"] == return_code
     assert report["command"][1:3] == ["-m", "pip_audit"]
     assert "--strict" in report["command"]
+    assert "--disable-pip" in report["command"]
     assert report["stderr_summary"] == stderr
     assert EXIT_CODES[status] == exit_code
