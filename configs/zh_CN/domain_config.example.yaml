@@ -28,7 +28,7 @@ factors:
 
 # ── 概念注册表 ──
 # 由 convert_to_juris_rules.py 自动从规则集生成
-# 完整列表见 concept_registry.yaml
+# 完整概念列表由当前 domain_config.yaml 提供；此示例只保留可覆盖字段。
 
 # ============================================================
 # pricing: migrated hardcoded params from peripheral_models.py
