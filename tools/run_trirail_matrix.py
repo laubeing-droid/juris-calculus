@@ -694,6 +694,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run the deterministic Tri-Rail matrix harness")
     parser.add_argument("--open", action="store_true", help="Open the generated HTML report in a browser")
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "过程文件" / "trirail",
+        help="Write local text and HTML reports outside the tracked repository surface",
+    )
     args = parser.parse_args()
     print("=" * 60)
     print("  Tri-Rail Collider v1.2.0")
@@ -718,7 +724,8 @@ if __name__ == "__main__":
 
     # 保存报告
     report = collider.generate_report(results)
-    report_path = Path(__file__).resolve().parents[1] / "reports" / "trirail_report_v1.2.0.txt"
+    report_path = args.out_dir / "trirail_report_v1.2.0.txt"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report)
 

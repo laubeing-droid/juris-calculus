@@ -13,11 +13,12 @@ from typing import Any, Dict, List
 
 
 ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_OUTPUT_DIR = ROOT / "过程文件" / "e2e_evidence"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-def collect_evidence(out_dir: str = "reports/e2e_evidence") -> Dict[str, Any]:
+def collect_evidence(out_dir: str | Path = DEFAULT_OUTPUT_DIR) -> Dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -64,7 +65,7 @@ def collect_evidence(out_dir: str = "reports/e2e_evidence") -> Dict[str, Any]:
 
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Collect E2E evidence for JC verification.")
-    parser.add_argument("--out-dir", default="reports/e2e_evidence")
+    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args(argv)
     report = collect_evidence(args.out_dir)
     print(f"status={report['status']} trace={report['trace_path']}")

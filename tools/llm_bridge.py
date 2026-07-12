@@ -11,7 +11,7 @@ DATA_ORIGIN = "NEURAL_LEAF_SUGGESTION"
 def _key(): return os.environ.get("LLM_API_KEY", "")
 
 def _log_call(mode, sanitized_input, result):
-    out = ROOT / "reports" / "llm_audit"
+    out = ROOT / "过程文件" / "llm_audit"
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     log = {"timestamp": datetime.now(timezone.utc).isoformat(), "mode": mode, "input_hash": hashlib.sha256(sanitized_input.encode()).hexdigest()[:16], "result_summary": str(result)[:500]}

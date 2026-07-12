@@ -15,8 +15,7 @@ from dataclasses import dataclass, field, asdict
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # ── 配置 ──
-REPORT_DIR = os.path.join(os.path.dirname(__file__), '..', 'reports')
-os.makedirs(REPORT_DIR, exist_ok=True)
+REPORT_DIR = Path(__file__).resolve().parents[1] / "过程文件" / "candidate_ingestion"
 
 import yaml
 
@@ -317,7 +316,7 @@ def run_single(case_path: str):
     print(f"{'='*60}")
 
     result = process_case(case_path)
-    report_path = os.path.join(REPORT_DIR, f"{case_name}_推理报告.md")
+    report_path = REPORT_DIR / f"{case_name}_推理报告.md"
     export_report(result, report_path)
 
     print(f"状态: {result.status}")
@@ -350,7 +349,7 @@ def run_batch(batch_dir: str):
     avg_claims = sum(r.claims_found for r in results) / max(total, 1)
     avg_hours = sum(r.pred_hours for r in results) / max(total, 1)
 
-    summary_path = os.path.join(REPORT_DIR, f"batch_{batch_path.name}_汇总.md")
+    summary_path = REPORT_DIR / f"batch_{batch_path.name}_汇总.md"
     lines = [
         f"# 批量推理汇总 — {batch_path.name}",
         "",
@@ -370,7 +369,8 @@ def run_batch(batch_dir: str):
     for r in results:
         lines.append(f"| {r.case_id} | {r.status} | {r.claims_found} | {r.deterministic} | {r.tainted} | {r.critical} | {r.pred_hours:.1f}h |")
 
-    Path(summary_path).write_text('\n'.join(lines), encoding='utf-8')
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text('\n'.join(lines), encoding='utf-8')
     print(f"\n{'='*60}")
     print(f"批量汇总: {summary_path}")
     print(f"  总计: {total} | 候选摄取: {candidates} | 错误: {errors}")
