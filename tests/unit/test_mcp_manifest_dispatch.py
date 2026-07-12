@@ -40,6 +40,25 @@ def test_manifest_exposes_exactly_four_versioned_tools_and_no_resources() -> Non
     assert all("inputSchema" in tool and "outputSchema" in tool for tool in manifest["tools"].values())
 
 
+def test_default_distribution_registers_cli_but_not_mcp_server() -> None:
+    """MCP 是显式可选适配器，默认包只注册 JC CLI。"""
+
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert '[project.scripts]\njc = "compiler_core.cli:main"' in pyproject
+    assert "jc-workbuddy" not in pyproject
+    assert "mcp_server" not in pyproject
+
+
+def test_in_process_smoke_does_not_claim_stdio_readiness(capsys) -> None:
+    """进程内 smoke 仅验证适配器配置，stdio 由协议子进程测试覆盖。"""
+
+    from addons.workbuddy_mcp import run_smoke
+
+    assert run_smoke(ROOT / "mcp_manifest.json") == 0
+    assert '"readiness_claimed": false' in capsys.readouterr().out
+
+
 def test_four_tools_share_existing_application_and_return_logical_refs(tmp_path) -> None:
     """四工具返回紧凑结果，不回显本地路径、events或traceback。"""
 
