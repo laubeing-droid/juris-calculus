@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from tools.export_training_corpus import export_rules_as_jsonl, generate_model_card
+from compiler_core.training import export_rules_as_jsonl, generate_model_card
 
 
 def test_export_rules_as_jsonl_writes_splits(tmp_path):

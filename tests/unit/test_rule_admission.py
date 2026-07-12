@@ -8,8 +8,8 @@ import yaml
 from compiler_core.domain_config import DomainConfig
 from compiler_core.evaluator import FixpointEvaluator, load_rules_from_yaml
 from compiler_core.types import IRState, LegalDomain, LegalFact
-from tools.export_training_corpus import export_rules_as_jsonl
-from tools.rule_quality_auditor import audit_rules
+from compiler_core.rule_governance import audit_rule_file
+from compiler_core.training import export_rules_as_jsonl
 
 
 def _write_admission_fixture(tmp_path):
@@ -69,13 +69,13 @@ def test_audit_and_training_export_share_candidate_inventory(tmp_path):
     """审计和训练导出必须共享同一计数，并在 JSONL 中保留候选状态。"""
     fixture = _write_admission_fixture(tmp_path)
 
-    audit = audit_rules(fixture)
+    audit = audit_rule_file(fixture)
     expected_inventory = {
         "corpus_total": 2,
         "reasoning_eligible_total": 1,
         "candidate_only_total": 1,
     }
-    assert {key: audit[key] for key in expected_inventory} == expected_inventory
+    assert {key: audit["inventory"][key] for key in expected_inventory} == expected_inventory
 
     output = tmp_path / "corpus.jsonl"
     exported = export_rules_as_jsonl([fixture], output, seed=42)
