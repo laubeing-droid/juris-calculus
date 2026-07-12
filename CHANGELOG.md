@@ -31,4 +31,4 @@
 
 ## Historical releases
 
-Versions 1.x through 2.1.x were experimental runtime lines with broader MCP, adapter, renderer, and orchestration surfaces. Their interfaces are not runtime-compatible with v3; see `docs/MIGRATION_V2_TO_V3.md`.
+Versions 1.x through 2.1.x were experimental runtime lines with broader MCP, adapter, renderer, and orchestration surfaces. Their interfaces are not runtime-compatible with v3; see `docs/guides/MIGRATION_V2_TO_V3.md`.

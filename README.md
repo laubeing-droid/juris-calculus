@@ -47,7 +47,7 @@ JC is CLI-first. WorkBuddy may register the optional stdio adapter because WorkB
 - `jc_analyze_strategy`
 - `jc_analyze_similar_cases`
 
-The adapter delegates to the same application, audit, lookup, and advisory services. It does not contain another evaluator or rule loader. See [docs/WORKBUDDY.md](docs/WORKBUDDY.md).
+The adapter delegates to the same application, audit, lookup, and advisory services. It does not contain another evaluator or rule loader. See [WorkBuddy adapter guide](docs/guides/WORKBUDDY.md).
 
 ## Auditing and visualization
 
@@ -55,11 +55,11 @@ Every completed run contains `input.json`, `events.jsonl`, `result.json`, `graph
 
 See:
 
-- [CLI contract](docs/CLI.md)
-- [Audit bundle and replay](docs/AUDIT_BUNDLE.md)
-- [Rule packs and promotion](docs/RULE_PACKS.md)
-- [Rendering and profiles](docs/rendering-and-profiles.md)
-- [v2 to v3 migration](docs/MIGRATION_V2_TO_V3.md)
+- [CLI contract](docs/guides/CLI.md)
+- [Audit bundle and replay](docs/contracts/AUDIT_BUNDLE.md)
+- [Rule packs and promotion](docs/contracts/RULE_PACKS.md)
+- [Rendering and profiles](docs/contracts/rendering-and-profiles.md)
+- [v2 to v3 migration](docs/guides/MIGRATION_V2_TO_V3.md)
 
 ## Local verification
 
