@@ -4,7 +4,7 @@
 For JC, "cross-platform" means:
   - Multi-OS: verify Python/stdlib availability (no GPU-specific deps)
   - Multi-jurisdiction: verify all addon configs load without ImportError
-  - Unified interface: verify same tools/phase_runner work regardless of OS
+  - Unified interface: verify the same packaged runtime interfaces work regardless of OS
 """
 from __future__ import annotations
 

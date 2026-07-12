@@ -59,11 +59,6 @@ def router_moe_path(jurisdiction: str = "zh_CN") -> str:
     return str(config_root() / jurisdiction / "router_moe.yaml")
 
 
-def juris_contracts_path() -> str:
-    """Path to structured experience contracts."""
-    return str(config_root() / "juris_contracts.yaml")
-
-
 def overrides_path(jurisdiction: str = "hk") -> str:
     """Path to L0 overrides for a given jurisdiction."""
     mapping = {
