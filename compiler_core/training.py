@@ -170,7 +170,7 @@ def generate_model_card(
         "limitations": [
             "shadow_only - no direct legal conclusion authority",
             "requires source anchor validation",
-            "must pass promotion gate before reasoning eligibility",
+            "requires external governance and human approval before pack status change",
         ],
         "audit_timestamp": "",
     }

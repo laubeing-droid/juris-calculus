@@ -88,8 +88,7 @@ class DACLGraph:
                 findings.append({"node": node_id, "type": node.node_type.value, "issue": "ORPHAN_NODE"})
         for node_id, node in self.nodes.items():
             if node.node_type == DACLNodeType.CANDIDATE and node.metadata.get("promotion") == "FINAL_AUTOMATED":
-                if not self._has_source_anchor_backing(node_id):
-                    findings.append({"node": node_id, "issue": "FINAL_AUTOMATED_WITHOUT_SOURCE_ANCHOR"})
+                findings.append({"node": node_id, "issue": "FINAL_AUTOMATED_PROMOTION_FORBIDDEN"})
         blocking = [f for f in findings if "MISSING" in f.get("issue", "") or "FINAL_" in f.get("issue", "")]
         return {
             "node_count": len(self.nodes),
@@ -99,21 +98,6 @@ class DACLGraph:
             "status": "PASS" if not blocking else "FAIL",
             "findings": findings,
         }
-
-    def _has_source_anchor_backing(self, node_id: str, visited: Optional[set] = None) -> bool:
-        if visited is None:
-            visited = set()
-        if node_id in visited:
-            return False
-        visited.add(node_id)
-        node = self.nodes.get(node_id)
-        if node and node.source_anchor and node.source_anchor.strip():
-            return True
-        for edge in self.edges:
-            if edge.target_id == node_id and edge.edge_type in {DACLEdgeType.DEPENDS_ON, DACLEdgeType.DERIVES_FROM}:
-                if self._has_source_anchor_backing(edge.source_id, visited.copy()):
-                    return True
-        return False
 
     def to_dict(self) -> Dict[str, Any]:
         return {

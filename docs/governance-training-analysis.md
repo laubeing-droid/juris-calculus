@@ -10,7 +10,7 @@
 
 [有理有据的][高等] `jc training export <pack-id> --out <dir> --seed <n>`只读取经过manifest完整性验证的规则语料，输出train/dev/test JSONL及`training_manifest.json`。每条记录包含pack ID/version/digest、source/admission状态、split与split seed；candidate-only规则必须保留。
 
-[有理有据的][高等] 训练导出拒绝写入pack config root，不读取案件审计包，manifest固定声明`private_case_facts_included=false`与`automatic promotion=false`。训练产物不能反向晋升正式规则；晋升仍需治理、promotion gate和人工批准。
+[有理有据的][高等] 训练导出拒绝写入pack config root，不读取案件审计包，manifest固定声明`private_case_facts_included=false`与`automatic promotion=false`。训练产物不能反向晋升正式规则；状态变更仍需外部人工审核、已验证来源材料和新的pack完整性验证。
 
 ## 缺失事实机器数据
 

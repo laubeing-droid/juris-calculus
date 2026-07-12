@@ -53,7 +53,7 @@ def test_rule_governance_reuses_pack_inventory_and_never_promotes(tmp_path) -> N
     assert report["promotion"] == {
         "automatic": False,
         "suggestion_only": True,
-        "required_action": "run promotion gate and obtain human approval before changing pack status",
+        "required_action": "obtain external human approval, add verified source material, and re-verify the pack before changing pack status",
     }
     assert report["test_coverage"]["status"] == "BLOCKED"
     assert report["blocking_count"] == 0

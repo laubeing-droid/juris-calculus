@@ -33,20 +33,20 @@ def test_anchored_rule_is_clean():
     assert all(f["issue"] != "SOURCE_ANCHOR_MISSING" for f in report["findings"])
 
 
-def test_final_automated_candidate_without_source_is_blocked():
+def test_final_automated_candidate_is_always_blocked():
     graph = DACLGraph()
     graph.add_node("auto_bad", DACLNodeType.CANDIDATE, label="bad promotion", metadata={"promotion": "FINAL_AUTOMATED"})
     report = graph.audit()
-    assert any("FINAL_AUTOMATED_WITHOUT" in f["issue"] for f in report["findings"])
+    assert any("FINAL_AUTOMATED_PROMOTION_FORBIDDEN" == f["issue"] for f in report["findings"])
 
 
-def test_final_automated_candidate_with_source_via_derives_from_passes():
+def test_final_automated_candidate_with_source_is_still_blocked():
     graph = DACLGraph()
     graph.add_node("evidence", DACLNodeType.EVIDENCE, source_anchor="statute:42")
     graph.add_node("cand", DACLNodeType.CANDIDATE, metadata={"promotion": "FINAL_AUTOMATED"})
     graph.add_edge("evidence", "cand", DACLEdgeType.DERIVES_FROM)
     report = graph.audit()
-    assert not any("FINAL_AUTOMATED_WITHOUT" in f["issue"] for f in report["findings"])
+    assert any("FINAL_AUTOMATED_PROMOTION_FORBIDDEN" == f["issue"] for f in report["findings"])
 
 
 def test_build_dacl_graph_from_rules():

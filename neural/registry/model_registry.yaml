@@ -1,8 +1,0 @@
-version: 1
-models:
-  - model_id: sample-domain-router
-    model_version: 0.0.0
-    training_data_version: synthetic-fixture-v1
-    task: domain_router_rerank
-    promotion_status: SHADOW_ONLY
-    model_card: neural/registry/sample-domain-router.model_card.yaml

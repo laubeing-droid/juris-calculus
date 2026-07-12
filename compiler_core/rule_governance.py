@@ -155,7 +155,7 @@ def audit_pack(
         "promotion": {
             "automatic": False,
             "suggestion_only": True,
-            "required_action": "run promotion gate and obtain human approval before changing pack status",
+            "required_action": "obtain external human approval, add verified source material, and re-verify the pack before changing pack status",
         },
         "file_reports": files,
     }

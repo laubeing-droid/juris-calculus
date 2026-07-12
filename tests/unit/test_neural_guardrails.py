@@ -4,7 +4,6 @@ from compiler_core.neural_leaf import (
     NeuralLeafTrustLabel,
     NeuralLeafType,
 )
-from compiler_core.neural_yaml_sync import NeuralYAMLSyncer
 from compiler_core.step_verifier import StepVerifier, Verdict
 
 
@@ -61,34 +60,6 @@ def test_neural_leaf_requires_symbolic_verification_and_safe_ranges():
     assert "SCORE_OUT_OF_RANGE: 1.2" in errors
     assert "CALIBRATION_DELTA_OUT_OF_RANGE: 2.0" in errors
     assert "SYMBOLIC_VERIFICATION_REQUIRED" in errors
-
-
-def test_yaml_syncer_generates_review_report_without_auto_write(tmp_path):
-    syncer = NeuralYAMLSyncer(report_dir=tmp_path)
-
-    report = syncer.promote(
-        "calibrator-1",
-        {"semantic_threshold": (0.35, 0.38)},
-        {"f1_gain": 0.01, "precision_delta": 0.02},
-    )
-
-    assert report.recommendation == "PENDING_HUMAN_REVIEW"
-    saved = tmp_path / "PROMOTION_REPORT.md"
-    assert saved.exists()
-    assert "PENDING_HUMAN_REVIEW" in saved.read_text(encoding="utf-8")
-
-
-def test_yaml_syncer_rejects_non_dry_run_writes():
-    syncer = NeuralYAMLSyncer(dry_run=False)
-
-    report = syncer.promote(
-        "calibrator-1",
-        {"semantic_threshold": (0.35, 0.38)},
-        {"f1_gain": 0.01},
-    )
-
-    assert report.recommendation == "REJECTED"
-    assert "AUTOMATIC_YAML_WRITE_FORBIDDEN" in report.issues
 
 
 def test_step_verifier_rejects_invalid_neural_output():

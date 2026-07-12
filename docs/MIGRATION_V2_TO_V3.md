@@ -19,7 +19,7 @@ v3 prioritizes correctness and auditability over runtime compatibility. There is
 | `calculate_damages`, `damages_baseline`, `impact` | Advisory/private downstream analysis; no standalone formal MCP result. |
 | `extract_elements`, `ingest_candidate`, `evaluate_facts_llm`, `align_concepts_llm`, `generate_nlni_llm` | Removed from the public kernel; candidate preparation belongs upstream. |
 | `get_operator_schemas`, `generate_task_schema`, `private_layer_contract` | Static schemas and documentation. |
-| `neural_leaf_status` | CI-only neural contract audit. |
+| `neural_leaf_status` | Removed; no parallel neural-promotion framework remains. |
 
 All former `legal://...` resources were removed. Use pack list/verify/lookup for bounded metadata and rules; architecture and schemas are static package documents.
 

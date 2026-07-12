@@ -734,7 +734,7 @@ packs/<pack-content-digest>/
 
 ### WP6.1 规则治理
 
-**CLI**：`jc rules audit`。复用`rule_quality_auditor.py`、source manifest、rule inventory和promotion gate。
+**CLI**：`jc rules audit`。复用`rule_quality_auditor.py`、source manifest和rule inventory。
 
 **输出**：corpus/eligible/candidate计数、candidate IDs、重复ID、source hash、有效期、modality、priority和测试覆盖问题。
 
@@ -789,7 +789,7 @@ packs/<pack-content-digest>/
 ### Phase 6 门禁
 
 - **通过**：规则治理、训练导出、诉讼策略、类案分析四类目标均有真实消费者、输出schema和边界测试；missing facts作为核心结果已接线，三轨已完成下沉；关闭外围模块不影响evaluate。
-- **不得继续**：策略/类案命令改写正式结果，或训练导出绕过promotion gate。
+- **不得继续**：策略/类案命令改写正式结果，或训练导出绕过人工审核、来源验证和pack完整性验证。
 - **材料不足**：真实类案索引缺失时，类案机制可完成但实务质量验收标为BLOCKED；不阻断core、governance和training提交。
 - **提交11**：`feat: expose governed analysis and training modules through CLI`。
 
@@ -825,7 +825,7 @@ packs/<pack-content-digest>/
 | `generate_task_schema` | 删除；不让内核生成agent任务 |
 | `rule_router` | 删除MCP；由内部`RulePackResolver`唯一承担routing |
 | `stratified_evaluate` | 合并到`jc_evaluate` |
-| `neural_leaf_status` | 删除公共工具；只保留`neural_contract_auditor`类CI诊断 |
+| `neural_leaf_status` | 删除公共工具；不保留平行 neural-promotion 框架 |
 | `search_rules` | 合并到`jc_lookup_rule` |
 | `evaluate_facts` | 合并到`jc_evaluate` |
 | `calculate_damages` | 作为`jc analyze strategy`的ADVISORY子结果，不单独MCP |

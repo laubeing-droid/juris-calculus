@@ -1,14 +1,7 @@
-from pathlib import Path
 import json
 
-import yaml
-
 from compiler_core.shadow_state import ShadowCandidate, ShadowState, compare_shadow_to_official
-from tools.neural_contract_auditor import audit_neural_contracts
 from tools.shadow_divergence_report import build_report, build_report_from_json, write_jsonl_example
-
-
-ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def test_shadow_state_does_not_accept_candidates_by_default():
@@ -60,17 +53,3 @@ def test_shadow_compare_aligned():
 
     assert report["divergence"] is False
 
-
-def test_neural_contracts_forbid_decision_outputs():
-    output_schema = yaml.safe_load((ROOT / "neural" / "contracts" / "output_schema.yaml").read_text(encoding="utf-8"))
-    promotion_policy = yaml.safe_load((ROOT / "neural" / "contracts" / "promotion_policy.yaml").read_text(encoding="utf-8"))
-
-    assert "legal_conclusion" in output_schema["forbidden_outputs"]
-    assert output_schema["requires_symbolic_verification"] is True
-    assert promotion_policy["automatic_yaml_write"] == "forbidden"
-
-
-def test_neural_contract_auditor_passes():
-    report = audit_neural_contracts(ROOT)
-
-    assert report["status"] == "PASS"
