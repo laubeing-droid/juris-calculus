@@ -53,7 +53,7 @@
 | `tools/calibrate_weights.py` | 每组权重构造evaluator并评分 | CLI/CI |
 | `tools/e2e_evidence_collector.py` | 固定规则/状态→临时evaluator→证据报告 | CLI/CI |
 | `tools/multi_model_comparison.py` | 同一CN规则跑Horn与Stratified并比较耗时/claims | CLI/CI |
-| `tools/perf_baseline.py` | CN规则→临时evaluator→性能报告 | CLI/CI |
+| `tools/perf_baseline.py` | 固定CaseRequest→正式审计application→预算/基线性能报告 | CLI/CI |
 | `tools/relevance_sensitivity_runner.py` | fixture rules/facts→claim ID集合 | CLI/CI |
 | `pipeline/pipeline.py::run_batch` | 枚举案卷并调用process_case | 摄取留CLI；求值迁application |
 | `tools/llm_batch_orchestrator.py`、`tools/semantic_compile_batch.py` | 均不构造或持有evaluator；分别管理候选批次和compiler contract | CLI/CI；明确为“batch但非正式求值”负项 |

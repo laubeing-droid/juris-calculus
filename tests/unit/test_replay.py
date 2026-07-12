@@ -25,6 +25,14 @@ def test_offline_replay_matches_events_result_and_graph(tmp_path) -> None:
     bundle = evaluate_to_audit_bundle(request, loaded, state_root=tmp_path / "state")
     replay = replay_audit_bundle(tmp_path / "state", bundle.result.semantic.run_id)
 
+    assert tuple(sorted(replay)) == (
+        "bundle_digest",
+        "events_digest",
+        "graph_digest",
+        "result_digest",
+        "run_id",
+        "status",
+    )
     assert replay == {
         "status": "PASS",
         "run_id": bundle.result.semantic.run_id,

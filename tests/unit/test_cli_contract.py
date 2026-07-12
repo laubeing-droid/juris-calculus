@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 
 import yaml
 
 import compiler_core.cli as cli
+from tests.unit.test_audit_bundle import _fixture
 
 
 def _write_corpus(root: Path) -> None:
@@ -101,3 +103,24 @@ def test_internal_error_is_redacted(monkeypatch, capsys) -> None:
     assert captured.out == ""
     assert json.loads(captured.err)["code"] == "CLI_INTERNAL_ERROR"
     assert "private absolute path" not in captured.err
+
+
+def test_evaluate_json_exposes_semantic_result_status_and_logical_artifact_refs(tmp_path, monkeypatch, capsys) -> None:
+    """evaluate --json 必须稳定暴露 formal result status 且不泄漏本地路径。"""
+
+    _, request = _fixture(tmp_path / "configs")
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO(json.dumps(request.to_dict(), ensure_ascii=False)))
+
+    exit_code = cli.main([
+        "evaluate",
+        "--input", "-",
+        "--development",
+        "--config-root", str(tmp_path / "configs"),
+        "--audit-out", str(tmp_path / "state"),
+        "--json",
+    ])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == cli.EXIT_OK
+    assert payload["canonical_result"]["semantic"]["result_status"] == "accepted_formal_result"
+    assert all(not ref.startswith(("C:", "D:", "/")) for ref in payload["canonical_result"]["artifact_refs"])

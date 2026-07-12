@@ -53,6 +53,8 @@ def test_four_tools_share_existing_application_and_return_logical_refs(tmp_path)
     )
 
     assert evaluated["status"] == "ok"
+    assert evaluated["result_status"] == "accepted_formal_result"
+    assert evaluated["review_required"] is False
     assert evaluated["formal_kernel_used"] is True
     assert looked_up["results"][0]["rule_id"] == "R-ANCHORED"
     assert strategy["analysis_status"] == "ADVISORY" and strategy["review_required"] is True
