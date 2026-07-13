@@ -33,3 +33,11 @@
 - Supply-chain auditing uses `pip-audit --disable-pip` with hash-pinned lock profiles; vulnerability lookup and fail-closed PASS/FAIL/BLOCKED remain mandatory.
 - Clean wheel checks must remove generated build caches first because stale `build/lib` can resurrect deleted modules.
 - Tri-rail is an engineering harness only; without official reasoning-ready packs it remains review-only with `formal_kernel_used=false`.
+
+## Legal compiler research baseline
+
+- The efficient compiler shape is a dual-IR hourglass: provenance-bound `LegalSpec` lowers into a small `Legal-IVL`, then fans out to deterministic execution, proof-obligation, counterexample, and explanation targets.
+- `Spec IR -> Impl IR -> Target` is incomplete without per-run translation validation, proof receipts, replay manifests, mutation/scenario oracles, and an external human-controlled rule-pack lifecycle.
+- Keep responsibilities split: `legal-math-modeling` defines semantics and proof obligations; Deli-style research automation proposes, repairs, tests, and trains candidates; JC validates admitted artifacts and executes the protected fail-closed kernel.
+- Strengthen legacy Horn candidates through source anchors, typed variables, temporal scope, modality, exception/attack/priority edges, static analysis, mutation tests, and proof receipts. Never promote candidates merely by changing manifest state.
+- Neural components may retrieve, route, rank, propose, or repair candidates. They must not create `verified_fact`, decide `DecisionStatus`, or bypass checker acceptance.
