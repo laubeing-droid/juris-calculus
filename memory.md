@@ -41,3 +41,8 @@
 - Keep responsibilities split: `legal-math-modeling` defines semantics and proof obligations; Deli-style research automation proposes, repairs, tests, and trains candidates; JC validates admitted artifacts and executes the protected fail-closed kernel.
 - Strengthen legacy Horn candidates through source anchors, typed variables, temporal scope, modality, exception/attack/priority edges, static analysis, mutation tests, and proof receipts. Never promote candidates merely by changing manifest state.
 - Neural components may retrieve, route, rank, propose, or repair candidates. They must not create `verified_fact`, decide `DecisionStatus`, or bypass checker acceptance.
+
+## Laptop-repair handoff snapshot — 2026-07-29
+
+- Added root `HANDOFF.md`. Before the handoff commit, `main` was clean and one commit ahead of `origin/main` at `4ddd718`.
+- Restoring on another machine requires rerunning the stdio MCP test and full suite; the historical clean state is not a current transport or release PASS.
