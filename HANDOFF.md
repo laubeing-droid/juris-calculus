@@ -16,7 +16,7 @@
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-只有 `verified_fact` 可进入形式推理；`UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 不产生证书。`cn-official` 在缺少第一方法源快照时继续 blocked。语义改动先进入 `D:\Codex\数学证明\legal-math-modeling`。
+只有 `verified_fact` 可进入形式推理；`UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 不产生证书。`cn-official` 在缺少第一方法源快照时继续 blocked。语义改动先进入上游 `legal-math-modeling` 仓库。
 
 ## 权威文件
 
@@ -42,3 +42,6 @@ git diff --check
 
 未获当前回合授权时不要 push、tag、release 或改变可见性。
 
+## 2026-08-07 路径复核
+
+仓库迁入 `D:\Codex\1.法律工作区\juris-calculus` 后，入口边界与 stdio MCP 权威测试通过。Windows 默认 `%TEMP%` 会使 render 测试的摘要目录超过传统路径长度；使用短 `--basetemp` 后全套为 355 通过、28 项因缺少重依赖跳过。该环境问题未通过修改正式内核或全局长路径策略规避。

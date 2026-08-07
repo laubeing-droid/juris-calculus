@@ -46,3 +46,10 @@
 
 - Added root `HANDOFF.md`. Before the handoff commit, `main` was clean and one commit ahead of `origin/main` at `4ddd718`.
 - Restoring on another machine requires rerunning the stdio MCP test and full suite; the historical clean state is not a current transport or release PASS.
+
+## Workspace path recheck — 2026-08-07
+
+- Current checkout: `D:\Codex\1.法律工作区\juris-calculus`; no tracked machine path remains after replacing the obsolete upstream path in `HANDOFF.md` with the repository name.
+- The v3 entrypoint and stdio MCP authority tests pass; in-process MCP smoke reports version `3.0.2`, four tools, zero resources, and does not claim readiness.
+- Default Windows `%TEMP%` makes render artifact paths exceed the legacy path limit. The default-temp full run produced 349 passed, 28 skipped, and 6 path-length failures; a complete rerun with short `--basetemp` produced 355 passed and 28 skipped.
+- Treat the short basetemp as a test-environment requirement on this machine, not a change to audit-bundle semantics or a reason to enable global long-path policy.
