@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://juris-calculus.local/schema/w1b/case-request.schema.json",
+  "title": "JCCaseRequest",
+  "description": "JC 案件请求（W1b 正式合同）。与 compiler_core.contracts.CaseRequest 字段对齐；LegalOS 固定消费此 digest。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "jurisdiction",
+    "governing_law",
+    "as_of_date",
+    "facts",
+    "rule_pack_id",
+    "rule_pack_version",
+    "rule_pack_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "3.0",
+      "description": "必须等于 compiler_core.contracts.SCHEMA_VERSION"
+    },
+    "jurisdiction": { "type": "string", "minLength": 1 },
+    "governing_law": { "type": "string", "minLength": 1 },
+    "as_of_date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "description": "ISO 日期" },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "raw_text": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["candidate_fact", "verified_fact"]
+          },
+          "source_ids": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "human_reviewed": { "type": "boolean" },
+          "created_by": { "type": "string", "enum": ["lawyer", "extraction", "system"] }
+        }
+      }
+    },
+    "rule_pack_id": { "type": "string", "minLength": 1 },
+    "rule_pack_version": { "type": "string", "minLength": 1 },
+    "rule_pack_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "external_source_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    }
+  }
+}

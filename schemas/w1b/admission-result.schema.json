@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://juris-calculus.local/schema/w1b/admission-result.schema.json",
+  "title": "JCAdmissionResult",
+  "description": "JC 准入结果（W1b 正式合同）：JC 独立拥有最终准入状态；LegalOS/LH 只投影，不得伪造。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["admission_id", "request_id", "status", "produced_by", "produced_at", "result_digest"],
+  "properties": {
+    "admission_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": "string", "description": "回显 RuleAdmissionRequest.request_id" },
+    "status": {
+      "type": "string",
+      "enum": ["admitted", "rejected", "pending_review"]
+    },
+    "produced_by": { "type": "string", "const": "jc" },
+    "produced_at": { "type": "string" },
+    "proof_bundle": {
+      "$ref": "proof-bundle-ref.schema.json",
+      "description": "status=admitted 时必填"
+    },
+    "rejection_reason": { "type": "string", "description": "status=rejected 时必填（脱敏）" },
+    "result_digest": { "type": "string", "pattern": "^sha256-[0-9a-f]{64}$" }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "description": "RFC 8785 JCS golden vectors。TS 与 Python 分别对 input 做 JCS，必须逐字节等于 expected。",
+  "vectors": [
+    { "name": "empty_object", "input": {}, "expected": "{}" },
+    { "name": "empty_array", "input": [], "expected": "[]" },
+    { "name": "key_sort_ascii", "input": { "b": 1, "a": 2 }, "expected": "{\"a\":2,\"b\":1}" },
+    {
+      "name": "key_sort_utf16_code_units",
+      "input": { "\ud83d\ude00": 1, "\ue000": 2, "a": 3 },
+      "expected": "{\"a\":3,\"\ud83d\ude00\":1,\"\ue000\":2}"
+    },
+    {
+      "name": "escape_control_and_quotes",
+      "input": { "s": "a\u0000b\u001f\"\\" },
+      "expected": "{\"s\":\"a\\u0000b\\u001f\\\"\\\\\"}"
+    },
+    { "name": "escape_chinese", "input": { "s": "合同法" }, "expected": "{\"s\":\"合同法\"}" },
+    { "name": "number_int", "input": { "n": 123 }, "expected": "{\"n\":123}" },
+    { "name": "number_negative", "input": { "n": -5 }, "expected": "{\"n\":-5}" },
+    { "name": "number_minus_zero", "input": { "n": -0 }, "expected": "{\"n\":0}" },
+    { "name": "number_exp_large", "input": { "n": 1e21 }, "expected": "{\"n\":1e21}" },
+    { "name": "number_exp_small", "input": { "n": 1e-7 }, "expected": "{\"n\":1e-7}" },
+    { "name": "number_shortest_float", "input": { "n": 0.1 }, "expected": "{\"n\":0.1}" },
+    { "name": "number_large_precise", "input": { "n": 1.2345678901234568e20 }, "expected": "{\"n\":123456789012345680000}" },
+    { "name": "boolean_null", "input": { "t": true, "f": false, "z": null }, "expected": "{\"f\":false,\"t\":true,\"z\":null}" },
+    { "name": "nested", "input": { "outer": { "b": 1, "a": [true, null, { "x": "y" }] } }, "expected": "{\"outer\":{\"a\":[true,null,{\"x\":\"y\"}],\"b\":1}}" },
+    { "name": "emoji_string", "input": { "s": "\u2696\ufe0f" }, "expected": "{\"s\":\"\u2696\ufe0f\"}" },
+    { "name": "mixed_law_envelope", "input": { "contract_version": "1.2.3", "input_digest": "sha256-abc", "caller": { "version": "0.1.0", "product_id": "legalos" }, "operation_id": "op-001" }, "expected": "{\"caller\":{\"product_id\":\"legalos\",\"version\":\"0.1.0\"},\"contract_version\":\"1.2.3\",\"input_digest\":\"sha256-abc\",\"operation_id\":\"op-001\"}" }
+  ]
+}

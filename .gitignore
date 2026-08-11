@@ -30,6 +30,10 @@
 *.json
 !schemas/
 !schemas/jc-v3.schema.json
+!schemas/w1b/
+!schemas/w1b/*.schema.json
+!tests/fixtures/golden/
+!tests/fixtures/golden/*.json
 *.key
 *.log
 *.npy

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://juris-calculus.local/schema/w1b/proof-bundle-ref.schema.json",
+  "title": "JCProofBundleRef",
+  "description": "JC 证明包引用（W1b 正式合同）：pack/version/digest 与失败原因。LegalOS 只保存引用与投影。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_id", "pack_id", "version", "digest"],
+  "properties": {
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "pack_id": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "pattern": "^sha256-[0-9a-f]{64}$", "description": "pack JCS+SHA-256" },
+    "locator": { "type": "string", "description": "JC data root 内相对 locator" },
+    "produced_at": { "type": "string", "description": "RFC3339 UTC" },
+    "failure_reason": { "type": "string", "description": "无 pack 时 BLOCK 的原因（脱敏）" }
+  }
+}

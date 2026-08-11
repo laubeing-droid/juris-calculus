@@ -22,6 +22,7 @@ from compiler_core.audit_bundle import (
     state_root_diagnostics,
 )
 from compiler_core.contracts import CaseRequest, ResultStatus
+from compiler_core.jcs import jcs_digest
 from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze_strategy
 from compiler_core.rendering import RendererError, render_run
 from compiler_core.rule_governance import audit_pack, write_governance_report
@@ -114,6 +115,10 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--audit-out", metavar="PATH", help="explicit state root to diagnose")
     doctor.add_argument("--json", action="store_true", dest="json_output")
     doctor.set_defaults(handler=_handle_doctor)
+
+    capabilities = commands.add_parser("capabilities", help="publish the host-neutral capability manifest (W1b)")
+    capabilities.add_argument("--json", action="store_true", dest="json_output")
+    capabilities.set_defaults(handler=_handle_capabilities)
 
     packs = commands.add_parser("packs", help="inspect and verify versioned rule packs")
     pack_commands = packs.add_subparsers(dest="packs_command", required=True)
@@ -246,6 +251,38 @@ def _handle_rules_lookup(args: argparse.Namespace) -> dict[str, Any]:
         "inventory": build_rule_inventory(rules),
         "match_count": len(matches),
         "results": matches[: args.limit],
+    }
+
+
+def _handle_capabilities(args: argparse.Namespace) -> dict[str, Any]:
+    """发布宿主无关能力清单（W1b 合同；stdout 单 UTF-8 JSON，stderr 只诊断）。"""
+
+    schemas_dir = schemas_root() / "w1b"
+    schema_digests: dict[str, str] = {}
+    try:
+        for path in sorted(schemas_dir.glob("*.schema.json")):
+            schema_digests[path.name] = jcs_digest(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as exc:
+        raise CLIError(
+            "SCHEMA_UNAVAILABLE",
+            "W1b schema directory cannot be read",
+            exit_code=EXIT_OPTIONAL_COMPONENT_MISSING,
+            details={"resource": str(schemas_dir), "error_type": type(exc).__name__},
+        ) from exc
+    return {
+        "command": "capabilities",
+        "status": "ok",
+        "product_id": "jc",
+        "product_version": __version__,
+        "contract_version": "1.0.0",
+        "commands": ["capabilities", "evaluate", "replay", "render", "rules", "packs", "doctor", "training", "analyze"],
+        "features": ["agent_executor_optional", "formal_reasoning", "audit_bundle", "replay", "rule_admission"],
+        "data_root": str(configs_root()),
+        "capabilities": {
+            "read_only": ["capabilities", "rules.lookup", "rules.audit", "packs.list", "packs.verify", "render", "analyze"],
+            "writable": ["evaluate", "replay", "training.export"],
+        },
+        "schema_digests": schema_digests,
     }
 
 
