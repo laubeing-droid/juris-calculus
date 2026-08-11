@@ -23,6 +23,7 @@ from compiler_core.audit_bundle import (
 )
 from compiler_core.contracts import CaseRequest, ResultStatus
 from compiler_core.jcs import jcs_digest
+from compiler_core.admission import admit_rule
 from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze_strategy
 from compiler_core.rendering import RendererError, render_run
 from compiler_core.rule_governance import audit_pack, write_governance_report
@@ -140,6 +141,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_pack_root_options(evaluate)
     evaluate.add_argument("--json", action="store_true", dest="json_output")
     evaluate.set_defaults(handler=_handle_evaluate)
+
+    admit = commands.add_parser("admit", help="independent rule admission (W9)")
+    admit.add_argument("--input", required=True, metavar="PATH", help="RuleAdmissionRequest JSON path or '-' for stdin")
+    admit.add_argument("--json", action="store_true", dest="json_output")
+    admit.set_defaults(handler=_handle_admit)
 
     replay = commands.add_parser("replay", help="verify and semantically replay a completed run")
     replay.add_argument("run_id")
@@ -468,6 +474,24 @@ def _handle_evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "_exit_code": EXIT_ENGINE_ERROR if bundle.result.semantic.result_status is ResultStatus.ENGINE_ERROR else EXIT_OK,
     }
     return payload
+
+
+def _handle_admit(args: argparse.Namespace) -> dict[str, Any]:
+    """独立准入 RuleAdmissionRequest（W9；不读 LCCC/LegalOS 数据库）。"""
+
+    request_payload = _read_json_input(args.input)
+    if not isinstance(request_payload, dict):
+        raise CLIError("INVALID_ADMISSION_REQUEST", "request must be an object", exit_code=EXIT_INPUT_ERROR)
+    try:
+        outcome = admit_rule(request_payload)
+    except ValueError as exc:
+        raise CLIError("INVALID_ADMISSION_REQUEST", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
+    return {
+        "command": "admit",
+        **outcome.public_dict(),
+        "cli_status": "ok",
+        "_exit_code": EXIT_OK,
+    }
 
 
 def _handle_replay(args: argparse.Namespace) -> dict[str, Any]:
