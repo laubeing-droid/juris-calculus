@@ -1,4 +1,4 @@
-"""Compatibility import for the proposal-only experimental extractor."""
+"""Proposal-only experimental adapters; never part of the formal kernel."""
 
 from pipeline.experimental.llm_client import (
     OpenAIProposalExtractor,
@@ -6,8 +6,6 @@ from pipeline.experimental.llm_client import (
     RegexProposalExtractor,
     create_extractor,
 )
-
-PROPOSAL_ONLY = True
 
 __all__ = (
     "OpenAIProposalExtractor",

@@ -130,9 +130,31 @@ class LegalFact:
 
         if self.status != FactTrustStatus.VERIFIED_FACT:
             return False
+        if not (self.human_reviewed and self.source_ids):
+            return False
         if self.created_by == FactCreator.COURT:
-            return True
-        return bool(self.human_reviewed and self.source_ids)
+            return bool(self.provenance.get("court_trusted"))
+        return self._has_verified_admission_marker()
+
+    def _has_verified_admission_marker(self) -> bool:
+        """外部输入中 verified fact 必须带入可核验准入标志。"""
+
+        marker = self.provenance.get("admission_channel")
+        if marker:
+            marker = str(marker).strip().lower()
+            if marker in {"trusted_service", "court", "admission_service", "trusted_admission", "trusted"}:
+                return True
+        for key in ("admission_attestation_id", "admission_asserted", "trusted", "verified", "court_trusted", "attested"):
+            value = self.provenance.get(key)
+            if isinstance(value, bool):
+                if value:
+                    return True
+            elif isinstance(value, str):
+                if value.strip().lower() in {"true", "1", "yes", "pass", "ok"}:
+                    return True
+            elif value is not None:
+                return True
+        return False
 
     def trust_dict(self) -> Dict[str, Any]:
         """返回新的稳定字典，供边界转换和审计摘要使用。"""

@@ -1295,13 +1295,62 @@
     "RulePackDescriptor": {
       "additionalProperties": false,
       "properties": {
+        "build_attestation": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "candidate_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "config_files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
         "content_digest": {
           "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "development_override": {
+          "type": "boolean"
+        },
+        "distribution_channel": {
+          "type": "string"
+        },
+        "effective_from": {
+          "type": "string"
+        },
+        "effective_to": {
+          "type": "string"
+        },
+        "governing_law": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "type": "string"
+        },
+        "kind": {
           "type": "string"
         },
         "pack_id": {
           "minLength": 1,
           "type": "string"
+        },
+        "rejected_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "review_only": {
+          "type": "boolean"
         },
         "verified_rule_ids": {
           "items": {
@@ -1342,6 +1391,9 @@
         },
         "checker_accepted": {
           "type": "boolean"
+        },
+        "checker_receipt": {
+          "type": "object"
         },
         "claims": {
           "items": {

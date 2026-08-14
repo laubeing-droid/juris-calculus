@@ -6,9 +6,9 @@ import json
 
 import pytest
 
-from compiler_core.application import evaluate_case
+from compiler_core.application import evaluate_case, run_id_for_case
 from compiler_core.audit import AuditRecorder, AuditValidationError
-from compiler_core.canonical_serialization import content_id, semantic_digest
+from compiler_core.canonical_serialization import semantic_digest
 from compiler_core.contracts import ResultStatus, schema_document
 from compiler_core.types import FactTrustStatus, LegalRule
 from compiler_core.version import __version__
@@ -18,7 +18,7 @@ from tests.unit.test_application_service import _fact, _manifest, _pack, _reques
 def _recorder_for(request) -> AuditRecorder:
     """以application同一规范请求计算run ID。"""
 
-    return AuditRecorder(content_id("run", request.to_dict()))
+    return AuditRecorder(run_id_for_case(request, _pack()))
 
 
 def test_accepted_result_has_complete_deterministic_semantic_event_chain() -> None:

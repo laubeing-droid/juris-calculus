@@ -67,12 +67,29 @@ class RulePackDescriptor:
     version: str
     content_digest: str
     verified_rule_ids: tuple[str, ...] = field(default_factory=tuple)
+    candidate_rule_ids: tuple[str, ...] = field(default_factory=tuple)
+    rejected_rule_ids: tuple[str, ...] = field(default_factory=tuple)
+    jurisdiction: str = ""
+    governing_law: str = ""
+    kind: str = ""
+    review_only: bool = False
+    distribution_channel: str = ""
+    development_override: bool = False
+    build_attestation: str = ""
+    effective_from: str = ""
+    effective_to: str = ""
+    config_files: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.pack_id.strip() or not self.version.strip():
             raise ContractValidationError("INVALID_RULE_PACK", "pack_id and version are required")
         _require_digest(self.content_digest, "content_digest")
         object.__setattr__(self, "verified_rule_ids", _sorted_unique(self.verified_rule_ids))
+        object.__setattr__(self, "candidate_rule_ids", _sorted_unique(self.candidate_rule_ids))
+        object.__setattr__(self, "rejected_rule_ids", _sorted_unique(self.rejected_rule_ids))
+        object.__setattr__(self, "config_files", _sorted_unique(self.config_files))
+        if self.build_attestation:
+            _require_digest(self.build_attestation, "build_attestation")
 
     def to_dict(self) -> dict[str, Any]:
         """返回新的确定性规则包字典。"""
@@ -82,6 +99,18 @@ class RulePackDescriptor:
             "version": self.version,
             "content_digest": self.content_digest,
             "verified_rule_ids": list(self.verified_rule_ids),
+            "candidate_rule_ids": list(self.candidate_rule_ids),
+            "rejected_rule_ids": list(self.rejected_rule_ids),
+            "jurisdiction": self.jurisdiction,
+            "governing_law": self.governing_law,
+            "kind": self.kind,
+            "review_only": self.review_only,
+            "distribution_channel": self.distribution_channel,
+            "development_override": self.development_override,
+            "build_attestation": self.build_attestation,
+            "effective_from": self.effective_from,
+            "effective_to": self.effective_to,
+            "config_files": list(self.config_files),
         }
 
 
@@ -130,7 +159,24 @@ class CaseRequest:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "CaseRequest":
-        """严格解析字典；拒绝未知顶层或事实字段。"""
+        """严格解析公开字典；任何外部verified自报均降为checked。"""
+
+        return cls._from_dict(payload, trusted_admission=False)
+
+    @classmethod
+    def _from_trusted_audit_dict(cls, payload: Mapping[str, Any]) -> "CaseRequest":
+        """仅供完整性验证后的审计重放恢复已准入事实。"""
+
+        return cls._from_dict(payload, trusted_admission=True)
+
+    @classmethod
+    def _from_dict(
+        cls,
+        payload: Mapping[str, Any],
+        *,
+        trusted_admission: bool,
+    ) -> "CaseRequest":
+        """共享严格codec；可信位只能由内部审计恢复路径设置。"""
 
         allowed = {
             "schema_version",
@@ -156,7 +202,10 @@ class CaseRequest:
             jurisdiction=str(payload["jurisdiction"]),
             governing_law=str(payload["governing_law"]),
             as_of_date=str(payload["as_of_date"]),
-            facts=tuple(_fact_from_dict(item) for item in facts_value),
+            facts=tuple(
+                _fact_from_dict(item, trusted_admission=trusted_admission)
+                for item in facts_value
+            ),
             rule_pack_id=str(payload["rule_pack_id"]),
             rule_pack_version=str(payload["rule_pack_version"]),
             rule_pack_digest=str(payload["rule_pack_digest"]),
@@ -287,6 +336,7 @@ class SemanticResult:
     missing_fact_review: tuple[MissingFactReview, ...] = field(default_factory=tuple)
     taint: tuple[str, ...] = field(default_factory=tuple)
     risk_labels: tuple[str, ...] = field(default_factory=tuple)
+    checker_receipt: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for name, enum_type in (
@@ -322,6 +372,9 @@ class SemanticResult:
             raise ContractValidationError("DUPLICATE_MISSING_FACT_REVIEW", "missing fact review IDs must be unique")
         if reviews and {item.fact_id for item in reviews} != set(self.missing_fact_ids):
             raise ContractValidationError("INVALID_MISSING_FACT_REVIEW", "review facts must equal missing_fact_ids")
+        if not isinstance(self.checker_receipt, Mapping):
+            raise ContractValidationError("INVALID_CHECKER_RECEIPT", "checker_receipt must be a mapping")
+        object.__setattr__(self, "checker_receipt", dict(self.checker_receipt))
         object.__setattr__(self, "missing_fact_review", reviews)
         _validate_result_state(self)
 
@@ -351,6 +404,7 @@ class SemanticResult:
             "missing_fact_review": [item.to_dict() for item in self.missing_fact_review],
             "taint": list(self.taint),
             "risk_labels": list(self.risk_labels),
+            "checker_receipt": dict(self.checker_receipt),
         }
 
     @classmethod
@@ -361,10 +415,11 @@ class SemanticResult:
             "schema_version", "run_id", "result_digest", "execution_status", "result_status",
             "formal_kernel_used", "review_required", "checker_accepted", "certificate_kind",
             "engine_version", "pack_id", "pack_version", "pack_digest", "claims", "branches",
-            "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "missing_fact_review", "taint", "risk_labels",
+            "used_fact_ids", "used_rule_ids", "source_ids", "missing_fact_ids", "missing_fact_review", "taint", "risk_labels", "checker_receipt",
         }
         _reject_unknown(payload, allowed, "semantic result")
-        missing = sorted(allowed - set(payload))
+        required = allowed - {"checker_receipt"}
+        missing = sorted(required - set(payload))
         if missing:
             raise ContractValidationError("MISSING_RESULT_FIELD", ", ".join(missing))
         review_fields = {
@@ -415,6 +470,7 @@ class SemanticResult:
             ),
             taint=tuple(payload["taint"]),
             risk_labels=tuple(payload["risk_labels"]),
+            checker_receipt=payload.get("checker_receipt", {}),
         )
 
 
@@ -555,6 +611,7 @@ PROTECTED_RESULT_FIELDS = frozenset({
     "missing_fact_review",
     "taint",
     "risk_labels",
+    "checker_receipt",
 })
 
 AuditSink = Callable[[Mapping[str, Any]], None]
@@ -630,7 +687,7 @@ def schema_document() -> dict[str, Any]:
                     "external_source_refs": string_array,
                 },
             },
-            "RulePackDescriptor": {
+        "RulePackDescriptor": {
                 "type": "object",
                 "additionalProperties": False,
                 "required": ["pack_id", "version", "content_digest", "verified_rule_ids"],
@@ -639,6 +696,18 @@ def schema_document() -> dict[str, Any]:
                     "version": {"type": "string", "minLength": 1},
                     "content_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
                     "verified_rule_ids": string_array,
+                    "candidate_rule_ids": string_array,
+                    "rejected_rule_ids": string_array,
+                    "jurisdiction": {"type": "string"},
+                    "governing_law": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "review_only": {"type": "boolean"},
+                    "distribution_channel": {"type": "string"},
+                    "development_override": {"type": "boolean"},
+                    "build_attestation": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                    "effective_from": {"type": "string"},
+                    "effective_to": {"type": "string"},
+                    "config_files": string_array,
                 },
             },
             "BranchResult": {
@@ -701,6 +770,7 @@ def schema_document() -> dict[str, Any]:
                     "missing_fact_review": {"type": "array", "items": {"$ref": "#/$defs/MissingFactReview"}},
                     "taint": string_array,
                     "risk_labels": string_array,
+                    "checker_receipt": {"type": "object"},
                 },
             },
             "CanonicalResult": {
@@ -837,7 +907,7 @@ def _validate_result_state(result: SemanticResult) -> None:
         raise ContractValidationError("INVALID_CERTIFICATE_KIND", "formal certificate requires accepted result")
 
 
-def _fact_from_dict(payload: Any) -> LegalFact:
+def _fact_from_dict(payload: Any, *, trusted_admission: bool = False) -> LegalFact:
     """严格解析一个事实对象并复制全部可变容器。"""
 
     if not isinstance(payload, Mapping):
@@ -855,6 +925,9 @@ def _fact_from_dict(payload: Any) -> LegalFact:
         creator = FactCreator(str(payload.get("created_by", FactCreator.SYSTEM.value)))
     except ValueError as exc:
         raise ContractValidationError("UNKNOWN_FACT_ENUM", str(exc)) from exc
+    provenance = dict(payload.get("provenance") or {})
+    if status == FactTrustStatus.VERIFIED_FACT and not trusted_admission:
+        status = FactTrustStatus.CHECKED_FACT
     try:
         return LegalFact(
             id=str(payload["id"]),
@@ -870,7 +943,7 @@ def _fact_from_dict(payload: Any) -> LegalFact:
             status=status,
             source_ids=tuple(str(item) for item in payload.get("source_ids") or ()),
             alternatives=tuple(dict(item) for item in payload.get("alternatives") or ()),
-            provenance=dict(payload.get("provenance") or {}),
+            provenance=provenance,
             human_reviewed=bool(payload.get("human_reviewed", False)),
             created_by=creator,
             reasoning_tier=str(payload.get("reasoning_tier") or "P0"),

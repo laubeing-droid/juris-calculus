@@ -90,7 +90,7 @@ class FixpointEvaluator:
         "当事人另有约定", "合同另有约定"
     ]
 
-    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None, l0_map: Dict[str, str] = None, case_date: str = None):
+    def __init__(self, rules: List[LegalRule], config: DomainConfig = None, domain_id: str = None, overrides_path: str = None, l0_map: Dict[str, str] = None, case_date: str = None, ontology_path: str = None, strict: bool = False):
         self.config = config or get_domain_config()
         self.l0_map = l0_map or {}  # v2.0: L0 concept mapping for cross-jurisdiction degradation
         self.domain_id = domain_id
@@ -133,7 +133,11 @@ class FixpointEvaluator:
         self.implicit_dependencies = self._detect_implicit_deps()
 
         # 约束层：Rebuttal Hook + Audit Trail
-        self.constraint_validator = ConstraintValidator(overrides_path=overrides_path)
+        self.constraint_validator = ConstraintValidator(
+            ontology_path=ontology_path,
+            overrides_path=overrides_path,
+            strict=strict,
+        )
         self.audit_log: List[dict] = []
 
     @staticmethod
@@ -488,14 +492,11 @@ class FixpointEvaluator:
                     low_streak += 1
                     streak_log.append({"rule": rule_id, "score": claim.confidence})
                     if low_streak >= self.config.critical_streak_max:
-                        # v1.2.0: 熔断时附带已收敛的 partial state，不再返回空
                         exc = CriticalClarityFailure(
                             f"Consecutive {low_streak} rules scored below "
                             f"{self.config.critical_score_threshold}. Engine halted.",
                             streak_log
                         )
-                        # 注入 partial_state 供调用方降级消费
-                        exc.partial_state = state
                         raise exc
                 else:
                     low_streak = 0

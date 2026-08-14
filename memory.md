@@ -53,3 +53,15 @@
 - The v3 entrypoint and stdio MCP authority tests pass; in-process MCP smoke reports version `3.0.2`, four tools, zero resources, and does not claim readiness.
 - Default Windows `%TEMP%` makes render artifact paths exceed the legacy path limit. The default-temp full run produced 349 passed, 28 skipped, and 6 path-length failures; a complete rerun with short `--basetemp` produced 355 passed and 28 skipped.
 - Treat the short basetemp as a test-environment requirement on this machine, not a change to audit-bundle semantics or a reason to enable global long-path policy.
+
+## 2026-08-15 W0/W1 formal-boundary closure
+
+- Scope: completed only W0 baseline/inventory and W1 P0 blockers authorized by section 30 of `260810_juris-calculus重点升级施工方案.md`; W2-W8 remain unopened.
+- External `CaseRequest` and legacy FactCoordinate payloads cannot self-issue `VERIFIED_FACT`; only trusted internal audit decoding preserves prior admission.
+- Development packs are loadable for review/replay but never reasoning-ready; official formal readiness requires manifest-bound configs and SHA-256 build attestation. `cn-official` remains inactive/blocked.
+- The independent grounded checker operates on one argument per applicable admitted rule. Claim-level audit events remain for compatibility; checker receipts persist argument witnesses, typed attack witnesses, AAF digest, and claim projection.
+- Public Python API is `JCClient`; package root no longer exports low-level evaluation functions. LLM extraction is proposal-only with explicit real/regex providers and no mock fallback.
+- Run identity binds complete execution inputs across early exits, audit, graph, bundle, and replay. Partial/truncated/candidate states remain visible and cannot produce formal certificates.
+- Renderer paths use a 40-character filesystem key derived from the full result/profile/renderer binding digest; metadata retains the complete 64-character digest to avoid Windows path overflow without weakening content binding.
+- Final acceptance: 384 passed, 28 skipped; MCP stdio 3 passed; in-process smoke status ok with readiness false; pip-audit PASS with 0 known vulnerabilities; fresh wheel/install smoke PASS. Wheel SHA-256: `cc14ff95c5c2fbb58b42c56ecf3f5b6f6f626a4e71a24a0eaa464e6fcc58d6d5`.
+- Do not reinterpret protocol smoke, wheel import, or test PASS as proof of legal corpus/product readiness.

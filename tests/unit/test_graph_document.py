@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from compiler_core.application import evaluate_case
+from compiler_core.application import evaluate_case, run_id_for_case
 from compiler_core.audit import AuditRecorder, build_reasoning_graph
-from compiler_core.canonical_serialization import content_id
 from compiler_core.types import FactTrustStatus, LegalRule
 from tests.unit.test_application_service import _fact, _manifest, _pack, _request, _rule
 
@@ -13,10 +12,11 @@ def _run(rules: tuple[LegalRule, ...], pack_ids: tuple[str, ...]):
     """执行一案并返回语义结果、事件和graph。"""
 
     request = _request(_fact())
-    recorder = AuditRecorder(content_id("run", request.to_dict()))
+    pack = _pack(*pack_ids)
+    recorder = AuditRecorder(run_id_for_case(request, pack))
     result = evaluate_case(
         request,
-        _pack(*pack_ids),
+        pack,
         rules,
         source_manifest=_manifest(),
         audit_sink=recorder,
@@ -150,7 +150,7 @@ def test_missing_fact_graph_has_no_fabricated_checker_node() -> None:
     """checker未运行时Graph不得因固定模板创建checker。"""
 
     request = _request(_fact(FactTrustStatus.UNKNOWN))
-    recorder = AuditRecorder(content_id("run", request.to_dict()))
+    recorder = AuditRecorder(run_id_for_case(request, _pack()))
     result = evaluate_case(
         request,
         _pack(),
@@ -177,7 +177,7 @@ def test_disputed_graph_has_stable_branch_nodes_and_edges() -> None:
         FactTrustStatus.DISPUTED,
         alternatives=({"value": False}, {"value": True}),
     ))
-    recorder = AuditRecorder(content_id("run", request.to_dict()))
+    recorder = AuditRecorder(run_id_for_case(request, _pack()))
     result = evaluate_case(
         request,
         _pack(),

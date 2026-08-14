@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-08-15T05:25:27+08:00",
+  "schema_version": "p0-regression-v2",
+  "environment": {
+    "python": "3.12.10",
+    "pytest": "available",
+    "yaml": "available"
+  },
+  "scenarios": [
+    {
+      "id": "P0-1",
+      "title": "外部 verified/court/legacy coordinate 自证阻断",
+      "tests": ["tests/unit/test_case_contracts.py", "tests/unit/test_fact_admission.py"],
+      "expected": "public input is at most checked/review-only without trusted internal admission"
+    },
+    {
+      "id": "P0-2",
+      "title": "development official pack 不得 formal",
+      "tests": ["tests/unit/test_rule_pack_manifest.py", "tests/unit/test_application_service.py"],
+      "expected": "review_only_result with RULE_PACK_DEVELOPMENT"
+    },
+    {
+      "id": "P0-3",
+      "title": "partial/clarity failure 不得 formal",
+      "tests": ["tests/unit/test_application_service.py", "tests/unit/test_reasoning_boundary_result_status.py"],
+      "expected": "review_only_result and no formal certificate"
+    },
+    {
+      "id": "P0-4",
+      "title": "argument identity 与 typed attack witness",
+      "tests": ["tests/unit/test_application_service.py", "tests/unit/test_graph_document.py"],
+      "expected": "one argument per fired rule; checker uses argument ids; claims are projections"
+    },
+    {
+      "id": "P0-6",
+      "title": "独立 checker receipt",
+      "tests": ["tests/unit/test_application_service.py", "tests/unit/test_audit_bundle.py"],
+      "expected": "receipt binds AAF digest, witnesses, verdict, and claim projection"
+    },
+    {
+      "id": "P0-7",
+      "title": "run identity 绑定完整执行输入",
+      "tests": ["tests/unit/test_application_service.py", "tests/unit/test_audit_events.py", "tests/unit/test_audit_bundle.py"],
+      "expected": "early exits, replay, audit, and graph use the same full-input run id"
+    },
+    {
+      "id": "P0-8",
+      "title": "candidate rule 可见但不执行",
+      "tests": ["tests/unit/test_application_service.py"],
+      "expected": "RELEVANT_RULE_NOT_ADMITTED without candidate execution"
+    },
+    {
+      "id": "P0-9",
+      "title": "规则包配置自包含且 fail-closed",
+      "tests": ["tests/unit/test_rule_pack_manifest.py", "tests/unit/test_application_service.py"],
+      "expected": "manifest-bound ontology and overrides; missing config blocks formal"
+    },
+    {
+      "id": "P0-10",
+      "title": "LLM provider 失败不回退 mock",
+      "tests": ["tests/unit/test_llm_proposal_boundary.py"],
+      "expected": "explicit real/regex mode; provider failure raises; output is proposal_only"
+    },
+    {
+      "id": "P0-11",
+      "title": "公开 API 只暴露 fail-closed facade",
+      "tests": ["tests/unit/test_v3_entrypoint_boundary.py"],
+      "expected": "JCClient exported; low-level evaluation functions absent at package root"
+    }
+  ]
+}

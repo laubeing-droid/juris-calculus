@@ -21,8 +21,8 @@ from compiler_core.types import FactTrustStatus, LegalFact
 from tests.unit.test_rule_pack_manifest import _write_pack
 
 
-def _fixture(config_root: Path):
-    """构造只有一条可准入规则的development official pack和匹配请求。"""
+def _fixture(config_root: Path, *, development_override: bool = True):
+    """构造只有一条可准入规则的official pack和匹配请求。"""
 
     rule = {
         "id": "R-ANCHORED",
@@ -36,13 +36,20 @@ def _fixture(config_root: Path):
         rules=[rule],
         inventory={"corpus_total": 1, "reasoning_eligible_total": 1, "candidate_only_total": 0},
     )
-    loaded = RulePackRegistry(config_root, development_override=True).load_reasoning_pack("fixture-official")
+    loaded = RulePackRegistry(
+        config_root,
+        development_override=development_override,
+    ).load_reasoning_pack("fixture-official")
     fact = LegalFact(
         id="fact::a",
         value=True,
         status=FactTrustStatus.VERIFIED_FACT,
         source_ids=("evidence::1",),
         human_reviewed=True,
+        provenance={
+            "admission_channel": "trusted_service",
+            "admission_attestation_id": "attestation::fixture",
+        },
     )
     request = CaseRequest(
         SCHEMA_VERSION,

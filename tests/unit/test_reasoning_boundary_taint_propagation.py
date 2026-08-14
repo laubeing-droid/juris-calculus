@@ -29,6 +29,7 @@ def test_unused_optional_fact_does_not_pollute():
             FactTrustStatus.VERIFIED_FACT,
             source_ids=("source::1",),
             human_reviewed=True,
+            provenance={"admission_channel": "trusted_service"},
         )
     ], checker_accepted=True, certificate_kind=CertificateKind.FORMAL, formal_kernel_used=True)
 

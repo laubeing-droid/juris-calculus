@@ -44,6 +44,8 @@ def test_render_writes_bound_artifact_and_metadata_without_re_evaluation(tmp_pat
     assert output.artifact.content_sha256 == hashlib.sha256(output.artifact.content.encode("utf-8")).hexdigest()
     assert metadata["result_digest"] == bundle.result.semantic.result_digest
     assert metadata["content_sha256"] == output.artifact.content_sha256
+    assert len(metadata["path_binding_digest"]) == 64
+    assert metadata["path_binding_digest"][:40] in output.artifact_ref
     assert "content" not in metadata
     assert result_path.read_bytes() == original_result
     assert output.artifact_ref.startswith("renders/")

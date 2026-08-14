@@ -94,6 +94,17 @@ def test_canonical_entrypoints_exist() -> None:
     assert not errors, "canonical entrypoint violations:\n" + "\n".join(errors)
 
 
+def test_package_root_exposes_client_not_low_level_evaluators() -> None:
+    """支持的Python入口不得接受调用者伪造descriptor或loaded pack。"""
+
+    import compiler_core
+
+    assert hasattr(compiler_core, "JCClient")
+    assert not hasattr(compiler_core, "evaluate_case")
+    assert not hasattr(compiler_core, "evaluate_to_audit_bundle")
+    assert not hasattr(compiler_core, "evaluate_registered_case")
+
+
 def test_production_evaluator_construction_is_allowlisted() -> None:
     """禁止正式生产模块绕过 application 直接构造任一 evaluator。"""
 

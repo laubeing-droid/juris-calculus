@@ -105,8 +105,8 @@ def test_internal_error_is_redacted(monkeypatch, capsys) -> None:
     assert "private absolute path" not in captured.err
 
 
-def test_evaluate_json_exposes_semantic_result_status_and_logical_artifact_refs(tmp_path, monkeypatch, capsys) -> None:
-    """evaluate --json 必须稳定暴露 formal result status 且不泄漏本地路径。"""
+def test_development_evaluate_json_exposes_review_status_and_logical_refs(tmp_path, monkeypatch, capsys) -> None:
+    """development evaluate必须稳定降级且不泄漏本地路径。"""
 
     _, request = _fixture(tmp_path / "configs")
     monkeypatch.setattr(cli.sys, "stdin", io.StringIO(json.dumps(request.to_dict(), ensure_ascii=False)))
@@ -122,5 +122,8 @@ def test_evaluate_json_exposes_semantic_result_status_and_logical_artifact_refs(
     payload = json.loads(capsys.readouterr().out)
 
     assert exit_code == cli.EXIT_OK
-    assert payload["canonical_result"]["semantic"]["result_status"] == "accepted_formal_result"
+    semantic = payload["canonical_result"]["semantic"]
+    assert semantic["result_status"] == "review_only_result"
+    assert semantic["certificate_kind"] == "none"
+    assert semantic["formal_kernel_used"] is False
     assert all(not ref.startswith(("C:", "D:", "/")) for ref in payload["canonical_result"]["artifact_refs"])

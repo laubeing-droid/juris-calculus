@@ -192,7 +192,13 @@ def render_run(
         warnings=warnings,
     )
     logical_run = _safe_run_component(run_id)
-    relative_root = Path("renders") / logical_run / semantic.result_digest / profile.profile_hash
+    path_binding_digest = semantic_digest({
+        "result_digest": semantic.result_digest,
+        "profile_hash": profile.profile_hash,
+        "renderer_id": RENDERER_ID,
+        "renderer_version": RENDERER_VERSION,
+    })
+    relative_root = Path("renders") / logical_run / path_binding_digest[:40]
     suffix = {"markdown": ".md", "mermaid": ".mmd", "html": ".html"}[output_format]
     artifact_relative = relative_root / f"{audience}{suffix}"
     metadata_relative = relative_root / f"{audience}{suffix}.render.json"
@@ -201,6 +207,7 @@ def render_run(
     metadata = {
         "schema_version": "1.0",
         **artifact.metadata_dict(),
+        "path_binding_digest": path_binding_digest,
         "artifact_ref": artifact_relative.as_posix(),
     }
     _atomic_write(artifact_path, content.encode("utf-8"))

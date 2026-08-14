@@ -12,6 +12,7 @@ def _fact(key, status):
         status=status,
         source_ids=("snapshot://1",),
         human_reviewed=True,
+        provenance={"admission_channel": "trusted_service"},
     )
 
 

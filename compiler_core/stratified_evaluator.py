@@ -35,11 +35,11 @@ class StratifiedEvaluator:
             self.rules, DomainConfig(domain=LegalDomain.CIVIL),
             overrides_path=overrides_path
         )
-        # Reverse index: head_claim -> rule (O(1) lookup for rebuttal)
-        self._claim_to_rule = {}
+        # Reverse index: head_claim -> [rules] (O(1) lookup for rebuttal)
+        self._claim_to_rules: dict[str, list] = {}
         for r in self.rules:
             if r.head_claim:
-                self._claim_to_rule[r.head_claim] = r
+                self._claim_to_rules.setdefault(r.head_claim, []).append(r)
 
     def evaluate(self, state: IRState, contract: Optional[Dict] = None) -> List[LegalClaim]:
         """Four-stage pipeline: Horn -> AAF -> Grounded Extension -> Trust Labels."""
@@ -59,14 +59,16 @@ class StratifiedEvaluator:
         # Stage 2b: Run rebuttal checks (non-monotone part) — O(claims) with reverse index
         if self.evaluator.constraint_validator.loaded:
             for claim in raw_claims:
-                rule = self._claim_to_rule.get(claim.id)
-                if rule and rule.concepts:
+                for rule in self._claim_to_rules.get(claim.id, []):
+                    if not rule.concepts:
+                        continue
                     rebuttal = self.evaluator.constraint_validator.check_rebuttal(
                         claim.id, rule.concepts, horn_state
                     )
                     if rebuttal.triggered:
                         claim.confidence = 0.0
                         claim.forbidden_claim = True
+                        break
 
         # Stage 3: Dung grounded extension (exclude confidence=0 claims)
         active_claims = [c for c in raw_claims if c.confidence > 0]

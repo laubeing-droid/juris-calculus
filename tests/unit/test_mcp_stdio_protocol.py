@@ -150,9 +150,9 @@ def test_stdio_calls_all_four_tools_through_one_audited_run(tmp_path) -> None:
         })
 
         assert evaluated["status"] == "ok" and evaluated["artifact_refs"]
-        assert evaluated["result_status"] == "accepted_formal_result"
-        assert evaluated["review_required"] is False
-        assert evaluated["formal_kernel_used"] is True
+        assert evaluated["result_status"] == "review_only_result"
+        assert evaluated["review_required"] is True
+        assert evaluated["formal_kernel_used"] is False
         assert looked_up["results"][0]["rule_id"] == "R-ANCHORED"
         assert strategy["analysis_status"] == "ADVISORY"
         assert similar["analysis_status"] == "ADVISORY"

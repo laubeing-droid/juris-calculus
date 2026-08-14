@@ -22,6 +22,7 @@ from compiler_core.contracts import (
     schema_document,
 )
 from compiler_core.version import __version__
+from compiler_core.types import FactTrustStatus
 
 
 DIGEST = "a" * 64
@@ -108,8 +109,29 @@ def test_case_request_is_strict_sorted_and_round_trips():
     request = CaseRequest.from_dict(_request_payload())
 
     assert [fact.id for fact in request.facts] == ["fact::a", "fact::b"]
+    assert request.facts[0].status is FactTrustStatus.CHECKED_FACT
     assert request.external_source_refs == ("source::a", "source::z")
     assert CaseRequest.from_dict(request.to_dict()).to_dict() == request.to_dict()
+
+
+@pytest.mark.parametrize(
+    "provenance",
+    [
+        {"admission_channel": "trusted_service"},
+        {"admission_asserted": True},
+        {"attested": "yes"},
+        {"court_trusted": True},
+    ],
+)
+def test_public_request_cannot_self_report_verified_admission(provenance):
+    payload = _request_payload()
+    payload["facts"][1]["provenance"] = provenance
+    payload["facts"][1]["created_by"] = "court"
+
+    request = CaseRequest.from_dict(payload)
+
+    assert request.facts[0].status is FactTrustStatus.CHECKED_FACT
+    assert request.facts[0].can_enter_formal_kernel() is False
 
 
 @pytest.mark.parametrize(

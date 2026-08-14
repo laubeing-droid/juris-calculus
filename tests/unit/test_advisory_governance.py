@@ -25,7 +25,7 @@ CASE_INDEX = ROOT / "tests" / "fixtures" / "synthetic_case_index.json"
 def _run(tmp_path: Path, *, unknown: bool = False):
     """创建正式或UNKNOWN审计run。"""
 
-    loaded, request = _fixture(tmp_path / "configs")
+    loaded, request = _fixture(tmp_path / "configs", development_override=False)
     if unknown:
         payload = request.to_dict()
         payload["facts"][0]["status"] = "unknown"

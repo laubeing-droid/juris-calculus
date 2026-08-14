@@ -50,6 +50,9 @@ def from_fact_coordinate(payload: Mapping[str, Any]) -> LegalFact:
     raw_state = str(payload.get("determination_state") or payload.get("truth_status") or "")
     status = FACT_COORDINATE_STATUS_MAP.get(raw_state, FactTrustStatus.CANDIDATE_FACT)
     provenance = dict(payload.get("provenance") or {})
+    if status == FactTrustStatus.VERIFIED_FACT:
+        # 旧坐标没有不可伪造的 admission receipt；任何自报标记都只能进入复核层。
+        status = FactTrustStatus.CHECKED_FACT
     return LegalFact(
         id=str(payload.get("fact_key") or ""),
         description=str(payload.get("description") or ""),
@@ -58,7 +61,7 @@ def from_fact_coordinate(payload: Mapping[str, Any]) -> LegalFact:
         source_ids=tuple(_source_ids(provenance)),
         alternatives=tuple(dict(item) for item in payload.get("alternatives") or ()),
         provenance=provenance,
-        human_reviewed=bool(payload.get("human_reviewed") or raw_state == "HUMAN_REVIEWED"),
+        human_reviewed=bool(payload.get("human_reviewed") or raw_state == "HUMAN_REVIEWED" or raw_state == "COURT_FIXED"),
         created_by=_creator_from_payload(raw_state, provenance),
         reasoning_tier=str(payload.get("reasoning_tier") or "P0"),
     )

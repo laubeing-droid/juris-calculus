@@ -11,7 +11,7 @@ import shutil
 import tempfile
 from typing import Any, Mapping
 
-from compiler_core.application import evaluate_case
+from compiler_core.application import evaluate_case, run_id_for_case
 from compiler_core.audit import AuditEvent, AuditRecorder, GraphDocument, build_reasoning_graph
 from compiler_core.canonical_serialization import semantic_digest
 from compiler_core.contracts import CanonicalResult, CaseRequest, SemanticResult
@@ -116,8 +116,15 @@ def evaluate_to_audit_bundle(
 ) -> AuditBundle:
     """净化请求、正式求值、构图、缓存pack并最后写COMPLETE。"""
 
+    if not loaded_pack.registry_issued:
+        raise AuditBundleError("UNVERIFIED_PACK_HANDLE", loaded_pack.descriptor.pack_id)
     safe_request = audit_safe_request(request)
-    run_id = _run_id(safe_request)
+    run_id = run_id_for_case(
+        safe_request,
+        loaded_pack.descriptor,
+        tuple(loaded_pack.descriptor.config_files),
+        checker_strict=True,
+    )
     recorder = AuditRecorder(run_id)
     result = evaluate_case(
         safe_request,
@@ -125,6 +132,8 @@ def evaluate_to_audit_bundle(
         loaded_pack.rules,
         source_manifest=loaded_pack.source_manifest,
         audit_sink=recorder,
+        pack_config_files=loaded_pack.config_files,
+        checker_strict=True,
     )
     graph = build_reasoning_graph(result, recorder.events)
     root = Path(state_root or default_state_root()).resolve()
@@ -178,11 +187,38 @@ def audit_safe_request(request: CaseRequest) -> CaseRequest:
             "extraction_confidence": fact.get("extraction_confidence", 1.0),
             "carrier_level": fact.get("carrier_level", ""),
             "source_anchor": fact.get("source_anchor", ""),
+            "provenance": _safe_audit_provenance(fact.get("provenance", {})),
         })
     payload["facts"] = safe_facts
     if _contains_absolute_path(payload):
         raise AuditBundleError("AUDIT_PRIVACY_VIOLATION", "structured audit input contains an absolute path")
-    return CaseRequest.from_dict(payload)
+    return CaseRequest._from_trusted_audit_dict(payload)
+
+
+def _safe_audit_provenance(provenance: Any) -> dict[str, Any]:
+    """保留 admission 判定所需字段，过滤其他内容。"""
+
+    if not isinstance(provenance, Mapping):
+        return {}
+    allowed = (
+        "admission_channel",
+        "admission_attestation_id",
+        "admission_asserted",
+        "trusted",
+        "verified",
+        "attested",
+        "court_trusted",
+    )
+    safe: dict[str, Any] = {}
+    for key in allowed:
+        if key not in provenance:
+            continue
+        value = provenance[key]
+        if isinstance(value, (str, bool, int)):
+            safe[key] = value
+        elif value is not None:
+            safe[key] = str(value)
+    return safe
 
 
 def cache_loaded_pack(loaded_pack: LoadedRulePack, state_root: Path) -> Path:
@@ -243,7 +279,7 @@ def verify_audit_bundle(state_root: Path, run_id: str) -> VerifiedAuditBundle:
     manifest = _read_json(run_directory / "manifest.json")
     events = _read_events(run_directory / "events.jsonl")
     try:
-        request = CaseRequest.from_dict(input_payload)
+        request = CaseRequest._from_trusted_audit_dict(input_payload)
         semantic_result = SemanticResult.from_dict(result_envelope["semantic"])
         _validate_event_sequence(events, run_id)
     except (KeyError, TypeError, ValueError) as exc:
@@ -309,17 +345,32 @@ def replay_audit_bundle(state_root: Path, run_id: str) -> dict[str, Any]:
     """完全离线重跑application并比较语义事件、结果和graph。"""
 
     verified = verify_audit_bundle(state_root, run_id)
-    if _run_id(verified.request) != run_id:
-        raise AuditBundleError("REPLAY_MISMATCH", "input:$.run_id:value")
     cache_root = Path(state_root).resolve() / "packs" / verified.semantic_result.pack_digest
     if not (cache_root / "PACK_COMPLETE").is_file():
         raise AuditBundleError("REPLAY_MATERIAL_MISSING", verified.semantic_result.pack_digest)
     try:
-        loaded = RulePackRegistry(cache_root / "configs").load_reasoning_pack(verified.semantic_result.pack_id)
+        development_override = "RULE_PACK_DEVELOPMENT" in verified.semantic_result.risk_labels
+        loaded = RulePackRegistry(
+            cache_root / "configs",
+            development_override=development_override,
+        ).load_reasoning_pack(verified.semantic_result.pack_id)
     except RulePackError as exc:
         raise AuditBundleError("REPLAY_PACK_INVALID", exc.code) from exc
     if loaded.descriptor.content_digest != verified.semantic_result.pack_digest:
         raise AuditBundleError("REPLAY_PACK_MISMATCH", loaded.descriptor.content_digest)
+    try:
+        resolved_run_id = run_id_for_case(
+            verified.request,
+            loaded.descriptor,
+            tuple(loaded.descriptor.config_files),
+            checker_strict=True,
+        )
+    except ValueError as exc:
+        raise AuditBundleError("REPLAY_MISMATCH", str(exc)) from exc
+    if resolved_run_id != run_id:
+        raise AuditBundleError("REPLAY_MISMATCH", "input:$.run_id:value")
+    if verified.semantic_result.run_id != run_id:
+        raise AuditBundleError("REPLAY_MISMATCH", "input:$.run_id:value")
     recorder = AuditRecorder(run_id)
     replayed = evaluate_case(
         verified.request,
@@ -327,6 +378,8 @@ def replay_audit_bundle(state_root: Path, run_id: str) -> dict[str, Any]:
         loaded.rules,
         source_manifest=loaded.source_manifest,
         audit_sink=recorder,
+        pack_config_files=loaded.config_files,
+        checker_strict=True,
     )
     replayed_graph = build_reasoning_graph(replayed, recorder.events)
     comparisons = (
@@ -558,14 +611,6 @@ def _contains_absolute_path(value: Any) -> bool:
         (len(value) >= 3 and value[1:3] in {":\\", ":/"} and value[0].isalpha())
         or value.startswith(("/home/", "/Users/", "/tmp/", "/var/", "/private/"))
     )
-
-
-def _run_id(request: CaseRequest) -> str:
-    """复用application内容寻址run ID算法。"""
-
-    from compiler_core.canonical_serialization import content_id
-
-    return content_id("run", request.to_dict())
 
 
 def _run_folder(run_id: str) -> str:

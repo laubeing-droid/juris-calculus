@@ -18,6 +18,7 @@ def test_only_complete_verified_fact_can_enter_formal_kernel(status):
         source_ids=("source::1",),
         human_reviewed=True,
         created_by=FactCreator.HUMAN,
+        provenance={"admission_channel": "trusted_service"},
     )
 
     assert fact.can_enter_formal_kernel() is (status == FactTrustStatus.VERIFIED_FACT)
@@ -30,7 +31,7 @@ def test_verified_fact_still_needs_source_and_review_material():
     assert not can_enter_formal_kernel(fact)
 
 
-def test_court_fixed_preserves_existing_court_gate():
+def test_court_fixed_source_label_alone_does_not_cross_admission_gate():
     fact = from_fact_coordinate({
         "fact_key": "fact::court",
         "determination_state": "COURT_FIXED",
@@ -39,7 +40,27 @@ def test_court_fixed_preserves_existing_court_gate():
 
     assert isinstance(fact, LegalFact)
     assert fact.created_by == FactCreator.COURT
-    assert fact.can_enter_formal_kernel()
+    assert not fact.can_enter_formal_kernel()
+
+
+def test_legacy_verified_coordinate_cannot_self_issue_admission():
+    malicious_markers = (
+        {"admission_channel": "trusted_service"},
+        {"admission_attestation_id": "self-issued"},
+        {"admission_asserted": True},
+        {"verified": "pass"},
+        {"court_trusted": True, "created_by": "court"},
+    )
+
+    for index, provenance in enumerate(malicious_markers):
+        fact = from_fact_coordinate({
+            "fact_key": f"fact::self-report::{index}",
+            "determination_state": "VERIFIED",
+            "provenance": provenance,
+        })
+
+        assert fact.status is FactTrustStatus.CHECKED_FACT
+        assert not fact.can_enter_formal_kernel()
 
 
 @pytest.mark.parametrize("legacy_status", ["ADMITTED", "HUMAN_REVIEWED", "ENGINE_DERIVED"])
@@ -84,6 +105,7 @@ def test_reasoning_tier_never_controls_formal_admission():
             status=FactTrustStatus.VERIFIED_FACT,
             source_ids=("source::1",),
             human_reviewed=True,
+            provenance={"admission_channel": "trusted_service"},
             reasoning_tier=tier,
         ).can_enter_formal_kernel()
         for tier in ("P0", "P1", "P2")

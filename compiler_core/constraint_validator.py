@@ -36,13 +36,15 @@ class ConstraintValidator:
     - 迭代保护：每个可废止原子的修改次数上限为 MAX_MODIFICATION_COUNT。
     """
 
-    def __init__(self, ontology_path: Optional[str] = None, overrides_path: Optional[str] = None):
+    def __init__(self, ontology_path: Optional[str] = None, overrides_path: Optional[str] = None, strict: bool = False):
         self.ontology = {}
         self.L1_meta = {}
         self._constraint_rules = []  # v1.1: L0_overrides constraint_rules
         self._loaded = False
         self._modification_counts: Dict[str, int] = {}
         if ontology_path is None:
+            if strict:
+                raise ValueError("strict mode requires explicit ontology_path")
             ontology_path = str(Path(__file__).resolve().parents[1] / "configs" / "core_ontology.yaml")
         try:
             with open(ontology_path, "r", encoding="utf-8") as f:
@@ -52,10 +54,14 @@ class ConstraintValidator:
             self._loaded = True
             logger.info(f"ConstraintValidator v0.9.1 loaded: {len(self.ontology)} concepts, {len(self.L1_meta)} L1 meta")
         except Exception as e:
+            if strict:
+                raise RuntimeError(f"ConstraintValidator: ontology load failed ({e})") from e
             logger.warning(f"ConstraintValidator: ontology load failed ({e}) — all atoms treated as Strict. Engine safe.")
 
         # v1.1: 加载 L0_overrides 中的强制收敛规则（支持法域特定）
         if overrides_path is None:
+            if strict:
+                raise ValueError("strict mode requires explicit overrides_path")
             overrides_path = str(Path(__file__).resolve().parents[1] / "configs" / "L0_overrides_hk.yaml")
         try:
             with open(overrides_path, "r", encoding="utf-8") as f:
@@ -64,6 +70,8 @@ class ConstraintValidator:
             if self._constraint_rules:
                 logger.info(f"ConstraintValidator: loaded {len(self._constraint_rules)} L0 constraint rules from {overrides_path}")
         except Exception as e:
+            if strict:
+                raise RuntimeError(f"ConstraintValidator: L0_overrides load failed ({e})") from e
             logger.warning(f"ConstraintValidator: L0_overrides load failed ({e}) — constraint rules disabled.")
 
     @property

@@ -1,0 +1,53 @@
+{
+  "repo": "juris-calculus",
+  "baseline_head": "74b61b3d8a9581eb7aa2b8f712f89ed6e8749877",
+  "branch": "main",
+  "upstream": "origin/main",
+  "generated_at": "2026-08-15T05:25:27+08:00",
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "python": "3.12.10",
+    "pytest": "available",
+    "pyyaml": "6.0.3",
+    "pip_audit": "2.10.1 isolated"
+  },
+  "scope": {
+    "completed": ["W0", "W1"],
+    "not_opened": ["W2", "W3", "W4", "W5", "W6", "W7", "W8"],
+    "formal_pack": "cn-official remains intentionally blocked/inactive"
+  },
+  "acceptance": {
+    "focused_p0": "67 passed in 28.98s",
+    "full_suite": "384 passed, 28 skipped in 189.79s",
+    "mcp_stdio": "3 passed in 2.10s",
+    "mcp_in_process_smoke": {
+      "status": "ok",
+      "readiness_claimed": false,
+      "tool_count": 4,
+      "resource_count": 0,
+      "version": "3.0.2"
+    },
+    "supply_chain": {
+      "status": "PASS",
+      "auditor": "pip-audit 2.10.1",
+      "vulnerability_count": 0,
+      "report_location": "external temporary artifact; not tracked"
+    },
+    "wheel": {
+      "file": "juris_calculus-3.0.2-py3-none-any.whl",
+      "sha256": "cc14ff95c5c2fbb58b42c56ecf3f5b6f6f626a4e71a24a0eaa464e6fcc58d6d5",
+      "size_bytes": 2633429,
+      "build": "fresh venv; setuptools 83.0.0; no build isolation",
+      "install": "second fresh venv; PyYAML 6.0.3; import PASS",
+      "public_client": true,
+      "low_level_export": false
+    }
+  },
+  "evidence_levels": {
+    "tests": "runtime pytest",
+    "mcp": "stdio subprocess authority plus in-process smoke",
+    "wheel": "fresh build environment plus separate fresh install environment",
+    "legal_content": "not claimed; no formal cn-official product pack"
+  },
+  "worktree_at_capture": "dirty implementation worktree; local commit follows acceptance"
+}

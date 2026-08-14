@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 
 import compiler_core.application as application
 from compiler_core.contracts import (
@@ -37,6 +38,10 @@ def _fact(
         source_ids=("evidence::1",),
         human_reviewed=True,
         alternatives=alternatives,
+        provenance={
+            "admission_channel": "trusted_service",
+            "admission_attestation_id": "attestation::fixture",
+        },
     )
 
 
@@ -70,7 +75,17 @@ def _rule(*, source_anchor: str = "source::law", data_quality: str = "CLEAN") ->
 def _pack(*rule_ids: str, digest: str = PACK_DIGEST) -> RulePackDescriptor:
     """构造与请求绑定的确定性规则包描述。"""
 
-    return RulePackDescriptor("official-cn", __version__, digest, tuple(rule_ids or ("R1",)))
+    return RulePackDescriptor(
+        "official-cn",
+        __version__,
+        digest,
+        tuple(rule_ids or ("R1",)),
+        jurisdiction="CN",
+        governing_law="PRC",
+        kind="official",
+        distribution_channel="release",
+        build_attestation="d" * 64,
+    )
 
 
 def _manifest(*, verified: bool = True, content_hash: str = SOURCE_HASH) -> SourceManifest:
@@ -128,6 +143,20 @@ def test_verified_fact_rule_source_and_checker_produce_formal_result() -> None:
         "CHECKER_VERDICT",
         "RESULT_FINALIZED",
     ]
+
+
+def test_development_pack_is_review_only_and_run_identity_binds_checker_profile() -> None:
+    """development身份不可formal，且早期阻断也不得退化为request-only run ID。"""
+
+    pack = replace(_pack(), development_override=True, review_only=True)
+    normal = _evaluate(_request(_fact()), pack=pack)
+    strict = _evaluate(_request(_fact()), pack=pack, checker_strict=True)
+
+    assert normal.result_status is ResultStatus.REVIEW_ONLY_RESULT
+    assert normal.execution_status is ExecutionStatus.ADMISSION_BLOCKED
+    assert normal.certificate_kind is CertificateKind.NONE
+    assert normal.risk_labels == ("RULE_PACK_DEVELOPMENT",)
+    assert normal.run_id != strict.run_id
 
 
 def test_unverified_or_candidate_rule_never_enters_formal_kernel() -> None:
@@ -358,3 +387,43 @@ def test_priority_attack_is_checked_before_formal_acceptance() -> None:
         for event in events
     )
     assert any(event.get("event_type") == "PRIORITY_RESOLVED" for event in events)
+    receipt = result.checker_receipt
+    argument_ids = {witness["argument_id"] for witness in receipt["argument_witnesses"]}
+    assert all(
+        witness["source_argument_id"] in argument_ids
+        and witness["target_argument_id"] in argument_ids
+        for witness in receipt["attack_witnesses"]
+    )
+    assert any(
+        origin == {"kind": "priority", "origin_rule_id": "WINNER"}
+        for witness in receipt["attack_witnesses"]
+        for origin in witness["origins"]
+    )
+
+
+def test_distinct_rules_for_same_claim_keep_distinct_argument_identity() -> None:
+    """同一claim的两条已触发规则不得在checker前折叠为一个argument。"""
+
+    first = LegalRule(
+        id="SUPPORT_A",
+        premise_atoms=["fact::trigger"],
+        head_claim="claim::shared",
+        source_anchor="source::law",
+    )
+    second = LegalRule(
+        id="SUPPORT_B",
+        premise_atoms=["fact::trigger"],
+        head_claim="claim::shared",
+        source_anchor="source::law",
+    )
+    result = _evaluate(
+        _request(_fact()),
+        pack=_pack("SUPPORT_A", "SUPPORT_B"),
+        rules=(first, second),
+    )
+
+    witnesses = result.checker_receipt["argument_witnesses"]
+    assert result.claims == ("claim::shared",)
+    assert {item["rule_id"] for item in witnesses} == {"SUPPORT_A", "SUPPORT_B"}
+    assert len({item["argument_id"] for item in witnesses}) == 2
+    assert result.checker_receipt["claim_projection"]["accepted_claim_ids"] == ["claim::shared"]

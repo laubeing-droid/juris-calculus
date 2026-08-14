@@ -365,36 +365,62 @@ def build_attack_graph_from_evaluator(
 
     This serves as the Stage 2 AAF bridge in the stratified evaluator.
     """
-    attacks: list[tuple[str, str]] = []
     labels: dict[str, str] = evaluator_result.get("labels", {})
+    attacks: list[tuple[str, str]] = []
+    by_id: dict[str, dict[str, Any]] = {}
+    by_head_lists: dict[str, list[str]] = {}
+
+    def value(rule_obj: Any, name: str, default: Any) -> Any:
+        return rule_obj.get(name, default) if isinstance(rule_obj, dict) else getattr(rule_obj, name, default)
+
+    def iter_refs(raw_refs: Any) -> list[Any]:
+        if raw_refs is None:
+            return []
+        if isinstance(raw_refs, (list, tuple, set)):
+            return list(raw_refs)
+        return [raw_refs]
+
+    def resolve_target(target: Any) -> str:
+        key = "" if target is None else str(target)
+        if not key:
+            return ""
+        if key in by_id:
+            return str(value(by_id[key], "head_claim", value(by_id[key], "head", "")) or key)
+        if key in by_head_lists and by_head_lists[key]:
+            return key
+        for rule in rules:
+            if str(value(rule, "id", "")) == key or str(value(rule, "head", "")) == key or str(value(rule, "head_claim", "")) == key:
+                return str(value(rule, "head_claim", value(rule, "head", "")))
+        return key
 
     for rule in rules:
-        rhead = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
-        if not rhead:
+        rid = str(value(rule, "id", ""))
+        if rid:
+            by_id[rid] = rule
+        rhead = str(value(rule, "head", value(rule, "head_claim", "")))
+        if rhead:
+            by_head_lists[rhead] = by_head_lists.get(rhead, []) + [rid or rhead]
+
+    for rule in rules:
+        source_head = str(value(rule, "head", value(rule, "head_claim", "")))
+        if not source_head:
             continue
 
-        # Priority-based attacks
-        priority_over = rule.get("priority_over", []) if isinstance(rule, dict) else getattr(rule, "priority_over", [])
-        for target in priority_over:
-            if target in labels or any(r.get("head") == target or getattr(r, "head_claim", "") == target for r in rules):
-                attacks.append((rhead, target))
+        # Priority-based and explicit attacks: source_head defeats target
+        for field_name in ("attacks", "priority_over", "exception_to"):
+            for raw_target in iter_refs(value(rule, field_name, ())):
+                target_head = resolve_target(raw_target)
+                if target_head and (target_head in labels or source_head in labels):
+                    attacks.append((source_head, target_head))
 
-        # Exception-based attacks (defeaters)
-        exceptions = rule.get("exception_to", []) if isinstance(rule, dict) else getattr(rule, "exception_to", [])
-        for target in exceptions:
-            attacks.append((rhead, target))
+        # Exception-chain attacks are represented as exception -> target
+        for raw_exception in iter_refs(value(rule, "exception_chain", ())):
+            exception_head = resolve_target(raw_exception)
+            if exception_head and source_head:
+                attacks.append((exception_head, source_head))
 
-    # Rebuttal: conflicting heads (same head drawn from different rules)
-    seen_heads: dict[str, str] = {}
-    for rule in rules:
-        head = rule.get("head", "") if isinstance(rule, dict) else getattr(rule, "head_claim", "")
-        r_id = rule.get("id", head) if isinstance(rule, dict) else getattr(rule, "id", head)
-        if head and head in seen_heads and head in labels:
-            attacks.append((r_id, seen_heads[head]))
-        elif head:
-            seen_heads[head] = r_id
-
-    return attacks
+    # Deduplicate deterministic ordering.
+    return sorted(set(attacks))
 
 
 def build_attack_edges_from_rules(
@@ -410,23 +436,42 @@ def build_attack_edges_from_rules(
 
         return rule.get(name, default) if isinstance(rule, dict) else getattr(rule, name, default)
 
+    def iter_refs(raw_refs: Any) -> list[Any]:
+        if raw_refs is None:
+            return []
+        if isinstance(raw_refs, (list, tuple, set)):
+            return list(raw_refs)
+        return [raw_refs]
+
     by_id = {str(value(rule, "id", "")): rule for rule in rules if str(value(rule, "id", ""))}
+    by_head = {str(value(rule, "head", value(rule, "head_claim", ""))): rule for rule in rules if str(value(rule, "head", value(rule, "head_claim", "")))}
     attacks: set[tuple[str, str]] = set()
+
+    def resolve_target(raw_target: Any) -> str:
+        target_key = str(raw_target)
+        target_rule = by_id.get(target_key)
+        if target_rule is not None:
+            target_head = str(value(target_rule, "head_claim", value(target_rule, "head", "")))
+            return target_head
+        if target_key in by_head:
+            return target_key
+        return target_key
+
     for rule in rules:
-        rhead = value(rule, "head", "") if isinstance(rule, dict) else value(rule, "head_claim", "")
-        if isinstance(rule, dict) and not rhead:
-            rhead = value(rule, "head_claim", "")
-        if not rhead:
+        source = str(value(rule, "head", value(rule, "head_claim", "")))
+        if not source:
             continue
+
         for field_name in ("attacks", "priority_over", "exception_to"):
-            for target in value(rule, field_name, ()) or ():
-                target_rule = by_id.get(str(target))
-                target_head = value(target_rule, "head_claim", "") if target_rule is not None else str(target)
+            for raw_target in iter_refs(value(rule, field_name, ())):
+                target_head = resolve_target(raw_target)
                 if target_head:
-                    attacks.add((str(rhead), str(target_head)))
-        for exception_id in value(rule, "exception_chain", ()) or ():
-            exception_rule = by_id.get(str(exception_id))
-            exception_head = value(exception_rule, "head_claim", "") if exception_rule is not None else ""
+                    attacks.add((source, target_head))
+
+        # exception_chain denotes target exception rule defeating the current rule.
+        for raw_exception in iter_refs(value(rule, "exception_chain", ())):
+            exception_head = resolve_target(raw_exception)
             if exception_head:
-                attacks.add((str(exception_head), str(rhead)))
-    return sorted(attacks)
+                attacks.add((exception_head, source))
+
+    return sorted((src, tgt) for src, tgt in attacks if src and tgt)

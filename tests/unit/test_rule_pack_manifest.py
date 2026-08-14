@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 import yaml
@@ -61,6 +62,12 @@ def _write_pack(
         encoding="utf-8",
     )
     source_path.write_text(yaml.safe_dump({"sources": sources}, sort_keys=False), encoding="utf-8")
+    repository_configs = Path(__file__).resolve().parents[2] / "configs"
+    config_entries = []
+    for name in ("core_ontology.yaml", "L0_overrides_hk.yaml"):
+        target = root / "fixture" / name
+        shutil.copy2(repository_configs / name, target)
+        config_entries.append({"path": f"fixture/{name}", "sha256": sha256_file(target)})
     expected_inventory = inventory or {
         "corpus_total": len(rules),
         "reasoning_eligible_total": 1,
@@ -78,10 +85,12 @@ def _write_pack(
         "effective_to": "",
         "rule_files": [{"path": "fixture/rules.yaml", "sha256": sha256_file(rule_path)}],
         "source_files": [{"path": "fixture/sources.yaml", "sha256": sha256_file(source_path)}],
-        "config_files": [],
+        "config_files": config_entries,
         "inventory": expected_inventory,
         "content_digest": "",
         "build_commit": "b" * 40,
+        "distribution_channel": "release",
+        "build_attestation": "c" * 64,
     }
     manifest["content_digest"] = manifest_content_digest(manifest)
     manifest_path = root / "packs" / pack_id / "manifest.yaml"
@@ -115,6 +124,21 @@ def test_one_anchored_and_one_unsourced_rule_have_separate_inventories(tmp_path)
     }
     assert result.candidate_rule_ids == ("R-CANDIDATE",)
     assert result.issues == ()
+
+
+def test_development_pack_loads_for_review_but_is_never_reasoning_ready(tmp_path) -> None:
+    """development可供审计/replay加载，但descriptor必须携带降级身份。"""
+
+    _write_pack(tmp_path)
+    registry = RulePackRegistry(tmp_path, development_override=True)
+    result = registry.verify("fixture-official")
+    loaded = registry.load_reasoning_pack("fixture-official")
+
+    assert result.integrity_valid is True
+    assert result.reasoning_ready is False
+    assert result.review_only is True
+    assert loaded.descriptor.development_override is True
+    assert loaded.descriptor.review_only is True
 
 
 def test_tampered_file_hash_fails_closed(tmp_path) -> None:

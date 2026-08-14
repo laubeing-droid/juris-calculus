@@ -47,6 +47,7 @@ def test_boundary_json_export_is_stable_and_sorted():
             FactTrustStatus.VERIFIED_FACT,
             source_ids=("src://a",),
             human_reviewed=True,
+            provenance={"admission_channel": "trusted_service"},
         )
     ], checker_accepted=True, certificate_kind=CertificateKind.FORMAL, formal_kernel_used=True).to_dict()
 

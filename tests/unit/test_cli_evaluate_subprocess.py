@@ -32,8 +32,8 @@ def _run(*arguments: str, stdin: str | None = None) -> subprocess.CompletedProce
     )
 
 
-def test_cli_evaluate_writes_bundle_then_replay_passes(tmp_path) -> None:
-    """显式development official fixture可通过CLI落包并离线replay。"""
+def test_cli_development_evaluate_is_review_only_and_replay_passes(tmp_path) -> None:
+    """显式development fixture只能产出review-only包，但仍可离线replay。"""
 
     _, request = _fixture(tmp_path / "configs")
     state_root = tmp_path / "state"
@@ -50,7 +50,11 @@ def test_cli_evaluate_writes_bundle_then_replay_passes(tmp_path) -> None:
 
     assert evaluated.returncode == 0
     assert evaluated.stderr == ""
-    assert payload["canonical_result"]["semantic"]["result_status"] == "accepted_formal_result"
+    semantic = payload["canonical_result"]["semantic"]
+    assert semantic["result_status"] == "review_only_result"
+    assert semantic["certificate_kind"] == "none"
+    assert semantic["checker_accepted"] is False
+    assert "RULE_PACK_DEVELOPMENT" in semantic["risk_labels"]
     assert all(not ref.startswith(("C:", "D:", "/")) for ref in payload["canonical_result"]["artifact_refs"])
     replayed = _run("replay", payload["run_id"], "--audit-out", str(state_root), "--json")
     replay_payload = json.loads(replayed.stdout)

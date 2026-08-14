@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 import hashlib
 import json
@@ -42,8 +42,18 @@ class PackVerification:
     reasoning_ready: bool
     content_digest: str
     inventory: dict[str, int]
-    candidate_rule_ids: tuple[str, ...]
-    issues: tuple[dict[str, str], ...]
+    verified_rule_ids: tuple[str, ...] = ()
+    candidate_rule_ids: tuple[str, ...] = ()
+    rejected_rule_ids: tuple[str, ...] = ()
+    issues: tuple[dict[str, str], ...] = ()
+    config_files: tuple[tuple[str, str], ...] = ()
+    governing_law: str = ""
+    review_only: bool = False
+    distribution_channel: str = ""
+    build_attestation: str = ""
+    effective_from: str = ""
+    effective_to: str = ""
+    declared_status: str = ""
     development_override: bool = False
     override_path_hash: str = ""
 
@@ -59,10 +69,20 @@ class PackVerification:
             "reasoning_ready": self.reasoning_ready,
             "content_digest": self.content_digest,
             "inventory": dict(self.inventory),
+            "verified_rule_ids": tuple(self.verified_rule_ids),
             "candidate_rule_count": len(self.candidate_rule_ids),
+            "rejected_rule_count": len(self.rejected_rule_ids),
             "issues": [dict(issue) for issue in self.issues],
+            "governing_law": self.governing_law,
+            "review_only": self.review_only,
+            "distribution_channel": self.distribution_channel,
+            "build_attestation": self.build_attestation,
+            "effective_from": self.effective_from,
+            "effective_to": self.effective_to,
+            "declared_status": self.declared_status,
             "development_override": self.development_override,
             "override_path_hash": self.override_path_hash,
+            "config_files": list(self.config_files),
         }
         if include_candidates:
             payload["candidate_rule_ids"] = list(self.candidate_rule_ids)
@@ -79,7 +99,15 @@ class LoadedRulePack:
     verification: PackVerification
     manifest_path: Path
     config_root: Path
+    config_files: tuple[Path, ...]
     resource_paths: tuple[Path, ...]
+    _issuer: object = field(repr=False, compare=False)
+
+    @property
+    def registry_issued(self) -> bool:
+        """仅registry加载器可签发可求值handle。"""
+
+        return self._issuer is _REGISTRY_HANDLE_ISSUER
 
 
 @dataclass(frozen=True)
@@ -92,6 +120,9 @@ class LoadedCorpusPack:
     rule_paths: tuple[Path, ...]
     source_paths: tuple[Path, ...]
     config_root: Path
+
+
+_REGISTRY_HANDLE_ISSUER = object()
 
 
 class RulePackRegistry:
@@ -167,7 +198,15 @@ class RulePackRegistry:
             return self._reasoning_cache[pack_id]
 
         verification = self.verify(pack_id)
-        if not verification.integrity_valid or not verification.reasoning_ready:
+        development_loadable = bool(
+            verification.development_override
+            and verification.integrity_valid
+            and verification.kind == "official"
+            and verification.declared_status == "active"
+            and verification.governing_law
+            and verification.verified_rule_ids
+        )
+        if not verification.reasoning_ready and not development_loadable:
             raise RulePackError("PACK_NOT_REASONING_READY", pack_id)
         manifest_path = self.manifests()[pack_id]
         document = _load_yaml_mapping(manifest_path)
@@ -186,15 +225,37 @@ class RulePackRegistry:
             path = self.config_root / entry["path"]
             source_manifest.load(str(path))
             resources.append(path)
+        config_file_paths: list[Path] = []
+        config_file_names: list[str] = []
         for entry in document["config_files"]:
-            resources.append(self.config_root / entry["path"])
-        candidate_ids = set(verification.candidate_rule_ids)
-        verified_ids = tuple(sorted(rule.id for rule in rules if rule.id not in candidate_ids))
+            path = _validated_resource_path(self.config_root, entry, [])
+            if path is None:
+                raise RulePackError("PACK_PATH_VERIFICATION_ERROR", entry["path"])
+            resources.append(path)
+            config_file_paths.append(path)
+            config_file_names.append(path.relative_to(self.config_root).as_posix())
+        rule_ids = tuple(rule.id for rule in rules)
+        id_set = set(rule_ids)
+        verified_ids = tuple(id for id in verification.verified_rule_ids if id in id_set)
+        candidate_ids = tuple(id for id in verification.candidate_rule_ids if id in id_set)
+        rejected_ids = tuple(id for id in verification.rejected_rule_ids if id in id_set)
         descriptor = RulePackDescriptor(
             pack_id=verification.pack_id,
             version=verification.version,
             content_digest=verification.content_digest,
             verified_rule_ids=verified_ids,
+            candidate_rule_ids=tuple(sorted(candidate_ids)),
+            rejected_rule_ids=tuple(sorted(rejected_ids)),
+            jurisdiction=verification.jurisdiction,
+            governing_law=verification.governing_law,
+            kind=verification.kind,
+            review_only=verification.review_only,
+            distribution_channel=verification.distribution_channel,
+            development_override=verification.development_override,
+            build_attestation=verification.build_attestation,
+            effective_from=verification.effective_from,
+            effective_to=verification.effective_to,
+            config_files=tuple(config_file_names),
         )
         loaded = LoadedRulePack(
             descriptor=descriptor,
@@ -204,6 +265,8 @@ class RulePackRegistry:
             manifest_path=manifest_path,
             config_root=self.config_root,
             resource_paths=tuple(resources),
+            config_files=tuple(config_file_paths),
+            _issuer=_REGISTRY_HANDLE_ISSUER,
         )
         self._reasoning_cache[pack_id] = loaded
         return loaded
@@ -268,6 +331,7 @@ def verify_pack_manifest(
     config_root = Path(config_root).resolve()
     rules: list[dict[str, Any]] = []
     source_entries: dict[str, dict[str, Any]] = {}
+    config_files: list[tuple[str, str]] = []
     for entry in _file_entries(document.get("rule_files"), "rule_files", issues):
         path = _validated_resource_path(config_root, entry, issues)
         if path is None:
@@ -299,6 +363,11 @@ def verify_pack_manifest(
         path = _validated_resource_path(config_root, entry, issues)
         if path is not None:
             _verify_file_hash(path, entry, issues)
+            try:
+                relative = path.relative_to(config_root).as_posix()
+            except ValueError:
+                relative = path.name
+            config_files.append((relative, entry["sha256"]))
 
     ids = [str(rule.get("id", "")) for rule in rules]
     for rule_id in sorted(rule_id for rule_id, count in Counter(ids).items() if count > 1):
@@ -306,22 +375,50 @@ def verify_pack_manifest(
     if any(not rule_id for rule_id in ids):
         _issue(issues, "EMPTY_RULE_ID", "one or more rules have no id")
 
+    governing_law = str(document.get("governing_law", ""))
+    distribution_channel = str(document.get("distribution_channel", ""))
+    manifest_development = bool(document.get("development_override", False))
+    effective_development = bool(development_override or manifest_development)
+    build_attestation = str(document.get("build_attestation", ""))
+    effective_from = str(document.get("effective_from", ""))
+    effective_to = str(document.get("effective_to", ""))
+    status = str(document.get("status", ""))
+    review_only = (
+        status != "active"
+        or distribution_channel == "review"
+        or bool(document.get("review_only"))
+        or effective_development
+    )
     eligible_ids: list[str] = []
     candidate_ids: list[str] = []
+    rejected_ids: list[str] = []
     official = document.get("kind") == "official"
     relation_validity = _validate_rule_relations(rules, issues) if official else {}
     for rule in rules:
         rule_id = str(rule.get("id", ""))
-        eligible = (
-            official
-            and relation_validity.get(rule_id, False)
-            and _official_rule_eligible(rule, source_entries, issues)
-        )
-        (eligible_ids if eligible else candidate_ids).append(rule_id)
+        if not rule_id:
+            _issue(issues, "EMPTY_RULE_ID", "one or more rules have no id")
+            continue
+        if not official:
+            candidate_ids.append(rule_id)
+            continue
+        if not relation_validity.get(rule_id, False):
+            rejected_ids.append(rule_id)
+            continue
+        if _official_rule_eligible(rule, source_entries, issues):
+            eligible_ids.append(rule_id)
+        else:
+            candidate_ids.append(rule_id)
+    if official and not governing_law:
+        _issue(issues, "MISSING_GOVERNING_LAW", "governing_law is required for official packs")
+    if official and not build_attestation:
+        _issue(issues, "MISSING_BUILD_ATTESTATION", "build attestation is required for official packs")
+    elif official and not _SHA256_RE.fullmatch(build_attestation):
+        _issue(issues, "INVALID_BUILD_ATTESTATION", "build attestation must be SHA-256")
     inventory = {
         "corpus_total": len(rules),
         "reasoning_eligible_total": len(eligible_ids),
-        "candidate_only_total": len(candidate_ids),
+        "candidate_only_total": len(candidate_ids) + len(rejected_ids),
     }
     expected_inventory = document.get("inventory")
     if expected_inventory != inventory:
@@ -330,29 +427,49 @@ def verify_pack_manifest(
     if document.get("content_digest") != calculated_digest:
         _issue(issues, "MANIFEST_DIGEST_MISMATCH", calculated_digest)
 
-    blocker_codes = {issue["code"] for issue in issues}
+    blocker_codes = {
+        issue["code"]
+        for issue in issues
+        if issue["code"] != "MISSING_BUILD_ATTESTATION"
+    }
+    if official and not eligible_ids:
+        _issue(issues, "EMPTY_OFFICIAL_PACK", "no reasoning-eligible rules")
     integrity_valid = not blocker_codes
     reasoning_ready = bool(
         integrity_valid
         and official
+        and not review_only
+        and governing_law
+        and build_attestation
         and eligible_ids
-        and document.get("status") == "active"
+        and status == "active"
     )
-    if official and not eligible_ids:
-        _issue(issues, "EMPTY_OFFICIAL_PACK", "no reasoning-eligible rules")
+    verified_rule_ids = tuple(sorted(
+        eligible_ids if official else {str(rule.get("id", "")) for rule in rules}
+    ))
     return PackVerification(
         pack_id=str(document.get("pack_id", "")),
         version=str(document.get("version", "")),
         jurisdiction=str(document.get("jurisdiction", "")),
         kind=str(document.get("kind", "")),
+        governing_law=governing_law,
         integrity_valid=integrity_valid,
         reasoning_ready=reasoning_ready,
         content_digest=str(document.get("content_digest", "")),
         inventory=inventory,
+        verified_rule_ids=verified_rule_ids,
         candidate_rule_ids=tuple(sorted(candidate_ids)),
+        rejected_rule_ids=tuple(sorted(rejected_ids)),
         issues=tuple(sorted(issues, key=lambda item: (item["code"], item["detail"]))),
-        development_override=development_override,
+        review_only=review_only,
+        distribution_channel=distribution_channel,
+        build_attestation=build_attestation,
+        effective_from=effective_from,
+        effective_to=effective_to,
+        declared_status=status,
+        development_override=effective_development,
         override_path_hash=override_path_hash,
+        config_files=tuple(config_files),
     )
 
 
