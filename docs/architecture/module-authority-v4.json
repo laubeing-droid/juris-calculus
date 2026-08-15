@@ -76,16 +76,10 @@
     {"module": "compiler_core.stratified_evaluator", "class": "COMPATIBILITY", "rationale": "shadow/diff-only"},
     {"module": "compiler_core.g8_evaluator_patch", "class": "COMPATIBILITY", "rationale": "历史补丁层"},
     {"module": "compiler_core.completion_status", "class": "COMPATIBILITY", "rationale": "v3 完成状态；并入 contracts_v4 completeness"},
-    {"module": "compiler_core.legal_compiler", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "旧编译入口，无正式调用者"},
-    {"module": "compiler_core.prc_collision_engine", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "私域对齐工作流"},
-    {"module": "compiler_core.entity_anonymizer", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "私域去标识化工作流"},
-    {"module": "compiler_core.dp_policy_loader", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "私域政策加载"},
-    {"module": "compiler_core.tool_cache", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "工具缓存，无正式调用者"},
-    {"module": "compiler_core.inference_cache", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "推理缓存，违反确定性重算原则"},
-    {"module": "compiler_core.metrics_collector", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "观测收集，非正式链"},
-    {"module": "compiler_core.plugin_registry", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "插件机制暂不进入公开内核"},
+    {"module": "compiler_core.prc_collision_engine", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "私域对齐工作流；有调用方（addons/cn、tools/run_trirail_matrix、test_trirail_collision），须随调用方整体外迁，不得单独删除"},
+    {"module": "compiler_core.plugin_registry", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "插件机制暂不进入公开内核；有调用方（addons/cn、addons/hk、addons/us、test_plugin_registry），须随 addons 整体外迁"},
     {"module": "compiler_core.config_paths", "class": "COMPATIBILITY", "rationale": "路径解析辅助；随兼容层迁移"},
-    {"module": "compiler_core.adapter_base", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "外仓 adapter 基座，非正式链"},
+    {"module": "compiler_core.adapter_base", "class": "REMOVE_OR_EXTERNALIZE", "rationale": "外仓 adapter 基座，非正式链；有调用方（addons/cn、addons/hk、addons/us），须随 addons 整体外迁"},
     {"module": "compiler_core.banach_verifier", "class": "ADVISORY", "rationale": "实验验证器"},
     {"module": "compiler_core.grounded_smt_verifier", "class": "ADVISORY", "rationale": "实验验证器"},
     {"module": "compiler_core.universal_grounded_smt", "class": "ADVISORY", "rationale": "实验验证器"},
@@ -108,6 +102,7 @@
   "notes": [
     "分类基于 W9 时点导入图与方案 §15/§16；模块迁移前不得删除，只降级调用面。",
     "REMOVE_OR_EXTERNALIZE 模块在下一迁移周期外迁或移除，需单独提交并记录调用方影响。",
-    "ADVISORY 模块禁止出现在 FormalCertificateV1 的 receipts 输入中。"
+    "ADVISORY 模块禁止出现在 FormalCertificateV1 的 receipts 输入中。",
+    "W9+ 外迁记录：legal_compiler、entity_anonymizer、dp_policy_loader、tool_cache、inference_cache、metrics_collector 经调用方审计确认零调用后删除（含 dp_policy_loader 自测试）；prc_collision_engine、plugin_registry、adapter_base 有真实调用方（addons/tools/tests），保留待整体外迁。"
   ]
 }
