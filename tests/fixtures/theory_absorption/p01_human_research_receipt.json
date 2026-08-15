@@ -1,0 +1,64 @@
+{
+  "item": "P01",
+  "title": "HumanResearchReceiptV1 consumption",
+  "cases": [
+    {
+      "id": "p01-positive-01",
+      "kind": "positive",
+      "input": {
+        "receipt": {
+          "receipt_id": "hrr-0001",
+          "kind": "HumanResearchReceiptV1",
+          "issuer_role": "legal_harness_reviewer",
+          "scope": {"case_ref": "case-0001", "run_ref": "run-0001"},
+          "research_claim_ref": "claim-interpretation-A",
+          "bound_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "issued_at": "2026-08-01T00:00:00Z",
+          "approval_receipt_ref": "approval-0001"
+        }
+      },
+      "expected": {
+        "gate": "fact_gate",
+        "status": "PASS",
+        "effects": ["receipt bound to run", "reviewed status may enter review graph"],
+        "forbidden": ["treating receipt as legal-correctness proof"]
+      },
+      "oracle": "plan section 3 P01: JC consumes receipt, binds to run; receipt never equals legal correctness"
+    },
+    {
+      "id": "p01-negative-01",
+      "kind": "negative",
+      "input": {
+        "receipt": {
+          "receipt_id": "hrr-0002",
+          "kind": "HumanResearchReceiptV1",
+          "issuer_role": "agent",
+          "scope": {"case_ref": "case-0001", "run_ref": "run-0001"},
+          "research_claim_ref": "claim-interpretation-B",
+          "bound_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "issued_at": "2026-08-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "gate": "fact_gate",
+        "status": "FAIL",
+        "reason": "issuer_role_not_authorized",
+        "effects": ["rejection event recorded", "claim remains candidate"]
+      },
+      "oracle": "plan section 3 P01 + section 9 action 6: human approval must come from Legal Harness versioned receipt; agent cannot issue"
+    },
+    {
+      "id": "p01-missing-01",
+      "kind": "missing",
+      "input": {"receipt": null, "claim_ref": "claim-interpretation-C"},
+      "expected": {
+        "gate": "fact_gate",
+        "status": "BLOCKED",
+        "reason": "receipt_absent",
+        "effects": ["downgrade to review-only or reject", "no formal certificate"],
+        "forbidden": ["treating absence as approval", "fabricating receipt"]
+      },
+      "oracle": "plan section 3 P01 row: absence triggers downgrade/reject rule; fail-closed section 4 item 11"
+    }
+  ]
+}

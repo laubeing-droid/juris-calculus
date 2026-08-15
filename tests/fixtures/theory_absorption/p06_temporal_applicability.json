@@ -1,0 +1,59 @@
+{
+  "item": "P06",
+  "title": "temporal applicability gates (decision time, source version, expiry/revision/unknown)",
+  "cases": [
+    {
+      "id": "p06-positive-01",
+      "kind": "positive",
+      "description": "rule effective at decision_time proceeds to rule selection",
+      "input": {
+        "decision_time": "2026-03-01T00:00:00Z",
+        "rule_ref": "rule-cpl-art85@2021",
+        "rule_validity": {"effective_time": "2022-01-01T00:00:00Z", "expiry_time": null, "revision_time": "2021-12-24T00:00:00Z"}
+      },
+      "expected": {
+        "gate": "temporal_applicability",
+        "status": "PASS",
+        "effects": ["rule eligible for selection", "applicability time recorded separately from source authority"]
+      },
+      "oracle": "plan section 8 action 3"
+    },
+    {
+      "id": "p06-negative-01",
+      "kind": "negative",
+      "description": "current-web-page version must not be auto-interpreted as law valid at the disputed time",
+      "input": {
+        "decision_time": "2019-06-01T00:00:00Z",
+        "rule_ref": "rule-cpl-art85@2021",
+        "rule_validity": {"effective_time": "2022-01-01T00:00:00Z", "expiry_time": null},
+        "source_note": "snapshot retrieved today reflects post-2022 revision"
+      },
+      "expected": {
+        "gate": "temporal_applicability",
+        "status": "FAIL",
+        "reason": "rule_not_effective_at_decision_time",
+        "effects": ["superseded/versioned rule selected instead or BLOCKED", "explicit blocked reason"],
+        "forbidden": ["treating current snapshot as applicable at earlier decision_time"]
+      },
+      "oracle": "plan section 3 P06 boundary + section 8 action 3"
+    },
+    {
+      "id": "p06-missing-01",
+      "kind": "missing",
+      "description": "missing decision_time or broken version chain blocks entry to formal evaluation",
+      "input": {
+        "decision_time": null,
+        "rule_ref": "rule-cpl-art85@2021",
+        "version_chain": {"supersedes": "src-cpl-2017", "superseded_by_target_exists": false}
+      },
+      "expected": {
+        "gate": "temporal_applicability",
+        "status": "BLOCKED",
+        "reason": "decision_time_missing_or_version_chain_broken",
+        "effects": ["no formal evaluation entered", "blocked reason emitted before rule selection"],
+        "forbidden": ["defaulting decision_time silently", "proceeding with broken version chain"]
+      },
+      "oracle": "plan section 8 action 3 + gate"
+    }
+  ]
+}

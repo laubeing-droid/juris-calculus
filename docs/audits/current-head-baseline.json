@@ -1,25 +1,39 @@
 {
   "repo": "juris-calculus",
-  "baseline_head": "74b61b3d8a9581eb7aa2b8f712f89ed6e8749877",
-  "branch": "main",
+  "baseline_head": "d9ec2fc6d66bbc09e199248a855b9836d57980dc",
+  "branch": "codex/jc-theory-absorption-plan",
+  "main_head": "5b7bd008966703a33343ef1784fd13f5650b8e66",
   "upstream": "origin/main",
-  "generated_at": "2026-08-15T05:25:27+08:00",
+  "generated_at": "2026-08-16T01:50:00+08:00",
+  "supersedes": {
+    "file": "docs/audits/current-head-baseline.json",
+    "previous_baseline_head": "74b61b3d8a9581eb7aa2b8f712f89ed6e8749877",
+    "reason": "W0 re-verification at current HEAD per 20260815 construction plan section 6"
+  },
   "environment": {
     "os": "Microsoft Windows NT 10.0.26200.0",
     "python": "3.12.10",
-    "pytest": "available",
     "pyyaml": "6.0.3",
-    "pip_audit": "2.10.1 isolated"
+    "pip_audit": "2.10.1 isolated venv under build-artifacts/",
+    "locale_note": "pip-audit requires PYTHONUTF8=1 on GBK locale; recorded as environment fact, not code change"
   },
-  "scope": {
-    "completed": ["W0", "W1"],
-    "not_opened": ["W2", "W3", "W4", "W5", "W6", "W7", "W8"],
-    "formal_pack": "cn-official remains intentionally blocked/inactive"
+  "git_state": {
+    "worktree_at_capture": "clean (git status empty; ignored-only entries verified)",
+    "version_source": "compiler_core/version.py __version__ = 3.0.2",
+    "worktree_pollution": {
+      "finding": "tests/fixtures/lmm_refinement/cases.json was an untracked residual from codex/lmm-runtime-receipt, masked by *.json ignore rule",
+      "resolution": "moved to build-artifacts/residual-lmm_refinement-from-codex-lmm-runtime-receipt/ (outside tracked tree); see docs/audits/branch-adoption-decision.md",
+      "status": "RESOLVED"
+    },
+    "history_branches": {
+      "codex/lmm-runtime-receipt": "2 commits ahead of main; per-file adopt/rewrite/drop decision in docs/audits/branch-adoption-decision.md; not merged",
+      "codex/jc-v3-auditable-cli": "historical feature branch; already merged content via main; no pending delta audited in W0"
+    }
   },
   "acceptance": {
-    "focused_p0": "67 passed in 28.98s",
-    "full_suite": "384 passed, 28 skipped in 189.79s",
-    "mcp_stdio": "3 passed in 2.10s",
+    "v3_entrypoint_boundary": "3 passed",
+    "mcp_stdio_subprocess_authority": "3 passed",
+    "full_suite": "384 passed, 28 skipped in 196.32s",
     "mcp_in_process_smoke": {
       "status": "ok",
       "readiness_claimed": false,
@@ -29,25 +43,48 @@
     },
     "supply_chain": {
       "status": "PASS",
-      "auditor": "pip-audit 2.10.1",
+      "auditor": "pip-audit 2.10.1 isolated venv",
+      "requirements": "requirements/core.lock",
+      "dependency_count": 1,
       "vulnerability_count": 0,
-      "report_location": "external temporary artifact; not tracked"
+      "raw_report": "build-artifacts/w0_pip_audit_raw.json (not tracked)"
     },
-    "wheel": {
-      "file": "juris_calculus-3.0.2-py3-none-any.whl",
-      "sha256": "cc14ff95c5c2fbb58b42c56ecf3f5b6f6f626a4e71a24a0eaa464e6fcc58d6d5",
-      "size_bytes": 2633429,
-      "build": "fresh venv; setuptools 83.0.0; no build isolation",
-      "install": "second fresh venv; PyYAML 6.0.3; import PASS",
-      "public_client": true,
-      "low_level_export": false
-    }
+    "git_diff_check": "PASS (exit 0)",
+    "note": "historical PASS numbers from the 74b61b3 baseline were NOT reused; every figure above was re-executed at d9ec2fc"
+  },
+  "capability_inventory": {
+    "legend": ["IMPLEMENTED", "PARTIAL", "BLOCKED", "ABSENT"],
+    "items": [
+      {"id": "single_version_source", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "compiler_core/version.py; MCP smoke reports version 3.0.2"},
+      {"id": "external_request_cannot_claim_verified_fact", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "tests/unit/test_v3_entrypoint_boundary.py 3 passed at HEAD"},
+      {"id": "development_pack_not_reasoning_ready", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "rule_packs.py registry_issued gating; full suite PASS at HEAD"},
+      {"id": "jcclient_public_api_only", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "compiler_core/client.py JCClient; low-level evaluate not exported from package root"},
+      {"id": "llm_extraction_proposal_only", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "pipeline/llm_client.py provider separation; boundary tests PASS"},
+      {"id": "run_identity_main_chain", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "application.run_id_for_case; audit/graph/bundle/replay carry run id"},
+      {"id": "independent_grounded_checker_witnesses", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "independent_grounded_checker.check_grounded with argument/attack witnesses and claim projection"},
+      {"id": "cn_official_pack", "plan_ref": "1.1/1.2.7", "status": "BLOCKED", "evidence": "no first-party official snapshot exists; remains inactive/blocked by policy"},
+      {"id": "v4_neutral_contracts_and_compat_entry", "plan_ref": "1.2.1", "status": "ABSENT", "evidence": "no contracts_v4.py, no schemas/jc-v4.schema.json"},
+      {"id": "source_snapshot_v2_evidence_manifest_v1_fact_attestation_v1", "plan_ref": "1.2.2", "status": "ABSENT", "evidence": "source_manifest.py is a flat YAML anchor validator; no V2/V1 closed loop"},
+      {"id": "p03_full_argumentation_semantics", "plan_ref": "1.2.3", "status": "PARTIAL", "evidence": "argumentation.py has grounded/SCC/cycle primitives; typed ArgumentV2/AttackV2/PermissionV1/PriorityEdgeV1 semantics and LMM binding absent"},
+      {"id": "p04_multi_backend_and_solver_receipt", "plan_ref": "1.2.4", "status": "PARTIAL", "evidence": "smt_sidecar.py has optional z3 plus python fallback; no ASP backend, no SolverReceiptV1, rule_router.py is keyword MoE not Legal-IVL feature router"},
+      {"id": "p07_legalspec_legal_ivl_pipeline", "plan_ref": "1.2.5", "status": "ABSENT", "evidence": "legal_ir_v3.py is a minimal compatibility layer; no LegalSpec, no translation receipts"},
+      {"id": "p09_three_gate_fact_admission", "plan_ref": "1.2.6", "status": "PARTIAL", "evidence": "verified_fact admission protected at contract boundary; source/interpretation/fact gates not separated; no FactAdmissionAttestationV1"},
+      {"id": "cn_official_rule_engineering_platform", "plan_ref": "1.2.7", "status": "BLOCKED", "evidence": "no staging/build/release layering; first rule domain not opened"},
+      {"id": "build_bound_identity_certificate_audit_replay", "plan_ref": "1.2.8", "status": "PARTIAL", "evidence": "AuditBundle v1 with atomic write and replay exists; RunIdentityV2/FormalCertificateV1/AuditBundleV2 absent; certificate_checker.py is minimal kind-check only"},
+      {"id": "three_entrypoint_parity", "plan_ref": "1.2.9", "status": "PARTIAL", "evidence": "CLI/JCClient/MCP share application.evaluate_case; canonical-bytes parity suite absent"},
+      {"id": "module_authority_convergence", "plan_ref": "1.2.10", "status": "PARTIAL", "evidence": "docs/architecture/module-authority-registry.json exists with official true/false; four-class FORMAL_CORE/ADVISORY/COMPATIBILITY/REMOVE_OR_EXTERNALIZE registry absent"}
+    ]
+  },
+  "fixtures": {
+    "theory_absorption_dir": "tests/fixtures/theory_absorption/",
+    "scope": "P01-P09 positive/negative/missing cases with independently recorded expectations; W4/W5/W6 waves extend P03/P04/P07 depth",
+    "oracle_policy": "expected values recorded from plan semantics, never produced by the code under test"
   },
   "evidence_levels": {
-    "tests": "runtime pytest",
+    "tests": "runtime pytest at HEAD d9ec2fc",
     "mcp": "stdio subprocess authority plus in-process smoke",
-    "wheel": "fresh build environment plus separate fresh install environment",
-    "legal_content": "not claimed; no formal cn-official product pack"
-  },
-  "worktree_at_capture": "dirty implementation worktree; local commit follows acceptance"
+    "supply_chain": "isolated pip-audit 2.10.1 run against requirements/core.lock",
+    "legal_content": "not claimed; no formal cn-official product pack",
+    "capability_inventory": "static inspection plus runtime tests; no semantic completeness claim"
+  }
 }

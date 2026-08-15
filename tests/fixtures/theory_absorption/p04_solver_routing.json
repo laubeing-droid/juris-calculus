@@ -1,0 +1,86 @@
+{
+  "item": "P04",
+  "title": "multi-backend routing, numeric/temporal semantics, SolverReceiptV1",
+  "wave_note": "W5 extends this file with boundary/overflow/leap-day/timezone/timeout cases; existing cases are frozen",
+  "cases": [
+    {
+      "id": "p04-positive-01",
+      "kind": "positive",
+      "description": "routing decided by typed capability, not natural-language labels",
+      "input": {
+        "problem": {
+          "features": {"conflict_structure": false, "temporal_bounds": true, "numeric_arithmetic": false, "quantifiers": false},
+          "constraints": [{"type": "temporal_deadline", "calendar": "gregorian", "timezone": "Asia/Shanghai", "boundary_inclusive": true}]
+        }
+      },
+      "expected": {
+        "gate": "router",
+        "status": "PASS",
+        "effects": [
+          "closed-form temporal backend selected",
+          "explainable feature receipt emitted"
+        ],
+        "forbidden": ["routing by natural-language labels", "solver costs for unneeded backends"]
+      },
+      "oracle": "plan section 11 action 1 + gate: explainable feature receipt"
+    },
+    {
+      "id": "p04-negative-01",
+      "kind": "negative",
+      "description": "binary float money forbidden on formal path; minimum currency unit integer required",
+      "input": {
+        "amount": {"value": 100.5, "type": "binary_float", "currency": "CNY"},
+        "claimed_semantics": "money_amount"
+      },
+      "expected": {
+        "gate": "type_checker",
+        "status": "FAIL",
+        "reason": "binary_float_forbidden",
+        "effects": ["rejection event with typed error"],
+        "forbidden": ["implicit coercion to integer", "silently accepting float"]
+      },
+      "oracle": "plan section 11 action 2"
+    },
+    {
+      "id": "p04-missing-01",
+      "kind": "missing",
+      "description": "solver timeout/UNKNOWN never collapses to FALSE or PASS",
+      "input": {
+        "solver_kind": "smt",
+        "problem_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "timeout_ms": 1000,
+        "observed": "timeout"
+      },
+      "expected": {
+        "gate": "solver",
+        "status": "UNKNOWN",
+        "effects": [
+          "SolverReceiptV1 records exit status and stdout/stderr digest",
+          "downstream DecisionStatus blocked/unknown, no certificate"
+        ],
+        "forbidden": ["timeout mapped to FALSE", "UNKNOWN mapped to PASS"]
+      },
+      "oracle": "plan section 11 action 5 + section 4 item 11"
+    },
+    {
+      "id": "p04-positive-02",
+      "kind": "positive",
+      "description": "receipt recomputable for identical normalized problem under identical solver identity",
+      "input": {
+        "solver_kind": "smt",
+        "solver_version": "z3-4.13.0",
+        "binary_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "normalized_problem_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "options": {"seed": 0, "timeout_ms": 5000},
+        "result": "UNSAT"
+      },
+      "expected": {
+        "gate": "solver",
+        "status": "PASS",
+        "effects": ["SolverReceiptV1 deterministically recomputable", "model/unsat-core hash bound"],
+        "forbidden": ["same function producing and verifying expected value"]
+      },
+      "oracle": "plan section 11 gate item 2 + action 6"
+    }
+  ]
+}

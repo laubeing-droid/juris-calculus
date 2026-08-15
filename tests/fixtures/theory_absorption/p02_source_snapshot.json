@@ -1,0 +1,69 @@
+{
+  "item": "P02",
+  "title": "SourceSnapshotV2 / EvidenceManifestV1 integrity gates",
+  "cases": [
+    {
+      "id": "p02-positive-01",
+      "kind": "positive",
+      "input": {
+        "snapshot": {
+          "source_id": "src-cpl-1991-2021",
+          "authority_tier": "official_first_party",
+          "issuer": "standing_committee",
+          "title": "civil_procedure_law",
+          "publication_time": "2021-12-24T00:00:00Z",
+          "effective_time": "2022-01-01T00:00:00Z",
+          "expiry_time": null,
+          "revision_time": "2021-12-24T00:00:00Z",
+          "retrieved_at": "2026-08-01T00:00:00Z",
+          "canonical_locator": {"kind": "article", "value": "art_85"},
+          "raw_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "normalized_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "structure_map_ref": "struct-cpl-2021",
+          "supersedes": "src-cpl-2017",
+          "signature_receipt_ref": "sig-0001"
+        }
+      },
+      "expected": {"gate": "source_gate", "status": "PASS", "effects": ["snapshot eligible for rule binding"]}
+    },
+    {
+      "id": "p02-negative-01",
+      "kind": "negative",
+      "description": "same title, different text must yield different snapshot identity; title match never substitutes content hash",
+      "input": {
+        "snapshot_a_title": "civil_procedure_law",
+        "snapshot_a_raw_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "snapshot_b_title": "civil_procedure_law",
+        "snapshot_b_raw_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "claim": "snapshot_b identical to snapshot_a by title"
+      },
+      "expected": {
+        "gate": "source_gate",
+        "status": "FAIL",
+        "reason": "content_hash_divergence",
+        "forbidden": ["title-based identity", "supplementing missing sources"]
+      },
+      "oracle": "plan section 3 P02 + section 8 action 2"
+    },
+    {
+      "id": "p02-missing-01",
+      "kind": "missing",
+      "input": {
+        "snapshot": {
+          "source_id": "src-x",
+          "authority_tier": "official_first_party",
+          "title": "unknown_statute",
+          "canonical_locator": {"kind": "article", "value": "art_1"}
+        },
+        "omitted_fields": ["raw_hash", "normalized_hash", "effective_time", "signature_receipt_ref"]
+      },
+      "expected": {
+        "gate": "source_gate",
+        "status": "BLOCKED",
+        "reason": "hash_locator_version_missing",
+        "effects": ["explicit blocked reason emitted", "no formal evaluation"]
+      },
+      "oracle": "plan section 8 gate: hash/locator/version/applicability absence -> blocked"
+    }
+  ]
+}

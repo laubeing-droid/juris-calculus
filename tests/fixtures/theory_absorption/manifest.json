@@ -1,0 +1,23 @@
+{
+  "fixture_set": "theory_absorption",
+  "fixed_at_wave": "W0",
+  "fixed_at_head": "d9ec2fc6d66bbc09e199248a855b9836d57980dc",
+  "oracle_policy": "expectations recorded from 20260815 construction plan semantics; never produced by code under test",
+  "evidence_level": "differential fixture",
+  "files": [
+    {"file": "p01_human_research_receipt.json", "item": "P01", "plan_refs": ["3:P01", "9"], "oracle_source": "plan section 3 P01 row + W3 gate semantics"},
+    {"file": "p02_source_snapshot.json", "item": "P02", "plan_refs": ["3:P02", "8"], "oracle_source": "plan section 8 SourceSnapshotV2 fields + gate"},
+    {"file": "p03_argumentation.json", "item": "P03", "plan_refs": ["3:P03", "10"], "oracle_source": "plan section 10; extended by W4"},
+    {"file": "p04_solver_routing.json", "item": "P04", "plan_refs": ["3:P04", "11"], "oracle_source": "plan section 11; extended by W5"},
+    {"file": "p05_proposal_envelope.json", "item": "P05", "plan_refs": ["3:P05"], "oracle_source": "plan section 3 P05 row + section 4 item 9"},
+    {"file": "p06_temporal_applicability.json", "item": "P06", "plan_refs": ["3:P06", "8"], "oracle_source": "plan section 8 action 3"},
+    {"file": "p07_translation.json", "item": "P07", "plan_refs": ["3:P07", "12"], "oracle_source": "plan section 12; extended by W6"},
+    {"file": "p08_source_path.json", "item": "P08", "plan_refs": ["3:P08", "8"], "oracle_source": "plan section 8 SourcePathV1"},
+    {"file": "p09_fact_admission.json", "item": "P09", "plan_refs": ["3:P09", "9"], "oracle_source": "plan section 9"}
+  ],
+  "status_vocabulary": ["PASS", "FAIL", "BLOCKED", "DISPUTED", "UNKNOWN"],
+  "notes": [
+    "hashes in fixtures are illustrative sha256 placeholders pinned for determinism; tests recompute from fixture bytes",
+    "any change to an existing case requires a new case id; silent edits are forbidden"
+  ]
+}

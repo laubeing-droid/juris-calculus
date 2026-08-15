@@ -1,0 +1,89 @@
+{
+  "item": "P03",
+  "title": "argument/attack/exception/permission/priority/cycle formal evaluation",
+  "wave_note": "W4 extends this file with typed AttackV2 matrix and mutation cases; existing cases are frozen",
+  "cases": [
+    {
+      "id": "p03-positive-01",
+      "kind": "positive",
+      "description": "conflict structure present: exception attacks rule applicability; grounded labels recomputed independently",
+      "input": {
+        "arguments": [
+          {"argument_id": "arg-1", "premises": ["fact_A"], "rule_ref": "rule-1@1.0", "claim": "obligation_X"},
+          {"argument_id": "arg-2", "premises": ["fact_B"], "rule_ref": "rule-2@1.0", "claim": "exception_to_rule_1"}
+        ],
+        "attacks": [
+          {"attack_id": "atk-1", "attacker": "arg-2", "target": "arg-1", "attack_type": "exception", "target_aspect": "rule_applicability"}
+        ],
+        "priority_edges": [],
+        "permissions": []
+      },
+      "expected": {
+        "gate": "formal_evaluation",
+        "status": "PASS",
+        "effects": [
+          "arg-1 applicability defeated via exception attack",
+          "independent checker recomputes grounded labels from canonical graph",
+          "argument witnesses retained after claim projection"
+        ],
+        "forbidden": ["exception rewritten as plain negative fact only", "flat horn result presented as conflict resolution"]
+      },
+      "oracle": "plan section 10 actions 3,6,7"
+    },
+    {
+      "id": "p03-negative-01",
+      "kind": "negative",
+      "description": "permission vs prohibition conflict must not be resolved by string precedence",
+      "input": {
+        "permissions": [{"permission_id": "perm-1", "permits": "action_Y", "relation_to": "prohibition_Z"}],
+        "obligations": [{"obligation_id": "prohibition_Z", "prohibits": "action_Y"}],
+        "naive_resolution": "compare('perm-1','prohibition_Z') by string order"
+      },
+      "expected": {
+        "gate": "formal_evaluation",
+        "status": "FAIL",
+        "reason": "permission_prohibition_conflict_requires_lmm_semantics",
+        "forbidden": ["string precedence resolution", "permission treated as ordinary positive proposition"]
+      },
+      "oracle": "plan section 10 action 4 + formal structures PermissionV1"
+    },
+    {
+      "id": "p03-missing-01",
+      "kind": "missing",
+      "description": "priority cycle must be explicit state, not silent",
+      "input": {
+        "priority_edges": [
+          {"edge_id": "pe-1", "source": "rule-1", "target": "rule-2"},
+          {"edge_id": "pe-2", "source": "rule-2", "target": "rule-3"},
+          {"edge_id": "pe-3", "source": "rule-3", "target": "rule-1"}
+        ]
+      },
+      "expected": {
+        "gate": "formal_evaluation",
+        "status": "BLOCKED",
+        "reason": "priority_cycle_detected",
+        "effects": ["cycle state recorded explicitly", "no certificate"],
+        "forbidden": ["silent cycle breaking", "arbitrary deterministic-but-unjustified winner"]
+      },
+      "oracle": "plan section 10 action 5 + gate: cyclic fixtures align with independent oracle"
+    },
+    {
+      "id": "p03-positive-02",
+      "kind": "positive",
+      "description": "conflict-free task uses horn fast path without forced argumentation cost",
+      "input": {
+        "arguments": [{"argument_id": "arg-1", "premises": ["fact_A"], "rule_ref": "rule-1@1.0", "claim": "conclusion_C"}],
+        "attacks": [],
+        "priority_edges": [],
+        "permissions": []
+      },
+      "expected": {
+        "gate": "formal_evaluation",
+        "status": "PASS",
+        "effects": ["horn fast path allowed", "equivalence test with full argument graph retained"],
+        "forbidden": ["forcing AAF cost on conflict-free chains"]
+      },
+      "oracle": "plan section 4 item 4 + section 10 action 1, gate item 4"
+    }
+  ]
+}

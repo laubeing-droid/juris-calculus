@@ -1,0 +1,74 @@
+{
+  "item": "P05",
+  "title": "ProposalEnvelopeV1 quarantine and field-level rejection",
+  "cases": [
+    {
+      "id": "p05-positive-01",
+      "kind": "positive",
+      "description": "well-formed agent proposal is unpacked as candidate only",
+      "input": {
+        "envelope": {
+          "proposal_id": "prop-0001",
+          "producer": {"kind": "agent", "id": "deli-agent-1"},
+          "payload_kind": "fact_candidate",
+          "payload": {"proposition": "defendant_resides_in_district_A", "evidence_refs": ["ev-0001"]},
+          "signature_or_receipt_ref": null
+        }
+      },
+      "expected": {
+        "gate": "quarantine",
+        "status": "PASS",
+        "effects": ["candidate enters review graph", "no verified_fact created", "no attestation issued"],
+        "forbidden": ["agent issuing attestation/certificate/DecisionStatus"]
+      },
+      "oracle": "plan section 3 P05 row"
+    },
+    {
+      "id": "p05-negative-01",
+      "kind": "negative",
+      "description": "agent attempts to self-attest verified_fact; field-level rejection",
+      "input": {
+        "envelope": {
+          "proposal_id": "prop-0002",
+          "producer": {"kind": "agent", "id": "deli-agent-1"},
+          "payload_kind": "fact_candidate",
+          "payload": {
+            "proposition": "contract_was_signed",
+            "status": "verified_fact",
+            "self_attestation": {"issuer": "deli-agent-1"}
+          }
+        }
+      },
+      "expected": {
+        "gate": "quarantine",
+        "status": "FAIL",
+        "reason": "agent_cannot_self_attest",
+        "effects": ["field-level rejection event", "payload quarantined, not promoted", "audit visibility retained"],
+        "forbidden": ["accepting self_attestation", "promoting status field from proposal"]
+      },
+      "oracle": "plan section 3 P05 + section 9 action 2"
+    },
+    {
+      "id": "p05-missing-01",
+      "kind": "missing",
+      "description": "polluted envelope with unknown/undeclared extension fields fails closed",
+      "input": {
+        "envelope": {
+          "proposal_id": "prop-0003",
+          "producer": {"kind": "agent", "id": "deli-agent-1"},
+          "payload_kind": "fact_candidate",
+          "payload": {"proposition": "x"},
+          "undeclared_extension": {"backdoor_flag": true}
+        }
+      },
+      "expected": {
+        "gate": "quarantine",
+        "status": "BLOCKED",
+        "reason": "undeclared_extension",
+        "effects": ["whole envelope rejected", "contamination isolated from clean proposals"],
+        "forbidden": ["partial silent acceptance of unknown fields"]
+      },
+      "oracle": "plan section 7 action 4 + section 3 P05 pollution isolation"
+    }
+  ]
+}

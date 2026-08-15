@@ -1,0 +1,71 @@
+{
+  "item": "P07",
+  "title": "LegalSpec -> Legal-IVL -> targets translation with per-hop receipts",
+  "wave_note": "W6 extends this file with mutation/metamorphic/proof-obligation cases; existing cases are frozen",
+  "cases": [
+    {
+      "id": "p07-positive-01",
+      "kind": "positive",
+      "description": "each hop emits TranslationReceiptV1 binding source/target hashes and lost/defaulted fields",
+      "input": {
+        "pipeline": [
+          {"hop": "SourceSnapshotV2/RuleV4 -> LegalSpec", "translator_version": "spec-compiler@1.0"},
+          {"hop": "LegalSpec -> Legal-IVL", "translator_version": "ivl-lowering@1.0"},
+          {"hop": "Legal-IVL -> deterministic_horn", "translator_version": "horn-target@1.0"}
+        ],
+        "source_bytes_hash": "sha256:ab12",
+        "target_bytes_hash": "sha256:cd34"
+      },
+      "expected": {
+        "gate": "translation",
+        "status": "PASS",
+        "effects": [
+          "TranslationReceiptV1 per hop with source/target bytes hash, translator version/build hash, mapping table, lost/defaulted fields, proof obligations, differential result, status",
+          "source hierarchy/definitions/conditions/exceptions/modality/priority/locator traceable to target nodes"
+        ],
+        "forbidden": ["claiming semantic preservation from IR file existence alone"]
+      },
+      "oracle": "plan section 12 TranslationReceiptV1 + action 1 + section 3 P07 boundary"
+    },
+    {
+      "id": "p07-negative-01",
+      "kind": "negative",
+      "description": "any lost/defaulted semantic field blocks formal compilation",
+      "input": {
+        "hop": "LegalSpec -> Legal-IVL",
+        "lost_fields": ["exception_chain[1].temporal_bound"],
+        "defaulted_fields": ["priority.authority_rank"],
+        "translator_version": "ivl-lowering@1.0"
+      },
+      "expected": {
+        "gate": "translation",
+        "status": "FAIL",
+        "reason": "lost_or_defaulted_semantic_field",
+        "effects": ["compilation blocked", "receipt records lost/defaulted fields and counterexample ref"],
+        "forbidden": ["silently defaulting semantic fields", "proceeding to backend with lost semantics"]
+      },
+      "oracle": "plan section 12 gate item 1"
+    },
+    {
+      "id": "p07-missing-01",
+      "kind": "missing",
+      "description": "direct oracle divergence must be classified, never resolved by editing expected value",
+      "input": {
+        "direct_oracle_result": "claim_X = admitted",
+        "dual_ir_result": "claim_X = rejected",
+        "fixture_ref": "p03-positive-01"
+      },
+      "expected": {
+        "gate": "differential",
+        "status": "FAIL",
+        "reason": "ORACLE_UNRESOLVED",
+        "effects": [
+          "divergence classified as SPEC_MISMATCH / IMPLEMENTATION_MISMATCH / TRANSLATION_MISMATCH / ORACLE_UNRESOLVED",
+          "no certificate until resolved"
+        ],
+        "forbidden": ["editing expected value to remove divergence", "declaring equivalence without receipt"]
+      },
+      "oracle": "plan section 12 action 3 + gate item 2 + section 5 direct oracle"
+    }
+  ]
+}

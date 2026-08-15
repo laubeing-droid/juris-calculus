@@ -1,0 +1,88 @@
+{
+  "item": "P08",
+  "title": "SourcePathV1 consumption, cross-document path integrity, cycle/broken-link checks",
+  "cases": [
+    {
+      "id": "p08-positive-01",
+      "kind": "positive",
+      "description": "acyclic directed source path with per-edge hashes and locators verifies; last hop still passes source authority gate",
+      "input": {
+        "path": {
+          "path_id": "sp-0001",
+          "nodes": [
+            {"node_id": "n1", "kind": "statute", "hash": "sha256:aa01"},
+            {"node_id": "n2", "kind": "judicial_interpretation", "hash": "sha256:aa02"},
+            {"node_id": "n3", "kind": "guiding_case", "hash": "sha256:aa03"}
+          ],
+          "edges": [
+            {"edge_id": "e1", "source": "n1", "target": "n2", "relation": "authorizes", "source_hash": "sha256:aa01", "target_hash": "sha256:aa02", "locator": "art_3", "retrieval_receipt_ref": "rr-1"},
+            {"edge_id": "e2", "source": "n2", "target": "n3", "relation": "applies", "source_hash": "sha256:aa02", "target_hash": "sha256:aa03", "locator": "para_2", "retrieval_receipt_ref": "rr-2"}
+          ],
+          "purpose": "interpretation_chain"
+        }
+      },
+      "expected": {
+        "gate": "source_path",
+        "status": "PASS",
+        "effects": [
+          "path existence attested",
+          "last hop still routed through source authority gate",
+          "retrieval scores kept only in candidate metadata"
+        ],
+        "forbidden": ["treating path existence as legal applicability", "storing retrieval score inside path"]
+      },
+      "oracle": "plan section 8 SourcePathV1 + section 3 P08 boundary"
+    },
+    {
+      "id": "p08-negative-01",
+      "kind": "negative",
+      "description": "broken link (edge target hash mismatch) fails integrity",
+      "input": {
+        "path": {
+          "path_id": "sp-0002",
+          "nodes": [
+            {"node_id": "n1", "kind": "statute", "hash": "sha256:bb01"},
+            {"node_id": "n2", "kind": "commentary", "hash": "sha256:bb02"}
+          ],
+          "edges": [
+            {"edge_id": "e1", "source": "n1", "target": "n2", "relation": "cites", "source_hash": "sha256:bb01", "target_hash": "sha256:DEADBEEF", "locator": "sec_1"}
+          ]
+        }
+      },
+      "expected": {
+        "gate": "source_path",
+        "status": "FAIL",
+        "reason": "broken_link_hash_mismatch",
+        "effects": ["broken-link state recorded", "path not usable for admission"],
+        "forbidden": ["repairing link by re-retrieval without new receipt"]
+      },
+      "oracle": "plan section 8 gate: broken-link negative test"
+    },
+    {
+      "id": "p08-missing-01",
+      "kind": "missing",
+      "description": "cyclic citation path detected and flagged, not silently accepted",
+      "input": {
+        "path": {
+          "path_id": "sp-0003",
+          "nodes": [
+            {"node_id": "n1", "kind": "case", "hash": "sha256:cc01"},
+            {"node_id": "n2", "kind": "case", "hash": "sha256:cc02"}
+          ],
+          "edges": [
+            {"edge_id": "e1", "source": "n1", "target": "n2", "relation": "cites"},
+            {"edge_id": "e2", "source": "n2", "target": "n1", "relation": "cites"}
+          ]
+        }
+      },
+      "expected": {
+        "gate": "source_path",
+        "status": "BLOCKED",
+        "reason": "cycle_detected",
+        "effects": ["cycle/broken state explicitly recorded", "path excluded from authority chain"],
+        "forbidden": ["silently truncating cycle", "accepting self-referential authority"]
+      },
+      "oracle": "plan section 8 gate: cycle detection negative test"
+    }
+  ]
+}

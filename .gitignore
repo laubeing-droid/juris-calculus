@@ -34,6 +34,8 @@
 !schemas/w1b/*.schema.json
 !tests/fixtures/golden/
 !tests/fixtures/golden/*.json
+!tests/fixtures/theory_absorption/
+!tests/fixtures/theory_absorption/**
 *.key
 *.log
 *.npy
@@ -64,6 +66,8 @@ __pycache__/
 .nox/
 build/
 dist/
+# W0: build-external artifacts (test receipts, scratch packs) never enter the tracked tree
+build-artifacts/
 *.egg-info/
 chroma_db_ocr/
 configs/en_US/US_complete.json

@@ -1,0 +1,71 @@
+{
+  "item": "P09",
+  "title": "three separated gates (source/interpretation/fact) and FactAdmissionAttestationV1",
+  "cases": [
+    {
+      "id": "p09-positive-01",
+      "kind": "positive",
+      "description": "fully bound attestation admits fact into formal premise set",
+      "input": {
+        "attestation": {
+          "attestation_id": "faa-0001",
+          "kind": "FactAdmissionAttestationV1",
+          "proposition_hash": "sha256:dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01",
+          "source_refs": [{"ref": "src-cpl-1991-2021", "hash": "sha256:aa00"}],
+          "evidence_refs": [{"ref": "ev-0001", "hash": "sha256:ee00"}],
+          "interpretation_version": "interp-2026-01",
+          "admission_basis": "documentary_evidence_human_reviewed",
+          "issuer_role": "legal_harness_approver",
+          "issuer_scope": {"case_ref": "case-0001", "run_ref": "run-0001"},
+          "issued_at": "2026-08-01T00:00:00Z",
+          "expires_at": null,
+          "dispute_state": "undisputed",
+          "assumption_state": "none",
+          "revocation_ref": null,
+          "signature_or_approval_receipt_ref": "approval-0001"
+        }
+      },
+      "expected": {
+        "gate": "fact_gate",
+        "status": "PASS",
+        "effects": ["fact enters formal premise set", "attestation bound to exact proposition and source bytes"],
+        "forbidden": ["any other gate substituting fact_gate"]
+      },
+      "oracle": "plan section 9 FactAdmissionAttestationV1 + three-gate separation"
+    },
+    {
+      "id": "p09-negative-01",
+      "kind": "negative",
+      "description": "proposition altered by one character invalidates attestation binding",
+      "input": {
+        "attestation_ref": "faa-0001",
+        "original_proposition_hash": "sha256:dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01dd01",
+        "presented_proposition_hash": "sha256:dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02dd02"
+      },
+      "expected": {
+        "gate": "fact_gate",
+        "status": "FAIL",
+        "reason": "attestation_binding_broken",
+        "effects": ["fact excluded from formal premise", "rejection event recorded", "rejected fact kept audit-visible but physically separated"],
+        "forbidden": ["accepting altered proposition", "reusing attestation across cases/runs"]
+      },
+      "oracle": "plan section 9 action 4,5 + gate"
+    },
+    {
+      "id": "p09-missing-01",
+      "kind": "missing",
+      "description": "fact without attestation never enters formal premise; UNKNOWN/DISPUTED stay review-only",
+      "input": {
+        "fact_candidate": {"proposition": "payment_was_made", "attestation": null, "dispute_state": "DISPUTED"}
+      },
+      "expected": {
+        "gate": "fact_gate",
+        "status": "BLOCKED",
+        "reason": "attestation_absent_or_disputed",
+        "effects": ["candidate may enter review graph", "no formal certificate", "no verified_fact created"],
+        "forbidden": ["UNKNOWN/DISPUTED/USER_ASSUMED creating formal certificate", "external input self-signing attestation"]
+      },
+      "oracle": "plan section 9 action 2,3 + gate item 1"
+    }
+  ]
+}
