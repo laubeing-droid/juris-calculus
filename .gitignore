@@ -37,6 +37,7 @@
 !tests/fixtures/golden/*.json
 !tests/fixtures/theory_absorption/
 !tests/fixtures/theory_absorption/**
+!docs/architecture/module-authority-v4.json
 *.key
 *.log
 *.npy

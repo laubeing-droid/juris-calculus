@@ -80,6 +80,20 @@
     "scope": "P01-P09 positive/negative/missing cases with independently recorded expectations; W4/W5/W6 waves extend P03/P04/P07 depth",
     "oracle_policy": "expected values recorded from plan semantics, never produced by the code under test"
   },
+  "wave_status_after_w9": {
+    "W0": "COMPLETE: baseline re-verified, branch adjudicated, fixtures fixed",
+    "W1": "COMPLETE: contracts_v4 + jc-v4.schema.json + compat_v3_v4 + parity tests",
+    "W2": "COMPLETE: source_service_v2 (SourceSnapshotV2/EvidenceManifestV1/SourcePathV1 gates)",
+    "W3": "COMPLETE: fact_admission_v1 three-gate admission",
+    "W4": "COMPLETE: argumentation_v2 typed semantics + independent recomputation",
+    "W5": "COMPLETE: backend_router_v1 + SolverReceiptV1",
+    "W6": "COMPLETE: legal_spec_ivl dual-IR compiler + TranslationReceiptV1",
+    "W7": "GATES BUILT, CONTENT BLOCKED: rule_platform_cn + layering; cn-official stays blocked until first-party snapshots exist",
+    "W8": "COMPLETE: certificate_v1 (RunIdentityV2/receipts/FormalCertificateV1/AuditBundleV2)",
+    "W9": "COMPLETE: module-authority-v4.json four-class registry + parity + registry regression tests",
+    "public_entry_note": "public stable entry remains v3 per plan section 18; v4 contracts are not wired into CLI/Client/MCP yet",
+    "suite_at_w9": "513 passed, 28 skipped"
+  },
   "evidence_levels": {
     "tests": "runtime pytest at HEAD d9ec2fc",
     "mcp": "stdio subprocess authority plus in-process smoke",
