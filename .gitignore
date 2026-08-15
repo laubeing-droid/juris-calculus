@@ -69,6 +69,9 @@ build/
 dist/
 # W0: build-external artifacts (test receipts, scratch packs) never enter the tracked tree
 build-artifacts/
+# W7: cn-official build layer docs are tracked despite the generic build/ rule
+!configs/packs/cn-official/build/
+!configs/packs/cn-official/build/**
 *.egg-info/
 chroma_db_ocr/
 configs/en_US/US_complete.json
