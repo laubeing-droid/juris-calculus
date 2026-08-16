@@ -33,6 +33,63 @@ git diff --check
 
 Run supply-chain, privacy, stale-narrative, and disclosure checks when relevant. The stdio subprocess test is the MCP transport authority; `mcp_server.py --test` is only an in-process smoke.
 
+## Post-edit Validation
+
+After making changes to production code, always run the appropriate validation checks:
+
+1. **For core module changes** (compiler_core/*, pipeline/*, addons/*, tools/*):
+   - Run the focused boundary test: `python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q`
+   - Run the MCP protocol test: `python -m pytest tests\unit\test_mcp_stdio_protocol.py -q`
+
+2. **For configuration changes** (configs/*, schemas/*, pyproject.toml):
+   - Run the full test suite: `python -m pytest tests\ -q`
+   - Validate JSON schemas: `python -c "import json; json.load(open('schemas/jc-v4.schema.json'))"`
+
+3. **For documentation changes** (README*, memory.md, AGENTS.md):
+   - Run `git diff --check` to verify formatting
+   - Ensure any referenced commands or paths are accurate
+
+4. **For any change that might affect the MCP server**:
+   - Run the in-process smoke test: `python mcp_server.py --test`
+
+Document the validation results in your commit message or change summary.
+
+## Core Code Boundary
+
+### Critical (fail-closed)
+- `compiler_core/evaluator.py` — Fixed-point evaluation engine
+- `compiler_core/reasoning_boundary.py` — DecisionStatus classification
+- `compiler_core/contracts.py` — CaseRequest/CanonicalResult contracts
+- `compiler_core/types.py` — Core type definitions
+- `compiler_core/step_verifier.py` — Step verification logic
+
+Changes to these files require:
+1. Full test suite pass
+2. Explicit review of fail-closed behavior preservation
+3. Evidence that `DecisionStatus`, `verified_fact`, or checker acceptance is not weakened
+
+### Core (high scrutiny)
+- `compiler_core/*.py` — All other compiler modules
+- `pipeline/*.py` — Processing pipeline
+- `mcp_server.py` — MCP transport
+- `schemas/*.json` — Schema definitions
+
+Changes require:
+1. Focused boundary test pass
+2. MCP protocol test pass (if applicable)
+
+### Extension (standard)
+- `addons/*` — Jurisdiction adapters
+- `tools/*` — Development tooling
+- `configs/*` — Configuration files
+- `tests/*` — Test files
+
+Standard validation applies.
+
+### Documentation
+- `README*`, `memory.md`, `AGENTS.md`, `CHANGELOG.md`
+- No runtime impact; formatting and accuracy checks only
+
 ## Documentation and commits
 
 Document evidence level precisely: runtime test, differential fixture, finite SMT check, upstream Lean theorem, or empirical heuristic. Keep README, manifest, CLI, and MCP statements aligned with runtime behavior; never publish static rule or test counts as permanent facts.
