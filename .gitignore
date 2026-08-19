@@ -85,6 +85,7 @@ configs/zh_CN/rules.yaml.bak.*
 configs/zh_CN/rules_augmented.yaml
 configs/zh_CN/rules_pre_inject.yaml
 /.planning/
+/.codegraph/
 reports/asymmetry_distillation_v1.1.0.json
 reports/parallax_detail_v1.1.0.json
 scripts/

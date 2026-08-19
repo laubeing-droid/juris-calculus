@@ -65,3 +65,11 @@
 - Renderer paths use a 40-character filesystem key derived from the full result/profile/renderer binding digest; metadata retains the complete 64-character digest to avoid Windows path overflow without weakening content binding.
 - Final acceptance: 384 passed, 28 skipped; MCP stdio 3 passed; in-process smoke status ok with readiness false; pip-audit PASS with 0 known vulnerabilities; fresh wheel/install smoke PASS. Wheel SHA-256: `cc14ff95c5c2fbb58b42c56ecf3f5b6f6f626a4e71a24a0eaa464e6fcc58d6d5`.
 - Do not reinterpret protocol smoke, wheel import, or test PASS as proof of legal corpus/product readiness.
+
+## 2026-08-19 V4 remediation planning correction
+
+- Build and synchronize CodeGraph before assigning file dispositions. The 2026-08-19 baseline indexed 228 files (191 Python and 37 YAML), 3,029 nodes, 7,051 edges, with zero unresolved refs or parse errors; the 13.6 MB `configs/zh_CN/rules.yaml` was the sole tracked Python/YAML/YML file outside the graph and must be closed through Git blob, byte, and record inventory.
+- CodeGraph is navigation evidence, not deletion authority. Confirm deletion-relevant edges in exact source/AST and supplement dynamic imports, entrypoints, package exports, tests, and assets. Empty callers/imports/impact never authorize deletion by themselves.
+- Keep one JC source repository and one V4 production wheel throughout the current remediation. Non-production source tools, experiments, and candidate assets stay in the repository but out of the wheel/runtime; only the signed `cn-official` pack is an independent production artifact. Any later repository or distribution proposal is a post-release RFC and cannot alter the current remediation topology or completion result.
+- Preserve semantics before removing files. The graph confirmed public consumers for rendering, analysis, governance, training, and legacy lookup, and formal-path reachability for `litigation_engineering` and the function-local `transformer.auto_patch`; cut or migrate those edges before moving/deleting paths. Keep companion-spec differential and independent oracle value outside production runtime.
+- Report repository removal, relocation/replacement, true whole-system deletion, and dependency movement separately. Moving code or dependencies out of the production wheel is not ecosystem deletion, and LOC is not a production gate.

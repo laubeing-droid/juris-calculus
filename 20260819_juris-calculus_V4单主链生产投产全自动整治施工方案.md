@@ -2,6 +2,8 @@
 
 日期：2026-08-19
 
+修订：2026-08-19 CodeGraph 调用图复核与反过度工程校正
+
 问题基线：`20260819_juris-calculus_V4单主链生产投产全量代码审计.md`
 
 问题基线 SHA-256：`9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3`
@@ -22,6 +24,11 @@
 6. candidate、教材、OCR、类案、旧法域、三轨、训练、advisory 资产可继续用于发现和候选生成，但不能进入 formal wheel、formal numerator 或正式证书。
 7. 一个从不产出正式结果的内核不算安全完成。Kernel RC 必须用 synthetic signed pack 产出可 verify/replay 的正向结果；法律生产必须再用真实 signed `cn-official` 产出正向结果。
 8. 不允许通过免责声明、空 pack、假 receipt、测试直接构造 trusted object 或硬编码 inactive 来保护不可用状态。
+9. 物理拓扑固定为：一个 JC source repo、一个 V4 production wheel、一个独立签名的 `cn-official` pack artifact。candidate assets、rule-engineering source、jurisdiction experiments 默认同仓保存，但不得进入 production wheel、默认 runtime registry 或生产部署。不得仅因 LOC、目录大小或“非 formal”新建 repo/distribution/service。
+10. “不进入 formal wheel”不等于“必须外迁”。本轮不批准为 JC 非生产源码新建 repo/distribution/service；独立发行建议只能登记为 `POST_RELEASE_RFC`，不得改变本轮一仓一 wheel 拓扑、文件处置或 Z03 结果。
+11. 零 import、零 caller、零测试或 Git 有历史均不能单独授权删除。涉及 Horn、attack、exception、permission、priority、checker、witness、translation loss、source/fact admission、certificate、domain scope 或 mutation/differential oracle 的内容，必须先迁到目标模块/required test/artifact并验绿。
+12. CodeGraph 用于发现 import/call/instantiate/impact 候选边，源码 AST、动态 import、入口、配置消费和测试再复核；图索引不是 module authority，也不是删除权威。大资产和 CodeGraph 不支持的文件由 Git blob、byte/record inventory 闭合。
+13. 复杂度同时报告仓库 tree 变化、同仓移动、artifact 重建、替代实现和全系统真实删除；移动或重建不得计作 whole-system deletion，LOC 不得作为完成门禁。
 
 ## 1. “机器自动执行到底”的准确含义
 
@@ -30,9 +37,10 @@
 机器可以自动完成：
 
 - 固定 Git 基线、创建独立 branch/worktree、建立任务状态；
-- 逐任务编写测试、修改代码、删除或外迁旧 authority；
+- 在任何模块处置前建立并同步 CodeGraph，导出 observed import/call graph，补查动态 import、入口和未入图资产；
+- 逐任务编写测试、修改代码、归位、合并或删除旧 authority；
 - 执行 unit/contract/property/integration/E2E/security/chaos/packaging gates；
-- 生成 Schema、ToolSpec、模块图、文件处置表、SBOM、provenance、checksums 和证据清单；
+- 从唯一权威对象确定性导出 Schema、ToolSpec 发布物、observed 模块图、文件处置表、SBOM、provenance、checksums 和证据清单；
 - 对 changed paths、依赖、任务状态、测试退出码、产物摘要做确定性核验；
 - 每个 green task 自动生成一个本地 Git commit；
 - 中断后验证已有 receipt 和 commit，再从第一个未完成任务续跑；
@@ -70,7 +78,7 @@ Bootstrap 任务 `B00` 尚未创建 runner 前，编码 Agent按第 24 节启动
 ```powershell
 py -3.12 -B tools/remediate_v4.py run `
   --plan remediation/v4/tasks.json `
-  --state-root 'D:\Codex\1.法律工作区\juris-calculus工作区\.jc-remediation\v4' `
+  --state-root $env:JC_REMEDIATION_STATE_ROOT `
   --through W9
 ```
 
@@ -88,8 +96,8 @@ py -3.12 -B tools/remediate_v4.py run `
 开工时从包含本方案的 commit 创建独立工作树：
 
 ```powershell
-$SOURCE_REPO = 'D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus'
-$EXEC_WORKTREE = 'D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation'
+$SOURCE_REPO = (git rev-parse --show-toplevel)
+$EXEC_WORKTREE = Join-Path (Split-Path $SOURCE_REPO -Parent) 'juris-calculus-v4-remediation'
 $EXEC_BRANCH = 'v4-remediation'
 
 git -C $SOURCE_REPO worktree add -b $EXEC_BRANCH $EXEC_WORKTREE HEAD
@@ -140,6 +148,8 @@ remediation/v4/file-disposition.json # 当前所有 tracked path 处置
 ```
 
 编排逻辑保持标准库优先。若拆分内部模块，只允许位于 `tools/remediation/`，不得进入 formal wheel；对外仍只有 `tools/remediate_v4.py` 一个命令。
+
+`tasks.json`、`issue-map.json`、`file-disposition.json`、observed graph 和 receipts 是施工期控制面，不是生产 current authority。Z02 封存后不得再作为 runtime、current docs 或日常 CI 输入；长期架构政策只有人工审核的 `docs/architecture/module-authority.json`。
 
 ### 3.2 Task 必填字段
 
@@ -273,10 +283,11 @@ Release、tag、生产签名、法源 custody confirmation 等非幂等动作重
 ### 4.1 唯一 authority
 
 - `compiler_core/contracts.py` 是当前 V4 typed contract 唯一源。
-- `schemas/jc-v4.schema.json`、`mcp_manifest.json`、capabilities contracts 由同一 generator 生成，禁止手改。
-- `docs/architecture/module-authority.json` 是唯一模块 authority registry，并由 AST/import graph 校验允许入边。
+- `compiler_core/mcp.py::TOOL_SPECS` 是四工具名称、输入/输出/error 映射的唯一协议源，并只引用 `contracts.py` 的类型；`schemas/jc-v4.schema.json` 和 `mcp_manifest.json` 是一个小型确定性 emitter 的发布物。runtime 不读取仓库 manifest/path；capabilities 值从实际 wheel、pack、trust、storage、provider 状态动态投影。
+- `docs/architecture/module-authority.json` 是人工规定的唯一模块 policy；AST/import graph 只生成 observed graph 并验证 policy，不得自动填写分类、允许边或删除结论。
 - `ApplicationV4` 是 formal evaluation 唯一 sink；入口、renderer、advisory、DSH 不得复制法律判断。
 - `compiler_core/version.py` 是 package、CLI、MCP、capabilities、RunIdentity 唯一版本源。
+- 派生物遵循“一份权威对象 + 一个 checker/serializer”：禁止为 Schema、ToolSpec、module graph、wheel allowlist 或单实现 pack builder 再造通用 generator framework、registry 或 interface。
 
 ### 4.2 V4-only
 
@@ -327,6 +338,8 @@ CLI / JCClient / formal MCP
  SemanticResultV4 -> CertificateV4
              |
  AuditBundleV4 -> verify -> offline replay
+       |
+       `-> audited neutral renderer -> presentation artifact
 ```
 
 目标 core 路径：
@@ -339,7 +352,7 @@ CLI / JCClient / formal MCP
 | `compiler_core/artifact_store.py` | typed resolver、content store、storage capability |
 | `compiler_core/source_service.py` | source/evidence/version/path verification |
 | `compiler_core/fact_admission.py` | typed fact admission |
-| `compiler_core/rule_packs.py` | immutable signed pack runtime；不做候选生成 |
+| `compiler_core/rule_packs.py` | immutable signed pack runtime、deterministic verify/admission、bounded inspection；不做候选生成或人工 promotion 编排 |
 | `compiler_core/legal_ir.py` | RuleV4、LegalSpecV4、LegalIVLV4、loss accounting |
 | `compiler_core/backends/` | 已认证的 provider implementations |
 | `compiler_core/backend_router.py` | 从 IR 派生 feature 并路由 certified provider |
@@ -349,16 +362,19 @@ CLI / JCClient / formal MCP
 | `compiler_core/audit.py` | typed deterministic semantic events |
 | `compiler_core/audit_bundle.py` | V4 writer/verify/replay |
 | `compiler_core/application.py` | 唯一 orchestration/state matrix |
+| `compiler_core/rendering.py` | 只消费 verified AuditBundle 的 neutral renderer；同一 production wheel 的 `RUNTIME_OUTPUT`，不可调用 evaluator/Application.evaluate |
 | `compiler_core/client.py` | Python facade |
 | `compiler_core/cli.py` | CLI adapter |
 | `compiler_core/mcp.py` | formal MCP adapter |
 | `compiler_core/resources.py` | generated schema/static resource lookup |
 | `compiler_core/version.py` | 唯一版本源 |
 
+`analysis`、`training`、人工 governance/promotion report、candidate lookup 和 pipeline 属于同仓 source tools；legacy jurisdiction adapters、TriRail 和 fast-path 属于同仓 experiments；legacy corpus 属于同仓 candidate assets。它们可保留现有路径或经一次性批准在仓内归位，但不得出现第二套 package metadata、release workflow、deployment manifest 或运行时自动发现。禁止仅为目录整洁移动 35 万行大资产。
+
 ## 6. 总 DAG
 
 ```text
-B00-B02
+B00 -> B00-CG -> B01 -> B02
   -> W0-01..05
   -> W1-01..06
   -> W2-01..06
@@ -394,19 +410,43 @@ py -3.12 -B tools/remediate_v4.py lint-plan --plan remediation/v4/tasks.json
 - **PASS**：DAG 无环；每个 task/schema 有 digest；故意改 receipt、commit、allowed path 时均非零退出；resume 能跳过已验证 commit。
 - **Commit**：`build(remediation): add resumable V4 task runner`。
 
+### B00-CG　CodeGraph 全仓索引和双清单基线
+
+- **Mode / depends / audit**：`AUTO / B00 / 全文件处置和调用关系基础`。
+- **Allowed paths**：`.gitignore` 仅允许加入 `/.codegraph/`，另允许 `tools/remediate_v4.py`、`tools/remediation/**` 和对应 graph-map unit tests；索引数据库、normalized graph、查询结果和 receipt 全部写入 `$R/evidence/codegraph/$SOURCE_TREE_ID/` 或本机 ignored `.codegraph/`，不跟踪数据库。
+- **实现**：runner 将 `git rev-parse 'HEAD^{tree}'` 的 validated lowercase hex 结果记为 `SOURCE_TREE_ID`，并在 B00-CG receipt 返回 normalized graph 的 canonical artifact path；锁定并记录 CodeGraph CLI 版本，执行 clean full index；通过只读 SQLite schema/CLI 导出 Python import/call/instantiate 边、symbol/file 位置、unresolved refs 和 parse errors；用 AST/`rg` 补查函数内 import、`importlib`、`__import__`、plugin discovery、`__main__`、CLI entrypoint 和 package-root export。将 CodeGraph files 与 `git ls-files` 对账；未入图的大 YAML/JSON/Markdown/lock/assets 进入 Git blob、SHA-256、byte/record inventory，不得消失。
+- **当前快照证据**：CodeGraph `0.9.7` 在 2026-08-19 基线上收录 228 files（191 Python、37 YAML）、3,029 nodes、7,051 edges、0 unresolved、0 parse error、worktree mismatch null；Git tracked Python/YAML/YML 为 229，唯一未入图文件是 13,620,766-byte 的 `configs/zh_CN/rules.yaml`，必须由 asset inventory 闭合。以上是开工快照，不是永久计数，runner 每次按 source tree 重算。
+- **限制门禁**：CodeGraph 的空 callers/impact、同名实例方法解析和 `affected` 输出不得单独作删除结论；每条 deletion-relevant 边必须回到 exact source range/AST 复核。已知动态边至少包括 `plugin_registry.py` 加载 `addons.*` 和 shadow harness 加载 companion spec。
+- **Gate**：
+
+```powershell
+codegraph --version
+codegraph index --force .
+codegraph status --json .
+py -3.12 -B tools/remediate_v4.py graph-map --check --codegraph .codegraph/codegraph.db --all-tracked
+```
+
+- **PASS**：索引与 start tree 绑定；pending changes=0、worktree mismatch=null、parse errors=0、unresolved refs=0；tracked file union=`codegraph-indexed ∪ asset-inventory`，交集/缺失/额外均可解释且无遗漏；normalized graph receipt 可复算。
+- **Commit**：只提交 `.gitignore` 和 runner 的 graph-map 支持；不提交 `.codegraph/**` 或机器路径。
+
 ### B01　审计问题和 tracked 文件闭合
 
-- **Mode / depends / audit**：`AUTO / B00 / P0-01..15, P1-01..20, P2-01..07, P3-01..02`。
-- **Allowed paths**：`remediation/v4/issue-map.json`、`remediation/v4/file-disposition.json`、runner tests。
-- **实现**：从审计报告登记 44 个 ID；从当前 Git tree 重新生成 path/mode/blob digest；每个 tracked path 必有 `KEEP_REWRITE|MERGE_DELETE|DELETE_CURRENT|EXTERNALIZE|GENERATED|HISTORY_ONLY|DOC_UPDATE` 之一、目标 consumer、最迟 task、删除前置证据。
+- **Mode / depends / audit**：`AUTO / B00-CG / P0-01..15, P1-01..20, P2-01..07, P3-01..02`。
+- **Allowed paths**：`remediation/v4/issue-map.json`、`remediation/v4/file-disposition.json`、`tools/remediate_v4.py`、`tools/remediation/**` 和对应 audit-map/file-map unit tests。
+- **实现**：从审计报告登记 44 个 ID；从当前 Git tree 和 B00-CG observed graph 重新生成 path/mode/blob digest及静态/动态 consumers。每个 tracked path 必有 `KEEP_REWRITE|MERGE_DELETE|MIGRATE_INVARIANTS_THEN_DELETE|RETAIN_NONPACKAGED|MOVE_IN_REPO_SOURCE_TOOL|MOVE_IN_REPO_EXPERIMENT|CANDIDATE_ASSET|TEST_ORACLE|DELETE_CURRENT|GENERATED|HISTORY_ONLY|DOC_UPDATE` 之一，并填写 `semantic_assets`、`target_module`、`target_test`、`target_artifact`、`target_consumer`、最迟 task、删除前置 receipts 和 terminal state。
+- **Terminal state**：删除候选初始一律 `UNREVIEWED`，`--deletions-ready` 按以下互斥分支验证，不得把所有终态强行套用同一 target：
+  - `MIGRATED_GREEN`：必须绑定 target module、RED→GREEN required test、result commit/tree；
+  - `HISTORY_BOUND`：必须绑定 frozen bytes/hash/locator 与 current negative rejection；`target_module` 必须为空；
+  - `NO_RELEVANT_SEMANTICS_APPROVED`：必须绑定 symbol-level semantic inventory、CodeGraph+AST+动态 consumer 复核、H5 具名审批 receipt 和删除后的 negative import/path gate；`target_module` 可以为空。
+  零 consumer、零 caller 或 Git 可恢复不能把 `UNREVIEWED` 自动改为 terminal；`POST_RELEASE_RFC` 不是 disposition 或 terminal state，不能授权删除。
 - **Gate**：
 
 ```powershell
 py -3.12 -B tools/remediate_v4.py audit-map --audit 20260819_juris-calculus_V4单主链生产投产全量代码审计.md --check
-py -3.12 -B tools/remediate_v4.py file-map --check --all-tracked
+py -3.12 -B tools/remediate_v4.py file-map --check --all-tracked --require-semantic-targets --graph-receipt-task B00-CG
 ```
 
-- **PASS**：44/44 问题恰好一次登记且至少一个 closure task；current tracked paths missing/extra/duplicate 均 0；新增 path 也必须有 disposition。
+- **PASS**：44/44 问题恰好一次登记且至少一个 closure task；current tracked paths missing/extra/duplicate 均 0；新增 path 也必须有 disposition；无待删除 path 仅以 caller=0 为理由；各 terminal branch 的 required/forbidden fields 均满足，迁移目标位于目标 authority、目标测试进入 required manifest，动态 consumers 全部处置。
 - **Commit**：`build(remediation): bind audit issues and repository inventory`。
 
 ### B02　Companion spec 和外部输入探测
@@ -414,7 +454,7 @@ py -3.12 -B tools/remediate_v4.py file-map --check --all-tracked
 - **Mode / depends / audit**：`EXTERNAL_GATE / B01 / P2-01`。
 - **Allowed paths**：只写 `$R/inputs` 和 gate request；不改仓库。
 - **实现**：解析现有 pinned `legal-math-modeling` commit；若本机没有 exact checkout，从批准的官方 remote 只读获取到外部目录；核对 commit/tree/license/required files。不能获得时返回 exit 21。
-- **PASS**：spec commit/tree receipt 可验证；五项 shadow/differential tests 能被后续 task 引用；不再硬编码个人盘符。
+- **PASS**：spec commit/tree receipt 可验证；五项 shadow/differential test ID、fixture digest、oracle入口进入 receipt并能被后续 task 引用；fixture 预期值不得由 JC production implementation 生成；外部 spec 不可用时 exit 21，不得 skip；不再硬编码个人盘符。
 - **无 commit**：外部 input receipt 进入 hash chain。
 
 ### W0-01　冻结 V4 object set 和状态矩阵
@@ -433,19 +473,19 @@ py -3.12 -B tools/remediate_v4.py file-map --check --all-tracked
 - **Gate**：golden vectors 可由 Python/Node 读取并得到相同 bytes/digest；非法日期、offset、fractional edge、unsafe integer、float 均列为 negative fixtures。
 - **Commit**：`docs(contract): freeze canonical identity and resource limits`。
 
-### W0-03　唯一 authority 和 import policy
+### W0-03　人工 authority policy 和 observed import graph
 
 - **Mode / depends / audit**：`AUTO / W0-01 / P0-08, P0-14, P1-07, P2-04`。
-- **Allowed paths**：`docs/architecture/module-authority.json`、authority generator/tests；旧 registry 此 task 只标记待删除，不提前删。
-- **动作**：定义 FORMAL_CORE、PUBLIC_ADAPTER、ADVISORY_EXTERNAL、CANDIDATE_ASSET、BUILD_ONLY、TEST_ONLY、REMOVE；定义允许入边；formal core 不得导入 advisory/candidate/network/UI/renderer/strategy。
-- **Gate**：AST graph 对所有 Python path 100% 分类；当前违规边形成 machine backlog，不得伪报 PASS；target graph 无第二 application/contract/certificate issuer。
-- **Commit**：`docs(architecture): define generated V4 authority graph`。
+- **Allowed paths**：`docs/architecture/module-authority.json`、observed-graph emitter、authority validator/tests；旧两份 registry 此 task 只标记待删除，不提前删。
+- **动作**：人工规定 `FORMAL_CORE|PUBLIC_ADAPTER|RUNTIME_OUTPUT|SOURCE_TOOL|EXPERIMENT_ONLY|CANDIDATE_ASSET|BUILD_ONLY|TEST_ONLY|REMOVE` 及允许入边、wheel/deployment属性。observed graph 只能验证，不得根据现状自动生成 policy 或删除结论。`FORMAL_CORE` 不得导入 source tool、experiment、candidate、network、UI、renderer 或 strategy；`RUNTIME_OUTPUT` 只能读取已独立验证的 bundle；后三类不得进入 production wheel。
+- **Gate**：CodeGraph+AST+动态 import 对所有 Python path 100% 分类；每条实际边满足人工 policy；当前违规边形成 machine backlog，不得伪报 PASS；target graph 无第二 application/contract/certificate issuer。故意制造同名方法误边、函数内 import 和动态 plugin edge 时，validator 不得漏报或据此误删。
+- **Commit**：`docs(architecture): define V4 authority policy and validate observed graph`。
 
 ### W0-04　测试分层和 required gate 清单
 
 - **Mode / depends / audit**：`AUTO / W0-01..03 / P2-02, P2-03`。
 - **Allowed paths**：`tests/**` 中只新增目录骨架、marker/config 和 test manifest；不先改生产代码。
-- **动作**：建立 `contract/property/integration/formal_e2e/security/storage_chaos/windows_security/mcp_protocol/packaging/dsh_formal`；登记 required tests；禁止 required module-level skip/xfail；把当前保护错误行为的测试列为 `REWRITE_AT_TASK`。
+- **动作**：建立 `contract/property/integration/differential/formal_e2e/security/storage_chaos/windows_security/mcp_protocol/packaging/dsh_formal`；登记 required tests；禁止 required module-level skip/xfail；把当前保护错误行为的测试列为 `REWRITE_AT_TASK`。自包含 V4 fixtures 和 pinned companion-spec differential 是两套 required 证据：前者保证日常确定性，后者防 same-bug oracle；`spec_shadow_harness.py` 可退出 runtime，但能力必须迁到 `tests/differential/**`。
 - **Gate**：test manifest 覆盖全部审计 mutation；pytest collection 中 required skip=0；尚未实现的测试应明确 fail，而不是 skip。
 - **Commit**：`test(v4): establish required production gate taxonomy`。
 
@@ -490,11 +530,11 @@ node tests/contract/jcs_node_oracle.mjs tests/fixtures/golden/jcs-v4-vectors.jso
 - **Gate**：每个 object 正负 round-trip；字符串不得被拆成 refs；nested float、unknown object、非法日期和 V3 version 必失败；mutable Mapping 不能进入内部 context。
 - **Commit**：`refactor(contract): make strict V4 models the sole Python contract`。
 
-### W1-03　Schema、ToolSpec、capabilities 确定性生成
+### W1-03　Schema、ToolSpec、capabilities 确定性发布
 
 - **Depends / audit**：`W1-02 / P1-02, P1-14, P2-04`。
-- **Paths**：生成 `schemas/jc-v4.schema.json`、`mcp_manifest.json`；generator/check tests。不得手写第二份 model。
-- **动作**：从 typed contract 生成完整 `$defs`、四 tools input/output/error、limits、state enums；启动时检查 committed bytes/hash 与 runtime object 一致。
+- **Paths**：`contracts.py`、`compiler_core/mcp.py::TOOL_SPECS`、一个小型 emitter、发布物 `schemas/jc-v4.schema.json` 和 `mcp_manifest.json`、differential/check tests。不得建立第二份 model、通用 codegen framework 或 runtime manifest loader。
+- **动作**：typed contract 产生完整 `$defs`、limits、state enums；唯一显式 `TOOL_SPECS` 把四 tools 映射到这些类型及稳定 error。emitter 只序列化发布物；installed runtime 使用内置 typed codecs/ToolSpec，不读取仓库 manifest/path。capabilities schema 可派生，值必须从实际 runtime 动态构造。
 - **Gate**：
 
 ```powershell
@@ -502,8 +542,8 @@ py -3.12 -B tools/remediate_v4.py generated --check
 py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -p no:cacheprovider --basetemp "$R/tmp/W1-03"
 ```
 
-- **PASS**：同一 corpus 在 Python/JSON Schema/MCP codec 同判；任一 generated byte mutation 使启动/gate 失败。
-- **Commit**：`feat(contract): generate V4 schema and ToolSpec from one authority`。
+- **PASS**：AST 恰有一个 `TOOL_SPECS`、`DEFAULT_MANIFEST`/dynamic manifest 零命中；同一 corpus 在 Python/JSON Schema/MCP codec 同判；临时生成物与 committed bytes相同；manifest tools 与真实 `tools/list` 相同；任一发布物 mutation 使 build gate 失败，但 installed runtime 不依赖仓库文件。
+- **Commit**：`feat(contract): publish V4 schema and MCP manifest from typed contracts and sole ToolSpec`。
 
 ### W1-04　ContentRef 和 ArtifactResolver
 
@@ -565,7 +605,7 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W2-05　Synthetic signed pack builder
 
 - **Depends / audit**：`W2-04 / P0-02, P0-05`。
-- **Paths**：test/build-only pack fixture、builder interface、fixtures；不把 builder 放入 runtime wheel。
+- **Paths**：一个 test-only helper/CLI、pack fixtures和tests；不为单一实现建立 builder protocol、registry或interface，不把 helper 放入 runtime wheel。
 - **动作**：构建最小但语义完整的 test-only pack，覆盖正向、例外、priority、permission、temporal、missing/disputed；固定 source bytes、review receipts、test signatures 和 digest。
 - **Gate**：两次 clean build pack bytes 相同；scope 明确 `test-only`；production trust policy 必拒绝该 pack；测试不直接构造 trusted internal object。
 - **Commit**：`test(pack): add reproducible signed synthetic V4 pack`。
@@ -688,39 +728,45 @@ W5 是唯一允许“大而原子”的 cutover wave。W5-CUTOVER 之前的 bran
 - **动作**：先写三入口 V4 parity、V3 payload/import rejection、MCP 全状态/isError/outputSchema/path rejection、verify/read capability、CLI exit-code、package-root export tests。当前主链下应按预期失败。
 - **Commit**：`test(entrypoints): define atomic V4 cutover contract`。
 
-### H5-02　Candidate/advisory 资产目的地和权利责任
+### H5-02　Candidate/advisory 资产归位、零语义审批和投产后 RFC
 
-- **Mode / depends**：`HUMAN_GATE / W5-01`。
-- **请求内容**：每组 `addons/**`、`pipeline/**`、legacy/candidate configs、advisory modules、rule-engineering tools 的 `destination|retain-build-only|delete-zero-consumer`、owner、license/provenance、consumer、retention。请求绑定精确 path/blob digest 清单。
-- **硬规则**：未签响应不得删除有内容资产；也不得因等待而继续把它们装入 formal wheel。可先在 source 中隔离为非 formal，W6 wheel gate仍必须排除。
+- **Mode / depends**：`AUTO；内容删除、权利不明或 NO_RELEVANT_SEMANTICS_APPROVED 触发 HUMAN_GATE；POST_RELEASE_RFC 只登记且不阻塞 / W5-01`。
+- **默认处置**：每组 `addons/**`、`pipeline/**`、legacy/candidate configs、advisory modules、rule-engineering tools 在 `retain-path-nonpackaged|move-in-repo-source-tool|move-in-repo-experiment|candidate-asset|test-oracle` 中机器提出最小变更，不默认拆仓、发包或移动大资产。每项绑定 CodeGraph/AST consumers、动态入口、`semantic_assets|target_module|target_test|target_artifact|oracle_independence`、owner、license/provenance、retention 和 blob digest。
+- **审批请求**：`delete-zero-value` 必须先附 symbol-level semantic inventory、CodeGraph/AST/dynamic consumer 复核和拟执行 negative gates；具名 approver 据此签发或拒绝 `NO_RELEVANT_SEMANTICS_APPROVED`，不得由 runner 自签。独立发行建议只能写成 `POST_RELEASE_RFC`，记录拟议 consumer、version、owner、必要性和成本；本轮不实现、不删源 path、不改变 package/release metadata，也不计入 Z03。
+- **硬规则**：H5 只能批准 `NO_RELEVANT_SEMANTICS_APPROVED`、同仓 destination、owner、license 和 retention，不能豁免其他 B01 语义迁移门禁。未签响应不得删除有内容资产或声称无相关语义；也不得因等待而继续把它们装入 formal wheel。runner 只有在审批签名和机器证据均验证后，才接受该 terminal state。
 
-### W5-03　资产导出和 consumer 断边
+### W5-03　资产归位和 consumer 断边
 
 - **Depends / audit**：`H5-02 / P0-14, P1-09, P2-04, P3-01..02`。
-- **Paths**：按批准的 file-disposition；资产 export manifest；import/consumer tests。
-- **动作**：candidate corpora 保留 path/blob/source/license/review status/consumer；advisory/rule-engineering 迁到批准的独立 distribution/repo 或明确 build-only 区；formal code 删除反向 imports；输出列表默认分页/摘要，不再吐 21,481 IDs。
-- **Gate**：export 行数/blob digest 守恒；零未决资产；formal AST 无 advisory/candidate 入边；不因 source anchor 误报 eligible。
-- **Commit**：`refactor(boundary): externalize advisory and candidate assets`。
+- **Paths**：按批准的 file-disposition；仅同仓归位；import/call/dynamic-consumer tests。
+- **动作**：candidate corpora 默认同仓保留现有 path，或仅在真实 namespace 冲突时一次性仓内移动；保持 blob/source/license/review status/consumer，不强制搬动 35 万行文件。analysis、training、governance reports 和 candidate lookup 先切断包根/CLI/MCP/contracts 现有公共入边，再保留为同仓 source tools；pipeline 保留离线 source-tool 入口，确认 formal 入边为零且不新增，并删除原地覆写器；legacy adapters、TriRail、fast-path 作为同仓 experiments。本轮所有非生产面不得出现第二 `pyproject.toml`、release workflow 或 deployment manifest；输出默认分页/摘要。
+- **CodeGraph 已知断边**：W5 必须同时删除包根 analysis exports、CLI analyze/training/rules-audit/内联 candidate lookup、旧 MCP advisory tools，以及 `contracts.py` 对 analysis/governance/training schema 的反向拼接；`rendering` 不在此删除，继续作为 `RUNTIME_OUTPUT`。
+- **Gate**：CodeGraph sync 后 normalized observed graph 与 source tree一致；每个删除 path 对应 terminal-state branch 的 required receipts 已绿；独立 oracle 不导入 production provider；shadow differential仍 required；blob digest+byte count+业务 record count守恒，line count只作观测；formal AST无 source-tool/experiment/candidate 入边；不因 source anchor误报 eligible。同仓归位或 artifact 重建不能替代语义迁移完成。
+- **Commit**：`refactor(boundary): isolate non-production sources from V4 runtime`。
 
 ### W5-CUTOVER　一次性切换全部 current authority
 
 - **Depends / audit**：`W5-03 / P0-01, P0-08..10, P0-14, P1-13..18, P2-03..04, P2-07, P3-02`。
-- **Allowed paths**：包根、`cli.py`、`client.py`、新增 `mcp.py`、`mcp_server.py`、`version.py`、generated Schema/manifest/resources、所有需删除的 V3/W1b/compat/suffixed staged files/tests/docs、authority/file-disposition；不得改锁和 release workflow。
+- **删除前置状态**：本 commit 所有删除项必须已处于 `MIGRATED_GREEN|HISTORY_BOUND|NO_RELEVANT_SEMANTICS_APPROVED`，并绑定该 terminal branch 要求的 exact receipts；不得包含 `UNREVIEWED`。
+- **Allowed paths**：包根、`cli.py`、`client.py`、新增 `mcp.py`、`mcp_server.py`、`version.py`、`rendering.py`、neutral render profile、rendering/entrypoint tests、generated Schema/manifest/resources、所有需删除的 V3/W1b/compat/suffixed staged files/tests/docs、authority/file-disposition；不得改锁和 release workflow。
 - **同一 commit 必做**：
   1. 包根只导出 `JCClient`、V4 contracts、typed errors、verify/replay results、`__version__`；
-  2. CLI、Client、formal MCP 只调用同一 V4 parser 和 `ApplicationV4.evaluate|verify|replay`；
+  2. 三入口的 formal evaluate 操作只调用同一 V4 parser 和 `ApplicationV4.evaluate`；CLI/Client 的 verify/replay 与 MCP 的 `jc_verify_run` 调用唯一 AuditBundle verifier/replayer，read 调用同一 bounded artifact reader；CLI/Client render 只调用 verified-bundle renderer；
   3. MCP 只有 `jc_capabilities|jc_evaluate|jc_verify_run|jc_read_artifact`，零 resources，禁 path/dynamic manifest/advisory；
   4. version 切为 `4.0.0rc1` 或 runner 计算的下一未发布 RC，所有 runtime identity 同源；
-  5. 删除 `compat_v3_v4.py`、`legal_ir_v3.py`、V3/W1b Schema、V3/W1b/compat tests/fixtures、旧 formal certificate 依赖；
-  6. 合并后删除 `contracts_v4.py`、`jcs.py`、`source_service_v2.py`、`fact_admission_v1.py`、`argumentation_v2.py`、`backend_router_v1.py`、`certificate_v1.py` 等 parallel authority；
+  5. 删除 `compat_v3_v4.py`；`legal_ir_v3.py` 先迁 typed IR/source/type-check不变量。V3/W1b Schema、tests、fixtures仅在有效语义已绑定 V4 target test、V3 payload负向拒绝已绿、历史 bytes/hash/locator 已封存后删除；companion-spec differential fixtures不属于 V3 compatibility，不得随删；
+  6. 按 `contracts_v4→contracts`、`source_service_v2→source_service`、`fact_admission_v1→fact_admission`、`legal_spec_ivl→legal_ir`、`argumentation_v2→argumentation`、`backend_router_v1→backend_router/backends`、`certificate_v1→certificates`、`independent_grounded_checker→independent_checker` 显式映射后删除 parallel path；`independent_checker.py` 不得合入 production provider、argumentation 或 application；
   7. 删除 current V2→V3/WorkBuddy migration authority；历史仅由 tag/旧 artifact 保存；
-  8. `mcp_manifest.json` 和 Schema 重新生成；禁止手工补兼容字段。
+  8. `mcp_manifest.json` 和 Schema 由小型 emitter 重建；禁止手工补兼容字段、`DEFAULT_MANIFEST` 或 runtime dynamic manifest；
+  9. 将 `rendering.py` 和 neutral profile 改为 V4 verified-bundle-only，移除旧 `SemanticResult`、`output_firewall`、evaluator 和 `Application.evaluate` 入边；CodeGraph 全量 sync/reindex后，公共 V4 入口只剩 formal runtime和该 renderer，旧 analysis/training/governance/lookup 调用边为零。
 - **Gate**：
 
 ```powershell
 py -3.12 -B tools/remediate_v4.py generated --check
 py -3.12 -B tools/remediate_v4.py authority --check --single-formal-sink
+py -3.12 -B tools/remediate_v4.py file-map --check --deletions-ready --require-target-receipts
 py -3.12 -B -m pytest tests/contract tests/formal_e2e tests/mcp_protocol -q -p no:cacheprovider --basetemp "$R/tmp/W5-CUTOVER"
+py -3.12 -B -m pytest tests/differential -q -p no:cacheprovider --basetemp "$R/tmp/W5-DIFF"
 py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbuddy
 ```
 
@@ -747,28 +793,28 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 - **Gate**：V4 process 不发现 V3 state；历史说明不被 current schema/docs index 当 authority；没有自动迁移命令。
 - **Commit**：`docs(history): isolate V3 replay from current runtime`。
 
-## 13. W6：formal-only wheel、全锁、CI、供应链和发布
+## 13. W6：单一 V4 production wheel、全锁、CI、供应链和发布
 
 ### W6-01　精确 package/wheel allowlist
 
 - **Depends / audit**：`W5-07 / P0-14, P1-19, P2-06`。
-- **Paths**：`pyproject.toml`、`tools/wheel_gate.py` 或 runner packaging gate、packaging tests。
-- **动作**：显式列出 formal package/modules、唯一 V4 schema、license/notice/metadata；排除 addons、pipeline、candidate/legacy configs、rule-engineering、advisory、tests、V3/W1b/compat、机器报告；engine wheel 不含 `cn-official`。
-- **Gate**：从无 `.git` 的两个 clean archive 分别 build；RECORD 与 generated allowlist byte-exact；每个 forbidden import 失败；在 wheel 注入任一禁止文件的 mutation 必杀。
+- **Paths**：`pyproject.toml`、唯一薄 `tools/wheel_gate.py`、packaging tests；runner/CI 只调用该 gate，不另写实现。
+- **动作**：expected wheel file set 直接由人工 `module-authority.json` 中可发布 class 加明示的 V4 schema、neutral render profile、license/notice/metadata计算，不提交第二份 allowlist。包含 V4 runtime、formal adapters、verified-bundle renderer、deterministic pack verify/admission；排除 addons、pipeline/source tools、candidate/legacy configs、experiments、tests、V3/W1b/compat、机器报告；engine wheel 不含 `cn-official` bytes。删除当前 `FORBIDDEN` blacklist及保护它的测试，不建归档，Git历史足够。
+- **Gate**：从无 `.git` 的两个 clean archive 分别 build；wheel ZIP entry names 无重复，normalized ZIP names、normalized RECORD names 与 expected set 三者集合严格相等，任一 missing/extra/duplicate/path traversal 均失败；所有 removed public imports 在 clean install 失败；AST 无 `FORBIDDEN` 常量/引用；向 wheel 注入任一新文件的 mutation 必杀。
 - **Commit**：`build(package): make the engine wheel V4 formal-only`。
 
 ### H6-02　锁文件和新依赖批准
 
 - **Mode / depends**：`HUMAN_GATE / W6-01`。
 - **原因**：项目规则禁止未授权修改 lock；请求列出签名/Schema/property/build/test/runtime 依赖、版本、transitive graph、license、平台 wheel、hash 和替代方案。
-- **响应**：批准 exact profiles/versions 或拒绝；生产 runtime 只保留必要依赖，test/build 分离。
+- **响应**：批准 exact profiles/versions 或拒绝；生产 runtime 只保留必要依赖，test/build/source-tool 分离。已知处置目标：Jinja2/render extra和render lock为全生态真删除；`pydantic|python-docx|pdfplumber`若 pipeline 保留则进入同仓 source-tool profile，只算 JC production distribution移除；Hypothesis 保留 test-only 供 property tests。
 
 ### W6-03　完整 hash locks 和供应链
 
 - **Depends / audit**：`H6-02 / P1-20`。
 - **Paths**：`requirements/*.lock`、supply-chain tooling/tests；只按批准内容改。
-- **动作**：production/build/test/release 及实际发布 optional profiles 的完整 transitive graph 全 pin+hash；禁止 release 内浮动升级；lock digests 进入 provenance/run identity。
-- **Gate**：Windows/Linux clean/offline `--require-hashes` install；替换 dependency file/hash/license deny/vulnerability blocker 均失败；SBOM graph 与 lock 对账。
+- **动作**：production/build/test/source-tool/release 及实际发布 optional profiles 的完整 transitive graph 全 pin+hash；禁止 release 内浮动升级；lock digests 进入 provenance/run identity。依赖变更分报 `jc_direct_removed|moved_to_source_tool|ecosystem_removed`，禁止用笼统“-N deps”。
+- **Gate**：Windows/Linux clean/offline `--require-hashes` install；替换 dependency file/hash/license deny/vulnerability blocker 均失败；SBOM graph 与 lock 对账；stable wheel METADATA/SBOM/engine locks不含 Jinja2、pipeline三依赖和Hypothesis，source-tool lock承接 pipeline实际依赖，test lock保留Hypothesis，全目标清单中Jinja2为零。
 - **Commit**：`build(deps): hash-lock every released and build profile`。
 
 ### W6-04　双构建和 clean installed-wheel E2E
@@ -776,7 +822,7 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 - **Depends / audit**：`W6-03 / P0-14, P1-19, P2-06`。
 - **Paths**：packaging tests/runner gates；生产修复回责任 task。
 - **动作**：固定 builder、epoch、locks；两个独立 source archive build；新 venv 只装 hashed runtime deps + wheel + approved synthetic pack；运行 import/capabilities/doctor/CLI/Client/MCP/evaluate/verify/replay。
-- **PASS**：wheel bytes 相同；RECORD exact；installed code path 位于 venv；accepted formal synthetic E2E 成功；V3/advisory/candidate imports 全失败；capabilities 无绝对路径且 `legal_production_ready=false`。
+- **PASS**：wheel bytes 相同；RECORD exact；installed code path 位于 venv；accepted formal synthetic E2E 成功；V3、analysis、training、governance reports、candidate lookup、pipeline、legacy experiments和candidate imports全失败；`compiler_core.rendering` import及 verified-bundle render lifecycle成功；capabilities无绝对路径且 `legal_production_ready=false`。
 - **Commit**：`test(package): prove reproducible installed V4 lifecycle`。
 
 ### W6-05　CI required matrix
@@ -861,7 +907,7 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 ### W8-01　第一方法源不可变摄取
 
 - **Depends / audit**：`H8-00 / P0-02, P0-04`。
-- **位置**：pack 工程在独立 repo/worktree/artifact pipeline；engine repo 只保留 contract/verifier，不嵌入原始法律包。
+- **位置**：pack 工程使用本仓独立 worktree、同仓不打包的 pack-engineering source、受控 source store 和 artifact pipeline；本轮不得新建第二代码 repo。engine wheel 只保留 contract/verifier，不嵌入原始法律包；最终产物作为独立签名 `cn-official` artifact 发布。若既有治理强制独立 repo，W8 返回 `WAITING_EXTERNAL` 并另立后续工程；该后续工程不得冒充本任务完成或计入本次 Z03。
 - **动作**：在批准的受控 source store 保存或解析原始 bytes，记录 raw digest、规范化 profile/digest、authority、公布/生效/失效、canonical locator、版本图、provenance/license 和 source authenticity receipt。若许可不允许再分发，engine/pack/repo 只保存 digest、locator、custody ref 和审批 receipt，不复制原文 bytes。
 - **Gate**：bytes/locator/version/time/signature/takedown mutation；source inventory 100% 有状态，未知许可可作为 candidate 存档但不能进入 official pack。
 
@@ -904,7 +950,7 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 ### H9-00　DSH pin 和部署拓扑
 
 - **Mode / depends**：`HUMAN_GATE / H8-07`。
-- **请求**：批准 exact DSH commit/release、Node/pnpm lock、OS、out-of-tree bundle/profile 位置、JC MCP transport/process identity、允许工具、部署/更新/回滚策略。生产 JC formal service 必须使用与 DSH 不同的 OS/service identity 或容器，并通过认证 transport/broker 访问；若 Windows 上 DSH 与 JC 使用同一 SID，DACL 无法阻止 DSH shell 直写 JC state，formal production 必须 BLOCKED。不得自动跟随 master。
+- **请求**：批准 exact DSH commit/release、Node/pnpm lock、OS、out-of-tree bundle/profile 位置、JC MCP transport/process identity、允许工具、部署/更新/回滚策略。生产 JC formal service 必须使用与 DSH 不同的 effective OS/service identity，并通过认证 transport/broker 访问；容器只有在不同宿主 identity/user namespace 且 JC state volume 对 DSH effective identity 无写权限时才等价。若 DSH 与 JC 使用同一 effective SID/UID/service principal，或任一路径、volume、broker 使 DSH 可写 JC state，formal production 必须 BLOCKED。不得自动跟随 master。
 
 ### W9-01　Out-of-tree formal bundle/profile
 
@@ -935,7 +981,7 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 
 - **Depends**：`W9-03..04`。
 - **Paths**：`tests/dsh_formal/**` 在集成repo。
-- **Gate**：不调用JC、工具隐藏/改名、fake tool output、server crash/reconnect exhausted、cancel、tool schema drift、session污染、filesystem/bash/web/MCP写JC state、同 SID 配置、未认证 transport、V3 payload、pack/key revocation；general profile仍可用但没有formal capability。
+- **Gate**：不调用JC、工具隐藏/改名、fake tool output、server crash/reconnect exhausted、cancel、tool schema drift、session污染、filesystem/bash/web/MCP写JC state、同 effective SID/UID/service principal、共享可写 path/volume/broker、未认证 transport、V3 payload、pack/key revocation；general profile仍可用但没有formal capability。
 
 ### W9-06　DSH integration evidence
 
@@ -984,7 +1030,7 @@ Runner 的 `issue-map --check` 必须验证下表。一个 task green 不等于�
 | P1-11 | W4-02..03, W7-01 | file+dir durability；fault injection后complete-or-absent |
 | P1-12 | W4-02, W7-01 | Windows owner/DACL/reparse现场fail-closed |
 | P1-13 | W4-01..03, W5-CUTOVER | V4 namespace/writer/replay；V3/V4双向拒绝 |
-| P1-14 | W1-03, W5-CUTOVER, W5-06 | generated ToolSpec和runtime codec byte/hash一致 |
+| P1-14 | W1-03, W5-CUTOVER, W5-06 | 唯一`TOOL_SPECS`与runtime codec一致；派生manifest与真实`tools/list` canonical bytes/hash一致 |
 | P1-15 | W0-02, W1-04, W4-06, W5-CUTOVER | byte/depth/deadline/cancel/queue/quota/retention门禁 |
 | P1-16 | W2-03, W4-05 | config缺失/损坏/权限/unknown字段全部BLOCKED；无global fallback |
 | P1-17 | W1-04, W4-06, W5-CUTOVER, W7-01 | 封闭ref grammar；所有公共/bundle输出path canary为零 |
@@ -1068,17 +1114,19 @@ Runner 记录每条命令、exit code、stdout/stderr digest。只截取日志�
 
 ### 19.1 原 90 个 `compiler_core/*.py`
 
-以下五组恰好覆盖审计快照的 90 个 core files。Runner 按新 Git tree 更新路径，但不得让旧文件因新增模块而失去 disposition。
+以下五组恰好覆盖审计快照的 90 个 core files，是 B01 的初始处置输入，不代替最终 per-path receipt。CodeGraph 已用于发现真实调用边；每个删除相关结论仍须回读 exact source/AST、动态 import、入口和测试。Runner 按新 Git tree 更新路径，但不得让旧文件因新增模块而失去 disposition。
 
-**KEEP_REWRITE（12）**：`__init__`、`application`、`audit`、`audit_bundle`、`canonical_serialization`、`cli`、`client`、`contracts`、`independent_grounded_checker`（改名）、`resources`、`rule_packs`、`version`。
+**KEEP_REWRITE（12）**：`__init__`、`application`、`audit`、`audit_bundle`、`canonical_serialization`、`cli`、`client`、`contracts`、`rendering`、`resources`、`rule_packs`、`version`。`rendering` 是被 CLI/Client 调用、只读 verified bundle 的 `RUNTIME_OUTPUT`，进入同一 production wheel；不得到达 evaluator。
 
-**MERGE_DELETE（8）**：`argumentation`、`argumentation_v2`、`backend_router_v1`、`certificate_v1`、`evaluator`、`fact_admission_v1`、`legal_spec_ivl`、`source_service_v2`。正确逻辑进入第5节无后缀目标模块，旧path在W5删除。
+**MERGE_DELETE（9）**：`argumentation`、`argumentation_v2`、`backend_router_v1`、`certificate_v1`、`evaluator`、`fact_admission_v1`、`independent_grounded_checker`、`legal_spec_ivl`、`source_service_v2`。正确逻辑进入第5节无后缀目标模块；其中 `independent_grounded_checker→independent_checker`，旧path在W5删除。
 
-**MIGRATE_INVARIANTS_THEN_DELETE（23）**：`admission`、`certificate_checker`、`completion_status`、`config_paths`、`constraint_validator`、`contracts_v4`、`defeasible_priority`、`domain_config`、`evidence_chain_validator`、`fact_trust_envelope`、`output_firewall`、`proof_trace`、`reasoning_boundary`、`rule_router`、`source_anchor`、`source_manifest`、`stratified_evaluator`、`taint`、`trust_labels`、`type_checker`、`types`、`validity_state_machine`、`jcs`。删除前必须有对应V4 invariant test；domain_config 的吞异常/global fallback不得迁移。
+**MIGRATE_INVARIANTS_THEN_DELETE（29）**：`admission`、`certificate_checker`、`completion_status`、`config_paths`、`constraint_validator`、`contracts_v4`、`defeasible_priority`、`domain_config`、`evidence_chain_validator`、`fact_trust_envelope`、`g8_evaluator_patch`、`horn_completeness`、`jcs`、`legal_ir_v3`、`litigation_engineering`、`output_firewall`、`proof_trace`、`reasoning_boundary`、`rule_governance`、`rule_router`、`source_anchor`、`source_manifest`、`stratified_evaluator`、`taint`、`transformer`、`trust_labels`、`type_checker`、`types`、`validity_state_machine`。删除前必须有对应 V4 invariant target 和 RED→GREEN required test。`domain_config` 的吞异常/global fallback不得迁移；`g8/horn` 迁 completeness/TRUNCATED/witness；`legal_ir_v3` 迁 typed IR/source/type checks；`litigation_engineering` 先把 certificate label witness和 accepted必须可独立复验迁入 `certificates.py`，其策略内容归 source tool；`rule_governance` 把 deterministic verify/admission迁入 runtime、人工报告归 source tool；`transformer` 不迁 runtime auto-patch，只迁 signed rule domain/scope 显式校验和负向测试。
 
-**EXTERNALIZE（43）**：`adapter_base`、`adjudication_draft`、`analysis`、`arbitration_reasoning`、`banach_verifier`、`breakthrough_candidates`、`breakthrough_verification`、`burden_of_proof`、`classifier`、`compliance_monitoring`、`conflict_of_laws`、`criminal_complexity`、`criminal_sentencing`、`cross_jurisdiction_compare`、`cross_jurisdiction_router`、`evidence_checklist`、`evidence_evaluation`、`grounded_smt_verifier`、`horn_completeness`、`incremental_grounded`、`invariance_metrics`、`ip_valuation`、`kg_recall`、`legal_memory`、`legal_reasoning`、`litigation_engineering`、`plugin_registry`、`prc_collision_engine`、`proof_trace_visualizer`、`proof_tree`、`rendering`、`result_diff`、`result_exporter`、`review_packet`、`rule_governance`、`rule_lookup`、`rule_platform_cn`、`smt_sidecar`、`spec_shadow_harness`、`step_verifier`、`training`、`transformer`、`universal_grounded_smt`。它们不得被formal core反向导入；有consumer则迁独立distribution/build/test面，零consumer可经H5批准删除。
+**NONPRODUCTION_SOURCE（38）**：`adapter_base`、`adjudication_draft`、`analysis`、`arbitration_reasoning`、`banach_verifier`、`breakthrough_candidates`、`breakthrough_verification`、`burden_of_proof`、`classifier`、`compliance_monitoring`、`conflict_of_laws`、`criminal_complexity`、`criminal_sentencing`、`cross_jurisdiction_compare`、`cross_jurisdiction_router`、`evidence_checklist`、`evidence_evaluation`、`grounded_smt_verifier`、`incremental_grounded`、`invariance_metrics`、`ip_valuation`、`kg_recall`、`legal_memory`、`legal_reasoning`、`plugin_registry`、`prc_collision_engine`、`proof_trace_visualizer`、`proof_tree`、`result_diff`、`result_exporter`、`review_packet`、`rule_lookup`、`rule_platform_cn`、`smt_sidecar`、`spec_shadow_harness`、`step_verifier`、`training`、`universal_grounded_smt`。这不是“统一外迁”或“零 caller 即删”：`analysis/training/rule_lookup` 先断公共入边后进入同仓 source tool或删除重复实现；`breakthrough_verification/grounded_smt_verifier/invariance_metrics/spec_shadow_harness/universal_grounded_smt` 固定为 TEST_ORACLE/semantic mutation/differential目标；`adapter_base/plugin_registry/prc_collision_engine/proof_tree` 与 addons/TriRail 作为动态连通实验分量处置；领域 toy code 必须先映射到 `cn-official` typed rules/fixtures、DSH advisory consumer或证明无相关语义，才可删除。
 
-**DELETE_CURRENT（4）**：`compat_v3_v4`、`g8_evaluator_patch`、`legal_ir_v3`、`proleg_translator`。历史由Git和V3 artifact保存，不提供current runtime替代。
+**DELETE_CURRENT（2）**：`compat_v3_v4`、`proleg_translator`。历史由 Git 和 V3 artifact 保存，不提供 current runtime 替代；仍须有 V3 payload负向拒绝和历史 locator。
+
+CodeGraph 在本基线确认的高风险边必须进入 B01 receipt：`render_run←CLI/JCClient`；`analyze_strategy|analyze_similar_cases←CLI/WorkBuddy MCP`；`audit_pack←CLI`；`export_corpus_pack←CLI`；`lookup_rules←WorkBuddy MCP`；`litigation_engineering.generate_certificate←application._evaluate_once`；函数内 `transformer.auto_patch←FixpointEvaluator.__init__`；`spec_shadow_harness` 动态加载 companion spec；`plugin_registry` 动态加载 addons。CodeGraph 的同名方法误连或空 callers 不能覆盖源码事实。
 
 新增 formal modules：`trust.py`、`artifact_store.py`、`source_service.py`、`fact_admission.py`、`legal_ir.py`、`backend_router.py`、`certificates.py`、`mcp.py`、`backends/**`。它们必须进入 authority和wheel exact allowlist。
 
@@ -1087,22 +1135,22 @@ Runner 记录每条命令、exit code、stdout/stderr digest。只截取日志�
 | 路径 | 处置 | 机器证明 |
 | --- | --- | --- |
 | `addons/workbuddy_mcp.py` | 协议壳有用部分迁 `compiler_core/mcp.py` 后删除 | 旧import失败，formal MCP四工具E2E |
-| `addons/cn|hk|us|federation/**` | H5批准后外迁/独立distribution | export hash/license/consumer守恒；formal wheel无addons |
-| `pipeline/**` | proposal/rule-engineering外迁；原地覆写器删除 | formal import/network/RECORD/SBOM均无pipeline |
-| legacy/candidate configs/packs | 导出candidate artifact，保留provenance/license/status | manifest行数和blob对账；formal registry不发现 |
-| `configs/packs/cn-official/**` | 空模拟目录退出engine；W8生产独立pack artifact | engine wheel无pack，active pack有签名/digest |
+| `addons/cn|hk|us|federation/**` | 同仓 `EXPERIMENT_ONLY`；可保留路径或必要时仓内归位，不建 distribution | 动态 plugin、blob/license/consumer守恒；formal wheel无addons |
+| `pipeline/**` | 同仓 `SOURCE_TOOL`；保留离线入口，确认 formal 入边为零；删除原地覆写器，不建 distribution | 离线入口和tests有处置；formal import/network/RECORD/SBOM均无pipeline |
+| legacy/candidate configs/packs | 同仓 `CANDIDATE_ASSET`；默认保留现有路径，不为整洁搬大文件 | blob SHA-256、byte/record/provenance/license/status对账；formal registry不发现 |
+| `configs/packs/cn-official/**` | 空模拟目录退出runtime；同仓 build-only pack source产生独立签名 artifact | engine wheel无pack，active pack有签名/digest |
 | formal ontology/domain/config | 进入signed pack并绑定run | missing/corrupt config blocked |
-| render profiles | 随renderer外迁 | result digest不依赖renderer |
+| neutral render profile | 随 `compiler_core.rendering` 进入同一 production wheel | 只消费 verified bundle；result digest不依赖renderer |
 | `schemas/jc-v3*`,`schemas/w1b/**` | W5-CUTOVER删除 | source/wheel/installed negative gate |
-| `schemas/jc-v4.schema.json` | 生成物 | generator diff=0和differential PASS |
-| `mcp_manifest.json` | 生成物 | runtime/committed byte-identical |
+| `schemas/jc-v4.schema.json` | 小型 emitter 发布物 | emitter diff=0和differential PASS |
+| `mcp_manifest.json` | 小型 emitter 发布物；runtime不读取仓库文件 | ToolSpec/runtime tools-list/committed bytes一致 |
 | `mcp_server.py` | V4 formal thin launcher | installed stdio/dev及production transport lifecycle |
-| `tools/build_rule_pack_manifests.py` | V3 builder删除；W8 builder在规则工程面 | reproducible signed pack |
+| `tools/build_rule_pack_manifests.py`及专属test | V3 builder删除；synthetic仅保留一个test helper，W8按正式pack合同重新实现同仓build-only工具 | 旧path/import为0；两次archive build pack bytes相同；builder commit/digest进入provenance |
 | `tools/build_provenance.py` | W6重写 | exact source/spec/wheel/schema/tool/lock/trust binding |
-| `tools/wheel_gate.py` | exact allowlist/installed lifecycle | no-git archive PASS、forbidden injection FAIL |
+| `tools/wheel_gate.py` | 唯一薄 positive-set gate；由module authority可发布class推导expected set | RECORD集合等式、无`FORBIDDEN` blacklist、no-git archive PASS、任意注入FAIL |
 | `tools/supply_chain_gate.py` | 全wheel/locks/license/SBOM | zero unhandled blocker |
 | perf tool | installed V4 + signed pack | approved budget report |
-| tri-rail/fast-path tools | 外迁实验面 | formal distribution/import graph无它们 |
+| tri-rail/fast-path tools | 同仓 `EXPERIMENT_ONLY`，不建 package/release/deployment | formal distribution/import graph无它们；与addons分别按真实图处置 |
 | V3/W1b tests/fixtures | 语义迁V4 tests后删除 | information-conservation manifest + negative imports |
 | skipped/root test scripts | 改为required pytest或退出coverage叙事 | CI collection/skip gate |
 | `requirements/*.lock` | H6批准后全transitive hash | clean/offline require-hashes |
@@ -1110,10 +1158,16 @@ Runner 记录每条命令、exit code、stdout/stderr digest。只截取日志�
 | README/HANDOFF/AGENTS/memory/CHANGELOG/docs | W6重写current state | path/command/version/authority validator |
 | `pyproject.toml` | exact formal distribution/entrypoints/version metadata | METADATA/RECORD/allowlist |
 | LICENSE/NOTICE/SECURITY/CODEOWNERS | 保留MIT并补完整治理/notice | wheel/SBOM/remote evidence |
+| `.codegraph/**` | 本机 ignored 可重建索引，不提交、不入wheel | version/status、normalized graph receipt、tracked coverage对账 |
+| `remediation/v4/**`、`tools/remediate_v4.py` | 施工期 BUILD_ONLY；Z02封存后转 HISTORY_ONLY | final archive digest、receipt chain、runtime/current-authority negative gate |
 
 ### 19.3 删除门禁
 
-删除一个 path 前 runner 必须同时证明：consumer graph无未处置消费者；正确不变量已有V4 tests；有内容资产已导出且hash/metadata/consumer对账；不属于用户未提交改动；删除在task allowlist；Git history或签名artifact可恢复。少任一项则 exit 6。
+删除一个 path 前 runner 必须先证明：CodeGraph 已与 exact tree 同步；import/call/instantiate候选边经源码AST、动态 import、入口和测试复核；consumer graph无未处置消费者；删除项非用户未提交内容且位于 task allowlist。随后 `--deletions-ready` 按 B01 的三种互斥终态分支验证：只有 `MIGRATED_GREEN` 要求 target module/commit和RED→GREEN target test；`HISTORY_BOUND` 要求 frozen bytes/hash/locator、current negative rejection且target module为空；`NO_RELEVANT_SEMANTICS_APPROVED` 要求 symbol inventory、动态consumer复核、H5具名审批和negative import/path gate。独立 oracle 还必须不调用 production implementation，内容资产必须完成 blob/byte/record/metadata/consumer 守恒。consumer=0、callers=[]、impact=0、文件有Git历史或普通H5签字均不能单独授权删除。少一项 exit 6。
+
+### 19.4 复杂度和依赖三本账
+
+Runner 对 start/final tree 输出：独立总账 `repo_tree{added,deleted,net}`，以及处置分账 `relocated_or_rebuilt{source,destination_receipt}`、`true_deleted{code,tests,assets,docs}`。以 `git diff --numstat` 逐 path 和 disposition 对账，Python 与 YAML/JSON资产分开；baseline 删除 path 必须在两类处置分账间恰好归类一次且交集为0，modified-in-place numstat 只计入 `repo_tree`，不得从两类 path 行数反推 `repo_tree.deleted`；替代实现新增量必须扣除。LOC只用于解释，不作为 PASS。依赖同时输出 `jc_direct_removed|moved_to_source_tool|ecosystem_removed`；移动、重建的代码或依赖不得计为 whole-system 删除。
 
 ## 20. Version、artifact 和 readiness
 
@@ -1147,7 +1201,7 @@ source version
 
 ### Z00　全问题和全文件复算
 
-`issue-map --check` 必须 44/44 closed；`file-map --check --all-tracked` 对最终tree missing/extra/duplicate为0；authority graph无禁边；required skip/critical mutation survivor为0。
+`issue-map --check` 必须 44/44 closed；CodeGraph 对 final tree重新 full index，pending/mismatch/error/unresolved为0，normalized graph与AST/dynamic-import supplement对账；`file-map --check --all-tracked` 对最终tree missing/extra/duplicate为0；authority graph无禁边；required skip/critical mutation survivor为0。输出 19.4 的仓库、迁移/替代、真实删除及依赖三本账，禁止把移动或 artifact 重建写成系统净减。
 
 ### Z01　全部 artifact 独立复验
 
@@ -1159,11 +1213,12 @@ source version
 - 每个commit只含任务allowlist；无用户源工作树内容；
 - 原源工作树两份删除仍原样存在且未被提交；
 - 无私钥、token、原始客户材料、绝对路径进入Git/wheel/release；
-- remote writes与HUMAN_GATE授权精确一致。
+- remote writes与HUMAN_GATE授权精确一致；
+- 冻结 tasks、issue-map、final file-disposition、normalized CodeGraph、全部 receipt chain 和 semantic migration mapping，生成 canonical archive manifest/digest并存入批准证据位置。封存后这些施工台账转 `HISTORY_ONLY`，不得要求未来日常维护旧迁移图；`module-authority.json` 仍是 current policy。
 
 ### Z03　唯一完成输出
 
-Runner exit 0并输出一个`final-remediation-result.json`，只引用原始receipt/report/artifact digests，顶层状态由verifier重算。至少包含：start/final commit/tree、44项closure、final tracked disposition、test/CI runs、stable wheel、official pack、engine/pack/trust/storage identity、formal run/certificate/bundle/verify/replay、DSH bypass evidence、known limitations、revocation/rollback handles。
+Runner exit 0并输出一个`final-remediation-result.json`，只引用原始receipt/report/artifact digests，顶层状态由verifier重算。至少包含：start/final commit/tree、44项closure、final tracked disposition、semantic migration closure、CodeGraph/施工台账 archive digest、test/CI runs、stable wheel、official pack、engine/pack/trust/storage identity、formal run/certificate/bundle/verify/replay、DSH bypass evidence、known limitations、revocation/rollback handles，以及 `repo_tree|relocated_or_rebuilt|true_deleted`、`jc_direct_removed|moved_to_source_tool|ecosystem_removed` 分栏。migration ledger不是第二 current authority。
 
 ## 22. 硬停止条件
 
@@ -1183,8 +1238,13 @@ Runner exit 0并输出一个`final-remediation-result.json`，只引用原始rec
 - tag/version/METADATA/wheel/provenance不同，或tag job重建artifact；
 - production key/approval/release permission缺失却准备晋级；
 - `cn-official`空/blocked/未签/未完整审核却准备legal-ready；
-- DSH和JC同SID/同可写state边界或未认证transport；
+- DSH和JC同effective SID/UID/service principal，或任一路径/volume/broker使DSH可写JC state，或transport未认证；
 - candidate资产无provenance/license/consumer对账就被删除或晋级。
+- CodeGraph缺失、未与exact tree同步、tracked code/asset coverage有缺口，或仅凭`callers=[]|impact=0|import=0`批准删除；
+- 因LOC、目录大小或“非formal”创建无真实独立消费者的repo/distribution/service；
+- source tools、experiments或candidate assets出现第二package/release/deployment metadata，或被production wheel/default registry/formal run自动发现；
+- 为派生 Schema/ToolSpec/module graph/wheel set或单实现builder新增第二generator framework、registry、interface；
+- 移动、重建的代码/依赖被计为whole-system deletion，或LOC成为PASS门禁。
 
 ## 23. 自动执行中的合理停机与恢复
 
@@ -1205,15 +1265,15 @@ Runner不得在状态未变化时反复生成新请求；相同subject复用同�
 你负责完整实施 Juris Calculus V4 单主链生产投产整治，不是做审计或写第二份计划。
 
 唯一施工合同：
-D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus\20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md
+仓库根目录/20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md
 
 问题基线：
-D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus\20260819_juris-calculus_V4单主链生产投产全量代码审计.md
+仓库根目录/20260819_juris-calculus_V4单主链生产投产全量代码审计.md
 
 启动后必须：
 1. 完整读取两份文件、仓库 AGENTS.md 和 memory.md。
 2. 不在用户当前脏工作树施工；按方案创建独立 v4-remediation branch/worktree，保护两份既有未暂存删除。
-3. 先完成 B00，创建唯一 runner 和 machine DAG；之后只用 tools/remediate_v4.py 返回的 work order逐任务施工。
+3. 先完成 B00 和 B00-CG：创建唯一 runner、machine DAG并对exact tree建立CodeGraph；函数/import/impact用图定位后回读源码，动态import和未入图大资产另行闭合。CodeGraph未通过不得进入B01处置。
 4. 每次只改 task allowed_paths；先写失败测试，再修根因；gate全绿后由runner生成receipt和本地commit。
 5. 不保留V3/W1b/compat/fallback；不以文件存在、空pack、caller PASS、单测数量或免责声明宣告完成。
 6. 自动持续执行，不因任务困难、上下文压缩或普通失败停下；从外部state receipts恢复。
@@ -1221,22 +1281,28 @@ D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus\20260819_juris
 8. 顺序严格为V4 Kernel RC、真实cn-official、DSH formal profile；通用DSH不得被JC强制。
 9. 每完成一个task检查Git diff/status；不push、不tag、不release，除非exact HUMAN_GATE授权。
 10. 最终只有Z03 verifier exit 0、44项闭合、全tracked disposition、stable wheel+official pack+formal verify/replay+DSH bypass evidence齐全时，才能报告全部完成。
+11. 保持一个JC source repo和一只production wheel；非生产源码同仓隔离但不另发包；只有`cn-official`是独立签名pack artifact。零caller不等于可删，移动或重建不等于系统净减。
 
-现在从B00开始，持续执行到第一个真实外部门禁或Z03完成。
+现在从B00开始，随后必须完成B00-CG，持续执行到第一个真实外部门禁或Z03完成。
 ```
 
 ## 25. 本方案自身验收
 
 方案交付时必须验证：
 
-- W0-W9、B00-B02、H5/H6/H7/H8/H9、Z00-Z03均有依赖和退出门禁；
+- W0-W9、B00、B00-CG、B01-B02、H5/H6/H7/H8/H9、Z00-Z03均有依赖和退出门禁；
 - P0 15、P1 20、P2 7、P3 2全部映射；
 - 原90个core modules五组数量合计90且不重复；其他目录每类有处置；
+- CodeGraph覆盖全部可解析code/config，未入图资产由Git blob/byte/record inventory闭合；删除结论有源码/AST/动态入口复核；
+- 所有删除候选terminal state非`UNREVIEWED`；shadow differential在最终required manifest；
+- module authority为人工政策、observed graph只验证；migration ledger已封存并退出current authority；
+- source repo数量为1、production engine wheel数量为1；非生产源码无独立package/release/deployment metadata，`cn-official`作为独立签名pack artifact发布；
+- 复杂度和依赖三本账分栏，移动或重建未计作whole-system deletion；
 - 工程自动化和人工签发边界明确；
 - 续跑、失败、commit、artifact、release和rollback不依赖口头状态；
 - DSH general/formal边界及独立service identity明确；
 - Stable 4.0.0重新build/test，不重标RC；
-- 方案文件是本任务唯一新增仓库文件，两份用户删除不纳入提交。
+- 本次修订只提交本方案、项目memory和`.gitignore`的CodeGraph忽略项；`.codegraph/**`、`.planning/**`均不提交，两份用户原有删除不纳入提交。
 
 ### [我违规之处]
 
