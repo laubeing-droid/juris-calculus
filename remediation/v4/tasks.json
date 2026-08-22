@@ -466,6 +466,8 @@
       "allowed_paths": [
         "docs/contracts/**",
         "tests/fixtures/v4_contract/**",
+        "tests/unit/test_remediation_runner.py",
+        "tools/remediate_v4.py",
         "remediation/v4/tasks.json"
       ],
       "terminal_states": [],
@@ -476,9 +478,23 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W0-01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "tests/unit/test_remediation_runner.py::test_w0_object_state_matrix_gate_passes",
+          "tests/unit/test_remediation_runner.py::test_w0_object_state_matrix_gate_rejects_critical_mutations",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W0-01"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

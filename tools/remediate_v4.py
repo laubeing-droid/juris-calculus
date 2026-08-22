@@ -28,7 +28,9 @@ import argparse
 import base64
 import fnmatch
 import hashlib
+import itertools
 import json
+import math
 import mimetypes
 import os
 import shutil
@@ -45,7 +47,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.2.0"
+RUNNER_VERSION = "0.2.1"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -55,6 +57,49 @@ FILE_DISPOSITION = SCHEMA_DIR / "file-disposition.json"
 TASK_SCHEMA = SCHEMA_DIR / "task.schema.json"
 RECEIPT_SCHEMA = SCHEMA_DIR / "receipt.schema.json"
 APPROVAL_SCHEMA = SCHEMA_DIR / "approval.schema.json"
+OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
+
+W0_REQUIRED_OBJECT_IDS = frozenset({
+    "DigestV4", "CanonicalTimeV4", "ContentRefV4", "ArtifactHandleV4", "ErrorV4",
+    "SignatureEnvelopeV4", "TrustPolicyV4", "StorageCapabilityV4", "ObservabilityEnvelopeV4",
+    "CaseRequestV4", "LegalContextV4", "RequestedOutputV4", "ResourceLimitsV4",
+    "SourceSnapshotV4", "CanonicalLocatorV4", "SourceVersionEdgeV4", "SourceBundleV4",
+    "EvidenceManifestV4", "EvidenceItemV4", "ContradictionRefV4",
+    "FactCandidateV4", "FactAttestationV4", "FactAdmissionReceiptV4",
+    "RuleV4", "PackManifestV4", "PackSignatureV4", "RulePromotionReceiptV4",
+    "LegalSpecV4", "LegalIVLV4", "TranslationReceiptV4",
+    "ArgumentV4", "AttackV4", "PriorityEdgeV4", "PermissionResolutionV4", "ExceptionResolutionV4",
+    "BackendInvocationV4", "SolverReceiptV4", "CheckerReceiptV4", "ProofReceiptV4",
+    "ExecutionStatusV4", "DecisionStatusV4", "ReviewStateV4", "CompletenessStateV4",
+    "InterruptionStateV4", "CertificateKindV4", "TransportOutcomeV4", "RuntimeProfileV4",
+    "ClaimResultV4", "BranchResultV4", "MissingFactRequirementV4", "SemanticResultV4",
+    "RunIdentityV4", "FormalCertificateV4", "ConflictCertificateV4", "CertificateEnvelopeV4",
+    "AuditManifestV4", "AuditBundleIndexV4", "EvaluationEnvelopeV4", "VerificationResultV4",
+    "ReplayResultV4", "MCPCapabilitiesInputV4", "MCPCapabilitiesOutputV4",
+    "MCPCapabilitiesErrorV4", "MCPEvaluateInputV4", "MCPEvaluateOutputV4", "MCPEvaluateErrorV4",
+    "MCPVerifyRunInputV4", "MCPVerifyRunOutputV4", "MCPVerifyRunErrorV4",
+    "MCPReadArtifactInputV4", "MCPReadArtifactOutputV4", "MCPReadArtifactErrorV4", "ToolSpecV4",
+})
+W0_REQUIRED_OBJECT_LAYERS = frozenset({
+    "common", "trust", "storage", "observability", "request", "source", "evidence",
+    "fact", "rule", "ir", "argument", "backend", "receipt", "state", "result", "run",
+    "certificate", "audit", "mcp",
+})
+
+W0_STATE_AXES = {
+    "execution": [
+        "completed", "admission_blocked", "interrupted", "unsupported",
+        "resource_exhausted", "cancelled", "engine_error",
+    ],
+    "decision": [
+        "accepted_formal_result", "hypothetical_result", "review_only_result",
+        "missing_required_fact", "conflict_certificate", "blocked", "unknown", "engine_error",
+    ],
+    "review": ["not_required", "required", "pending", "approved", "rejected"],
+    "completeness": ["complete", "partial", "truncated", "interrupted"],
+    "certificate": ["none", "formal_verified", "conflict_verified"],
+    "transport": ["success", "error"],
+}
 
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -892,7 +937,174 @@ def cmd_forbidden_imports(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _object_state_matrix_problems(matrix: Any) -> list[str]:
+    problems: list[str] = []
+    required_top = {
+        "schema_version", "object_types", "axes", "cartesian_cardinality",
+        "valid_combination_count", "decision_constraints",
+    }
+    if not isinstance(matrix, dict):
+        return ["matrix must be a JSON object"]
+    if set(matrix) != required_top:
+        problems.append(
+            f"matrix fields must be exactly {sorted(required_top)}; got {sorted(matrix)}"
+        )
+    if matrix.get("schema_version") != "jc/v4-object-state-matrix/1.0":
+        problems.append("unexpected schema_version")
+
+    object_types = matrix.get("object_types")
+    object_ids: list[str] = []
+    object_layers: list[str] = []
+    if not isinstance(object_types, list):
+        problems.append("object_types must be an array")
+    else:
+        item_fields = {"id", "layer", "schema_kind", "formal", "additional_properties"}
+        for index, item in enumerate(object_types):
+            if not isinstance(item, dict) or set(item) != item_fields:
+                problems.append(f"object_types[{index}] fields are not closed")
+                continue
+            if not isinstance(item["id"], str) or not item["id"]:
+                problems.append(f"object_types[{index}].id must be a non-empty string")
+                continue
+            if not isinstance(item["layer"], str) or not item["layer"]:
+                problems.append(f"{item['id']} layer must be a non-empty string")
+                continue
+            object_ids.append(item["id"])
+            object_layers.append(item["layer"])
+            if item["formal"] is not True:
+                problems.append(f"{item['id']} must be formal")
+            if item["schema_kind"] == "object":
+                if item["additional_properties"] is not False:
+                    problems.append(f"{item['id']} object must set additional_properties=false")
+            elif item["schema_kind"] in {"string_enum", "string_pattern"}:
+                if item["additional_properties"] is not None:
+                    problems.append(f"{item['id']} non-object must set additional_properties=null")
+            else:
+                problems.append(f"{item['id']} has unknown schema_kind")
+        if len(object_ids) != len(set(object_ids)):
+            problems.append("object type ids must be unique")
+        missing = sorted(W0_REQUIRED_OBJECT_IDS - set(object_ids))
+        extra = sorted(set(object_ids) - W0_REQUIRED_OBJECT_IDS)
+        if missing or extra:
+            problems.append(f"object registry mismatch: missing={missing} extra={extra}")
+        if set(object_layers) != W0_REQUIRED_OBJECT_LAYERS:
+            problems.append("object layer registry is incomplete or contains an unknown layer")
+
+    axes = matrix.get("axes")
+    if axes != W0_STATE_AXES:
+        problems.append("state axes or ordered values differ from the frozen W0 contract")
+    if not isinstance(axes, dict) or any(not isinstance(values, list) for values in axes.values()):
+        return problems
+    cardinality = math.prod(len(values) for values in axes.values())
+    if matrix.get("cartesian_cardinality") != cardinality:
+        problems.append(
+            f"cartesian_cardinality must be {cardinality}; got {matrix.get('cartesian_cardinality')}"
+        )
+
+    constraints = matrix.get("decision_constraints")
+    decisions = axes.get("decision", [])
+    nondecision_axes = set(axes) - {"decision"}
+    if not isinstance(constraints, dict) or set(constraints) != set(decisions):
+        problems.append("decision_constraints must cover each decision exactly once")
+        return problems
+    for decision, constraint in constraints.items():
+        if not isinstance(constraint, dict) or set(constraint) != nondecision_axes:
+            problems.append(f"constraint for {decision} must cover every non-decision axis")
+            continue
+        for axis, allowed in constraint.items():
+            if (
+                not isinstance(allowed, list) or not allowed or len(allowed) != len(set(allowed))
+                or any(value not in axes[axis] for value in allowed)
+            ):
+                problems.append(f"constraint for {decision}.{axis} is invalid")
+
+    if problems:
+        return sorted(set(problems))
+
+    valid: list[dict[str, str]] = []
+    reachable = {axis: set() for axis in axes}
+    for values in itertools.product(*(axes[axis] for axis in axes)):
+        item = dict(zip(axes, values))
+        constraint = constraints[item["decision"]]
+        if all(item[axis] in allowed for axis, allowed in constraint.items()):
+            valid.append(item)
+            for axis, value in item.items():
+                reachable[axis].add(value)
+    if matrix.get("valid_combination_count") != len(valid):
+        problems.append(
+            f"valid_combination_count must be {len(valid)}; got {matrix.get('valid_combination_count')}"
+        )
+    for axis, values in axes.items():
+        unreachable = sorted(set(values) - reachable[axis])
+        if unreachable:
+            problems.append(f"unreachable {axis} states: {unreachable}")
+
+    semantic_success = {
+        "accepted_formal_result", "hypothetical_result", "review_only_result",
+        "missing_required_fact", "conflict_certificate", "unknown",
+    }
+    for item in valid:
+        decision = item["decision"]
+        if decision in semantic_success and (
+            item["execution"] != "completed" or item["transport"] != "success"
+        ):
+            problems.append(f"{decision} must be completed transport success")
+        if decision == "accepted_formal_result" and not (
+            item["review"] == "not_required"
+            and item["completeness"] == "complete"
+            and item["certificate"] == "formal_verified"
+        ):
+            problems.append("accepted formal result lacks its closed certificate state")
+        if decision != "accepted_formal_result" and item["certificate"] == "formal_verified":
+            problems.append(f"{decision} illegally carries a formal certificate")
+        if decision == "conflict_certificate" and item["certificate"] != "conflict_verified":
+            problems.append("conflict result lacks a verified conflict certificate")
+        if decision != "conflict_certificate" and item["certificate"] == "conflict_verified":
+            problems.append(f"{decision} illegally carries a conflict certificate")
+        if decision == "blocked" and not (
+            item["execution"] in {
+                "admission_blocked", "interrupted", "unsupported",
+                "resource_exhausted", "cancelled",
+            }
+            and item["certificate"] == "none"
+            and item["transport"] == "error"
+        ):
+            problems.append("blocked state must be a certificate-free transport error")
+        if decision == "engine_error" and not (
+            item["execution"] == "engine_error"
+            and item["certificate"] == "none"
+            and item["transport"] == "error"
+        ):
+            problems.append("engine_error state is not closed")
+    return sorted(set(problems))
+
+
+def cmd_object_state_matrix(args: argparse.Namespace) -> int:
+    path = Path(args.path).resolve()
+    if not path.is_file():
+        print(f"object-state matrix not found: {path}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        matrix = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"object-state matrix unreadable: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _object_state_matrix_problems(matrix)
+    if problems:
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"object-state matrix OK: {len(matrix['object_types'])} formal types, "
+        f"{matrix['cartesian_cardinality']} combinations, "
+        f"{matrix['valid_combination_count']} valid"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
+    if args.wave == "W0-01":
+        return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -1581,6 +1793,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("forbidden-imports", help="Forbidden import scan")
     p.add_argument("--check", action="store_true")
     p.set_defaults(func=cmd_forbidden_imports)
+
+    p = sub.add_parser("object-state-matrix", help="Validate the frozen W0 V4 object/state matrix")
+    p.add_argument("--path", default=str(OBJECT_STATE_MATRIX))
+    p.set_defaults(func=cmd_object_state_matrix)
 
     p = sub.add_parser("verify-wave", help="Aggregate gate per wave")
     p.add_argument("wave")

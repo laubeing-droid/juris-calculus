@@ -250,3 +250,43 @@ def test_runner_authority_check_reports_module_authority() -> None:
     """§3.1 authority 命令必须报告 module-authority 唯一性。"""
     result = _run_runner("authority", "--check")
     assert result.returncode in (0, 3), f"unexpected exit: {result.returncode}\n{result.stdout}\n{result.stderr}"
+
+
+def test_w0_object_state_matrix_gate_passes() -> None:
+    result = _run_runner("verify-wave", "W0-01")
+    assert result.returncode == 0, f"matrix gate failed:\n{result.stdout}\n{result.stderr}"
+    assert "formal types" in result.stdout
+
+
+def test_w0_object_state_matrix_gate_rejects_critical_mutations(tmp_path: Path) -> None:
+    source = REPO / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
+    baseline = json.loads(source.read_text(encoding="utf-8"))
+
+    mutations = []
+    accepted_without_certificate = json.loads(json.dumps(baseline))
+    accepted_without_certificate["decision_constraints"]["accepted_formal_result"]["certificate"] = ["none"]
+    mutations.append(accepted_without_certificate)
+
+    blocked_transport_success = json.loads(json.dumps(baseline))
+    blocked_transport_success["decision_constraints"]["blocked"]["transport"] = ["success"]
+    mutations.append(blocked_transport_success)
+
+    unknown_formal = json.loads(json.dumps(baseline))
+    unknown_formal["decision_constraints"]["unknown"]["certificate"] = ["formal_verified"]
+    mutations.append(unknown_formal)
+
+    open_formal_object = json.loads(json.dumps(baseline))
+    next(item for item in open_formal_object["object_types"] if item["schema_kind"] == "object")[
+        "additional_properties"
+    ] = True
+    mutations.append(open_formal_object)
+
+    missing_contract_type = json.loads(json.dumps(baseline))
+    missing_contract_type["object_types"].pop()
+    mutations.append(missing_contract_type)
+
+    for index, payload in enumerate(mutations):
+        path = tmp_path / f"invalid-{index}.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        result = _run_runner("object-state-matrix", "--path", str(path))
+        assert result.returncode != 0, f"mutation {index} unexpectedly passed"

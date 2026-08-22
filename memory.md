@@ -81,3 +81,10 @@
 - Treat B00 as failed and B00-CG/B01 as unverified. Reuse observations and the tracked-path enumeration only as inputs, never as closure evidence.
 - The old temporary state root is preserved. Its 22 files and 12 requests are recorded as `INVALID_SUPERSEDED` under the persistent state root `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state`.
 - The only recovery command is recorded with absolute repository, plan, runner, and state-root paths in `remediation/v4/STATUS.md` and the external goal ledger.
+
+## 2026-08-22 W0-01 V4 target contract freeze
+
+- The target registry contains 73 formal public types: 60 non-MCP types plus input/output/error envelopes for each of four MCP tools and `ToolSpecV4`. Object-shaped types are closed; runtime classes and generated schemas remain non-conformant until W1 implements the registry.
+- Terminal classification enumerates 6,720 combinations across execution, decision, review, completeness, certificate, and transport; 115 combinations are reachable under the frozen constraints.
+- `missing_required_fact`, review-only, hypothetical, conflict, and unknown are completed semantic outcomes with transport success. Only pre-evaluation blocked and internal engine failure use transport error.
+- A formal certificate is legal only for `accepted_formal_result`; a conflict certificate is legal only for `conflict_certificate`. The W0 runner gate rejects missing, swapped, or open object definitions and illegal certificate/transport mutations.
