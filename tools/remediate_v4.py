@@ -29,6 +29,8 @@ import ast
 import base64
 import calendar
 import configparser
+import dataclasses
+import enum
 import fnmatch
 import hashlib
 import importlib.util
@@ -48,6 +50,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Iterable
 
 try:
@@ -55,13 +58,14 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.7.0"
+RUNNER_VERSION = "0.8.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
     "0.5.0": 3,
     "0.6.0": 3,
     "0.7.0": 4,
+    "0.8.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -81,8 +85,13 @@ USER_DIRECTIVE_SCHEMA = SCHEMA_DIR / "user-directive.schema.json"
 OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
 JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
+RESOURCE_LIMIT_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-resource-limit-probe.json"
+V4_CONTRACT_VECTORS = ROOT / "tests" / "contract" / "v4-contract-vectors.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
 REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
+W1_02_TEST_CASE_IDS_DIGEST = (
+    "sha256:99b49c631f7a40a45aa064ca60c26ff57d7a7dc27f0546e947e803c6275573f7"
+)
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
 W0_05_DECISION = SCHEMA_DIR / "approvals" / "W0-05-dependency-decision.json"
@@ -2393,6 +2402,8 @@ def _required_pytest_environment() -> dict[str, str]:
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
+        "NO_COLOR": "1",
+        "PY_COLORS": "0",
     })
     return environment
 
@@ -3842,6 +3853,2012 @@ def cmd_w1_01_canonical_gate() -> int:
     return EXIT_OK
 
 
+def cmd_w1_02_contract_gate() -> int:
+    """Verify the closed W1-02 typed-contract and version-export boundary."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "compiler_core/contracts.py",
+        "compiler_core/__init__.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_contracts.py",
+        "tests/contract/test_public_version.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/required-v4-tests.json",
+        "tools/remediate_v4.py",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-02"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-02",
+            "tests/contract/test_contracts.py",
+            "tests/contract/test_public_version.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W1-02/contract-tests.xml",
+        ],
+    ]
+    expected_w1_03_allowed_paths = [
+        "compiler_core/mcp.py",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_python_schema_mcp_differential.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tools/remediate_v4.py",
+    ]
+    expected_w1_03_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-03"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-03",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W1-03/contract-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        matrix = json.loads(OBJECT_STATE_MATRIX.read_text(encoding="utf-8"))
+        foundation = json.loads(FOUNDATION_V4_CONTRACT.read_text(encoding="utf-8"))
+        vectors = json.loads(V4_CONTRACT_VECTORS.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"W1-02 control input unreadable: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W1-02"),
+        None,
+    )
+    if not isinstance(task, dict):
+        fail("W1-02 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W1-01"]:
+            fail("W1-02 mode or dependency drifted")
+        if task.get("audit_ids") != ["P1-02", "P2-07"]:
+            fail("W1-02 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-02 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W1-02 argv or expected exit codes drifted")
+
+    next_task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W1-03"),
+        None,
+    )
+    if not isinstance(next_task, dict):
+        fail("W1-03 task is missing")
+    elif (
+        next_task.get("allowed_paths") != expected_w1_03_allowed_paths
+        or next_task.get("argv") != expected_w1_03_argv
+        or next_task.get("expected_exit_codes") != [0, 0]
+    ):
+        fail("W1-03 lacks an executable verifier/test publication scope")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_active = {
+        "V4-P0-03-DIGEST-COMPOSITION",
+        "V4-P1-01-RFC8785-PROPERTY",
+        "V4-P2-07-PUBLIC-VERSION",
+    }
+    actual_active = {
+        test_id for test_id, item in mutation_by_id.items()
+        if item.get("state") == "ACTIVE_REQUIRED"
+    }
+    if actual_active != expected_active:
+        fail(f"W1-02 ACTIVE_REQUIRED audit set drifted: {sorted(actual_active)}")
+    p2_version = mutation_by_id.get("V4-P2-07-PUBLIC-VERSION")
+    if not isinstance(p2_version, dict) or (
+        p2_version.get("audit_id"), p2_version.get("owner_task"),
+        p2_version.get("state"), p2_version.get("selector"),
+    ) != (
+        "P2-07", "W1-02", "ACTIVE_REQUIRED",
+        "tests/contract/test_public_version.py::test_package_root_exports_v4_version",
+    ):
+        fail("P2-07 public-version obligation is not the exact active W1-02 selector")
+    elif not _selector_is_declared(ROOT, p2_version["selector"]):
+        fail("P2-07 public-version selector is not declared")
+    p1_codec = mutation_by_id.get("V4-P1-02-CODEC-DIFFERENTIAL")
+    if not isinstance(p1_codec, dict) or (
+        p1_codec.get("audit_id"), p1_codec.get("owner_task"),
+        p1_codec.get("state"), p1_codec.get("selector"),
+    ) != (
+        "P1-02", "W1-03", "RED_AT_TASK",
+        "tests/contract/test_python_schema_mcp_differential.py::"
+        "test_python_schema_mcp_acceptance_sets_match",
+    ):
+        fail("P1-02 differential obligation must remain RED_AT_TASK for W1-03")
+    active_evidence = sorted(
+        item.get("id")
+        for item in manifest.get("evidence_tracks", [])
+        if isinstance(item, dict) and item.get("state") == "ACTIVE_REQUIRED"
+    )
+    if active_evidence:
+        fail(f"W1-02 activated future evidence tracks: {active_evidence}")
+
+    frozen_hashes = {
+        OBJECT_STATE_MATRIX: "96ca196e25eaec0a1a29439643791f0db5fd2b6fcc4e4f6696dc31d59256b822",
+        FOUNDATION_V4_CONTRACT: "80a51050b0dc52a67e00997aa2c5824dd2e0c11a336d4c338983f8b86405edf2",
+        RESOURCE_LIMIT_PROBE: "cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35",
+    }
+    for path, expected_hash in frozen_hashes.items():
+        try:
+            actual_hash = sha256_hex(path.read_bytes())
+        except OSError as exc:
+            fail(f"W1-02 frozen input unreadable: {path}: {exc}")
+            continue
+        if actual_hash != expected_hash:
+            fail(f"W1-02 frozen input digest drifted: {path.relative_to(ROOT)}")
+
+    baseline_commit = "dfdfab110a7ba34bbb94def6e52945602ab0b0ec"
+    plan_authority_hash = "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d"
+    audit_authority_hash = "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
+    authority_source_hashes = {
+        ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md":
+            plan_authority_hash,
+        ROOT / "20260819_juris-calculus_V4单主链生产投产全量代码审计.md":
+            audit_authority_hash,
+    }
+    for path, expected_hash in authority_source_hashes.items():
+        try:
+            actual_hash = sha256_hex(path.read_bytes())
+        except OSError as exc:
+            fail(f"W1-02 critical-field authority unreadable: {path}: {exc}")
+            continue
+        if actual_hash != expected_hash:
+            fail(f"W1-02 critical-field authority digest drifted: {path.name}")
+    baseline = plan.get("baseline", {})
+    if not isinstance(baseline, dict) or (
+        baseline.get("commit"), baseline.get("plan_sha256"), baseline.get("audit_sha256")
+    ) != (baseline_commit, plan_authority_hash, audit_authority_hash):
+        fail("W1-02 plan is not bound to the frozen baseline/plan/audit authorities")
+    if not isinstance(disposition, dict) or (
+        disposition.get("baseline_commit"), disposition.get("plan_sha256"),
+        disposition.get("audit_baseline_sha256"),
+    ) != (baseline_commit, plan_authority_hash, audit_authority_hash):
+        fail("W1-02 file disposition is not bound to the frozen authorities")
+    baseline_probe = subprocess.run(
+        ["git", "cat-file", "-e", f"{baseline_commit}^{{commit}}"],
+        cwd=str(ROOT), capture_output=True, text=True, check=False,
+    )
+    if baseline_probe.returncode != 0:
+        fail("W1-02 frozen baseline commit is unavailable in the repository")
+    problems.extend(f"W1-02 object matrix: {item}" for item in _object_state_matrix_problems(matrix))
+    problems.extend(f"W1-02 foundation: {item}" for item in _foundation_contract_problems(foundation))
+
+    expected_vector_fields = {
+        "schema_version", "objects", "scalar_negative",
+        "case_request_forbidden_fields", "field_authority",
+    }
+    if not isinstance(vectors, dict) or set(vectors) != expected_vector_fields:
+        fail("W1-02 contract vector top-level fields are not exact")
+        vector_objects: dict[str, Any] = {}
+        field_authority: dict[str, Any] = {}
+        scalar_negative: dict[str, Any] = {}
+        forbidden_request_fields: list[Any] = []
+    else:
+        if vectors.get("schema_version") != "jc/v4-contract-vectors/1.0":
+            fail("W1-02 contract vector schema_version drifted")
+        vector_objects = vectors.get("objects", {})
+        field_authority = vectors.get("field_authority", {})
+        scalar_negative = vectors.get("scalar_negative", {})
+        forbidden_request_fields = vectors.get("case_request_forbidden_fields", [])
+
+    if not isinstance(vector_objects, dict):
+        fail("W1-02 positive vectors must be an object keyed by type id")
+        vector_objects = {}
+    if not isinstance(field_authority, dict):
+        fail("W1-02 field authority must be an object keyed by type id")
+        field_authority = {}
+    if not isinstance(scalar_negative, dict):
+        fail("W1-02 scalar negative vectors must be an object keyed by type id")
+        scalar_negative = {}
+
+    registry_items = matrix.get("object_types", [])
+    registry_kinds = {
+        item.get("id"): item.get("schema_kind")
+        for item in registry_items if isinstance(item, dict)
+    }
+    object_ids = {
+        type_id for type_id, kind in registry_kinds.items() if kind == "object"
+    }
+    scalar_ids = set(registry_kinds) - object_ids
+    if set(vector_objects) != set(registry_kinds):
+        fail("W1-02 positive vector keys do not equal the frozen 73-type registry")
+    if set(field_authority) != object_ids:
+        fail("W1-02 field-authority keys do not equal the frozen 68 object types")
+    if set(scalar_negative) != scalar_ids:
+        fail("W1-02 scalar-negative keys do not equal the frozen scalar types")
+    expected_forbidden_request_fields = {
+        "active", "build_identity", "certificate", "checker_accepted",
+        "checker_receipt", "engine_commit", "engine_tree", "engine_version",
+        "formal_kernel_used", "gate_outcome", "gate_status", "receipt",
+        "run_identity", "solver_receipt", "wheel_digest",
+    }
+    if (
+        not isinstance(forbidden_request_fields, list)
+        or len(forbidden_request_fields) != len(set(forbidden_request_fields))
+        or set(forbidden_request_fields) != expected_forbidden_request_fields
+    ):
+        fail("W1-02 external request forbidden-field vector drifted")
+
+    contracts_path = ROOT / "compiler_core" / "contracts.py"
+    init_path = ROOT / "compiler_core" / "__init__.py"
+    forbidden_modules = {
+        "compiler_core.contracts_v4", "compiler_core.compat_v3_v4",
+        "compiler_core.jcs", "compiler_core.types",
+    }
+    forbidden_relative_modules = {"contracts_v4", "compat_v3_v4", "jcs", "types"}
+    legacy_names = {
+        "SCHEMA_VERSION", "ContractValidationError", "ResultStatus", "ExecutionStatus",
+        "CertificateKind", "RulePackDescriptor", "RulePackRefV4", "CaseRequest",
+        "BranchResult", "MissingFactReview", "SemanticResult", "CanonicalResult",
+        "RendererProfile", "RenderedArtifact", "AuditSink", "emit_audit_event",
+        "schema_document", "write_schema",
+    }
+    try:
+        contracts_source = contracts_path.read_text(encoding="utf-8-sig")
+        contracts_tree = ast.parse(contracts_source, filename="compiler_core/contracts.py")
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        fail(f"W1-02 contracts source is unreadable or invalid: {exc}")
+        contracts_tree = ast.Module(body=[], type_ignores=[])
+    for node in ast.walk(contracts_tree):
+        if isinstance(node, ast.Import) and any(
+            alias.name in forbidden_modules for alias in node.names
+        ):
+            fail("W1-02 contracts imports a legacy contract/canonical authority")
+            break
+        if isinstance(node, ast.ImportFrom) and (
+            (node.module or "") in forbidden_modules
+            or (
+                node.level > 0
+                and (node.module or "").split(".")[-1] in forbidden_relative_modules
+            )
+        ):
+            fail("W1-02 contracts imports a legacy contract/canonical authority")
+            break
+    if any(
+        isinstance(node, ast.FunctionDef) and node.name == "__getattr__"
+        for node in contracts_tree.body
+    ):
+        fail("W1-02 contracts exposes a dynamic compatibility alias")
+
+    contracts = None
+    module_name = "jc_w1_02_contract_gate"
+    inserted_root = str(ROOT) not in sys.path
+    if inserted_root:
+        sys.path.insert(0, str(ROOT))
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, contracts_path)
+        if spec is None or spec.loader is None:
+            raise ImportError("module spec has no loader")
+        contracts = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = contracts
+        spec.loader.exec_module(contracts)
+    except Exception as exc:
+        fail(f"W1-02 contracts module cannot load: {type(exc).__name__}: {exc}")
+        contracts = None
+    finally:
+        if inserted_root:
+            try:
+                sys.path.remove(str(ROOT))
+            except ValueError:
+                pass
+
+    positive_count = 0
+    negative_count = 0
+    if contracts is not None:
+        for name in legacy_names:
+            if hasattr(contracts, name):
+                fail(f"W1-02 legacy public name remains: {name}")
+        exported = set(getattr(contracts, "__all__", ()))
+        if not W0_REQUIRED_OBJECT_IDS <= exported:
+            fail("W1-02 contracts.__all__ omits a frozen V4 public type")
+        if legacy_names & exported:
+            fail("W1-02 contracts.__all__ contains a V3 public name")
+
+        registry = getattr(contracts, "V4_TYPE_REGISTRY", None)
+        if not isinstance(registry, MappingProxyType):
+            fail("W1-02 V4_TYPE_REGISTRY is not immutable")
+        try:
+            runtime_registry = dict(registry)
+        except (TypeError, ValueError):
+            runtime_registry = {}
+            fail("W1-02 V4_TYPE_REGISTRY is not an immutable mapping-compatible registry")
+        if set(runtime_registry) != W0_REQUIRED_OBJECT_IDS:
+            fail("W1-02 runtime type registry does not equal the frozen 73 types")
+        if len({id(value) for value in runtime_registry.values()}) != len(runtime_registry):
+            fail("W1-02 runtime type registry contains class aliases")
+
+        base_type = getattr(contracts, "V4Contract", None)
+        if not isinstance(base_type, type):
+            fail("W1-02 V4Contract base type is unavailable")
+        digest_type = runtime_registry.get("DigestV4")
+
+        critical_required_fields = {
+            "ContentRefV4": frozenset({"kind", "digest"}),
+            "CaseRequestV4": frozenset({
+                "schema_version",
+                "source_bundle_ref", "evidence_manifest_ref", "fact_attestation_refs",
+                "rule_pack_ref",
+            }),
+            "SourceVersionEdgeV4": frozenset({
+                "source_ref", "target_ref", "relation",
+            }),
+            "PackManifestV4": frozenset({
+                "pack_id", "pack_version", "engine_api", "rule_refs", "source_refs",
+                "config_refs", "receipt_refs", "compiler_build_digest",
+                "source_tree_digest", "schema_digest", "trust_policy_ref",
+                "coverage_receipt_refs", "verification_receipt_refs",
+                "manifest_digest",
+            }),
+            "PackSignatureV4": frozenset({"manifest_ref", "signature"}),
+            "AttackV4": frozenset({
+                "attacker_ref", "target_ref", "attack_type",
+            }),
+            "PriorityEdgeV4": frozenset({
+                "preferred_ref", "defeated_ref",
+            }),
+            "PermissionResolutionV4": frozenset({
+                "status", "witness_refs",
+            }),
+            "TransportOutcomeV4": frozenset({"status", "error"}),
+            "RuntimeProfileV4": frozenset({
+                "engine_build_digest", "formal_kernel", "backend_invocation_ref",
+                "backend_receipt_ref",
+            }),
+            "ClaimResultV4": frozenset({
+                "label", "argument_refs",
+                "fact_refs", "rule_refs", "source_refs", "proof_receipt_refs",
+                "checker_receipt_refs",
+            }),
+            "BranchResultV4": frozenset({
+                "assumption_refs", "decision_status", "branch_digest",
+            }),
+            "MissingFactRequirementV4": frozenset({
+                "impacted_rule_refs", "impacted_claim_refs",
+                "allowed_answer_types", "required_source_kinds", "priority",
+            }),
+            "ToolSpecV4": frozenset({
+                "name", "input_type", "output_type", "error_type",
+            }),
+            "MCPCapabilitiesInputV4": frozenset(),
+            "MCPVerifyRunOutputV4": frozenset({"verification", "replay"}),
+            "SignatureEnvelopeV4": frozenset({
+                "algorithm", "key_id", "issuer", "role", "scope", "kind",
+                "schema_version", "subject_digest", "run_identity_ref", "status",
+                "issued_at", "expires_at", "nonce", "evidence_refs", "payload_digest",
+                "policy_digest", "revocation_ref", "signature",
+            }),
+            "TrustPolicyV4": frozenset({
+                "policy_id", "allowed_algorithms", "trusted_key_ids", "revoked_key_ids",
+                "allowed_issuers", "allowed_roles", "allowed_scopes",
+                "allowed_artifact_kinds", "valid_from", "valid_to",
+                "authorization_policy_ref", "revocation_policy_ref", "replay_policy_ref",
+                "separation_of_duties_ref", "policy_digest",
+            }),
+            "StorageCapabilityV4": frozenset({
+                "provider_id", "namespace", "content_addressed", "atomic_write",
+                "no_follow", "max_artifact_bytes", "durability_ref",
+                "access_policy_ref", "encryption_ref", "quota_policy_ref",
+                "retention_policy_ref", "attestation_refs", "policy_digest",
+                "capability_digest",
+            }),
+            "ArtifactHandleV4": frozenset({
+                "artifact_id", "kind", "content_ref", "run_identity_ref", "scope",
+                "media_type", "size_bytes", "expires_at", "max_bytes", "signature",
+            }),
+            "ErrorV4": frozenset({
+                "code", "message", "stage", "retryable", "correlation_id", "field_path",
+            }),
+            "ObservabilityEnvelopeV4": frozenset({
+                "run_identity_ref", "started_at", "finished_at", "host_id",
+                "process_id", "elapsed_ms", "event_refs",
+            }),
+            "SourceSnapshotV4": frozenset({
+                "source_id", "jurisdiction", "authority_tier", "issuer", "title",
+                "publication_time", "normalization_profile",
+                "effective_from", "effective_to", "retrieved_at", "canonical_locator",
+                "raw_digest", "normalized_digest", "structure_map_ref",
+                "authenticity_receipt_ref", "provenance_refs", "acquisition_method",
+                "license_status", "distribution_status",
+            }),
+            "SourceBundleV4": frozenset({
+                "bundle_id", "root_source_ref", "terminal_source_ref", "snapshots",
+                "version_edges", "bundle_digest",
+            }),
+            "EvidenceManifestV4": frozenset({
+                "manifest_id", "request_ref", "case_scope", "items",
+                "fact_candidate_refs", "contradictions", "manifest_digest",
+            }),
+            "FactCandidateV4": frozenset({
+                "candidate_id", "proposition_ref", "value_kind", "value_ref",
+                "evidence_refs", "producer_kind", "proposal_ref",
+            }),
+            "FactAttestationV4": frozenset({
+                "attestation_id", "candidate_ref", "request_ref", "case_scope",
+                "proposition_digest", "value_digest", "source_refs", "evidence_refs",
+                "interpretation_version", "admission_basis", "issuer_role", "issued_at",
+                "expires_at", "dispute_state", "assumption_state", "nonce",
+                "replay_policy_ref", "revocation_ref", "signature",
+            }),
+            "FactAdmissionReceiptV4": frozenset({
+                "receipt_id", "request_ref", "case_scope", "run_identity_ref",
+                "subject_digest", "status", "source_gate_receipt_ref",
+                "interpretation_gate_receipt_ref", "fact_gate_receipt_ref",
+                "attestation_ref", "fact_ref", "issued_at", "issuer", "signature",
+            }),
+            "RuleV4": frozenset({
+                "rule_id", "rule_digest", "jurisdiction", "governing_law",
+                "authority_ref", "variable_declaration_refs", "premise_refs",
+                "conclusion_ref", "modality", "permission_ref", "exception_refs",
+                "priority_refs", "attack_refs", "temporal_constraint_refs",
+                "numeric_constraint_refs", "source_snapshot_ref", "source_locator",
+                "source_structure_ref", "interpretation_choice_refs",
+                "defined_term_refs", "promotion_receipt_refs", "effective_from",
+                "effective_to",
+            }),
+            "LegalSpecV4": frozenset({
+                "spec_id", "rule_ref", "jurisdiction", "governing_law", "authority_ref",
+                "variable_declaration_refs", "premise_refs",
+                "conclusion_ref", "modality", "permission_ref", "exception_refs",
+                "priority_refs", "attack_refs", "temporal_constraint_refs",
+                "numeric_constraint_refs", "source_snapshot_ref", "source_locator",
+                "source_structure_ref", "interpretation_choice_refs",
+                "defined_term_refs", "promotion_receipt_refs", "effective_from",
+                "effective_to", "spec_digest",
+            }),
+            "LegalIVLV4": frozenset({
+                "ivl_id", "spec_ref", "type_environment_ref", "authority_ref",
+                "variable_declaration_refs",
+                "premise_refs", "conclusion_ref", "modality_ref", "clause_refs",
+                "exception_attack_refs", "permission_refs", "priority_refs",
+                "temporal_constraint_refs", "numeric_constraint_refs", "source_map_ref",
+                "interpretation_choice_refs", "interpretation_approval_refs",
+                "defined_term_refs", "proof_obligation_refs", "ivl_digest",
+            }),
+            "BackendInvocationV4": frozenset({
+                "invocation_id", "provider_id", "provider_version",
+                "provider_package_digest", "provider_binary_digest",
+                "provider_build_digest", "provider_capability_ref", "ir_ref",
+                "algorithm_profile_digest", "limits_ref", "seed",
+            }),
+            "RulePromotionReceiptV4": frozenset({
+                "receipt_id", "rule_subject_digest", "legal_review_ref",
+                "engineering_review_ref", "status", "issued_at", "signature",
+            }),
+            "TranslationReceiptV4": frozenset({
+                "receipt_id", "run_identity_ref", "hop", "translator_ref", "source_ref",
+                "target_ref", "field_mapping_ref", "field_coverage", "lost_fields",
+                "defaulted_fields", "unsupported_fields", "counterexample_refs",
+                "proof_obligation_refs", "status", "issued_at", "signature",
+            }),
+            "SolverReceiptV4": frozenset({
+                "receipt_id", "run_identity_ref", "invocation_ref", "status",
+                "exit_status", "backend_result_ref", "model_or_core_ref", "proof_ref",
+                "issued_at", "signature",
+            }),
+            "CheckerReceiptV4": frozenset({
+                "receipt_id", "run_identity_ref", "subject_ref", "argument_graph_ref",
+                "backend_result_ref", "checker_build_digest", "algorithm_profile_digest",
+                "input_digest", "output_digest", "witness_refs", "status", "issued_at",
+                "signature",
+            }),
+            "ProofReceiptV4": frozenset({
+                "receipt_id", "run_identity_ref", "subject_ref", "proof_kind",
+                "proof_ref", "checker_receipt_ref", "proof_build_digest",
+                "trusted_computing_base_refs", "status", "issued_at", "signature",
+            }),
+            "ReviewStateV4": frozenset({
+                "status", "unresolved_item_refs", "responsible_role",
+                "release_condition_refs", "review_receipt_ref",
+            }),
+            "SemanticResultV4": frozenset({
+                "request_ref", "execution_status", "decision_status", "review_state",
+                "completeness_state", "interruption_state", "certificate_kind",
+                "runtime_profile", "claims", "branches", "missing_facts",
+                "admitted_fact_refs",
+                "rejected_fact_refs", "applicable_rule_refs", "inapplicable_rule_refs",
+                "argument_refs", "attack_refs", "exception_resolution_refs",
+                "permission_resolution_refs", "priority_resolution_refs",
+                "temporal_result_refs", "numeric_result_refs", "decision_reason_codes",
+                "taint_codes", "risk_codes", "receipt_refs", "run_identity_ref",
+                "result_digest",
+            }),
+            "RunIdentityV4": frozenset({
+                "request_ref", "source_bundle_ref", "evidence_manifest_ref",
+                "fact_attestation_refs", "rule_pack_ref", "engine_version",
+                "engine_source_commit", "engine_source_tree", "engine_build_digest",
+                "wheel_digest", "package_digest", "schema_digest", "tool_spec_digest",
+                "lock_digest", "runtime_config_digest", "algorithm_profile_digest",
+                "trust_policy_ref", "storage_capability_ref", "backend_invocation_ref",
+                "run_digest",
+            }),
+            "FormalCertificateV4": frozenset({
+                "request_ref", "result_ref", "run_identity_ref", "bundle_core_digest",
+                "claim_refs", "source_receipt_refs", "evidence_receipt_refs",
+                "fact_admission_receipt_refs", "rule_promotion_receipt_refs",
+                "translation_receipt_refs", "solver_receipt_refs", "proof_receipt_refs",
+                "checker_receipt_refs", "certificate_digest",
+            }),
+            "ConflictCertificateV4": frozenset({
+                "request_ref", "result_ref", "run_identity_ref", "bundle_core_digest",
+                "conflict_refs", "argument_refs", "attack_refs",
+                "exception_resolution_refs", "priority_resolution_refs",
+                "permission_resolution_refs", "source_receipt_refs",
+                "evidence_receipt_refs", "fact_admission_receipt_refs",
+                "rule_promotion_receipt_refs", "translation_receipt_refs",
+                "solver_receipt_refs", "proof_receipt_refs", "checker_receipt_refs",
+                "certificate_digest",
+            }),
+            "CertificateEnvelopeV4": frozenset({
+                "kind", "formal", "conflict", "service_signature",
+            }),
+            "AuditManifestV4": frozenset({
+                "run_identity_ref", "request_ref", "input_ref", "source_index_ref",
+                "fact_admission_ref", "rule_pack_ref", "translation_receipts_ref",
+                "backend_receipts_ref", "checker_receipts_ref", "events_ref",
+                "graph_ref", "result_ref", "certificate_ref", "bundle_core_digest",
+                "manifest_digest",
+            }),
+            "AuditBundleIndexV4": frozenset({
+                "manifest_ref", "checksums_ref", "complete_marker_ref", "entries",
+                "bundle_digest",
+            }),
+            "ReplayResultV4": frozenset({
+                "run_identity_ref", "replay_run_identity_ref", "replay_policy_ref",
+                "original_result_ref", "replay_result_ref", "original_bundle_ref",
+                "replay_bundle_ref", "status", "exact_equal", "semantic_equal",
+                "differing_paths",
+            }),
+            "MCPCapabilitiesOutputV4": frozenset({
+                "schema_version", "engine_version", "engine_source_tree",
+                "engine_build_digest",
+                "wheel_digest", "package_digest", "lock_digest", "schema_digest",
+                "tool_spec_digest", "tool_specs", "resource_limits", "active_pack_ref",
+                "trust_policy_ref",
+                "storage_capability_ref", "kernel_ready", "legal_production_ready",
+            }),
+            "MCPEvaluateInputV4": frozenset({"request", "request_handle"}),
+            "MCPEvaluateOutputV4": frozenset({
+                "result", "certificate_handle", "run_handle", "artifact_handles",
+            }),
+            "MCPVerifyRunInputV4": frozenset({"run_handle", "offline_replay"}),
+            "MCPReadArtifactInputV4": frozenset({"artifact_handle", "offset", "length"}),
+            "MCPReadArtifactOutputV4": frozenset({
+                "artifact_handle", "offset", "length", "next_offset", "content_base64",
+                "chunk_digest", "artifact_digest", "content_type", "eof",
+            }),
+            "MCPCapabilitiesErrorV4": frozenset({"error"}),
+            "MCPEvaluateErrorV4": frozenset({
+                "error", "result", "run_handle", "artifact_handles",
+            }),
+            "MCPVerifyRunErrorV4": frozenset({
+                "error", "run_handle", "verification", "replay",
+            }),
+            "MCPReadArtifactErrorV4": frozenset({"error", "artifact_handle"}),
+        }
+        critical_forbidden_fields = {
+            "FactAttestationV4": frozenset({"run_id", "run_identity_ref"}),
+            "RuleV4": frozenset({
+                "variable_types", "premises", "conclusion", "permission", "exceptions",
+                "temporal_semantics", "numeric_semantics", "interpretation_choices",
+            }),
+            "LegalSpecV4": frozenset({
+                "typed_variables", "premises", "conclusion", "exceptions",
+                "interpretation_choices",
+            }),
+            "RulePromotionReceiptV4": frozenset({"rule_ref", "rule_digest"}),
+            "PackManifestV4": frozenset({
+                "signature", "signature_ref", "release_signature",
+                "release_signature_ref",
+            }),
+            "SolverReceiptV4": frozenset({"semantic_result_ref", "observability_ref"}),
+            "RunIdentityV4": frozenset({
+                "run_id", "started_at", "completed_at", "finished_at", "host_id",
+                "process_id", "elapsed_ms",
+            }),
+            "FormalCertificateV4": frozenset({
+                "certificate_id", "issued_at", "receipt_refs", "signature",
+            }),
+            "ConflictCertificateV4": frozenset({
+                "certificate_id", "issued_at", "receipt_refs", "signature",
+            }),
+            "SemanticResultV4": frozenset({"certificate", "transport_outcome"}),
+            "AuditManifestV4": frozenset({
+                "checksums_ref", "complete_marker_ref", "entries",
+            }),
+            "ReplayResultV4": frozenset({"replay_mode"}),
+            "MCPCapabilitiesOutputV4": frozenset({"formal_kernel_ready"}),
+            "MCPEvaluateInputV4": frozenset({"request_ref"}),
+            "MCPVerifyRunInputV4": frozenset({"audit_manifest_ref"}),
+        }
+        critical_field_types = {
+            "ContentRefV4": {"digest": "DigestV4"},
+            "CaseRequestV4": {
+                "legal_context": "LegalContextV4", "decision_time": "CanonicalTimeV4",
+                "source_bundle_ref": "ContentRefV4",
+                "evidence_manifest_ref": "ContentRefV4",
+                "fact_attestation_refs": "tuple[ContentRefV4, ...]",
+                "rule_pack_ref": "ContentRefV4",
+                "requested_outputs": "tuple[RequestedOutputV4, ...]",
+                "proposal_refs": "tuple[ContentRefV4, ...]",
+            },
+            "SourceVersionEdgeV4": {
+                "source_ref": "ContentRefV4", "target_ref": "ContentRefV4",
+                "locator": "CanonicalLocatorV4",
+                "retrieval_receipt_ref": "ContentRefV4",
+            },
+            "ArtifactHandleV4": {
+                "content_ref": "ContentRefV4", "run_identity_ref": "ContentRefV4",
+                "expires_at": "CanonicalTimeV4", "signature": "SignatureEnvelopeV4",
+            },
+            "FactCandidateV4": {
+                "proposition_ref": "ContentRefV4", "value_ref": "ContentRefV4",
+                "evidence_refs": "tuple[ContentRefV4, ...]",
+            },
+            "AttackV4": {
+                "attacker_ref": "ContentRefV4", "target_ref": "ContentRefV4",
+            },
+            "PriorityEdgeV4": {
+                "preferred_ref": "ContentRefV4", "defeated_ref": "ContentRefV4",
+                "condition_ref": "ContentRefV4 | None", "source_ref": "ContentRefV4",
+            },
+            "PermissionResolutionV4": {
+                "claim_ref": "ContentRefV4",
+                "prohibition_ref": "ContentRefV4 | None",
+                "witness_refs": "tuple[ContentRefV4, ...]",
+            },
+            "FactAttestationV4": {
+                "candidate_ref": "ContentRefV4", "request_ref": "ContentRefV4",
+                "source_refs": "tuple[ContentRefV4, ...]",
+                "evidence_refs": "tuple[ContentRefV4, ...]",
+                "replay_policy_ref": "ContentRefV4",
+                "revocation_ref": "ContentRefV4 | None",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "FactAdmissionReceiptV4": {
+                "request_ref": "ContentRefV4", "run_identity_ref": "ContentRefV4",
+                "subject_digest": "DigestV4", "source_gate_receipt_ref": "ContentRefV4",
+                "interpretation_gate_receipt_ref": "ContentRefV4",
+                "fact_gate_receipt_ref": "ContentRefV4", "attestation_ref": "ContentRefV4",
+                "fact_ref": "ContentRefV4", "signature": "SignatureEnvelopeV4",
+            },
+            "RuleV4": {
+                "authority_ref": "ContentRefV4",
+                "variable_declaration_refs": "tuple[ContentRefV4, ...]",
+                "premise_refs": "tuple[ContentRefV4, ...]", "conclusion_ref": "ContentRefV4",
+                "permission_ref": "ContentRefV4 | None",
+                "exception_refs": "tuple[ContentRefV4, ...]",
+                "priority_refs": "tuple[ContentRefV4, ...]",
+                "attack_refs": "tuple[ContentRefV4, ...]",
+                "temporal_constraint_refs": "tuple[ContentRefV4, ...]",
+                "numeric_constraint_refs": "tuple[ContentRefV4, ...]",
+                "source_snapshot_ref": "ContentRefV4", "source_locator": "CanonicalLocatorV4",
+                "source_structure_ref": "ContentRefV4",
+                "interpretation_choice_refs": "tuple[ContentRefV4, ...]",
+                "defined_term_refs": "tuple[ContentRefV4, ...]",
+            },
+            "PackManifestV4": {
+                "rule_refs": "tuple[ContentRefV4, ...]",
+                "source_refs": "tuple[ContentRefV4, ...]",
+                "config_refs": "tuple[ContentRefV4, ...]",
+                "receipt_refs": "tuple[ContentRefV4, ...]",
+                "compiler_build_digest": "DigestV4",
+                "source_tree_digest": "DigestV4", "schema_digest": "DigestV4",
+                "trust_policy_ref": "ContentRefV4",
+                "coverage_receipt_refs": "tuple[ContentRefV4, ...]",
+                "verification_receipt_refs": "tuple[ContentRefV4, ...]",
+                "manifest_digest": "DigestV4",
+            },
+            "PackSignatureV4": {
+                "manifest_ref": "ContentRefV4", "signature": "SignatureEnvelopeV4",
+            },
+            "LegalSpecV4": {
+                "authority_ref": "ContentRefV4",
+                "variable_declaration_refs": "tuple[ContentRefV4, ...]",
+                "premise_refs": "tuple[ContentRefV4, ...]", "conclusion_ref": "ContentRefV4",
+                "permission_ref": "ContentRefV4 | None",
+                "exception_refs": "tuple[ContentRefV4, ...]",
+                "priority_refs": "tuple[ContentRefV4, ...]",
+                "attack_refs": "tuple[ContentRefV4, ...]",
+                "temporal_constraint_refs": "tuple[ContentRefV4, ...]",
+                "numeric_constraint_refs": "tuple[ContentRefV4, ...]",
+                "source_snapshot_ref": "ContentRefV4", "source_locator": "CanonicalLocatorV4",
+                "source_structure_ref": "ContentRefV4",
+                "interpretation_choice_refs": "tuple[ContentRefV4, ...]",
+                "defined_term_refs": "tuple[ContentRefV4, ...]",
+            },
+            "LegalIVLV4": {
+                "spec_ref": "ContentRefV4", "type_environment_ref": "ContentRefV4",
+                "authority_ref": "ContentRefV4",
+                "variable_declaration_refs": "tuple[ContentRefV4, ...]",
+                "premise_refs": "tuple[ContentRefV4, ...]", "conclusion_ref": "ContentRefV4",
+                "modality_ref": "ContentRefV4", "clause_refs": "tuple[ContentRefV4, ...]",
+                "exception_attack_refs": "tuple[ContentRefV4, ...]",
+                "permission_refs": "tuple[ContentRefV4, ...]",
+                "priority_refs": "tuple[ContentRefV4, ...]",
+                "temporal_constraint_refs": "tuple[ContentRefV4, ...]",
+                "numeric_constraint_refs": "tuple[ContentRefV4, ...]",
+                "source_map_ref": "ContentRefV4",
+                "interpretation_choice_refs": "tuple[ContentRefV4, ...]",
+                "interpretation_approval_refs": "tuple[ContentRefV4, ...]",
+                "defined_term_refs": "tuple[ContentRefV4, ...]",
+                "proof_obligation_refs": "tuple[ContentRefV4, ...]",
+            },
+            "RunIdentityV4": {
+                "request_ref": "ContentRefV4", "source_bundle_ref": "ContentRefV4",
+                "evidence_manifest_ref": "ContentRefV4",
+                "fact_attestation_refs": "tuple[ContentRefV4, ...]",
+                "rule_pack_ref": "ContentRefV4", "engine_build_digest": "DigestV4",
+                "wheel_digest": "DigestV4", "package_digest": "DigestV4",
+                "schema_digest": "DigestV4", "tool_spec_digest": "DigestV4",
+                "lock_digest": "DigestV4", "runtime_config_digest": "DigestV4",
+                "algorithm_profile_digest": "DigestV4", "trust_policy_ref": "ContentRefV4",
+                "storage_capability_ref": "ContentRefV4",
+                "backend_invocation_ref": "ContentRefV4 | None", "run_digest": "DigestV4",
+            },
+            "TransportOutcomeV4": {"error": "ErrorV4 | None"},
+            "RuntimeProfileV4": {
+                "engine_build_digest": "DigestV4",
+                "backend_invocation_ref": "ContentRefV4 | None",
+                "backend_receipt_ref": "ContentRefV4 | None",
+                "trust_policy_ref": "ContentRefV4",
+                "storage_capability_ref": "ContentRefV4",
+            },
+            "ClaimResultV4": {
+                "claim_ref": "ContentRefV4",
+                "argument_refs": "tuple[ContentRefV4, ...]",
+                "fact_refs": "tuple[ContentRefV4, ...]",
+                "rule_refs": "tuple[ContentRefV4, ...]",
+                "source_refs": "tuple[ContentRefV4, ...]",
+                "proof_receipt_refs": "tuple[ContentRefV4, ...]",
+                "checker_receipt_refs": "tuple[ContentRefV4, ...]",
+            },
+            "BranchResultV4": {
+                "assumption_refs": "tuple[ContentRefV4, ...]",
+                "claim_refs": "tuple[ContentRefV4, ...]",
+                "decision_status": "DecisionStatusV4", "branch_digest": "DigestV4",
+            },
+            "MissingFactRequirementV4": {
+                "impacted_rule_refs": "tuple[ContentRefV4, ...]",
+                "impacted_claim_refs": "tuple[ContentRefV4, ...]",
+                "allowed_answer_types": "tuple[str, ...]",
+                "required_source_kinds": "tuple[str, ...]",
+            },
+            "BackendInvocationV4": {
+                "provider_package_digest": "DigestV4",
+                "provider_binary_digest": "DigestV4", "provider_build_digest": "DigestV4",
+                "provider_capability_ref": "ContentRefV4", "ir_ref": "ContentRefV4",
+                "algorithm_profile_digest": "DigestV4", "limits_ref": "ContentRefV4",
+            },
+            "RulePromotionReceiptV4": {
+                "rule_subject_digest": "DigestV4", "legal_review_ref": "ContentRefV4",
+                "engineering_review_ref": "ContentRefV4",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "TranslationReceiptV4": {
+                "run_identity_ref": "ContentRefV4", "translator_ref": "ContentRefV4",
+                "source_ref": "ContentRefV4", "target_ref": "ContentRefV4",
+                "field_mapping_ref": "ContentRefV4",
+                "counterexample_refs": "tuple[ContentRefV4, ...]",
+                "proof_obligation_refs": "tuple[ContentRefV4, ...]",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "SolverReceiptV4": {
+                "run_identity_ref": "ContentRefV4", "invocation_ref": "ContentRefV4",
+                "exit_status": "int", "backend_result_ref": "ContentRefV4",
+                "model_or_core_ref": "ContentRefV4 | None", "proof_ref": "ContentRefV4 | None",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "CheckerReceiptV4": {
+                "run_identity_ref": "ContentRefV4", "subject_ref": "ContentRefV4",
+                "argument_graph_ref": "ContentRefV4", "backend_result_ref": "ContentRefV4",
+                "checker_build_digest": "DigestV4", "algorithm_profile_digest": "DigestV4",
+                "input_digest": "DigestV4", "output_digest": "DigestV4",
+                "witness_refs": "tuple[ContentRefV4, ...]",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "ProofReceiptV4": {
+                "run_identity_ref": "ContentRefV4", "subject_ref": "ContentRefV4",
+                "proof_ref": "ContentRefV4", "checker_receipt_ref": "ContentRefV4",
+                "proof_build_digest": "DigestV4",
+                "trusted_computing_base_refs": "tuple[ContentRefV4, ...]",
+                "signature": "SignatureEnvelopeV4",
+            },
+            "FormalCertificateV4": {
+                "request_ref": "ContentRefV4", "result_ref": "ContentRefV4",
+                "run_identity_ref": "ContentRefV4", "bundle_core_digest": "DigestV4",
+                "certificate_digest": "DigestV4",
+            },
+            "ConflictCertificateV4": {
+                "request_ref": "ContentRefV4", "result_ref": "ContentRefV4",
+                "run_identity_ref": "ContentRefV4", "bundle_core_digest": "DigestV4",
+                "certificate_digest": "DigestV4",
+            },
+            "CertificateEnvelopeV4": {
+                "formal": "FormalCertificateV4 | None",
+                "conflict": "ConflictCertificateV4 | None",
+                "service_signature": "SignatureEnvelopeV4 | None",
+            },
+            "AuditManifestV4": {
+                "run_identity_ref": "ContentRefV4", "request_ref": "ContentRefV4",
+                "input_ref": "ContentRefV4", "source_index_ref": "ContentRefV4",
+                "fact_admission_ref": "ContentRefV4", "rule_pack_ref": "ContentRefV4",
+                "translation_receipts_ref": "ContentRefV4",
+                "backend_receipts_ref": "ContentRefV4", "checker_receipts_ref": "ContentRefV4",
+                "events_ref": "ContentRefV4", "graph_ref": "ContentRefV4",
+                "result_ref": "ContentRefV4", "certificate_ref": "ContentRefV4",
+                "bundle_core_digest": "DigestV4", "manifest_digest": "DigestV4",
+            },
+            "AuditBundleIndexV4": {
+                "manifest_ref": "ContentRefV4", "checksums_ref": "ContentRefV4",
+                "complete_marker_ref": "ContentRefV4",
+                "entries": "tuple[ContentRefV4, ...]", "bundle_digest": "DigestV4",
+            },
+            "MCPEvaluateInputV4": {"request_handle": "ArtifactHandleV4 | None"},
+            "MCPVerifyRunInputV4": {"run_handle": "ArtifactHandleV4"},
+            "MCPReadArtifactInputV4": {"artifact_handle": "ArtifactHandleV4"},
+            "MCPReadArtifactOutputV4": {
+                "artifact_handle": "ArtifactHandleV4", "chunk_digest": "DigestV4",
+                "artifact_digest": "DigestV4",
+            },
+            "ToolSpecV4": {
+                "input_type": "str", "output_type": "str", "error_type": "str",
+            },
+            "MCPVerifyRunOutputV4": {
+                "verification": "VerificationResultV4",
+                "replay": "ReplayResultV4 | None",
+            },
+            "MCPCapabilitiesErrorV4": {"error": "ErrorV4"},
+            "MCPEvaluateErrorV4": {
+                "error": "ErrorV4", "result": "SemanticResultV4 | None",
+                "run_handle": "ArtifactHandleV4 | None",
+                "artifact_handles": "tuple[ArtifactHandleV4, ...]",
+            },
+            "MCPVerifyRunErrorV4": {
+                "error": "ErrorV4", "run_handle": "ArtifactHandleV4 | None",
+                "verification": "VerificationResultV4 | None",
+                "replay": "ReplayResultV4 | None",
+            },
+            "MCPReadArtifactErrorV4": {
+                "error": "ErrorV4", "artifact_handle": "ArtifactHandleV4 | None",
+            },
+        }
+        self_digest_fields = {
+            "TrustPolicyV4": "policy_digest",
+            "StorageCapabilityV4": "capability_digest",
+            "SourceBundleV4": "bundle_digest",
+            "EvidenceManifestV4": "manifest_digest",
+            "RuleV4": "rule_digest",
+            "PackManifestV4": "manifest_digest",
+            "LegalSpecV4": "spec_digest",
+            "LegalIVLV4": "ivl_digest",
+            "BranchResultV4": "branch_digest",
+            "SemanticResultV4": "result_digest",
+            "RunIdentityV4": "run_digest",
+            "FormalCertificateV4": "certificate_digest",
+            "ConflictCertificateV4": "certificate_digest",
+            "AuditManifestV4": "manifest_digest",
+            "AuditBundleIndexV4": "bundle_digest",
+        }
+        self_digest_mutation_paths = {
+            "TrustPolicyV4": ("policy_id",),
+            "StorageCapabilityV4": ("provider_id",),
+            "SourceBundleV4": ("bundle_id",),
+            "EvidenceManifestV4": ("manifest_id",),
+            "RuleV4": ("rule_id",),
+            "PackManifestV4": ("pack_id",),
+            "LegalSpecV4": ("spec_id",),
+            "LegalIVLV4": ("ivl_id",),
+            "BranchResultV4": ("branch_id",),
+            "SemanticResultV4": ("request_ref", "kind"),
+            "RunIdentityV4": ("request_ref", "kind"),
+            "FormalCertificateV4": ("request_ref", "kind"),
+            "ConflictCertificateV4": ("request_ref", "kind"),
+            "AuditManifestV4": ("run_identity_ref", "kind"),
+            "AuditBundleIndexV4": ("manifest_ref", "kind"),
+        }
+        signed_subject_fields = {
+            "ArtifactHandleV4": "content_ref",
+            "PackSignatureV4": "manifest_ref",
+            "FactAttestationV4": "candidate_ref",
+            "FactAdmissionReceiptV4": "subject_digest",
+            "RulePromotionReceiptV4": "rule_subject_digest",
+            "TranslationReceiptV4": "target_ref",
+            "SolverReceiptV4": "backend_result_ref",
+            "CheckerReceiptV4": "subject_ref",
+            "ProofReceiptV4": "subject_ref",
+        }
+        signed_mutation_paths = {
+            "ArtifactHandleV4": ("content_ref", "kind"),
+            "PackSignatureV4": ("manifest_ref", "kind"),
+            "FactAttestationV4": ("candidate_ref", "kind"),
+            "FactAdmissionReceiptV4": ("request_ref", "kind"),
+            "RulePromotionReceiptV4": ("legal_review_ref", "kind"),
+            "TranslationReceiptV4": ("target_ref", "kind"),
+            "SolverReceiptV4": ("backend_result_ref", "kind"),
+            "CheckerReceiptV4": ("subject_ref", "kind"),
+            "ProofReceiptV4": ("subject_ref", "kind"),
+        }
+
+        def wrong_digest_wire(value: str) -> str:
+            replacement = "0" if value[7] != "0" else "1"
+            return value[:7] + replacement + value[8:]
+
+        def mutate_string_path(payload: dict[str, Any], path: tuple[str, ...]) -> None:
+            current: Any = payload
+            for segment in path[:-1]:
+                current = current[segment]
+            current[path[-1]] += "-tampered"
+
+        def self_digest_body_payload(
+            type_id: str, payload: dict[str, Any], digest_field: str,
+        ) -> dict[str, Any]:
+            body = json.loads(json.dumps(payload))
+            del body[digest_field]
+            if type_id == "SemanticResultV4":
+                del body["runtime_profile"]["backend_receipt_ref"]
+                for claim in body["claims"]:
+                    del claim["proof_receipt_refs"]
+                    del claim["checker_receipt_refs"]
+                del body["receipt_refs"]
+            return body
+
+        pack_manifest_payload = vector_objects.get("PackManifestV4")
+        pack_signature_payload = vector_objects.get("PackSignatureV4")
+        if not (
+            isinstance(pack_manifest_payload, dict)
+            and isinstance(pack_signature_payload, dict)
+            and isinstance(pack_signature_payload.get("manifest_ref"), dict)
+            and pack_signature_payload["manifest_ref"].get("digest")
+            == pack_manifest_payload.get("manifest_digest")
+        ):
+            fail("W1-02 release signature does not bind the pack manifest digest")
+
+        rule_payload = vector_objects.get("RuleV4")
+        promotion_receipt_payload = vector_objects.get("RulePromotionReceiptV4")
+        if isinstance(rule_payload, dict) and isinstance(promotion_receipt_payload, dict):
+            promotion_subject_body = json.loads(json.dumps(rule_payload))
+            del promotion_subject_body["rule_digest"]
+            del promotion_subject_body["promotion_receipt_refs"]
+            promotion_subject_digest = _digest_object(promotion_subject_body)
+            promotion_receipt_digest = _digest_object(promotion_receipt_payload)
+            if not (
+                promotion_receipt_payload.get("rule_subject_digest")
+                == promotion_subject_digest
+                and isinstance(promotion_receipt_payload.get("signature"), dict)
+                and promotion_receipt_payload["signature"].get("subject_digest")
+                == promotion_subject_digest
+                and isinstance(rule_payload.get("promotion_receipt_refs"), list)
+                and len(rule_payload["promotion_receipt_refs"]) == 1
+                and rule_payload["promotion_receipt_refs"][0].get("digest")
+                == promotion_receipt_digest
+            ):
+                fail("W1-02 rule promotion subject/receipt/final-rule chain is disconnected")
+        else:
+            fail("W1-02 rule promotion chain lacks typed positive vectors")
+
+        production_self_fields = getattr(contracts, "_SELF_DIGEST_FIELDS_V4", None)
+        try:
+            actual_self_fields = dict(production_self_fields)
+        except (TypeError, ValueError):
+            actual_self_fields = {}
+        if actual_self_fields != self_digest_fields:
+            fail("W1-02 production self-digest field map differs from the independent oracle")
+        production_signed_fields = getattr(contracts, "_SIGNED_BODY_FIELDS_V4", None)
+        production_subject_fields = getattr(contracts, "_SIGNED_SUBJECT_FIELDS_V4", None)
+        try:
+            actual_signed_fields = dict(production_signed_fields)
+            actual_subject_fields = dict(production_subject_fields)
+        except (TypeError, ValueError):
+            actual_signed_fields = {}
+            actual_subject_fields = {}
+        if actual_signed_fields != {type_id: "signature" for type_id in signed_subject_fields}:
+            fail("W1-02 production signed-body field map differs from the independent oracle")
+        if actual_subject_fields != signed_subject_fields:
+            fail("W1-02 production signed-subject field map differs from the independent oracle")
+        if set(self_digest_fields) & set(signed_subject_fields):
+            fail("W1-02 deterministic self-digest payloads must exclude service signatures")
+
+        for type_id in sorted(object_ids):
+            model_type = runtime_registry.get(type_id)
+            if not isinstance(model_type, type) or not dataclasses.is_dataclass(model_type):
+                fail(f"W1-02 {type_id} is not a dataclass type")
+                continue
+            params = getattr(model_type, "__dataclass_params__", None)
+            if (
+                params is None
+                or not params.frozen
+                or "__slots__" not in model_type.__dict__
+            ):
+                fail(f"W1-02 {type_id} is not frozen and slotted")
+            if isinstance(base_type, type) and not issubclass(model_type, base_type):
+                fail(f"W1-02 {type_id} does not inherit V4Contract")
+            fields = dataclasses.fields(model_type)
+            field_names = [field.name for field in fields]
+            field_name_set = set(field_names)
+            if type_id == "MCPCapabilitiesInputV4" and field_name_set:
+                fail("W1-02 MCP capabilities input must remain an exact empty object")
+            critical_fields = critical_required_fields.get(type_id, frozenset())
+            missing_critical = critical_fields - field_name_set
+            forbidden_critical = critical_forbidden_fields.get(type_id, frozenset()) & field_name_set
+            if missing_critical:
+                fail(
+                    f"W1-02 {type_id} omits authority-required critical fields: "
+                    f"{sorted(missing_critical)}"
+                )
+            if forbidden_critical:
+                fail(
+                    f"W1-02 {type_id} retains authority-forbidden critical fields: "
+                    f"{sorted(forbidden_critical)}"
+                )
+            field_types = {field.name: str(field.type) for field in fields}
+            for field_name, expected_type in critical_field_types.get(type_id, {}).items():
+                if field_types.get(field_name) != expected_type:
+                    fail(
+                        f"W1-02 {type_id}.{field_name} critical type drifted: "
+                        f"{field_types.get(field_name)!r} != {expected_type!r}"
+                    )
+            declared_fields = field_authority.get(type_id)
+            payload = vector_objects.get(type_id)
+            if declared_fields != field_names:
+                fail(f"W1-02 {type_id} dataclass fields differ from field authority")
+            if not isinstance(payload, dict) or set(payload) != set(field_names):
+                fail(f"W1-02 {type_id} positive payload keys differ from typed fields")
+                continue
+            for field in fields:
+                annotation = str(field.type)
+                if annotation in {"Any", "typing.Any", "object"} or any(
+                    token in annotation
+                    for token in ("Mapping[", "MutableMapping[", "dict[", "Dict[")
+                ):
+                    fail(f"W1-02 {type_id}.{field.name} is an open typed field: {annotation}")
+            from_dict = getattr(model_type, "from_dict", None)
+            if not callable(from_dict):
+                fail(f"W1-02 {type_id} has no from_dict decoder")
+                continue
+            try:
+                value = from_dict(payload)
+                encoded = value.to_dict()
+                restored = from_dict(encoded)
+                canonical = value.canonical_bytes()
+                digest = value.canonical_digest()
+            except Exception as exc:
+                fail(f"W1-02 {type_id} positive round-trip raised {type(exc).__name__}: {exc}")
+                continue
+            if encoded != payload or restored != value:
+                fail(f"W1-02 {type_id} positive round-trip changed fields or value")
+            if (
+                not isinstance(canonical, bytes)
+                or not isinstance(digest_type, type)
+                or not isinstance(digest, digest_type)
+            ):
+                fail(f"W1-02 {type_id} canonical identity is not typed")
+
+            digest_field = self_digest_fields.get(type_id)
+            if digest_field is not None and isinstance(digest_type, type):
+                expected_body = self_digest_body_payload(type_id, payload, digest_field)
+                expected_digest_wire = _digest_object(expected_body)
+                try:
+                    actual_body = value.digest_body()
+                    stored_digest_wire = str(getattr(value, digest_field))
+                    canonical_digest_wire = str(value.canonical_digest())
+                except Exception as exc:
+                    fail(
+                        f"W1-02 {type_id} self-digest accessor raised "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                else:
+                    if actual_body != expected_body:
+                        fail(f"W1-02 {type_id} digest_body projection drifted")
+                    if not (
+                        stored_digest_wire
+                        == canonical_digest_wire
+                        == payload[digest_field]
+                        == expected_digest_wire
+                    ):
+                        fail(f"W1-02 {type_id} self digest is not bound to its canonical body")
+
+                wrong_wire = wrong_digest_wire(payload[digest_field])
+                wrong_self_payload = json.loads(json.dumps(payload))
+                wrong_self_payload[digest_field] = wrong_wire
+                try:
+                    from_dict(wrong_self_payload)
+                except Exception as exc:
+                    if (
+                        getattr(exc, "code", None) != "SELF_DIGEST_MISMATCH"
+                        or f"{type_id}.{digest_field}" not in str(exc)
+                    ):
+                        fail(f"W1-02 {type_id} wrong self digest returned the wrong failure")
+                else:
+                    fail(f"W1-02 {type_id} accepted a wrong self digest")
+
+                tampered_body = json.loads(json.dumps(payload))
+                mutate_string_path(tampered_body, self_digest_mutation_paths[type_id])
+                try:
+                    from_dict(tampered_body)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "SELF_DIGEST_MISMATCH":
+                        fail(f"W1-02 {type_id} body tamper returned the wrong failure")
+                else:
+                    fail(f"W1-02 {type_id} accepted a body tamper under a stale digest")
+
+                try:
+                    dataclasses.replace(
+                        value, **{digest_field: digest_type.parse(wrong_wire)}
+                    )
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "SELF_DIGEST_MISMATCH":
+                        fail(f"W1-02 {type_id} constructor bypass returned the wrong failure")
+                else:
+                    fail(f"W1-02 {type_id} direct constructor bypassed self-digest validation")
+
+            subject_field = signed_subject_fields.get(type_id)
+            if subject_field is not None:
+                expected_signed_body = {
+                    key: nested for key, nested in payload.items() if key != "signature"
+                }
+                expected_payload_digest = _digest_object(expected_signed_body)
+                subject = payload[subject_field]
+                expected_subject_digest = (
+                    subject["digest"] if isinstance(subject, dict) else subject
+                )
+                try:
+                    actual_signed_body = value.signature_body()
+                except Exception as exc:
+                    fail(
+                        f"W1-02 {type_id} signature_body raised "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                else:
+                    if actual_signed_body != expected_signed_body:
+                        fail(f"W1-02 {type_id} signed-body projection drifted")
+                if (
+                    payload["signature"]["payload_digest"] != expected_payload_digest
+                    or payload["signature"]["subject_digest"] != expected_subject_digest
+                ):
+                    fail(f"W1-02 {type_id} signature does not bind body and subject")
+
+                for signature_digest_field in ("payload_digest", "subject_digest"):
+                    wrong_signature = json.loads(json.dumps(payload))
+                    wrong_signature["signature"][signature_digest_field] = (
+                        wrong_digest_wire(
+                            wrong_signature["signature"][signature_digest_field]
+                        )
+                    )
+                    try:
+                        from_dict(wrong_signature)
+                    except Exception as exc:
+                        if getattr(exc, "code", None) != "SIGNATURE_SUBJECT_MISMATCH":
+                            fail(
+                                f"W1-02 {type_id} wrong signature "
+                                f"{signature_digest_field} returned the wrong failure"
+                            )
+                    else:
+                        fail(
+                            f"W1-02 {type_id} accepted a wrong signature "
+                            f"{signature_digest_field}"
+                        )
+
+                tampered_signed_body = json.loads(json.dumps(payload))
+                mutate_string_path(tampered_signed_body, signed_mutation_paths[type_id])
+                try:
+                    from_dict(tampered_signed_body)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "SIGNATURE_SUBJECT_MISMATCH":
+                        fail(f"W1-02 {type_id} signed-body tamper returned the wrong failure")
+                else:
+                    fail(f"W1-02 {type_id} accepted a signed-body tamper")
+            positive_count += 1
+
+            def retains_mutable(candidate: Any, seen: set[int]) -> bool:
+                identity = id(candidate)
+                if identity in seen:
+                    return False
+                seen.add(identity)
+                if isinstance(candidate, (dict, list, set, bytearray)):
+                    return True
+                if dataclasses.is_dataclass(candidate) and not isinstance(candidate, type):
+                    return any(
+                        retains_mutable(getattr(candidate, field.name), seen)
+                        for field in dataclasses.fields(candidate)
+                    )
+                if isinstance(candidate, (tuple, frozenset)):
+                    return any(retains_mutable(item, seen) for item in candidate)
+                return False
+
+            if hasattr(value, "__dict__") or retains_mutable(value, set()):
+                fail(f"W1-02 {type_id} retains mutable or unslotted internal state")
+            mutated = {**payload, "__w1_02_unknown__": True}
+            try:
+                from_dict(mutated)
+            except Exception as exc:
+                if getattr(exc, "code", None) != "UNKNOWN_FIELD":
+                    fail(
+                        f"W1-02 {type_id} unknown field returned "
+                        f"{getattr(exc, 'code', type(exc).__name__)}"
+                    )
+            else:
+                fail(f"W1-02 {type_id} accepted an unknown field")
+            negative_count += 1
+
+        def expect_vector_failure(
+            type_id: str, payload: dict[str, Any], expected_code: str, label: str,
+        ) -> None:
+            try:
+                runtime_registry[type_id].from_dict(payload)
+            except Exception as exc:
+                if getattr(exc, "code", None) != expected_code:
+                    fail(
+                        f"W1-02 {label} returned "
+                        f"{getattr(exc, 'code', type(exc).__name__)} instead of "
+                        f"{expected_code}"
+                    )
+            else:
+                fail(f"W1-02 accepted {label}")
+
+        for field_name, invalid_value, expected_code in (
+            ("attack_type", "invented_attack_kind", "ATTACK_TYPE"),
+            ("target_aspect", "invented_target", "ATTACK_TARGET_ASPECT"),
+        ):
+            invalid_attack = json.loads(json.dumps(vector_objects["AttackV4"]))
+            invalid_attack[field_name] = invalid_value
+            expect_vector_failure(
+                "AttackV4", invalid_attack, expected_code, f"invalid AttackV4.{field_name}",
+            )
+
+        for field_name, invalid_value, expected_code in (
+            ("status", "invented_permission_state", "PERMISSION_STATUS"),
+            ("witness_refs", [], "PERMISSION_WITNESS_REQUIRED"),
+        ):
+            invalid_permission = json.loads(
+                json.dumps(vector_objects["PermissionResolutionV4"])
+            )
+            invalid_permission[field_name] = invalid_value
+            expect_vector_failure(
+                "PermissionResolutionV4", invalid_permission, expected_code,
+                f"invalid PermissionResolutionV4.{field_name}",
+            )
+
+        for forbidden_solver_field in ("semantic_result_ref", "observability_ref"):
+            invalid_solver = json.loads(json.dumps(vector_objects["SolverReceiptV4"]))
+            invalid_solver[forbidden_solver_field] = json.loads(
+                json.dumps(vector_objects["ContentRefV4"])
+            )
+            expect_vector_failure(
+                "SolverReceiptV4", invalid_solver, "UNKNOWN_FIELD",
+                f"forbidden SolverReceiptV4.{forbidden_solver_field}",
+            )
+
+        for required_field in (
+            "impacted_rule_refs", "impacted_claim_refs", "allowed_answer_types",
+            "required_source_kinds",
+        ):
+            missing_fact = json.loads(
+                json.dumps(vector_objects["MissingFactRequirementV4"])
+            )
+            missing_fact[required_field] = []
+            expect_vector_failure(
+                "MissingFactRequirementV4", missing_fact,
+                "MISSING_FACT_BINDING_REQUIRED",
+                f"empty MissingFactRequirementV4.{required_field}",
+            )
+
+        def refresh_semantic_digest(payload: dict[str, Any]) -> None:
+            payload["result_digest"] = _digest_object(
+                self_digest_body_payload("SemanticResultV4", payload, "result_digest")
+            )
+
+        semantic_vector = vector_objects["SemanticResultV4"]
+        formal_result = json.loads(json.dumps(semantic_vector))
+        formal_result.update({
+            "decision_status": "accepted_formal_result",
+            "review_state": {
+                "status": "not_required", "unresolved_item_refs": [],
+                "responsible_role": None, "release_condition_refs": [],
+                "review_receipt_ref": None,
+            },
+            "completeness_state": "complete",
+            "certificate_kind": "formal_verified",
+            "claims": [json.loads(json.dumps(vector_objects["ClaimResultV4"]))],
+            "taint_codes": [],
+        })
+        formal_result["runtime_profile"]["formal_kernel"] = True
+        formal_result["runtime_profile"]["backend_invocation_ref"] = json.loads(
+            json.dumps(vector_objects["ContentRefV4"])
+        )
+        formal_result["runtime_profile"]["backend_receipt_ref"] = json.loads(
+            json.dumps(vector_objects["ContentRefV4"])
+        )
+        refresh_semantic_digest(formal_result)
+        for claim_binding in ("argument_refs", "fact_refs", "rule_refs", "source_refs"):
+            incomplete_formal = json.loads(json.dumps(formal_result))
+            incomplete_formal["claims"][0][claim_binding] = []
+            refresh_semantic_digest(incomplete_formal)
+            expect_vector_failure(
+                "SemanticResultV4", incomplete_formal,
+                "FORMAL_CLAIM_BINDING_REQUIRED", f"formal claim without {claim_binding}",
+            )
+
+        review_ref = json.loads(json.dumps(vector_objects["ContentRefV4"]))
+        branch_review = {
+            "status": "required", "unresolved_item_refs": [review_ref],
+            "responsible_role": "reviewer",
+            "release_condition_refs": [json.loads(json.dumps(review_ref))],
+            "review_receipt_ref": None,
+        }
+        hypothetical_result = json.loads(json.dumps(semantic_vector))
+        hypothetical_result.update({
+            "decision_status": "hypothetical_result",
+            "review_state": branch_review,
+            "completeness_state": "complete", "certificate_kind": "none",
+            "branches": [],
+        })
+        refresh_semantic_digest(hypothetical_result)
+        expect_vector_failure(
+            "SemanticResultV4", hypothetical_result,
+            "HYPOTHETICAL_ASSUMPTION_REQUIRED", "hypothetical result without assumptions",
+        )
+        hypothetical_result["branches"] = [
+            json.loads(json.dumps(vector_objects["BranchResultV4"]))
+        ]
+        refresh_semantic_digest(hypothetical_result)
+        try:
+            runtime_registry["SemanticResultV4"].from_dict(hypothetical_result)
+        except Exception as exc:
+            fail(
+                "W1-02 explicit hypothetical branch raised "
+                f"{type(exc).__name__}: {exc}"
+            )
+        mixed_hypothetical = json.loads(json.dumps(hypothetical_result))
+        mixed_hypothetical["admitted_fact_refs"] = [
+            json.loads(json.dumps(mixed_hypothetical["branches"][0]["assumption_refs"][0]))
+        ]
+        refresh_semantic_digest(mixed_hypothetical)
+        expect_vector_failure(
+            "SemanticResultV4", mixed_hypothetical, "HYPOTHETICAL_FACT_MIX",
+            "hypothetical assumption admitted as fact",
+        )
+
+        conflict_result = json.loads(json.dumps(semantic_vector))
+        conflict_result.update({
+            "decision_status": "conflict_certificate", "review_state": branch_review,
+            "completeness_state": "complete", "certificate_kind": "conflict_verified",
+            "claims": [], "argument_refs": [], "attack_refs": [],
+        })
+        refresh_semantic_digest(conflict_result)
+        expect_vector_failure(
+            "SemanticResultV4", conflict_result, "CONFLICT_WITNESS_REQUIRED",
+            "conflict result without claims, arguments, or attacks",
+        )
+
+        certificate_envelope_type = runtime_registry.get("CertificateEnvelopeV4")
+        service_signature_payload = vector_objects.get("SignatureEnvelopeV4")
+        certificate_payloads = (
+            ("FormalCertificateV4", "formal_verified", "formal", "conflict"),
+            ("ConflictCertificateV4", "conflict_verified", "conflict", "formal"),
+        )
+        if not (
+            isinstance(certificate_envelope_type, type)
+            and isinstance(service_signature_payload, dict)
+            and all(
+                isinstance(vector_objects.get(type_id), dict)
+                for type_id, _, _, _ in certificate_payloads
+            )
+        ):
+            fail("W1-02 certificate service-signature oracle lacks typed vectors")
+        else:
+            for type_id, kind, certificate_field, empty_field in certificate_payloads:
+                certificate_payload = vector_objects[type_id]
+                unsigned_certificate_envelope = {
+                    "kind": kind,
+                    certificate_field: json.loads(json.dumps(certificate_payload)),
+                    empty_field: None,
+                }
+                signed_certificate_envelope = {
+                    **unsigned_certificate_envelope,
+                    "service_signature": json.loads(json.dumps(service_signature_payload)),
+                }
+                certificate_signature = signed_certificate_envelope["service_signature"]
+                certificate_signature["subject_digest"] = certificate_payload[
+                    "certificate_digest"
+                ]
+                certificate_signature["run_identity_ref"] = json.loads(
+                    json.dumps(certificate_payload["run_identity_ref"])
+                )
+                certificate_signature["payload_digest"] = _digest_object(
+                    unsigned_certificate_envelope
+                )
+                try:
+                    certificate_envelope_type.from_dict(signed_certificate_envelope)
+                except Exception as exc:
+                    fail(
+                        f"W1-02 valid layered {type_id} signature raised "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                missing_service_signature = {
+                    **signed_certificate_envelope,
+                    "service_signature": None,
+                }
+                try:
+                    unsigned_value = certificate_envelope_type.from_dict(
+                        missing_service_signature
+                    )
+                except Exception as exc:
+                    fail(
+                        "W1-02 deterministic unsigned certificate envelope raised "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                else:
+                    if unsigned_value.to_dict() != missing_service_signature:
+                        fail("W1-02 unsigned certificate envelope changed on decode")
+                for digest_field in ("payload_digest", "subject_digest"):
+                    stale_service_signature = json.loads(
+                        json.dumps(signed_certificate_envelope)
+                    )
+                    stale_service_signature["service_signature"][digest_field] = (
+                        wrong_digest_wire(
+                            stale_service_signature["service_signature"][digest_field]
+                        )
+                    )
+                    try:
+                        certificate_envelope_type.from_dict(stale_service_signature)
+                    except Exception as exc:
+                        if getattr(exc, "code", None) != "CERTIFICATE_SIGNATURE_MISMATCH":
+                            fail("W1-02 stale service signature returned the wrong failure")
+                    else:
+                        fail("W1-02 certificate accepted a stale service signature")
+                wrong_run_signature = json.loads(json.dumps(signed_certificate_envelope))
+                wrong_run_signature["service_signature"]["run_identity_ref"]["digest"] = (
+                    wrong_digest_wire(
+                        wrong_run_signature["service_signature"]["run_identity_ref"][
+                            "digest"
+                        ]
+                    )
+                )
+                try:
+                    certificate_envelope_type.from_dict(wrong_run_signature)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "CERTIFICATE_SIGNATURE_MISMATCH":
+                        fail("W1-02 wrong-run service signature returned the wrong failure")
+                else:
+                    fail("W1-02 certificate accepted a wrong-run service signature")
+
+            signed_none_certificate = json.loads(
+                json.dumps(vector_objects["CertificateEnvelopeV4"])
+            )
+            signed_none_certificate["service_signature"] = json.loads(
+                json.dumps(service_signature_payload)
+            )
+            try:
+                certificate_envelope_type.from_dict(signed_none_certificate)
+            except Exception as exc:
+                if getattr(exc, "code", None) != "CERTIFICATE_ENVELOPE":
+                    fail("W1-02 signed none-certificate returned the wrong failure")
+            else:
+                fail("W1-02 none-certificate accepted a service signature")
+
+        expected_enum_axes = {
+            "ExecutionStatusV4": "execution",
+            "DecisionStatusV4": "decision",
+            "CompletenessStateV4": "completeness",
+            "CertificateKindV4": "certificate",
+        }
+        for type_id, axis in expected_enum_axes.items():
+            enum_type = runtime_registry.get(type_id)
+            if (
+                not isinstance(enum_type, type)
+                or not issubclass(enum_type, str)
+                or not issubclass(enum_type, enum.Enum)
+            ):
+                fail(f"W1-02 {type_id} is not a closed string enum")
+                continue
+            actual_values = [item.value for item in enum_type]
+            if actual_values != matrix.get("axes", {}).get(axis):
+                fail(f"W1-02 {type_id} values drifted from the W0 state axis")
+            positive_wire = vector_objects.get(type_id)
+            try:
+                if str(enum_type.parse(positive_wire)) != positive_wire:
+                    fail(f"W1-02 {type_id} positive scalar round-trip drifted")
+            except Exception as exc:
+                fail(f"W1-02 {type_id} positive scalar raised {type(exc).__name__}: {exc}")
+            positive_count += 1
+
+        if not isinstance(digest_type, type) or not callable(getattr(digest_type, "parse", None)):
+            fail("W1-02 DigestV4 is not the typed canonical digest class")
+        else:
+            positive_wire = vector_objects.get("DigestV4")
+            try:
+                if str(digest_type.parse(positive_wire)) != positive_wire:
+                    fail("W1-02 DigestV4 positive scalar round-trip drifted")
+            except Exception as exc:
+                fail(f"W1-02 DigestV4 positive scalar raised {type(exc).__name__}: {exc}")
+            positive_count += 1
+
+        for type_id in sorted(scalar_ids):
+            scalar_type = runtime_registry.get(type_id)
+            invalid_wire = scalar_negative.get(type_id)
+            if not isinstance(invalid_wire, str) or not invalid_wire:
+                fail(f"W1-02 {type_id} has no scalar negative vectors")
+                continue
+            try:
+                scalar_type.parse(invalid_wire)
+            except Exception:
+                pass
+            else:
+                fail(f"W1-02 {type_id} accepted invalid scalar wire value")
+            negative_count += 1
+
+        case_type = runtime_registry.get("CaseRequestV4")
+        expected_case_fields = [
+            "request_id", "schema_version", "legal_context", "decision_time",
+            "source_bundle_ref", "evidence_manifest_ref", "fact_attestation_refs",
+            "rule_pack_ref", "requested_outputs", "proposal_refs",
+        ]
+        if (
+            not isinstance(case_type, type)
+            or not dataclasses.is_dataclass(case_type)
+            or [field.name for field in dataclasses.fields(case_type)] != expected_case_fields
+        ):
+            fail("W1-02 CaseRequestV4 field set or order drifted")
+        else:
+            payload = vector_objects.get("CaseRequestV4")
+            if not isinstance(payload, dict):
+                fail("W1-02 CaseRequestV4 positive vector is not an object")
+            else:
+                if not callable(getattr(case_type, "from_json_bytes", None)):
+                    fail("W1-02 CaseRequestV4 lacks bounded from_json_bytes admission")
+                else:
+                    try:
+                        raw_value = case_type.from_json_bytes(
+                            json.dumps(
+                                payload, ensure_ascii=False, separators=(",", ":"),
+                            ).encode("utf-8")
+                        )
+                        if raw_value.to_dict() != payload:
+                            fail("W1-02 CaseRequestV4 raw admission changed the canonical payload")
+                    except Exception as exc:
+                        fail(
+                            "W1-02 CaseRequestV4 raw admission raised "
+                            f"{type(exc).__name__}: {exc}"
+                        )
+                for field_name in expected_forbidden_request_fields:
+                    try:
+                        case_type.from_dict({**payload, field_name: True})
+                    except Exception as exc:
+                        if getattr(exc, "code", None) != "UNKNOWN_FIELD":
+                            fail(
+                                f"W1-02 external field {field_name} did not fail "
+                                "as UNKNOWN_FIELD"
+                            )
+                    else:
+                        fail(f"W1-02 external request accepted authority field: {field_name}")
+                for field_name in (
+                    "fact_attestation_refs", "proposal_refs", "requested_outputs",
+                ):
+                    try:
+                        case_type.from_dict({**payload, field_name: "not-an-array"})
+                    except Exception as exc:
+                        if getattr(exc, "code", None) != "ARRAY_REQUIRED":
+                            fail(f"W1-02 string {field_name} did not fail as ARRAY_REQUIRED")
+                    else:
+                        fail(f"W1-02 request split a string into {field_name}")
+                for invalid_value, expected_code in (
+                    (1.5, "FLOAT_FORBIDDEN"),
+                    (2**53, "UNSAFE_INTEGER"),
+                ):
+                    try:
+                        invalid_payload = json.loads(json.dumps(payload))
+                        invalid_payload["legal_context"]["jurisdiction"] = {
+                            "nested": [invalid_value],
+                        }
+                        case_type.from_dict(invalid_payload)
+                    except Exception as exc:
+                        if getattr(exc, "code", None) != expected_code:
+                            fail(f"W1-02 nested scalar did not fail as {expected_code}")
+                    else:
+                        fail(f"W1-02 nested scalar passed: {expected_code}")
+                try:
+                    caller_payload = json.loads(json.dumps(payload))
+                    decoded_request = case_type.from_dict(caller_payload)
+                    baseline = decoded_request.canonical_bytes()
+                    caller_payload["legal_context"]["jurisdiction"] = "mutated"
+                    returned_payload = decoded_request.to_dict()
+                    returned_payload["legal_context"]["jurisdiction"] = "mutated-again"
+                    returned_payload["fact_attestation_refs"].append(
+                        returned_payload["source_bundle_ref"]
+                    )
+                    if decoded_request.canonical_bytes() != baseline:
+                        fail("W1-02 decoded request retained caller or returned mutable state")
+                except Exception as exc:
+                    fail(f"W1-02 request immutability probe raised {type(exc).__name__}: {exc}")
+
+        benchmarked = foundation.get("resource_limit_policy", {}).get("benchmarked_limits", [])
+        deferred = foundation.get("resource_limit_policy", {}).get("deferred_limits", [])
+        expected_engine_limits = {
+            item["id"]: (item["default"], item["hard_max"])
+            for item in benchmarked
+        }
+        expected_engine_limits.update({item["id"]: (None, None) for item in deferred})
+        expected_defaults = {item["id"]: item["default"] for item in benchmarked}
+        expected_hard_max = {item["id"]: item["hard_max"] for item in benchmarked}
+        expected_resource_payload = expected_defaults | {
+            item["id"]: None for item in deferred
+        }
+        expected_error_codes = {item["id"]: item["error_code"] for item in benchmarked}
+        for name, expected in (
+            ("ENGINE_LIMITS_V4", expected_engine_limits),
+            ("DEFAULT_RESOURCE_LIMITS_V4", expected_defaults),
+            ("HARD_MAX_RESOURCE_LIMITS_V4", expected_hard_max),
+            ("RESOURCE_LIMIT_ERROR_CODES_V4", expected_error_codes),
+        ):
+            try:
+                authority = getattr(contracts, name)
+                actual = dict(authority)
+            except (AttributeError, TypeError, ValueError):
+                fail(f"W1-02 {name} is missing or not mapping-compatible")
+                continue
+            if not isinstance(authority, MappingProxyType):
+                fail(f"W1-02 {name} is not immutable")
+            if actual != expected:
+                fail(f"W1-02 {name} drifted from the frozen foundation")
+        resource_type = runtime_registry.get("ResourceLimitsV4")
+        if isinstance(resource_type, type) and dataclasses.is_dataclass(resource_type):
+            if [field.name for field in dataclasses.fields(resource_type)] != list(expected_resource_payload):
+                fail("W1-02 ResourceLimitsV4 fields drifted from the 19 frozen limits")
+            resource_value = None
+            try:
+                resource_value = resource_type.from_dict(expected_resource_payload)
+                contracts.validate_resource_limits_v4(resource_value)
+            except Exception as exc:
+                fail(f"W1-02 default resource limits raised {type(exc).__name__}: {exc}")
+            for item in benchmarked:
+                accepted = {**expected_resource_payload, item["id"]: item["hard_max"]}
+                try:
+                    if resource_type.from_dict(accepted).to_dict() != accepted:
+                        fail(f"W1-02 inclusive resource limit changed: {item['id']}")
+                except Exception as exc:
+                    fail(
+                        f"W1-02 inclusive resource limit rejected {item['id']}: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                rejected = {
+                    **expected_resource_payload,
+                    item["id"]: item["hard_max"] + 1,
+                }
+                try:
+                    resource_type.from_dict(rejected)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != item["error_code"]:
+                        fail(f"W1-02 resource limit error drifted: {item['id']}")
+                else:
+                    fail(f"W1-02 resource limit+1 passed: {item['id']}")
+            for item in deferred:
+                try:
+                    resource_type.from_dict({
+                        **expected_resource_payload,
+                        item["id"]: 1,
+                    })
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "DEFERRED_LIMIT":
+                        fail(f"W1-02 deferred limit error drifted: {item['id']}")
+                else:
+                    fail(f"W1-02 deferred unbenchmarked limit was guessed: {item['id']}")
+
+            case_payload = vector_objects.get("CaseRequestV4")
+            if (
+                isinstance(case_type, type)
+                and isinstance(case_payload, dict)
+                and isinstance(resource_value, resource_type)
+            ):
+                try:
+                    tiny = resource_type.from_dict({
+                        **expected_resource_payload,
+                        "max_request_bytes": 20,
+                    })
+                    case_type.from_json_bytes(b"\xff" * 21, limits=tiny)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "REQUEST_TOO_LARGE":
+                        fail("W1-02 admission did not enforce bytes before UTF-8")
+                else:
+                    fail("W1-02 oversized invalid UTF-8 request passed")
+                try:
+                    shallow = resource_type.from_dict({
+                        **expected_resource_payload,
+                        "max_request_bytes": 100,
+                        "max_json_depth": 2,
+                    })
+                    case_type.from_json_bytes(
+                        b'{"a":{"b":{"c":1.5}}}', limits=shallow,
+                    )
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "JSON_DEPTH_LIMIT":
+                        fail("W1-02 admission did not enforce depth before float parsing")
+                else:
+                    fail("W1-02 over-depth request passed")
+                try:
+                    case_type.from_json_bytes(
+                        b'{"a":1,"a":2}', limits=resource_value,
+                    )
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "DUPLICATE_KEY":
+                        fail("W1-02 admission duplicate-key error drifted")
+                else:
+                    fail("W1-02 duplicate-key request passed")
+                encoded_request = json.dumps(
+                    case_payload, ensure_ascii=False, separators=(",", ":"),
+                ).encode("utf-8")
+                try:
+                    case_type.from_json_bytes(
+                        encoded_request, limits=resource_value, deadline_ns=0,
+                    )
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "ADMISSION_DEADLINE":
+                        fail("W1-02 admission deadline error drifted")
+                else:
+                    fail("W1-02 expired admission deadline passed")
+        else:
+            fail("W1-02 ResourceLimitsV4 is unavailable")
+
+        time_type = runtime_registry.get("CanonicalTimeV4")
+        if isinstance(time_type, type):
+            for item in foundation.get("time_policy", {}).get("positive", []):
+                try:
+                    instant = time_type.from_dict({"wire": item["wire"]})
+                    if (instant.epoch_seconds, instant.nanosecond) != (
+                        item["epoch_seconds"], item["nanosecond"],
+                    ):
+                        fail(f"W1-02 canonical time projection drifted: {item['id']}")
+                except Exception as exc:
+                    fail(f"W1-02 positive time {item['id']} raised {type(exc).__name__}: {exc}")
+            for item in foundation.get("time_policy", {}).get("negative", []):
+                try:
+                    time_type.from_dict({"wire": item["wire"]})
+                except Exception as exc:
+                    if getattr(exc, "code", None) != item["expected_error"]:
+                        fail(f"W1-02 negative time error drifted: {item['id']}")
+                else:
+                    fail(f"W1-02 invalid canonical time passed: {item['id']}")
+            for item in foundation.get("time_policy", {}).get("interval_vectors", []):
+                try:
+                    start = time_type.from_dict({"wire": item["start"]})
+                    end = time_type.from_dict({"wire": item["end"]})
+                except Exception as exc:
+                    fail(
+                        f"W1-02 half-open interval bounds raised "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                    continue
+                for probe in item["probes"]:
+                    try:
+                        instant = time_type.from_dict({"wire": probe["instant"]})
+                        static_result = time_type.contains_half_open(start, end, instant)
+                        instance_result = instant.in_half_open(start, end)
+                    except Exception as exc:
+                        fail(f"W1-02 half-open time helper raised {type(exc).__name__}: {exc}")
+                        continue
+                    if static_result is not probe["contains"] or instance_result is not probe["contains"]:
+                        fail(f"W1-02 half-open interval result drifted: {item['id']}")
+        else:
+            fail("W1-02 CanonicalTimeV4 is unavailable")
+
+        numeric = foundation.get("numeric_policy", {})
+        numeric_helpers = {
+            "integer": getattr(contracts, "validate_safe_integer_v4", None),
+            "money": getattr(contracts, "validate_money_v4", None),
+            "rational": getattr(contracts, "validate_rational_v4", None),
+        }
+        for item in numeric.get("positive", []):
+            helper = numeric_helpers.get(item.get("kind"))
+            if not callable(helper):
+                fail(f"W1-02 {item.get('kind')} validator is unavailable")
+                continue
+            try:
+                actual = helper(item["value"])
+            except Exception as exc:
+                fail(f"W1-02 positive {item['kind']} {item['id']} raised {type(exc).__name__}: {exc}")
+                continue
+            if item["kind"] == "integer":
+                expected = item["value"]
+            elif item["kind"] == "money":
+                expected = (item["value"]["currency"], item["value"]["minor_units"])
+            else:
+                expected = (
+                    item["value"]["numerator"], item["value"]["denominator"],
+                )
+            if actual != expected:
+                fail(f"W1-02 positive {item['kind']} result drifted: {item['id']}")
+        for item in numeric.get("negative", []):
+            helper = numeric_helpers.get(item.get("kind"))
+            if not callable(helper):
+                continue
+            try:
+                helper(item["value"])
+            except Exception as exc:
+                if getattr(exc, "code", None) != item["expected_error"]:
+                    fail(f"W1-02 negative {item['kind']} error drifted: {item['id']}")
+            else:
+                fail(f"W1-02 invalid {item['kind']} passed: {item['id']}")
+
+        require_engine_match = getattr(contracts, "require_engine_match", None)
+        if not callable(require_engine_match):
+            fail("W1-02 require_engine_match is unavailable")
+        else:
+            for version in ("4.0.0", "4.0.0rc1"):
+                try:
+                    if require_engine_match(version) != version:
+                        fail(f"W1-02 engine major 4 did not return {version}")
+                except Exception as exc:
+                    fail(f"W1-02 engine major 4 rejected {version}: {type(exc).__name__}")
+            for version in (
+                "3.0.2", "5.0.0", "04.0.0", "4", "4.0", "v4.0.0",
+                "4.0.0+local", "4x",
+            ):
+                try:
+                    require_engine_match(version)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != "ENGINE_VERSION_MISMATCH":
+                        fail(f"W1-02 engine mismatch error drifted for {version}")
+                else:
+                    fail(f"W1-02 accepted non-major-4 engine version: {version}")
+
+        validate_state_matrix = getattr(contracts, "validate_state_matrix", None)
+        if not callable(validate_state_matrix):
+            fail("W1-02 validate_state_matrix is unavailable")
+        else:
+            state_types = {
+                "execution": runtime_registry.get("ExecutionStatusV4"),
+                "decision": runtime_registry.get("DecisionStatusV4"),
+                "review": runtime_registry.get("ReviewStateV4"),
+                "completeness": runtime_registry.get("CompletenessStateV4"),
+                "certificate": runtime_registry.get("CertificateKindV4"),
+                "transport": runtime_registry.get("TransportOutcomeV4"),
+            }
+            if not all(isinstance(value, type) for value in state_types.values()):
+                fail("W1-02 state matrix types are unavailable")
+            else:
+                valid_count = 0
+                mismatch_reported = False
+                axes = matrix["axes"]
+                constraints = matrix["decision_constraints"]
+                axis_order = (
+                    "execution", "decision", "review", "completeness",
+                    "certificate", "transport",
+                )
+                for state_wire in itertools.product(
+                    *(axes[axis] for axis in axis_order)
+                ):
+                    state = dict(zip(axis_order, state_wire, strict=True))
+                    constraint = constraints[state["decision"]]
+                    expected_valid = all(
+                        state[axis] in constraint[axis]
+                        for axis in (
+                            "execution", "review", "completeness",
+                            "certificate", "transport",
+                        )
+                    )
+                    review_payload = {
+                        "status": state["review"],
+                        "unresolved_item_refs": [],
+                        "responsible_role": None,
+                        "release_condition_refs": [],
+                        "review_receipt_ref": None,
+                    }
+                    if state["review"] in {"required", "pending"}:
+                        review_payload.update({
+                            "unresolved_item_refs": [vector_objects["ContentRefV4"]],
+                            "responsible_role": "reviewer",
+                            "release_condition_refs": [vector_objects["ContentRefV4"]],
+                        })
+                    elif state["review"] in {"approved", "rejected"}:
+                        review_payload["review_receipt_ref"] = vector_objects["ContentRefV4"]
+                    try:
+                        state_result = validate_state_matrix(
+                            state_types["execution"].parse(state["execution"]),
+                            state_types["decision"].parse(state["decision"]),
+                            state_types["review"].from_dict(review_payload),
+                            state_types["completeness"].parse(state["completeness"]),
+                            state_types["certificate"].parse(state["certificate"]),
+                            state_types["transport"].from_dict({
+                                "status": state["transport"],
+                                "error": (
+                                    vector_objects["ErrorV4"]
+                                    if state["transport"] == "error"
+                                    else None
+                                ),
+                            }),
+                        )
+                        actual_valid = True
+                        if state_result is not None and not mismatch_reported:
+                            fail("W1-02 validate_state_matrix returned a non-None value")
+                            mismatch_reported = True
+                    except Exception as exc:
+                        actual_valid = False
+                        if (
+                            not expected_valid
+                            and getattr(exc, "code", None) != "INVALID_STATE_COMBINATION"
+                            and not mismatch_reported
+                        ):
+                            fail(
+                                "W1-02 invalid state returned "
+                                f"{getattr(exc, 'code', type(exc).__name__)}"
+                            )
+                            mismatch_reported = True
+                    if actual_valid:
+                        valid_count += 1
+                    if actual_valid is not expected_valid and not mismatch_reported:
+                        fail(f"W1-02 state acceptance drifted: {state}")
+                        mismatch_reported = True
+                if valid_count != matrix["valid_combination_count"]:
+                    fail(
+                        "W1-02 valid state count drifted: "
+                        f"{valid_count} != {matrix['valid_combination_count']}"
+                    )
+
+    try:
+        init_source = init_path.read_text(encoding="utf-8-sig")
+        init_tree = ast.parse(init_source, filename="compiler_core/__init__.py")
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        fail(f"W1-02 package root is unreadable or invalid: {exc}")
+        init_tree = ast.Module(body=[], type_ignores=[])
+    direct_version_import = any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == "compiler_core.version"
+        and any(alias.name == "__version__" for alias in node.names)
+        for node in ast.walk(init_tree)
+    )
+    if not direct_version_import:
+        fail("W1-02 package root does not import the sole __version__ source")
+    try:
+        package = __import__("compiler_core")
+        version_module = __import__("compiler_core.version", fromlist=["__version__"])
+        if getattr(package, "__version__", None) != version_module.__version__:
+            fail("W1-02 package-root __version__ drifted from compiler_core.version")
+        if "__version__" not in getattr(package, "__all__", ()):
+            fail("W1-02 package-root __all__ omits __version__")
+        if any(hasattr(package, name) for name in legacy_names):
+            fail("W1-02 package root still exports a V3 contract name")
+    except Exception as exc:
+        fail(f"W1-02 package root cannot load: {type(exc).__name__}: {exc}")
+
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-02 file disposition is not closed over the tracked tree")
+
+    sys.modules.pop(module_name, None)
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W1-02 contract gate OK: {positive_count} positive models; "
+        f"{negative_count} negative vectors; 73 distinct types; 68 closed objects; "
+        "19 frozen limits; engine major 4; P2-07 active"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -3855,6 +5872,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w0_05_dependency_gate()
     if args.wave == "W1-01":
         return cmd_w1_01_canonical_gate()
+    if args.wave == "W1-02":
+        return cmd_w1_02_contract_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -4040,11 +6059,33 @@ def _stream_record(path: Path, payload: bytes) -> dict[str, Any]:
     return {"path": str(path), "sha256": sha256_hex(payload), "bytes": len(payload)}
 
 
+def _pytest_junit_path(argv: list[str]) -> Path | None:
+    values: list[str] = []
+    for index, value in enumerate(argv):
+        if value == "--junitxml":
+            if index + 1 >= len(argv):
+                raise ValueError("--junitxml requires a path")
+            values.append(argv[index + 1])
+        elif value.startswith("--junitxml="):
+            values.append(value.split("=", 1)[1])
+    if len(values) > 1:
+        raise ValueError("pytest command declares multiple JUnit reports")
+    return Path(values[0]) if values else None
+
+
 def _run_argv(
     argv: list[str], expected_exit_code: int, attempt_dir: Path,
     index: int, timeout_seconds: float, state_root: Path,
 ) -> dict[str, Any]:
     exact_argv = _expanded_argv(argv, state_root)
+    junit_path = _pytest_junit_path(exact_argv)
+    if junit_path is not None:
+        junit_path = junit_path.resolve()
+        evidence_root = (state_root.resolve() / "evidence").resolve()
+        if not junit_path.is_relative_to(evidence_root):
+            raise ValueError(f"pytest JUnit report escapes state evidence root: {junit_path}")
+        junit_path.parent.mkdir(parents=True, exist_ok=True)
+        junit_path.unlink(missing_ok=True)
     timed_out = False
     exit_code: int | None
     if "pytest" in exact_argv:
@@ -4149,7 +6190,7 @@ def _declared_state_artifacts(
     evidence_root = (state_root.resolve() / "evidence").resolve()
     artifacts: dict[str, str] = {}
     labels: set[str] = set()
-    for command in command_results:
+    for command_index, command in enumerate(command_results, 1):
         stdout_path = Path(command["stdout"]["path"])
         payload = stdout_path.read_bytes().decode("utf-8", errors="strict")
         for line in payload.splitlines():
@@ -4175,6 +6216,14 @@ def _declared_state_artifacts(
                     f"JC_ARTIFACT digest mismatch for {label}: {actual} != {digest}"
                 )
             artifacts[f"state-artifact:{label}"] = digest
+        junit_path = _pytest_junit_path(command["argv"])
+        if junit_path is not None:
+            target = junit_path.resolve(strict=True)
+            if not target.is_file() or not target.is_relative_to(evidence_root):
+                raise ValueError(f"pytest JUnit report escapes state evidence root: {target}")
+            artifacts[f"state-artifact:pytest-junit-{command_index:03d}"] = (
+                "sha256:" + sha256_hex(target.read_bytes())
+            )
     return artifacts
 
 
@@ -4667,6 +6716,8 @@ def _structured_test_reports(
             continue
         stdout_path = Path(item["stdout"]["path"])
         stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace")
+        if report_format >= 5:
+            stdout_text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", stdout_text)
         report: dict[str, Any] = {
             "command_index": index,
             "kind": kind,
@@ -4677,9 +6728,58 @@ def _structured_test_reports(
             "stderr_sha256": item["stderr"]["sha256"],
         })
         if kind == "pytest":
-            passed = re.search(r"(?:^|\s)(\d+) passed(?:\s|,|$)", stdout_text)
+            summary_text = stdout_text
+            if report_format >= 5:
+                summary_lines = [
+                    line.strip()
+                    for line in stdout_text.splitlines()
+                    if re.search(
+                        r"(?:^|\s)\d+ (?:passed|failed|errors?|skipped|xfailed|xpassed)"
+                        r"(?:\s|,|$)",
+                        line,
+                    )
+                ]
+                report["terminal_summaries"] = len(summary_lines)
+                summary_text = summary_lines[0] if len(summary_lines) == 1 else ""
+            passed = re.search(r"(?:^|\s)(\d+) passed(?:\s|,|$)", summary_text)
             if passed:
                 report["passed"] = int(passed.group(1))
+            if report_format >= 5:
+                outcome_patterns = {
+                    "failed": r"(?:^|\s)(\d+) failed(?:\s|,|$)",
+                    "errors": r"(?:^|\s)(\d+) errors?(?:\s|,|$)",
+                    "skipped": r"(?:^|\s)(\d+) skipped(?:\s|,|$)",
+                    "xfailed": r"(?:^|\s)(\d+) xfailed(?:\s|,|$)",
+                    "xpassed": r"(?:^|\s)(\d+) xpassed(?:\s|,|$)",
+                }
+                for field, pattern in outcome_patterns.items():
+                    match = re.search(pattern, summary_text)
+                    report[field] = int(match.group(1)) if match else 0
+                collection = re.search(
+                    r"(?:^|\s)(\d+) errors? during collection(?:\s|,|$)", stdout_text
+                )
+                report["collection_errors"] = int(collection.group(1)) if collection else 0
+                junit_path = _pytest_junit_path(argv)
+                if junit_path is not None:
+                    try:
+                        counts, cases = _junit_evidence(junit_path)
+                        case_ids = sorted(
+                            f"{item.attrib.get('classname', '')}::{item.attrib.get('name', '')}"
+                            for item in cases
+                        )
+                        report.update({
+                            "junit_valid": True,
+                            "junit_sha256": sha256_hex(junit_path.read_bytes()),
+                            "junit_tests": counts["tests"],
+                            "junit_skipped": counts["skipped"],
+                            "junit_failures": counts["failures"],
+                            "junit_errors": counts["errors"],
+                            "junit_cases": len(case_ids),
+                            "junit_unique_cases": len(set(case_ids)),
+                            "junit_case_ids_digest": _digest_object(case_ids),
+                        })
+                    except (OSError, ET.ParseError, ValueError):
+                        report["junit_valid"] = False
         elif kind == "node-oracle":
             for field in ("positive", "negative", "canonical_bytes"):
                 match = re.search(rf"(?:^|\s){field}=(\d+)(?:\s|$)", stdout_text)
@@ -4756,6 +6856,44 @@ def _w1_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
                 f"W1-01 Node oracle {field} drifted: "
                 f"{node_report.get(field)!r} != {expected!r}"
             )
+    return problems
+
+
+def _w1_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W1-02 contract/public-version executable evidence."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W1-02 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": 173,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": 173,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 173,
+        "junit_unique_cases": 173,
+        "junit_case_ids_digest": W1_02_TEST_CASE_IDS_DIGEST,
+    }
+    problems: list[str] = []
+    for field, expected_value in expected.items():
+        if report.get(field) != expected_value:
+            problems.append(
+                f"W1-02 pytest {field} drifted: "
+                f"{report.get(field)!r} != {expected_value!r}"
+            )
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W1-02 pytest junit_sha256 is missing or invalid")
     return problems
 
 
@@ -5027,6 +7165,17 @@ def _execute_auto_task(
             "ok": not report_problems,
             "detail": (
                 "38 pytest items and Node 22/24 9/16/295 oracle evidence bound"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+    if task["id"] == "W1-02":
+        report_problems = _w1_02_test_report_problems(test_reports)
+        assertions.append({
+            "id": "w1-02-exact-test-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "173 focused contract/version/governance pytest items bound with zero bypass"
                 if not report_problems else "; ".join(report_problems)
             ),
         })

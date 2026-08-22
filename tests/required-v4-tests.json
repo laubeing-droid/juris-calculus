@@ -554,7 +554,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_public_version.py::test_package_root_exports_v4_version",
       "owner_task": "W1-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Remove or drift compiler_core.__version__ from the V4 package identity.",
       "red_failure": "Installed package-root version lookup must fail on drift."
     },

@@ -1228,8 +1228,15 @@
       "objective": "重写 contracts.py 为 V4 typed models；__version__ public export contract；engine major=4",
       "allowed_paths": [
         "compiler_core/contracts.py",
-        "tests/contract/**",
-        "compiler_core/__init__.py"
+        "compiler_core/__init__.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_contracts.py",
+        "tests/contract/test_public_version.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/required-v4-tests.json",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1239,9 +1246,29 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W1-02"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W1-02",
+          "tests/contract/test_contracts.py",
+          "tests/contract/test_public_version.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W1-02/contract-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [
@@ -1289,9 +1316,13 @@
       "objective": "Schema/ToolSpec/capabilities 确定性发布物；唯一 TOOL_SPECS；emitter 只生成发布物",
       "allowed_paths": [
         "compiler_core/mcp.py",
-        "schemas/jc-v4.schema.json",
         "mcp_manifest.json",
-        "tests/contract/test_python_schema_mcp_differential.py"
+        "remediation/v4/file-disposition.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_python_schema_mcp_differential.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1301,9 +1332,28 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W1-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W1-03",
+          "tests/contract/test_python_schema_mcp_differential.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W1-03/contract-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

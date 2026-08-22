@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 341,
+  "count": 344,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1673,7 +1673,21 @@
       "closure_task": "W1-01"
     },
     {
+      "path": "tests/contract/test_contracts.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_jcs_v4.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/contract/test_public_version.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
@@ -1692,6 +1706,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/contract/v4-contract-vectors.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/differential/README.md",

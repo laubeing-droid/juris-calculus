@@ -1,0 +1,3635 @@
+{
+  "schema_version": "jc/v4-contract-vectors/1.0",
+  "objects": {
+    "DigestV4": "sha256:974740b4e47906e8c63d9576274bfe448b7cd0f692b561703a924cc9ec79480b",
+    "CanonicalTimeV4": {
+      "wire": "2026-08-22T08:00:00Z"
+    },
+    "ContentRefV4": {
+      "kind": "kind-value",
+      "digest": "sha256:9d426e01cd92e6696165ed997dbf143a12bae06b442afc8e089ec9b40cfa5ce6"
+    },
+    "ArtifactHandleV4": {
+      "artifact_id": "artifact_id-value",
+      "kind": "kind-value",
+      "content_ref": {
+        "kind": "artifacthandle-content-ref",
+        "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+      },
+      "run_identity_ref": {
+        "kind": "artifacthandle-run-identity-ref",
+        "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+      },
+      "scope": "scope-value",
+      "media_type": "media_type-value",
+      "size_bytes": 16,
+      "expires_at": {
+        "wire": "2026-08-23T08:00:00Z"
+      },
+      "max_bytes": 8,
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "ErrorV4": {
+      "code": "code-value",
+      "message": "message-value",
+      "stage": "stage-value",
+      "retryable": true,
+      "correlation_id": "correlation_id-value",
+      "field_path": [
+        "request",
+        "field"
+      ]
+    },
+    "SignatureEnvelopeV4": {
+      "algorithm": "Ed25519",
+      "key_id": "key_id-value",
+      "issuer": "issuer-value",
+      "role": "role-value",
+      "scope": "scope-value",
+      "kind": "kind-value",
+      "schema_version": "jc/4.0",
+      "subject_digest": "sha256:a68828e12ba702b03df87ba33c4358e33fe97125d3080e59cec984126e9fae91",
+      "run_identity_ref": null,
+      "status": "status-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "expires_at": {
+        "wire": "2026-08-23T08:00:00Z"
+      },
+      "nonce": "nonce-value",
+      "evidence_refs": [
+        {
+          "kind": "signatureenvelope-evidence-refs",
+          "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+        }
+      ],
+      "payload_digest": "sha256:00309c9084978ffe8f5600f6bcdca36f3a842da15d60821db8e7a669cac4a438",
+      "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+      "revocation_ref": null,
+      "signature": "signature-value"
+    },
+    "TrustPolicyV4": {
+      "policy_id": "policy_id-value",
+      "allowed_algorithms": [
+        "Ed25519"
+      ],
+      "trusted_key_ids": [
+        "trusted-key"
+      ],
+      "revoked_key_ids": [
+        "revoked-key"
+      ],
+      "allowed_issuers": [
+        "allowed_issuers-value"
+      ],
+      "allowed_roles": [
+        "allowed_roles-value"
+      ],
+      "allowed_scopes": [
+        "allowed_scopes-value"
+      ],
+      "allowed_artifact_kinds": [
+        "allowed_artifact_kinds-value"
+      ],
+      "valid_from": {
+        "wire": "2026-01-01T00:00:00Z"
+      },
+      "valid_to": null,
+      "authorization_policy_ref": {
+        "kind": "trustpolicy-authorization-policy-ref",
+        "digest": "sha256:6d2928ef82c9f599ac58c8a42332df5227c8cc7ea640f4c518c2b2ba97abe4fc"
+      },
+      "revocation_policy_ref": {
+        "kind": "trustpolicy-revocation-policy-ref",
+        "digest": "sha256:2748d4cfe72d0ed3bf6efa7507ffbbda14253a5a3f3250de83a29e722f7065da"
+      },
+      "replay_policy_ref": {
+        "kind": "trustpolicy-replay-policy-ref",
+        "digest": "sha256:639785deb2a9c7ea457996cc51e33bea5c3f84a7295e4d72368009ced24c2644"
+      },
+      "separation_of_duties_ref": {
+        "kind": "trustpolicy-separation-of-duties-ref",
+        "digest": "sha256:1ac812c6a36f0a3367c9451993cb7c06fe8239ec8169857389ffa8c4e9a5911f"
+      },
+      "policy_digest": "sha256:66ce4aa4afcb56573532f87ac54c6e7921ba48b6bff9d8f7bb73320367b3d0e7"
+    },
+    "StorageCapabilityV4": {
+      "provider_id": "provider_id-value",
+      "namespace": "namespace-value",
+      "content_addressed": true,
+      "atomic_write": true,
+      "no_follow": true,
+      "max_artifact_bytes": 1048576,
+      "durability_ref": {
+        "kind": "storagecapability-durability-ref",
+        "digest": "sha256:4c46c016b1f1cf37666f909a70b8295c75084215b633ed6ad24bb8752f99fc9e"
+      },
+      "access_policy_ref": {
+        "kind": "storagecapability-access-policy-ref",
+        "digest": "sha256:2043e8f925f73c49ecdb5ce11868751e1fbbe3e2ecd67f88d74d61e70a89b932"
+      },
+      "encryption_ref": {
+        "kind": "storagecapability-encryption-ref",
+        "digest": "sha256:4f08f1d7898593d05799ed4edd8d60b346cd20914fe7589f9137280027930c08"
+      },
+      "quota_policy_ref": {
+        "kind": "storagecapability-quota-policy-ref",
+        "digest": "sha256:85ea5836bf48d37fb446a6d075c64fe26c905546e1a2fd0cfc2716c6b51da109"
+      },
+      "retention_policy_ref": {
+        "kind": "storagecapability-retention-policy-ref",
+        "digest": "sha256:99857462d2ced0215a103413663d60b400d2e91096a5d0f7793f92ae6c166ddb"
+      },
+      "attestation_refs": [
+        {
+          "kind": "storagecapability-attestation-refs",
+          "digest": "sha256:2793a0b50c4a95e03b3e97416f35e14bba69ece9c4f26dc48b9a9365e3e77ffc"
+        }
+      ],
+      "policy_digest": "sha256:53d7484173d63e16a2d47f46b8e19dfffee7fd1c4474378322a24cdc4f59e356",
+      "capability_digest": "sha256:b91dbb0980d4eda35597dc6ec5fb51e1b9eb17a90a306aba839e4dc251303665"
+    },
+    "ObservabilityEnvelopeV4": {
+      "run_identity_ref": {
+        "kind": "observabilityenvelope-run-identity-ref",
+        "digest": "sha256:1751aaf5d3419721a1bc2c381317a5d6576b2fa1839814200421df3fb388c073"
+      },
+      "started_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "finished_at": {
+        "wire": "2026-08-22T08:00:01Z"
+      },
+      "host_id": "host_id-value",
+      "process_id": 123,
+      "elapsed_ms": 1000,
+      "event_refs": [
+        {
+          "kind": "observabilityenvelope-event-refs",
+          "digest": "sha256:1af25e494a9a69cfb1e1f4c9f6e50b456378fb1a5e65eb4f1d8ae2b82e537edf"
+        }
+      ]
+    },
+    "CaseRequestV4": {
+      "request_id": "request_id-value",
+      "schema_version": "jc/4.0",
+      "legal_context": {
+        "jurisdiction": "jurisdiction-value",
+        "governing_law": "governing_law-value"
+      },
+      "decision_time": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "source_bundle_ref": {
+        "kind": "caserequest-source-bundle-ref",
+        "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
+      },
+      "evidence_manifest_ref": {
+        "kind": "caserequest-evidence-manifest-ref",
+        "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
+      },
+      "fact_attestation_refs": [
+        {
+          "kind": "caserequest-fact-attestation-refs",
+          "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
+        }
+      ],
+      "rule_pack_ref": {
+        "kind": "caserequest-rule-pack-ref",
+        "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
+      },
+      "requested_outputs": [
+        {
+          "kind": "semantic_result",
+          "format": "format-value",
+          "locale": "locale-value"
+        }
+      ],
+      "proposal_refs": [
+        {
+          "kind": "caserequest-proposal-refs",
+          "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
+        }
+      ]
+    },
+    "LegalContextV4": {
+      "jurisdiction": "jurisdiction-value",
+      "governing_law": "governing_law-value"
+    },
+    "RequestedOutputV4": {
+      "kind": "semantic_result",
+      "format": "format-value",
+      "locale": "locale-value"
+    },
+    "ResourceLimitsV4": {
+      "max_request_bytes": 262144,
+      "max_json_depth": 16,
+      "max_json_nodes": 10000,
+      "max_object_members_per_object": 64,
+      "max_total_object_members": 4096,
+      "max_array_items_per_array": 512,
+      "max_total_array_items": 4096,
+      "max_string_utf8_bytes": 8192,
+      "max_total_string_utf8_bytes": 196608,
+      "max_total_reference_values": 1536,
+      "max_fact_attestation_refs": 512,
+      "max_proposal_refs": 512,
+      "admission_deadline_ms": 250,
+      "artifact_page_bytes": null,
+      "solver_deadline_ms": null,
+      "worker_queue_items": null,
+      "in_flight_runs": null,
+      "state_quota_bytes": null,
+      "retention_seconds": null
+    },
+    "SourceSnapshotV4": {
+      "source_id": "source_id-value",
+      "jurisdiction": "jurisdiction-value",
+      "authority_tier": "authority_tier-value",
+      "issuer": "issuer-value",
+      "title": "title-value",
+      "publication_time": {
+        "wire": "2026-01-01T00:00:00Z"
+      },
+      "effective_from": {
+        "wire": "2026-02-01T00:00:00Z"
+      },
+      "effective_to": null,
+      "retrieved_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "canonical_locator": {
+        "kind": "kind-value",
+        "value": "authority.example/source",
+        "page": 1,
+        "span_start": null,
+        "span_end": null
+      },
+      "raw_digest": "sha256:a69db1a7d57a48e9ed528c41cf327b70bea8ed32930056f31d7774dfa53f27c6",
+      "normalization_profile": "normalization_profile-value",
+      "normalized_digest": "sha256:f3f0e27de6df7ff7a878e688b4953700786ee60ea86e3ed1e72a1671c2360721",
+      "structure_map_ref": {
+        "kind": "sourcesnapshot-structure-map-ref",
+        "digest": "sha256:1e37d2bc705764df48caea958e8b88ca4cf47364a8066ee436fbf5cc8ea7fc9f"
+      },
+      "authenticity_receipt_ref": {
+        "kind": "sourcesnapshot-authenticity-receipt-ref",
+        "digest": "sha256:85995dedbc3f60a2a1d7cf8da3f51638bb4c364f8f4a73713aea620c261037db"
+      },
+      "provenance_refs": [
+        {
+          "kind": "sourcesnapshot-provenance-refs",
+          "digest": "sha256:c45cc264b558700eaa5d68b4c3d178159cc5ffd9f37ede822592ddb1f3f924e6"
+        }
+      ],
+      "acquisition_method": "acquisition_method-value",
+      "license_status": "license_status-value",
+      "distribution_status": "distribution_status-value"
+    },
+    "CanonicalLocatorV4": {
+      "kind": "kind-value",
+      "value": "authority.example/source",
+      "page": 1,
+      "span_start": null,
+      "span_end": null
+    },
+    "SourceVersionEdgeV4": {
+      "source_ref": {
+        "kind": "sourceversionedge-source-ref",
+        "digest": "sha256:10f8413c06a49a3fbd6580a7a1fccb4b4c91ff594acca72a1a9837c8b046bbfb"
+      },
+      "target_ref": {
+        "kind": "sourceversionedge-target-ref",
+        "digest": "sha256:04d61548520baf4af9b8ea0ce97ebb31e857e0161abf843cd1bd6ab1d7054779"
+      },
+      "relation": "relation-value",
+      "locator": {
+        "kind": "kind-value",
+        "value": "authority.example/source",
+        "page": 1,
+        "span_start": null,
+        "span_end": null
+      },
+      "retrieval_receipt_ref": {
+        "kind": "sourceversionedge-retrieval-receipt-ref",
+        "digest": "sha256:3d0434d3c4a7bae5c502d589eaf37989e82f6f33a0a46e928301235ee758b725"
+      }
+    },
+    "SourceBundleV4": {
+      "bundle_id": "bundle_id-value",
+      "root_source_ref": {
+        "kind": "sourcebundle-root-source-ref",
+        "digest": "sha256:0e26257bd87bf9b35e34b60ff8f104f97f4ff1a7a64abe89fd5cedc8ecc881b7"
+      },
+      "terminal_source_ref": {
+        "kind": "sourcebundle-terminal-source-ref",
+        "digest": "sha256:a37c033014f3125aa2e18d6cc021cd8b687719bd3c38390b57184f6b3c2c87f2"
+      },
+      "snapshots": [
+        {
+          "source_id": "source_id-value",
+          "jurisdiction": "jurisdiction-value",
+          "authority_tier": "authority_tier-value",
+          "issuer": "issuer-value",
+          "title": "title-value",
+          "publication_time": {
+            "wire": "2026-01-01T00:00:00Z"
+          },
+          "effective_from": {
+            "wire": "2026-02-01T00:00:00Z"
+          },
+          "effective_to": null,
+          "retrieved_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "canonical_locator": {
+            "kind": "kind-value",
+            "value": "authority.example/source",
+            "page": 1,
+            "span_start": null,
+            "span_end": null
+          },
+          "raw_digest": "sha256:a69db1a7d57a48e9ed528c41cf327b70bea8ed32930056f31d7774dfa53f27c6",
+          "normalization_profile": "normalization_profile-value",
+          "normalized_digest": "sha256:f3f0e27de6df7ff7a878e688b4953700786ee60ea86e3ed1e72a1671c2360721",
+          "structure_map_ref": {
+            "kind": "sourcesnapshot-structure-map-ref",
+            "digest": "sha256:1e37d2bc705764df48caea958e8b88ca4cf47364a8066ee436fbf5cc8ea7fc9f"
+          },
+          "authenticity_receipt_ref": {
+            "kind": "sourcesnapshot-authenticity-receipt-ref",
+            "digest": "sha256:85995dedbc3f60a2a1d7cf8da3f51638bb4c364f8f4a73713aea620c261037db"
+          },
+          "provenance_refs": [
+            {
+              "kind": "sourcesnapshot-provenance-refs",
+              "digest": "sha256:c45cc264b558700eaa5d68b4c3d178159cc5ffd9f37ede822592ddb1f3f924e6"
+            }
+          ],
+          "acquisition_method": "acquisition_method-value",
+          "license_status": "license_status-value",
+          "distribution_status": "distribution_status-value"
+        }
+      ],
+      "version_edges": [
+        {
+          "source_ref": {
+            "kind": "sourceversionedge-source-ref",
+            "digest": "sha256:10f8413c06a49a3fbd6580a7a1fccb4b4c91ff594acca72a1a9837c8b046bbfb"
+          },
+          "target_ref": {
+            "kind": "sourceversionedge-target-ref",
+            "digest": "sha256:04d61548520baf4af9b8ea0ce97ebb31e857e0161abf843cd1bd6ab1d7054779"
+          },
+          "relation": "relation-value",
+          "locator": {
+            "kind": "kind-value",
+            "value": "authority.example/source",
+            "page": 1,
+            "span_start": null,
+            "span_end": null
+          },
+          "retrieval_receipt_ref": {
+            "kind": "sourceversionedge-retrieval-receipt-ref",
+            "digest": "sha256:3d0434d3c4a7bae5c502d589eaf37989e82f6f33a0a46e928301235ee758b725"
+          }
+        }
+      ],
+      "bundle_digest": "sha256:1a0205656b39178e0e974d3eb649cabc21eb926dd10722cee40a1fc30c52a4c5"
+    },
+    "EvidenceManifestV4": {
+      "manifest_id": "manifest_id-value",
+      "request_ref": {
+        "kind": "evidencemanifest-request-ref",
+        "digest": "sha256:23bd8823449e1a3689a1a00219326e406a1ff00213f11e72f821fd1f8669efc7"
+      },
+      "case_scope": "case:test",
+      "items": [
+        {
+          "evidence_id": "evidence_id-value",
+          "document_ref": {
+            "kind": "evidenceitem-document-ref",
+            "digest": "sha256:f89a42080e89d39dce844d2594118dd5a2f6fc7e5ea832b43364c70f1567a6a5"
+          },
+          "locators": [
+            {
+              "kind": "kind-value",
+              "value": "authority.example/source",
+              "page": 1,
+              "span_start": null,
+              "span_end": null
+            }
+          ],
+          "custody_provenance": [
+            {
+              "kind": "evidenceitem-custody-provenance",
+              "digest": "sha256:ae526e932e0da93ef478fabd0cc713281e66eeb6ac08cecc557e080ecec777d0"
+            }
+          ],
+          "redaction_state": "redaction_state-value",
+          "review_state": "review_state-value"
+        }
+      ],
+      "fact_candidate_refs": [
+        {
+          "kind": "evidencemanifest-fact-candidate-refs",
+          "digest": "sha256:e7d8814b439adcf882a63de0b69e09368e9972cd531e3fa51c515507352607a7"
+        }
+      ],
+      "contradictions": [
+        {
+          "left_ref": {
+            "kind": "contradictionref-left-ref",
+            "digest": "sha256:ed8c680c370cbf59c89484512a757dada23e78ed45ed34e437652f8d91f9e245"
+          },
+          "right_ref": {
+            "kind": "contradictionref-right-ref",
+            "digest": "sha256:2a47aa41ff18a2c02e8675ca6258a9d30f50e1a6603557da5c0ad33fec09fc21"
+          },
+          "kind": "kind-value",
+          "reason_code": "reason_code-value"
+        }
+      ],
+      "manifest_digest": "sha256:16b60bd265cbc4d784110e226784346b43da567ae0d2feb1876fb8d3a0fd5e6f"
+    },
+    "EvidenceItemV4": {
+      "evidence_id": "evidence_id-value",
+      "document_ref": {
+        "kind": "evidenceitem-document-ref",
+        "digest": "sha256:f89a42080e89d39dce844d2594118dd5a2f6fc7e5ea832b43364c70f1567a6a5"
+      },
+      "locators": [
+        {
+          "kind": "kind-value",
+          "value": "authority.example/source",
+          "page": 1,
+          "span_start": null,
+          "span_end": null
+        }
+      ],
+      "custody_provenance": [
+        {
+          "kind": "evidenceitem-custody-provenance",
+          "digest": "sha256:ae526e932e0da93ef478fabd0cc713281e66eeb6ac08cecc557e080ecec777d0"
+        }
+      ],
+      "redaction_state": "redaction_state-value",
+      "review_state": "review_state-value"
+    },
+    "ContradictionRefV4": {
+      "left_ref": {
+        "kind": "contradictionref-left-ref",
+        "digest": "sha256:ed8c680c370cbf59c89484512a757dada23e78ed45ed34e437652f8d91f9e245"
+      },
+      "right_ref": {
+        "kind": "contradictionref-right-ref",
+        "digest": "sha256:2a47aa41ff18a2c02e8675ca6258a9d30f50e1a6603557da5c0ad33fec09fc21"
+      },
+      "kind": "kind-value",
+      "reason_code": "reason_code-value"
+    },
+    "FactCandidateV4": {
+      "candidate_id": "candidate_id-value",
+      "proposition_ref": {
+        "kind": "factcandidate-proposition-ref",
+        "digest": "sha256:3f38e89c6ff53120a73c6b64263f9e6648120a9265108af6b1646c691279bd81"
+      },
+      "value_kind": "value_kind-value",
+      "value_ref": {
+        "kind": "factcandidate-value-ref",
+        "digest": "sha256:5e0400330cd7eda8b4005e77cb5a8c315b8efb1e557ed48fbb01e3480b26deba"
+      },
+      "evidence_refs": [
+        {
+          "kind": "factcandidate-evidence-refs",
+          "digest": "sha256:0e8a8d7c35a24e9607fa65f4c3e36d6de5e319876d137ad3e1a8b793ec0c31ec"
+        }
+      ],
+      "producer_kind": "producer_kind-value",
+      "proposal_ref": null
+    },
+    "FactAttestationV4": {
+      "attestation_id": "attestation_id-value",
+      "candidate_ref": {
+        "kind": "factattestation-candidate-ref",
+        "digest": "sha256:2e617f86851e45bfbdc773f3e60b73d0ae8ed67ca8058b51ca91e64d7c78ee66"
+      },
+      "request_ref": {
+        "kind": "factattestation-request-ref",
+        "digest": "sha256:7ec6f5c09bf2157ede1951428ce055bfaec5a8b0b844c4d659673f7c17f320cf"
+      },
+      "case_scope": "case:test",
+      "proposition_digest": "sha256:cd89c802d8847e94f334d680c791b11a7389932badde38a6f30130bc873dd3a0",
+      "value_digest": "sha256:a884edf9f1e8ea38ea96512cb488a60166096a2329eafdba911affe92e6cafbe",
+      "source_refs": [
+        {
+          "kind": "factattestation-source-refs",
+          "digest": "sha256:9b247978e7ebf88673d3583aeafe82db3073c8bc51ca6d301db66811d1c30676"
+        }
+      ],
+      "evidence_refs": [
+        {
+          "kind": "factattestation-evidence-refs",
+          "digest": "sha256:4b0b30a8704dd68e0070a16f4543430dfa800def99b77a9f5cf95f63cd52bdaa"
+        }
+      ],
+      "interpretation_version": "interpretation_version-value",
+      "admission_basis": "admission_basis-value",
+      "issuer_role": "issuer_role-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "expires_at": {
+        "wire": "2026-08-23T08:00:00Z"
+      },
+      "dispute_state": "dispute_state-value",
+      "assumption_state": "assumption_state-value",
+      "nonce": "nonce-value",
+      "replay_policy_ref": {
+        "kind": "factattestation-replay-policy-ref",
+        "digest": "sha256:2bf0e49e4ba381914c3b34bbaf4a2ae9c01c44698b0f028a28194153b59d8e94"
+      },
+      "revocation_ref": null,
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:2e617f86851e45bfbdc773f3e60b73d0ae8ed67ca8058b51ca91e64d7c78ee66",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:8ab2b7ec45075cc39e639db2ee646a885c2ab964854d27fbe11bd5a7f6c26963",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "RuleV4": {
+      "rule_id": "rule_id-value",
+      "rule_digest": "sha256:f61ee1f5cd187bdf9956c073fefc1220bfc85bb45d0edcd5d71571c554daf39a",
+      "jurisdiction": "jurisdiction-value",
+      "governing_law": "governing_law-value",
+      "authority_ref": {
+        "kind": "rule-authority-ref",
+        "digest": "sha256:3855ab21beb4a443a3abd2df4ed32a2e0f3a01e8f7af9375d9e6b6b36c569a19"
+      },
+      "variable_declaration_refs": [
+        {
+          "kind": "rule-variable-declaration-refs",
+          "digest": "sha256:24faf793667633f1ee4f8d6cb9c030c030e5548cb0043211c957241d55665601"
+        }
+      ],
+      "premise_refs": [
+        {
+          "kind": "rule-premise-refs",
+          "digest": "sha256:9d0cdc1f4aeb91a99da3dffdf1faae4fef943bb4aaad6239a9e0dbe2714e6fe9"
+        }
+      ],
+      "conclusion_ref": {
+        "kind": "rule-conclusion-ref",
+        "digest": "sha256:7bb4604758db73612369fc0a47a98b5d4aa7b08a6a958b76fd18a4c3464dde46"
+      },
+      "modality": "modality-value",
+      "permission_ref": null,
+      "exception_refs": [
+        {
+          "kind": "rule-exception-refs",
+          "digest": "sha256:be3ef4a88395dd46e5977aae2d5ced3a5715486c5556341fbc4ddb6cf9de1735"
+        }
+      ],
+      "priority_refs": [
+        {
+          "kind": "rule-priority-refs",
+          "digest": "sha256:1dbae75057f26ab0e06c8b138d4aab6e05ac0d2ccafc777a18d56522ab01c4b3"
+        }
+      ],
+      "attack_refs": [
+        {
+          "kind": "rule-attack-refs",
+          "digest": "sha256:f6fb99d10f23f555e192167ce673c4f22330f50bee42c09a8a5c6bda79f3b561"
+        }
+      ],
+      "temporal_constraint_refs": [
+        {
+          "kind": "rule-temporal-constraint-refs",
+          "digest": "sha256:11a252531bea26c7bf5bf8df9ed328059ac934eb2f5f094d412ee76510b9582f"
+        }
+      ],
+      "numeric_constraint_refs": [
+        {
+          "kind": "rule-numeric-constraint-refs",
+          "digest": "sha256:6833c208f4ed18a29a557a6540068e7483883ddd929eb554b1e525ab9398bca5"
+        }
+      ],
+      "source_snapshot_ref": {
+        "kind": "rule-source-snapshot-ref",
+        "digest": "sha256:55aea3ef6e7392e55b68729def8e1bfcea95088351eb9df2b072465fab422d1a"
+      },
+      "source_locator": {
+        "kind": "kind-value",
+        "value": "authority.example/source",
+        "page": 1,
+        "span_start": null,
+        "span_end": null
+      },
+      "source_structure_ref": {
+        "kind": "rule-source-structure-ref",
+        "digest": "sha256:9308116e34219f82a48eeb7a2aae72ad4c6898590ee08b8257ebfa68347ce708"
+      },
+      "interpretation_choice_refs": [
+        {
+          "kind": "rule-interpretation-choice-refs",
+          "digest": "sha256:77f4652686a376c2ba3f89bdcb887a1090272a2d1e6480a65f49ae100664a6d5"
+        }
+      ],
+      "defined_term_refs": [
+        {
+          "kind": "rule-defined-term-refs",
+          "digest": "sha256:f945a50f9d7b3ab5915d03eb3d20fa0e17e4354d8a015f7ef7877c325094560f"
+        }
+      ],
+      "promotion_receipt_refs": [
+        {
+          "kind": "rule-promotion-receipt-refs",
+          "digest": "sha256:be1bef75433811035b96359a26ab4a5658d4ae3e7410297b50f61eb9660492ba"
+        }
+      ],
+      "effective_from": {
+        "wire": "2026-02-01T00:00:00Z"
+      },
+      "effective_to": null
+    },
+    "PackManifestV4": {
+      "pack_id": "pack_id-value",
+      "pack_version": "pack_version-value",
+      "engine_api": "4.0.0",
+      "rule_refs": [
+        {
+          "kind": "packmanifest-rule-refs",
+          "digest": "sha256:ce472daf57c5982408637c15cf8987744487a8890589aacad41bc4d66f94e75d"
+        }
+      ],
+      "source_refs": [
+        {
+          "kind": "packmanifest-source-refs",
+          "digest": "sha256:866ba8bae7d23a266267244568a70c2b64a2ac7eff0780b87bc13b4aa6483795"
+        }
+      ],
+      "config_refs": [
+        {
+          "kind": "packmanifest-config-refs",
+          "digest": "sha256:cdb6068dab60065a8dbe86d24df57c99992ff411df3892c3f54059c6b18f72d1"
+        }
+      ],
+      "receipt_refs": [
+        {
+          "kind": "packmanifest-receipt-refs",
+          "digest": "sha256:aced4022312dc8edc08a01dfc06103d501338129ea270e13840c0f4794f81e1f"
+        }
+      ],
+      "compiler_build_digest": "sha256:431f47c07155b49055c9b72cb2a3c7505d9d4d10d2dd01838a20b08e814f4233",
+      "source_tree_digest": "sha256:3b613d7b91b0927d5417108cea562d26172b69713435832c3a53fb1b72c07191",
+      "schema_digest": "sha256:4ebbea2bde9e2e9e0c2fa2687f98edd204c822f5562479966e7c68f0ac4f9351",
+      "trust_policy_ref": {
+        "kind": "packmanifest-trust-policy-ref",
+        "digest": "sha256:b161c431197cde6f6741568c2effde2d70f1780b8077954403a7884ba924d995"
+      },
+      "coverage_receipt_refs": [
+        {
+          "kind": "packmanifest-coverage-receipt-refs",
+          "digest": "sha256:d6519a53b171b083a5463fa1c2d6e32f445b18002a3b100a9022c9db649c77ca"
+        }
+      ],
+      "verification_receipt_refs": [
+        {
+          "kind": "packmanifest-verification-receipt-refs",
+          "digest": "sha256:1d938529a797849f926097e1580bd201622ca02e3013c06823f19493c8d88e6d"
+        }
+      ],
+      "manifest_digest": "sha256:e13aa607a8b3f92840009fe961b2522626970cce4d7c2fe070a43a9038548eaa"
+    },
+    "PackSignatureV4": {
+      "manifest_ref": {
+        "kind": "packsignature-manifest-ref",
+        "digest": "sha256:e13aa607a8b3f92840009fe961b2522626970cce4d7c2fe070a43a9038548eaa"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:e13aa607a8b3f92840009fe961b2522626970cce4d7c2fe070a43a9038548eaa",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:194ad7b2047d0082caa9756fb4dfcc32eb541b31fcb17d618058110d0a9bd477",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "LegalSpecV4": {
+      "spec_id": "spec_id-value",
+      "rule_ref": {
+        "kind": "legalspec-rule-ref",
+        "digest": "sha256:dd058b64f2376cba52bb8e47844c095ff21d12ca4c52f3a71d0d69cebea7fbd9"
+      },
+      "jurisdiction": "jurisdiction-value",
+      "governing_law": "governing_law-value",
+      "authority_ref": {
+        "kind": "legalspec-authority-ref",
+        "digest": "sha256:db72ee441a0e6f092289614f91527c7d40bc787c272263c89cd7f5c4b1ca28a6"
+      },
+      "variable_declaration_refs": [
+        {
+          "kind": "legalspec-variable-declaration-refs",
+          "digest": "sha256:9d78a64e7857f3243ddb2c51b246187b3f30145231e1c7a0e561c313cfc5aef5"
+        }
+      ],
+      "premise_refs": [
+        {
+          "kind": "legalspec-premise-refs",
+          "digest": "sha256:7f2765f5b485af7433b63b76efe08d809ce3dec4445c88be50729a874226db4f"
+        }
+      ],
+      "conclusion_ref": {
+        "kind": "legalspec-conclusion-ref",
+        "digest": "sha256:daaf6fe4a43728d28dd5b0635e3470db8c8a56aa251692221939683d500ed6c7"
+      },
+      "modality": "modality-value",
+      "permission_ref": null,
+      "exception_refs": [
+        {
+          "kind": "legalspec-exception-refs",
+          "digest": "sha256:d6b972c5c01d56a998b7a93465d481543b5355500e0dc2a6496c37eb7b66d5f1"
+        }
+      ],
+      "priority_refs": [
+        {
+          "kind": "legalspec-priority-refs",
+          "digest": "sha256:44d3516dac01015fc51f5eea8589ee8e96cc3ab5c1c1d6b8095a3ab216b08976"
+        }
+      ],
+      "attack_refs": [
+        {
+          "kind": "legalspec-attack-refs",
+          "digest": "sha256:f6df2921ba3255acab390543e625d093a7bc5177ecadcd25ea6c9bd830f4e8e3"
+        }
+      ],
+      "temporal_constraint_refs": [
+        {
+          "kind": "legalspec-temporal-constraint-refs",
+          "digest": "sha256:82d713bdca8deb4c54291c9147d785ff020ee6aea83e04040e6f5cbd5b252a77"
+        }
+      ],
+      "numeric_constraint_refs": [
+        {
+          "kind": "legalspec-numeric-constraint-refs",
+          "digest": "sha256:98c47d10c43ac5b070633b125f9abbbbed145fe32dc27e9e2e59d0f701dd5bc1"
+        }
+      ],
+      "source_snapshot_ref": {
+        "kind": "legalspec-source-snapshot-ref",
+        "digest": "sha256:55514f0deb16f03f4b7e050e82ae35e769c11533f02788432d60d2ad7bc71a1f"
+      },
+      "source_locator": {
+        "kind": "kind-value",
+        "value": "authority.example/source",
+        "page": 1,
+        "span_start": null,
+        "span_end": null
+      },
+      "source_structure_ref": {
+        "kind": "legalspec-source-structure-ref",
+        "digest": "sha256:931d290d6eecc976e897b173821e1c690c674dfb01862a8080cc444bd520fc2d"
+      },
+      "interpretation_choice_refs": [
+        {
+          "kind": "legalspec-interpretation-choice-refs",
+          "digest": "sha256:b33cf07cd11dad8b15116ac5695bc2729ee1e28aa22c0e9f16ae6da79bde6dce"
+        }
+      ],
+      "defined_term_refs": [
+        {
+          "kind": "legalspec-defined-term-refs",
+          "digest": "sha256:05c2d5681169c6b302dcc9b446f499b4f18033fbb731e78f57d570fda8c947b6"
+        }
+      ],
+      "promotion_receipt_refs": [
+        {
+          "kind": "legalspec-promotion-receipt-refs",
+          "digest": "sha256:531dad01036042fb9bdb1c169a3de117a51cedea4715b3251510817ff549bc8f"
+        }
+      ],
+      "effective_from": {
+        "wire": "2026-02-01T00:00:00Z"
+      },
+      "effective_to": null,
+      "spec_digest": "sha256:f82bbbc4e24bd0dc378cf93af94c2fbc29e2f10df62671405b06ca723b602be1"
+    },
+    "LegalIVLV4": {
+      "ivl_id": "ivl_id-value",
+      "spec_ref": {
+        "kind": "legalivl-spec-ref",
+        "digest": "sha256:f7bae2816aba841d9d2bfc190ccecb518529245a297cbd5457410b4f38d4bab6"
+      },
+      "type_environment_ref": {
+        "kind": "legalivl-type-environment-ref",
+        "digest": "sha256:17e8ac49adf98d405cdaedee16784fb70fd1c5900fb94a6d2574517917104ea3"
+      },
+      "authority_ref": {
+        "kind": "legalivl-authority-ref",
+        "digest": "sha256:ef78c9c1d5fc8e0f0d987848e67f23580c12d843bee99d7a42839b90b8349518"
+      },
+      "variable_declaration_refs": [
+        {
+          "kind": "legalivl-variable-declaration-refs",
+          "digest": "sha256:de48895b6596c50aa861cd33358b35501c0a54c4211b3b975ab40e11d3be7bb6"
+        }
+      ],
+      "premise_refs": [
+        {
+          "kind": "legalivl-premise-refs",
+          "digest": "sha256:31b19e1a623d4e2207f5ecbb85a7d1f585e742480cbeb71cb5cbdf7e34e0f644"
+        }
+      ],
+      "conclusion_ref": {
+        "kind": "legalivl-conclusion-ref",
+        "digest": "sha256:755cee8e3960d7046a6f4c4d71ae3ee90d7a30001ef5ccdf29bf2d5b958c7083"
+      },
+      "modality_ref": {
+        "kind": "legalivl-modality-ref",
+        "digest": "sha256:50deda6f153f12e67398fd80e4138d39a05ccab14e3db6c2e1ed2379b841bdaf"
+      },
+      "clause_refs": [
+        {
+          "kind": "legalivl-clause-refs",
+          "digest": "sha256:ea8723edc2f2706f4f1782258c80da8c2f7a2047cad48b5319da1fb2e1abfb6f"
+        }
+      ],
+      "exception_attack_refs": [
+        {
+          "kind": "legalivl-exception-attack-refs",
+          "digest": "sha256:127badc63b726509513cb5c3123f59585451b8706019be9791f167e8d010e06e"
+        }
+      ],
+      "permission_refs": [
+        {
+          "kind": "legalivl-permission-refs",
+          "digest": "sha256:18969789b8dc220d5648b84e242e145989223f287d59eef254631d783094b430"
+        }
+      ],
+      "priority_refs": [
+        {
+          "kind": "legalivl-priority-refs",
+          "digest": "sha256:2853d735e9f3628b3e5aad948b68358cad340e17b2720fa460047e5fa1639652"
+        }
+      ],
+      "temporal_constraint_refs": [
+        {
+          "kind": "legalivl-temporal-constraint-refs",
+          "digest": "sha256:aee5de7418bd481b4001ad5d5ff3c8b8817afc7d4022b7e6f2ccb20aae961e70"
+        }
+      ],
+      "numeric_constraint_refs": [
+        {
+          "kind": "legalivl-numeric-constraint-refs",
+          "digest": "sha256:d22a9125c44af69f48a669b733c28b1fe77f8475c0e233d88c72ed5ae87d3352"
+        }
+      ],
+      "source_map_ref": {
+        "kind": "legalivl-source-map-ref",
+        "digest": "sha256:bfab924c64968a8fbce4fa56a5a54e40ec2b924fbec35c41abe28bbd836c1b68"
+      },
+      "interpretation_choice_refs": [
+        {
+          "kind": "legalivl-interpretation-choice-refs",
+          "digest": "sha256:db6510c970b8e156b3bca21bb02ec05cee618c9554e571e75aa1b4b6fd38157a"
+        }
+      ],
+      "interpretation_approval_refs": [
+        {
+          "kind": "legalivl-interpretation-approval-refs",
+          "digest": "sha256:cd4c43b77b48634110ea50e92be82ee381456932ccac6ebe881845fcd8442c9a"
+        }
+      ],
+      "defined_term_refs": [
+        {
+          "kind": "legalivl-defined-term-refs",
+          "digest": "sha256:c452950dd7e1c198f4b9239a11048c35cc026fe4553615535f451f478ebb8768"
+        }
+      ],
+      "proof_obligation_refs": [
+        {
+          "kind": "legalivl-proof-obligation-refs",
+          "digest": "sha256:ba1166f275148096bb3688a906a535c33c02272ed8d686d754c7a86eb2efd1db"
+        }
+      ],
+      "ivl_digest": "sha256:1014c32b4ded746d0700b1bdca764cb4c0ad0e68ac55eca3d0c2e09526369b19"
+    },
+    "ArgumentV4": {
+      "argument_id": "argument_id-value",
+      "premise_refs": [
+        {
+          "kind": "argument-premise-refs",
+          "digest": "sha256:b54bbeb07abd839aa31bfbe67c5fb788e1f506c51af6ec9f2b52514ae205d666"
+        }
+      ],
+      "rule_ref": {
+        "kind": "argument-rule-ref",
+        "digest": "sha256:81212895eeaa9d4e2795cb19e7721b27e9b800f8a4bea1de323707a3eb0649aa"
+      },
+      "claim_ref": {
+        "kind": "argument-claim-ref",
+        "digest": "sha256:80cac281aa4799bdfd6c92d26f531936fefe631aa5f2c9b47d3a068557121b8f"
+      },
+      "derivation_refs": [
+        {
+          "kind": "argument-derivation-refs",
+          "digest": "sha256:d64d153bd6ba25a180a51682bf783c1f1d7dd4eea8eed039e1496e3dfe6e2660"
+        }
+      ]
+    },
+    "AttackV4": {
+      "attack_id": "attack_id-value",
+      "attacker_ref": {
+        "kind": "attack-attacker-ref",
+        "digest": "sha256:2b50f563a5e0bd759f15702dd3f08c6ff409edfe32252d199bfba48780ca1578"
+      },
+      "target_ref": {
+        "kind": "attack-target-ref",
+        "digest": "sha256:2e025e19377ea1f1eb8be8e1b68efc7e53fb6ba17d28f9d3368460ef4dde8e21"
+      },
+      "attack_type": "rebut",
+      "target_aspect": "claim"
+    },
+    "PriorityEdgeV4": {
+      "edge_id": "edge_id-value",
+      "preferred_ref": {
+        "kind": "priorityedge-preferred-ref",
+        "digest": "sha256:3b3981de9450e331833694ed78e93b92e49e73b2cd21aefecde4f6de59ab3b23"
+      },
+      "defeated_ref": {
+        "kind": "priorityedge-defeated-ref",
+        "digest": "sha256:dac83dbc03af81707120627bf800da9c8ebbcc92089ffe36519c30081d38559e"
+      },
+      "condition_ref": null,
+      "source_ref": {
+        "kind": "priorityedge-source-ref",
+        "digest": "sha256:43d9021bf88ac7c5090eb4823159bf6b478e4f784a09945674723520295a0a37"
+      }
+    },
+    "PermissionResolutionV4": {
+      "permission_id": "permission_id-value",
+      "claim_ref": {
+        "kind": "permissionresolution-claim-ref",
+        "digest": "sha256:39225c0e1748eef1fb8db9916bdba26372f9c26c223057d3a229e4a4d5530432"
+      },
+      "prohibition_ref": null,
+      "status": "holds",
+      "witness_refs": [
+        {
+          "kind": "permissionresolution-witness-refs",
+          "digest": "sha256:a194c2a9b4bf5996308f59cd94830e22c8915b95af229d320a89c67a1dd99f4b"
+        }
+      ]
+    },
+    "ExceptionResolutionV4": {
+      "exception_id": "exception_id-value",
+      "claim_ref": {
+        "kind": "exceptionresolution-claim-ref",
+        "digest": "sha256:b96c8cdd74810ab25dc8297350dcc2bfd0a9bd8660e2f5b2af1d67c1d8308717"
+      },
+      "target_ref": {
+        "kind": "exceptionresolution-target-ref",
+        "digest": "sha256:06c3efc7c9cbb1ef4e9bbd2ea0bb878bc540ff789e1ee3d3dd2cac0eae2e854f"
+      },
+      "target_aspect": "target_aspect-value",
+      "status": "status-value",
+      "witness_refs": [
+        {
+          "kind": "exceptionresolution-witness-refs",
+          "digest": "sha256:2359ca020c3662e610c72e34610a97115ecb99fba59436f1de4bd5574a4c0b8e"
+        }
+      ]
+    },
+    "BackendInvocationV4": {
+      "invocation_id": "invocation_id-value",
+      "provider_id": "provider_id-value",
+      "provider_version": "1.0.0",
+      "provider_package_digest": "sha256:11d1a7cd2e11392b0d6468d2113c8d3047e7fb9dc7c09504c2439e6cad6fda7c",
+      "provider_binary_digest": "sha256:4a60321509931bf40810afea3d27f10cb41e4dcef43176ee932cdec7c32485c5",
+      "provider_build_digest": "sha256:e888181b0da735fa484e80c04f4709194be07c92b6775ab23a968690dc776ffb",
+      "provider_capability_ref": {
+        "kind": "backendinvocation-provider-capability-ref",
+        "digest": "sha256:de616fab318071ad88b95d73a77a3c91557163cdb912e762dc2e2259e361c641"
+      },
+      "ir_ref": {
+        "kind": "backendinvocation-ir-ref",
+        "digest": "sha256:f89ac67b5c19ac73da2d96f75daf9229d78937f5b957b1e0795140284a73c2fb"
+      },
+      "algorithm_profile_digest": "sha256:4f6274fb3191766990bbe63d95167cbbd745e3ccde3318486af4a5d5b40c3b66",
+      "limits_ref": {
+        "kind": "backendinvocation-limits-ref",
+        "digest": "sha256:4424735890ed8476a4f65aa9cb0cdabe8eb3db60798d19a8094bf9b5e2a552fc"
+      },
+      "seed": 1
+    },
+    "FactAdmissionReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "request_ref": {
+        "kind": "factadmissionreceipt-request-ref",
+        "digest": "sha256:21d04a4cf2685f5e590cb2dae1987e2e8b730033d9e2c1e3af87961ea9660b8f"
+      },
+      "case_scope": "case:test",
+      "run_identity_ref": {
+        "kind": "factadmissionreceipt-run-identity-ref",
+        "digest": "sha256:7467abbb4524fcb2d7ac96e6971f793a8de870137cf77c4df26c4ff6edb4cc6e"
+      },
+      "subject_digest": "sha256:727f83c6b257e85ac9d0a43fc99b417f56963a3dcc4b93f33dde02fc9bfb6165",
+      "status": "status-value",
+      "source_gate_receipt_ref": {
+        "kind": "factadmissionreceipt-source-gate-receipt-ref",
+        "digest": "sha256:420374ac78b32f1331b256e805639baca7fa5e9959d268013946faecc84e5169"
+      },
+      "interpretation_gate_receipt_ref": {
+        "kind": "factadmissionreceipt-interpretation-gate-receipt-ref",
+        "digest": "sha256:f4d2fc137bfaaa4e18539f144ee4423a63e0f491222e7c8c01181b6cf06d2a6d"
+      },
+      "fact_gate_receipt_ref": {
+        "kind": "factadmissionreceipt-fact-gate-receipt-ref",
+        "digest": "sha256:3d80f7c694085ee730315c988332a7079e94e1afc6a835c8154aeef7738e5a2a"
+      },
+      "attestation_ref": {
+        "kind": "factadmissionreceipt-attestation-ref",
+        "digest": "sha256:2fcc30e2ae9cd8970a0fe1453e0c9312b22f7ef80f5bd73afd5d558f53632168"
+      },
+      "fact_ref": {
+        "kind": "factadmissionreceipt-fact-ref",
+        "digest": "sha256:d6870327397b8250050c26bb56cfc5a7547dc53e6e9d02d7fc50d5e2c7fc33e9"
+      },
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "issuer": "issuer-value",
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:727f83c6b257e85ac9d0a43fc99b417f56963a3dcc4b93f33dde02fc9bfb6165",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:f071100b2aa338b375d74b58f44b11a1e0cb9f5f95fa04757874ae55696e50c4",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "RulePromotionReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "rule_subject_digest": "sha256:ec717193988163185aa19064bced4e9036e2d064725887427b281b2f21cc29c3",
+      "legal_review_ref": {
+        "kind": "rulepromotionreceipt-legal-review-ref",
+        "digest": "sha256:5d9cfa8157061db6a58f9594a62f4917fc68b62774a774c51bd42ffda6e5e613"
+      },
+      "engineering_review_ref": {
+        "kind": "rulepromotionreceipt-engineering-review-ref",
+        "digest": "sha256:d7c666cf416643c40d8217f4474222203be5983232994023ba1bd15212cbbb08"
+      },
+      "status": "status-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:ec717193988163185aa19064bced4e9036e2d064725887427b281b2f21cc29c3",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:7cf783cd4ff9e56dea8567654aa2badfd7e4fc0a2f11cf9c1f64bb853ec61b7e",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "TranslationReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "run_identity_ref": {
+        "kind": "translationreceipt-run-identity-ref",
+        "digest": "sha256:4f64e656a94ac2f8a1c0d43443f9be8ba4dcae46583a74963f988b23ba02c7f3"
+      },
+      "hop": "hop-value",
+      "translator_ref": {
+        "kind": "translationreceipt-translator-ref",
+        "digest": "sha256:a35dfbdff7ec04d69546fa5f936fccff0b7dcaa96a6218b775d6b6363fc44517"
+      },
+      "source_ref": {
+        "kind": "translationreceipt-source-ref",
+        "digest": "sha256:cc7f36f57173adc4d447bd6dde5087e5bbe54a546cca95a8f036ce227a87789c"
+      },
+      "target_ref": {
+        "kind": "translationreceipt-target-ref",
+        "digest": "sha256:3177abe4a826fbe730c6aa31b33f2332ed057a0b6435202a97dfa2787ca9b427"
+      },
+      "field_mapping_ref": {
+        "kind": "translationreceipt-field-mapping-ref",
+        "digest": "sha256:3c901580f8a53bdba8aceec4d69d0328db62f2269d19623ab0d70d8041c84e1d"
+      },
+      "field_coverage": [
+        "field_coverage-value"
+      ],
+      "lost_fields": [],
+      "defaulted_fields": [],
+      "unsupported_fields": [],
+      "counterexample_refs": [],
+      "proof_obligation_refs": [
+        {
+          "kind": "translationreceipt-proof-obligation-refs",
+          "digest": "sha256:ec962821cb5d1aeb251c4a769d6eb071b60f89735a7f4b0ddf3999fabc1e862d"
+        }
+      ],
+      "status": "status-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:3177abe4a826fbe730c6aa31b33f2332ed057a0b6435202a97dfa2787ca9b427",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:c6bdfc9184c9ebd6beb3ccdff9b97ed08319ab31372def67b0220c49523a1c14",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "SolverReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "run_identity_ref": {
+        "kind": "solverreceipt-run-identity-ref",
+        "digest": "sha256:bc34a9803edd0540e28485b952659a206bcb6e80482799f19a3d782e0e74d024"
+      },
+      "invocation_ref": {
+        "kind": "solverreceipt-invocation-ref",
+        "digest": "sha256:da5de020fd068c60fc613d53d674dc9c2a6abc05f847dbf79da2bfe1218423c1"
+      },
+      "status": "status-value",
+      "exit_status": 0,
+      "backend_result_ref": {
+        "kind": "solverreceipt-backend-result-ref",
+        "digest": "sha256:764559eb1837f5ee3f19aa7377bade77a9f1e1ccaf1773a3dfde3c7d04cb4c37"
+      },
+      "model_or_core_ref": null,
+      "proof_ref": null,
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:764559eb1837f5ee3f19aa7377bade77a9f1e1ccaf1773a3dfde3c7d04cb4c37",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:ffbaa7e6c2659dfbb570f6f028ed730fb1714bcd71151cb4429d9695a11c5f59",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "CheckerReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "run_identity_ref": {
+        "kind": "checkerreceipt-run-identity-ref",
+        "digest": "sha256:c9f6c8271e1d26c739b8b97e3a6afebba53061b49c662e980588e89b7c2f5e42"
+      },
+      "subject_ref": {
+        "kind": "checkerreceipt-subject-ref",
+        "digest": "sha256:6416cecabedd7c675efdec7095295ac0b1925157e98ad9f6bcfcdd488c890ef8"
+      },
+      "argument_graph_ref": {
+        "kind": "checkerreceipt-argument-graph-ref",
+        "digest": "sha256:0c6d0fc9b6aeffc4dd095909f8d99c6494561a3d1863bf5e7ad03a08a472bf57"
+      },
+      "backend_result_ref": {
+        "kind": "checkerreceipt-backend-result-ref",
+        "digest": "sha256:c6d5594b3878ba7bae0d842188f63ca56044dfe59831f8d1e2c69c3cdddc1c27"
+      },
+      "checker_build_digest": "sha256:5256e878ba1925ba4bfebab18266af2c7439a8396db18b9bf9b7967110004eb7",
+      "algorithm_profile_digest": "sha256:233ed19b39f5429433744734d160590f6251b3a83632999844ed43ebb2c648eb",
+      "input_digest": "sha256:6383fce44f5c32543ca58726cd364ce834638278b1c8dcd819890f14d102126d",
+      "output_digest": "sha256:fa67623be81eefdcd6bca2d2726e26c08949540ea1db045ccfbd7a022d579de4",
+      "witness_refs": [
+        {
+          "kind": "checkerreceipt-witness-refs",
+          "digest": "sha256:d372b8e717383c9a32d9f4303f433101eee5c364c4a3813228ea817eb94aba6e"
+        }
+      ],
+      "status": "status-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:6416cecabedd7c675efdec7095295ac0b1925157e98ad9f6bcfcdd488c890ef8",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:5639fdc5f34cce88ccdd75beeb186e31b528173c8eb5c8c883c4dc45f569aa44",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "ProofReceiptV4": {
+      "receipt_id": "receipt_id-value",
+      "run_identity_ref": {
+        "kind": "proofreceipt-run-identity-ref",
+        "digest": "sha256:51b5cf166552259ba132bd54e26a1f4b084fd9f156f321ebaf5c776c0930492f"
+      },
+      "subject_ref": {
+        "kind": "proofreceipt-subject-ref",
+        "digest": "sha256:a2bf8d7abf98607eec962bdc0302d0b4bbb5588cc7ae3571875919bd4d046460"
+      },
+      "proof_kind": "proof_kind-value",
+      "proof_ref": {
+        "kind": "proofreceipt-proof-ref",
+        "digest": "sha256:c67264e4379e3d8a0e49c528af1e9afab78f661fe2fa4190521f1f5b81217dd4"
+      },
+      "checker_receipt_ref": {
+        "kind": "proofreceipt-checker-receipt-ref",
+        "digest": "sha256:a5560afde0ab7a9098a372842fc1e8f5f668d003875a907de6a577218936d992"
+      },
+      "proof_build_digest": "sha256:07cec1c4f19c24ae50a7484db529893e187b625f9d5607efcee0777d5427e9e0",
+      "trusted_computing_base_refs": [
+        {
+          "kind": "proofreceipt-trusted-computing-base-refs",
+          "digest": "sha256:627e9c0ef8853bc3144dbba1cdaed8d5d0d72e80150264d34547a4cb9a330d78"
+        }
+      ],
+      "status": "status-value",
+      "issued_at": {
+        "wire": "2026-08-22T08:00:00Z"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "key_id": "key_id-value",
+        "issuer": "issuer-value",
+        "role": "role-value",
+        "scope": "scope-value",
+        "kind": "kind-value",
+        "schema_version": "jc/4.0",
+        "subject_digest": "sha256:a2bf8d7abf98607eec962bdc0302d0b4bbb5588cc7ae3571875919bd4d046460",
+        "run_identity_ref": null,
+        "status": "status-value",
+        "issued_at": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "nonce": "nonce-value",
+        "evidence_refs": [
+          {
+            "kind": "signatureenvelope-evidence-refs",
+            "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+          }
+        ],
+        "payload_digest": "sha256:767218c6c44a2d3489d637da45ea1802baa4d85143d33b5c9d61612f15df296f",
+        "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+        "revocation_ref": null,
+        "signature": "signature-value"
+      }
+    },
+    "ExecutionStatusV4": "completed",
+    "DecisionStatusV4": "unknown",
+    "ReviewStateV4": {
+      "status": "not_required",
+      "unresolved_item_refs": [],
+      "responsible_role": null,
+      "release_condition_refs": [],
+      "review_receipt_ref": null
+    },
+    "CompletenessStateV4": "complete",
+    "InterruptionStateV4": {
+      "reason_code": "test-interruption",
+      "at_stage": "backend"
+    },
+    "CertificateKindV4": "none",
+    "TransportOutcomeV4": {
+      "status": "success",
+      "error": null
+    },
+    "RuntimeProfileV4": {
+      "engine_version": "4.0.0",
+      "engine_build_digest": "sha256:c6e1af51c253133b68db2655c8d248ffd84f14073ccc032667a67451cadceca0",
+      "formal_kernel": false,
+      "backend_invocation_ref": null,
+      "backend_receipt_ref": null,
+      "trust_policy_ref": {
+        "kind": "runtimeprofile-trust-policy-ref",
+        "digest": "sha256:5e6c6ba8e930f07d71004360af49b6c87e1d4e15edbe46074cae53fbd8aeaa48"
+      },
+      "storage_capability_ref": {
+        "kind": "runtimeprofile-storage-capability-ref",
+        "digest": "sha256:b9a87fdcd3472750d6ea4205b8c6f8aa6f853c6e31266a13de2828a9fb820f95"
+      }
+    },
+    "ClaimResultV4": {
+      "claim_id": "claim_id-value",
+      "claim_ref": {
+        "kind": "claimresult-claim-ref",
+        "digest": "sha256:d2d094ad3be8f64a4a673ed4376a310616499fa0eca7ee1e1c9f1eff15c1a4fc"
+      },
+      "status": "status-value",
+      "label": "label-value",
+      "argument_refs": [
+        {
+          "kind": "claimresult-argument-refs",
+          "digest": "sha256:9fe88f015b3ffcc114380842f4e9e6ed8f5417f41e8148178beba31a169542c2"
+        }
+      ],
+      "fact_refs": [
+        {
+          "kind": "claimresult-fact-refs",
+          "digest": "sha256:f7acadf3efb73d24860240757a7d8f1baee114a9d0e88c4fd2ed6f8c994beb32"
+        }
+      ],
+      "rule_refs": [
+        {
+          "kind": "claimresult-rule-refs",
+          "digest": "sha256:e1444ad795c7f8ecbf5df8e03a3ed457ce4daec06b18f483ccb702b7001f35ff"
+        }
+      ],
+      "source_refs": [
+        {
+          "kind": "claimresult-source-refs",
+          "digest": "sha256:1073bd3a76947386214e5f64b065a4a74789b77592d9b531c58c98e4022640ae"
+        }
+      ],
+      "proof_receipt_refs": [
+        {
+          "kind": "claimresult-proof-receipt-refs",
+          "digest": "sha256:1c01300126e5f9397677611816189bc6e605f6b0bd5f92d17432d8f0055716c0"
+        }
+      ],
+      "checker_receipt_refs": [
+        {
+          "kind": "claimresult-checker-receipt-refs",
+          "digest": "sha256:e7f8db3d67a42c6e43b2195785f67c591791f5e6991342a20df7799033ebc4d6"
+        }
+      ]
+    },
+    "BranchResultV4": {
+      "branch_id": "branch_id-value",
+      "assumption_refs": [
+        {
+          "kind": "branchresult-assumption-refs",
+          "digest": "sha256:530f170dfd55d18304e3644aeb53565d840bae2593b410ef62fedda3623cc034"
+        }
+      ],
+      "claim_refs": [
+        {
+          "kind": "branchresult-claim-refs",
+          "digest": "sha256:6cbe88757b07896590818aafc46697c1c64cb512237f9fc0069b28b2077eea6f"
+        }
+      ],
+      "decision_status": "accepted_formal_result",
+      "branch_digest": "sha256:4736608cf6f9130753e750cc8c1e1c9870e5d57080b31330d1ec93db12a1dbf4"
+    },
+    "MissingFactRequirementV4": {
+      "fact_id": "fact_id-value",
+      "impacted_rule_refs": [
+        {
+          "kind": "missingfactrequirement-impacted-rule-refs",
+          "digest": "sha256:9e075c0f250dfb52cf3936b23cc4ef5b317201bc464c48a0a5618b478a3d7b85"
+        }
+      ],
+      "impacted_claim_refs": [
+        {
+          "kind": "missingfactrequirement-impacted-claim-refs",
+          "digest": "sha256:6d2f7bbcf081d213af2d3bb67630c0e6e13866c14f83ef5edd780921c078d4fc"
+        }
+      ],
+      "allowed_answer_types": [
+        "allowed_answer_types-value"
+      ],
+      "required_source_kinds": [
+        "required_source_kinds-value"
+      ],
+      "priority": 1
+    },
+    "SemanticResultV4": {
+      "request_ref": {
+        "kind": "semanticresult-request-ref",
+        "digest": "sha256:c85de52523fd3d8d75527d20ec0b590f76da42744d6a62742f6a95ce1d52b94d"
+      },
+      "execution_status": "completed",
+      "decision_status": "unknown",
+      "review_state": {
+        "status": "not_required",
+        "unresolved_item_refs": [],
+        "responsible_role": null,
+        "release_condition_refs": [],
+        "review_receipt_ref": null
+      },
+      "completeness_state": "complete",
+      "interruption_state": null,
+      "certificate_kind": "none",
+      "runtime_profile": {
+        "engine_version": "4.0.0",
+        "engine_build_digest": "sha256:c6e1af51c253133b68db2655c8d248ffd84f14073ccc032667a67451cadceca0",
+        "formal_kernel": false,
+        "backend_invocation_ref": null,
+        "backend_receipt_ref": null,
+        "trust_policy_ref": {
+          "kind": "runtimeprofile-trust-policy-ref",
+          "digest": "sha256:5e6c6ba8e930f07d71004360af49b6c87e1d4e15edbe46074cae53fbd8aeaa48"
+        },
+        "storage_capability_ref": {
+          "kind": "runtimeprofile-storage-capability-ref",
+          "digest": "sha256:b9a87fdcd3472750d6ea4205b8c6f8aa6f853c6e31266a13de2828a9fb820f95"
+        }
+      },
+      "claims": [],
+      "branches": [],
+      "missing_facts": [],
+      "admitted_fact_refs": [],
+      "rejected_fact_refs": [
+        {
+          "kind": "semanticresult-rejected-fact-refs",
+          "digest": "sha256:33b41c482faadb972d01ce6cfc99f9543cfaa7a4c049886fc37bc520658026ee"
+        }
+      ],
+      "applicable_rule_refs": [],
+      "inapplicable_rule_refs": [
+        {
+          "kind": "semanticresult-inapplicable-rule-refs",
+          "digest": "sha256:70ffc4b1cc4938104fd6cc941d728a847f8cdd3f7f2997bcad0ad9adcfa82209"
+        }
+      ],
+      "argument_refs": [],
+      "attack_refs": [],
+      "exception_resolution_refs": [],
+      "permission_resolution_refs": [],
+      "priority_resolution_refs": [],
+      "temporal_result_refs": [],
+      "numeric_result_refs": [],
+      "decision_reason_codes": [
+        "INSUFFICIENT_SEMANTIC_SUPPORT"
+      ],
+      "taint_codes": [],
+      "risk_codes": [
+        "risk_codes-value"
+      ],
+      "receipt_refs": [
+        {
+          "kind": "semanticresult-receipt-refs",
+          "digest": "sha256:e884a94815e774e606a8b94869cdd4b60faefecadd75d126c3568bce47ac6ed2"
+        }
+      ],
+      "run_identity_ref": {
+        "kind": "semanticresult-run-identity-ref",
+        "digest": "sha256:a63b9c1ac748cab4b1223b83c10f1e045e69de5872719b36010a55aef57d5fb1"
+      },
+      "result_digest": "sha256:7874a57c4faf70c462d50788b1bbb4e120cd279b8866a84329c230102d44c488"
+    },
+    "RunIdentityV4": {
+      "request_ref": {
+        "kind": "runidentity-request-ref",
+        "digest": "sha256:55a50cff0b1d67b2c82cb01e11c43b5e355cfbc1b3385c6d22adfb22abd3abfb"
+      },
+      "source_bundle_ref": {
+        "kind": "runidentity-source-bundle-ref",
+        "digest": "sha256:eac8eb1e9e35f8e89c5e36b0bbc31b4466884d3ec20314bad99b600d5cecff6c"
+      },
+      "evidence_manifest_ref": {
+        "kind": "runidentity-evidence-manifest-ref",
+        "digest": "sha256:f0c4c71091b9a4f9705ddaf21c87acc31b2594d187ed8091c2dfba2cb2ccfa51"
+      },
+      "fact_attestation_refs": [
+        {
+          "kind": "runidentity-fact-attestation-refs",
+          "digest": "sha256:ddc2025acbc551d00e329762285215918c8bafb9a1c57a3764c753137a1017e7"
+        }
+      ],
+      "rule_pack_ref": {
+        "kind": "runidentity-rule-pack-ref",
+        "digest": "sha256:c705fc810badf879ed029e3d613b2d2128ec6073bc6d19e71b8e8726009bc0f1"
+      },
+      "engine_version": "4.0.0",
+      "engine_source_commit": "1111111111111111111111111111111111111111",
+      "engine_source_tree": "2222222222222222222222222222222222222222",
+      "engine_build_digest": "sha256:29306c30f7a05d4ad3df68621103d4b4ef5eb4f71ecadc8babe770de35913a28",
+      "wheel_digest": "sha256:c7d7a9bc00085740e9955862b3d6dcbeb6c4199971101057e4757d6355ebe015",
+      "package_digest": "sha256:5590614fc1efff765691cf5dc81ba0c55b8364e12caabb28d7d466d8beb79661",
+      "schema_digest": "sha256:cd6dbe61840546c7cfd4713c01e29df59fb552d65b513a8d98c961b1a0d7e3ce",
+      "tool_spec_digest": "sha256:9cc3f9be614f5a655e8ffb8dc5c82724a23c52135a9dbaa49cf088a766795bf0",
+      "lock_digest": "sha256:6195dc27b86bc64c53829e747b5a58874744880024d194030f9cd3092ea24373",
+      "runtime_config_digest": "sha256:a85f3bf5f55affeca7feccabed6b492f61555e23d0437e2986ee92936497965a",
+      "algorithm_profile_digest": "sha256:46d19857a08b73f7242eabfb16c05056d0b7ddb602d21e78329aba7bc8e730a9",
+      "trust_policy_ref": {
+        "kind": "runidentity-trust-policy-ref",
+        "digest": "sha256:1fdebc79238be5bdfeb866988cd96dbe78fbaae4a3fad80f257e8b45beceacff"
+      },
+      "storage_capability_ref": {
+        "kind": "runidentity-storage-capability-ref",
+        "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
+      },
+      "backend_invocation_ref": {
+        "kind": "runidentity-backend-invocation-ref",
+        "digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03"
+      },
+      "run_digest": "sha256:280a76644e75db514a6a8c97e4aa841ccc18af2b225837c4c08df5680eeac02f"
+    },
+    "FormalCertificateV4": {
+      "request_ref": {
+        "kind": "formalcertificate-request-ref",
+        "digest": "sha256:c9fb6e9dde7263028575dbde12a3e0a04edaaf7acf3812c82acc9c8dc4d6c91a"
+      },
+      "result_ref": {
+        "kind": "formalcertificate-result-ref",
+        "digest": "sha256:771eeddc9a6205eaeda8daf9e8181f8d91aee9224f36280dd716f0d5574f49f5"
+      },
+      "run_identity_ref": {
+        "kind": "formalcertificate-run-identity-ref",
+        "digest": "sha256:456281050d427fdc0bac96d35550739deb5a93fb2542174e88e2ee35747100fd"
+      },
+      "bundle_core_digest": "sha256:f00a50a233c7f979a347d2c04f310986725c9441a5b4c896fd06c922e0d7f631",
+      "claim_refs": [
+        {
+          "kind": "formalcertificate-claim-refs",
+          "digest": "sha256:c063ad96bd51b2d71973896529317ec79673429daebbb2869b9d70c0e632a3ab"
+        }
+      ],
+      "source_receipt_refs": [
+        {
+          "kind": "formalcertificate-source-receipt-refs",
+          "digest": "sha256:3ec1a734732ce4b6f777d21f3e2990e8cd3dfd0e56284c72baf1e9823e125084"
+        }
+      ],
+      "evidence_receipt_refs": [
+        {
+          "kind": "formalcertificate-evidence-receipt-refs",
+          "digest": "sha256:2e4ab191b54fa1b6e4be5878a04e5e7dcfc29c11c956e471d8792504080bb022"
+        }
+      ],
+      "fact_admission_receipt_refs": [
+        {
+          "kind": "formalcertificate-fact-admission-receipt-refs",
+          "digest": "sha256:6743f93539f3dae5a3f063d20c9d6bd6daf3a106a75968c6f4b88b2eddd54bf7"
+        }
+      ],
+      "rule_promotion_receipt_refs": [
+        {
+          "kind": "formalcertificate-rule-promotion-receipt-refs",
+          "digest": "sha256:de16cba47dbd5f0a646700eccf79230115c1ca05a99fafddad026b0283d183af"
+        }
+      ],
+      "translation_receipt_refs": [
+        {
+          "kind": "formalcertificate-translation-receipt-refs",
+          "digest": "sha256:538dd24a5df811cd8d222d6fbc707e31e89bb08adcc39f944ebbf27b3cdd89ec"
+        }
+      ],
+      "solver_receipt_refs": [
+        {
+          "kind": "formalcertificate-solver-receipt-refs",
+          "digest": "sha256:46bbcd99d703e108e4afe350984275877ba47a02c2425b669b708b4812180f0d"
+        }
+      ],
+      "proof_receipt_refs": [
+        {
+          "kind": "formalcertificate-proof-receipt-refs",
+          "digest": "sha256:108dff4a4ca4db692fa3fe79c3868f5d9700f1c7816653779e2325c594043d8d"
+        }
+      ],
+      "checker_receipt_refs": [
+        {
+          "kind": "formalcertificate-checker-receipt-refs",
+          "digest": "sha256:f315d2d1276589daab9ae90e29cf60aa182c6a6e10c622476c298c8244affe7e"
+        }
+      ],
+      "certificate_digest": "sha256:8a5e9b53e0ccfc00c5fb3a1255789cb3c6faee33ba91674e3b8fddd31f972979"
+    },
+    "ConflictCertificateV4": {
+      "request_ref": {
+        "kind": "conflictcertificate-request-ref",
+        "digest": "sha256:fb369ac43b8efaa9efb791e5aefb1243413eaa34936a13c1900324464de64df0"
+      },
+      "result_ref": {
+        "kind": "conflictcertificate-result-ref",
+        "digest": "sha256:c44b4bae9c0375937181f820e200985ebaa15caab19415dbd4728be8b4caa5c7"
+      },
+      "run_identity_ref": {
+        "kind": "conflictcertificate-run-identity-ref",
+        "digest": "sha256:84be99f85e4b0e5a352d466dd2e4178fab3dc4115c5bb2d9b3f1a0339eb0925f"
+      },
+      "bundle_core_digest": "sha256:6db9a4ee2c19bbebe2ca52c08fbc2f267f37dada18d83c7858b0c4558b875c19",
+      "conflict_refs": [
+        {
+          "kind": "conflictcertificate-conflict-refs",
+          "digest": "sha256:85a009a1b048c2785a329934f1f25ab106d1277a9c3b3fcd2b763d75486a88f0"
+        }
+      ],
+      "argument_refs": [
+        {
+          "kind": "conflictcertificate-argument-refs",
+          "digest": "sha256:831711ce0c80b81c864dca8b5b3ecbbf0c94b2cdbe56022dd2ed5e3c2ef72f50"
+        }
+      ],
+      "attack_refs": [
+        {
+          "kind": "conflictcertificate-attack-refs",
+          "digest": "sha256:92a57a1bb8759a57800b6ea4b0318d3cc3907f6fa521be4604cc7168ed6dee7e"
+        }
+      ],
+      "exception_resolution_refs": [
+        {
+          "kind": "conflictcertificate-exception-resolution-refs",
+          "digest": "sha256:ad7030765601b5fff10b6c9b9e74892a6fb04b73c4f7b360fe98a7c3ef5c2125"
+        }
+      ],
+      "priority_resolution_refs": [
+        {
+          "kind": "conflictcertificate-priority-resolution-refs",
+          "digest": "sha256:9dcf3095423dfaa170bf2d07ac776ea8af93a3a7245009a95e9df73b4afde2f0"
+        }
+      ],
+      "permission_resolution_refs": [
+        {
+          "kind": "conflictcertificate-permission-resolution-refs",
+          "digest": "sha256:ec123d45e5a732a49dfbbb8801cf1d1e2c7e65ce705122747eb527725ab53592"
+        }
+      ],
+      "source_receipt_refs": [
+        {
+          "kind": "conflictcertificate-source-receipt-refs",
+          "digest": "sha256:7e5bc630cf872201e80f2383217fbd60c50f011a28b72331beb5301106f5fa9c"
+        }
+      ],
+      "evidence_receipt_refs": [
+        {
+          "kind": "conflictcertificate-evidence-receipt-refs",
+          "digest": "sha256:82e4cbd298bf07effff40d6b74a0f7ea4767e207f24dee41255fce69c4106ec8"
+        }
+      ],
+      "fact_admission_receipt_refs": [
+        {
+          "kind": "conflictcertificate-fact-admission-receipt-refs",
+          "digest": "sha256:84455f3e982f5c2b86fdd98fe90d187fac0af1e6a0d212935051765dc848bfd2"
+        }
+      ],
+      "rule_promotion_receipt_refs": [
+        {
+          "kind": "conflictcertificate-rule-promotion-receipt-refs",
+          "digest": "sha256:c08942112664b8b1ab6b94e27ea8e03758a26a89cdb14157f3a401829003b129"
+        }
+      ],
+      "translation_receipt_refs": [
+        {
+          "kind": "conflictcertificate-translation-receipt-refs",
+          "digest": "sha256:771298239cacd47ba8c40fe7bf5ea65086aecf59d1f4119cb9c39347d39b21ec"
+        }
+      ],
+      "solver_receipt_refs": [
+        {
+          "kind": "conflictcertificate-solver-receipt-refs",
+          "digest": "sha256:5817f04ac37e9be96411851dcc768284ba9a8de23b9b3a82dcfd2c2034297dda"
+        }
+      ],
+      "proof_receipt_refs": [
+        {
+          "kind": "conflictcertificate-proof-receipt-refs",
+          "digest": "sha256:910d0ea39aa777e232272cf3cf080a53425475d83ad621f71cdebe2a594319e7"
+        }
+      ],
+      "checker_receipt_refs": [
+        {
+          "kind": "conflictcertificate-checker-receipt-refs",
+          "digest": "sha256:70ca74b2d79ab61491a4ed87ece17c83c46247f95467505cf8b9aa58ba38614f"
+        }
+      ],
+      "certificate_digest": "sha256:d5db6086efac5a53180e66f29d7a44252ae10ab0acb4dc01fef03ef67f3b9c25"
+    },
+    "CertificateEnvelopeV4": {
+      "kind": "none",
+      "formal": null,
+      "conflict": null,
+      "service_signature": null
+    },
+    "AuditManifestV4": {
+      "run_identity_ref": {
+        "kind": "auditmanifest-run-identity-ref",
+        "digest": "sha256:9c38730f8aa1e3d9c28d54c9836c2fbbe64f5e79ddaf5acdbe0f37f93a44ca23"
+      },
+      "request_ref": {
+        "kind": "auditmanifest-request-ref",
+        "digest": "sha256:20a931e2deef9f29a891bb3b00abe5fbd54eeb22208930c3afbfac0256b97895"
+      },
+      "input_ref": {
+        "kind": "auditmanifest-input-ref",
+        "digest": "sha256:74a5c51a3cf495f889ed7d002a8450401bbd6f5592b99896211aab0d0bf9cfc6"
+      },
+      "source_index_ref": {
+        "kind": "auditmanifest-source-index-ref",
+        "digest": "sha256:99e25f60fa8562c2aa3c18a712f9590adc4804852f1c203529218411639bf1a7"
+      },
+      "fact_admission_ref": {
+        "kind": "auditmanifest-fact-admission-ref",
+        "digest": "sha256:d3952c507b0309c52d35aca2b862503fd336628c8d71256527d3396a9cfcfbf1"
+      },
+      "rule_pack_ref": {
+        "kind": "auditmanifest-rule-pack-ref",
+        "digest": "sha256:c6ec28b856aa243bf313d6779360e6fe0e094c0bf7a4164ca7775197160a866c"
+      },
+      "translation_receipts_ref": {
+        "kind": "auditmanifest-translation-receipts-ref",
+        "digest": "sha256:998a6371004e251c3045ba7dfc9a9ae5d0646424a59172d5a401d285ae9f5554"
+      },
+      "backend_receipts_ref": {
+        "kind": "auditmanifest-backend-receipts-ref",
+        "digest": "sha256:b7054fe51ffbbd2151b778a5143cbe9bbc4235819f452a470021d67021b17e86"
+      },
+      "checker_receipts_ref": {
+        "kind": "auditmanifest-checker-receipts-ref",
+        "digest": "sha256:096be672481d92dfa640c36998b8070584f142fff2be00ca4d5397b8c5310615"
+      },
+      "events_ref": {
+        "kind": "auditmanifest-events-ref",
+        "digest": "sha256:a446a10d39387584678f8d54e78de5979715a3023d71a454f6e19eb3c64713c7"
+      },
+      "graph_ref": {
+        "kind": "auditmanifest-graph-ref",
+        "digest": "sha256:f49f07bf271110a93813519dbeaa40af563e4186e828fb287c35999230cff812"
+      },
+      "result_ref": {
+        "kind": "auditmanifest-result-ref",
+        "digest": "sha256:4fcb27ae9aaf8ca86e6d6e02c2a219417e16a984094df0b5fa7aa58f97219178"
+      },
+      "certificate_ref": {
+        "kind": "auditmanifest-certificate-ref",
+        "digest": "sha256:a46c047e626567c1e757fd411f1464eb1f1017db4ba9b9d6ab74cdedecc8e401"
+      },
+      "bundle_core_digest": "sha256:28c93659f9f599cfce2bf3f27337256f32116106b10d6c4c9e9ac07dacef5d25",
+      "manifest_digest": "sha256:6298b1e325bf86c56e21a05aef3fa67408b7a5238d3083fdadc429f1dadc71ad"
+    },
+    "AuditBundleIndexV4": {
+      "manifest_ref": {
+        "kind": "auditbundleindex-manifest-ref",
+        "digest": "sha256:2bcbdfb25858596e5e365e4507b4bd7d4471593cab9e08c9690d37d93d32a21f"
+      },
+      "checksums_ref": {
+        "kind": "auditmanifest-checksums-ref",
+        "digest": "sha256:67f3b13270455065b38e8e8ea2b838af6d271e31d39934ebec592781a7357136"
+      },
+      "complete_marker_ref": {
+        "kind": "auditmanifest-complete-marker-ref",
+        "digest": "sha256:ea2443ea05751ac923a535d0feb21ed70ca02c8145cd08f3ba2e5b64a6c75145"
+      },
+      "entries": [
+        {
+          "kind": "auditbundleindex-entries",
+          "digest": "sha256:90f3d023682778a712a52151a7637ad92e8d405eddcf762867c0b83a8f393069"
+        }
+      ],
+      "bundle_digest": "sha256:c12ce04c33c87f578482befbd177e7d261107806dd91e4290b02b9c3434295b4"
+    },
+    "EvaluationEnvelopeV4": {
+      "request": {
+        "request_id": "request_id-value",
+        "schema_version": "jc/4.0",
+        "legal_context": {
+          "jurisdiction": "jurisdiction-value",
+          "governing_law": "governing_law-value"
+        },
+        "decision_time": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "source_bundle_ref": {
+          "kind": "caserequest-source-bundle-ref",
+          "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
+        },
+        "evidence_manifest_ref": {
+          "kind": "caserequest-evidence-manifest-ref",
+          "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
+        },
+        "fact_attestation_refs": [
+          {
+            "kind": "caserequest-fact-attestation-refs",
+            "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
+          }
+        ],
+        "rule_pack_ref": {
+          "kind": "caserequest-rule-pack-ref",
+          "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
+        },
+        "requested_outputs": [
+          {
+            "kind": "semantic_result",
+            "format": "format-value",
+            "locale": "locale-value"
+          }
+        ],
+        "proposal_refs": [
+          {
+            "kind": "caserequest-proposal-refs",
+            "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
+          }
+        ]
+      },
+      "result": {
+        "request_ref": {
+          "kind": "runidentity-request-ref",
+          "digest": "sha256:7b597a943343c11574782a6b5812e4dba9fe5433efa4f58937298e7ec783fffe"
+        },
+        "execution_status": "completed",
+        "decision_status": "unknown",
+        "review_state": {
+          "status": "not_required",
+          "unresolved_item_refs": [],
+          "responsible_role": null,
+          "release_condition_refs": [],
+          "review_receipt_ref": null
+        },
+        "completeness_state": "complete",
+        "interruption_state": null,
+        "certificate_kind": "none",
+        "runtime_profile": {
+          "engine_version": "4.0.0",
+          "engine_build_digest": "sha256:29306c30f7a05d4ad3df68621103d4b4ef5eb4f71ecadc8babe770de35913a28",
+          "formal_kernel": false,
+          "backend_invocation_ref": null,
+          "backend_receipt_ref": null,
+          "trust_policy_ref": {
+            "kind": "runidentity-trust-policy-ref",
+            "digest": "sha256:1fdebc79238be5bdfeb866988cd96dbe78fbaae4a3fad80f257e8b45beceacff"
+          },
+          "storage_capability_ref": {
+            "kind": "runidentity-storage-capability-ref",
+            "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
+          }
+        },
+        "claims": [],
+        "branches": [],
+        "missing_facts": [],
+        "admitted_fact_refs": [],
+        "rejected_fact_refs": [
+          {
+            "kind": "semanticresult-rejected-fact-refs",
+            "digest": "sha256:33b41c482faadb972d01ce6cfc99f9543cfaa7a4c049886fc37bc520658026ee"
+          }
+        ],
+        "applicable_rule_refs": [],
+        "inapplicable_rule_refs": [
+          {
+            "kind": "semanticresult-inapplicable-rule-refs",
+            "digest": "sha256:70ffc4b1cc4938104fd6cc941d728a847f8cdd3f7f2997bcad0ad9adcfa82209"
+          }
+        ],
+        "argument_refs": [],
+        "attack_refs": [],
+        "exception_resolution_refs": [],
+        "permission_resolution_refs": [],
+        "priority_resolution_refs": [],
+        "temporal_result_refs": [],
+        "numeric_result_refs": [],
+        "decision_reason_codes": [
+          "INSUFFICIENT_SEMANTIC_SUPPORT"
+        ],
+        "taint_codes": [],
+        "risk_codes": [
+          "risk_codes-value"
+        ],
+        "receipt_refs": [
+          {
+            "kind": "semanticresult-receipt-refs",
+            "digest": "sha256:e884a94815e774e606a8b94869cdd4b60faefecadd75d126c3568bce47ac6ed2"
+          }
+        ],
+        "run_identity_ref": {
+          "kind": "semanticresult-run-identity-ref",
+          "digest": "sha256:389d222ffdb4a38f89e32b59f9d7fb7b80315662fb1b24351c712223287bc1a4"
+        },
+        "result_digest": "sha256:baa411f8f9beebf0139a02d64c73ce7cea62b89efed8ac210b6e8ac3f933a376"
+      },
+      "run_identity": {
+        "request_ref": {
+          "kind": "runidentity-request-ref",
+          "digest": "sha256:7b597a943343c11574782a6b5812e4dba9fe5433efa4f58937298e7ec783fffe"
+        },
+        "source_bundle_ref": {
+          "kind": "runidentity-source-bundle-ref",
+          "digest": "sha256:eac8eb1e9e35f8e89c5e36b0bbc31b4466884d3ec20314bad99b600d5cecff6c"
+        },
+        "evidence_manifest_ref": {
+          "kind": "runidentity-evidence-manifest-ref",
+          "digest": "sha256:f0c4c71091b9a4f9705ddaf21c87acc31b2594d187ed8091c2dfba2cb2ccfa51"
+        },
+        "fact_attestation_refs": [
+          {
+            "kind": "runidentity-fact-attestation-refs",
+            "digest": "sha256:ddc2025acbc551d00e329762285215918c8bafb9a1c57a3764c753137a1017e7"
+          }
+        ],
+        "rule_pack_ref": {
+          "kind": "runidentity-rule-pack-ref",
+          "digest": "sha256:c705fc810badf879ed029e3d613b2d2128ec6073bc6d19e71b8e8726009bc0f1"
+        },
+        "engine_version": "4.0.0",
+        "engine_source_commit": "1111111111111111111111111111111111111111",
+        "engine_source_tree": "2222222222222222222222222222222222222222",
+        "engine_build_digest": "sha256:29306c30f7a05d4ad3df68621103d4b4ef5eb4f71ecadc8babe770de35913a28",
+        "wheel_digest": "sha256:c7d7a9bc00085740e9955862b3d6dcbeb6c4199971101057e4757d6355ebe015",
+        "package_digest": "sha256:5590614fc1efff765691cf5dc81ba0c55b8364e12caabb28d7d466d8beb79661",
+        "schema_digest": "sha256:cd6dbe61840546c7cfd4713c01e29df59fb552d65b513a8d98c961b1a0d7e3ce",
+        "tool_spec_digest": "sha256:9cc3f9be614f5a655e8ffb8dc5c82724a23c52135a9dbaa49cf088a766795bf0",
+        "lock_digest": "sha256:6195dc27b86bc64c53829e747b5a58874744880024d194030f9cd3092ea24373",
+        "runtime_config_digest": "sha256:a85f3bf5f55affeca7feccabed6b492f61555e23d0437e2986ee92936497965a",
+        "algorithm_profile_digest": "sha256:46d19857a08b73f7242eabfb16c05056d0b7ddb602d21e78329aba7bc8e730a9",
+        "trust_policy_ref": {
+          "kind": "runidentity-trust-policy-ref",
+          "digest": "sha256:1fdebc79238be5bdfeb866988cd96dbe78fbaae4a3fad80f257e8b45beceacff"
+        },
+        "storage_capability_ref": {
+          "kind": "runidentity-storage-capability-ref",
+          "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
+        },
+        "backend_invocation_ref": {
+          "kind": "runidentity-backend-invocation-ref",
+          "digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03"
+        },
+        "run_digest": "sha256:389d222ffdb4a38f89e32b59f9d7fb7b80315662fb1b24351c712223287bc1a4"
+      },
+      "certificate": {
+        "kind": "none",
+        "formal": null,
+        "conflict": null,
+        "service_signature": null
+      },
+      "transport_outcome": {
+        "status": "success",
+        "error": null
+      },
+      "audit_manifest_ref": {
+        "kind": "evaluationenvelope-audit-manifest-ref",
+        "digest": "sha256:7756fcb2141af11f5dae60de3082c37539ae7ee3cb509cbbaff8d3f5b9eb7c3a"
+      },
+      "audit_bundle_index": {
+        "manifest_ref": {
+          "kind": "evaluationenvelope-audit-manifest-ref",
+          "digest": "sha256:7756fcb2141af11f5dae60de3082c37539ae7ee3cb509cbbaff8d3f5b9eb7c3a"
+        },
+        "checksums_ref": {
+          "kind": "auditmanifest-checksums-ref",
+          "digest": "sha256:67f3b13270455065b38e8e8ea2b838af6d271e31d39934ebec592781a7357136"
+        },
+        "complete_marker_ref": {
+          "kind": "auditmanifest-complete-marker-ref",
+          "digest": "sha256:ea2443ea05751ac923a535d0feb21ed70ca02c8145cd08f3ba2e5b64a6c75145"
+        },
+        "entries": [
+          {
+            "kind": "auditbundleindex-entries",
+            "digest": "sha256:90f3d023682778a712a52151a7637ad92e8d405eddcf762867c0b83a8f393069"
+          }
+        ],
+        "bundle_digest": "sha256:04ceda6b677483ec7296b04d200906cee5e95be227fde8ed5401b8e94a5c281c"
+      }
+    },
+    "VerificationResultV4": {
+      "run_identity_ref": {
+        "kind": "verificationresult-run-identity-ref",
+        "digest": "sha256:8645dbbb965147eb817f27aa5c3260d8031f57e654f802858f30af0c0a287e90"
+      },
+      "status": "status-value",
+      "certificate_ref": {
+        "kind": "verificationresult-certificate-ref",
+        "digest": "sha256:5fc9747f0a4ad09ebe8428cd1df2006f04f1ba67c575263d28544b4cc494d369"
+      },
+      "audit_manifest_ref": {
+        "kind": "verificationresult-audit-manifest-ref",
+        "digest": "sha256:25ca1c3c7f136af4301a27aea889a2f4377042513bd12ad0f7cb5bfe19ce6376"
+      },
+      "audit_bundle_ref": {
+        "kind": "verificationresult-audit-bundle-ref",
+        "digest": "sha256:e083ed619dc84c1c67bf996a08fac4e0234cbdc06d54c0ca6280c0605dd6d245"
+      },
+      "verified_artifact_refs": [
+        {
+          "kind": "verificationresult-verified-artifact-refs",
+          "digest": "sha256:ec0e7200b94f5693faff2e45349013f97f25e9303f7f674f415ee27845330616"
+        }
+      ],
+      "failed_artifact_refs": [
+        {
+          "kind": "verificationresult-failed-artifact-refs",
+          "digest": "sha256:ac9a4f81d01fb4d9347ba06d9f477dedc50f62202b51ff0872258924ebe94f5c"
+        }
+      ],
+      "checker_receipt_refs": [
+        {
+          "kind": "verificationresult-checker-receipt-refs",
+          "digest": "sha256:143f309d4dd5c017c61175e7b93b0310b28f59b11dd76e59af37abd6c8dd9323"
+        }
+      ],
+      "verification_receipt_refs": [
+        {
+          "kind": "verificationresult-verification-receipt-refs",
+          "digest": "sha256:d072d76a31c6f0277eb7e6b482ba1972429e01bd597e64317f37ac2237ad7636"
+        }
+      ],
+      "error_codes": [
+        "error_codes-value"
+      ]
+    },
+    "ReplayResultV4": {
+      "run_identity_ref": {
+        "kind": "replayresult-run-identity-ref",
+        "digest": "sha256:5ddfb95d27f316f19762ad0e254dc56ca4cecff6eec09025771a66f492e76b75"
+      },
+      "replay_run_identity_ref": {
+        "kind": "replayresult-replay-run-identity-ref",
+        "digest": "sha256:04482443283ff83a316fe570c1cd8791207019eff1a6c942cbcefbc7777806c2"
+      },
+      "status": "status-value",
+      "replay_policy_ref": {
+        "kind": "replayresult-replay-policy-ref",
+        "digest": "sha256:1722856b0c69df256196c2efa07c2b71ad3b0fb975ff9c492a313257ba268fed"
+      },
+      "original_result_ref": {
+        "kind": "replayresult-original-result-ref",
+        "digest": "sha256:908d401f87247bad12b86ec82d2d98f37ecbeefd06e382df29f95b56bd8f7fa6"
+      },
+      "replay_result_ref": {
+        "kind": "replayresult-replay-result-ref",
+        "digest": "sha256:737a1807478c8f9aa1b4fe4a717897a7b3d0531598884e1940252c702e029cbf"
+      },
+      "original_bundle_ref": {
+        "kind": "replayresult-original-bundle-ref",
+        "digest": "sha256:cc2a91f4899fb7c82802e5f4d6ada14b2a509919c9b459486613c34c4cf64ed7"
+      },
+      "replay_bundle_ref": {
+        "kind": "replayresult-replay-bundle-ref",
+        "digest": "sha256:c0ef27949b16e89759b11b96f57a0e279975ba2ad2d4abd56fb6768e75f5dcc6"
+      },
+      "exact_equal": true,
+      "semantic_equal": true,
+      "differing_paths": []
+    },
+    "MCPCapabilitiesInputV4": {},
+    "MCPCapabilitiesOutputV4": {
+      "schema_version": "jc/4.0",
+      "engine_version": "4.0.0",
+      "engine_source_tree": "2222222222222222222222222222222222222222",
+      "engine_build_digest": "sha256:e2b94ba193d7407a4e3e8ba80d3396ae2cc40c7d4c576602a851265ccfce328d",
+      "wheel_digest": "sha256:eb5ce5beeed20b22f69b3423201e2770673dfc703c4c387d3298660178b4d033",
+      "package_digest": "sha256:5897b8d3a6e65226ea625b3abf3977919d22765fd41d20538bddcfcb2ee45253",
+      "lock_digest": "sha256:39010c07f7819b0963ac026900f5ee320cebedd215c245d90343962079bd3537",
+      "schema_digest": "sha256:038150f3ed95a0f2fae2f01ace99d3655cfb8298ef2fbd78a23c8274c5127a14",
+      "tool_spec_digest": "sha256:3ffa931e252785310262ef110e3a36b4f2622eabee9b184f32cb493cf4839cde",
+      "tool_specs": [
+        {
+          "name": "name-value",
+          "description": "description-value",
+          "input_type": "input_type-value",
+          "output_type": "output_type-value",
+          "error_type": "error_type-value"
+        }
+      ],
+      "resource_limits": {
+        "max_request_bytes": 262144,
+        "max_json_depth": 16,
+        "max_json_nodes": 10000,
+        "max_object_members_per_object": 64,
+        "max_total_object_members": 4096,
+        "max_array_items_per_array": 512,
+        "max_total_array_items": 4096,
+        "max_string_utf8_bytes": 8192,
+        "max_total_string_utf8_bytes": 196608,
+        "max_total_reference_values": 1536,
+        "max_fact_attestation_refs": 512,
+        "max_proposal_refs": 512,
+        "admission_deadline_ms": 250,
+        "artifact_page_bytes": null,
+        "solver_deadline_ms": null,
+        "worker_queue_items": null,
+        "in_flight_runs": null,
+        "state_quota_bytes": null,
+        "retention_seconds": null
+      },
+      "active_pack_ref": null,
+      "trust_policy_ref": {
+        "kind": "mcpcapabilitiesoutput-trust-policy-ref",
+        "digest": "sha256:b386088d93f9ce938b5d794657d421eb097ca8b424c90411e84ec6f0e79d361a"
+      },
+      "storage_capability_ref": {
+        "kind": "mcpcapabilitiesoutput-storage-capability-ref",
+        "digest": "sha256:c6c39ea9117616e7c7f1510193cdc46eba1960c4bc087e7a407664a9b1d90464"
+      },
+      "kernel_ready": false,
+      "legal_production_ready": false
+    },
+    "MCPCapabilitiesErrorV4": {
+      "error": {
+        "code": "code-value",
+        "message": "message-value",
+        "stage": "stage-value",
+        "retryable": true,
+        "correlation_id": "correlation_id-value",
+        "field_path": [
+          "request",
+          "field"
+        ]
+      }
+    },
+    "MCPEvaluateInputV4": {
+      "request": {
+        "request_id": "request_id-value",
+        "schema_version": "jc/4.0",
+        "legal_context": {
+          "jurisdiction": "jurisdiction-value",
+          "governing_law": "governing_law-value"
+        },
+        "decision_time": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "source_bundle_ref": {
+          "kind": "caserequest-source-bundle-ref",
+          "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
+        },
+        "evidence_manifest_ref": {
+          "kind": "caserequest-evidence-manifest-ref",
+          "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
+        },
+        "fact_attestation_refs": [
+          {
+            "kind": "caserequest-fact-attestation-refs",
+            "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
+          }
+        ],
+        "rule_pack_ref": {
+          "kind": "caserequest-rule-pack-ref",
+          "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
+        },
+        "requested_outputs": [
+          {
+            "kind": "semantic_result",
+            "format": "format-value",
+            "locale": "locale-value"
+          }
+        ],
+        "proposal_refs": [
+          {
+            "kind": "caserequest-proposal-refs",
+            "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
+          }
+        ]
+      },
+      "request_handle": null
+    },
+    "MCPEvaluateOutputV4": {
+      "result": {
+        "request_ref": {
+          "kind": "semanticresult-request-ref",
+          "digest": "sha256:c85de52523fd3d8d75527d20ec0b590f76da42744d6a62742f6a95ce1d52b94d"
+        },
+        "execution_status": "completed",
+        "decision_status": "unknown",
+        "review_state": {
+          "status": "not_required",
+          "unresolved_item_refs": [],
+          "responsible_role": null,
+          "release_condition_refs": [],
+          "review_receipt_ref": null
+        },
+        "completeness_state": "complete",
+        "interruption_state": null,
+        "certificate_kind": "none",
+        "runtime_profile": {
+          "engine_version": "4.0.0",
+          "engine_build_digest": "sha256:c6e1af51c253133b68db2655c8d248ffd84f14073ccc032667a67451cadceca0",
+          "formal_kernel": false,
+          "backend_invocation_ref": null,
+          "backend_receipt_ref": null,
+          "trust_policy_ref": {
+            "kind": "runtimeprofile-trust-policy-ref",
+            "digest": "sha256:5e6c6ba8e930f07d71004360af49b6c87e1d4e15edbe46074cae53fbd8aeaa48"
+          },
+          "storage_capability_ref": {
+            "kind": "runtimeprofile-storage-capability-ref",
+            "digest": "sha256:b9a87fdcd3472750d6ea4205b8c6f8aa6f853c6e31266a13de2828a9fb820f95"
+          }
+        },
+        "claims": [],
+        "branches": [],
+        "missing_facts": [],
+        "admitted_fact_refs": [],
+        "rejected_fact_refs": [
+          {
+            "kind": "semanticresult-rejected-fact-refs",
+            "digest": "sha256:33b41c482faadb972d01ce6cfc99f9543cfaa7a4c049886fc37bc520658026ee"
+          }
+        ],
+        "applicable_rule_refs": [],
+        "inapplicable_rule_refs": [
+          {
+            "kind": "semanticresult-inapplicable-rule-refs",
+            "digest": "sha256:70ffc4b1cc4938104fd6cc941d728a847f8cdd3f7f2997bcad0ad9adcfa82209"
+          }
+        ],
+        "argument_refs": [],
+        "attack_refs": [],
+        "exception_resolution_refs": [],
+        "permission_resolution_refs": [],
+        "priority_resolution_refs": [],
+        "temporal_result_refs": [],
+        "numeric_result_refs": [],
+        "decision_reason_codes": [
+          "INSUFFICIENT_SEMANTIC_SUPPORT"
+        ],
+        "taint_codes": [],
+        "risk_codes": [
+          "risk_codes-value"
+        ],
+        "receipt_refs": [
+          {
+            "kind": "semanticresult-receipt-refs",
+            "digest": "sha256:e884a94815e774e606a8b94869cdd4b60faefecadd75d126c3568bce47ac6ed2"
+          }
+        ],
+        "run_identity_ref": {
+          "kind": "semanticresult-run-identity-ref",
+          "digest": "sha256:a63b9c1ac748cab4b1223b83c10f1e045e69de5872719b36010a55aef57d5fb1"
+        },
+        "result_digest": "sha256:7874a57c4faf70c462d50788b1bbb4e120cd279b8866a84329c230102d44c488"
+      },
+      "certificate_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "run_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "artifact_handles": [
+        {
+          "artifact_id": "artifact_id-value",
+          "kind": "kind-value",
+          "content_ref": {
+            "kind": "artifacthandle-content-ref",
+            "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+          },
+          "run_identity_ref": {
+            "kind": "artifacthandle-run-identity-ref",
+            "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+          },
+          "scope": "scope-value",
+          "media_type": "media_type-value",
+          "size_bytes": 16,
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "max_bytes": 8,
+          "signature": {
+            "algorithm": "Ed25519",
+            "key_id": "key_id-value",
+            "issuer": "issuer-value",
+            "role": "role-value",
+            "scope": "scope-value",
+            "kind": "kind-value",
+            "schema_version": "jc/4.0",
+            "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+            "run_identity_ref": null,
+            "status": "status-value",
+            "issued_at": {
+              "wire": "2026-08-22T08:00:00Z"
+            },
+            "expires_at": {
+              "wire": "2026-08-23T08:00:00Z"
+            },
+            "nonce": "nonce-value",
+            "evidence_refs": [
+              {
+                "kind": "signatureenvelope-evidence-refs",
+                "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+              }
+            ],
+            "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+            "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+            "revocation_ref": null,
+            "signature": "signature-value"
+          }
+        }
+      ]
+    },
+    "MCPEvaluateErrorV4": {
+      "error": {
+        "code": "code-value",
+        "message": "message-value",
+        "stage": "stage-value",
+        "retryable": true,
+        "correlation_id": "correlation_id-value",
+        "field_path": [
+          "request",
+          "field"
+        ]
+      },
+      "result": null,
+      "run_handle": null,
+      "artifact_handles": []
+    },
+    "MCPVerifyRunInputV4": {
+      "run_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "offline_replay": false
+    },
+    "MCPVerifyRunOutputV4": {
+      "verification": {
+        "run_identity_ref": {
+          "kind": "verificationresult-run-identity-ref",
+          "digest": "sha256:8645dbbb965147eb817f27aa5c3260d8031f57e654f802858f30af0c0a287e90"
+        },
+        "status": "status-value",
+        "certificate_ref": {
+          "kind": "verificationresult-certificate-ref",
+          "digest": "sha256:5fc9747f0a4ad09ebe8428cd1df2006f04f1ba67c575263d28544b4cc494d369"
+        },
+        "audit_manifest_ref": {
+          "kind": "verificationresult-audit-manifest-ref",
+          "digest": "sha256:25ca1c3c7f136af4301a27aea889a2f4377042513bd12ad0f7cb5bfe19ce6376"
+        },
+        "audit_bundle_ref": {
+          "kind": "verificationresult-audit-bundle-ref",
+          "digest": "sha256:e083ed619dc84c1c67bf996a08fac4e0234cbdc06d54c0ca6280c0605dd6d245"
+        },
+        "verified_artifact_refs": [
+          {
+            "kind": "verificationresult-verified-artifact-refs",
+            "digest": "sha256:ec0e7200b94f5693faff2e45349013f97f25e9303f7f674f415ee27845330616"
+          }
+        ],
+        "failed_artifact_refs": [
+          {
+            "kind": "verificationresult-failed-artifact-refs",
+            "digest": "sha256:ac9a4f81d01fb4d9347ba06d9f477dedc50f62202b51ff0872258924ebe94f5c"
+          }
+        ],
+        "checker_receipt_refs": [
+          {
+            "kind": "verificationresult-checker-receipt-refs",
+            "digest": "sha256:143f309d4dd5c017c61175e7b93b0310b28f59b11dd76e59af37abd6c8dd9323"
+          }
+        ],
+        "verification_receipt_refs": [
+          {
+            "kind": "verificationresult-verification-receipt-refs",
+            "digest": "sha256:d072d76a31c6f0277eb7e6b482ba1972429e01bd597e64317f37ac2237ad7636"
+          }
+        ],
+        "error_codes": [
+          "error_codes-value"
+        ]
+      },
+      "replay": null
+    },
+    "MCPVerifyRunErrorV4": {
+      "error": {
+        "code": "code-value",
+        "message": "message-value",
+        "stage": "stage-value",
+        "retryable": true,
+        "correlation_id": "correlation_id-value",
+        "field_path": [
+          "request",
+          "field"
+        ]
+      },
+      "run_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "verification": null,
+      "replay": null
+    },
+    "MCPReadArtifactInputV4": {
+      "artifact_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "offset": 0,
+      "length": 4
+    },
+    "MCPReadArtifactOutputV4": {
+      "artifact_handle": {
+        "artifact_id": "artifact_id-value",
+        "kind": "kind-value",
+        "content_ref": {
+          "kind": "artifacthandle-content-ref",
+          "digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351"
+        },
+        "run_identity_ref": {
+          "kind": "artifacthandle-run-identity-ref",
+          "digest": "sha256:bd75f09e80423a616d618d577c54a63aa99a17223a3d04334d0e97979253f901"
+        },
+        "scope": "scope-value",
+        "media_type": "media_type-value",
+        "size_bytes": 16,
+        "expires_at": {
+          "wire": "2026-08-23T08:00:00Z"
+        },
+        "max_bytes": 8,
+        "signature": {
+          "algorithm": "Ed25519",
+          "key_id": "key_id-value",
+          "issuer": "issuer-value",
+          "role": "role-value",
+          "scope": "scope-value",
+          "kind": "kind-value",
+          "schema_version": "jc/4.0",
+          "subject_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+          "run_identity_ref": null,
+          "status": "status-value",
+          "issued_at": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "expires_at": {
+            "wire": "2026-08-23T08:00:00Z"
+          },
+          "nonce": "nonce-value",
+          "evidence_refs": [
+            {
+              "kind": "signatureenvelope-evidence-refs",
+              "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+            }
+          ],
+          "payload_digest": "sha256:9d4c8250896f79a09ec66ff08222c875485b6e708d481d034b634a86b8c1fa9a",
+          "policy_digest": "sha256:74e41df051909ed617f1f9e4738f08b173a87fc6e12a05554d675c990780b212",
+          "revocation_ref": null,
+          "signature": "signature-value"
+        }
+      },
+      "offset": 0,
+      "length": 4,
+      "next_offset": 4,
+      "content_base64": "dGVzdA==",
+      "chunk_digest": "sha256:c7df1d4a04778f4ebe4fd514ba19943cc64c2af1ed474ad6118f0b6dd7a71545",
+      "artifact_digest": "sha256:43381a7faf220dce857a27a82d9b4618b0fb69aca269ff52239c26027dc3e351",
+      "content_type": "application/json",
+      "eof": false
+    },
+    "MCPReadArtifactErrorV4": {
+      "error": {
+        "code": "code-value",
+        "message": "message-value",
+        "stage": "stage-value",
+        "retryable": true,
+        "correlation_id": "correlation_id-value",
+        "field_path": [
+          "request",
+          "field"
+        ]
+      },
+      "artifact_handle": null
+    },
+    "ToolSpecV4": {
+      "name": "name-value",
+      "description": "description-value",
+      "input_type": "input_type-value",
+      "output_type": "output_type-value",
+      "error_type": "error_type-value"
+    }
+  },
+  "scalar_negative": {
+    "DigestV4": "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "ExecutionStatusV4": "finished",
+    "DecisionStatusV4": "formal",
+    "CompletenessStateV4": "complete-ish",
+    "CertificateKindV4": "formal"
+  },
+  "case_request_forbidden_fields": [
+    "active",
+    "build_identity",
+    "certificate",
+    "checker_accepted",
+    "checker_receipt",
+    "engine_commit",
+    "engine_tree",
+    "engine_version",
+    "formal_kernel_used",
+    "gate_outcome",
+    "gate_status",
+    "receipt",
+    "run_identity",
+    "solver_receipt",
+    "wheel_digest"
+  ],
+  "field_authority": {
+    "CanonicalTimeV4": [
+      "wire"
+    ],
+    "ContentRefV4": [
+      "kind",
+      "digest"
+    ],
+    "ArtifactHandleV4": [
+      "artifact_id",
+      "kind",
+      "content_ref",
+      "run_identity_ref",
+      "scope",
+      "media_type",
+      "size_bytes",
+      "expires_at",
+      "max_bytes",
+      "signature"
+    ],
+    "ErrorV4": [
+      "code",
+      "message",
+      "stage",
+      "retryable",
+      "correlation_id",
+      "field_path"
+    ],
+    "SignatureEnvelopeV4": [
+      "algorithm",
+      "key_id",
+      "issuer",
+      "role",
+      "scope",
+      "kind",
+      "schema_version",
+      "subject_digest",
+      "run_identity_ref",
+      "status",
+      "issued_at",
+      "expires_at",
+      "nonce",
+      "evidence_refs",
+      "payload_digest",
+      "policy_digest",
+      "revocation_ref",
+      "signature"
+    ],
+    "TrustPolicyV4": [
+      "policy_id",
+      "allowed_algorithms",
+      "trusted_key_ids",
+      "revoked_key_ids",
+      "allowed_issuers",
+      "allowed_roles",
+      "allowed_scopes",
+      "allowed_artifact_kinds",
+      "valid_from",
+      "valid_to",
+      "authorization_policy_ref",
+      "revocation_policy_ref",
+      "replay_policy_ref",
+      "separation_of_duties_ref",
+      "policy_digest"
+    ],
+    "StorageCapabilityV4": [
+      "provider_id",
+      "namespace",
+      "content_addressed",
+      "atomic_write",
+      "no_follow",
+      "max_artifact_bytes",
+      "durability_ref",
+      "access_policy_ref",
+      "encryption_ref",
+      "quota_policy_ref",
+      "retention_policy_ref",
+      "attestation_refs",
+      "policy_digest",
+      "capability_digest"
+    ],
+    "ObservabilityEnvelopeV4": [
+      "run_identity_ref",
+      "started_at",
+      "finished_at",
+      "host_id",
+      "process_id",
+      "elapsed_ms",
+      "event_refs"
+    ],
+    "CaseRequestV4": [
+      "request_id",
+      "schema_version",
+      "legal_context",
+      "decision_time",
+      "source_bundle_ref",
+      "evidence_manifest_ref",
+      "fact_attestation_refs",
+      "rule_pack_ref",
+      "requested_outputs",
+      "proposal_refs"
+    ],
+    "LegalContextV4": [
+      "jurisdiction",
+      "governing_law"
+    ],
+    "RequestedOutputV4": [
+      "kind",
+      "format",
+      "locale"
+    ],
+    "ResourceLimitsV4": [
+      "max_request_bytes",
+      "max_json_depth",
+      "max_json_nodes",
+      "max_object_members_per_object",
+      "max_total_object_members",
+      "max_array_items_per_array",
+      "max_total_array_items",
+      "max_string_utf8_bytes",
+      "max_total_string_utf8_bytes",
+      "max_total_reference_values",
+      "max_fact_attestation_refs",
+      "max_proposal_refs",
+      "admission_deadline_ms",
+      "artifact_page_bytes",
+      "solver_deadline_ms",
+      "worker_queue_items",
+      "in_flight_runs",
+      "state_quota_bytes",
+      "retention_seconds"
+    ],
+    "SourceSnapshotV4": [
+      "source_id",
+      "jurisdiction",
+      "authority_tier",
+      "issuer",
+      "title",
+      "publication_time",
+      "effective_from",
+      "effective_to",
+      "retrieved_at",
+      "canonical_locator",
+      "raw_digest",
+      "normalization_profile",
+      "normalized_digest",
+      "structure_map_ref",
+      "authenticity_receipt_ref",
+      "provenance_refs",
+      "acquisition_method",
+      "license_status",
+      "distribution_status"
+    ],
+    "CanonicalLocatorV4": [
+      "kind",
+      "value",
+      "page",
+      "span_start",
+      "span_end"
+    ],
+    "SourceVersionEdgeV4": [
+      "source_ref",
+      "target_ref",
+      "relation",
+      "locator",
+      "retrieval_receipt_ref"
+    ],
+    "SourceBundleV4": [
+      "bundle_id",
+      "root_source_ref",
+      "terminal_source_ref",
+      "snapshots",
+      "version_edges",
+      "bundle_digest"
+    ],
+    "EvidenceManifestV4": [
+      "manifest_id",
+      "request_ref",
+      "case_scope",
+      "items",
+      "fact_candidate_refs",
+      "contradictions",
+      "manifest_digest"
+    ],
+    "EvidenceItemV4": [
+      "evidence_id",
+      "document_ref",
+      "locators",
+      "custody_provenance",
+      "redaction_state",
+      "review_state"
+    ],
+    "ContradictionRefV4": [
+      "left_ref",
+      "right_ref",
+      "kind",
+      "reason_code"
+    ],
+    "FactCandidateV4": [
+      "candidate_id",
+      "proposition_ref",
+      "value_kind",
+      "value_ref",
+      "evidence_refs",
+      "producer_kind",
+      "proposal_ref"
+    ],
+    "FactAttestationV4": [
+      "attestation_id",
+      "candidate_ref",
+      "request_ref",
+      "case_scope",
+      "proposition_digest",
+      "value_digest",
+      "source_refs",
+      "evidence_refs",
+      "interpretation_version",
+      "admission_basis",
+      "issuer_role",
+      "issued_at",
+      "expires_at",
+      "dispute_state",
+      "assumption_state",
+      "nonce",
+      "replay_policy_ref",
+      "revocation_ref",
+      "signature"
+    ],
+    "RuleV4": [
+      "rule_id",
+      "rule_digest",
+      "jurisdiction",
+      "governing_law",
+      "authority_ref",
+      "variable_declaration_refs",
+      "premise_refs",
+      "conclusion_ref",
+      "modality",
+      "permission_ref",
+      "exception_refs",
+      "priority_refs",
+      "attack_refs",
+      "temporal_constraint_refs",
+      "numeric_constraint_refs",
+      "source_snapshot_ref",
+      "source_locator",
+      "source_structure_ref",
+      "interpretation_choice_refs",
+      "defined_term_refs",
+      "promotion_receipt_refs",
+      "effective_from",
+      "effective_to"
+    ],
+    "PackManifestV4": [
+      "pack_id",
+      "pack_version",
+      "engine_api",
+      "rule_refs",
+      "source_refs",
+      "config_refs",
+      "receipt_refs",
+      "compiler_build_digest",
+      "source_tree_digest",
+      "schema_digest",
+      "trust_policy_ref",
+      "coverage_receipt_refs",
+      "verification_receipt_refs",
+      "manifest_digest"
+    ],
+    "PackSignatureV4": [
+      "manifest_ref",
+      "signature"
+    ],
+    "LegalSpecV4": [
+      "spec_id",
+      "rule_ref",
+      "jurisdiction",
+      "governing_law",
+      "authority_ref",
+      "variable_declaration_refs",
+      "premise_refs",
+      "conclusion_ref",
+      "modality",
+      "permission_ref",
+      "exception_refs",
+      "priority_refs",
+      "attack_refs",
+      "temporal_constraint_refs",
+      "numeric_constraint_refs",
+      "source_snapshot_ref",
+      "source_locator",
+      "source_structure_ref",
+      "interpretation_choice_refs",
+      "defined_term_refs",
+      "promotion_receipt_refs",
+      "effective_from",
+      "effective_to",
+      "spec_digest"
+    ],
+    "LegalIVLV4": [
+      "ivl_id",
+      "spec_ref",
+      "type_environment_ref",
+      "authority_ref",
+      "variable_declaration_refs",
+      "premise_refs",
+      "conclusion_ref",
+      "modality_ref",
+      "clause_refs",
+      "exception_attack_refs",
+      "permission_refs",
+      "priority_refs",
+      "temporal_constraint_refs",
+      "numeric_constraint_refs",
+      "source_map_ref",
+      "interpretation_choice_refs",
+      "interpretation_approval_refs",
+      "defined_term_refs",
+      "proof_obligation_refs",
+      "ivl_digest"
+    ],
+    "ArgumentV4": [
+      "argument_id",
+      "premise_refs",
+      "rule_ref",
+      "claim_ref",
+      "derivation_refs"
+    ],
+    "AttackV4": [
+      "attack_id",
+      "attacker_ref",
+      "target_ref",
+      "attack_type",
+      "target_aspect"
+    ],
+    "PriorityEdgeV4": [
+      "edge_id",
+      "preferred_ref",
+      "defeated_ref",
+      "condition_ref",
+      "source_ref"
+    ],
+    "PermissionResolutionV4": [
+      "permission_id",
+      "claim_ref",
+      "prohibition_ref",
+      "status",
+      "witness_refs"
+    ],
+    "ExceptionResolutionV4": [
+      "exception_id",
+      "claim_ref",
+      "target_ref",
+      "target_aspect",
+      "status",
+      "witness_refs"
+    ],
+    "BackendInvocationV4": [
+      "invocation_id",
+      "provider_id",
+      "provider_version",
+      "provider_package_digest",
+      "provider_binary_digest",
+      "provider_build_digest",
+      "provider_capability_ref",
+      "ir_ref",
+      "algorithm_profile_digest",
+      "limits_ref",
+      "seed"
+    ],
+    "FactAdmissionReceiptV4": [
+      "receipt_id",
+      "request_ref",
+      "case_scope",
+      "run_identity_ref",
+      "subject_digest",
+      "status",
+      "source_gate_receipt_ref",
+      "interpretation_gate_receipt_ref",
+      "fact_gate_receipt_ref",
+      "attestation_ref",
+      "fact_ref",
+      "issued_at",
+      "issuer",
+      "signature"
+    ],
+    "RulePromotionReceiptV4": [
+      "receipt_id",
+      "rule_subject_digest",
+      "legal_review_ref",
+      "engineering_review_ref",
+      "status",
+      "issued_at",
+      "signature"
+    ],
+    "TranslationReceiptV4": [
+      "receipt_id",
+      "run_identity_ref",
+      "hop",
+      "translator_ref",
+      "source_ref",
+      "target_ref",
+      "field_mapping_ref",
+      "field_coverage",
+      "lost_fields",
+      "defaulted_fields",
+      "unsupported_fields",
+      "counterexample_refs",
+      "proof_obligation_refs",
+      "status",
+      "issued_at",
+      "signature"
+    ],
+    "SolverReceiptV4": [
+      "receipt_id",
+      "run_identity_ref",
+      "invocation_ref",
+      "status",
+      "exit_status",
+      "backend_result_ref",
+      "model_or_core_ref",
+      "proof_ref",
+      "issued_at",
+      "signature"
+    ],
+    "CheckerReceiptV4": [
+      "receipt_id",
+      "run_identity_ref",
+      "subject_ref",
+      "argument_graph_ref",
+      "backend_result_ref",
+      "checker_build_digest",
+      "algorithm_profile_digest",
+      "input_digest",
+      "output_digest",
+      "witness_refs",
+      "status",
+      "issued_at",
+      "signature"
+    ],
+    "ProofReceiptV4": [
+      "receipt_id",
+      "run_identity_ref",
+      "subject_ref",
+      "proof_kind",
+      "proof_ref",
+      "checker_receipt_ref",
+      "proof_build_digest",
+      "trusted_computing_base_refs",
+      "status",
+      "issued_at",
+      "signature"
+    ],
+    "ReviewStateV4": [
+      "status",
+      "unresolved_item_refs",
+      "responsible_role",
+      "release_condition_refs",
+      "review_receipt_ref"
+    ],
+    "InterruptionStateV4": [
+      "reason_code",
+      "at_stage"
+    ],
+    "TransportOutcomeV4": [
+      "status",
+      "error"
+    ],
+    "RuntimeProfileV4": [
+      "engine_version",
+      "engine_build_digest",
+      "formal_kernel",
+      "backend_invocation_ref",
+      "backend_receipt_ref",
+      "trust_policy_ref",
+      "storage_capability_ref"
+    ],
+    "ClaimResultV4": [
+      "claim_id",
+      "claim_ref",
+      "status",
+      "label",
+      "argument_refs",
+      "fact_refs",
+      "rule_refs",
+      "source_refs",
+      "proof_receipt_refs",
+      "checker_receipt_refs"
+    ],
+    "BranchResultV4": [
+      "branch_id",
+      "assumption_refs",
+      "claim_refs",
+      "decision_status",
+      "branch_digest"
+    ],
+    "MissingFactRequirementV4": [
+      "fact_id",
+      "impacted_rule_refs",
+      "impacted_claim_refs",
+      "allowed_answer_types",
+      "required_source_kinds",
+      "priority"
+    ],
+    "SemanticResultV4": [
+      "request_ref",
+      "execution_status",
+      "decision_status",
+      "review_state",
+      "completeness_state",
+      "interruption_state",
+      "certificate_kind",
+      "runtime_profile",
+      "claims",
+      "branches",
+      "missing_facts",
+      "admitted_fact_refs",
+      "rejected_fact_refs",
+      "applicable_rule_refs",
+      "inapplicable_rule_refs",
+      "argument_refs",
+      "attack_refs",
+      "exception_resolution_refs",
+      "permission_resolution_refs",
+      "priority_resolution_refs",
+      "temporal_result_refs",
+      "numeric_result_refs",
+      "decision_reason_codes",
+      "taint_codes",
+      "risk_codes",
+      "receipt_refs",
+      "run_identity_ref",
+      "result_digest"
+    ],
+    "RunIdentityV4": [
+      "request_ref",
+      "source_bundle_ref",
+      "evidence_manifest_ref",
+      "fact_attestation_refs",
+      "rule_pack_ref",
+      "engine_version",
+      "engine_source_commit",
+      "engine_source_tree",
+      "engine_build_digest",
+      "wheel_digest",
+      "package_digest",
+      "schema_digest",
+      "tool_spec_digest",
+      "lock_digest",
+      "runtime_config_digest",
+      "algorithm_profile_digest",
+      "trust_policy_ref",
+      "storage_capability_ref",
+      "backend_invocation_ref",
+      "run_digest"
+    ],
+    "FormalCertificateV4": [
+      "request_ref",
+      "result_ref",
+      "run_identity_ref",
+      "bundle_core_digest",
+      "claim_refs",
+      "source_receipt_refs",
+      "evidence_receipt_refs",
+      "fact_admission_receipt_refs",
+      "rule_promotion_receipt_refs",
+      "translation_receipt_refs",
+      "solver_receipt_refs",
+      "proof_receipt_refs",
+      "checker_receipt_refs",
+      "certificate_digest"
+    ],
+    "ConflictCertificateV4": [
+      "request_ref",
+      "result_ref",
+      "run_identity_ref",
+      "bundle_core_digest",
+      "conflict_refs",
+      "argument_refs",
+      "attack_refs",
+      "exception_resolution_refs",
+      "priority_resolution_refs",
+      "permission_resolution_refs",
+      "source_receipt_refs",
+      "evidence_receipt_refs",
+      "fact_admission_receipt_refs",
+      "rule_promotion_receipt_refs",
+      "translation_receipt_refs",
+      "solver_receipt_refs",
+      "proof_receipt_refs",
+      "checker_receipt_refs",
+      "certificate_digest"
+    ],
+    "CertificateEnvelopeV4": [
+      "kind",
+      "formal",
+      "conflict",
+      "service_signature"
+    ],
+    "AuditManifestV4": [
+      "run_identity_ref",
+      "request_ref",
+      "input_ref",
+      "source_index_ref",
+      "fact_admission_ref",
+      "rule_pack_ref",
+      "translation_receipts_ref",
+      "backend_receipts_ref",
+      "checker_receipts_ref",
+      "events_ref",
+      "graph_ref",
+      "result_ref",
+      "certificate_ref",
+      "bundle_core_digest",
+      "manifest_digest"
+    ],
+    "AuditBundleIndexV4": [
+      "manifest_ref",
+      "checksums_ref",
+      "complete_marker_ref",
+      "entries",
+      "bundle_digest"
+    ],
+    "EvaluationEnvelopeV4": [
+      "request",
+      "result",
+      "run_identity",
+      "certificate",
+      "transport_outcome",
+      "audit_manifest_ref",
+      "audit_bundle_index"
+    ],
+    "VerificationResultV4": [
+      "run_identity_ref",
+      "status",
+      "certificate_ref",
+      "audit_manifest_ref",
+      "audit_bundle_ref",
+      "verified_artifact_refs",
+      "failed_artifact_refs",
+      "checker_receipt_refs",
+      "verification_receipt_refs",
+      "error_codes"
+    ],
+    "ReplayResultV4": [
+      "run_identity_ref",
+      "replay_run_identity_ref",
+      "status",
+      "replay_policy_ref",
+      "original_result_ref",
+      "replay_result_ref",
+      "original_bundle_ref",
+      "replay_bundle_ref",
+      "exact_equal",
+      "semantic_equal",
+      "differing_paths"
+    ],
+    "MCPCapabilitiesInputV4": [],
+    "MCPCapabilitiesOutputV4": [
+      "schema_version",
+      "engine_version",
+      "engine_source_tree",
+      "engine_build_digest",
+      "wheel_digest",
+      "package_digest",
+      "lock_digest",
+      "schema_digest",
+      "tool_spec_digest",
+      "tool_specs",
+      "resource_limits",
+      "active_pack_ref",
+      "trust_policy_ref",
+      "storage_capability_ref",
+      "kernel_ready",
+      "legal_production_ready"
+    ],
+    "MCPCapabilitiesErrorV4": [
+      "error"
+    ],
+    "MCPEvaluateInputV4": [
+      "request",
+      "request_handle"
+    ],
+    "MCPEvaluateOutputV4": [
+      "result",
+      "certificate_handle",
+      "run_handle",
+      "artifact_handles"
+    ],
+    "MCPEvaluateErrorV4": [
+      "error",
+      "result",
+      "run_handle",
+      "artifact_handles"
+    ],
+    "MCPVerifyRunInputV4": [
+      "run_handle",
+      "offline_replay"
+    ],
+    "MCPVerifyRunOutputV4": [
+      "verification",
+      "replay"
+    ],
+    "MCPVerifyRunErrorV4": [
+      "error",
+      "run_handle",
+      "verification",
+      "replay"
+    ],
+    "MCPReadArtifactInputV4": [
+      "artifact_handle",
+      "offset",
+      "length"
+    ],
+    "MCPReadArtifactOutputV4": [
+      "artifact_handle",
+      "offset",
+      "length",
+      "next_offset",
+      "content_base64",
+      "chunk_digest",
+      "artifact_digest",
+      "content_type",
+      "eof"
+    ],
+    "MCPReadArtifactErrorV4": [
+      "error",
+      "artifact_handle"
+    ],
+    "ToolSpecV4": [
+      "name",
+      "description",
+      "input_type",
+      "output_type",
+      "error_type"
+    ]
+  }
+}

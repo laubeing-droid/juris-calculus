@@ -294,6 +294,18 @@ def nested_alias_bypass():
     ]
     w1_reports = RUNNER._structured_test_reports(w1_commands)
     assert RUNNER._w1_01_test_report_problems(w1_reports) == []
+    assert all(
+        field in w1_reports[0]
+        for field in ("failed", "errors", "skipped", "xfailed", "xpassed", "collection_errors")
+    )
+    runner_0_7_reports = RUNNER._structured_test_reports(
+        w1_commands,
+        runner_version="0.7.0",
+    )
+    assert all(
+        field not in runner_0_7_reports[0]
+        for field in ("failed", "errors", "skipped", "xfailed", "xpassed", "collection_errors")
+    )
     legacy_reports = RUNNER._structured_test_reports(
         w1_commands,
         runner_version="0.3.0",
@@ -301,18 +313,96 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.8.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.9.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
     tampered_reports[1]["runtime"] = "v23.0.0"
     assert len(RUNNER._w1_01_test_report_problems(tampered_reports)) == 2
+
+    w1_02_stdout = tmp_path / "w1-02-pytest-stdout.bin"
+    w1_02_stdout.write_text("173 passed in 3.00s\n", encoding="utf-8")
+    w1_02_reports = RUNNER._structured_test_reports([{
+        "argv": ["py", "-m", "pytest", "tests/contract/test_contracts.py"],
+        "exit_code": 0,
+        "stdout": {"path": str(w1_02_stdout), "sha256": "3" * 64},
+        "stderr": {"path": str(tmp_path / "w1-02-stderr.bin"), "sha256": "4" * 64},
+    }])
+    assert any(
+        "junit" in problem
+        for problem in RUNNER._w1_02_test_report_problems(w1_02_reports)
+    )
+    w1_02_junit = tmp_path / "w1-02-junit.xml"
+    w1_02_junit.write_text(
+        '<testsuites><testsuite tests="1" skipped="0" failures="0" errors="0">'
+        '<testcase classname="contract.test_contracts" name="test_probe" />'
+        "</testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    parsed_junit_report = RUNNER._structured_test_reports([{
+        "argv": [
+            "py", "-m", "pytest", "tests/contract/test_contracts.py",
+            "--junitxml", str(w1_02_junit),
+        ],
+        "exit_code": 0,
+        "stdout": {"path": str(w1_02_stdout), "sha256": "a" * 64},
+        "stderr": {"path": str(tmp_path / "w1-02-stderr.bin"), "sha256": "b" * 64},
+    }])[0]
+    assert (
+        parsed_junit_report["junit_valid"],
+        parsed_junit_report["junit_tests"],
+        parsed_junit_report["junit_cases"],
+        parsed_junit_report["junit_unique_cases"],
+    ) == (True, 1, 1, 1)
+    w1_02_reports[0].update({
+        "junit_valid": True,
+        "junit_sha256": "9" * 64,
+        "junit_tests": 173,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 173,
+        "junit_unique_cases": 173,
+        "junit_case_ids_digest": RUNNER.W1_02_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w1_02_test_report_problems(w1_02_reports) == []
+    w1_02_reports[0]["skipped"] = 1
+    assert RUNNER._w1_02_test_report_problems(w1_02_reports) == [
+        "W1-02 pytest skipped drifted: 1 != 0"
+    ]
+    w1_02_stdout.write_text(
+        "1 passed in 0.01s\n173 passed in 3.00s\n", encoding="utf-8"
+    )
+    forged_reports = RUNNER._structured_test_reports([{
+        "argv": ["py", "-m", "pytest", "tests/contract/test_contracts.py"],
+        "exit_code": 0,
+        "stdout": {"path": str(w1_02_stdout), "sha256": "5" * 64},
+        "stderr": {"path": str(tmp_path / "w1-02-stderr.bin"), "sha256": "6" * 64},
+    }])
+    assert any(
+        "terminal_summaries" in problem
+        for problem in RUNNER._w1_02_test_report_problems(forged_reports)
+    )
+
+    w1_02_stdout.write_text(
+        "38 passed in 1.00s\n37 passed in 2.00s\n", encoding="utf-8"
+    )
+    old_parser_reports = RUNNER._structured_test_reports(
+        [{
+            "argv": ["py", "-m", "pytest", "tests/contract/test_contracts.py"],
+            "exit_code": 0,
+            "stdout": {"path": str(w1_02_stdout), "sha256": "7" * 64},
+            "stderr": {"path": str(tmp_path / "w1-02-stderr.bin"), "sha256": "8" * 64},
+        }],
+        runner_version="0.7.0",
+    )
+    assert old_parser_reports[0]["passed"] == 38
 
     captured_environment: dict[str, str] = {}
 
