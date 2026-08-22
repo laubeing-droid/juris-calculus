@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "7a22e559c05d88d4cab13be38ce2a603e191c542c6ce964b3a9fb749fecf1cbe",
+    "plan_sha256": "6276814e102722ed7a32a74f23a1fc1689b85e73ca1ebeef22cf6b54c29c3cc0",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -1887,9 +1887,16 @@
       ],
       "objective": "重写 rule_packs.py；RuleV4 + signed PackManifestV4；active 只由 verifier 推导",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/rule_packs.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
         "tests/contract/test_rule_packs.py",
-        "tests/security/test_pack_attacks.py"
+        "tests/required-v4-tests.json",
+        "tests/security/test_pack_attacks.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1899,9 +1906,29 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W2-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W2-03",
+          "tests/contract/test_rule_packs.py",
+          "tests/security/test_pack_attacks.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W2-03/rule-pack-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

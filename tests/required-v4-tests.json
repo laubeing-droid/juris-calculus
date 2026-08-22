@@ -198,7 +198,7 @@
       "suite": "security",
       "selector": "tests/security/test_pack_attacks.py::test_candidate_cannot_self_activate",
       "owner_task": "W2-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Mark a non-executable candidate active without a signed pack.",
       "red_failure": "Candidate self-activation must fail."
     },
@@ -378,7 +378,7 @@
       "suite": "security",
       "selector": "tests/security/test_pack_attacks.py::test_empty_official_pack_and_format_only_attestation_fail",
       "owner_task": "W2-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Treat a format-only attestation or empty official pack as valid.",
       "red_failure": "Both mutations must block pack activation."
     },
@@ -458,7 +458,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_rule_packs.py::test_missing_or_corrupt_domain_config_blocks",
       "owner_task": "W2-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Swallow missing or corrupt domain configuration and use defaults.",
       "red_failure": "Configuration failure must block rather than fall back."
     },

@@ -591,9 +591,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W2-03　RuleV4 和 signed PackManifestV4
 
 - **Depends / audit**：`W2-01, W1-05 / P0-05, P1-07..09, P1-16`。
-- **Paths**：重写 `compiler_core/rule_packs.py`；RuleV4/pack contracts/tests。
-- **动作**：RuleV4 覆盖 typed variables、premise/conclusion、modality、permission、exception、priority/attack、temporal/numeric、source locator、interpretation、promotion receipts；pack 绑定 rule/source/config/receipt/build/schema/trust/coverage/signature。`active` 只由 verifier 推导。
-- **Gate**：candidate/development/empty/unsigned/wrong engine API/missing config/wrong commit/revoked pack 必 blocked；空 official 不得 `integrity_valid=true`；CLI 状态不自行推导 eligible。
+- **Paths**：仅以下 10 个 exact paths：本方案、`compiler_core/rule_packs.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_rule_packs.py`、`tests/required-v4-tests.json`、`tests/security/test_pack_attacks.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；不修改 frozen contracts、resolver、trust、source service、artifact store、domain config 或 CLI。
+- **动作**：在保留后续切换所需 legacy reader 的同时，新增唯一 V4 `RulePackVerifierV4.verify(pack_ref, now)`；RuleV4/PackManifestV4 只从 canonical digest-body bytes 解析；promotion subject 断开 rule↔receipt 环，法律、工程、service promotion、build attestation、pack release 五类真实 Ed25519 签名逐层绑定且职责分离；pack signature 单向引用 manifest，manifest receipt 闭合集合由 promotion receipts 与唯一 build attestation 组成；verifier 解析真实 SourceSnapshot、typed rule refs、closed domain config、coverage/verification receipts，并精确绑定 engine/build/source-tree/schema/trust identity。`VERIFIED_ACTIVE` 仅由该 verifier 内部签发，API 不接受 caller `active`、`eligible`、`integrity_valid`、`PASS` 或 receipt。
+- **Gate**：candidate、development/test key 用于 production、empty、unsigned、wrong exact engine API、missing/corrupt/unknown config、wrong build/tree/schema、未验证 source、locator/structure mismatch、少签/伪签/过期/撤销/wrong scope、同人多角色、promotion replay、manifest/signature byte replacement 均 blocked；空 formal pack 不产生 verified handle；同 pack retry 幂等。W2-03 只建立 verified snapshot 权威；CLI/lookup 转述该状态和 global domain fallback 清除仍分别由 W5-02C/W5-03 与 W4-05 完成，不在本 task 伪报跨入口闭环。
 - **Commit**：`feat(pack): verify immutable signed RuleV4 snapshots`。
 
 ### W2-04　消除 pack TOCTOU

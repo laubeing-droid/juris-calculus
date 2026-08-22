@@ -380,7 +380,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "7a22e559c05d88d4cab13be38ce2a603e191c542c6ce964b3a9fb749fecf1cbe",
+        "plan_sha256": "6276814e102722ed7a32a74f23a1fc1689b85e73ca1ebeef22cf6b54c29c3cc0",
         "count": len(entries),
         "paths": entries,
     }
