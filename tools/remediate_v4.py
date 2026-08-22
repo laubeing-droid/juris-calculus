@@ -63,6 +63,11 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.6.0": 3,
     "0.7.0": 4,
 }
+KNOWN_RUNNER_VERSIONS = frozenset({
+    "0.2.0",
+    "0.2.1",
+    *STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION,
+})
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -4214,6 +4219,8 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         attempt_number = int(attempt_dir.name)
         if receipt["task_id"] != task_id or receipt["attempt"] != attempt_number or attempt_number <= previous_attempt:
             raise ValueError(f"receipt identity mismatch: {receipt_path}")
+        if receipt["runner_version"] not in KNOWN_RUNNER_VERSIONS:
+            raise ValueError(f"unsupported receipt runner version: {receipt_path}")
         if receipt["previous_receipt_digest"] != previous:
             raise ValueError(f"receipt chain broken: {receipt_path}")
         if receipt["receipt_digest"] != _receipt_digest(receipt):

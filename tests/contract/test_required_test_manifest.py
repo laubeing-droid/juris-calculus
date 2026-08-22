@@ -306,6 +306,9 @@ def nested_alias_bypass():
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
+    assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0",
+    })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
     tampered_reports[1]["runtime"] = "v23.0.0"
