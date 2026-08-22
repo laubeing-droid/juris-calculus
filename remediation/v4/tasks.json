@@ -555,6 +555,7 @@
         "remediation/v4/tasks.json",
         "tests/contract/**",
         "tests/fixtures/golden/**",
+        "tests/unit/test_remediation_run.py",
         "tests/unit/test_remediation_runner.py",
         "tools/build_file_disposition.py",
         "tools/remediate_v4.py"
@@ -584,9 +585,23 @@
           "node",
           "tests/contract/jcs_node_oracle.mjs",
           "tests/fixtures/golden/jcs-v4-vectors.json"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "tests/unit/test_remediation_runner.py",
+          "tests/unit/test_remediation_run.py",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W0-02-runner"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0,
         0,
         0

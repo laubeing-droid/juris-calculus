@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -67,6 +68,14 @@ def _run(plan: Path, state_root: Path) -> subprocess.CompletedProcess[str]:
         [sys.executable, "-B", str(RUNNER), "run", "--plan", str(plan),
          "--state-root", str(state_root), "--through", "ALL"],
         cwd=str(REPO), capture_output=True, text=True,
+    )
+
+
+def _run_in_repo(repo: Path, plan: Path, state_root: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-B", str(repo / "tools" / "remediate_v4.py"), "run",
+         "--plan", str(plan), "--state-root", str(state_root), "--through", "ALL"],
+        cwd=str(repo), capture_output=True, text=True,
     )
 
 
@@ -137,6 +146,62 @@ def test_real_minimal_dag_writes_chained_receipts(tmp_path: Path) -> None:
     assert second["input_receipt_digests"] == {"A": first["receipt_digest"]}
     assert second["command_results"][0]["argv"][0] == sys.executable
     assert Path(second["command_results"][0]["stdout"]["path"]).read_bytes() == b"b\r\n" or Path(second["command_results"][0]["stdout"]["path"]).read_bytes() == b"b\n"
+
+
+def test_auto_task_binds_nonempty_committed_delta_in_receipt(tmp_path: Path) -> None:
+    repo = tmp_path / "isolated-repo"
+    runner = repo / "tools" / "remediate_v4.py"
+    runner.parent.mkdir(parents=True)
+    shutil.copy2(RUNNER, runner)
+    schema_dir = repo / "remediation" / "v4"
+    schema_dir.mkdir(parents=True)
+    shutil.copy2(REPO / "remediation" / "v4" / "task.schema.json", schema_dir)
+    shutil.copy2(REPO / "remediation" / "v4" / "receipt.schema.json", schema_dir)
+    shutil.copy2(REPO / "remediation" / "v4" / "issue-map.json", schema_dir)
+
+    def git(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        )
+        return completed.stdout.strip()
+
+    git("init", "-q")
+    git("config", "user.name", "Runner Integration")
+    git("config", "user.email", "runner@example.invalid")
+    git("add", "tools/remediate_v4.py", "remediation/v4/task.schema.json",
+        "remediation/v4/receipt.schema.json", "remediation/v4/issue-map.json")
+    git("commit", "-qm", "baseline")
+    baseline = git("rev-parse", "HEAD")
+
+    command = (
+        "from pathlib import Path; import subprocess; "
+        "p=Path('docs/_runner_committed_delta.txt'); p.parent.mkdir(parents=True); "
+        "p.write_bytes(b'bound bytes\\n'); "
+        "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+        "subprocess.run(['git','commit','-qm','runner integration delta'],check=True)"
+    )
+    plan = _write_plan(tmp_path / "plan", [
+        _auto_task(
+            "DELTA", ["{python}", "-c", command],
+            allowed=["docs/_runner_committed_delta.txt"],
+        )
+    ])
+    state_root = tmp_path / "state"
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 0, result.stderr
+
+    receipt = _receipt(state_root, "DELTA")
+    expected_digest = "sha256:" + hashlib.sha256(b"bound bytes\n").hexdigest()
+    assert receipt["status"] == "COMPLETED"
+    assert receipt["start_commit"] == baseline
+    assert receipt["result_commit"] == git("rev-parse", "HEAD")
+    assert receipt["result_commit"] != receipt["start_commit"]
+    assert receipt["changed_paths"] == ["docs/_runner_committed_delta.txt"]
+    assert receipt["artifact_digests"] == {
+        "result-path:docs/_runner_committed_delta.txt": expected_digest,
+    }
+    assert receipt["allowlist"] == {"allowed": True, "violations": []}
+    assert git("status", "--porcelain") == ""
 
 
 def test_failure_exit_code_is_receipted(tmp_path: Path) -> None:
