@@ -313,13 +313,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.10.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.11.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -400,6 +400,20 @@ def nested_alias_bypass():
     w1_04_reports[0]["junit_cases"] = 471
     assert RUNNER._w1_04_test_report_problems(w1_04_reports) == [
         "W1-04 pytest junit_cases drifted: 471 != 472"
+    ]
+
+    w1_05_reports = copy.deepcopy(w1_02_reports)
+    w1_05_reports[0].update({
+        "passed": 36,
+        "junit_tests": 36,
+        "junit_cases": 36,
+        "junit_unique_cases": 36,
+        "junit_case_ids_digest": RUNNER.W1_05_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w1_05_test_report_problems(w1_05_reports) == []
+    w1_05_reports[0]["junit_cases"] = 35
+    assert RUNNER._w1_05_test_report_problems(w1_05_reports) == [
+        "W1-05 pytest junit_cases drifted: 35 != 36"
     ]
 
     w1_02_reports[0]["skipped"] = 1

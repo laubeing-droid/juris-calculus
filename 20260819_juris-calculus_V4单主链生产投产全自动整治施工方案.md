@@ -558,9 +558,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W1-05　TrustPolicy、签名、撤销和角色
 
 - **Depends / audit**：`W1-01, W1-04, W0-05 / P0-04..07`。
-- **Paths**：新增 `compiler_core/trust.py`、trust security tests、test policy fixtures。
-- **动作**：验证 key id、issuer、role、scope、artifact kind、subject、policy digest、issued/expiry、nonce/replay、revocation；source authenticity、legal approval、engineering approval、pack release、service certificate、build attestation 分 scope。
-- **Gate**：unknown/expired/revoked/wrong scope/wrong subject/wrong role/same-person separation violation/replay/bit flip 均失败；test root 对 production policy 失败。
+- **Paths**：仅以下 11 个 exact paths：本方案、`compiler_core/trust.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/fixtures/golden/v4-test-trust-policy.json`、`tests/required-v4-tests.json`、`tests/security/test_trust_policy.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。
+- **动作**：只以进程内 public-key registry 验证 key id、issuer、role、scope、artifact kind、subject、policy digest、issued/expiry、nonce/replay、revocation；source authenticity、legal approval、engineering approval、pack release、service certificate、build attestation 分 scope；runtime 不读取文件/网络/私钥。W1-05 只关闭同一 verifier 实例内的原子 replay，跨进程/重启后的持久 replay 由 W4-02..03 关闭。
+- **Gate**：unknown/expired/revoked/wrong issuer/scope/kind/subject/role/policy/same-person separation violation/replay/bit flip 均失败；test root 对 production policy 失败；focused pytest 必须以 JUnit 绑定全部 trust cases，P0-05/06/07 保持 RED 到各自 closure task。
 - **Commit**：`feat(trust): enforce signed scoped V4 trust policy`。
 
 ### W1-06　合同/信任综合攻击门禁

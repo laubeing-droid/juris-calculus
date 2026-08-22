@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.9.0"
+RUNNER_VERSION = "0.10.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -67,6 +67,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.7.0": 4,
     "0.8.0": 5,
     "0.9.0": 5,
+    "0.10.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -88,6 +89,7 @@ JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
 RESOURCE_LIMIT_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-resource-limit-probe.json"
 ARTIFACT_PAGE_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-artifact-page-probe.json"
+TRUST_POLICY_FIXTURE = ROOT / "tests" / "fixtures" / "golden" / "v4-test-trust-policy.json"
 V4_CONTRACT_VECTORS = ROOT / "tests" / "contract" / "v4-contract-vectors.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
 REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
@@ -101,6 +103,9 @@ W1_03_TEST_CASE_IDS_DIGEST = (
 )
 W1_04_TEST_CASE_IDS_DIGEST = (
     "sha256:d6873ffd480af7b044e50c76a8dd0ea1e2f7a4f3ce26e44bec59b27d29e5dc20"
+)
+W1_05_TEST_CASE_IDS_DIGEST = (
+    "sha256:aefc8c254b70bfb3521a8a98aa4dee1d7e58e702aaf17810fe3c7ce576efcdbc"
 )
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
 W1_03_MANIFEST_SHA256 = "5238ec7b357efa9354e7f6a8e5364500185ba5d53c61b4df3f3ed0757008319d"
@@ -155,6 +160,12 @@ W1_04_ARTIFACT_PAGE_PROBE_FILE_DIGEST = (
 )
 W1_04_ARTIFACT_PAGE_PROBE_PAYLOAD_DIGEST = (
     "sha256:6c7de4f369af92d088727accdff94fcc59e1002df0a72ff90b25dbe1a78333ae"
+)
+W1_05_TRUST_POLICY_FIXTURE_FILE_DIGEST = (
+    "sha256:83e19c83417065fff04aafd44cc0c14264a28a8d1d67f8cea7021f29d939058c"
+)
+W0_05_TEST_KEY_FILE_DIGEST = (
+    "sha256:efa943deef1ebb96675f56379009f723a75c4687648371d0297e572a8c399f45"
 )
 SAFE_IJSON_INTEGER = 9_007_199_254_740_991
 DIGEST_V4_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -3061,6 +3072,13 @@ def _required_test_manifest_problems(
             "state": "REQUIRED_NOW",
             "expected_tests": 1,
         },
+        {
+            "id": "W1-SCOPED-TRUST-POLICY",
+            "suite": "security",
+            "selector": "tests/security/test_trust_policy.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 29,
+        },
     ]
     if required_now != expected_required_now:
         problems.append("required-now registry is not the exact W0-04 executable set")
@@ -4389,7 +4407,7 @@ def cmd_w1_02_contract_gate() -> int:
             fail(f"W1-02 frozen input digest drifted: {path.relative_to(ROOT)}")
 
     baseline_commit = "dfdfab110a7ba34bbb94def6e52945602ab0b0ec"
-    plan_authority_hash = "ce0164c8808bd18816ba86351423b335123e322b443337d910c51bffdcc82543"
+    plan_authority_hash = "bb0852c48bbb2846d506e09fd1ed8a8df3ce14104b1421d1709948f39e455e2d"
     audit_authority_hash = "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
     authority_source_hashes = {
         ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md":
@@ -7104,6 +7122,456 @@ def cmd_w1_04_artifact_resolver_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w1_05_trust_policy_gate() -> int:
+    """Verify exact W1-05 authority and a real scoped Ed25519 known vector."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/trust.py",
+        "docs/architecture/module-authority.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/fixtures/golden/v4-test-trust-policy.json",
+        "tests/required-v4-tests.json",
+        "tests/security/test_trust_policy.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-05"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-05",
+            "tests/security/test_trust_policy.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W1-05/trust-policy-tests.xml",
+        ],
+    ]
+    expected_profiles = [
+        {"scope": "source-authenticity", "role": "source_attestor", "artifact_kind": "source-snapshot"},
+        {"scope": "legal-approval", "role": "legal_reviewer", "artifact_kind": "legal-approval"},
+        {"scope": "engineering-approval", "role": "engineering_reviewer", "artifact_kind": "engineering-approval"},
+        {"scope": "pack-release", "role": "pack_releaser", "artifact_kind": "rule-pack"},
+        {"scope": "service-certificate", "role": "service_signer", "artifact_kind": "service-certificate"},
+        {"scope": "build-attestation", "role": "build_attestor", "artifact_kind": "build-attestation"},
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        required_manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        fixture = json.loads(TRUST_POLICY_FIXTURE.read_text(encoding="utf-8"))
+        key_fixture = json.loads(W0_05_TEST_KEY.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs" / "architecture" / "module-authority.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w1_05_file_disposition_generator",
+            ROOT / "tools" / "build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        inserted_root = str(ROOT) not in sys.path
+        if inserted_root:
+            sys.path.insert(0, str(ROOT))
+        try:
+            from compiler_core.canonical_serialization import DigestV4, canonical_bytes, digest_value
+            from compiler_core.contracts import (
+                CanonicalTimeV4, ContractV4Error, SignatureEnvelopeV4, TrustPolicyV4,
+            )
+            from compiler_core.trust import TRUST_PROFILES_V4, TrustKeyV4, TrustVerifierV4
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        finally:
+            if inserted_root:
+                sys.path.remove(str(ROOT))
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, TypeError) as exc:
+        print(
+            f"W1-05 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W1-05"), None)
+    if not isinstance(task, dict):
+        fail("W1-05 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W1-01", "W1-04", "W0-05"]:
+            fail("W1-05 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-04", "P0-05", "P0-06", "P0-07"]:
+            fail("W1-05 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-05 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W1-05 argv or expected exit codes drifted")
+    plan_source = ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md"
+    actual_plan_sha256 = sha256_hex(plan_source.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W1-05 task, disposition, and generator are not bound to the formal plan bytes")
+
+    problems.extend(_required_test_manifest_problems(
+        required_manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_trust = [
+        item for item in required_manifest.get("required_now", [])
+        if isinstance(item, dict) and item.get("id") == "W1-SCOPED-TRUST-POLICY"
+    ]
+    if required_trust != [{
+        "id": "W1-SCOPED-TRUST-POLICY", "suite": "security",
+        "selector": "tests/security/test_trust_policy.py",
+        "state": "REQUIRED_NOW", "expected_tests": 29,
+    }]:
+        fail("W1-05 required trust selector is not exact")
+
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in required_manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-04-CALLER-TRUST": (
+            "P0-04", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+        ),
+        "V4-P0-05-CANDIDATE-ACTIVATION": (
+            "P0-05", "W2-03", "RED_AT_TASK",
+            "tests/security/test_pack_attacks.py::test_candidate_cannot_self_activate",
+        ),
+        "V4-P0-06-CALLER-SOLVER-RECEIPT": (
+            "P0-06", "W3-03", "RED_AT_TASK",
+            "tests/security/test_backend_attacks.py::test_caller_solver_receipt_is_rejected",
+        ),
+        "V4-P0-07-CALLER-CERTIFICATE": (
+            "P0-07", "W4-03", "RED_AT_TASK",
+            "tests/security/test_audit_bundle_attacks.py::"
+            "test_caller_gate_and_digest_cannot_issue_certificate",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W1-05 lifecycle obligation drifted: {test_id}")
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
+        "P0-05": ["W2-03", "W2-04", "W2-05", "W8-05"],
+        "P0-06": ["W3-03", "W3-04"],
+        "P0-07": ["W4-03", "W4-04"],
+    }
+    for audit_id, closures in expected_closures.items():
+        item = issue_by_id.get(audit_id, {})
+        if (item.get("status"), item.get("closure_tasks")) != ("registered", closures):
+            fail(f"W1-05 issue lifecycle drifted: {audit_id}")
+
+    trust_source_path = ROOT / "compiler_core" / "trust.py"
+    trust_test_path = ROOT / "tests" / "security" / "test_trust_policy.py"
+    try:
+        trust_source = trust_source_path.read_text(encoding="utf-8")
+        trust_tree = ast.parse(trust_source, filename="compiler_core/trust.py")
+        trust_test_source = trust_test_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        fail(f"W1-05 source is unreadable: {type(exc).__name__}")
+        trust_source = ""
+        trust_tree = ast.Module(body=[], type_ignores=[])
+        trust_test_source = ""
+    import_aliases: dict[str, str] = {}
+    for node in ast.walk(trust_tree):
+        if isinstance(node, ast.Import):
+            for item in node.names:
+                import_aliases[item.asname or item.name.split(".", 1)[0]] = item.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for item in node.names:
+                import_aliases[item.asname or item.name] = f"{node.module}.{item.name}"
+    expected_imports = {
+        "__future__.annotations",
+        "base64.b64decode", "base64.b64encode", "binascii.Error",
+        "dataclasses.dataclass", "threading.Lock", "types.MappingProxyType",
+        "cryptography.exceptions.InvalidSignature",
+        "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey",
+        "compiler_core.canonical_serialization.DigestV4",
+        "compiler_core.canonical_serialization.canonical_bytes",
+        "compiler_core.contracts.CanonicalTimeV4",
+        "compiler_core.contracts.ContractV4Error",
+        "compiler_core.contracts.SignatureEnvelopeV4",
+        "compiler_core.contracts.TrustPolicyV4",
+    }
+    if set(import_aliases.values()) != expected_imports:
+        fail(f"W1-05 trust runtime imports drifted: {sorted(import_aliases.values())}")
+    forbidden_uses: set[str] = set()
+    dangerous_calls = {
+        "open", "eval", "exec", "compile", "__import__", "getattr", "setattr",
+        "globals", "locals", "vars",
+    }
+    dangerous_suffixes = (
+        ".open", ".read_text", ".read_bytes", ".glob", ".rglob", ".resolve",
+        ".stat", ".lstat", ".readlink", ".urlopen", ".connect",
+        ".create_connection", ".popen", ".system", ".run",
+    )
+    private_key_suffixes = (
+        ".Ed25519PrivateKey", ".load_pem_private_key", ".load_der_private_key",
+        ".load_ssh_private_key",
+    )
+    for node in ast.walk(trust_tree):
+        if isinstance(node, ast.Call):
+            raw_name = _ast_dotted_name(node.func)
+            head, separator, tail = raw_name.partition(".")
+            normalized = import_aliases.get(head, head)
+            if separator:
+                normalized = f"{normalized}.{tail}"
+            if (
+                normalized in dangerous_calls
+                or normalized.endswith(dangerous_suffixes)
+                or normalized.endswith(private_key_suffixes)
+            ):
+                forbidden_uses.add(normalized)
+        elif isinstance(node, ast.Name) and node.id in import_aliases:
+            normalized = import_aliases[node.id]
+            if normalized.endswith(private_key_suffixes):
+                forbidden_uses.add(normalized)
+    if forbidden_uses:
+        fail(
+            "W1-05 trust runtime acquired file/network/process/dynamic/private-key "
+            f"authority: {sorted(forbidden_uses)}"
+        )
+    controls = _forbidden_test_controls(trust_test_source)
+    if controls:
+        fail(f"W1-05 trust tests contain bypass controls: {controls}")
+
+    trust_rules = [
+        item for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict) and item.get("path") == "compiler_core/trust.py"
+    ]
+    external_policy = module_policy.get("external_imports", {})
+    formal_external = external_policy.get("class_allowlist", {}).get("FORMAL_CORE", [])
+    if len(trust_rules) != 1 or trust_rules[0].get("class") != "FORMAL_CORE":
+        fail("W1-05 module policy does not classify trust.py as FORMAL_CORE")
+    expected_external_policy = {
+        "deployable_allowlist": ["cryptography", "yaml"],
+        "class_allowlist": {
+            "FORMAL_CORE": ["cryptography", "yaml"],
+            "PUBLIC_ADAPTER": [],
+            "RUNTIME_OUTPUT": ["yaml", "jinja2"],
+        },
+        "forbidden_roots": [
+            "requests", "httpx", "urllib", "http", "socket", "tkinter",
+            "PyQt5", "PySide6",
+        ],
+    }
+    if external_policy != expected_external_policy or formal_external != ["cryptography", "yaml"]:
+        fail("W1-05 module policy external authority drifted")
+    if disposition != generated_disposition:
+        fail("W1-05 file disposition is not reproducible from its generator")
+    disposition_by_path = {
+        item.get("path"): item for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    trust_disposition = disposition_by_path.get("compiler_core/trust.py", {})
+    if {
+        key: trust_disposition.get(key)
+        for key in ("disposition", "terminal_state", "namespace")
+    } != {
+        "disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE",
+        "namespace": "formal_core",
+    }:
+        fail("W1-05 trust.py disposition authority drifted")
+    for relative in (
+        "tests/security/test_trust_policy.py",
+        "tests/fixtures/golden/v4-test-trust-policy.json",
+    ):
+        entry = disposition_by_path.get(relative, {})
+        if (entry.get("disposition"), entry.get("terminal_state")) != (
+            "TEST_ORACLE", "TEST_ORACLE",
+        ):
+            fail(f"W1-05 test oracle disposition drifted: {relative}")
+
+    if "sha256:" + sha256_hex(TRUST_POLICY_FIXTURE.read_bytes()) != W1_05_TRUST_POLICY_FIXTURE_FILE_DIGEST:
+        fail("W1-05 trust policy fixture bytes drifted")
+    if "sha256:" + sha256_hex(W0_05_TEST_KEY.read_bytes()) != W0_05_TEST_KEY_FILE_DIGEST:
+        fail("W1-05 W0-05 test key bytes drifted")
+    if cmd_w0_05_dependency_gate() != EXIT_OK:
+        fail("W1-05 no longer satisfies the W0-05 dependency and private-key isolation gate")
+    expected_fixture_keys = {
+        "schema_version", "key_fixture", "policy_id", "issuer", "principal_id",
+        "production_allowed", "valid_from", "valid_to", "policy_refs", "profiles",
+    }
+    if set(fixture) != expected_fixture_keys or (
+        fixture.get("schema_version"), fixture.get("key_fixture"),
+        fixture.get("production_allowed"), fixture.get("profiles")
+    ) != (
+        "jc/v4-test-trust-policy/1.0", "tests/fixtures/keys/v4-test-ed25519.json",
+        False, expected_profiles,
+    ):
+        fail("W1-05 test trust policy fixture is not the exact closed authority")
+
+    try:
+        policy_body = {
+            "policy_id": fixture["policy_id"],
+            "allowed_algorithms": ["Ed25519"],
+            "trusted_key_ids": [key_fixture["key_id"]],
+            "revoked_key_ids": [],
+            "allowed_issuers": [fixture["issuer"]],
+            "allowed_roles": [item["role"] for item in expected_profiles],
+            "allowed_scopes": [item["scope"] for item in expected_profiles],
+            "allowed_artifact_kinds": [item["artifact_kind"] for item in expected_profiles],
+            "valid_from": {"wire": fixture["valid_from"]},
+            "valid_to": {"wire": fixture["valid_to"]},
+            "authorization_policy_ref": fixture["policy_refs"]["authorization"],
+            "revocation_policy_ref": fixture["policy_refs"]["revocation"],
+            "replay_policy_ref": fixture["policy_refs"]["replay"],
+            "separation_of_duties_ref": fixture["policy_refs"]["separation_of_duties"],
+        }
+        policy = TrustPolicyV4.from_dict({
+            **policy_body, "policy_digest": str(digest_value(policy_body)),
+        })
+        public_bytes = base64.b64decode(key_fixture["public_key_base64"], validate=True)
+        private_key = Ed25519PrivateKey.from_private_bytes(
+            base64.b64decode(key_fixture["private_key_base64"], validate=True)
+        )
+        key = TrustKeyV4(
+            key_id=key_fixture["key_id"], issuer=fixture["issuer"],
+            principal_id=fixture["principal_id"],
+            roles=tuple(item["role"] for item in expected_profiles),
+            scopes=tuple(item["scope"] for item in expected_profiles),
+            artifact_kinds=tuple(item["artifact_kind"] for item in expected_profiles),
+            public_key=public_bytes, production_allowed=False,
+        )
+        if type(TRUST_PROFILES_V4) is not MappingProxyType or dict(TRUST_PROFILES_V4) != {
+            item["scope"]: (item["role"], item["artifact_kind"])
+            for item in expected_profiles
+        }:
+            fail("W1-05 runtime trust profiles are not exact and immutable")
+        subject = DigestV4.from_bytes(b"W1-05-known-subject")
+        payload = DigestV4.from_bytes(b"W1-05-known-payload")
+        now = CanonicalTimeV4("2026-08-22T12:00:00Z")
+
+        def signed(profile: dict[str, str]) -> SignatureEnvelopeV4:
+            body = {
+                "algorithm": "Ed25519", "key_id": key_fixture["key_id"],
+                "issuer": fixture["issuer"], "role": profile["role"],
+                "scope": profile["scope"], "kind": profile["artifact_kind"],
+                "schema_version": "jc/4.0", "subject_digest": str(subject),
+                "run_identity_ref": None, "status": "APPROVED",
+                "issued_at": {"wire": "2026-08-22T11:00:00Z"},
+                "expires_at": {"wire": "2026-08-23T11:00:00Z"},
+                "nonce": f"w1-05-{profile['scope']}", "evidence_refs": [],
+                "payload_digest": str(payload), "policy_digest": str(policy.policy_digest),
+                "revocation_ref": policy.revocation_policy_ref.to_dict(),
+            }
+            signature = base64.b64encode(private_key.sign(canonical_bytes(body))).decode("ascii")
+            return SignatureEnvelopeV4.from_dict({**body, "signature": signature})
+
+        def verify(verifier: TrustVerifierV4, envelope: SignatureEnvelopeV4,
+                   profile: dict[str, str], separation: tuple[str, ...] = ()) -> str:
+            return verifier.verify(
+                envelope, expected_subject_digest=subject,
+                expected_payload_digest=payload, required_role=profile["role"],
+                required_scope=profile["scope"],
+                required_artifact_kind=profile["artifact_kind"],
+                expected_status="APPROVED", now=now,
+                separation_from_principals=separation,
+            )
+
+        verifier = TrustVerifierV4(policy=policy, keys=(key,), target_environment="test")
+        envelopes = [signed(profile) for profile in expected_profiles]
+        if [
+            verify(verifier, envelope, profile)
+            for envelope, profile in zip(envelopes, expected_profiles)
+        ] != [fixture["principal_id"]] * 6:
+            fail("W1-05 six-scope Ed25519 known vector failed")
+
+        replay_verifier = TrustVerifierV4(policy=policy, keys=(key,), target_environment="test")
+        verify(replay_verifier, envelopes[0], expected_profiles[0])
+        try:
+            verify(replay_verifier, envelopes[0], expected_profiles[0])
+        except ContractV4Error as exc:
+            if exc.code != "TRUST_REPLAY":
+                fail(f"W1-05 replay returned {exc.code}")
+        else:
+            fail("W1-05 replay was accepted")
+
+        bitflip_wire = envelopes[0].to_dict()
+        bitflip = bytearray(base64.b64decode(bitflip_wire["signature"], validate=True))
+        bitflip[0] ^= 1
+        bitflip_wire["signature"] = base64.b64encode(bitflip).decode("ascii")
+        try:
+            verify(
+                TrustVerifierV4(policy=policy, keys=(key,), target_environment="test"),
+                SignatureEnvelopeV4.from_dict(bitflip_wire), expected_profiles[0],
+            )
+        except ContractV4Error as exc:
+            if exc.code != "TRUST_SIGNATURE_INVALID":
+                fail(f"W1-05 bit flip returned {exc.code}")
+        else:
+            fail("W1-05 bit-flipped signature was accepted")
+
+        for environment, separation, expected_code in (
+            ("production", (), "TRUST_TEST_KEY_FORBIDDEN"),
+            ("test", (fixture["principal_id"],), "TRUST_SEPARATION_OF_DUTIES"),
+        ):
+            try:
+                verify(
+                    TrustVerifierV4(policy=policy, keys=(key,), target_environment=environment),
+                    envelopes[1], expected_profiles[1], separation,
+                )
+            except ContractV4Error as exc:
+                if exc.code != expected_code:
+                    fail(f"W1-05 {expected_code} vector returned {exc.code}")
+            else:
+                fail(f"W1-05 {expected_code} vector was accepted")
+    except Exception as exc:
+        fail(f"W1-05 cryptographic known vector crashed: {type(exc).__name__}: {exc}")
+
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-05 file disposition is not closed over the tracked tree")
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W1-05 trust policy gate OK: 6 immutable scopes; real Ed25519; exact "
+        "issuer/role/kind/subject/policy/time/revocation; atomic process-local replay; "
+        "test root rejected for production; P0-05/P0-06/P0-07 remain future RED"
+    )
+    return EXIT_OK
+
+
+def cmd_w1_05_trust_policy_gate() -> int:
+    """Fail closed on malformed W1-05 authority or cryptographic input."""
+
+    try:
+        return _cmd_w1_05_trust_policy_gate()
+    except Exception as exc:
+        print(
+            f"W1-05 trust policy gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -7123,6 +7591,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_03_publication_gate()
     if args.wave == "W1-04":
         return cmd_w1_04_artifact_resolver_gate()
+    if args.wave == "W1-05":
+        return cmd_w1_05_trust_policy_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -8231,6 +8701,44 @@ def _w1_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w1_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W1-05 trust/security executable evidence."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W1-05 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": 36,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": 36,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 36,
+        "junit_unique_cases": 36,
+        "junit_case_ids_digest": W1_05_TEST_CASE_IDS_DIGEST,
+    }
+    problems: list[str] = []
+    for field, expected_value in expected.items():
+        if report.get(field) != expected_value:
+            problems.append(
+                f"W1-05 pytest {field} drifted: "
+                f"{report.get(field)!r} != {expected_value!r}"
+            )
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W1-05 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -8468,10 +8976,16 @@ def _execute_auto_task(
         ]
         evidence_digest = state_artifacts.get("state-artifact:w0-04-required-tests")
         accepted_red_counts = {46}
+        accepted_required_counts = {13}
         try:
             current_required_manifest = json.loads(
                 REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8")
             )
+            accepted_required_counts.add(sum(
+                item.get("expected_tests", 0)
+                for item in current_required_manifest.get("required_now", [])
+                if isinstance(item, dict)
+            ))
             accepted_red_counts.add(sum(
                 item.get("state") == "RED_AT_TASK"
                 for registry in ("evidence_tracks", "audit_mutations")
@@ -8484,7 +8998,7 @@ def _execute_auto_task(
             len(governance_reports) == 1
             and evidence_digest is not None
             and governance_reports[0].get("evidence_sha256") == evidence_digest
-            and governance_reports[0].get("required_passed") == 13
+            and governance_reports[0].get("required_passed") in accepted_required_counts
             and governance_reports[0].get("future_red") in accepted_red_counts
             and governance_reports[0].get("bypass_or_collection_errors") == 0
         )
@@ -8493,7 +9007,7 @@ def _execute_auto_task(
             "kind": "artifact_binding",
             "ok": evidence_bound,
             "detail": (
-                "13 required PASS and an exact lifecycle RED set bound to canonical state evidence"
+                "historical or current exact required PASS and lifecycle RED sets bound to canonical state evidence"
                 if evidence_bound else "W0-04 test report or state evidence binding is incomplete"
             ),
         })
@@ -8579,6 +9093,29 @@ def _execute_auto_task(
             "detail": (
                 "artifact-page probe and generated publications match frozen digests"
                 if not artifact_problems else "; ".join(artifact_problems)
+            ),
+        })
+    if task["id"] == "W1-05":
+        report_problems = _w1_05_test_report_problems(test_reports)
+        fixture_key = "result-path:tests/fixtures/golden/v4-test-trust-policy.json"
+        fixture_problem = artifact_digests.get(fixture_key) != W1_05_TRUST_POLICY_FIXTURE_FILE_DIGEST
+        assertions.append({
+            "id": "w1-05-exact-test-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "36 trust/security/governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w1-05-exact-policy-fixture",
+            "kind": "artifact_binding",
+            "ok": not fixture_problem,
+            "detail": (
+                "committed test trust policy matches the frozen fixture digest"
+                if not fixture_problem
+                else f"{fixture_key}={artifact_digests.get(fixture_key)!r}"
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

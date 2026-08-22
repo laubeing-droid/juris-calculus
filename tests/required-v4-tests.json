@@ -96,6 +96,13 @@
       "selector": "tests/security/test_artifact_resolver.py::test_resolve_handle_page_length_policy_exact_and_limit_plus_one",
       "state": "REQUIRED_NOW",
       "expected_tests": 1
+    },
+    {
+      "id": "W1-SCOPED-TRUST-POLICY",
+      "suite": "security",
+      "selector": "tests/security/test_trust_policy.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 29
     }
   ],
   "evidence_tracks": [

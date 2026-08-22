@@ -1,0 +1,36 @@
+{
+  "schema_version": "jc/v4-test-trust-policy/1.0",
+  "key_fixture": "tests/fixtures/keys/v4-test-ed25519.json",
+  "policy_id": "jc-v4-test-trust-policy",
+  "issuer": "jc-v4-test-root",
+  "principal_id": "test-principal-1",
+  "production_allowed": false,
+  "valid_from": "2026-01-01T00:00:00Z",
+  "valid_to": "2030-01-01T00:00:00Z",
+  "policy_refs": {
+    "authorization": {
+      "kind": "trust-authorization-policy",
+      "digest": "sha256:86a446fa71581fcbb56f6f2ae2479ebf6acd77828c711bdf849b78f2e75a4168"
+    },
+    "revocation": {
+      "kind": "trust-revocation-policy",
+      "digest": "sha256:12757fbc97ce9b7ef8b9669c35aa7ef7afde0d00197e01afad83c73431a49e3b"
+    },
+    "replay": {
+      "kind": "trust-replay-policy",
+      "digest": "sha256:dedde935a682b249f6fe96ec23f97890da5238e26706668a46113198f2b9dce0"
+    },
+    "separation_of_duties": {
+      "kind": "trust-separation-policy",
+      "digest": "sha256:47f0bcb812b27bb8b78621142b62268e56862566a172022557a9f6487722d415"
+    }
+  },
+  "profiles": [
+    {"scope": "source-authenticity", "role": "source_attestor", "artifact_kind": "source-snapshot"},
+    {"scope": "legal-approval", "role": "legal_reviewer", "artifact_kind": "legal-approval"},
+    {"scope": "engineering-approval", "role": "engineering_reviewer", "artifact_kind": "engineering-approval"},
+    {"scope": "pack-release", "role": "pack_releaser", "artifact_kind": "rule-pack"},
+    {"scope": "service-certificate", "role": "service_signer", "artifact_kind": "service-certificate"},
+    {"scope": "build-attestation", "role": "build_attestor", "artifact_kind": "build-attestation"}
+  ]
+}

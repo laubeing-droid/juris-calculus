@@ -150,6 +150,7 @@
     {"path": "compiler_core/taint.py", "class": "REMOVE", "rationale": "Migrate required taint invariants to typed source/fact/result boundaries."},
     {"path": "compiler_core/training.py", "class": "SOURCE_TOOL", "rationale": "Offline training/export source tool; excluded from runtime."},
     {"path": "compiler_core/transformer.py", "class": "REMOVE", "rationale": "Delete runtime auto-patching; migrate only signed rule validation invariants."},
+    {"path": "compiler_core/trust.py", "class": "FORMAL_CORE", "rationale": "Scoped in-memory Ed25519 policy, revocation, role, and replay verifier."},
     {"path": "compiler_core/trust_labels.py", "class": "REMOVE", "rationale": "Replace advisory labels with typed trust and receipt gates."},
     {"path": "compiler_core/type_checker.py", "class": "REMOVE", "rationale": "Migrate type invariants into contracts.py and legal_ir.py."},
     {"path": "compiler_core/types.py", "class": "REMOVE", "rationale": "Parallel type authority must merge into the V4 contract and IR authorities."},
@@ -192,9 +193,9 @@
     }
   ],
   "external_imports": {
-    "deployable_allowlist": ["yaml"],
+    "deployable_allowlist": ["cryptography", "yaml"],
     "class_allowlist": {
-      "FORMAL_CORE": ["yaml"],
+      "FORMAL_CORE": ["cryptography", "yaml"],
       "PUBLIC_ADAPTER": [],
       "RUNTIME_OUTPUT": ["yaml", "jinja2"]
     },
