@@ -115,6 +115,7 @@
       ],
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -203,6 +204,7 @@
       ],
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -322,6 +324,7 @@
       ],
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -426,6 +429,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -488,6 +492,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -550,6 +555,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -610,6 +616,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -713,6 +720,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -772,6 +780,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -833,6 +842,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -893,6 +903,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -955,6 +966,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1021,6 +1033,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1081,6 +1094,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1139,6 +1153,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1202,6 +1217,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1263,6 +1279,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1322,6 +1339,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1391,6 +1409,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1450,6 +1469,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1508,6 +1528,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1568,6 +1589,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1629,6 +1651,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1692,6 +1715,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1751,6 +1775,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1817,6 +1842,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1880,6 +1906,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -1940,6 +1967,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2007,6 +2035,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2067,6 +2096,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2159,6 +2189,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2225,6 +2256,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2358,6 +2390,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2422,6 +2455,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2502,6 +2536,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2564,6 +2599,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2627,6 +2663,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2686,6 +2723,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2746,6 +2784,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2840,6 +2879,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2899,6 +2939,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -2960,6 +3001,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3018,6 +3060,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3125,6 +3168,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3224,6 +3268,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3282,6 +3327,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3340,6 +3386,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3443,6 +3490,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3570,6 +3618,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3628,6 +3677,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3745,6 +3795,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3802,6 +3853,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3927,6 +3979,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -3985,6 +4038,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4041,6 +4095,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4097,6 +4152,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4157,6 +4213,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4214,6 +4271,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4315,6 +4373,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4373,6 +4432,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4431,6 +4491,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",
@@ -4532,6 +4593,7 @@
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
+        "task_digest",
         "run_id",
         "task_id",
         "attempt",

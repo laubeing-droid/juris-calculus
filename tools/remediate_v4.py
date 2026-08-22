@@ -918,6 +918,10 @@ def _receipt_digest(receipt: dict[str, Any]) -> str:
     return _digest_object(unsigned)
 
 
+def _task_digest(task: dict[str, Any]) -> str:
+    return _digest_object(task)
+
+
 def _validate_stream(stream: dict[str, Any]) -> bool:
     path = Path(stream["path"])
     if not path.is_file():
@@ -1134,7 +1138,7 @@ def _complete_gate_task(
     commit = _git_checked("rev-parse", "HEAD")
     tree = _git_checked("rev-parse", "HEAD^{tree}")
     receipt = {
-        "schema_version": "jc/remediation-v4-receipt/2.0", "run_id": run_id,
+        "schema_version": "jc/remediation-v4-receipt/2.1", "task_digest": _task_digest(task), "run_id": run_id,
         "task_id": task["id"], "attempt": attempt, "status": "COMPLETED",
         "input_receipt_digests": input_receipts,
         "start_commit": commit, "start_tree": tree,
@@ -1205,7 +1209,7 @@ def _execute_auto_task(
     result_commit = _git_checked("rev-parse", "HEAD")
     result_tree = _git_checked("rev-parse", "HEAD^{tree}")
     receipt = {
-        "schema_version": "jc/remediation-v4-receipt/2.0", "run_id": run_id,
+        "schema_version": "jc/remediation-v4-receipt/2.1", "task_digest": _task_digest(task), "run_id": run_id,
         "task_id": task["id"], "attempt": attempt, "status": status,
         "input_receipt_digests": input_receipts,
         "start_commit": start_commit, "start_tree": start_tree,
@@ -1269,7 +1273,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                 dep: completed_receipts[dep]["receipt_digest"] for dep in task["depends_on"]
             }
             latest = history[-1] if history else None
-            if latest and latest["status"] == "COMPLETED" and latest["input_receipt_digests"] == input_receipts:
+            if (
+                latest and latest["status"] == "COMPLETED"
+                and latest.get("task_digest") == _task_digest(task)
+                and latest["input_receipt_digests"] == input_receipts
+            ):
                 assertions = _evaluate_assertions(task, latest["command_results"], state_root)
                 if all(item["ok"] for item in assertions):
                     completed_receipts[task["id"]] = latest

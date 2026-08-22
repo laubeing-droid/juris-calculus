@@ -9,7 +9,8 @@
     "previous_receipt_digest", "runner_version", "receipt_digest"
   ],
   "properties": {
-    "schema_version": {"const": "jc/remediation-v4-receipt/2.0"},
+    "schema_version": {"enum": ["jc/remediation-v4-receipt/2.0", "jc/remediation-v4-receipt/2.1"]},
+    "task_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "run_id": {"type": "string"}, "task_id": {"type": "string"},
     "attempt": {"type": "integer", "minimum": 1},
     "status": {"enum": ["COMPLETED", "FAILED", "SCOPE_VIOLATION", "TIMED_OUT"]},
@@ -47,6 +48,12 @@
     "runner_version": {"type": "string"},
     "receipt_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
   },
+  "allOf": [
+    {
+      "if": {"properties": {"schema_version": {"const": "jc/remediation-v4-receipt/2.1"}}},
+      "then": {"required": ["task_digest"]}
+    }
+  ],
   "$defs": {
     "stream": {
       "type": "object", "additionalProperties": false, "required": ["path", "sha256", "bytes"],

@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 REPO = Path(__file__).resolve().parents[2]
 RUNNER = REPO / "tools" / "remediate_v4.py"
 REQUIRED_RECEIPT_FIELDS = [
-    "schema_version", "run_id", "task_id", "attempt", "status",
+    "schema_version", "task_digest", "run_id", "task_id", "attempt", "status",
     "input_receipt_digests", "start_commit", "start_tree", "result_commit",
     "result_tree", "command_results", "changed_paths", "allowlist",
     "test_reports", "artifact_digests", "completion_assertions",
@@ -227,6 +227,18 @@ def test_stdout_tamper_breaks_resume(tmp_path: Path) -> None:
     receipt = _receipt(state_root, "A")
     Path(receipt["command_results"][0]["stdout"]["path"]).write_bytes(b"tampered")
     assert _run(plan, state_root).returncode == 5
+
+
+def test_task_definition_change_invalidates_completed_receipt(tmp_path: Path) -> None:
+    plan = _write_plan(tmp_path, [_auto_task("A", ["{python}", "-c", "print('v1')"])])
+    state_root = tmp_path / "state"
+    assert _run(plan, state_root).returncode == 0
+    first = _receipt(state_root, "A")
+    _write_plan(tmp_path, [_auto_task("A", ["{python}", "-c", "print('v2')"])])
+    assert _run(plan, state_root).returncode == 0
+    second = _receipt(state_root, "A", 2)
+    assert first["task_digest"] != second["task_digest"]
+    assert Path(second["command_results"][0]["stdout"]["path"]).read_bytes().strip() == b"v2"
 
 
 def test_result_tree_tamper_breaks_resume_even_with_rehashed_receipt(tmp_path: Path) -> None:
