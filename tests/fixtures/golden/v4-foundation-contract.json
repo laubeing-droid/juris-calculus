@@ -1,0 +1,119 @@
+{
+  "schema_version": "jc/v4-foundation-contract/1.0",
+  "digest_policy": {
+    "algorithm": "sha256",
+    "wire_prefix": "sha256:",
+    "grammar": "^sha256:[0-9a-f]{64}$"
+  },
+  "time_policy": {
+    "wire_profile": "UTC_Z_RFC3339_NANOSECOND_CANONICAL",
+    "precision": "nanosecond",
+    "comparison": "epoch_seconds_then_nanosecond",
+    "interval_semantics": "[start,end)",
+    "positive": [
+      {"id": "epoch", "wire": "1970-01-01T00:00:00Z", "epoch_seconds": 0, "nanosecond": 0},
+      {"id": "one-nanosecond", "wire": "1970-01-01T00:00:00.000000001Z", "epoch_seconds": 0, "nanosecond": 1},
+      {"id": "pre-epoch", "wire": "1969-12-31T23:59:59.999999999Z", "epoch_seconds": -1, "nanosecond": 999999999},
+      {"id": "leap-day-nanoseconds", "wire": "2024-02-29T12:34:56.123456789Z", "epoch_seconds": 1709210096, "nanosecond": 123456789}
+    ],
+    "negative": [
+      {"id": "offset", "wire": "2024-01-01T00:00:00+00:00", "expected_error": "INVALID_CANONICAL_TIME"},
+      {"id": "lowercase-z", "wire": "2024-01-01T00:00:00z", "expected_error": "INVALID_CANONICAL_TIME"},
+      {"id": "missing-seconds", "wire": "2024-01-01T00:00Z", "expected_error": "INVALID_CANONICAL_TIME"},
+      {"id": "empty-fraction", "wire": "2024-01-01T00:00:00.Z", "expected_error": "INVALID_CANONICAL_TIME"},
+      {"id": "too-many-fraction-digits", "wire": "2024-01-01T00:00:00.1234567890Z", "expected_error": "INVALID_CANONICAL_TIME"},
+      {"id": "trailing-fraction-zero", "wire": "2024-01-01T00:00:00.10Z", "expected_error": "NON_CANONICAL_TIME"},
+      {"id": "leap-second", "wire": "2016-12-31T23:59:60Z", "expected_error": "INVALID_CALENDAR_TIME"},
+      {"id": "invalid-leap-day", "wire": "2023-02-29T00:00:00Z", "expected_error": "INVALID_CALENDAR_TIME"},
+      {"id": "hour-24", "wire": "2024-01-01T24:00:00Z", "expected_error": "INVALID_CALENDAR_TIME"}
+    ],
+    "interval_vectors": [
+      {
+        "id": "half-open-boundaries",
+        "start": "2024-01-01T00:00:00Z",
+        "end": "2024-02-01T00:00:00Z",
+        "probes": [
+          {"instant": "2023-12-31T23:59:59.999999999Z", "contains": false},
+          {"instant": "2024-01-01T00:00:00Z", "contains": true},
+          {"instant": "2024-01-31T23:59:59.999999999Z", "contains": true},
+          {"instant": "2024-02-01T00:00:00Z", "contains": false}
+        ]
+      }
+    ]
+  },
+  "numeric_policy": {
+    "safe_integer": {"minimum": -9007199254740991, "maximum": 9007199254740991, "float_allowed": false},
+    "money": {"fields": ["currency", "minor_units"], "currency_grammar": "^[A-Z]{3}$", "amount_unit": "minor_unit"},
+    "rational": {"fields": ["numerator", "denominator"], "denominator": "positive", "normal_form": "gcd=1;zero=0/1"},
+    "positive": [
+      {"id": "integer-min", "kind": "integer", "value": -9007199254740991},
+      {"id": "integer-max", "kind": "integer", "value": 9007199254740991},
+      {"id": "money-zero", "kind": "money", "value": {"currency": "CNY", "minor_units": 0}},
+      {"id": "money-negative", "kind": "money", "value": {"currency": "USD", "minor_units": -1}},
+      {"id": "rational-third", "kind": "rational", "value": {"numerator": 1, "denominator": 3}},
+      {"id": "rational-negative-half", "kind": "rational", "value": {"numerator": -1, "denominator": 2}},
+      {"id": "rational-zero", "kind": "rational", "value": {"numerator": 0, "denominator": 1}}
+    ],
+    "negative": [
+      {"id": "unsafe-high", "kind": "integer", "value": 9007199254740992, "expected_error": "UNSAFE_INTEGER"},
+      {"id": "unsafe-low", "kind": "integer", "value": -9007199254740992, "expected_error": "UNSAFE_INTEGER"},
+      {"id": "float", "kind": "integer", "value": 1.5, "expected_error": "FLOAT_FORBIDDEN"},
+      {"id": "money-float", "kind": "money", "value": {"currency": "CNY", "minor_units": 0.01}, "expected_error": "FLOAT_FORBIDDEN"},
+      {"id": "money-lowercase-currency", "kind": "money", "value": {"currency": "cny", "minor_units": 1}, "expected_error": "CURRENCY_CODE"},
+      {"id": "money-extra-field", "kind": "money", "value": {"currency": "CNY", "minor_units": 1, "major_units": 0}, "expected_error": "UNKNOWN_FIELD"},
+      {"id": "rational-zero-denominator", "kind": "rational", "value": {"numerator": 1, "denominator": 0}, "expected_error": "DENOMINATOR_NONPOSITIVE"},
+      {"id": "rational-negative-denominator", "kind": "rational", "value": {"numerator": 1, "denominator": -2}, "expected_error": "DENOMINATOR_NONPOSITIVE"},
+      {"id": "rational-unreduced", "kind": "rational", "value": {"numerator": 2, "denominator": 4}, "expected_error": "NON_CANONICAL_RATIONAL"},
+      {"id": "rational-zero-not-normalized", "kind": "rational", "value": {"numerator": 0, "denominator": 2}, "expected_error": "NON_CANONICAL_RATIONAL"}
+    ]
+  },
+  "resource_limit_policy": {
+    "claim": "LOCAL_ADMISSION_BOUNDS_ONLY",
+    "profile": "V4_INLINE_REQUEST_ADMISSION_V1",
+    "probe_file": "tests/fixtures/golden/v4-resource-limit-probe.json",
+    "probe_file_sha256": "sha256:cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35",
+    "probe_payload_sha256": "sha256:13f79fdd6b5282f5aabfca9569aba6e69064f47765a0572bd8aa43f10c2c5ba1",
+    "benchmarked_limits": [
+      {"id": "max_request_bytes", "scope": "request_admission", "unit": "bytes", "default": 262144, "hard_max": 1048576, "boundary": "inclusive", "error_code": "REQUEST_TOO_LARGE"},
+      {"id": "max_json_depth", "scope": "request_admission", "unit": "levels", "default": 16, "hard_max": 32, "boundary": "inclusive", "error_code": "JSON_DEPTH_LIMIT"},
+      {"id": "max_json_nodes", "scope": "request_admission", "unit": "count", "default": 10000, "hard_max": 50000, "boundary": "inclusive", "error_code": "JSON_NODE_LIMIT"},
+      {"id": "max_object_members_per_object", "scope": "request_admission", "unit": "count", "default": 64, "hard_max": 128, "boundary": "inclusive", "error_code": "OBJECT_MEMBER_LIMIT"},
+      {"id": "max_total_object_members", "scope": "request_admission", "unit": "count", "default": 4096, "hard_max": 20000, "boundary": "inclusive", "error_code": "TOTAL_OBJECT_MEMBER_LIMIT"},
+      {"id": "max_array_items_per_array", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 1024, "boundary": "inclusive", "error_code": "ARRAY_ITEM_LIMIT"},
+      {"id": "max_total_array_items", "scope": "request_admission", "unit": "count", "default": 4096, "hard_max": 20000, "boundary": "inclusive", "error_code": "TOTAL_ARRAY_ITEM_LIMIT"},
+      {"id": "max_string_utf8_bytes", "scope": "request_admission", "unit": "bytes", "default": 8192, "hard_max": 65536, "boundary": "inclusive", "error_code": "STRING_BYTE_LIMIT"},
+      {"id": "max_total_string_utf8_bytes", "scope": "request_admission", "unit": "bytes", "default": 196608, "hard_max": 786432, "boundary": "inclusive", "error_code": "TOTAL_STRING_BYTE_LIMIT"},
+      {"id": "max_total_reference_values", "scope": "request_admission", "unit": "count", "default": 1536, "hard_max": 2048, "boundary": "inclusive", "error_code": "REFERENCE_LIMIT"},
+      {"id": "max_fact_attestation_refs", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 512, "boundary": "inclusive", "error_code": "FACT_REFERENCE_LIMIT"},
+      {"id": "max_proposal_refs", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 512, "boundary": "inclusive", "error_code": "PROPOSAL_REFERENCE_LIMIT"},
+      {"id": "admission_deadline_ms", "scope": "request_admission", "unit": "milliseconds", "default": 250, "hard_max": 1000, "boundary": "inclusive", "error_code": "ADMISSION_DEADLINE"}
+    ],
+    "deferred_limits": [
+      {"id": "artifact_page_bytes", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W1-04", "reason": "Artifact resolver and pagination implementation do not exist yet."},
+      {"id": "solver_deadline_ms", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W3-03", "reason": "Provider-specific solver and checker benchmarks are required."},
+      {"id": "worker_queue_items", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Backpressure topology does not exist yet."},
+      {"id": "in_flight_runs", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Concurrency and cancellation tests must define this budget."},
+      {"id": "state_quota_bytes", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-02", "reason": "Atomic state provider and storage capability are not implemented."},
+      {"id": "retention_seconds", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-02", "reason": "Retention and legal-hold policy require the typed state provider."}
+    ],
+    "enforcement_order": [
+      "reject transport frame over max_request_bytes before UTF-8 decode or json.loads",
+      "pre-scan or bounded parser enforces depth before recursive stdlib decoder can exhaust stack",
+      "strict parse rejects duplicate keys, floats, non-finite numbers, and unsafe integers",
+      "single iterative structural pass enforces node/member/array/string/reference totals",
+      "typed CaseRequestV4 validation enforces field-specific 512-reference caps",
+      "deadline is checked across decode, parse, structural validation, and typed validation"
+    ]
+  },
+  "platform_matrix": {
+    "claim": "TARGET_MATRIX_NOT_EXECUTION_RECEIPT",
+    "runtime_targets": [
+      {"os": "ubuntu", "python": "3.11"},
+      {"os": "ubuntu", "python": "3.12"},
+      {"os": "windows", "python": "3.11"},
+      {"os": "windows", "python": "3.12"}
+    ],
+    "node_oracle_targets": ["22", "24"],
+    "verification_stage": "W6-05"
+  }
+}

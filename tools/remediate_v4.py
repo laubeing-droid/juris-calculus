@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import calendar
 import fnmatch
 import hashlib
 import itertools
@@ -33,6 +34,7 @@ import json
 import math
 import mimetypes
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -47,7 +49,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.2.1"
+RUNNER_VERSION = "0.3.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -58,6 +60,21 @@ TASK_SCHEMA = SCHEMA_DIR / "task.schema.json"
 RECEIPT_SCHEMA = SCHEMA_DIR / "receipt.schema.json"
 APPROVAL_SCHEMA = SCHEMA_DIR / "approval.schema.json"
 OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
+JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
+FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
+W0_RESOURCE_PROBE_FILE_DIGEST = (
+    "sha256:cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35"
+)
+W0_RESOURCE_PROBE_PAYLOAD_DIGEST = (
+    "sha256:13f79fdd6b5282f5aabfca9569aba6e69064f47765a0572bd8aa43f10c2c5ba1"
+)
+SAFE_IJSON_INTEGER = 9_007_199_254_740_991
+DIGEST_V4_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
+UTC_INSTANT_V4_PATTERN = re.compile(
+    r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})T"
+    r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
+    r"(?:\.(?P<fraction>[0-9]{1,9}))?Z\Z"
+)
 
 W0_REQUIRED_OBJECT_IDS = frozenset({
     "DigestV4", "CanonicalTimeV4", "ContentRefV4", "ArtifactHandleV4", "ErrorV4",
@@ -1102,9 +1119,926 @@ def cmd_object_state_matrix(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+class _W0VectorError(ValueError):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+def _reject_lone_surrogates(value: Any) -> None:
+    if isinstance(value, str):
+        if any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+            raise _W0VectorError("LONE_SURROGATE")
+    elif isinstance(value, list):
+        for item in value:
+            _reject_lone_surrogates(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            _reject_lone_surrogates(key)
+            _reject_lone_surrogates(item)
+
+
+def _utf16_sort_key(value: str) -> bytes:
+    _reject_lone_surrogates(value)
+    return value.encode("utf-16-be")
+
+
+def _canonical_v4_bytes(value: Any, *, top_level: bool = True) -> bytes:
+    if top_level and not isinstance(value, (dict, list)):
+        raise _W0VectorError("TOP_LEVEL_SCALAR")
+    if value is None:
+        return b"null"
+    if value is True:
+        return b"true"
+    if value is False:
+        return b"false"
+    if isinstance(value, int):
+        if not -SAFE_IJSON_INTEGER <= value <= SAFE_IJSON_INTEGER:
+            raise _W0VectorError("UNSAFE_INTEGER")
+        return str(value).encode("ascii")
+    if isinstance(value, float):
+        raise _W0VectorError("FLOAT_FORBIDDEN")
+    if isinstance(value, str):
+        _reject_lone_surrogates(value)
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    if isinstance(value, list):
+        return b"[" + b",".join(
+            _canonical_v4_bytes(item, top_level=False) for item in value
+        ) + b"]"
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise _W0VectorError("NON_STRING_KEY")
+        parts = []
+        for key in sorted(value, key=_utf16_sort_key):
+            parts.append(
+                _canonical_v4_bytes(key, top_level=False)
+                + b":"
+                + _canonical_v4_bytes(value[key], top_level=False)
+            )
+        return b"{" + b",".join(parts) + b"}"
+    raise _W0VectorError("UNSUPPORTED_JSON_TYPE")
+
+
+def _parse_v4_json(raw: str) -> Any:
+    def pairs_hook(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise _W0VectorError("DUPLICATE_KEY")
+            result[key] = value
+        return result
+
+    def parse_integer(raw_integer: str) -> int:
+        value = int(raw_integer)
+        if not -SAFE_IJSON_INTEGER <= value <= SAFE_IJSON_INTEGER:
+            raise _W0VectorError("UNSAFE_INTEGER")
+        return value
+
+    def reject_float(_raw_float: str) -> float:
+        raise _W0VectorError("FLOAT_FORBIDDEN")
+
+    def reject_constant(_raw_constant: str) -> float:
+        raise _W0VectorError("NON_JSON_NUMBER")
+
+    value = json.loads(
+        raw,
+        object_pairs_hook=pairs_hook,
+        parse_int=parse_integer,
+        parse_float=reject_float,
+        parse_constant=reject_constant,
+    )
+    if not isinstance(value, (dict, list)):
+        raise _W0VectorError("TOP_LEVEL_SCALAR")
+    _reject_lone_surrogates(value)
+    return value
+
+
+def _jcs_vector_problems(vectors: Any) -> list[str]:
+    problems: list[str] = []
+    required_top = {
+        "schema_version", "digest_grammar", "integer_minimum", "integer_maximum",
+        "positive", "negative",
+    }
+    if not isinstance(vectors, dict) or set(vectors) != required_top:
+        return ["JCS vector fields are not closed"]
+    if vectors["schema_version"] != "jc/v4-jcs-vectors/1.0":
+        problems.append("unexpected JCS vector schema_version")
+    if vectors["digest_grammar"] != "^sha256:[0-9a-f]{64}$":
+        problems.append("digest grammar is not the sole V4 sha256 grammar")
+    if vectors["integer_minimum"] != -SAFE_IJSON_INTEGER or vectors["integer_maximum"] != SAFE_IJSON_INTEGER:
+        problems.append("I-JSON safe integer bounds drifted")
+
+    positive_ids: list[str] = []
+    for item in vectors.get("positive", []):
+        if not isinstance(item, dict) or set(item) != {"id", "input", "canonical_utf8_hex", "sha256"}:
+            problems.append("positive JCS vector fields are not closed")
+            continue
+        positive_ids.append(item["id"])
+        try:
+            canonical = _canonical_v4_bytes(item["input"])
+        except _W0VectorError as exc:
+            problems.append(f"positive {item['id']} rejected as {exc.code}")
+            continue
+        if canonical.hex() != item["canonical_utf8_hex"]:
+            problems.append(f"positive {item['id']} canonical bytes mismatch")
+        digest = "sha256:" + sha256_hex(canonical)
+        if digest != item["sha256"] or DIGEST_V4_PATTERN.fullmatch(item["sha256"]) is None:
+            problems.append(f"positive {item['id']} digest mismatch")
+    if len(positive_ids) != len(set(positive_ids)) or set(positive_ids) != {
+        "empty-object", "ascii-key-order", "escaped-and-unicode", "utf16-key-order",
+        "safe-integer-edges", "nested", "numeric-like-key-order", "unicode-preservation",
+        "control-escapes",
+    }:
+        problems.append("positive JCS vector ids are incomplete or duplicated")
+
+    expected_negative_ids = {
+        "duplicate-key", "escaped-duplicate-key", "float", "float-exponent", "nested-float",
+        "unsafe-integer-high", "unsafe-integer-low", "nan", "infinity", "top-level-scalar",
+        "lone-surrogate", "old-hyphen-digest", "bare-digest", "uppercase-digest",
+        "short-digest", "digest-whitespace",
+    }
+    negative_ids: list[str] = []
+    allowed_kinds = {
+        "duplicate_key", "float", "unsafe_integer", "non_json_number", "top_level_scalar",
+        "lone_surrogate", "digest_grammar",
+    }
+    for item in vectors.get("negative", []):
+        if not isinstance(item, dict):
+            problems.append("negative JCS vector must be an object")
+            continue
+        negative_ids.append(item.get("id"))
+        kind = item.get("kind")
+        if kind not in allowed_kinds:
+            problems.append(f"negative {item.get('id')} has unknown kind")
+            continue
+        expected_fields = {"id", "kind", "expected_error", "value" if kind == "digest_grammar" else "input_json"}
+        if set(item) != expected_fields:
+            problems.append(f"negative {item.get('id')} fields are not closed")
+            continue
+        try:
+            if kind == "digest_grammar":
+                if DIGEST_V4_PATTERN.fullmatch(item["value"]) is None:
+                    raise _W0VectorError("DIGEST_GRAMMAR")
+            else:
+                _parse_v4_json(item["input_json"])
+        except (_W0VectorError, json.JSONDecodeError) as exc:
+            code = exc.code if isinstance(exc, _W0VectorError) else "NON_JSON_NUMBER"
+            if code != item["expected_error"]:
+                problems.append(
+                    f"negative {item['id']} expected {item['expected_error']} but got {code}"
+                )
+        else:
+            problems.append(f"negative {item['id']} unexpectedly accepted")
+    if len(negative_ids) != len(set(negative_ids)) or set(negative_ids) != expected_negative_ids:
+        problems.append("negative JCS vector ids are incomplete or duplicated")
+    return problems
+
+
+def _parse_utc_instant_v4(wire: str) -> tuple[int, int]:
+    match = UTC_INSTANT_V4_PATTERN.fullmatch(wire)
+    if match is None:
+        raise _W0VectorError("INVALID_CANONICAL_TIME")
+    fraction = match.group("fraction") or ""
+    if fraction.endswith("0"):
+        raise _W0VectorError("NON_CANONICAL_TIME")
+    try:
+        instant = datetime(
+            int(match.group("year")), int(match.group("month")), int(match.group("day")),
+            int(match.group("hour")), int(match.group("minute")), int(match.group("second")),
+            tzinfo=timezone.utc,
+        )
+    except ValueError as exc:
+        raise _W0VectorError("INVALID_CALENDAR_TIME") from exc
+    epoch_seconds = calendar.timegm(instant.utctimetuple())
+    nanosecond = int(fraction.ljust(9, "0")) if fraction else 0
+    return epoch_seconds, nanosecond
+
+
+def _numeric_v4_error(kind: str, value: Any) -> str | None:
+    def integer_error(candidate: Any) -> str | None:
+        if isinstance(candidate, bool) or not isinstance(candidate, int):
+            return "FLOAT_FORBIDDEN" if isinstance(candidate, float) else "INTEGER_REQUIRED"
+        if not -SAFE_IJSON_INTEGER <= candidate <= SAFE_IJSON_INTEGER:
+            return "UNSAFE_INTEGER"
+        return None
+
+    if kind == "integer":
+        return integer_error(value)
+    if kind == "money":
+        if not isinstance(value, dict):
+            return "OBJECT_REQUIRED"
+        if set(value) != {"currency", "minor_units"}:
+            return "UNKNOWN_FIELD"
+        if not isinstance(value["currency"], str) or re.fullmatch(r"[A-Z]{3}", value["currency"]) is None:
+            return "CURRENCY_CODE"
+        return integer_error(value["minor_units"])
+    if kind == "rational":
+        if not isinstance(value, dict):
+            return "OBJECT_REQUIRED"
+        if set(value) != {"numerator", "denominator"}:
+            return "UNKNOWN_FIELD"
+        numerator_error = integer_error(value["numerator"])
+        denominator_error = integer_error(value["denominator"])
+        if numerator_error or denominator_error:
+            return numerator_error or denominator_error
+        if value["denominator"] <= 0:
+            return "DENOMINATOR_NONPOSITIVE"
+        if math.gcd(abs(value["numerator"]), value["denominator"]) != 1:
+            return "NON_CANONICAL_RATIONAL"
+        return None
+    return "UNKNOWN_NUMERIC_KIND"
+
+
+def _foundation_contract_problems(contract: Any) -> list[str]:
+    problems: list[str] = []
+    required_top = {
+        "schema_version", "digest_policy", "time_policy", "numeric_policy",
+        "resource_limit_policy", "platform_matrix",
+    }
+    if not isinstance(contract, dict) or set(contract) != required_top:
+        return ["foundation contract fields are not closed"]
+    if contract["schema_version"] != "jc/v4-foundation-contract/1.0":
+        problems.append("unexpected foundation contract schema_version")
+
+    if contract["digest_policy"] != {
+        "algorithm": "sha256",
+        "wire_prefix": "sha256:",
+        "grammar": "^sha256:[0-9a-f]{64}$",
+    }:
+        problems.append("foundation digest policy drifted")
+
+    time_policy = contract["time_policy"]
+    time_fields = {
+        "wire_profile", "precision", "comparison", "interval_semantics",
+        "positive", "negative", "interval_vectors",
+    }
+    if not isinstance(time_policy, dict) or set(time_policy) != time_fields:
+        problems.append("time policy fields are not closed")
+    else:
+        if time_policy["wire_profile"] != "UTC_Z_RFC3339_NANOSECOND_CANONICAL":
+            problems.append("time wire profile drifted")
+        if time_policy["precision"] != "nanosecond":
+            problems.append("time precision must be nanosecond")
+        if time_policy["comparison"] != "epoch_seconds_then_nanosecond":
+            problems.append("time comparison policy drifted")
+        if time_policy["interval_semantics"] != "[start,end)":
+            problems.append("time interval must be half-open")
+
+        positive_ids: list[str] = []
+        for item in time_policy.get("positive", []):
+            if not isinstance(item, dict) or set(item) != {
+                "id", "wire", "epoch_seconds", "nanosecond",
+            }:
+                problems.append("positive time vector fields are not closed")
+                continue
+            positive_ids.append(item["id"])
+            try:
+                actual = _parse_utc_instant_v4(item["wire"])
+            except _W0VectorError as exc:
+                problems.append(f"positive time {item['id']} rejected as {exc.code}")
+                continue
+            if actual != (item["epoch_seconds"], item["nanosecond"]):
+                problems.append(f"positive time {item['id']} epoch projection mismatch")
+        expected_positive_time_ids = {
+            "epoch", "one-nanosecond", "pre-epoch", "leap-day-nanoseconds",
+        }
+        if (
+            set(positive_ids) != expected_positive_time_ids
+            or len(positive_ids) != len(expected_positive_time_ids)
+        ):
+            problems.append("positive time vector ids are incomplete or duplicated")
+
+        negative_ids: list[str] = []
+        for item in time_policy.get("negative", []):
+            if not isinstance(item, dict) or set(item) != {"id", "wire", "expected_error"}:
+                problems.append("negative time vector fields are not closed")
+                continue
+            negative_ids.append(item["id"])
+            try:
+                _parse_utc_instant_v4(item["wire"])
+            except _W0VectorError as exc:
+                if exc.code != item["expected_error"]:
+                    problems.append(
+                        f"negative time {item['id']} expected {item['expected_error']} but got {exc.code}"
+                    )
+            else:
+                problems.append(f"negative time {item['id']} unexpectedly accepted")
+        expected_negative_time_ids = {
+            "offset", "lowercase-z", "missing-seconds", "empty-fraction",
+            "too-many-fraction-digits", "trailing-fraction-zero", "leap-second",
+            "invalid-leap-day", "hour-24",
+        }
+        if (
+            set(negative_ids) != expected_negative_time_ids
+            or len(negative_ids) != len(expected_negative_time_ids)
+        ):
+            problems.append("negative time vector ids are incomplete or duplicated")
+
+        interval_ids: list[str] = []
+        for item in time_policy.get("interval_vectors", []):
+            if not isinstance(item, dict) or set(item) != {"id", "start", "end", "probes"}:
+                problems.append("interval vector fields are not closed")
+                continue
+            interval_ids.append(item["id"])
+            try:
+                start = _parse_utc_instant_v4(item["start"])
+                end = _parse_utc_instant_v4(item["end"])
+            except _W0VectorError as exc:
+                problems.append(f"interval {item['id']} boundary rejected as {exc.code}")
+                continue
+            if start >= end:
+                problems.append(f"interval {item['id']} is empty or reversed")
+            for probe in item["probes"]:
+                if not isinstance(probe, dict) or set(probe) != {"instant", "contains"}:
+                    problems.append(f"interval {item['id']} probe fields are not closed")
+                    continue
+                try:
+                    instant = _parse_utc_instant_v4(probe["instant"])
+                except _W0VectorError as exc:
+                    problems.append(f"interval {item['id']} probe rejected as {exc.code}")
+                    continue
+                if (start <= instant < end) is not probe["contains"]:
+                    problems.append(f"interval {item['id']} half-open result mismatch")
+        if interval_ids != ["half-open-boundaries"]:
+            problems.append("interval vectors are incomplete or reordered")
+
+    numeric = contract["numeric_policy"]
+    numeric_fields = {"safe_integer", "money", "rational", "positive", "negative"}
+    if not isinstance(numeric, dict) or set(numeric) != numeric_fields:
+        problems.append("numeric policy fields are not closed")
+    else:
+        if numeric["safe_integer"] != {
+            "minimum": -SAFE_IJSON_INTEGER,
+            "maximum": SAFE_IJSON_INTEGER,
+            "float_allowed": False,
+        }:
+            problems.append("safe integer policy drifted")
+        if numeric["money"] != {
+            "fields": ["currency", "minor_units"],
+            "currency_grammar": "^[A-Z]{3}$",
+            "amount_unit": "minor_unit",
+        }:
+            problems.append("money wire policy drifted")
+        if numeric["rational"] != {
+            "fields": ["numerator", "denominator"],
+            "denominator": "positive",
+            "normal_form": "gcd=1;zero=0/1",
+        }:
+            problems.append("rational wire policy drifted")
+
+        positive_ids: list[str] = []
+        for item in numeric.get("positive", []):
+            if not isinstance(item, dict) or set(item) != {"id", "kind", "value"}:
+                problems.append("positive numeric vector fields are not closed")
+                continue
+            positive_ids.append(item["id"])
+            error = _numeric_v4_error(item["kind"], item["value"])
+            if error:
+                problems.append(f"positive numeric {item['id']} rejected as {error}")
+        expected_positive_numeric_ids = {
+            "integer-min", "integer-max", "money-zero", "money-negative",
+            "rational-third", "rational-negative-half", "rational-zero",
+        }
+        if (
+            set(positive_ids) != expected_positive_numeric_ids
+            or len(positive_ids) != len(expected_positive_numeric_ids)
+        ):
+            problems.append("positive numeric vector ids are incomplete or duplicated")
+
+        negative_ids: list[str] = []
+        for item in numeric.get("negative", []):
+            if not isinstance(item, dict) or set(item) != {"id", "kind", "value", "expected_error"}:
+                problems.append("negative numeric vector fields are not closed")
+                continue
+            negative_ids.append(item["id"])
+            error = _numeric_v4_error(item["kind"], item["value"])
+            if error != item["expected_error"]:
+                problems.append(
+                    f"negative numeric {item['id']} expected {item['expected_error']} but got {error}"
+                )
+        expected_negative_numeric_ids = {
+            "unsafe-high", "unsafe-low", "float", "money-float", "money-lowercase-currency",
+            "money-extra-field", "rational-zero-denominator", "rational-negative-denominator",
+            "rational-unreduced", "rational-zero-not-normalized",
+        }
+        if (
+            set(negative_ids) != expected_negative_numeric_ids
+            or len(negative_ids) != len(expected_negative_numeric_ids)
+        ):
+            problems.append("negative numeric vector ids are incomplete or duplicated")
+
+    platform = contract["platform_matrix"]
+    if not isinstance(platform, dict) or set(platform) != {
+        "claim", "runtime_targets", "node_oracle_targets", "verification_stage",
+    }:
+        problems.append("platform matrix fields are not closed")
+    else:
+        target_tuples = {
+            (item.get("os"), item.get("python")) for item in platform.get("runtime_targets", [])
+            if isinstance(item, dict) and set(item) == {"os", "python"}
+        }
+        if target_tuples != {
+            ("ubuntu", "3.11"), ("ubuntu", "3.12"),
+            ("windows", "3.11"), ("windows", "3.12"),
+        } or len(platform.get("runtime_targets", [])) != 4:
+            problems.append("runtime platform matrix is incomplete")
+        if platform.get("node_oracle_targets") != ["22", "24"]:
+            problems.append("Node oracle target matrix drifted")
+        if platform.get("claim") != "TARGET_MATRIX_NOT_EXECUTION_RECEIPT":
+            problems.append("platform matrix overclaims execution evidence")
+        if platform.get("verification_stage") != "W6-05":
+            problems.append("platform verification stage drifted")
+
+    problems.extend(_resource_limit_policy_problems(contract["resource_limit_policy"]))
+    return sorted(set(problems))
+
+
+def _probe_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def _probe_request() -> dict[str, Any]:
+    return {
+        "request_id": "request::benchmark",
+        "schema_version": "jc/4.0",
+        "legal_context": {"jurisdiction": "CN", "governing_law": "PRC"},
+        "decision_time": "2026-08-22T00:00:00Z",
+        "source_bundle_ref": "sha256:" + "1" * 64,
+        "evidence_manifest_ref": "sha256:" + "2" * 64,
+        "fact_attestation_refs": ["sha256:" + "3" * 64],
+        "rule_pack_ref": {
+            "pack_id": "benchmark", "version": "4.0.0",
+            "digest": "sha256:" + "4" * 64,
+        },
+        "requested_outputs": ["semantic_result"],
+        "proposal_refs": [],
+    }
+
+
+def _probe_sized_request(target_bytes: int) -> bytes:
+    item_count = max(1, target_bytes // 80)
+    while True:
+        payload = {
+            "items": [
+                {"id": f"node::{index:07d}", "value": "x" * 16}
+                for index in range(item_count)
+            ],
+            "padding": "",
+        }
+        raw = _probe_json_bytes(payload)
+        if len(raw) <= target_bytes:
+            break
+        item_count -= max(1, (len(raw) - target_bytes) // 50)
+    payload["padding"] = "x" * (target_bytes - len(raw))
+    raw = _probe_json_bytes(payload)
+    if len(raw) != target_bytes:
+        raise RuntimeError("deterministic request sizing drifted")
+    return raw
+
+
+def _probe_reference_request(reference_count: int) -> bytes:
+    payload = _probe_request()
+    first = reference_count // 2
+    payload["fact_attestation_refs"] = [
+        "sha256:" + hashlib.sha256(f"fact:{index}".encode()).hexdigest()
+        for index in range(first)
+    ]
+    payload["proposal_refs"] = [
+        "sha256:" + hashlib.sha256(f"proposal:{index}".encode()).hexdigest()
+        for index in range(reference_count - first)
+    ]
+    return _probe_json_bytes(payload)
+
+
+def _expected_probe_samples() -> list[tuple[str, str, int, bytes]]:
+    samples = [("baseline_v4_request", "baseline", 1, _probe_json_bytes(_probe_request()))]
+    for size in (65_536, 262_144, 1_048_576, 2_097_152):
+        samples.append((f"request_bytes_{size}", "request_bytes", size, _probe_sized_request(size)))
+    for depth in (8, 16, 32, 64, 128, 256, 512, 768, 900, 1_000, 2_048, 3_072):
+        raw = ("[" * depth + "0" + "]" * depth).encode("ascii")
+        samples.append((f"depth_{depth}", "depth", depth, raw))
+    for item_count in (1_000, 10_000, 50_000, 100_000, 250_000):
+        raw = ("[" + ",".join("0" for _ in range(item_count)) + "]").encode("ascii")
+        samples.append((f"nodes_{item_count + 1}", "nodes", item_count + 1, raw))
+    for members in (32, 128, 512, 2_048, 10_000, 50_000):
+        raw = _probe_json_bytes({f"k{index:06d}": 0 for index in range(members)})
+        samples.append((f"object_members_{members}", "object_members", members, raw))
+    for items in (128, 512, 1_024, 4_096, 16_384, 65_536):
+        raw = ("[" + ",".join("0" for _ in range(items)) + "]").encode("ascii")
+        samples.append((f"array_items_{items}", "array_items", items, raw))
+    for byte_count in (1_024, 8_192, 65_536, 262_144, 1_048_576):
+        raw = _probe_json_bytes({"value": "x" * byte_count})
+        samples.append((f"string_ascii_{byte_count}", "string_bytes_ascii", byte_count, raw))
+    for byte_count in (8_190, 65_535, 262_143):
+        raw = _probe_json_bytes({"value": "法" * (byte_count // 3)})
+        samples.append((f"string_cjk_{byte_count}", "string_bytes_cjk", byte_count, raw))
+    for references in (128, 512, 1_024, 2_048, 4_096, 8_192):
+        samples.append(
+            (f"references_{references}", "references", references,
+             _probe_reference_request(references))
+        )
+    if len(samples) != 48:
+        raise RuntimeError("deterministic probe sample matrix drifted")
+    return sorted(samples, key=lambda item: (item[1], item[2], item[0]))
+
+
+def _probe_observation(value: Any) -> dict[str, int]:
+    observed = {
+        "nodes": 0, "max_depth": 0,
+        "total_object_members": 0, "max_object_members": 0,
+        "total_array_items": 0, "max_array_items": 0,
+        "total_string_utf8_bytes": 0, "max_string_utf8_bytes": 0,
+        "reference_count": 0,
+    }
+    stack: list[tuple[Any, int, str | None]] = [(value, 1, None)]
+    while stack:
+        current, depth, field_name = stack.pop()
+        observed["nodes"] += 1
+        observed["max_depth"] = max(observed["max_depth"], depth)
+        if isinstance(current, dict):
+            member_count = len(current)
+            observed["total_object_members"] += member_count
+            observed["max_object_members"] = max(
+                observed["max_object_members"], member_count
+            )
+            for key, child in current.items():
+                key_bytes = len(key.encode("utf-8"))
+                observed["total_string_utf8_bytes"] += key_bytes
+                observed["max_string_utf8_bytes"] = max(
+                    observed["max_string_utf8_bytes"], key_bytes
+                )
+                stack.append((child, depth + 1, key))
+        elif isinstance(current, list):
+            item_count = len(current)
+            observed["total_array_items"] += item_count
+            observed["max_array_items"] = max(observed["max_array_items"], item_count)
+            stack.extend((child, depth + 1, field_name) for child in current)
+        elif isinstance(current, str):
+            string_bytes = len(current.encode("utf-8"))
+            observed["total_string_utf8_bytes"] += string_bytes
+            observed["max_string_utf8_bytes"] = max(
+                observed["max_string_utf8_bytes"], string_bytes
+            )
+            if field_name and (field_name.endswith("_ref") or field_name.endswith("_refs")):
+                observed["reference_count"] += 1
+    return observed
+
+
+def _probe_sample_problems(probe: dict[str, Any]) -> list[str]:
+    problems: list[str] = []
+    expected = _expected_probe_samples()
+    actual_samples = probe.get("samples", [])
+    expected_names = [item[0] for item in expected]
+    actual_names = [
+        item.get("name") if isinstance(item, dict) else None
+        for item in actual_samples
+    ]
+    if actual_names != expected_names:
+        return ["resource limit probe sample order or identity drifted"]
+    success_fields = {
+        "name", "category", "requested_scale", "raw_bytes", "raw_sha256",
+        "status", "observed", "timing_ms", "tracemalloc_peak_bytes",
+    }
+    failure_fields = {
+        "name", "category", "requested_scale", "raw_bytes", "raw_sha256",
+        "status", "error_type", "error",
+    }
+    for actual, (name, category, scale, raw) in zip(actual_samples, expected):
+        if not isinstance(actual, dict):
+            problems.append(f"probe sample {name} is not an object")
+            continue
+        is_failure = name == "depth_3072"
+        if set(actual) != (failure_fields if is_failure else success_fields):
+            problems.append(f"probe sample {name} fields are not closed")
+            continue
+        if actual["category"] != category or actual["requested_scale"] != scale:
+            problems.append(f"probe sample {name} metadata drifted")
+        if actual["raw_bytes"] != len(raw):
+            problems.append(f"probe sample {name} raw byte count mismatch")
+        if actual["raw_sha256"] != "sha256:" + sha256_hex(raw):
+            problems.append(f"probe sample {name} raw digest mismatch")
+        if is_failure:
+            if (
+                actual["status"] != "rejected_or_parser_error"
+                or actual["error_type"] != "RecursionError"
+                or not isinstance(actual["error"], str)
+                or not actual["error"]
+            ):
+                problems.append("probe depth_3072 failure evidence drifted")
+            continue
+        if actual["status"] != "ok":
+            problems.append(f"probe sample {name} is not successful")
+            continue
+        if category == "depth":
+            expected_observed = {
+                "nodes": scale + 1, "max_depth": scale + 1,
+                "total_object_members": 0, "max_object_members": 0,
+                "total_array_items": scale, "max_array_items": 1,
+                "total_string_utf8_bytes": 0, "max_string_utf8_bytes": 0,
+                "reference_count": 0,
+            }
+        else:
+            try:
+                parsed = _parse_v4_json(raw.decode("utf-8"))
+            except (UnicodeError, json.JSONDecodeError, _W0VectorError) as exc:
+                problems.append(f"probe sample {name} no longer parses strictly: {exc}")
+                continue
+            expected_observed = _probe_observation(parsed)
+        if actual["observed"] != expected_observed:
+            problems.append(f"probe sample {name} structural observation mismatch")
+        timing = actual["timing_ms"]
+        timing_fields = {
+            "parse_median", "parse_p95_nearest_rank", "traverse_median",
+            "traverse_p95_nearest_rank", "total_median", "total_p95_nearest_rank",
+        }
+        if not isinstance(timing, dict) or set(timing) != timing_fields:
+            problems.append(f"probe sample {name} timing fields are not closed")
+        else:
+            if any(
+                isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value) or value < 0
+                for value in timing.values()
+            ):
+                problems.append(f"probe sample {name} timing values are invalid")
+            for prefix in ("parse", "traverse", "total"):
+                if timing[f"{prefix}_median"] > timing[f"{prefix}_p95_nearest_rank"]:
+                    problems.append(f"probe sample {name} {prefix} timing order is invalid")
+        memory = actual["tracemalloc_peak_bytes"]
+        if (
+            not isinstance(memory, dict) or set(memory) != {"median", "max"}
+            or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0 for value in memory.values())
+            or memory.get("median", 1) > memory.get("max", 0)
+        ):
+            problems.append(f"probe sample {name} tracemalloc values are invalid")
+    return problems
+
+
+def _resource_limit_policy_problems(policy: Any) -> list[str]:
+    problems: list[str] = []
+    required_fields = {
+        "claim", "profile", "probe_file", "probe_file_sha256", "probe_payload_sha256",
+        "benchmarked_limits", "deferred_limits", "enforcement_order",
+    }
+    if not isinstance(policy, dict) or set(policy) != required_fields:
+        return ["resource limit policy fields are not closed"]
+    if policy["claim"] != "LOCAL_ADMISSION_BOUNDS_ONLY":
+        problems.append("resource limit policy overclaims its local benchmark")
+    if policy["profile"] != "V4_INLINE_REQUEST_ADMISSION_V1":
+        problems.append("resource limit profile drifted")
+    if policy["probe_file"] != "tests/fixtures/golden/v4-resource-limit-probe.json":
+        problems.append("resource limit probe path drifted")
+        return problems
+    probe_path = ROOT / policy["probe_file"]
+    if not probe_path.is_file():
+        return problems + ["resource limit probe is missing"]
+    raw_probe = probe_path.read_bytes()
+    actual_probe_file_digest = "sha256:" + sha256_hex(raw_probe)
+    if (
+        policy["probe_file_sha256"] != actual_probe_file_digest
+        or actual_probe_file_digest != W0_RESOURCE_PROBE_FILE_DIGEST
+    ):
+        problems.append("resource limit probe file digest mismatch")
+    try:
+        probe = json.loads(raw_probe.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError):
+        return problems + ["resource limit probe is not strict UTF-8 JSON"]
+    required_probe_fields = {
+        "schema_version", "generated_at_utc", "scope", "platform", "methodology",
+        "attack_surface_evidence", "samples", "recommendations",
+        "payload_sha256", "payload_sha256_scope",
+    }
+    if not isinstance(probe, dict) or set(probe) != required_probe_fields:
+        return problems + ["resource limit probe fields are not closed"]
+    if probe.get("schema_version") != "jc/v4-remediation-limit-probe/1.0":
+        problems.append("resource limit probe schema_version drifted")
+    unsigned_probe = {
+        key: value for key, value in probe.items()
+        if key not in {"payload_sha256", "payload_sha256_scope"}
+    }
+    payload_digest = _digest_object(unsigned_probe)
+    if (
+        probe.get("payload_sha256") != payload_digest
+        or policy["probe_payload_sha256"] != payload_digest
+        or payload_digest != W0_RESOURCE_PROBE_PAYLOAD_DIGEST
+    ):
+        problems.append("resource limit probe payload digest mismatch")
+    if probe.get("payload_sha256_scope") != (
+        "canonical UTF-8 JSON with payload_sha256 and payload_sha256_scope omitted"
+    ):
+        problems.append("resource limit probe payload digest scope drifted")
+    if UTC_INSTANT_V4_PATTERN.fullmatch(probe.get("generated_at_utc", "")) is None:
+        problems.append("resource limit probe timestamp is not canonical UTC")
+    expected_scope = {
+        "claim": "local parser/admission sizing evidence only",
+        "not_claimed": [
+            "cross-platform equivalence", "production throughput",
+            "solver/runtime deadline sufficiency", "state quota or retention sufficiency",
+        ],
+        "repository_mutated": False,
+    }
+    if probe.get("scope") != expected_scope:
+        problems.append("resource limit probe scope drifted")
+    platform = probe.get("platform")
+    platform_fields = {
+        "python", "python_implementation", "os", "machine", "processor",
+        "logical_cpu_count", "python_hash_seed", "cpu_model",
+        "physical_memory_bytes", "hardware_source",
+    }
+    if not isinstance(platform, dict) or set(platform) != platform_fields:
+        problems.append("resource limit probe platform fields are not closed")
+    elif (
+        platform["python_implementation"] != "CPython"
+        or platform["python_hash_seed"] != "0"
+        or not isinstance(platform["logical_cpu_count"], int)
+        or platform["logical_cpu_count"] <= 0
+        or not isinstance(platform["physical_memory_bytes"], int)
+        or platform["physical_memory_bytes"] <= 0
+        or any(
+            not isinstance(platform[field], str) or not platform[field]
+            for field in platform_fields - {
+                "logical_cpu_count", "physical_memory_bytes", "python_hash_seed",
+            }
+        )
+    ):
+        problems.append("resource limit probe platform values are invalid")
+    methodology = probe.get("methodology")
+    methodology_fields = {
+        "logic_description", "logic_sha256", "warmups", "measured_repetitions",
+        "timing_clock", "memory_metric", "sample_staging", "strict_parser",
+        "traversal", "reference_count_rule",
+    }
+    if not isinstance(methodology, dict) or set(methodology) != methodology_fields:
+        problems.append("resource limit probe methodology fields are not closed")
+    else:
+        description_digest = "sha256:" + sha256_hex(
+            methodology["logic_description"].encode("utf-8")
+        ) if isinstance(methodology["logic_description"], str) else "invalid"
+        if methodology["logic_sha256"] != description_digest:
+            problems.append("resource limit methodology description digest mismatch")
+        if (
+            methodology["warmups"] != 1
+            or methodology["measured_repetitions"] != 7
+            or methodology["timing_clock"] != "time.perf_counter_ns"
+            or methodology["strict_parser"] != {
+                "utf8": "strict",
+                "duplicate_object_names": "rejected during object construction",
+                "float_tokens": "rejected",
+                "nonfinite_tokens": "rejected",
+                "integer_domain": "[-9007199254740991, 9007199254740991]",
+            }
+            or methodology["traversal"] != (
+                "iterative complete tree walk; counts containers/scalars as nodes, "
+                "object names as string bytes but not nodes"
+            )
+            or methodology["reference_count_rule"] != (
+                "string value under a field ending _ref or _refs"
+            )
+        ):
+            problems.append("resource limit probe methodology values drifted")
+    problems.extend(_probe_sample_problems(probe))
+
+    recommendations = probe.get("recommendations", {})
+    defaults = recommendations.get("defaults", {}) if isinstance(recommendations, dict) else {}
+    hard_caps = recommendations.get("hard_caps", {}) if isinstance(recommendations, dict) else {}
+    expected_ids = {
+        "max_request_bytes", "max_json_depth", "max_json_nodes",
+        "max_object_members_per_object", "max_total_object_members",
+        "max_array_items_per_array", "max_total_array_items",
+        "max_string_utf8_bytes", "max_total_string_utf8_bytes",
+        "max_total_reference_values", "max_fact_attestation_refs", "max_proposal_refs",
+        "admission_deadline_ms",
+    }
+    recommendation_fields = {
+        "profile", "defaults", "hard_caps", "enforcement_order", "basis",
+        "deferred_not_supported_by_this_probe", "limit_semantics",
+    }
+    if not isinstance(recommendations, dict) or set(recommendations) != recommendation_fields:
+        problems.append("resource limit recommendation fields are not closed")
+    elif recommendations["profile"] != "V4_INLINE_REQUEST_ADMISSION_V1":
+        problems.append("resource limit recommendation profile drifted")
+    if not isinstance(defaults, dict) or set(defaults) != expected_ids:
+        problems.append("resource limit default recommendation registry drifted")
+    if not isinstance(hard_caps, dict) or set(hard_caps) != expected_ids:
+        problems.append("resource limit hard-cap recommendation registry drifted")
+    if (
+        not isinstance(recommendations.get("basis"), list)
+        or not recommendations.get("basis")
+        or any(not isinstance(item, str) or not item for item in recommendations.get("basis", []))
+    ):
+        problems.append("resource limit recommendation basis is missing")
+    units = {
+        "max_request_bytes": "bytes",
+        "max_json_depth": "levels",
+        "max_json_nodes": "count",
+        "max_object_members_per_object": "count",
+        "max_total_object_members": "count",
+        "max_array_items_per_array": "count",
+        "max_total_array_items": "count",
+        "max_string_utf8_bytes": "bytes",
+        "max_total_string_utf8_bytes": "bytes",
+        "max_total_reference_values": "count",
+        "max_fact_attestation_refs": "count",
+        "max_proposal_refs": "count",
+        "admission_deadline_ms": "milliseconds",
+    }
+    errors = {
+        "max_request_bytes": "REQUEST_TOO_LARGE",
+        "max_json_depth": "JSON_DEPTH_LIMIT",
+        "max_json_nodes": "JSON_NODE_LIMIT",
+        "max_object_members_per_object": "OBJECT_MEMBER_LIMIT",
+        "max_total_object_members": "TOTAL_OBJECT_MEMBER_LIMIT",
+        "max_array_items_per_array": "ARRAY_ITEM_LIMIT",
+        "max_total_array_items": "TOTAL_ARRAY_ITEM_LIMIT",
+        "max_string_utf8_bytes": "STRING_BYTE_LIMIT",
+        "max_total_string_utf8_bytes": "TOTAL_STRING_BYTE_LIMIT",
+        "max_total_reference_values": "REFERENCE_LIMIT",
+        "max_fact_attestation_refs": "FACT_REFERENCE_LIMIT",
+        "max_proposal_refs": "PROPOSAL_REFERENCE_LIMIT",
+        "admission_deadline_ms": "ADMISSION_DEADLINE",
+    }
+    seen: set[str] = set()
+    for item in policy.get("benchmarked_limits", []):
+        if not isinstance(item, dict) or set(item) != {
+            "id", "scope", "unit", "default", "hard_max", "boundary", "error_code",
+        }:
+            problems.append("benchmarked limit fields are not closed")
+            continue
+        limit_id = item["id"]
+        seen.add(limit_id)
+        if limit_id not in expected_ids:
+            problems.append(f"unknown benchmarked limit {limit_id}")
+            continue
+        if item["scope"] != "request_admission" or item["boundary"] != "inclusive":
+            problems.append(f"{limit_id} scope/boundary drifted")
+        if item["unit"] != units[limit_id] or item["error_code"] != errors[limit_id]:
+            problems.append(f"{limit_id} unit/error drifted")
+        if item["default"] != defaults.get(limit_id) or item["hard_max"] != hard_caps.get(limit_id):
+            problems.append(f"{limit_id} does not match the measured recommendation")
+        if not isinstance(item["default"], int) or not isinstance(item["hard_max"], int):
+            problems.append(f"{limit_id} must use integer limits")
+        elif not 0 < item["default"] <= item["hard_max"]:
+            problems.append(f"{limit_id} default exceeds its hard maximum")
+    if seen != expected_ids or len(policy.get("benchmarked_limits", [])) != len(expected_ids):
+        problems.append("benchmarked limit registry is incomplete or duplicated")
+    if policy.get("enforcement_order") != recommendations.get("enforcement_order"):
+        problems.append("resource limit enforcement order drifted from the probe")
+
+    deferred_expected = {
+        "artifact_page_bytes": "W1-04",
+        "solver_deadline_ms": "W3-03",
+        "worker_queue_items": "W4-06",
+        "in_flight_runs": "W4-06",
+        "state_quota_bytes": "W4-02",
+        "retention_seconds": "W4-02",
+    }
+    deferred_seen: dict[str, str] = {}
+    for item in policy.get("deferred_limits", []):
+        if not isinstance(item, dict) or set(item) != {
+            "id", "status", "value", "closure_task", "reason",
+        }:
+            problems.append("deferred limit fields are not closed")
+            continue
+        deferred_seen[item["id"]] = item["closure_task"]
+        if item["status"] != "DEFERRED_UNBENCHMARKED" or item["value"] is not None:
+            problems.append(f"deferred limit {item['id']} contains an unsupported magic value")
+        if not isinstance(item["reason"], str) or not item["reason"]:
+            problems.append(f"deferred limit {item['id']} lacks a reason")
+    if deferred_seen != deferred_expected or len(policy.get("deferred_limits", [])) != len(deferred_expected):
+        problems.append("deferred operational limit registry is incomplete")
+    return problems
+
+
+def cmd_foundation_contract(args: argparse.Namespace) -> int:
+    jcs_path = Path(args.jcs).resolve()
+    foundation_path = Path(args.foundation).resolve()
+    try:
+        jcs_vectors = json.loads(jcs_path.read_text(encoding="utf-8"))
+        foundation = json.loads(foundation_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"W0 foundation artifact unreadable: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _jcs_vector_problems(jcs_vectors) + _foundation_contract_problems(foundation)
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    limits = foundation["resource_limit_policy"]
+    print(
+        f"foundation contract OK: {len(jcs_vectors['positive'])} JCS positive, "
+        f"{len(jcs_vectors['negative'])} JCS negative, "
+        f"{len(limits['benchmarked_limits'])} benchmarked admission limits, "
+        f"{len(limits['deferred_limits'])} explicit deferred operational limits"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
+    if args.wave == "W0-02":
+        return cmd_foundation_contract(argparse.Namespace(
+            jcs=str(JCS_V4_VECTORS), foundation=str(FOUNDATION_V4_CONTRACT)
+        ))
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -1171,6 +2105,62 @@ def _changed_status_paths(before: dict[str, str], after: dict[str, str]) -> list
     return sorted(
         path for path in set(before) | set(after) if before.get(path) != after.get(path)
     )
+
+
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    completed = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=str(ROOT), capture_output=True, check=False,
+    )
+    return completed.returncode == 0
+
+
+def _git_path_bytes(commit: str, path: str) -> bytes | None:
+    object_name = f"{commit}:{path}"
+    exists = subprocess.run(
+        ["git", "cat-file", "-e", object_name], cwd=str(ROOT),
+        capture_output=True, check=False,
+    )
+    if exists.returncode != 0:
+        return None
+    completed = subprocess.run(
+        ["git", "show", object_name], cwd=str(ROOT), capture_output=True, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"git show failed for {object_name}")
+    return completed.stdout
+
+
+def _committed_delta(start_commit: str, result_commit: str) -> tuple[list[str], dict[str, str]]:
+    """Bind the exact task delta; renames are intentionally deletion plus addition."""
+    if not _git_is_ancestor(start_commit, result_commit):
+        raise RuntimeError(
+            f"task result {result_commit} does not descend from start {start_commit}"
+        )
+    completed = subprocess.run(
+        [
+            "git", "-c", "core.quotepath=false", "diff", "--no-renames",
+            "--name-only", "-z", start_commit, result_commit,
+        ],
+        cwd=str(ROOT), capture_output=True, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("git diff failed while binding the task delta")
+    paths = sorted(
+        item.decode("utf-8").replace("\\", "/")
+        for item in completed.stdout.split(b"\0") if item
+    )
+    artifact_digests: dict[str, str] = {}
+    for path in paths:
+        result_bytes = _git_path_bytes(result_commit, path)
+        if result_bytes is not None:
+            artifact_digests[f"result-path:{path}"] = "sha256:" + sha256_hex(result_bytes)
+            continue
+        start_bytes = _git_path_bytes(start_commit, path)
+        if start_bytes is None:
+            raise RuntimeError(f"changed path is absent from both task commits: {path}")
+        artifact_digests[f"deleted-path:{path}"] = "sha256:" + sha256_hex(start_bytes)
+    return paths, artifact_digests
 
 
 def _matches_allowed(path: str, patterns: list[str]) -> bool:
@@ -1355,9 +2345,28 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             raise ValueError(f"start commit/tree mismatch: {receipt_path}")
         if not _validate_git_binding(receipt["result_commit"], receipt["result_tree"]):
             raise ValueError(f"result commit/tree mismatch: {receipt_path}")
+        expected_paths, expected_artifacts = _committed_delta(
+            receipt["start_commit"], receipt["result_commit"]
+        )
+        if receipt["changed_paths"] != expected_paths:
+            raise ValueError(f"changed path binding mismatch: {receipt_path}")
+        recorded_delta_artifacts = {
+            key: value for key, value in receipt["artifact_digests"].items()
+            if key.startswith("result-path:") or key.startswith("deleted-path:")
+        }
+        if recorded_delta_artifacts != expected_artifacts:
+            raise ValueError(f"artifact digest binding mismatch: {receipt_path}")
         for command in receipt["command_results"]:
             if not _validate_stream(command["stdout"]) or not _validate_stream(command["stderr"]):
                 raise ValueError(f"stdout/stderr digest mismatch: {receipt_path}")
+        if (
+            receipt["runner_version"] == RUNNER_VERSION
+            or any(
+                assertion["id"].startswith("runner-")
+                for assertion in receipt["completion_assertions"]
+            )
+        ) and receipt["test_reports"] != _structured_test_reports(receipt["command_results"]):
+            raise ValueError(f"structured test report binding mismatch: {receipt_path}")
         previous = receipt["receipt_digest"]
         previous_attempt = attempt_number
         receipts.append(receipt)
@@ -1385,6 +2394,27 @@ def _topological_tasks(plan: dict[str, Any]) -> list[dict[str, Any]]:
         completed.add(task["id"])
         remaining.remove(task["id"])
     return ordered
+
+
+def _task_start_commit(
+    task: dict[str, Any], completed_receipts: dict[str, dict[str, Any]],
+    run_baseline_commit: str,
+) -> str:
+    dependency_commits = [
+        completed_receipts[dependency]["result_commit"]
+        for dependency in task["depends_on"]
+    ]
+    if not dependency_commits:
+        return run_baseline_commit
+    latest = dependency_commits[0]
+    for candidate in dependency_commits[1:]:
+        if _git_is_ancestor(latest, candidate):
+            latest = candidate
+        elif not _git_is_ancestor(candidate, latest):
+            raise ValueError(
+                f"task {task['id']} dependency commits are not linearly ordered"
+            )
+    return latest
 
 
 def _subject_digest(task: dict[str, Any], state_root: Path) -> str:
@@ -1551,39 +2581,246 @@ def _write_receipt(attempt_dir: Path, receipt: dict[str, Any]) -> None:
         handle.write("\n")
 
 
+def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    reports: list[dict[str, Any]] = []
+    for index, item in enumerate(command_results, 1):
+        argv = item["argv"]
+        kind: str | None = None
+        if "pytest" in argv:
+            kind = "pytest"
+        elif any(Path(value).name == "jcs_node_oracle.mjs" for value in argv):
+            kind = "node-oracle"
+        if kind is None:
+            continue
+        stdout_path = Path(item["stdout"]["path"])
+        stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace")
+        report: dict[str, Any] = {
+            "command_index": index,
+            "kind": kind,
+            "exit_code": item["exit_code"],
+            "stdout_sha256": item["stdout"]["sha256"],
+            "stderr_sha256": item["stderr"]["sha256"],
+        }
+        if kind == "pytest":
+            passed = re.search(r"(?:^|\s)(\d+) passed(?:\s|,|$)", stdout_text)
+            if passed:
+                report["passed"] = int(passed.group(1))
+        else:
+            for field in ("positive", "negative", "canonical_bytes"):
+                match = re.search(rf"(?:^|\s){field}=(\d+)(?:\s|$)", stdout_text)
+                if match:
+                    report[field] = int(match.group(1))
+            runtime = re.search(r"(?:^|\s)runtime=(v\d+\.\d+\.\d+)(?:\s|$)", stdout_text)
+            if runtime:
+                report["runtime"] = runtime.group(1)
+        reports.append(report)
+    return reports
+
+
+def _rebind_legacy_auto_receipt(
+    task: dict[str, Any], latest: dict[str, Any], start_commit: str,
+    state_root: Path, run_id: str, input_receipts: dict[str, str],
+    history: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Append a corrected delta receipt while preserving already-bound command bytes."""
+    if (
+        latest["status"] != "COMPLETED"
+        or latest["start_commit"] != latest["result_commit"]
+        or latest["result_commit"] == start_commit
+        or latest["changed_paths"]
+        or any(
+            key.startswith("result-path:") or key.startswith("deleted-path:")
+            for key in latest["artifact_digests"]
+        )
+    ):
+        return None
+    old_plan_bytes = _git_path_bytes(latest["result_commit"], "remediation/v4/tasks.json")
+    if old_plan_bytes is None:
+        return None
+    old_plan = json.loads(old_plan_bytes.decode("utf-8"))
+    old_task = next(
+        (candidate for candidate in old_plan.get("tasks", []) if candidate.get("id") == task["id"]),
+        None,
+    )
+    if old_task is None or latest.get("task_digest") != _task_digest(old_task):
+        return None
+    old_semantics = {key: value for key, value in old_task.items() if key != "allowed_paths"}
+    new_semantics = {key: value for key, value in task.items() if key != "allowed_paths"}
+    if old_semantics != new_semantics:
+        return None
+    old_allowlist = set(old_task["allowed_paths"])
+    new_allowlist = set(task["allowed_paths"])
+    if not old_allowlist < new_allowlist:
+        return None
+    added_allowlist = sorted(new_allowlist - old_allowlist)
+    changed_paths, artifact_digests = _committed_delta(
+        start_commit, latest["result_commit"]
+    )
+    violations = [
+        path for path in changed_paths
+        if not _matches_allowed(path, task["allowed_paths"])
+    ]
+    if violations:
+        return None
+    assertions = _evaluate_assertions(task, latest["command_results"], state_root)
+    assertions.extend([
+        {
+            "id": "runner-legacy-delta-rebind", "kind": "scope_contract_correction", "ok": True,
+            "detail": (
+                "append-only scope-contract correction; original command streams retained; "
+                f"added allowlist entries={added_allowlist}; "
+                f"{len(changed_paths)} historical committed paths rebound"
+            ),
+        },
+        {
+            "id": "runner-committed-delta", "kind": "artifact_binding", "ok": True,
+            "detail": f"{len(changed_paths)} committed paths bound to {len(artifact_digests)} digests",
+        },
+        {
+            "id": "runner-input-chain-correction", "kind": "receipt_chain_binding", "ok": True,
+            "detail": (
+                f"input receipt map corrected={latest['input_receipt_digests'] != input_receipts}; "
+                "dependency result commit is the rebound start commit"
+            ),
+        },
+    ])
+    attempt = _next_attempt(task["id"], state_root)
+    attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    receipt = {
+        "schema_version": "jc/remediation-v4-receipt/2.1",
+        "task_digest": _task_digest(task), "run_id": run_id,
+        "task_id": task["id"], "attempt": attempt, "status": "COMPLETED",
+        "input_receipt_digests": input_receipts,
+        "start_commit": start_commit,
+        "start_tree": _git_checked("rev-parse", f"{start_commit}^{{tree}}"),
+        "result_commit": latest["result_commit"],
+        "result_tree": latest["result_tree"],
+        "command_results": latest["command_results"],
+        "changed_paths": changed_paths,
+        "allowlist": {"allowed": True, "violations": []},
+        "test_reports": _structured_test_reports(latest["command_results"]),
+        "artifact_digests": {
+            **artifact_digests,
+            "legacy-task-definition": _task_digest(old_task),
+            "corrected-task-definition": _task_digest(task),
+            "legacy-input-receipts": _digest_object(latest["input_receipt_digests"]),
+            "corrected-input-receipts": _digest_object(input_receipts),
+        },
+        "completion_assertions": assertions,
+        "previous_receipt_digest": history[-1]["receipt_digest"],
+        "runner_version": RUNNER_VERSION,
+    }
+    _write_receipt(attempt_dir, receipt)
+    return receipt
+
+
+def _rebind_dependency_chain_receipt(
+    task: dict[str, Any], latest: dict[str, Any], start_commit: str,
+    state_root: Path, run_id: str, input_receipts: dict[str, str],
+    history: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Rebind only an upstream receipt digest when every bound Git object is unchanged."""
+    if (
+        latest["status"] != "COMPLETED"
+        or latest.get("task_digest") != _task_digest(task)
+        or latest["input_receipt_digests"] == input_receipts
+        or latest["start_commit"] != latest["result_commit"]
+        or latest["result_commit"] != start_commit
+        or latest["changed_paths"]
+        or any(
+            key.startswith("result-path:") or key.startswith("deleted-path:")
+            for key in latest["artifact_digests"]
+        )
+    ):
+        return None
+    assertions = _evaluate_assertions(task, latest["command_results"], state_root)
+    assertions.append({
+        "id": "runner-dependency-chain-rebind", "kind": "receipt_chain_binding", "ok": True,
+        "detail": (
+            "append-only dependency digest correction; command streams and Git tree unchanged"
+        ),
+    })
+    attempt = _next_attempt(task["id"], state_root)
+    attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    receipt = {
+        "schema_version": "jc/remediation-v4-receipt/2.1",
+        "task_digest": _task_digest(task), "run_id": run_id,
+        "task_id": task["id"], "attempt": attempt, "status": "COMPLETED",
+        "input_receipt_digests": input_receipts,
+        "start_commit": start_commit, "start_tree": latest["start_tree"],
+        "result_commit": start_commit, "result_tree": latest["result_tree"],
+        "command_results": latest["command_results"], "changed_paths": [],
+        "allowlist": {"allowed": True, "violations": []},
+        "test_reports": _structured_test_reports(latest["command_results"]),
+        "artifact_digests": {
+            **latest["artifact_digests"],
+            "legacy-input-receipts": _digest_object(latest["input_receipt_digests"]),
+            "corrected-input-receipts": _digest_object(input_receipts),
+        },
+        "completion_assertions": assertions,
+        "previous_receipt_digest": history[-1]["receipt_digest"],
+        "runner_version": RUNNER_VERSION,
+    }
+    _write_receipt(attempt_dir, receipt)
+    return receipt
+
+
 def _execute_auto_task(
     task: dict[str, Any], state_root: Path, run_id: str,
     input_receipts: dict[str, str], history: list[dict[str, Any]],
+    start_commit: str,
 ) -> tuple[int, dict[str, Any]]:
     attempt = _next_attempt(task["id"], state_root)
     attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
     attempt_dir.mkdir(parents=True, exist_ok=False)
-    start_commit = _git_checked("rev-parse", "HEAD")
-    start_tree = _git_checked("rev-parse", "HEAD^{tree}")
+    start_tree = _git_checked("rev-parse", f"{start_commit}^{{tree}}")
     before = _git_status_snapshot()
     command_results: list[dict[str, Any]] = []
     timeout = float(task.get("timeout_seconds", 600))
-    for index, (argv, expected) in enumerate(zip(task["argv"], task["expected_exit_codes"]), 1):
-        command_results.append(_run_argv(argv, expected, attempt_dir, index, timeout, state_root))
-        if command_results[-1]["timed_out"] or command_results[-1]["exit_code"] != expected:
-            break
+    if not before:
+        for index, (argv, expected) in enumerate(zip(task["argv"], task["expected_exit_codes"]), 1):
+            command_results.append(_run_argv(argv, expected, attempt_dir, index, timeout, state_root))
+            if command_results[-1]["timed_out"] or command_results[-1]["exit_code"] != expected:
+                break
     after = _git_status_snapshot()
-    changed_paths = _changed_status_paths(before, after)
-    violations = [path for path in changed_paths if not _matches_allowed(path, task["allowed_paths"])]
+    result_commit = _git_checked("rev-parse", "HEAD")
+    result_tree = _git_checked("rev-parse", "HEAD^{tree}")
+    changed_paths, artifact_digests = _committed_delta(start_commit, result_commit)
+    dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
+    scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
+    violations = [path for path in scoped_paths if not _matches_allowed(path, task["allowed_paths"])]
     assertions = _evaluate_assertions(task, command_results, state_root)
+    worktree_clean = not before and not after
+    assertions.extend([
+        {
+            "id": "runner-clean-worktree", "kind": "clean_worktree",
+            "ok": worktree_clean,
+            "detail": "worktree clean before and after commands" if worktree_clean
+            else f"uncommitted paths: {dirty_paths}",
+        },
+        {
+            "id": "runner-committed-delta", "kind": "artifact_binding",
+            "ok": True,
+            "detail": f"{len(changed_paths)} committed paths bound to {len(artifact_digests)} digests",
+        },
+    ])
     timed_out = any(item["timed_out"] for item in command_results)
     commands_ok = len(command_results) == len(task["argv"]) and all(
         item["exit_code"] == item["expected_exit_code"] and not item["timed_out"]
         for item in command_results
     )
     assertions_ok = all(item["ok"] for item in assertions)
-    status = "COMPLETED" if commands_ok and assertions_ok and not violations else "FAILED"
+    status = (
+        "COMPLETED"
+        if commands_ok and assertions_ok and worktree_clean and not violations
+        else "FAILED"
+    )
     if timed_out:
         status = "TIMED_OUT"
     if violations:
         status = "SCOPE_VIOLATION"
-    result_commit = _git_checked("rev-parse", "HEAD")
-    result_tree = _git_checked("rev-parse", "HEAD^{tree}")
     receipt = {
         "schema_version": "jc/remediation-v4-receipt/2.1", "task_digest": _task_digest(task), "run_id": run_id,
         "task_id": task["id"], "attempt": attempt, "status": status,
@@ -1592,11 +2829,8 @@ def _execute_auto_task(
         "result_commit": result_commit, "result_tree": result_tree,
         "command_results": command_results, "changed_paths": changed_paths,
         "allowlist": {"allowed": not violations, "violations": violations},
-        "test_reports": [
-            {"command_index": index + 1, "kind": "pytest", "exit_code": item["exit_code"]}
-            for index, item in enumerate(command_results) if "pytest" in item["argv"]
-        ],
-        "artifact_digests": {}, "completion_assertions": assertions,
+        "test_reports": _structured_test_reports(command_results),
+        "artifact_digests": artifact_digests, "completion_assertions": assertions,
         "previous_receipt_digest": history[-1]["receipt_digest"] if history else None,
         "runner_version": RUNNER_VERSION,
     }
@@ -1605,6 +2839,8 @@ def _execute_auto_task(
         return EXIT_OK, receipt
     if status == "SCOPE_VIOLATION":
         return EXIT_SCOPE_VIOLATION, receipt
+    if not worktree_clean:
+        return EXIT_BASELINE_DRIFT, receipt
     return EXIT_GATE_FAIL, receipt
 
 
@@ -1619,6 +2855,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     if state_root is None:
         print("--state-root is required for run", file=sys.stderr)
         return EXIT_USAGE
+    initial_worktree = _git_status_snapshot()
+    if initial_worktree:
+        print(
+            "baseline/worktree drift: commit or remove uncommitted paths before run: "
+            + ", ".join(sorted(initial_worktree)[:20]),
+            file=sys.stderr,
+        )
+        return EXIT_BASELINE_DRIFT
     state_root.mkdir(parents=True, exist_ok=True)
     (state_root / "tmp").mkdir(parents=True, exist_ok=True)
     lint_rc = cmd_lint_plan(argparse.Namespace(plan=str(plan_path)))
@@ -1630,6 +2874,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         run_state = json.loads(run_path.read_text(encoding="utf-8"))
         if Path(run_state["plan_path"]).resolve() != plan_path:
             print("state root belongs to a different plan", file=sys.stderr)
+            return EXIT_BASELINE_DRIFT
+        if run_state.get("through") != through:
+            print(
+                f"state root through target is {run_state.get('through')}, not {through}",
+                file=sys.stderr,
+            )
             return EXIT_BASELINE_DRIFT
     else:
         run_state = {
@@ -1643,17 +2893,72 @@ def cmd_run(args: argparse.Namespace) -> int:
     completed_receipts: dict[str, dict[str, Any]] = {}
     try:
         ordered = _topological_tasks(plan)
+        task_ids = [task["id"] for task in ordered]
+        if through == "ALL":
+            pass
+        elif through in task_ids:
+            ordered = ordered[:task_ids.index(through) + 1]
+        else:
+            wave_indexes = [
+                index for index, task in enumerate(ordered)
+                if task.get("wave") == through
+            ]
+            if not wave_indexes:
+                raise ValueError(f"unknown --through target: {through}")
+            ordered = ordered[:wave_indexes[-1] + 1]
         for task in ordered:
             history = _receipt_history(task["id"], state_root)
             input_receipts = {
                 dep: completed_receipts[dep]["receipt_digest"] for dep in task["depends_on"]
             }
             latest = history[-1] if history else None
+            task_start_commit = _task_start_commit(
+                task, completed_receipts, run_state["baseline_commit"]
+            )
+            if task["mode"] == "AUTO" and latest is not None:
+                rebound = _rebind_legacy_auto_receipt(
+                    task, latest, task_start_commit, state_root,
+                    run_state["run_id"], input_receipts, history,
+                )
+                if rebound is None:
+                    rebound = _rebind_dependency_chain_receipt(
+                        task, latest, task_start_commit, state_root,
+                        run_state["run_id"], input_receipts, history,
+                    )
+                if rebound is not None:
+                    latest = rebound
+                    history = [*history, rebound]
+                    print(
+                        f"task {task['id']} legacy receipt rebound "
+                        f"receipt={rebound['receipt_digest']}"
+                    )
+                elif (
+                    latest["status"] == "COMPLETED"
+                    and latest["start_commit"] == latest["result_commit"]
+                    and latest["result_commit"] != task_start_commit
+                    and not latest["changed_paths"]
+                    and not any(
+                        key.startswith("result-path:") or key.startswith("deleted-path:")
+                        for key in latest["artifact_digests"]
+                    )
+                ):
+                    raise ValueError(
+                        f"legacy receipt lacks committed delta binding: {task['id']}"
+                    )
             if (
                 latest and latest["status"] == "COMPLETED"
                 and latest.get("task_digest") == _task_digest(task)
                 and latest["input_receipt_digests"] == input_receipts
             ):
+                expected_violations = [
+                    path for path in latest["changed_paths"]
+                    if not _matches_allowed(path, task["allowed_paths"])
+                ]
+                if latest["allowlist"] != {
+                    "allowed": not expected_violations,
+                    "violations": expected_violations,
+                }:
+                    raise ValueError(f"receipt scope binding mismatch: {task['id']}")
                 assertions = _evaluate_assertions(task, latest["command_results"], state_root)
                 if all(item["ok"] for item in assertions):
                     completed_receipts[task["id"]] = latest
@@ -1661,7 +2966,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                     continue
             if task["mode"] == "AUTO":
                 rc, receipt = _execute_auto_task(
-                    task, state_root, run_state["run_id"], input_receipts, history
+                    task, state_root, run_state["run_id"], input_receipts, history,
+                    task_start_commit,
                 )
                 run_state["task_status"][task["id"]] = receipt["status"]
                 run_state["updated_at"] = _iso_now()
@@ -1700,6 +3006,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     except (ValueError, RuntimeError) as exc:
         print(f"receipt/run validation failed: {exc}", file=sys.stderr)
         return EXIT_RECEIPT_FAIL
+    if ordered:
+        terminal_receipt = completed_receipts[ordered[-1]["id"]]
+        current_commit = _git_checked("rev-parse", "HEAD")
+        if terminal_receipt["result_commit"] != current_commit:
+            print(
+                "baseline drift: terminal receipt does not bind current HEAD",
+                file=sys.stderr,
+            )
+            return EXIT_BASELINE_DRIFT
     run_state["status"] = "COMPLETED"
     run_state["updated_at"] = _iso_now()
     _atomic_json(run_path, run_state)
@@ -1797,6 +3112,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("object-state-matrix", help="Validate the frozen W0 V4 object/state matrix")
     p.add_argument("--path", default=str(OBJECT_STATE_MATRIX))
     p.set_defaults(func=cmd_object_state_matrix)
+
+    p = sub.add_parser("foundation-contract", help="Validate W0 canonical/time/numeric/limit contracts")
+    p.add_argument("--jcs", default=str(JCS_V4_VECTORS))
+    p.add_argument("--foundation", default=str(FOUNDATION_V4_CONTRACT))
+    p.set_defaults(func=cmd_foundation_contract)
 
     p = sub.add_parser("verify-wave", help="Aggregate gate per wave")
     p.add_argument("wave")

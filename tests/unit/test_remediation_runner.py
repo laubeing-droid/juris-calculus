@@ -12,6 +12,7 @@ already ships with the project, and they do not shell out.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -24,6 +25,14 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 RUNNER = REPO / "tools" / "remediate_v4.py"
 REMEDIATION_DIR = REPO / "remediation" / "v4"
+
+
+def _load_runner_module():
+    spec = importlib.util.spec_from_file_location("remediate_v4_test_module", RUNNER)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _run_runner(*args: str, cwd: Path | None = None, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -250,6 +259,46 @@ def test_runner_authority_check_reports_module_authority() -> None:
     """§3.1 authority 命令必须报告 module-authority 唯一性。"""
     result = _run_runner("authority", "--check")
     assert result.returncode in (0, 3), f"unexpected exit: {result.returncode}\n{result.stdout}\n{result.stderr}"
+
+
+def test_committed_delta_binds_added_modified_and_deleted_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "receipt-repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        )
+        return completed.stdout.strip()
+
+    git("init", "-q")
+    git("config", "user.name", "Receipt Test")
+    git("config", "user.email", "receipt@example.invalid")
+    (repo / "modified.txt").write_text("before\n", encoding="utf-8")
+    (repo / "deleted.txt").write_text("deleted bytes\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-qm", "baseline")
+    baseline = git("rev-parse", "HEAD")
+
+    (repo / "modified.txt").write_text("after\n", encoding="utf-8")
+    (repo / "deleted.txt").unlink()
+    (repo / "added.txt").write_text("added bytes\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "result")
+    result = git("rev-parse", "HEAD")
+
+    runner = _load_runner_module()
+    monkeypatch.setattr(runner, "ROOT", repo)
+    changed_paths, artifact_digests = runner._committed_delta(baseline, result)
+
+    assert changed_paths == ["added.txt", "deleted.txt", "modified.txt"]
+    assert artifact_digests == {
+        "deleted-path:deleted.txt": "sha256:" + hashlib.sha256(b"deleted bytes\n").hexdigest(),
+        "result-path:added.txt": "sha256:" + hashlib.sha256(b"added bytes\n").hexdigest(),
+        "result-path:modified.txt": "sha256:" + hashlib.sha256(b"after\n").hexdigest(),
+    }
 
 
 def test_w0_object_state_matrix_gate_passes() -> None:

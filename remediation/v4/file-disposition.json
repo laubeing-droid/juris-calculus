@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 312,
+  "count": 318,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1302,6 +1302,14 @@
       "namespace": "docs"
     },
     {
+      "path": "docs/contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
       "path": "docs/contracts/V4_OBJECT_STATE_MATRIX.md",
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
@@ -1629,6 +1637,20 @@
       "namespace": "formal_core"
     },
     {
+      "path": "tests/contract/jcs_node_oracle.mjs",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W1-01"
+    },
+    {
+      "path": "tests/contract/test_v4_foundation_contract.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-06"
+    },
+    {
       "path": "tests/fixtures/ci_promotion_candidate.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
@@ -1645,12 +1667,32 @@
       "namespace": "candidate_asset"
     },
     {
+      "path": "tests/fixtures/golden/jcs-v4-vectors.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W1-01"
+    },
+    {
       "path": "tests/fixtures/golden/jcs-vectors.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "closure_task": "W1-01"
+    },
+    {
+      "path": "tests/fixtures/golden/v4-foundation-contract.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/fixtures/golden/v4-resource-limit-probe.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-06"
     },
     {
       "path": "tests/fixtures/legal_ir_v3_sample.yaml",

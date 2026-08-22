@@ -177,6 +177,12 @@ SPECIAL_CLOSURE_TASKS = {
     "requirements/render.lock": "W6-03",
     "compiler_core/contracts_v4.py": "W1-02",
     "tests/fixtures/v4_contract/object-state-matrix.json": "W1-02",
+    "tests/contract/jcs_node_oracle.mjs": "W1-01",
+    "tests/contract/test_v4_foundation_contract.py": "W4-06",
+    "tests/fixtures/golden/jcs-vectors.json": "W1-01",
+    "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
+    "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
+    "tests/fixtures/golden/v4-resource-limit-probe.json": "W4-06",
 }
 
 MIGRATION_TARGETS = {
@@ -240,6 +246,9 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     elif rel.startswith("tests/run_benchmark_zh.py") or rel.startswith("tests/stress_test_facts.py"):
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
+    elif rel.startswith("tests/contract/") or rel.startswith("tests/fixtures/golden/"):
+        disp = "TEST_ORACLE"
+        terminal = "TEST_ORACLE"
     elif rel.startswith("tests/fixtures/v4_contract/"):
         disp = "TEST_ORACLE"
         terminal = "TEST_ORACLE"

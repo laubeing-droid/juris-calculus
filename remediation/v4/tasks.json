@@ -66,7 +66,9 @@
         ".gitignore",
         "tools/remediate_v4_gates.py",
         "tests/unit/test_remediation_run.py",
-        "tests/unit/test_remediation_gates.py"
+        "tests/unit/test_remediation_gates.py",
+        "tests/unit/test_remediation_*.py",
+        "tools/build_file_disposition.py"
       ],
       "forbidden_paths": [
         "requirements/*.lock",
@@ -391,6 +393,7 @@
       "allowed_paths": [
         "$JC_REMEDIATION_STATE_ROOT/inputs/**",
         "$JC_REMEDIATION_STATE_ROOT/evidence/B02/**",
+        "remediation/v4/tasks.json",
         "tools/remediate_v4.py",
         "compiler_core/spec_shadow_harness.py",
         "tests/unit/test_spec_shadow_harness.py"
@@ -465,10 +468,13 @@
       "objective": "冻结 V4 object set 和 execution/decision/review/completeness/certificate 笛卡尔状态矩阵；所有 formal object additionalProperties=false",
       "allowed_paths": [
         "docs/contracts/**",
+        "memory.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/fixtures/v4_contract/**",
         "tests/unit/test_remediation_runner.py",
-        "tools/remediate_v4.py",
-        "remediation/v4/tasks.json"
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -544,8 +550,14 @@
       "objective": "冻结 canonicalization/UTC instant/limits/平台矩阵",
       "allowed_paths": [
         "docs/contracts/**",
+        "memory.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/**",
         "tests/fixtures/golden/**",
-        "remediation/v4/tasks.json"
+        "tests/unit/test_remediation_runner.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -555,9 +567,28 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W0-02"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "tests/contract/test_v4_foundation_contract.py",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W0-02"
+        ],
+        [
+          "node",
+          "tests/contract/jcs_node_oracle.mjs",
+          "tests/fixtures/golden/jcs-v4-vectors.json"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
       "completion_assertions": [
@@ -595,7 +626,7 @@
       "wave": "W0",
       "mode": "AUTO",
       "depends_on": [
-        "W0-01"
+        "W0-02"
       ],
       "audit_ids": [
         "P0-08",
@@ -613,14 +644,52 @@
       "terminal_states": [],
       "argv": [
         [
+          "codegraph",
+          "--version"
+        ],
+        [
+          "codegraph",
+          "index",
+          "--force",
+          "."
+        ],
+        [
+          "codegraph",
+          "status",
+          "--json",
+          "."
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "tests/unit/test_authority_observed_graph.py",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W0-03"
+        ],
+        [
           "{python}",
           "-B",
           "tools/remediate_v4.py",
-          "verify-wave",
-          "W0-03"
+          "authority",
+          "--record",
+          "--policy",
+          "docs/architecture/module-authority.json",
+          "--codegraph",
+          ".codegraph/codegraph.db",
+          "--state-root",
+          "{state_root}"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "completion_assertions": [
@@ -719,7 +788,7 @@
       "wave": "W0",
       "mode": "MIXED",
       "depends_on": [
-        "W0-02"
+        "W0-04"
       ],
       "audit_ids": [
         "P0-04",
