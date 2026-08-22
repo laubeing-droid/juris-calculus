@@ -296,12 +296,19 @@
         "tools/remediate_v4.py",
         "tools/remediation/**",
         "tests/unit/test_remediation_audit_map.py",
-        "tests/unit/test_remediation_file_map.py"
+        "tests/unit/test_remediation_file_map.py",
+        "tools/build_file_disposition.py",
+        "tests/unit/test_remediation_file_map_full.py"
       ],
       "rollback": "do not promote; fix in dedicated worktree",
       "commit_type": "build",
       "terminal_states": [],
       "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/build_file_disposition.py"
+        ],
         [
           "{python}",
           "-B",
@@ -321,9 +328,23 @@
           "--require-semantic-targets",
           "--graph-receipt-task",
           "B00-CG"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "tests/unit/test_remediation_file_map_full.py",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/B01"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0,
         0
       ],

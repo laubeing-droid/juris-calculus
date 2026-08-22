@@ -85,7 +85,7 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "configs/packs/cn-official/release": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "HISTORY_ONLY"},
     "configs/packs/cn-official/staging": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "HISTORY_ONLY"},
     "configs/packs/cn-official/manifest.yaml": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "HISTORY_ONLY"},
-    "configs/perf_patterns.yaml": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "configs/perf_patterns.yaml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "schemas/jc-v3.schema.json": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "schemas/w1b": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "schemas/jc-v4.schema.json": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
@@ -94,7 +94,7 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "pyproject.toml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/build_provenance.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/supply_chain_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "tools/wheel_gate.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tools/wheel_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/build_rule_pack_manifests.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tools/perf_baseline.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
     "tools/run_trirail_matrix.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
@@ -104,9 +104,9 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tools/remediation": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "requirements/core.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "requirements/dev.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "requirements/documents.lock": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "requirements/pipeline.lock": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "requirements/render.lock": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "requirements/documents.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/pipeline.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/render.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     ".github/workflows/ci.yml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     ".github/workflows/auto-release.yml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "remediation/v4": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "BUILD_ONLY"},
@@ -116,12 +116,12 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tests/unit/test_adversarial.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/unit/test_trirail_collision.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/unit/test_trirail_runtime.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_cli_subprocess.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_cli_evaluate_subprocess.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tests/unit/test_cli_subprocess.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_cli_evaluate_subprocess.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/unit/test_cli_contract.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/unit/test_plugin_registry.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/unit/test_release_engineering.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_rule_pack_manifest.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tests/unit/test_rule_pack_manifest.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/unit/test_rule_pack_manifest_builder.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
 }
 
@@ -164,6 +164,23 @@ CLOSURE_TASK: dict[str, str] = {
     "DOC_UPDATE": "W6-08",
     "BUILD_ONLY": "Z02",
     "HISTORY_ONLY": "Z02",
+    "TEST_ORACLE": "W5-01",
+}
+
+SPECIAL_CLOSURE_TASKS = {
+    "configs/perf_patterns.yaml": "W5-02C",
+    "tools/wheel_gate.py": "W6-01",
+    "requirements/core.lock": "W6-03",
+    "requirements/dev.lock": "W6-03",
+    "requirements/documents.lock": "W6-03",
+    "requirements/pipeline.lock": "W6-03",
+    "requirements/render.lock": "W6-03",
+    "compiler_core/contracts_v4.py": "W1-02",
+}
+
+MIGRATION_TARGETS = {
+    "addons/workbuddy_mcp.py": ("compiler_core/mcp.py", "tests/unit/test_mcp_stdio_protocol.py"),
+    "compiler_core/contracts_v4.py": ("compiler_core/contracts.py", "tests/contract/test_contracts.py"),
 }
 
 
@@ -277,7 +294,7 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         "disposition": disp,
         "terminal_state": terminal,
         "audit_role": audit_role,
-        "closure_task": CLOSURE_TASK.get(terminal, "W5-CUTOVER"),
+        "closure_task": SPECIAL_CLOSURE_TASKS.get(rel, CLOSURE_TASK.get(terminal, "W5-CUTOVER")),
     }
     if rel in CN_FINGERPRINTS:
         entry["frozen_fingerprint"] = CN_FINGERPRINTS[rel]
@@ -300,8 +317,12 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
             except Exception:
                 pass
     if terminal == "MIGRATED_GREEN":
-        entry["target_module"] = f"compiler_core/_v4_target_for_{Path(rel).stem}"
-        entry["target_test"] = f"tests/contract/test_{Path(rel).stem}_v4_migration.py"
+        target = MIGRATION_TARGETS.get(rel)
+        if target is None:
+            raise ValueError(f"MIGRATED_GREEN path lacks a real migration target: {rel}")
+        entry["target_module"], entry["target_test"] = target
+    if rel == "compiler_core/contracts_v4.py":
+        entry["target_module"], entry["target_test"] = MIGRATION_TARGETS[rel]
     if terminal == "MOVE_IN_REPO_SOURCE_TOOL":
         entry["namespace"] = "source_tool"
     if terminal == "MOVE_IN_REPO_EXPERIMENT":

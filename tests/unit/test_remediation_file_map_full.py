@@ -158,6 +158,22 @@ def test_v3_only_authority_paths_not_keep_rewrite() -> None:
         )
 
 
+def test_known_b01_semantic_corrections_are_bound() -> None:
+    entries = _disposition_entries()
+    assert entries["configs/perf_patterns.yaml"]["disposition"] == "KEEP_REWRITE"
+    assert entries["configs/perf_patterns.yaml"]["closure_task"] == "W5-02C"
+    assert entries["tools/wheel_gate.py"]["disposition"] == "KEEP_REWRITE"
+    assert entries["tools/wheel_gate.py"]["closure_task"] == "W6-01"
+    assert entries["tests/unit/test_rule_pack_manifest.py"]["disposition"] == "TEST_ORACLE"
+    assert entries["compiler_core/contracts_v4.py"]["target_module"] == "compiler_core/contracts.py"
+    assert entries["compiler_core/contracts_v4.py"]["target_test"] == "tests/contract/test_contracts.py"
+    assert not [entry["path"] for entry in entries.values() if "_v4_target_for_" in str(entry.get("target_module"))]
+    assert all(
+        entry["closure_task"] == "W6-03"
+        for path, entry in entries.items() if path.startswith("requirements/")
+    )
+
+
 # ---------------------------------------------------------------------------
 # CLI surface
 # ---------------------------------------------------------------------------

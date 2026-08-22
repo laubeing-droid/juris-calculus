@@ -401,7 +401,7 @@ def _git_tracked_files() -> list[str]:
 
 
 def cmd_audit_map(args: argparse.Namespace) -> int:
-    """施工方案 §7 B01: 验证 44 项 issue map 完整。"""
+    """Validate issue registration without claiming closure."""
     if not ISSUE_MAP.is_file():
         print(f"issue-map missing: {ISSUE_MAP}", file=sys.stderr)
         return EXIT_GATE_FAIL
@@ -418,7 +418,13 @@ def cmd_audit_map(args: argparse.Namespace) -> int:
     if bad:
         print(f"issue-map severity mismatch: {bad}", file=sys.stderr)
         return EXIT_GATE_FAIL
-    print(f"audit-map OK: {len(issues)} issues, severities={by_sev}")
+    valid_statuses = {"registered", "in_progress", "verified", "closed"}
+    invalid_statuses = {entry["id"]: entry.get("status") for entry in issues if entry.get("status") not in valid_statuses}
+    if invalid_statuses:
+        print(f"issue-map invalid statuses: {invalid_statuses}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    closed = sum(entry["status"] == "closed" for entry in issues)
+    print(f"audit-map OK: {len(issues)} registered issues, closed={closed}, severities={by_sev}")
     return EXIT_OK
 
 
@@ -439,6 +445,13 @@ def cmd_file_map(args: argparse.Namespace) -> int:
         return EXIT_GATE_FAIL
 
     by_path = {p["path"]: p for p in paths}
+    tracked = set(_git_tracked_files())
+    if set(by_path) != tracked:
+        print(
+            f"file-disposition coverage mismatch missing={sorted(tracked-set(by_path))[:10]} "
+            f"extra={sorted(set(by_path)-tracked)[:10]}", file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
     cn_rules = by_path.get("configs/zh_CN/rules.yaml")
     if not cn_rules:
         print("configs/zh_CN/rules.yaml missing from file-disposition", file=sys.stderr)
@@ -468,6 +481,24 @@ def cmd_file_map(args: argparse.Namespace) -> int:
     for path in forbidden_keep:
         if by_path.get(path, {}).get("disposition") == "KEEP_REWRITE":
             print(f"{path} must not be KEEP_REWRITE in V4-only topology", file=sys.stderr)
+            return EXIT_GATE_FAIL
+
+    required_corrections = {
+        "configs/perf_patterns.yaml": ("KEEP_REWRITE", "W5-02C"),
+        "tools/wheel_gate.py": ("KEEP_REWRITE", "W6-01"),
+        "tests/unit/test_rule_pack_manifest.py": ("TEST_ORACLE", "W5-01"),
+    }
+    for path, expected_pair in required_corrections.items():
+        actual = (by_path.get(path, {}).get("disposition"), by_path.get(path, {}).get("closure_task"))
+        if actual != expected_pair:
+            print(f"{path} semantic disposition mismatch: {actual} != {expected_pair}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+    for path, entry in by_path.items():
+        if path.startswith("requirements/") and entry.get("closure_task") != "W6-03":
+            print(f"{path} must belong to dependency governance W6-03", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        if "_v4_target_for_" in str(entry.get("target_module", "")):
+            print(f"placeholder migration target forbidden: {path}", file=sys.stderr)
             return EXIT_GATE_FAIL
 
     print(f"file-map OK: {len(paths)} disposition entries; CN legacy fingerprint bound")
