@@ -364,6 +364,70 @@ def cmd_asset_map(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_spec_intake(args: argparse.Namespace) -> int:
+    """Fetch and verify the pinned public companion spec without promoting it."""
+    state_root = Path(args.state_root).resolve()
+    repo = state_root / "inputs" / "legal-math-modeling"
+    if not (repo / ".git").is_dir():
+        repo.parent.mkdir(parents=True, exist_ok=True)
+        cp = subprocess.run(["git", "clone", "--filter=blob:none", "--no-checkout", args.remote, str(repo)], capture_output=True, text=True, check=False)
+        if cp.returncode != 0:
+            print(cp.stderr, file=sys.stderr)
+            return EXIT_WAITING_EXTERNAL
+    if subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{args.commit}^{{commit}}"], capture_output=True).returncode != 0:
+        cp = subprocess.run(["git", "-C", str(repo), "fetch", "origin", args.commit], capture_output=True, text=True, check=False)
+        if cp.returncode != 0:
+            print(cp.stderr, file=sys.stderr)
+            return EXIT_WAITING_EXTERNAL
+    checkout = subprocess.run(["git", "-C", str(repo), "checkout", "--detach", args.commit], capture_output=True, text=True, check=False)
+    if checkout.returncode != 0:
+        print(checkout.stderr, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    required = ["LICENSE", "theory/spec/reference_semantics.py", "theory/spec/certificate_schema.py"]
+    if any(not (repo / path).is_file() for path in required):
+        print("companion spec missing required files", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    evidence_dir = state_root / "evidence" / "B02"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    report_path = evidence_dir / "differential.json"
+    harness = subprocess.run(
+        [sys.executable, "-B", "-m", "compiler_core.spec_shadow_harness",
+         "--spec-root", str(repo), "--output", str(report_path)],
+        cwd=str(ROOT), capture_output=True, text=True, check=False,
+        env={**os.environ, "LEGAL_MATH_MODELING_ROOT": str(repo)},
+    )
+    if harness.returncode != 0:
+        print(harness.stdout + harness.stderr, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    families: dict[str, list[dict[str, Any]]] = {}
+    for fixture in report["fixtures"]:
+        families.setdefault(fixture["report"]["fixture_id"], []).append(fixture)
+    intake = {
+        "schema_version": "jc/remediation-v4-spec-intake/1.0", "remote": args.remote,
+        "commit": _run_git_at(repo, "rev-parse", "HEAD"), "tree": _run_git_at(repo, "rev-parse", "HEAD^{tree}"),
+        "license": {"declared": "CC BY 4.0", "sha256": sha256_hex((repo / "LICENSE").read_bytes())},
+        "required_files": {path: sha256_hex((repo / path).read_bytes()) for path in required[1:]},
+        "fixture_family_digests": {name: _digest_object(items) for name, items in sorted(families.items())},
+        "differential_report_sha256": sha256_hex(report_path.read_bytes()),
+        "summary": report["summary"],
+    }
+    intake["digest"] = _digest_object(intake)
+    _atomic_json(evidence_dir / "intake.json", intake)
+    if len(families) != 5 or report["summary"]["diverged_count"] != 0:
+        print(f"spec differential incomplete: families={len(families)} summary={report['summary']}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"spec-intake OK: commit={intake['commit']} tree={intake['tree']} license=CC BY 4.0 families=5")
+    return EXIT_OK
+
+
+def _run_git_at(repo: Path, *args: str) -> str:
+    cp = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
+    if cp.returncode != 0:
+        raise RuntimeError(cp.stderr.strip())
+    return cp.stdout.strip()
+
+
 def _codegraph_indexed_files(db: Path) -> list[str]:
     conn = sqlite3.connect(str(db))
     try:
@@ -1473,6 +1537,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--codegraph", default=".codegraph/codegraph.db")
     p.add_argument("--state-root", required=True)
     p.set_defaults(func=cmd_asset_map)
+
+    p = sub.add_parser("spec-intake", help="Fetch and verify pinned companion spec")
+    p.add_argument("--state-root", required=True)
+    p.add_argument("--remote", required=True)
+    p.add_argument("--commit", required=True)
+    p.set_defaults(func=cmd_spec_intake)
 
     p = sub.add_parser("audit-map", help="44 audit issue closure check")
     p.add_argument("--audit", required=False)

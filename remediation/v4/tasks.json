@@ -380,7 +380,7 @@
     {
       "id": "B02",
       "wave": "B02",
-      "mode": "EXTERNAL_GATE",
+      "mode": "AUTO",
       "depends_on": [
         "B01"
       ],
@@ -390,30 +390,59 @@
       "objective": "解析 pinned legal-math-modeling commit 到 $JC_REMEDIATION_STATE_ROOT/inputs，登记五项 differential fixture",
       "allowed_paths": [
         "$JC_REMEDIATION_STATE_ROOT/inputs/**",
-        "$JC_REMEDIATION_STATE_ROOT/requests/B02*",
-        "remediation/v4/tasks.json"
+        "$JC_REMEDIATION_STATE_ROOT/evidence/B02/**",
+        "tools/remediate_v4.py",
+        "compiler_core/spec_shadow_harness.py",
+        "tests/unit/test_spec_shadow_harness.py"
       ],
-      "rollback": "do not promote; cannot proceed without external spec",
       "commit_type": "external",
       "terminal_states": [],
-      "approval": {
-        "gate_id": "B02-APPROVAL",
-        "subject": "解析 pinned legal-math-modeling commit 到 $JC_REMEDIATION_STATE_ROOT/inputs，登记五项 differential fixture",
-        "subject_paths": [
-          "$JC_REMEDIATION_STATE_ROOT/inputs/**",
-          "$JC_REMEDIATION_STATE_ROOT/requests/B02*",
-          "remediation/v4/tasks.json"
-        ],
-        "required_roles": [
-          "external_provider"
-        ],
-        "allowed_scopes": [
-          "B02"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "EXTERNAL_ARTIFACT"
-      }
+      "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "spec-intake",
+          "--state-root",
+          "{state_root}",
+          "--remote",
+          "https://github.com/laubeing-droid/legal-math-modeling.git",
+          "--commit",
+          "a3a015941f75091c87d57aa956e712f1546dd7d4"
+        ]
+      ],
+      "expected_exit_codes": [
+        0
+      ],
+      "completion_assertions": [
+        {
+          "id": "all-commands-passed",
+          "kind": "all_commands_passed"
+        }
+      ],
+      "rollback": "retain fetched read-only input and evidence; fix verifier; rerun",
+      "required_receipt_fields": [
+        "schema_version",
+        "task_digest",
+        "run_id",
+        "task_id",
+        "attempt",
+        "status",
+        "input_receipt_digests",
+        "start_commit",
+        "start_tree",
+        "result_commit",
+        "result_tree",
+        "command_results",
+        "changed_paths",
+        "allowlist",
+        "test_reports",
+        "artifact_digests",
+        "completion_assertions",
+        "previous_receipt_digest",
+        "runner_version",
+        "receipt_digest"
+      ]
     },
     {
       "id": "W0-01",
