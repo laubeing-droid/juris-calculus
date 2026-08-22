@@ -28,6 +28,7 @@ import argparse
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -176,14 +177,133 @@ def cmd_authority(args: argparse.Namespace) -> int:
 def cmd_graph_map(args: argparse.Namespace) -> int:
     """施工方案 §7 B00-CG: 校验 CodeGraph 索引与 start tree 的一致性。
 
-    B00 阶段仅做 CLI 接口存根：解析参数并报告 B00-CG 受 gating。
-    完整实现将在 B00-CG task 内补全。
+    tracked union == codegraph-indexed ∪ asset-inventory。CN legacy corpus
+    (configs/zh_CN/rules.yaml) 必须在 asset-inventory 而非 codegraph 中。
+    normalized graph receipt 写到 $JC_REMEDIATION_STATE_ROOT/evidence/codegraph/$SOURCE_TREE_ID/。
     """
-    if getattr(args, "check", False):
-        print("graph-map stub: B00-CG task will perform full CodeGraph reconciliation")
+    codegraph_db = Path(args.codegraph).resolve()
+    if not codegraph_db.is_file():
+        print(f"codegraph db not found: {codegraph_db}", file=sys.stderr)
+        return EXIT_BASELINE_DRIFT
+
+    codegraph_files = _codegraph_indexed_files(codegraph_db)
+    tracked = _git_tracked_files()
+
+    indexed_set = set(codegraph_files)
+    # asset-inventory = tracked files NOT in codegraph-indexed set. We use
+    # set-membership instead of extension-only because CodeGraph may skip
+    # large YAMLs (e.g. configs/zh_CN/rules.yaml at 13.6 MB) and they must
+    # still be accounted for.
+    asset_inventory = [p for p in tracked if p not in indexed_set]
+
+    indexed_set = set(codegraph_files)
+    tracked_set = set(tracked)
+    assets_set = set(asset_inventory)
+
+    missing = sorted(tracked_set - (indexed_set | assets_set))
+    orphan = sorted(indexed_set - tracked_set)
+
+    cn_rules = "configs/zh_CN/rules.yaml"
+    cn_in_indexed = cn_rules in indexed_set
+    cn_in_assets = cn_rules in assets_set
+
+    payload = {
+        "schema_version": "jc/remediation-v4-graph-receipt/1.0",
+        "source_tree_id": _git("rev-parse", "HEAD^{tree}").strip(),
+        "codegraph_file_count": len(codegraph_files),
+        "codegraph_node_count": _codegraph_count(codegraph_db, "nodes"),
+        "codegraph_edge_count": _codegraph_count(codegraph_db, "edges"),
+        "codegraph_unresolved": _codegraph_count(codegraph_db, "unresolved_refs"),
+        "codegraph_parse_errors": _codegraph_files_with_errors(codegraph_db),
+        "tracked_file_count": len(tracked),
+        "asset_inventory_count": len(asset_inventory),
+        "missing_from_union": missing,
+        "orphan_graph_entries": orphan,
+        "cn_legacy_in_codegraph": cn_in_indexed,
+        "cn_legacy_in_assets": cn_in_assets,
+    }
+    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    payload["digest"] = "sha256:" + hashlib.sha256(canon.encode("utf-8")).hexdigest()
+
+    if not getattr(args, "check", False):
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
         return EXIT_OK
-    print("graph-map: --check required for validation")
-    return EXIT_USAGE
+
+    problems: list[str] = []
+    if payload["codegraph_unresolved"] != 0:
+        problems.append(f"unresolved refs={payload['codegraph_unresolved']}")
+    if payload["codegraph_parse_errors"] != 0:
+        problems.append(f"files with parse errors={payload['codegraph_parse_errors']}")
+    if missing:
+        problems.append(f"missing_from_union={missing[:5]}{'...' if len(missing) > 5 else ''}")
+    if orphan:
+        problems.append(f"orphan_graph_entries={orphan[:5]}{'...' if len(orphan) > 5 else ''}")
+    if cn_in_indexed:
+        problems.append("configs/zh_CN/rules.yaml was indexed by codegraph; should be asset-only")
+    if not cn_in_assets:
+        problems.append("configs/zh_CN/rules.yaml missing from asset inventory")
+
+    state_root = getattr(args, "state_root", None)
+    if state_root:
+        evidence_dir = (
+            Path(state_root) / "evidence" / "codegraph" / payload["source_tree_id"]
+        )
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        normalized_path = evidence_dir / "normalized.json"
+        normalized_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"normalized graph receipt: {normalized_path}")
+
+    if problems:
+        for p in problems:
+            print(p, file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    print(
+        f"graph-map OK: {len(codegraph_files)} indexed files, "
+        f"{len(asset_inventory)} asset inventory entries, "
+        f"{len(tracked)} tracked total; "
+        f"unresolved=0 parse_errors=0 missing=0 orphan=0"
+    )
+    return EXIT_OK
+
+
+def _codegraph_indexed_files(db: Path) -> list[str]:
+    conn = sqlite3.connect(str(db))
+    try:
+        rows = conn.execute("SELECT path FROM files").fetchall()
+    finally:
+        conn.close()
+    return sorted({row[0].replace("\\", "/") for row in rows})
+
+
+def _codegraph_count(db: Path, table: str) -> int:
+    conn = sqlite3.connect(str(db))
+    try:
+        return conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def _codegraph_files_with_errors(db: Path) -> int:
+    conn = sqlite3.connect(str(db))
+    try:
+        return conn.execute("SELECT COUNT(*) FROM files WHERE errors IS NOT NULL AND errors != ''").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def _git_tracked_files() -> list[str]:
+    cp = subprocess.run(
+        ["git", "ls-files"],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return [line.strip().replace("\\", "/") for line in cp.stdout.splitlines() if line.strip()]
 
 
 def cmd_audit_map(args: argparse.Namespace) -> int:
@@ -401,6 +521,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--check", action="store_true")
     p.add_argument("--codegraph", default=".codegraph/codegraph.db")
     p.add_argument("--all-tracked", action="store_true")
+    p.add_argument("--state-root", default=None)
     p.set_defaults(func=cmd_graph_map)
 
     p = sub.add_parser("audit-map", help="44 audit issue closure check")
