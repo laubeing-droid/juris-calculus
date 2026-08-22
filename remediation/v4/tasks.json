@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6",
+    "plan_sha256": "95eb653e12fca2d404c2a8ea67777dfcaeacb3e3779febce41c3265a45dac9fb",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -1704,9 +1704,17 @@
       ],
       "objective": "新增 source_service.py；SourceSnapshot/time/SourcePath 强制单 root/单 terminal/全节点可达/无环/edge-order-independent",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/source_service.py",
+        "docs/architecture/module-authority.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
         "tests/contract/test_source_service.py",
-        "tests/security/test_source_service_attacks.py"
+        "tests/required-v4-tests.json",
+        "tests/security/test_source_service_attacks.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1716,9 +1724,30 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W2-01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W2-01",
+          "tests/contract/test_source_service.py",
+          "tests/security/test_source_service_attacks.py",
+          "tests/contract/test_required_test_manifest.py",
+          "tests/security/test_artifact_resolver.py::test_caller_claimed_pass_cannot_create_trust",
+          "--junitxml",
+          "{state_root}/evidence/W2-01/source-service-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

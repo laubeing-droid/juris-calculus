@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.11.0"
+RUNNER_VERSION = "0.12.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -69,6 +69,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.9.0": 5,
     "0.10.0": 5,
     "0.11.0": 5,
+    "0.12.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -110,6 +111,22 @@ W1_05_TEST_CASE_IDS_DIGEST = (
 )
 W1_06_TEST_CASE_IDS_DIGEST = (
     "sha256:6ce649d36b96fb6dff1009e39e45d75d237d1562ceab4c84e838c57a6060c1cb"
+)
+W2_01_TEST_CASE_IDS_DIGEST = (
+    "sha256:c2dccec7201a5162bb79130199e16120c223ae0fcbf55765b0ef9daf0bc7ec6b"
+)
+W2_01_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/source_service.py",
+    "docs/architecture/module-authority.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/contract/test_source_service.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_source_service_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
 )
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
 W1_03_MANIFEST_SHA256 = "5238ec7b357efa9354e7f6a8e5364500185ba5d53c61b4df3f3ed0757008319d"
@@ -4411,7 +4428,7 @@ def cmd_w1_02_contract_gate() -> int:
             fail(f"W1-02 frozen input digest drifted: {path.relative_to(ROOT)}")
 
     baseline_commit = "dfdfab110a7ba34bbb94def6e52945602ab0b0ec"
-    plan_authority_hash = "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6"
+    plan_authority_hash = "95eb653e12fca2d404c2a8ea67777dfcaeacb3e3779febce41c3265a45dac9fb"
     audit_authority_hash = "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
     authority_source_hashes = {
         ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md":
@@ -7698,12 +7715,12 @@ def _cmd_w1_06_attack_gate() -> int:
             "test_python_schema_mcp_acceptance_sets_match",
         ),
         "V4-P1-03-TIME-ORDER": (
-            "P1-03", "W2-01", "RED_AT_TASK",
+            "P1-03", "W2-01", "ACTIVE_REQUIRED",
             "tests/contract/test_source_service.py::"
             "test_fractional_instants_compare_chronologically",
         ),
         "V4-P1-04-DISCONNECTED-SOURCE-PATH": (
-            "P1-04", "W2-01", "RED_AT_TASK",
+            "P1-04", "W2-01", "ACTIVE_REQUIRED",
             "tests/security/test_source_service_attacks.py::"
             "test_disconnected_source_path_cannot_pass",
         ),
@@ -7837,8 +7854,8 @@ def _cmd_w1_06_attack_gate() -> int:
         return EXIT_GATE_FAIL
     print(
         "W1-06 contract/trust attack gate OK: W1-01..05 machine gates green; "
-        "3 legacy-positive replacements active; P1-03/P1-04/full-P1-15 remain "
-        "future RED at their owning tasks"
+        "3 legacy-positive replacements active; P1-03/P1-04 active at W2-01; "
+        "full P1-15 remains future RED at W5-CUTOVER"
     )
     return EXIT_OK
 
@@ -7851,6 +7868,233 @@ def cmd_w1_06_attack_gate() -> int:
     except Exception as exc:
         print(
             f"W1-06 attack gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
+def _cmd_w2_01_source_gate() -> int:
+    """Verify W2-01 source code, governance bindings, and active attack selectors."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = list(W2_01_CHANGED_PATHS)
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W2-01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W2-01",
+            "tests/contract/test_source_service.py",
+            "tests/security/test_source_service_attacks.py",
+            "tests/contract/test_required_test_manifest.py",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+            "--junitxml", "{state_root}/evidence/W2-01/source-service-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs/architecture/module-authority.json").read_text(encoding="utf-8")
+        )
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w2_01_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        source_text = (ROOT / "compiler_core/source_service.py").read_text(encoding="utf-8")
+        source_tree = ast.parse(source_text)
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError) as exc:
+        print(
+            f"W2-01 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W2-01"), None)
+    if not isinstance(task, dict):
+        fail("W2-01 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W1-06"]:
+            fail("W2-01 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-04", "P1-03", "P1-04"]:
+            fail("W2-01 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W2-01 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W2-01 argv or expected exit codes drifted")
+
+    formal_plan = ROOT / expected_allowed_paths[0]
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W2-01 task, disposition, and generator are not bound to the formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W2-01 file disposition is not reproducible from its generator")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-04-CALLER-TRUST": (
+            "P0-04", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+        ),
+        "V4-P1-03-TIME-ORDER": (
+            "P1-03", "W2-01", "ACTIVE_REQUIRED",
+            "tests/contract/test_source_service.py::"
+            "test_fractional_instants_compare_chronologically",
+        ),
+        "V4-P1-04-DISCONNECTED-SOURCE-PATH": (
+            "P1-04", "W2-01", "ACTIVE_REQUIRED",
+            "tests/security/test_source_service_attacks.py::"
+            "test_disconnected_source_path_cannot_pass",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or not _selector_is_declared(ROOT, expected[3]):
+            fail(f"W2-01 required mutation is not active and declared: {test_id}")
+
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
+        "P1-03": ["W0-02", "W2-01"],
+        "P1-04": ["W2-01"],
+    }
+    for audit_id, closures in expected_closures.items():
+        issue = issue_by_id.get(audit_id, {})
+        if (issue.get("status"), issue.get("closure_tasks")) != ("registered", closures):
+            fail(f"W2-01 issue lifecycle drifted: {audit_id}")
+
+    rules = {
+        item.get("path"): item
+        for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict)
+    }
+    if rules.get("compiler_core/source_service.py", {}).get("class") != "FORMAL_CORE":
+        fail("W2-01 source service is not FORMAL_CORE")
+    if rules.get("compiler_core/source_service_v2.py", {}).get("class") != "REMOVE":
+        fail("W2-01 legacy source service is not retained on its REMOVE branch")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/source_service.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "tests/contract/test_source_service.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/security/test_source_service_attacks.py": ("TEST_ORACLE", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W2-01 file disposition drifted: {path}")
+
+    imports = {
+        alias.name
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.ImportFrom) and isinstance(node.module, str)
+    }
+    forbidden_imports = {
+        name for name in imports
+        if name == "compiler_core.source_service_v2"
+        or name.startswith(("pathlib", "socket", "urllib", "requests", "httpx"))
+        or "private" in name.casefold()
+    }
+    forbidden_calls = {
+        node.func.id
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        and node.func.id in {"open", "eval", "exec"}
+    }
+    if forbidden_imports or forbidden_calls or "GateOutcome" in source_text:
+        fail("W2-01 source service acquired legacy, filesystem, network, or caller-PASS authority")
+    service_class = next(
+        (node for node in source_tree.body if isinstance(node, ast.ClassDef) and node.name == "SourceServiceV4"),
+        None,
+    )
+    public_methods = {
+        node.name for node in service_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_")
+    } if service_class is not None else set()
+    if public_methods != {"admit_snapshot", "resolve_applicable"}:
+        fail("W2-01 SourceServiceV4 public API drifted")
+    required_symbols = {
+        "ArtifactResolverV4", "TrustVerifierV4", "SignatureEnvelopeV4",
+        "normalize_source_bytes", "source_authenticity_payload_digest",
+        "SOURCE_STRUCTURE_MAP_KIND", "SOURCE_PROVENANCE_KIND",
+        "SOURCE_RETRIEVAL_RECEIPT_KIND", "source_version_receipt_bytes",
+        "SOURCE_PATH_DISCONNECTED", "SOURCE_PATH_CYCLE",
+        "SOURCE_VERSION_IDENTITY", "SOURCE_VERSION_RECEIPT_UNSIGNED",
+    }
+    if any(symbol not in source_text for symbol in required_symbols):
+        fail("W2-01 source implementation lacks a required resolved-byte or graph invariant")
+
+    for relative in (
+        "tests/contract/test_source_service.py",
+        "tests/security/test_source_service_attacks.py",
+    ):
+        test_source = (ROOT / relative).read_text(encoding="utf-8-sig")
+        controls = _forbidden_test_controls(test_source)
+        if controls:
+            fail(f"W2-01 test uses forbidden controls: {relative} {controls}")
+    contract_test = (ROOT / "tests/contract/test_source_service.py").read_text(encoding="utf-8")
+    attack_test = (ROOT / "tests/security/test_source_service_attacks.py").read_text(encoding="utf-8")
+    if "theory_absorption" not in contract_test or "test_fractional_instants_compare_chronologically" not in contract_test:
+        fail("W2-01 contract tests do not consume the frozen theory fixture and required selector")
+    if "test_disconnected_source_path_cannot_pass" not in attack_test:
+        fail("W2-01 disconnected-path selector is missing")
+
+    if problems:
+        for problem in problems:
+            print(f"W2-01 source gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W2-01 source gate OK: resolved canonical snapshot/bundle bytes; real normalization "
+        "and scoped signatures; UTC half-open time; connected acyclic edge-order-independent path"
+    )
+    return EXIT_OK
+
+
+def cmd_w2_01_source_gate() -> int:
+    try:
+        return _cmd_w2_01_source_gate()
+    except Exception as exc:
+        print(
+            f"W2-01 source gate rejected malformed input: {type(exc).__name__}: {exc}",
             file=sys.stderr,
         )
         return EXIT_GATE_FAIL
@@ -7879,6 +8123,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_05_trust_policy_gate()
     if args.wave == "W1-06":
         return cmd_w1_06_attack_gate()
+    if args.wave == "W2-01":
+        return cmd_w2_01_source_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -9087,6 +9333,42 @@ def _w1_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w2_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W2-01 source/JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W2-01 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": 31,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": 31,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 31,
+        "junit_unique_cases": 31,
+        "junit_case_ids_digest": W2_01_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W2-01 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W2-01 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -9476,6 +9758,36 @@ def _execute_auto_task(
                 "521 contract/property/security pytest items plus the Node 24/22 "
                 "JCS oracle are bound with zero bypass"
                 if not report_problems else "; ".join(report_problems)
+            ),
+        })
+    if task["id"] == "W2-01":
+        report_problems = _w2_01_test_report_problems(test_reports)
+        expected_paths = set(W2_01_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W2_01_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w2-01-exact-source-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "31 source/graph/governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-01-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 exact W2-01 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

@@ -575,7 +575,7 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W2-01　SourceSnapshot、time 和 SourcePath
 
 - **Depends / audit**：`W1-06 / P0-04, P1-03, P1-04`。
-- **Paths**：新增 `compiler_core/source_service.py`；迁移 `source_service_v2.py` 的有效逻辑；source tests。
+- **Paths**：仅以下 11 个 exact paths：本方案、`compiler_core/source_service.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_source_service.py`、`tests/required-v4-tests.json`、`tests/security/test_source_service_attacks.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；不修改 V4 frozen contracts、resolver、trust 或旧 V2 caller-PASS 测试。
 - **动作**：真实 raw/normalized bytes digest、authority、jurisdiction、issuer、promulgation/effective/expiry、locator、license/provenance、version graph；时间先解析 UTC instant；path 强制单 root、单 terminal、全节点可达、无环、edge order independent。
 - **Gate**：fractional/offset boundary、invalid date、disconnected/multi-root/multi-terminal/orphan/permutation、wrong source bytes/signature 全部负例；合法 version chain 正例。
 - **Commit**：`feat(source): verify signed bytes, time, locator, and connected paths`。

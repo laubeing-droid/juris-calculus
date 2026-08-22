@@ -328,7 +328,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_source_service.py::test_fractional_instants_compare_chronologically",
       "owner_task": "W2-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Compare canonical instants as raw strings.",
       "red_failure": "Fractional-second ordering mutations must reverse the test outcome."
     },
@@ -338,7 +338,7 @@
       "suite": "security",
       "selector": "tests/security/test_source_service_attacks.py::test_disconnected_source_path_cannot_pass",
       "owner_task": "W2-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Provide a hash-valid but disconnected source graph.",
       "red_failure": "A disconnected authority path must fail."
     },

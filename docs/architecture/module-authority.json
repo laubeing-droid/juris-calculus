@@ -143,6 +143,7 @@
     {"path": "compiler_core/smt_sidecar.py", "class": "CANDIDATE_ASSET", "rationale": "Research backend candidate without certified receipt contract."},
     {"path": "compiler_core/source_anchor.py", "class": "REMOVE", "rationale": "Migrate locator invariants to source_service.py."},
     {"path": "compiler_core/source_manifest.py", "class": "REMOVE", "rationale": "Migrate source/version evidence to the V4 source service."},
+    {"path": "compiler_core/source_service.py", "class": "FORMAL_CORE", "rationale": "Resolved-byte source authenticity, temporal applicability, and connected version-path authority."},
     {"path": "compiler_core/source_service_v2.py", "class": "REMOVE", "rationale": "Migrate proven invariants to the unversioned source_service.py."},
     {"path": "compiler_core/spec_shadow_harness.py", "class": "TEST_ONLY", "rationale": "Pinned companion-spec differential oracle only."},
     {"path": "compiler_core/step_verifier.py", "class": "CANDIDATE_ASSET", "rationale": "Research verifier candidate; not production proof authority."},

@@ -30,7 +30,7 @@ CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "artifact_store", "audit", "audit_bundle",
         "canonical_serialization", "cli", "client", "contracts",
-        "mcp", "rendering", "resources", "rule_packs", "trust", "version",
+        "mcp", "rendering", "resources", "rule_packs", "source_service", "trust", "version",
     ],
     "MERGE_DELETE": [
         "argumentation", "argumentation_v2", "backend_router_v1",
@@ -379,7 +379,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6",
+        "plan_sha256": "95eb653e12fca2d404c2a8ea67777dfcaeacb3e3779febce41c3265a45dac9fb",
         "count": len(entries),
         "paths": entries,
     }
