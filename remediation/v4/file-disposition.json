@@ -1,12 +1,1192 @@
 {
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
+  "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
+  "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
+  "count": 306,
   "paths": [
+    {
+      "path": ".gitattributes",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "other-assets",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": ".github/workflows/auto-release.yml",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": ".gitignore",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "other-assets",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260815_juris-calculus理论成果全量吸收施工方案.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260819_juris-calculus_V4单主链全量切换与生产投产施工方案.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260819_juris-calculus_V4单主链生产投产全量代码审计.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "AGENTS.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "CLAUDE.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "HANDOFF.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "LICENSE",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "other-assets",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "README.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "addons/__init__.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/cn/__init__.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/cn/adapter.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/cn/modal_mapping.yaml",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/federation/__init__.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/hk/__init__.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/hk/adapter.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/us/__init__.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/us/adapter.py",
+      "disposition": "MOVE_IN_REPO_EXPERIMENT",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "addons/workbuddy_mcp.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "target_module": "compiler_core/_v4_target_for_workbuddy_mcp",
+      "target_test": "tests/contract/test_workbuddy_mcp_v4_migration.py"
+    },
+    {
+      "path": "compiler_core/__init__.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/adapter_base.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/adjudication_draft.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/admission.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/analysis.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/application.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/arbitration_reasoning.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/argumentation.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/argumentation_v2.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/audit.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/audit_bundle.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/backend_router_v1.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/banach_verifier.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/breakthrough_candidates.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/breakthrough_verification.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/burden_of_proof.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/canonical_serialization.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/certificate_checker.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/certificate_v1.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/classifier.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/cli.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/client.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/compat_v3_v4.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "DELETE_CURRENT",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/completion_status.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/compliance_monitoring.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/config_paths.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/conflict_of_laws.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/constraint_validator.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/contracts.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/contracts_v4.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/criminal_complexity.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/criminal_sentencing.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/cross_jurisdiction_compare.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/cross_jurisdiction_router.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/defeasible_priority.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/domain_config.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/evaluator.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/evidence_chain_validator.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/evidence_checklist.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/evidence_evaluation.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/fact_admission_v1.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/fact_trust_envelope.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/g8_evaluator_patch.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/grounded_smt_verifier.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/horn_completeness.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/incremental_grounded.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/independent_grounded_checker.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/invariance_metrics.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/ip_valuation.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/jcs.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/kg_recall.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/legal_ir_v3.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/legal_memory.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/legal_reasoning.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/legal_spec_ivl.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/litigation_engineering.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/output_firewall.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/plugin_registry.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/prc_collision_engine.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/proleg_translator.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "DELETE_CURRENT",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/proof_trace.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/proof_trace_visualizer.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/proof_tree.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/reasoning_boundary.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/rendering.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/resources.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/result_diff.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/result_exporter.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/review_packet.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/rule_governance.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/rule_lookup.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/rule_packs.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "compiler_core/rule_platform_cn.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/rule_router.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/smt_sidecar.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/source_anchor.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/source_manifest.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/source_service_v2.py",
+      "disposition": "MERGE_DELETE",
+      "terminal_state": "MERGE_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/spec_shadow_harness.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/step_verifier.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/stratified_evaluator.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/taint.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/training.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/transformer.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/trust_labels.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/type_checker.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/types.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/universal_grounded_smt.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "production-code",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/validity_state_machine.py",
+      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/version.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "production-code",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "configs/L0_overrides_cn.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/L0_overrides_hk.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/__init__.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/core_ontology.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/en_US/L0_overrides_us.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/en_US/US_Adapter.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/en_US/rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/blocking_rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/extended_rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/provenance.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/term_L0_mappings.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/hk/trilingual_alignment.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/packs/cn-legacy-corpus/manifest.yaml",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-02C",
+      "frozen_fingerprint": {
+        "sha256": "5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7",
+        "git_blob_v3_0_2": "1b29b412ee97563381f5a9b32e8b8efb9f62e90c",
+        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "configs/packs/cn-official/build/README.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "HISTORY_ONLY",
+      "audit_role": "config/rule-pack",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "configs/packs/cn-official/manifest.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "HISTORY_ONLY",
+      "audit_role": "config/rule-pack",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "configs/packs/cn-official/release/README.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "HISTORY_ONLY",
+      "audit_role": "config/rule-pack",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "configs/packs/cn-official/staging/README.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "HISTORY_ONLY",
+      "audit_role": "config/rule-pack",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "configs/packs/hk-legacy-corpus/manifest.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/packs/us-federal-legacy-corpus/manifest.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/packs/us-l0-adapter-legacy-corpus/manifest.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/perf_patterns.yaml",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "fa552ea6596a8be9a7c4351afe19581f4a873b49",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "configs/prc_us_alignment/blocking_rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/prc_us_alignment/meta_constraints.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/prc_us_alignment/spc_rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/prc_us_alignment/term_L0_mappings.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/prc_us_alignment/term_L0_mappings_batch2.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/prc_us_alignment/trirail_matrix_report.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/render_profiles/neutral.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/us/rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/us/term_L0_mappings.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/zh_CN/classifier_rules.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/zh_CN/criminal_complexity.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/zh_CN/domain_config.example.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "frozen_fingerprint": {
+        "_note": "domain config example, not CN legacy corpus"
+      },
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/zh_CN/ontology_map.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "frozen_fingerprint": {
+        "_note": "ontology is candidate source, not CN legacy corpus"
+      },
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "configs/zh_CN/router_moe.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
     {
       "path": "configs/zh_CN/rules.yaml",
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
-      "rationale": "施工方案 §0 第14项：用户授权在 W5 从 current tree 删除，不复制/转换进 cn-official",
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-02C",
       "frozen_fingerprint": {
         "sha256": "032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
         "bytes": 13620766,
@@ -14,70 +1194,1360 @@
         "git_blob_v3_0_2": "8f51fdfd1db3e343812e8f35a321418fa854f4f7",
         "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
       },
-      "consumers_to_disconnect": [
-        "compiler_core/cli.py::rules",
-        "compiler_core/cli.py::rules.lookup",
-        "compiler_core/config_paths.py::rules_path",
-        "compiler_core/prc_collision_engine.py::_run_cn_track",
-        "compiler_core/rule_packs.py::RulePackRegistry.load_corpus_pack",
-        "tools/run_trirail_matrix.py::PRC_CN",
-        "tools/build_rule_pack_manifests.py",
-        "pipeline/fix_single_premise.py",
-        "configs/perf_patterns.yaml",
-        "tests/run_benchmark_zh.py",
-        "tests/stress_test_facts.py",
-        "tests/unit/test_adversarial.py",
-        "tests/unit/test_cli_contract.py",
-        "tests/unit/test_cli_evaluate_subprocess.py",
-        "tests/unit/test_cli_subprocess.py",
-        "tests/unit/test_plugin_registry.py",
-        "tests/unit/test_release_engineering.py",
-        "tests/unit/test_rule_pack_manifest.py",
-        "tests/unit/test_rule_pack_manifest_builder.py",
-        "tests/unit/test_trirail_collision.py",
-        "tests/unit/test_trirail_runtime.py",
-        "tests/unit/test_zh_rules.py",
-        "addons/cn/__init__.py",
-        "addons/cn/adapter.py",
-        "addons/workbuddy_mcp.py"
-      ],
-      "closure_task": "W5-02C",
-      "history_locator_only": true
-    },
-    {
-      "path": "configs/packs/cn-legacy-corpus/manifest.yaml",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "rationale": "施工方案 §7 B01: 与 rules.yaml 同冻结指纹同 current-tree 删除",
-      "frozen_fingerprint": {
-        "sha256": "5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7",
-        "git_blob_v3_0_2": "1b29b412ee97563381f5a9b32e8b8efb9f62e90c",
-        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
-      },
-      "closure_task": "W5-02C",
-      "history_locator_only": true
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "configs/zh_CN/source_manifest.yaml",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
-      "rationale": "源法源清单是 candidate source manifest，非 CN legacy corpus 同伴；B01 单独分类",
-      "closure_task": "B01"
+      "audit_role": "config/rule-pack",
+      "closure_task": "W5-03",
+      "frozen_fingerprint": {
+        "_note": "source manifest is candidate source, not CN legacy corpus"
+      },
+      "namespace": "candidate_asset"
     },
     {
-      "path": "configs/zh_CN/ontology_map.yaml",
+      "path": "docs/README.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/architecture/contract-authority-v4.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/architecture/module-authority-registry.json",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/architecture/module-authority-v4.json",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/architecture/runtime-path-inventory.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/audits/branch-adoption-decision.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/audits/current-head-baseline.json",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/AUDIT_BUNDLE.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/EXTERNAL_PROTOCOL.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/FORMAL_RUNTIME_CONFORMANCE.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/INPUT_AND_SEMANTIC_BOUNDARY.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/RULE_PACKS.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/contracts/rendering-and-profiles.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/guides/CLI.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/guides/MIGRATION_V2_TO_V3.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/guides/README_CN.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/guides/WORKBUDDY.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "docs/operations/governance-training-analysis.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "mcp_manifest.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "mcp_server.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "memory.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "pipeline/__init__.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/adversarial_pipeline.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/experimental/__init__.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/experimental/llm_client.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/extract_concepts.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/fix_single_premise.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/guardian.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/llm_client.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/pipeline.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/prc_us_alignment.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pipeline/schemas.py",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "pyproject.toml",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "remediation/v4/approval.schema.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/file-disposition.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/issue-map.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/receipt.schema.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/task.schema.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/tasks.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "requirements/core.lock",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "requirements/dev.lock",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "requirements/documents.lock",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "0f5608400f4984011a6bbd4bf93654d3cb4ed37b",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "requirements/pipeline.lock",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "4b5fe4d67d6aa95e64f4be521ec189e7bac77ff3",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "requirements/render.lock",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "f7c9608a79bd0f7f35f2649e73e1bff9658af05b",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "schemas/__init__.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "schemas/jc-v3.schema.json",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "8890718afad14634682ee3899e737bcf20a6fbf4",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "schemas/jc-v4.schema.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "schemas/w1b/admission-result.schema.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "schemas/w1b/case-request.schema.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "schemas/w1b/proof-bundle-ref.schema.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "schemas/w1b/rule-admission-request.schema.json",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "Schema/protocol",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tests/fixtures/ci_promotion_candidate.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
-      "rationale": "ontology 不属于 W5-02C 删除范围；B01 单独分类",
-      "closure_task": "B01"
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
     },
     {
-      "path": "configs/zh_CN/domain_config.example.yaml",
+      "path": "tests/fixtures/ci_requests.jsonl",
       "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "DOC_UPDATE",
-      "rationale": "示例文件，不在 W5-02C 删除范围",
-      "closure_task": "B01"
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/golden/jcs-vectors.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/legal_ir_v3_sample.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/p0_regressions/README.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/p0_regressions/p0_regression_matrix.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/rule_migration_sample.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/synthetic_case_index.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/README.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/manifest.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p01_human_research_receipt.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p02_source_snapshot.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p03_argumentation.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p04_solver_routing.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p05_proposal_envelope.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p06_temporal_applicability.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p07_translation.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p08_source_path.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/theory_absorption/p09_fact_admission.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "fixture/generated",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/run_benchmark_zh.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "92eb07be371db5fd753fe646244a76712247c974",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/stress_test_facts.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "34cf9823073e25938f706dd6cb932b476bf3e465",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/__init__.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_adjudication_draft_and_smt.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_adversarial.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "24f7aa30519ef4fe319370a643a50c62500fa0ef",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_advisory_governance.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_application_service.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_argumentation_v2.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_audit_bundle.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_audit_events.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_backend_router_v1.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_canonical_serialization.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_case_admission.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_case_contracts.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_certificate_v1.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_cli_contract.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "734b1118d5115ce4b54e147f6e4f74fc5098ac31",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_cli_evaluate_subprocess.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "12615fc5e30cbfe2a3c6f1db015bfe034725e150",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_cli_subprocess.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "0939d800f01291953ab32e86decf725f43bf8882",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_completion_status.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_conflict_of_laws.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_constraint_validator.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_contracts_v4.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_criminal_complexity.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_cross_process_determinism.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_ddl_modal_gate.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_evaluator.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_fact_admission.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_fact_admission_v1.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_fast_path_interceptor.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_graph_document.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_grounded_g9a.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_independent_checker.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_legal_spec_ivl.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_litigation_certificates.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_llm_proposal_boundary.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_mcp_manifest_dispatch.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_mcp_stdio_protocol.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_module_authority_registry.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_new_modules.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_nonmonotone_regression.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_p1_ir_smt.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_performance_gate.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_phase6_cli.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_plugin_registry.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "87f6dd0d08a933e556f1334d0cd5705e9e6866c8",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_conflict_certificate.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_provenance.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_renderer_firewall.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_result_status.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_review_packet.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_reasoning_boundary_taint_propagation.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_release_engineering.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "89a13ed7619175b45c433149df2deb641755cabc",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_remediation_b00cg_verify.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_remediation_consumer_map.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_remediation_graph_map.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_remediation_runner.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_rendering.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_replay.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_rule_admission.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_rule_pack_manifest.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "a0845c72b1d2c3a33bbf80e0e1a593bc236ecc27",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_rule_pack_manifest_builder.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "01c5d4df48c93e1e9951919f093086c8ca748e48",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_rule_platform_cn.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_source_service_v2.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_spec_shadow_harness.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_supply_chain_gate.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_three_entrypoint_parity.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_training_export.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_trirail_collision.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "f7cba14aa5537c2efb52d03e659dd190c0646ace",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_trirail_runtime.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "17ec7b7cc180ed38f0b4e92ecf9a38839b3c2155",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tests/unit/test_trust_labels.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_us_pack_identity.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_v3_entrypoint_boundary.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_v3_semantic_baseline.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_w1b_contracts.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_w9_admission.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_zh_rules.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "tests",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "a18819b9e92d34d6ac9d6bfeae4d9b64aa42159d",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tools/build_provenance.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/build_rule_pack_manifests.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "36f7ef8c0732a12a78a096ed0c84cabda2c6f764",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "tools/fast_path_interceptor.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tools/perf_baseline.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tools/remediate_v4.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/remediate_v4_verify.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/run_trirail_matrix.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tools/supply_chain_gate.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/wheel_gate.py",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "CI/build/release",
+      "closure_task": "W5-02C",
+      "history_locator_only": true,
+      "frozen_fingerprint": {
+        "git_blob_head": "7e277e59000c23b24567dde4e4aef68c8c459340",
+        "note": "current HEAD blob locator only; not pre-frozen"
+      },
+      "target_module": null,
+      "target_artifact": null
     }
-  ],
-  "_note": "Starter disposition produced by B00. B01 expands this to a full per-path map covering the 292 tracked files. Deletion-relevant paths must satisfy施工方案 §19.3 three-branch terminal states."
+  ]
 }

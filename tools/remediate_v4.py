@@ -297,7 +297,7 @@ def _codegraph_files_with_errors(db: Path) -> int:
 
 def _git_tracked_files() -> list[str]:
     cp = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "-c", "core.quotepath=false", "ls-files"],
         cwd=str(ROOT),
         capture_output=True,
         text=True,
