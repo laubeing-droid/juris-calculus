@@ -38,6 +38,10 @@
 !tests/fixtures/theory_absorption/
 !tests/fixtures/theory_absorption/**
 !docs/architecture/module-authority-v4.json
+# B00 remediation runner bootstrap: remediation/v4/ is the施工期 control plane and must be tracked
+!remediation/
+!remediation/v4/
+!remediation/v4/*.json
 *.key
 *.log
 *.npy

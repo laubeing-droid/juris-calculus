@@ -1,0 +1,639 @@
+{
+  "schema_version": "jc/remediation-v4-task/1.0",
+  "baseline": {
+    "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
+    "tree": "TBD_BY_RUNNER",
+    "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
+    "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
+  },
+  "tasks": [
+    {
+      "id": "B00", "wave": "B00", "mode": "AUTO", "depends_on": [],
+      "audit_ids": ["P0-01","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P0-14","P0-15","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P1-19","P1-20","P2-01","P2-02","P2-03","P2-04","P2-05","P2-06","P2-07","P3-01","P3-02"],
+      "objective": "建立唯一编排 runner + machine DAG + schemas + 测试；red/green gate 全过",
+      "allowed_paths": ["tools/remediate_v4.py", "tools/remediation/**", "remediation/v4/*.json", "tests/unit/test_remediation_runner.py", ".gitignore"],
+      "forbidden_paths": ["requirements/*.lock", "compiler_core/**", "addons/**", "pipeline/**", "configs/**", "schemas/**", "pyproject.toml"],
+      "test_first": true,
+      "red_commands": ["py -3.12 -B -m pytest tests/unit/test_remediation_runner.py -q -p no:cacheprovider --baset \"$JC_REMEDIATION_STATE_ROOT/tmp/B00\""],
+      "red_failure_assertions": ["FileNotFoundError on missing runner", "AssertionError on lint-plan failure"],
+      "commands": [
+        "py -3.12 -B -m pytest tests/unit/test_remediation_runner.py -q -p no:cacheprovider --baset \"$JC_REMEDIATION_STATE_ROOT/tmp/B00\"",
+        "py -3.12 -B tools/remediate_v4.py lint-plan --plan remediation/v4/tasks.json"
+      ],
+      "expected_exit_codes": [0, 0],
+      "completion_assertions": [
+        "tools/remediate_v4.py exists and is executable",
+        "remediation/v4/{tasks.json,task.schema.json,receipt.schema.json,approval.schema.json,issue-map.json,file-disposition.json} exist",
+        "issue-map has 44 entries P0:15,P1:20,P2:7,P3:2",
+        "tasks.json has acyclic DAG with unique IDs",
+        "configs/zh_CN/rules.yaml has frozen fingerprint sha256=032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44, bytes=13620766, unique_rule_ids=21144",
+        "runner --help exits 0",
+        "runner lint-plan --plan remediation/v4/tasks.json exits 0",
+        "runner lint-plan rejects cyclic and unknown-dep plans with non-zero exit"
+      ],
+      "rollback": "do not promote; fix in dedicated worktree",
+      "commit_type": "build",
+      "terminal_states": []
+    },
+    {
+      "id": "B00-CG", "wave": "B00-CG", "mode": "AUTO", "depends_on": ["B00"],
+      "audit_ids": ["P0-14","P1-09","P2-04","P3-01"],
+      "objective": "建立 CodeGraph 全仓索引并校验与 start tree 一致；tracked Python/YAML/JSON 与 graph indexed files 完全对账",
+      "allowed_paths": ["tools/remediate_v4.py", "tools/remediation/**", "remediation/v4/*.json", "tests/unit/test_remediation_*.py", ".gitignore"],
+      "commands": [
+        "codegraph --version",
+        "codegraph index --force .",
+        "codegraph status --json .",
+        "py -3.12 -B tools/remediate_v4.py graph-map --check --codegraph .codegraph/codegraph.db --all-tracked"
+      ],
+      "expected_exit_codes": [0, 0, 0, 0],
+      "completion_assertions": [
+        "codegraph status reports pending_changes=0, worktree_mismatch=null, parse_errors=0, unresolved_refs=0",
+        "tracked Python/YAML/JSON/MD files minus CN legacy rules.yaml all appear in codegraph indexed set",
+        "configs/zh_CN/rules.yaml is registered in asset-inventory not graph",
+        "normalized graph receipt saved under $JC_REMEDIATION_STATE_ROOT/evidence/codegraph/$SOURCE_TREE_ID/"
+      ],
+      "rollback": "do not promote; fix in dedicated worktree",
+      "commit_type": "build",
+      "terminal_states": []
+    },
+    {
+      "id": "B01", "wave": "B01", "mode": "AUTO", "depends_on": ["B00-CG"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P0-14","P0-15","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P1-19","P1-20","P2-01","P2-02","P2-03","P2-04","P2-05","P2-06","P2-07","P3-01","P3-02"],
+      "objective": "从审计报告登记 44 个 ID；扩展 file-disposition 到 292 个 tracked paths，每个 path 一个 disposition + authority class",
+      "allowed_paths": ["remediation/v4/issue-map.json", "remediation/v4/file-disposition.json", "tools/remediate_v4.py", "tools/remediation/**", "tests/unit/test_remediation_audit_map.py", "tests/unit/test_remediation_file_map.py"],
+      "commands": [
+        "py -3.12 -B tools/remediate_v4.py audit-map --audit 20260819_juris-calculus_V4单主链生产投产全量代码审计.md --check",
+        "py -3.12 -B tools/remediate_v4.py file-map --check --all-tracked --require-semantic-targets --graph-receipt-task B00-CG"
+      ],
+      "expected_exit_codes": [0, 0],
+      "completion_assertions": [
+        "44/44 issues registered exactly once with at least one closure task",
+        "all tracked paths have disposition in {KEEP_REWRITE, MERGE_DELETE, MIGRATE_INVARIANTS_THEN_DELETE, RETAIN_NONPACKAGED, MOVE_IN_REPO_SOURCE_TOOL, MOVE_IN_REPO_EXPERIMENT, CANDIDATE_ASSET, TEST_ORACLE, DELETE_CURRENT, GENERATED, HISTORY_ONLY, DOC_UPDATE}",
+        "no deletion candidate has terminal_state=UNREVIEWED for paths in allowlist without migration target",
+        "HISTORY_BOUND paths bind frozen bytes/hash/locator and have empty target_module/target_artifact",
+        "MIGRATED_GREEN paths bind target module and required test commit",
+        "dynamic consumers (plugin_registry, spec_shadow_harness, etc.) have explicit DELETE/REWRITE/RETAIN decisions"
+      ],
+      "rollback": "do not promote; fix in dedicated worktree",
+      "commit_type": "build",
+      "terminal_states": []
+    },
+    {
+      "id": "B02", "wave": "B02", "mode": "EXTERNAL_GATE", "depends_on": ["B01"],
+      "audit_ids": ["P2-01"],
+      "objective": "解析 pinned legal-math-modeling commit 到 $JC_REMEDIATION_STATE_ROOT/inputs，登记五项 differential fixture",
+      "allowed_paths": ["$JC_REMEDIATION_STATE_ROOT/inputs/**", "$JC_REMEDIATION_STATE_ROOT/requests/B02*", "remediation/v4/tasks.json"],
+      "commands": [],
+      "expected_exit_codes": [],
+      "completion_assertions": ["spec commit/tree/license/receipt saved", "five differential fixture digests recorded"],
+      "rollback": "do not promote; cannot proceed without external spec",
+      "commit_type": "external",
+      "terminal_states": []
+    },
+    {
+      "id": "W0-01", "wave": "W0", "mode": "AUTO", "depends_on": ["B02"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P1-02"],
+      "objective": "冻结 V4 object set 和 execution/decision/review/completeness/certificate 笛卡尔状态矩阵；所有 formal object additionalProperties=false",
+      "allowed_paths": ["docs/contracts/**", "tests/fixtures/v4_contract/**", "remediation/v4/tasks.json"],
+      "terminal_states": []
+    },
+    {
+      "id": "W0-02", "wave": "W0", "mode": "AUTO", "depends_on": ["W0-01"],
+      "audit_ids": ["P0-03","P1-01","P1-02","P1-03","P1-15"],
+      "objective": "冻结 canonicalization/UTC instant/limits/平台矩阵",
+      "allowed_paths": ["docs/contracts/**", "tests/fixtures/golden/**", "remediation/v4/tasks.json"],
+      "terminal_states": []
+    },
+    {
+      "id": "W0-03", "wave": "W0", "mode": "AUTO", "depends_on": ["W0-01"],
+      "audit_ids": ["P0-08","P0-14","P1-07","P2-04"],
+      "objective": "人工 authority policy + observed graph 验证",
+      "allowed_paths": ["docs/architecture/module-authority.json", "tools/remediation/observed_graph.py", "tools/remediate_v4.py", "tests/unit/test_authority_observed_graph.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W0-04", "wave": "W0", "mode": "AUTO", "depends_on": ["W0-01","W0-02","W0-03"],
+      "audit_ids": ["P2-02","P2-03"],
+      "objective": "建立 contract/property/integration/differential/formal_e2e/security/storage_chaos/windows_security/mcp_protocol/packaging/dsh_formal suite 骨架",
+      "allowed_paths": ["tests/**", "tools/remediate_v4.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W0-05", "wave": "W0", "mode": "MIXED", "depends_on": ["W0-02"],
+      "audit_ids": ["P0-04","P0-05","P0-06","P0-07","P1-20"],
+      "objective": "机器评估 Ed25519 verifier 候选依赖，HUMAN_GATE 批准后更新最小 exact hash lock 和 test-only key fixtures",
+      "allowed_paths": ["requirements/core.lock", "pyproject.toml", "tools/remediate_v4.py", "remediation/v4/approvals/W0-05*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-01", "wave": "W1", "mode": "AUTO", "depends_on": ["W0-05"],
+      "audit_ids": ["P0-03","P1-01"],
+      "objective": "重写 canonical_serialization.py；统一 DigestV4；Node oracle 向量同构",
+      "allowed_paths": ["compiler_core/canonical_serialization.py", "tests/contract/test_jcs_v4.py", "tests/property/test_canonicalization.py", "tests/contract/jcs_node_oracle.mjs", "tests/fixtures/golden/jcs-v4-vectors.json"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-02", "wave": "W1", "mode": "AUTO", "depends_on": ["W1-01"],
+      "audit_ids": ["P1-02","P2-07"],
+      "objective": "重写 contracts.py 为 V4 typed models；__version__ public export contract；engine major=4",
+      "allowed_paths": ["compiler_core/contracts.py", "tests/contract/**", "compiler_core/__init__.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-03", "wave": "W1", "mode": "AUTO", "depends_on": ["W1-02"],
+      "audit_ids": ["P1-02","P1-14","P2-04"],
+      "objective": "Schema/ToolSpec/capabilities 确定性发布物；唯一 TOOL_SPECS；emitter 只生成发布物",
+      "allowed_paths": ["compiler_core/mcp.py", "schemas/jc-v4.schema.json", "mcp_manifest.json", "tests/contract/test_python_schema_mcp_differential.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-04", "wave": "W1", "mode": "AUTO", "depends_on": ["W1-02"],
+      "audit_ids": ["P0-04","P0-10","P1-17"],
+      "objective": "新增 artifact_store.py；ContentRef + bounded resolver；same id same digest 幂等",
+      "allowed_paths": ["compiler_core/artifact_store.py", "tests/security/test_artifact_resolver.py", "tests/property/test_resolver_properties.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-05", "wave": "W1", "mode": "AUTO", "depends_on": ["W1-01","W1-04","W0-05"],
+      "audit_ids": ["P0-04","P0-05","P0-06","P0-07"],
+      "objective": "新增 trust.py；key id/issuer/role/scope/kind/subject/policy/issued/expiry/nonce/revocation 验证",
+      "allowed_paths": ["compiler_core/trust.py", "tests/security/test_trust_policy.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W1-06", "wave": "W1", "mode": "AUTO", "depends_on": ["W1-03","W1-04","W1-05"],
+      "audit_ids": ["P0-03","P0-04","P1-01","P1-02","P1-14","P1-15"],
+      "objective": "合同/信任综合攻击门禁",
+      "allowed_paths": ["tests/contract/**", "tests/property/**", "tests/security/**", "tests/fixtures/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-01", "wave": "W2", "mode": "AUTO", "depends_on": ["W1-06"],
+      "audit_ids": ["P0-04","P1-03","P1-04"],
+      "objective": "新增 source_service.py；SourceSnapshot/time/SourcePath 强制单 root/单 terminal/全节点可达/无环/edge-order-independent",
+      "allowed_paths": ["compiler_core/source_service.py", "tests/contract/test_source_service.py", "tests/security/test_source_service_attacks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-02", "wave": "W2", "mode": "AUTO", "depends_on": ["W2-01"],
+      "audit_ids": ["P0-02","P0-04"],
+      "objective": "新增 fact_admission.py；candidate fact 绑定 proposition/value/type；receipt 由服务内部生成",
+      "allowed_paths": ["compiler_core/fact_admission.py", "tests/contract/test_fact_admission.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-03", "wave": "W2", "mode": "AUTO", "depends_on": ["W2-01","W1-05"],
+      "audit_ids": ["P0-05","P1-07","P1-08","P1-09","P1-16"],
+      "objective": "重写 rule_packs.py；RuleV4 + signed PackManifestV4；active 只由 verifier 推导",
+      "allowed_paths": ["compiler_core/rule_packs.py", "tests/contract/test_rule_packs.py", "tests/security/test_pack_attacks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-04", "wave": "W2", "mode": "AUTO", "depends_on": ["W2-03","W1-04"],
+      "audit_ids": ["P0-11","P1-08","P1-10"],
+      "objective": "消除 pack TOCTOU；从同一 no-follow bytes 完成 hash/parse/execute",
+      "allowed_paths": ["compiler_core/artifact_store.py", "compiler_core/rule_packs.py", "tests/security/test_pack_toctou.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-05", "wave": "W2", "mode": "AUTO", "depends_on": ["W2-04"],
+      "audit_ids": ["P0-02","P0-05"],
+      "objective": "Test-only synthetic signed pack builder；scope=test-only；production trust policy 必拒绝",
+      "allowed_paths": ["tools/build_synthetic_pack.py", "tests/fixtures/packs/synthetic/**", "tests/contract/test_synthetic_pack.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W2-06", "wave": "W2", "mode": "AUTO", "depends_on": ["W2-01","W2-02","W2-03","W2-04","W2-05"],
+      "audit_ids": ["P0-02","P0-04","P0-05","P1-03","P1-04","P1-07","P1-08","P1-09","P1-16"],
+      "objective": "Source→Fact→Pack 纵向门禁",
+      "allowed_paths": ["tests/integration/**", "tests/security/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W3-01", "wave": "W3", "mode": "AUTO", "depends_on": ["W2-06"],
+      "audit_ids": ["P1-05"],
+      "objective": "新增 legal_ir.py；RuleV4→LegalSpecV4→LegalIVLV4 信息守恒；reference oracle 不导入 production",
+      "allowed_paths": ["compiler_core/legal_ir.py", "tests/contract/test_legal_ir.py", "tests/property/test_ir_properties.py", "tests/semantic_mutation/test_ir_mutation.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W3-02", "wave": "W3", "mode": "AUTO", "depends_on": ["W3-01"],
+      "audit_ids": ["P1-06"],
+      "objective": "重写 argumentation.py；priority 实际改变 defeat；permission 三态可达；UNDEC 不 accepted",
+      "allowed_paths": ["compiler_core/argumentation.py", "tests/contract/test_argumentation.py", "tests/semantic_mutation/test_argumentation_mutation.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W3-03", "wave": "W3", "mode": "AUTO", "depends_on": ["W3-01","W3-02"],
+      "audit_ids": ["P0-06"],
+      "objective": "新增 backends/** + backend_router.py；router 从 LegalIVL 派生 features；真实 provider 执行",
+      "allowed_paths": ["compiler_core/backends/**", "compiler_core/backend_router.py", "tests/contract/test_backend_router.py", "tests/security/test_backend_attacks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W3-04", "wave": "W3", "mode": "AUTO", "depends_on": ["W3-03"],
+      "audit_ids": ["P0-06","P0-07","P1-05","P1-06"],
+      "objective": "新增 independent_checker.py；只读 canonical IR；独立重算；不调用 production provider 内部状态",
+      "allowed_paths": ["compiler_core/independent_checker.py", "tests/contract/test_independent_checker.py", "tests/security/test_checker_independence.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W3-05", "wave": "W3", "mode": "AUTO", "depends_on": ["W3-01","W3-02","W3-03","W3-04"],
+      "audit_ids": ["P1-05","P1-06","P1-07"],
+      "objective": "Semantic mutation gate",
+      "allowed_paths": ["tests/semantic_mutation/**", "tools/remediate_v4.py", "tests/unit/test_semantic_mutation_manifest.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-01", "wave": "W4", "mode": "AUTO", "depends_on": ["W3-05"],
+      "audit_ids": ["P0-12","P1-13"],
+      "objective": "RunIdentityV4 绑定 source commit/tree/wheel/Schema/ToolSpec/locks/pack/trust/algorithm/backend/storage digests",
+      "allowed_paths": ["compiler_core/contracts.py", "compiler_core/application.py", "tests/contract/test_run_identity.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-02", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-01","W2-04"],
+      "audit_ids": ["P0-11","P0-12","P0-13","P1-10","P1-11","P1-12","P1-13"],
+      "objective": "V4 storage abstraction；跨进程 lock；POSIX file+dir fsync；Windows FlushFileBuffers/write-through/replace；no-follow/reparse",
+      "allowed_paths": ["compiler_core/artifact_store.py", "compiler_core/storage.py", "tests/storage_chaos/**", "tests/windows_security/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-03", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-02","W3-04"],
+      "audit_ids": ["P0-07","P0-12","P1-10","P1-11","P1-13"],
+      "objective": "重写 audit_bundle.py；AuditBundleV4 writer/verify/replay；read_artifact handle 绑定 run/artifact/scope/expiry/max-bytes",
+      "allowed_paths": ["compiler_core/audit_bundle.py", "tests/contract/test_audit_bundle.py", "tests/security/test_audit_bundle_attacks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-04", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-03","W1-05"],
+      "audit_ids": ["P0-07","P0-08"],
+      "objective": "新增 certificates.py；issuer 只接 Application 内部 immutable context；从 bundle core 重算 gates",
+      "allowed_paths": ["compiler_core/certificates.py", "tests/contract/test_certificates.py", "tests/security/test_certificate_attacks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-05", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-04"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P1-07","P1-16"],
+      "objective": "重写 application.py；唯一编排 ApplicationV4；strict order resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle",
+      "allowed_paths": ["compiler_core/application.py", "tests/formal_e2e/**", "tests/contract/test_application.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-06", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-05"],
+      "audit_ids": ["P1-15","P1-17","P1-18"],
+      "objective": "隐私/error/资源闭环；稳定 error code/stage/retryable/correlation id；stdout/bundle 不回显 traceback/绝对路径",
+      "allowed_paths": ["compiler_core/application.py", "compiler_core/audit_bundle.py", "tests/security/test_privacy_firewall.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W4-07", "wave": "W4", "mode": "AUTO", "depends_on": ["W4-01","W4-02","W4-03","W4-04","W4-05","W4-06"],
+      "audit_ids": ["P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18"],
+      "objective": "Synthetic formal vertical slice E2E",
+      "allowed_paths": ["tests/formal_e2e/**", "tests/storage_chaos/**", "tests/security/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-01", "wave": "W5", "mode": "AUTO", "depends_on": ["W4-07"],
+      "audit_ids": ["P0-01","P0-09","P0-10","P1-14","P1-15","P1-17","P1-18","P2-03"],
+      "objective": "入口合同和旧行为负例准备",
+      "allowed_paths": ["tests/contract/**", "tests/formal_e2e/**", "tests/mcp_protocol/**", "tests/fixtures/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "H5-02", "wave": "W5", "mode": "MIXED", "depends_on": ["W5-01"],
+      "audit_ids": ["P0-14","P1-09","P3-01"],
+      "objective": "candidate/advisory 资产归位、零语义审批和投产后 RFC；USER_AUTHORIZED_HISTORY_BOUND receipt 核验",
+      "allowed_paths": ["remediation/v4/file-disposition.json", "remediation/v4/approvals/H5-02*", "$JC_REMEDIATION_STATE_ROOT/approvals/H5-02*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-02C", "wave": "W5", "mode": "AUTO", "depends_on": ["H5-02"],
+      "audit_ids": ["P0-14","P1-09","P2-04","P3-01","P3-02"],
+      "objective": "删除 CN legacy corpus 并断开全部消费者；fingerprint 冻结授权",
+      "allowed_paths": [
+        "configs/zh_CN/rules.yaml",
+        "configs/packs/cn-legacy-corpus/**",
+        "configs/perf_patterns.yaml",
+        ".gitignore",
+        ".github/workflows/ci.yml",
+        ".github/workflows/auto-release.yml",
+        "addons/cn/__init__.py",
+        "addons/cn/adapter.py",
+        "addons/workbuddy_mcp.py",
+        "compiler_core/cli.py",
+        "compiler_core/config_paths.py",
+        "compiler_core/prc_collision_engine.py",
+        "pipeline/fix_single_premise.py",
+        "tools/build_rule_pack_manifests.py",
+        "tools/run_trirail_matrix.py",
+        "tools/remediate_v4.py",
+        "tools/remediation/**",
+        "remediation/v4/**",
+        "tests/run_benchmark_zh.py",
+        "tests/stress_test_facts.py",
+        "tests/unit/test_adversarial.py",
+        "tests/unit/test_cli_contract.py",
+        "tests/unit/test_cli_evaluate_subprocess.py",
+        "tests/unit/test_cli_subprocess.py",
+        "tests/unit/test_plugin_registry.py",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_rule_pack_manifest.py",
+        "tests/unit/test_rule_pack_manifest_builder.py",
+        "tests/unit/test_trirail_collision.py",
+        "tests/unit/test_trirail_runtime.py",
+        "tests/unit/test_zh_rules.py",
+        "tests/unit/test_remediation_legacy_cn_corpus.py",
+        "tests/packaging/test_legacy_cn_corpus_absent.py",
+        "tests/mcp_protocol/test_legacy_cn_corpus_absent.py"
+      ],
+      "completion_assertions": [
+        "configs/zh_CN/rules.yaml and configs/packs/cn-legacy-corpus/manifest.yaml deleted from current tree",
+        "physical file system path does not exist",
+        "tracked path does not exist",
+        "v3.0.2^{commit}=aa0e038daf066bfc0baa4d27ee54adef12c3ae16 still serves rules via git show",
+        "git ls-files | grep -E '(configs/zh_CN/rules.yaml|configs/packs/cn-legacy-corpus/manifest.yaml)' is empty"
+      ],
+      "terminal_states": ["DELETE_CURRENT"]
+    },
+    {
+      "id": "W5-03", "wave": "W5", "mode": "AUTO", "depends_on": ["W5-02C"],
+      "audit_ids": ["P0-14","P1-09","P2-04","P3-01","P3-02"],
+      "objective": "candidate corpora 同仓保留或一次性仓内归位；分析/训练/治理 reports 切断公共入边",
+      "allowed_paths": ["remediation/v4/file-disposition.json", "tests/**", "compiler_core/analysis.py", "compiler_core/training.py", "compiler_core/rule_lookup.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-CUTOVER", "wave": "W5", "mode": "AUTO", "depends_on": ["W5-03"],
+      "audit_ids": ["P0-01","P0-08","P0-09","P0-10","P0-14","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P2-03","P2-04","P2-07","P3-02"],
+      "objective": "一次性切换全部 current authority 到 V4；删除 V3/W1b/compat；version=4.0.0rc1",
+      "allowed_paths": [
+        "compiler_core/__init__.py",
+        "compiler_core/cli.py",
+        "compiler_core/client.py",
+        "compiler_core/mcp.py",
+        "mcp_server.py",
+        "compiler_core/version.py",
+        "compiler_core/rendering.py",
+        "schemas/jc-v4.schema.json",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "tests/**"
+      ],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-05", "wave": "W5", "mode": "AUTO", "depends_on": ["W5-CUTOVER"],
+      "audit_ids": ["P0-01","P0-08","P0-14","P2-04","P3-02"],
+      "objective": "全仓 current authority 复扫；任何语义回归回责任 task",
+      "allowed_paths": ["docs/**", "remediation/v4/file-disposition.json", "tests/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-06", "wave": "W5", "mode": "AUTO", "depends_on": ["W5-05"],
+      "audit_ids": ["P0-01","P0-09","P0-10","P1-14","P1-15","P1-17","P1-18"],
+      "objective": "三入口与错误矩阵",
+      "allowed_paths": ["tests/**", "tests/fixtures/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W5-07", "wave": "W5", "mode": "AUTO", "depends_on": ["W5-06"],
+      "audit_ids": ["P3-02"],
+      "objective": "V3 历史重放隔离说明",
+      "allowed_paths": ["docs/**", "README.md", "HANDOFF.md", "CHANGELOG.md"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-01", "wave": "W6", "mode": "AUTO", "depends_on": ["W5-07"],
+      "audit_ids": ["P0-14","P1-19","P2-06"],
+      "objective": "精确 package/wheel allowlist；唯一薄 tools/wheel_gate.py",
+      "allowed_paths": ["pyproject.toml", "tools/wheel_gate.py", "tests/packaging/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "H6-02", "wave": "W6", "mode": "HUMAN_GATE", "depends_on": ["W6-01"],
+      "audit_ids": ["P1-20"],
+      "objective": "锁文件和新依赖批准",
+      "allowed_paths": ["requirements/*.lock", "pyproject.toml", "remediation/v4/approvals/H6-02*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-03", "wave": "W6", "mode": "AUTO", "depends_on": ["H6-02"],
+      "audit_ids": ["P1-20"],
+      "objective": "完整 hash locks 和供应链；transitive graph 全 pin+hash",
+      "allowed_paths": ["requirements/*.lock", "tools/supply_chain_gate.py", "tests/packaging/test_hash_locks.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-04", "wave": "W6", "mode": "AUTO", "depends_on": ["W6-03"],
+      "audit_ids": ["P0-14","P1-19","P2-06"],
+      "objective": "双构建和 clean installed-wheel E2E",
+      "allowed_paths": ["tests/packaging/**", "tools/wheel_gate.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-05", "wave": "W6", "mode": "AUTO", "depends_on": ["W6-04"],
+      "audit_ids": ["P2-01","P2-02","P2-03","P2-05"],
+      "objective": "CI required matrix：generated/authority/purity/secrets/ruff/type/unit/contract/property/mutation/integration/formal_e2e/security/Ubuntu×2/Windows×2/storage/chaos/platform subsets/locks/audit/license/A-B build/installed wheel/SBOM/provenance/performance/docs/current paths",
+      "allowed_paths": [".github/workflows/ci.yml", "tests/**", "tools/remediate_v4.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-06", "wave": "W6", "mode": "AUTO", "depends_on": ["W6-04"],
+      "audit_ids": ["P0-15","P1-20"],
+      "objective": "SBOM/provenance/checksums/attestation",
+      "allowed_paths": ["tools/build_provenance.py", "tests/packaging/test_provenance.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "H6-07", "wave": "W6", "mode": "MIXED", "depends_on": ["W6-06"],
+      "audit_ids": ["P0-15","P2-04"],
+      "objective": "GitHub governance 和发布签发者；现场读取 branch/tag protection",
+      "allowed_paths": [".github/**", "remediation/v4/approvals/H6-07*", "SECURITY.md", "CODEOWNERS"],
+      "terminal_states": []
+    },
+    {
+      "id": "W6-08", "wave": "W6", "mode": "AUTO", "depends_on": ["H6-07"],
+      "audit_ids": ["P0-15","P2-04","P2-07","P3-02"],
+      "objective": "Artifact promotion workflow 和 current docs",
+      "allowed_paths": [".github/workflows/auto-release.yml", "README.md", "CHANGELOG.md", "HANDOFF.md", "AGENTS.md", "memory.md", "docs/**", "SECURITY.md", "CODEOWNERS", "NOTICE"],
+      "terminal_states": []
+    },
+    {
+      "id": "H7-00", "wave": "W7", "mode": "MIXED", "depends_on": ["W6-08"],
+      "audit_ids": ["P0-13","P1-10","P1-11","P1-12"],
+      "objective": "目标 state provider、平台和 SLO 输入",
+      "allowed_paths": ["remediation/v4/approvals/H7-00*", "$JC_REMEDIATION_STATE_ROOT/approvals/H7-00*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W7-01", "wave": "W7", "mode": "AUTO", "depends_on": ["H7-00"],
+      "audit_ids": ["P0-13","P1-10","P1-11","P1-12","P1-17"],
+      "objective": "生产 storage capability 验收",
+      "allowed_paths": ["tests/storage_chaos/**", "tests/windows_security/**", "compiler_core/storage.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W7-02", "wave": "W7", "mode": "AUTO", "depends_on": ["W7-01"],
+      "audit_ids": ["P1-15", "P1-17"],
+      "objective": "容量和性能预算",
+      "allowed_paths": ["tests/performance/**", "tools/perf_baseline.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W7-03", "wave": "W7", "mode": "AUTO", "depends_on": ["W7-02"],
+      "audit_ids": ["P1-10","P1-11"],
+      "objective": "灾难/撤销/回退演练",
+      "allowed_paths": ["tests/storage_chaos/**", "tests/security/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W7-04", "wave": "W7", "mode": "AUTO", "depends_on": ["W7-01","W7-02","W7-03"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P0-14","P0-15","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P1-19","P1-20","P2-01","P2-02","P2-03","P2-04","P2-05","P2-06","P2-07","P3-01","P3-02"],
+      "objective": "Kernel RC evidence verifier",
+      "allowed_paths": ["tools/remediate_v4.py", "remediation/v4/evidence/kernel-rc-evidence.json", "tests/formal_e2e/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "H7-05", "wave": "W7", "mode": "HUMAN_GATE", "depends_on": ["W7-04"],
+      "audit_ids": ["P0-15"],
+      "objective": "RC 远端晋级",
+      "allowed_paths": ["remediation/v4/approvals/H7-05*"],
+      "terminal_states": []
+    },
+    {
+      "id": "H8-00", "wave": "W8", "mode": "MIXED", "depends_on": ["W7-04"],
+      "audit_ids": ["P0-02", "P0-04", "P0-05", "P1-20"],
+      "objective": "领域/法源/角色/密钥开工门禁；FORMAL_SOURCE_INVENTORY 必须列出唯一允许源并排除 legacy 语料",
+      "allowed_paths": ["remediation/v4/approvals/H8-00*", "$JC_REMEDIATION_STATE_ROOT/approvals/H8-00*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W8-01", "wave": "W8", "mode": "AUTO", "depends_on": ["H8-00"],
+      "audit_ids": ["P0-02","P0-04"],
+      "objective": "第一方法源不可变摄取；legacy 隔离",
+      "allowed_paths": ["tools/build_cn_official_pack.py", "tests/contract/test_cn_official_source_intake.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W8-02", "wave": "W8", "mode": "AUTO", "depends_on": ["W8-01"],
+      "audit_ids": ["P0-02", "P1-07"],
+      "objective": "RuleV4 candidate 生成",
+      "allowed_paths": ["tools/build_cn_official_pack.py", "tests/contract/test_cn_official_candidate.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "H8-03", "wave": "W8", "mode": "HUMAN_GATE", "depends_on": ["W8-02"],
+      "audit_ids": [],
+      "objective": "法律审核 receipts",
+      "allowed_paths": ["remediation/v4/approvals/H8-03*"],
+      "terminal_states": []
+    },
+    {
+      "id": "H8-04", "wave": "W8", "mode": "HUMAN_GATE", "depends_on": ["H8-03"],
+      "audit_ids": [],
+      "objective": "工程审核和角色分离",
+      "allowed_paths": ["remediation/v4/approvals/H8-04*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W8-05", "wave": "W8", "mode": "AUTO", "depends_on": ["H8-04"],
+      "audit_ids": ["P0-05"],
+      "objective": "Deterministic official pack build",
+      "allowed_paths": ["tools/build_cn_official_pack.py", "tests/contract/test_cn_official_pack.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "W8-06", "wave": "W8", "mode": "AUTO", "depends_on": ["W8-05"],
+      "audit_ids": ["P0-02"],
+      "objective": "真实领域全状态和法律质量门禁",
+      "allowed_paths": ["tests/formal_e2e/**", "tests/semantic_mutation/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "H8-07", "wave": "W8", "mode": "HUMAN_GATE", "depends_on": ["W8-06"],
+      "audit_ids": ["P0-15"],
+      "objective": "cn-official release 和 4.0.0 晋级；stable 重新 build 不重标 RC",
+      "allowed_paths": ["remediation/v4/approvals/H8-07*", "tools/remediate_v4.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "H9-00", "wave": "W9", "mode": "MIXED", "depends_on": ["H8-07"],
+      "audit_ids": ["P0-13","P2-05"],
+      "objective": "DSH pin 和部署拓扑；JC/DSH 独立 service identity",
+      "allowed_paths": ["remediation/v4/approvals/H9-00*", "$JC_REMEDIATION_STATE_ROOT/approvals/H9-00*"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-01", "wave": "W9", "mode": "AUTO", "depends_on": ["H9-00"],
+      "audit_ids": ["P2-05"],
+      "objective": "Out-of-tree formal bundle/profile",
+      "allowed_paths": ["tests/dsh_formal/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-02", "wave": "W9", "mode": "AUTO", "depends_on": ["W9-01"],
+      "audit_ids": ["P0-09","P0-10","P1-15"],
+      "objective": "MCP client fail-closed 配置",
+      "allowed_paths": ["tests/dsh_formal/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-03", "wave": "W9", "mode": "AUTO", "depends_on": ["W9-02"],
+      "audit_ids": ["P0-09"],
+      "objective": "Project skill 仅负责触发说明",
+      "allowed_paths": [".agents/skills/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-04", "wave": "W9", "mode": "AUTO", "depends_on": ["W9-02"],
+      "audit_ids": ["P0-09"],
+      "objective": "Delivery guard plugin",
+      "allowed_paths": ["tests/dsh_formal/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-05", "wave": "W9", "mode": "AUTO", "depends_on": ["W9-03","W9-04"],
+      "audit_ids": ["P0-09","P0-10","P1-15","P2-05"],
+      "objective": "Bypass/隔离/升级兼容测试",
+      "allowed_paths": ["tests/dsh_formal/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "W9-06", "wave": "W9", "mode": "AUTO", "depends_on": ["W9-05"],
+      "audit_ids": ["P2-05"],
+      "objective": "DSH integration evidence",
+      "allowed_paths": ["remediation/v4/evidence/dsh-formal-evidence.json", "tools/remediate_v4.py"],
+      "terminal_states": []
+    },
+    {
+      "id": "Z00", "wave": "Z", "mode": "AUTO", "depends_on": ["W9-06"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P0-14","P0-15","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P1-19","P1-20","P2-01","P2-02","P2-03","P2-04","P2-05","P2-06","P2-07","P3-01","P3-02"],
+      "objective": "全问题和全文件复算；issue-map --check 44/44；CodeGraph 对 final tree 重 full index；file-map --check missing/extra/duplicate=0",
+      "allowed_paths": ["tools/remediate_v4.py", "remediation/v4/issue-map.json", "remediation/v4/file-disposition.json"],
+      "terminal_states": []
+    },
+    {
+      "id": "Z01", "wave": "Z", "mode": "AUTO", "depends_on": ["Z00"],
+      "audit_ids": ["P0-15", "P1-20"],
+      "objective": "全部 artifact 独立复验",
+      "allowed_paths": ["tools/remediate_v4.py", "tests/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "Z02", "wave": "Z", "mode": "AUTO", "depends_on": ["Z01"],
+      "audit_ids": ["P0-15"],
+      "objective": "Git 和外部状态终检",
+      "allowed_paths": ["tools/remediate_v4.py", ".gitignore", "remediation/v4/**"],
+      "terminal_states": []
+    },
+    {
+      "id": "Z03", "wave": "Z", "mode": "AUTO", "depends_on": ["Z02"],
+      "audit_ids": ["P0-01","P0-02","P0-03","P0-04","P0-05","P0-06","P0-07","P0-08","P0-09","P0-10","P0-11","P0-12","P0-13","P0-14","P0-15","P1-01","P1-02","P1-03","P1-04","P1-05","P1-06","P1-07","P1-08","P1-09","P1-10","P1-11","P1-12","P1-13","P1-14","P1-15","P1-16","P1-17","P1-18","P1-19","P1-20","P2-01","P2-02","P2-03","P2-04","P2-05","P2-06","P2-07","P3-01","P3-02"],
+      "objective": "唯一完成输出：final-remediation-result.json；runner exit 0",
+      "allowed_paths": ["tools/remediate_v4.py", "remediation/v4/evidence/final-remediation-result.json", "remediation/v4/file-disposition.json"],
+      "terminal_states": []
+    }
+  ]
+}

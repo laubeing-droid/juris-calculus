@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jc/remediation-v4-task/1.0",
+  "title": "Remediation V4 task plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tasks"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "jc/remediation-v4-task/1.0"
+    },
+    "baseline": {
+      "type": "object",
+      "description": "Frozen baseline anchored at the施工方案 commit.",
+      "additionalProperties": false,
+      "properties": {
+        "commit": {"type": "string"},
+        "tree": {"type": "string"},
+        "plan_sha256": {"type": "string"},
+        "audit_sha256": {"type": "string"}
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/task"}
+    }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "wave", "mode", "depends_on",
+        "objective", "allowed_paths"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Z0-9-]+$"},
+        "wave": {"type": "string"},
+        "mode": {"enum": ["AUTO", "HUMAN_GATE", "EXTERNAL_GATE", "MIXED"]},
+        "depends_on": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "audit_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "AUTO tasks must reference at least one audit ID. HUMAN_GATE/EXTERNAL_GATE tasks may have empty audit_ids because they are external coordination points, not direct code fixes."
+        },
+        "objective": {"type": "string", "minLength": 1},
+        "allowed_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "forbidden_paths": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "test_first": {"type": "boolean"},
+        "red_commands": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "red_failure_assertions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "commands": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "expected_exit_codes": {
+          "type": "array",
+          "items": {"type": "integer"}
+        },
+        "completion_assertions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rollback": {"type": "string"},
+        "commit_type": {"type": "string"},
+        "terminal_states": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MIGRATED_GREEN",
+              "HISTORY_BOUND",
+              "NO_RELEVANT_SEMANTICS_APPROVED",
+              "KEEP_REWRITE",
+              "MERGE_DELETE",
+              "MIGRATE_INVARIANTS_THEN_DELETE",
+              "RETAIN_NONPACKAGED",
+              "MOVE_IN_REPO_SOURCE_TOOL",
+              "MOVE_IN_REPO_EXPERIMENT",
+              "CANDIDATE_ASSET",
+              "TEST_ORACLE",
+              "DELETE_CURRENT",
+              "GENERATED",
+              "HISTORY_ONLY",
+              "DOC_UPDATE"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

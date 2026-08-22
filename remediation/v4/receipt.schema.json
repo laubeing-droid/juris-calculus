@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jc/remediation-v4-receipt/1.0",
+  "title": "Remediation V4 task receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "task_id", "attempt",
+    "start_commit", "start_tree", "result_commit",
+    "changed_paths", "completion_assertions",
+    "audit_ids", "receipt_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "jc/remediation-v4-receipt/1.0"},
+    "run_id": {"type": "string"},
+    "task_id": {"type": "string"},
+    "attempt": {"type": "integer", "minimum": 1},
+    "start_commit": {"type": "string"},
+    "start_tree": {"type": "string"},
+    "result_commit": {"type": ["string", "null"]},
+    "result_tree": {"type": ["string", "null"]},
+    "changed_paths": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "red_command_exit_codes": {
+      "type": "array",
+      "items": {"type": "integer"}
+    },
+    "green_command_exit_codes": {
+      "type": "array",
+      "items": {"type": "integer"}
+    },
+    "completion_assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "ok"],
+        "properties": {
+          "name": {"type": "string"},
+          "ok": {"type": "boolean"},
+          "detail": {"type": "string"}
+        }
+      }
+    },
+    "audit_ids": {"type": "array", "items": {"type": "string"}},
+    "artifact_digests": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "runner_version": {"type": "string"},
+    "receipt_digest": {"type": "string"},
+    "previous_receipt_digest": {"type": ["string", "null"]}
+  }
+}

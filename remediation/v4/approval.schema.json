@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jc/remediation-v4-approval/1.0",
+  "title": "Remediation V4 human/external gate approval envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "gate_id", "task_id",
+    "request_digest", "decision", "signer",
+    "issued_at", "expires_at", "signature"
+  ],
+  "properties": {
+    "schema_version": {"const": "jc/remediation-v4-approval/1.0"},
+    "gate_id": {"type": "string"},
+    "task_id": {"type": "string"},
+    "request_digest": {"type": "string"},
+    "subject_digest": {"type": "string"},
+    "decision": {"enum": ["APPROVE", "REJECT", "NEEDS_MORE_INFO"]},
+    "signer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_id", "role", "scope"],
+      "properties": {
+        "key_id": {"type": "string"},
+        "role": {"type": "string"},
+        "scope": {"type": "string"}
+      }
+    },
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {"type": "string"},
+        "value": {"type": "string"},
+        "public_key_id": {"type": "string"}
+      }
+    },
+    "separation_of_duties": {"type": "boolean"},
+    "notes": {"type": "string"}
+  }
+}

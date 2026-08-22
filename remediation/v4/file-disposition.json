@@ -1,0 +1,83 @@
+{
+  "schema_version": "jc/remediation-v4-file-disposition/1.0",
+  "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
+  "paths": [
+    {
+      "path": "configs/zh_CN/rules.yaml",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "rationale": "施工方案 §0 第14项：用户授权在 W5 从 current tree 删除，不复制/转换进 cn-official",
+      "frozen_fingerprint": {
+        "sha256": "032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
+        "bytes": 13620766,
+        "unique_rule_ids": 21144,
+        "git_blob_v3_0_2": "8f51fdfd1db3e343812e8f35a321418fa854f4f7",
+        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
+      },
+      "consumers_to_disconnect": [
+        "compiler_core/cli.py::rules",
+        "compiler_core/cli.py::rules.lookup",
+        "compiler_core/config_paths.py::rules_path",
+        "compiler_core/prc_collision_engine.py::_run_cn_track",
+        "compiler_core/rule_packs.py::RulePackRegistry.load_corpus_pack",
+        "tools/run_trirail_matrix.py::PRC_CN",
+        "tools/build_rule_pack_manifests.py",
+        "pipeline/fix_single_premise.py",
+        "configs/perf_patterns.yaml",
+        "tests/run_benchmark_zh.py",
+        "tests/stress_test_facts.py",
+        "tests/unit/test_adversarial.py",
+        "tests/unit/test_cli_contract.py",
+        "tests/unit/test_cli_evaluate_subprocess.py",
+        "tests/unit/test_cli_subprocess.py",
+        "tests/unit/test_plugin_registry.py",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_rule_pack_manifest.py",
+        "tests/unit/test_rule_pack_manifest_builder.py",
+        "tests/unit/test_trirail_collision.py",
+        "tests/unit/test_trirail_runtime.py",
+        "tests/unit/test_zh_rules.py",
+        "addons/cn/__init__.py",
+        "addons/cn/adapter.py",
+        "addons/workbuddy_mcp.py"
+      ],
+      "closure_task": "W5-02C",
+      "history_locator_only": true
+    },
+    {
+      "path": "configs/packs/cn-legacy-corpus/manifest.yaml",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "rationale": "施工方案 §7 B01: 与 rules.yaml 同冻结指纹同 current-tree 删除",
+      "frozen_fingerprint": {
+        "sha256": "5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7",
+        "git_blob_v3_0_2": "1b29b412ee97563381f5a9b32e8b8efb9f62e90c",
+        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
+      },
+      "closure_task": "W5-02C",
+      "history_locator_only": true
+    },
+    {
+      "path": "configs/zh_CN/source_manifest.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "rationale": "源法源清单是 candidate source manifest，非 CN legacy corpus 同伴；B01 单独分类",
+      "closure_task": "B01"
+    },
+    {
+      "path": "configs/zh_CN/ontology_map.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "rationale": "ontology 不属于 W5-02C 删除范围；B01 单独分类",
+      "closure_task": "B01"
+    },
+    {
+      "path": "configs/zh_CN/domain_config.example.yaml",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "DOC_UPDATE",
+      "rationale": "示例文件，不在 W5-02C 删除范围",
+      "closure_task": "B01"
+    }
+  ],
+  "_note": "Starter disposition produced by B00. B01 expands this to a full per-path map covering the 292 tracked files. Deletion-relevant paths must satisfy施工方案 §19.3 three-branch terminal states."
+}
