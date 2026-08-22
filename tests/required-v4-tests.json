@@ -1,0 +1,809 @@
+{
+  "schema_version": "jc/v4-required-test-manifest/1.0",
+  "required_policy": {
+    "current_state": "REQUIRED_NOW",
+    "future_state": "RED_AT_TASK",
+    "activation_state": "ACTIVE_REQUIRED",
+    "rewrite_state": "REWRITE_AT_TASK",
+    "prohibited_outcomes": [
+      "SKIP",
+      "XFAIL"
+    ],
+    "unimplemented_behavior": "FAIL"
+  },
+  "pytest_config": "tests/pytest.ini",
+  "red_sentinel_selector": "tests/required_red_sentinels.py",
+  "suite_aliases": {
+    "contract_v4": "contract",
+    "trust_security": "security",
+    "semantic_mutation": "differential"
+  },
+  "suites": [
+    {
+      "id": "contract",
+      "path": "tests/contract",
+      "proof_obligation": "Closed V4 object, codec, schema, and public-boundary contracts."
+    },
+    {
+      "id": "property",
+      "path": "tests/property",
+      "proof_obligation": "Generated boundary and invariant checks."
+    },
+    {
+      "id": "integration",
+      "path": "tests/integration",
+      "proof_obligation": "Cross-component behavior without installed-wheel claims."
+    },
+    {
+      "id": "differential",
+      "path": "tests/differential",
+      "proof_obligation": "Independent repository and pinned companion-spec oracles."
+    },
+    {
+      "id": "formal_e2e",
+      "path": "tests/formal_e2e",
+      "proof_obligation": "Installed public entrypoints through certificate, verify, and replay."
+    },
+    {
+      "id": "security",
+      "path": "tests/security",
+      "proof_obligation": "Trust, tamper, privacy, resource, and fail-closed attacks."
+    },
+    {
+      "id": "storage_chaos",
+      "path": "tests/storage_chaos",
+      "proof_obligation": "Concurrency, crash, durability, collision, and recovery."
+    },
+    {
+      "id": "windows_security",
+      "path": "tests/windows_security",
+      "proof_obligation": "DACL, owner, reparse, long, device, and UNC path behavior."
+    },
+    {
+      "id": "mcp_protocol",
+      "path": "tests/mcp_protocol",
+      "proof_obligation": "Protocol status, schema, timeout, cancellation, and backpressure."
+    },
+    {
+      "id": "packaging",
+      "path": "tests/packaging",
+      "proof_obligation": "Exact artifacts, reproducibility, locks, provenance, and release identity."
+    },
+    {
+      "id": "dsh_formal",
+      "path": "tests/dsh_formal",
+      "proof_obligation": "Pinned formal-profile compatibility and delivery guard."
+    }
+  ],
+  "required_now": [
+    {
+      "id": "W0-FOUNDATION-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_v4_foundation_contract.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 5
+    },
+    {
+      "id": "W0-REQUIRED-MANIFEST-GATE",
+      "suite": "contract",
+      "selector": "tests/contract/test_required_test_manifest.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
+    }
+  ],
+  "evidence_tracks": [
+    {
+      "id": "SELF-CONTAINED-V4-FIXTURES",
+      "suite": "differential",
+      "selector": "tests/differential/test_self_contained_v4.py::test_repository_fixture_oracle_detects_mutations",
+      "owner_task": "W6-05",
+      "state": "RED_AT_TASK",
+      "source_kind": "SELF_CONTAINED_REPOSITORY_FIXTURE",
+      "source_binding": {
+        "kind": "REPOSITORY_FIXTURE",
+        "fixture_root": "tests/fixtures/v4_contract",
+        "oracle_imports_production": false,
+        "requires_companion_environment": false
+      },
+      "red_failure": "Missing fixtures or an undetected contract mutation must fail."
+    },
+    {
+      "id": "PINNED-COMPANION-SPEC",
+      "suite": "differential",
+      "selector": "tests/differential/test_pinned_companion_spec.py::test_pinned_companion_oracle_detects_mutations",
+      "owner_task": "W6-05",
+      "state": "RED_AT_TASK",
+      "source_kind": "PINNED_COMPANION_SPEC",
+      "source_binding": {
+        "kind": "B02_RECEIPT",
+        "receipt_digest": "sha256:fbc068ebad1ec4c02f72acff30dfade3e928c5967b1c0baa89b51971d3982045",
+        "intake_digest": "sha256:0540bb89c4799c4b5372ebd0768ba0efbb2d2e4ae5b36eb9b94143978f68ef6f",
+        "commit": "a3a015941f75091c87d57aa956e712f1546dd7d4",
+        "tree": "2d0b1bb9c4f4cd82a9a4452b96ab1d05c0d1ed99",
+        "required_files": {
+          "theory/spec/reference_semantics.py": "a37304e753da21016e83f3ae8cfb53286eedff78d058e8ebb1470ebac8cd64ba",
+          "theory/spec/certificate_schema.py": "1b71a5cd8239dac29c2eacb3397817a47bea8b4acef0fcff9addc10aa5bb4d95"
+        },
+        "fixture_family_digests": {
+          "admin_breach": "sha256:383dd4ebfba8909f16e49efbf4800c07da554bdee0e67f357d0fd2324b9b9721",
+          "contract_breach": "sha256:43f96433ca76dd57fb165b4c1a3c6d717b5ae007a42d14aad86ea1f77bc58d0c",
+          "criminal_breach": "sha256:7bb6ff224c9ea294b3c81370870e3c9aefc205184d88aa57db3fcc54307d014e",
+          "license_permission_priority": "sha256:2d27f41f24277b4895a7681299d702db5f862a0c73feabad039506b88a7baaab",
+          "tort_breach": "sha256:f3035cb082fae1742efc3fbfeba7f7d029c86262f7f54b4f1fd90f1486107a8b"
+        },
+        "oracle_imports_production": false,
+        "unavailable_exit_code": 21
+      },
+      "red_failure": "Unavailable pinned input or an undetected semantic mutation must fail."
+    }
+  ],
+  "audit_mutations": [
+    {
+      "audit_id": "P0-01",
+      "test_id": "V4-P0-01-ENTRYPOINT-V3",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_single_chain.py::test_public_entrypoints_reject_v3_route",
+      "owner_task": "W4-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Route any public entrypoint to V3 or a second application.",
+      "red_failure": "The test fails while any public entrypoint is not the sole ApplicationV4 chain."
+    },
+    {
+      "audit_id": "P0-02",
+      "test_id": "V4-P0-02-POSITIVE-PRODUCTION",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_signed_pack_produces_verified_result",
+      "owner_task": "W4-07",
+      "state": "RED_AT_TASK",
+      "mutation": "Remove the executable signed rule or downgrade a verified fact.",
+      "red_failure": "The positive slice fails until a signed test pack produces a verified result."
+    },
+    {
+      "audit_id": "P0-03",
+      "test_id": "V4-P0-03-DIGEST-COMPOSITION",
+      "suite": "contract",
+      "selector": "tests/contract/test_jcs_v4.py::test_digest_grammar_composes_across_request_receipt_bundle",
+      "owner_task": "W1-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Change any request, receipt, or bundle digest to legacy grammar.",
+      "red_failure": "Mixed or legacy digest grammar must fail composition."
+    },
+    {
+      "audit_id": "P0-04",
+      "test_id": "V4-P0-04-CALLER-TRUST",
+      "suite": "security",
+      "selector": "tests/security/test_artifact_resolver.py::test_caller_claimed_pass_cannot_create_trust",
+      "owner_task": "W1-04",
+      "state": "RED_AT_TASK",
+      "mutation": "Replace resolver evidence with caller-provided PASS or trusted text.",
+      "red_failure": "Caller assertions must not create source or fact trust."
+    },
+    {
+      "audit_id": "P0-05",
+      "test_id": "V4-P0-05-CANDIDATE-ACTIVATION",
+      "suite": "security",
+      "selector": "tests/security/test_pack_attacks.py::test_candidate_cannot_self_activate",
+      "owner_task": "W2-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Mark a non-executable candidate active without a signed pack.",
+      "red_failure": "Candidate self-activation must fail."
+    },
+    {
+      "audit_id": "P0-06",
+      "test_id": "V4-P0-06-CALLER-SOLVER-RECEIPT",
+      "suite": "security",
+      "selector": "tests/security/test_backend_attacks.py::test_caller_solver_receipt_is_rejected",
+      "owner_task": "W3-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Inject a solver result DTO without executing the provider.",
+      "red_failure": "A caller-supplied solver receipt must not prove execution."
+    },
+    {
+      "audit_id": "P0-07",
+      "test_id": "V4-P0-07-CALLER-CERTIFICATE",
+      "suite": "security",
+      "selector": "tests/security/test_audit_bundle_attacks.py::test_caller_gate_and_digest_cannot_issue_certificate",
+      "owner_task": "W4-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Self-report all PASS gates and receipt digests.",
+      "red_failure": "Caller gate strings and digests must not issue a certificate."
+    },
+    {
+      "audit_id": "P0-08",
+      "test_id": "V4-P0-08-ADVISORY-BOOLEAN",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_single_chain.py::test_advisory_boolean_cannot_be_formal",
+      "owner_task": "W4-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Replace a formal certificate with an advisory verifiable boolean.",
+      "red_failure": "A boolean must never satisfy formal result admission."
+    },
+    {
+      "audit_id": "P0-09",
+      "test_id": "V4-P0-09-MCP-ERROR-SEMANTICS",
+      "suite": "mcp_protocol",
+      "selector": "tests/mcp_protocol/test_transport_semantics.py::test_blocked_and_engine_error_are_protocol_errors",
+      "owner_task": "W5-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Encode blocked or engine_error as a successful tool result.",
+      "red_failure": "Blocked and engine errors must use protocol error semantics."
+    },
+    {
+      "audit_id": "P0-10",
+      "test_id": "V4-P0-10-ARBITRARY-PATH",
+      "suite": "security",
+      "selector": "tests/security/test_artifact_resolver.py::test_arbitrary_local_unc_and_device_paths_are_rejected",
+      "owner_task": "W1-04",
+      "state": "RED_AT_TASK",
+      "mutation": "Resolve arbitrary absolute, UNC, or device paths.",
+      "red_failure": "Paths outside registered artifact handles must fail."
+    },
+    {
+      "audit_id": "P0-11",
+      "test_id": "V4-P0-11-PACK-TOCTOU",
+      "suite": "security",
+      "selector": "tests/security/test_pack_toctou.py::test_verified_bytes_are_the_executed_bytes",
+      "owner_task": "W2-04",
+      "state": "RED_AT_TASK",
+      "mutation": "Swap pack bytes after verification and before evaluation.",
+      "red_failure": "Executed bytes must be the immutable verified bytes."
+    },
+    {
+      "audit_id": "P0-12",
+      "test_id": "V4-P0-12-BUNDLE-RESULT-MIX",
+      "suite": "contract",
+      "selector": "tests/contract/test_run_identity.py::test_existing_bundle_cannot_mix_old_digest_with_new_result",
+      "owner_task": "W4-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Reuse an old COMPLETE bundle with a new result.",
+      "red_failure": "Run identity mismatch must prevent bundle reuse."
+    },
+    {
+      "audit_id": "P0-13",
+      "test_id": "V4-P0-13-REPARSE-ESCAPE",
+      "suite": "windows_security",
+      "selector": "tests/windows_security/test_reparse_escape.py::test_state_reparse_cannot_escape_root",
+      "owner_task": "W4-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Insert a junction or reparse point below the state root.",
+      "red_failure": "Any state-root escape must fail before read or write."
+    },
+    {
+      "audit_id": "P0-14",
+      "test_id": "V4-P0-14-WHEEL-INJECTION",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_wheel_exact_set.py::test_nonformal_module_injection_fails_exact_record_gate",
+      "owner_task": "W6-04",
+      "state": "RED_AT_TASK",
+      "mutation": "Inject V3, compat, candidate, addon, or pipeline code into the wheel.",
+      "red_failure": "The wheel RECORD must equal the authority-derived positive set."
+    },
+    {
+      "audit_id": "P0-15",
+      "test_id": "V4-P0-15-RELEASE-IDENTITY",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_provenance.py::test_release_identity_binds_commit_tag_version_and_artifacts",
+      "owner_task": "W6-06",
+      "state": "RED_AT_TASK",
+      "mutation": "Change commit, tag, version, or artifact after provenance generation.",
+      "red_failure": "Every release identity mismatch must fail promotion."
+    },
+    {
+      "audit_id": "P1-01",
+      "test_id": "V4-P1-01-RFC8785-PROPERTY",
+      "suite": "property",
+      "selector": "tests/property/test_canonicalization.py::test_rfc8785_cross_language_property_vectors",
+      "owner_task": "W1-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Perturb number, string, or key ordering away from RFC 8785 bytes.",
+      "red_failure": "Cross-language canonical bytes and digests must diverge on the mutation."
+    },
+    {
+      "audit_id": "P1-02",
+      "test_id": "V4-P1-02-CODEC-DIFFERENTIAL",
+      "suite": "contract",
+      "selector": "tests/contract/test_python_schema_mcp_differential.py::test_python_schema_mcp_acceptance_sets_match",
+      "owner_task": "W1-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Mutate tuple, nested float, calendar date, engine version, or unknown field acceptance.",
+      "red_failure": "Python, Schema, and MCP acceptance sets must remain identical."
+    },
+    {
+      "audit_id": "P1-03",
+      "test_id": "V4-P1-03-TIME-ORDER",
+      "suite": "contract",
+      "selector": "tests/contract/test_source_service.py::test_fractional_instants_compare_chronologically",
+      "owner_task": "W2-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Compare canonical instants as raw strings.",
+      "red_failure": "Fractional-second ordering mutations must reverse the test outcome."
+    },
+    {
+      "audit_id": "P1-04",
+      "test_id": "V4-P1-04-DISCONNECTED-SOURCE-PATH",
+      "suite": "security",
+      "selector": "tests/security/test_source_service_attacks.py::test_disconnected_source_path_cannot_pass",
+      "owner_task": "W2-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Provide a hash-valid but disconnected source graph.",
+      "red_failure": "A disconnected authority path must fail."
+    },
+    {
+      "audit_id": "P1-05",
+      "test_id": "V4-P1-05-IR-LOSS",
+      "suite": "property",
+      "selector": "tests/property/test_ir_properties.py::test_every_legal_ir_field_survives_lowering_or_blocks",
+      "owner_task": "W3-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Drop authority, terms, interpretation, or source during lowering.",
+      "red_failure": "Every semantic loss must block instead of issuing PASS."
+    },
+    {
+      "audit_id": "P1-06",
+      "test_id": "V4-P1-06-ARGUMENT-MUTATION",
+      "suite": "contract",
+      "selector": "tests/contract/test_argumentation.py::test_priority_permission_attack_mutations_change_result",
+      "owner_task": "W3-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Remove or reorder priority, permission, attack, or witness semantics.",
+      "red_failure": "Each semantic mutation must change labels or fail verification."
+    },
+    {
+      "audit_id": "P1-07",
+      "test_id": "V4-P1-07-DOMAIN-PATCH",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_namespace_domain_patch_changes_evaluation",
+      "owner_task": "W4-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Discard namespace or domain patch values before evaluation.",
+      "red_failure": "The end-to-end result must expose the discarded configuration."
+    },
+    {
+      "audit_id": "P1-08",
+      "test_id": "V4-P1-08-PACK-ATTESTATION",
+      "suite": "security",
+      "selector": "tests/security/test_pack_attacks.py::test_empty_official_pack_and_format_only_attestation_fail",
+      "owner_task": "W2-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Treat a format-only attestation or empty official pack as valid.",
+      "red_failure": "Both mutations must block pack activation."
+    },
+    {
+      "audit_id": "P1-09",
+      "test_id": "V4-P1-09-CANDIDATE-ELIGIBILITY",
+      "suite": "integration",
+      "selector": "tests/integration/test_candidate_boundaries.py::test_source_anchor_does_not_make_candidate_eligible",
+      "owner_task": "W5-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Treat source anchoring alone as reasoning eligibility.",
+      "red_failure": "A candidate remains non-formal without promotion and signed-pack binding."
+    },
+    {
+      "audit_id": "P1-10",
+      "test_id": "V4-P1-10-MULTIPROCESS-RECOVERY",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_multiprocess_recovery.py::test_cross_process_lock_and_stale_staging_recovery",
+      "owner_task": "W4-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Run colliding writers or leave stale staging after a kill point.",
+      "red_failure": "Exactly one writer commits and stale staging remains recoverable."
+    },
+    {
+      "audit_id": "P1-11",
+      "test_id": "V4-P1-11-DIRECTORY-FSYNC",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_power_loss.py::test_directory_fsync_preserves_replayable_commit",
+      "owner_task": "W4-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Omit directory or copied-pack fsync before COMPLETE.",
+      "red_failure": "The power-loss model must expose a non-replayable commit."
+    },
+    {
+      "audit_id": "P1-12",
+      "test_id": "V4-P1-12-DACL-FAIL-CLOSED",
+      "suite": "windows_security",
+      "selector": "tests/windows_security/test_dacl.py::test_unverified_dacl_fails_closed",
+      "owner_task": "W4-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Return state-present when owner or DACL verification is unavailable.",
+      "red_failure": "Unverified Windows permissions must block production state."
+    },
+    {
+      "audit_id": "P1-13",
+      "test_id": "V4-P1-13-STATE-GENERATION",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_generation_isolation.py::test_v3_and_v4_state_generations_are_disjoint",
+      "owner_task": "W4-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Read V3 cache or state from a V4 run generation.",
+      "red_failure": "Cross-generation state reuse must fail."
+    },
+    {
+      "audit_id": "P1-14",
+      "test_id": "V4-P1-14-TOOLSPEC-AUTHORITY",
+      "suite": "contract",
+      "selector": "tests/contract/test_python_schema_mcp_differential.py::test_toolspec_manifest_and_runtime_codec_are_one_authority",
+      "owner_task": "W1-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Drift a manifest schema or runtime codec from ToolSpec.",
+      "red_failure": "Any generated or runtime tool-contract drift must fail."
+    },
+    {
+      "audit_id": "P1-15",
+      "test_id": "V4-P1-15-RESOURCE-BUDGET",
+      "suite": "security",
+      "selector": "tests/security/test_resource_limits.py::test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+      "owner_task": "W5-CUTOVER",
+      "state": "RED_AT_TASK",
+      "mutation": "Disable one byte, depth, deadline, cancellation, backpressure, or quota limit.",
+      "red_failure": "Every removed production budget must be detected."
+    },
+    {
+      "audit_id": "P1-16",
+      "test_id": "V4-P1-16-DOMAIN-CONFIG",
+      "suite": "contract",
+      "selector": "tests/contract/test_rule_packs.py::test_missing_or_corrupt_domain_config_blocks",
+      "owner_task": "W2-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Swallow missing or corrupt domain configuration and use defaults.",
+      "red_failure": "Configuration failure must block rather than fall back."
+    },
+    {
+      "audit_id": "P1-17",
+      "test_id": "V4-P1-17-PATH-PRIVACY",
+      "suite": "security",
+      "selector": "tests/security/test_privacy_firewall.py::test_capabilities_and_errors_never_leak_absolute_paths",
+      "owner_task": "W4-06",
+      "state": "RED_AT_TASK",
+      "mutation": "Expose an installation, state, UNC, or device path in capabilities or errors.",
+      "red_failure": "Absolute machine paths must never leave the boundary."
+    },
+    {
+      "audit_id": "P1-18",
+      "test_id": "V4-P1-18-STORAGE-ERROR-CLASS",
+      "suite": "security",
+      "selector": "tests/security/test_privacy_firewall.py::test_enospc_and_eacces_keep_retryable_storage_class",
+      "owner_task": "W4-06",
+      "state": "RED_AT_TASK",
+      "mutation": "Map ENOSPC or EACCES to invalid tool input.",
+      "red_failure": "Retryable storage errors must retain their protocol class."
+    },
+    {
+      "audit_id": "P1-19",
+      "test_id": "V4-P1-19-WHEEL-POSITIVE-SET",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_formal_only.py::test_wheel_record_equals_authority_positive_set",
+      "owner_task": "W6-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Replace the positive set with a short forbidden-module blacklist.",
+      "red_failure": "The packaging gate must fail unless RECORD equals the complete positive set."
+    },
+    {
+      "audit_id": "P1-20",
+      "test_id": "V4-P1-20-HASH-LOCKS",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked",
+      "owner_task": "W6-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Remove a transitive dependency hash from any supported profile.",
+      "red_failure": "Clean offline require-hashes installation must fail on the mutation."
+    },
+    {
+      "audit_id": "P2-01",
+      "test_id": "V4-P2-01-COMPANION-PORTABILITY",
+      "suite": "differential",
+      "selector": "tests/differential/test_pinned_companion_spec.py::test_companion_oracle_is_available_without_personal_checkout",
+      "owner_task": "W6-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Depend on an unpinned personal companion checkout.",
+      "red_failure": "The differential suite must fail if the B02-bound input is unavailable."
+    },
+    {
+      "audit_id": "P2-02",
+      "test_id": "V4-P2-02-INSTALLED-SUITES",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_installed_production.py::test_installed_required_suites_have_zero_skip_or_xfail",
+      "owner_task": "W6-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Remove a required suite or mark a required test skipped or xfailed.",
+      "red_failure": "Installed production collection must contain every required suite with zero bypasses."
+    },
+    {
+      "audit_id": "P2-03",
+      "test_id": "V4-P2-03-DERIVED-TRUST",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_public_boundary_inputs.py::test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
+      "owner_task": "W5-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Replace boundary inputs with pre-trusted facts, PASS gates, or receipts.",
+      "red_failure": "The public vertical slice must derive every trusted object."
+    },
+    {
+      "audit_id": "P2-04",
+      "test_id": "V4-P2-04-CURRENT-AUTHORITY",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_current_authority_docs.py::test_current_claims_have_one_authority",
+      "owner_task": "W5-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Restore a conflicting current architecture registry or status claim.",
+      "red_failure": "Conflicting current authority claims must fail the gate."
+    },
+    {
+      "audit_id": "P2-05",
+      "test_id": "V4-P2-05-DSH-DELIVERY-GUARD",
+      "suite": "dsh_formal",
+      "selector": "tests/dsh_formal/test_delivery_guard.py::test_dsh_formal_bypass_and_tool_hiding_are_blocked",
+      "owner_task": "W9-05",
+      "state": "RED_AT_TASK",
+      "mutation": "Bypass JC verification or hide a required formal tool from DSH.",
+      "red_failure": "DSH formal delivery must fail without the pinned verified path."
+    },
+    {
+      "audit_id": "P2-06",
+      "test_id": "V4-P2-06-NO-GIT-ARCHIVE",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_source_archive.py::test_wheel_gate_runs_without_git_metadata",
+      "owner_task": "W6-01",
+      "state": "RED_AT_TASK",
+      "mutation": "Run the wheel gate from a source archive without .git metadata.",
+      "red_failure": "The source-archive build must remain verifiable without a checkout."
+    },
+    {
+      "audit_id": "P2-07",
+      "test_id": "V4-P2-07-PUBLIC-VERSION",
+      "suite": "contract",
+      "selector": "tests/contract/test_public_version.py::test_package_root_exports_v4_version",
+      "owner_task": "W1-02",
+      "state": "RED_AT_TASK",
+      "mutation": "Remove or drift compiler_core.__version__ from the V4 package identity.",
+      "red_failure": "Installed package-root version lookup must fail on drift."
+    },
+    {
+      "audit_id": "P3-01",
+      "test_id": "V4-P3-01-BOUNDED-DIAGNOSTICS",
+      "suite": "integration",
+      "selector": "tests/integration/test_pack_diagnostics.py::test_pack_verify_summary_is_bounded_and_actionable",
+      "owner_task": "W5-03",
+      "state": "RED_AT_TASK",
+      "mutation": "Emit the full candidate identifier set by default.",
+      "red_failure": "Default diagnostics must remain bounded and retain actionable counts."
+    },
+    {
+      "audit_id": "P3-02",
+      "test_id": "V4-P3-02-HISTORICAL-DOCS",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_current_docs.py::test_historical_guides_are_not_current_authority",
+      "owner_task": "W5-CUTOVER",
+      "state": "RED_AT_TASK",
+      "mutation": "Restore a V2, V3, W1b, or WorkBuddy migration guide as current documentation.",
+      "red_failure": "Historical guidance must not re-enter current authority."
+    }
+  ],
+  "rewrite_at_task": [
+    {
+      "id": "REWRITE-SKIPPED-ADVERSARIAL",
+      "selector": "tests/unit/test_adversarial.py",
+      "rewrite_task": "W5-02C",
+      "retirement_task": "W5-02C",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Module-level skip hides legacy evaluator and corpus behavior.",
+      "replacement_selector": "tests/unit/test_adversarial.py::test_v4_adversarial_fail_closed"
+    },
+    {
+      "id": "REWRITE-SKIPPED-TRIRAIL",
+      "selector": "tests/unit/test_trirail_collision.py",
+      "rewrite_task": "W5-02C",
+      "retirement_task": "W5-02C",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Module-level skip hides an experiment bound to the legacy corpus.",
+      "replacement_selector": "tests/unit/test_trirail_collision.py::test_experiment_has_no_formal_or_legacy_consumer"
+    },
+    {
+      "id": "REWRITE-SKIPPED-ZH-RULES",
+      "selector": "tests/unit/test_zh_rules.py",
+      "rewrite_task": "W5-02C",
+      "retirement_task": "W5-02C",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Module-level skip hides direct legacy rules.yaml consumption.",
+      "replacement_selector": "tests/unit/test_zh_rules.py::test_legacy_rules_path_is_absent_from_current_consumers"
+    },
+    {
+      "id": "REWRITE-ENVIRONMENT-EXCLUDED-DIGEST",
+      "selector": "tests/unit/test_canonical_serialization.py::test_semantic_digest_excludes_environment_fields_and_digest_itself",
+      "rewrite_task": "W1-01",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test protects a digest that can ignore identity-bearing result fields.",
+      "replacement_selector": "tests/property/test_canonicalization.py::test_every_identity_field_changes_digest"
+    },
+    {
+      "id": "REWRITE-ENGINE-3-ACCEPTANCE",
+      "selector": "tests/unit/test_contracts_v4.py::TestFailClosed::test_engine_version_mismatch_rejected",
+      "rewrite_task": "W1-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test currently requires engine 3.0.2 to be accepted by V4.",
+      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_engine_3_payload_fails"
+    },
+    {
+      "id": "REWRITE-COMPAT-ADAPTER",
+      "selector": "tests/unit/test_contracts_v4.py::TestCompatAdapter",
+      "rewrite_task": "W1-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Compat projection tests protect the prohibited V3 adapter.",
+      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_v3_payload_has_no_upgrade_path"
+    },
+    {
+      "id": "REWRITE-V3-SCHEMA-GENERATION",
+      "selector": "tests/unit/test_case_contracts.py::test_committed_schema_is_generated_from_contracts",
+      "rewrite_task": "W1-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test freezes the V3 schema and advisory definitions as current output.",
+      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_only_v4_schema_is_generated"
+    },
+    {
+      "id": "REWRITE-APPLICATION-TRUSTED-SUCCESS",
+      "selector": "tests/unit/test_application_service.py",
+      "rewrite_task": "W4-07",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Formal success directly constructs trusted facts, pack, source, and checker state.",
+      "replacement_selector": "tests/formal_e2e/test_public_boundary_inputs.py::test_public_request_derives_all_trust"
+    },
+    {
+      "id": "REWRITE-SOURCE-CALLER-PASS",
+      "selector": "tests/unit/test_source_service_v2.py::TestSourceSnapshot::test_positive_official_snapshot_passes_source_gate",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The positive source test constructs the object that reports PASS.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_source_trust_is_derived_from_resolved_bytes"
+    },
+    {
+      "id": "REWRITE-SOURCE-APPLICABILITY-PASS",
+      "selector": "tests/unit/test_source_service_v2.py::TestApplicabilityGate::test_rule_effective_at_decision_time_passes",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The applicability test passes a caller-built source snapshot without the V4 resolver chain.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_applicability_consumes_verified_source_version_path"
+    },
+    {
+      "id": "REWRITE-SOURCE-PATH-PASS",
+      "selector": "tests/unit/test_source_service_v2.py::TestSourcePath::test_positive_path_with_terminal_binding_passes",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The path test constructs and blesses its own terminal binding in memory.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_source_path_is_bound_to_resolved_authority_root"
+    },
+    {
+      "id": "REWRITE-FACT-CALLER-PASS",
+      "selector": "tests/unit/test_fact_admission_v1.py::TestFactGate::test_positive_attestation_admits_fact",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The fact test passes caller-created PASS gate outcomes into admission.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_fact_admission_consumes_verified_source_receipt"
+    },
+    {
+      "id": "REWRITE-LEGACY-VERIFIED-FACT",
+      "selector": "tests/unit/test_fact_admission.py::test_only_complete_verified_fact_can_enter_formal_kernel",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test directly constructs VERIFIED_FACT plus a trusted_service coordinate.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_public_fact_cannot_self_issue_admission"
+    },
+    {
+      "id": "REWRITE-RULE-CALLER-RECEIPT",
+      "selector": "tests/unit/test_rule_platform_cn.py::TestPromotionGate::test_full_promotion_requires_receipt_and_ready_domain",
+      "rewrite_task": "W2-06",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The rule test constructs its human promotion receipt in process.",
+      "replacement_selector": "tests/integration/test_trust_chain.py::test_rule_activation_consumes_verified_promotion_and_pack"
+    },
+    {
+      "id": "REWRITE-SHARED-IR-ORACLE",
+      "selector": "tests/unit/test_legal_spec_ivl.py::TestDifferential",
+      "rewrite_task": "W3-05",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The current differential oracle shares the staged IVL simplification and is not independent.",
+      "replacement_selector": "tests/semantic_mutation/test_ir_mutation.py::test_independent_oracle_kills_ir_semantic_mutations"
+    },
+    {
+      "id": "REWRITE-BACKEND-CALLER-FEATURES",
+      "selector": "tests/unit/test_backend_router_v1.py::TestRouting",
+      "rewrite_task": "W4-07",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Routing tests construct caller features and never exercise a provider.",
+      "replacement_selector": "tests/formal_e2e/test_backend_execution.py::test_problem_features_are_derived_and_provider_executes"
+    },
+    {
+      "id": "REWRITE-BACKEND-CALLER-RECEIPTS",
+      "selector": "tests/unit/test_backend_router_v1.py::TestSolverReceipt",
+      "rewrite_task": "W4-07",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Solver receipt tests only construct DTOs and do not prove provider execution.",
+      "replacement_selector": "tests/formal_e2e/test_backend_execution.py::test_solver_receipt_is_bound_to_executed_provider"
+    },
+    {
+      "id": "REWRITE-CERTIFICATE-CALLER-PASS",
+      "selector": "tests/unit/test_certificate_v1.py::TestFormalCertificate::test_full_pass_issues_certificate",
+      "rewrite_task": "W4-07",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "Certificate success constructs PASS gates and receipts directly.",
+      "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_certificate_uses_verified_run_receipts"
+    },
+    {
+      "id": "REWRITE-OLD-AUDIT-BUNDLE-COMPLETE",
+      "selector": "tests/unit/test_audit_bundle.py::test_complete_bundle_has_fixed_files_hashes_and_semantic_digests",
+      "rewrite_task": "W4-07",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test proves the current V3 bundle writer, not a V4 verified vertical slice.",
+      "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_v4_bundle_verifies_and_replays"
+    },
+    {
+      "id": "REWRITE-WORKBUDDY-MCP",
+      "selector": "tests/unit/test_mcp_manifest_dispatch.py",
+      "rewrite_task": "W5-01",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The focused tests protect the addon WorkBuddy adapter instead of the V4 formal MCP boundary.",
+      "replacement_selector": "tests/mcp_protocol/test_transport_semantics.py::test_v4_tools_validate_success_and_error_outputs"
+    },
+    {
+      "id": "REWRITE-OLD-MCP-STDIO",
+      "selector": "tests/unit/test_mcp_stdio_protocol.py",
+      "rewrite_task": "W5-01",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The helper discards isError and the module exercises the old addon transport.",
+      "replacement_selector": "tests/mcp_protocol/test_transport_semantics.py::test_stdio_preserves_v4_iserror_and_status"
+    },
+    {
+      "id": "REWRITE-V3-ENTRYPOINT-PARITY",
+      "selector": "tests/unit/test_three_entrypoint_parity.py",
+      "rewrite_task": "W5-01",
+      "retirement_task": "W5-CUTOVER",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The parity test follows V3 development entrypoints instead of an installed V4 formal chain.",
+      "replacement_selector": "tests/formal_e2e/test_single_chain.py::test_three_installed_entrypoints_are_byte_identical"
+    },
+    {
+      "id": "REWRITE-PARTIAL-CORE-LOCK",
+      "selector": "tests/unit/test_release_engineering.py::test_core_lock_has_target_wheel_hashes_and_matches_runtime_dependency",
+      "rewrite_task": "W6-03",
+      "retirement_task": "W6-05",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The test hard-codes a partial runtime lock instead of all transitive profiles.",
+      "replacement_selector": "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked"
+    },
+    {
+      "id": "REWRITE-WHEEL-BLACKLIST",
+      "selector": "tests/unit/test_release_engineering.py::test_clean_wheel_gate_rejects_known_deleted_runtime_modules",
+      "rewrite_task": "W6-01",
+      "retirement_task": "W6-05",
+      "state": "REWRITE_AT_TASK",
+      "reason": "A short blacklist cannot prove the wheel contains only the formal positive set.",
+      "replacement_selector": "tests/packaging/test_formal_only.py::test_wheel_record_equals_authority_positive_set"
+    },
+    {
+      "id": "REWRITE-SPEC-SHADOW-RUNTIME",
+      "selector": "tests/unit/test_spec_shadow_harness.py",
+      "rewrite_task": "W6-05",
+      "retirement_task": "W6-05",
+      "state": "REWRITE_AT_TASK",
+      "reason": "The differential oracle must leave runtime and bind the B02 pinned input.",
+      "replacement_selector": "tests/differential/test_pinned_companion_spec.py::test_pinned_companion_oracle_detects_mutations"
+    }
+  ]
+}

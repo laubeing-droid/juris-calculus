@@ -25,8 +25,10 @@ B00 阶段 runner 还提供以下子命令，让 B00 自身的 gate 可机器验
 from __future__ import annotations
 
 import argparse
+import ast
 import base64
 import calendar
+import configparser
 import fnmatch
 import hashlib
 import itertools
@@ -39,7 +41,9 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import uuid
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -49,7 +53,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.4.0"
+RUNNER_VERSION = "0.5.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -62,6 +66,8 @@ APPROVAL_SCHEMA = SCHEMA_DIR / "approval.schema.json"
 OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
 JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
+REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
+REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
 W0_RESOURCE_PROBE_FILE_DIGEST = (
     "sha256:cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35"
 )
@@ -75,6 +81,62 @@ UTC_INSTANT_V4_PATTERN = re.compile(
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
     r"(?:\.(?P<fraction>[0-9]{1,9}))?Z\Z"
 )
+
+W0_REQUIRED_TEST_SUITES = (
+    "contract", "property", "integration", "differential", "formal_e2e",
+    "security", "storage_chaos", "windows_security", "mcp_protocol",
+    "packaging", "dsh_formal",
+)
+W0_REQUIRED_REWRITE_IDS = frozenset({
+    "REWRITE-SKIPPED-ADVERSARIAL",
+    "REWRITE-SKIPPED-TRIRAIL",
+    "REWRITE-SKIPPED-ZH-RULES",
+    "REWRITE-ENVIRONMENT-EXCLUDED-DIGEST",
+    "REWRITE-ENGINE-3-ACCEPTANCE",
+    "REWRITE-COMPAT-ADAPTER",
+    "REWRITE-V3-SCHEMA-GENERATION",
+    "REWRITE-APPLICATION-TRUSTED-SUCCESS",
+    "REWRITE-SOURCE-CALLER-PASS",
+    "REWRITE-SOURCE-APPLICABILITY-PASS",
+    "REWRITE-SOURCE-PATH-PASS",
+    "REWRITE-FACT-CALLER-PASS",
+    "REWRITE-LEGACY-VERIFIED-FACT",
+    "REWRITE-RULE-CALLER-RECEIPT",
+    "REWRITE-SHARED-IR-ORACLE",
+    "REWRITE-BACKEND-CALLER-FEATURES",
+    "REWRITE-BACKEND-CALLER-RECEIPTS",
+    "REWRITE-CERTIFICATE-CALLER-PASS",
+    "REWRITE-OLD-AUDIT-BUNDLE-COMPLETE",
+    "REWRITE-WORKBUDDY-MCP",
+    "REWRITE-OLD-MCP-STDIO",
+    "REWRITE-V3-ENTRYPOINT-PARITY",
+    "REWRITE-PARTIAL-CORE-LOCK",
+    "REWRITE-WHEEL-BLACKLIST",
+    "REWRITE-SPEC-SHADOW-RUNTIME",
+})
+W0_REQUIRED_REWRITE_PROJECTION_DIGEST = (
+    "sha256:df12272a2c3882baad21625035f642af2b43ce2a4877a0903066b5908dae15da"
+)
+W0_B02_COMPANION_BINDING = {
+    "kind": "B02_RECEIPT",
+    "receipt_digest": "sha256:fbc068ebad1ec4c02f72acff30dfade3e928c5967b1c0baa89b51971d3982045",
+    "intake_digest": "sha256:0540bb89c4799c4b5372ebd0768ba0efbb2d2e4ae5b36eb9b94143978f68ef6f",
+    "commit": "a3a015941f75091c87d57aa956e712f1546dd7d4",
+    "tree": "2d0b1bb9c4f4cd82a9a4452b96ab1d05c0d1ed99",
+    "required_files": {
+        "theory/spec/reference_semantics.py": "a37304e753da21016e83f3ae8cfb53286eedff78d058e8ebb1470ebac8cd64ba",
+        "theory/spec/certificate_schema.py": "1b71a5cd8239dac29c2eacb3397817a47bea8b4acef0fcff9addc10aa5bb4d95",
+    },
+    "fixture_family_digests": {
+        "admin_breach": "sha256:383dd4ebfba8909f16e49efbf4800c07da554bdee0e67f357d0fd2324b9b9721",
+        "contract_breach": "sha256:43f96433ca76dd57fb165b4c1a3c6d717b5ae007a42d14aad86ea1f77bc58d0c",
+        "criminal_breach": "sha256:7bb6ff224c9ea294b3c81370870e3c9aefc205184d88aa57db3fcc54307d014e",
+        "license_permission_priority": "sha256:2d27f41f24277b4895a7681299d702db5f862a0c73feabad039506b88a7baaab",
+        "tort_breach": "sha256:f3035cb082fae1742efc3fbfeba7f7d029c86262f7f54b4f1fd90f1486107a8b",
+    },
+    "oracle_imports_production": False,
+    "unavailable_exit_code": 21,
+}
 
 W0_REQUIRED_OBJECT_IDS = frozenset({
     "DigestV4", "CanonicalTimeV4", "ContentRefV4", "ArtifactHandleV4", "ErrorV4",
@@ -2062,6 +2124,976 @@ def cmd_foundation_contract(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _ast_dotted_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        prefix = _ast_dotted_name(node.value)
+        return f"{prefix}.{node.attr}" if prefix else node.attr
+    return ""
+
+
+def _forbidden_test_controls(source: str) -> list[str]:
+    """Return collection/runtime bypass controls used by required test source."""
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return ["syntax-error"]
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for imported in node.names:
+                if imported.name in {"pytest", "unittest"}:
+                    aliases[imported.asname or imported.name] = imported.name
+        elif isinstance(node, ast.ImportFrom) and node.module in {"pytest", "unittest"}:
+            for imported in node.names:
+                aliases[imported.asname or imported.name] = f"{node.module}.{imported.name}"
+
+    def normalized_name(node: ast.AST) -> str:
+        raw = _ast_dotted_name(node)
+        head, separator, tail = raw.partition(".")
+        replacement = aliases.get(head, head)
+        return f"{replacement}.{tail}" if separator else replacement
+
+    forbidden = {
+        "pytest.skip", "pytest.xfail", "pytest.importorskip",
+        "pytest.mark.skip", "pytest.mark.skipif", "pytest.mark.xfail",
+        "unittest.skip", "unittest.skipIf", "unittest.skipUnless",
+        "unittest.expectedFailure", "unittest.SkipTest",
+    }
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Call, ast.Attribute)):
+            target = node.func if isinstance(node, ast.Call) else node
+            name = normalized_name(target)
+            if name in forbidden:
+                found.add(name)
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id == "__unittest_skip__":
+                    found.add("__unittest_skip__")
+        if isinstance(node, ast.Call) and normalized_name(node.func) == "getattr" and len(node.args) >= 2:
+            owner = normalized_name(node.args[0])
+            member = node.args[1].value if isinstance(node.args[1], ast.Constant) else None
+            candidate = f"{owner}.{member}" if isinstance(member, str) else ""
+            if candidate in forbidden:
+                found.add(candidate)
+    return sorted(found)
+
+
+def _selector_file(selector: Any) -> str | None:
+    if not isinstance(selector, str) or not selector:
+        return None
+    path = selector.split("::", 1)[0]
+    if (
+        "\\" in path
+        or path.startswith("/")
+        or re.match(r"^[A-Za-z]:", path)
+        or not path.endswith(".py")
+        or any(part in {"", ".", ".."} for part in path.split("/"))
+    ):
+        return None
+    return path
+
+
+def _selector_is_declared(root: Path, selector: str) -> bool:
+    relative = _selector_file(selector)
+    if relative is None:
+        return False
+    path = root / relative
+    if not path.is_file():
+        return False
+    parts = [part.split("[", 1)[0] for part in selector.split("::")[1:]]
+    if not parts:
+        return True
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=relative)
+    except (OSError, UnicodeError, SyntaxError):
+        return False
+    body: list[ast.stmt] = tree.body
+    for part in parts:
+        match = next(
+            (
+                node for node in body
+                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.name == part
+            ),
+            None,
+        )
+        if match is None:
+            return False
+        body = match.body if isinstance(match, ast.ClassDef) else []
+    return True
+
+
+def _selector_matches_suite(
+    selector_path: str, canonical_suite: str, aliases: dict[str, str],
+) -> bool:
+    parts = selector_path.split("/")
+    return (
+        len(parts) >= 3
+        and parts[0] == "tests"
+        and aliases.get(parts[1], parts[1]) == canonical_suite
+    )
+
+
+def _task_is_ancestor_or_same(
+    ancestor_id: str, descendant_id: str, task_by_id: dict[str, dict[str, Any]],
+) -> bool:
+    if ancestor_id == descendant_id:
+        return True
+    pending = list(task_by_id.get(descendant_id, {}).get("depends_on", []))
+    visited: set[str] = set()
+    while pending:
+        candidate = pending.pop()
+        if candidate == ancestor_id:
+            return True
+        if candidate in visited:
+            continue
+        visited.add(candidate)
+        pending.extend(task_by_id.get(candidate, {}).get("depends_on", []))
+    return False
+
+
+def _closed_manifest_fields(
+    value: Any, fields: set[str], label: str, problems: list[str],
+) -> bool:
+    if not isinstance(value, dict) or set(value) != fields:
+        problems.append(f"{label} fields are not closed")
+        return False
+    return True
+
+
+def _git_untracked_paths(root: Path, paths: Iterable[str]) -> list[str]:
+    """Return gate inputs that would be absent from a fresh Git checkout."""
+
+    normalized = sorted({path for path in paths if isinstance(path, str) and path})
+    if not normalized:
+        return []
+    completed = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--cached", "-z", "--", *normalized],
+        capture_output=True, check=False,
+    )
+    if completed.returncode != 0:
+        return normalized
+    tracked = {
+        item.decode("utf-8", errors="surrogateescape")
+        for item in completed.stdout.split(b"\0")
+        if item
+    }
+    return [path for path in normalized if path not in tracked]
+
+
+def _pytest_config_problems(config_text: str, sentinel_name: str) -> list[str]:
+    """Parse and lock the discovery and bypass controls used by required tests."""
+
+    parser = configparser.ConfigParser(interpolation=None, strict=True)
+    try:
+        parser.read_string(config_text)
+    except configparser.Error as exc:
+        return [f"required pytest config is invalid: {exc}"]
+    if parser.sections() != ["pytest"]:
+        return ["required pytest config must contain exactly one pytest section"]
+    section = parser["pytest"]
+    problems: list[str] = []
+    if section.get("addopts", "").split() != ["--strict-config", "--strict-markers"]:
+        problems.append("required pytest addopts are not exact")
+    if section.get("xfail_strict", "").strip().lower() != "true":
+        problems.append("required pytest xfail_strict is not true")
+    patterns = section.get("python_files", "").split()
+    if patterns != ["test_*.py", "*_test.py"]:
+        problems.append("required pytest discovery patterns are not exact")
+    if any(fnmatch.fnmatchcase(sentinel_name, pattern) for pattern in patterns):
+        problems.append("red sentinel matches default pytest discovery")
+    if section.get("pythonpath", "").split() != [".."]:
+        problems.append("required pytest pythonpath is not repository root")
+    marker_lines = [line.strip() for line in section.get("markers", "").splitlines() if line.strip()]
+    if marker_lines != ["v4_required: test is admitted by tests/required-v4-tests.json"]:
+        problems.append("required pytest marker registry is not exact")
+    return problems
+
+
+def _required_pytest_environment() -> dict[str, str]:
+    """Remove ambient pytest/Python injection from W0-04 subprocesses."""
+
+    environment = os.environ.copy()
+    for name in ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTHONHOME", "PYTHONPATH"):
+        environment.pop(name, None)
+    environment.update({
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    })
+    return environment
+
+
+def _live_b02_binding(state_root: Path) -> dict[str, str]:
+    """Rebind the pinned companion declaration to preserved B02 state bytes."""
+
+    expected_receipt_digest = W0_B02_COMPANION_BINDING["receipt_digest"]
+    receipt_paths = sorted(
+        (state_root / "tasks" / "B02").glob("*/receipt.json"),
+        key=lambda path: int(path.parent.name) if path.parent.name.isdigit() else -1,
+    )
+    receipt: dict[str, Any] | None = None
+    for path in receipt_paths:
+        try:
+            candidate = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        if candidate.get("receipt_digest") == expected_receipt_digest:
+            receipt = candidate
+            break
+    if receipt is None:
+        raise ValueError("pinned B02 receipt is missing")
+    if (
+        receipt.get("task_id") != "B02"
+        or receipt.get("status") != "COMPLETED"
+        or _receipt_digest(receipt) != expected_receipt_digest
+        or not _validate_git_binding(receipt["start_commit"], receipt["start_tree"])
+        or not _validate_git_binding(receipt["result_commit"], receipt["result_tree"])
+        or any(
+            not _validate_stream(command[stream])
+            for command in receipt.get("command_results", [])
+            for stream in ("stdout", "stderr")
+        )
+    ):
+        raise ValueError("pinned B02 receipt binding is invalid")
+
+    intake_path = state_root / "evidence" / "B02" / "intake.json"
+    try:
+        intake = json.loads(intake_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"pinned B02 intake is unreadable: {exc}") from exc
+    intake_digest = intake.get("digest")
+    unsigned_intake = {key: value for key, value in intake.items() if key != "digest"}
+    if (
+        intake_digest != W0_B02_COMPANION_BINDING["intake_digest"]
+        or _digest_object(unsigned_intake) != intake_digest
+        or intake.get("schema_version") != "jc/remediation-v4-spec-intake/1.0"
+        or intake.get("commit") != W0_B02_COMPANION_BINDING["commit"]
+        or intake.get("tree") != W0_B02_COMPANION_BINDING["tree"]
+        or intake.get("required_files") != W0_B02_COMPANION_BINDING["required_files"]
+        or intake.get("fixture_family_digests")
+        != W0_B02_COMPANION_BINDING["fixture_family_digests"]
+    ):
+        raise ValueError("pinned B02 intake binding is invalid")
+    differential_path = state_root / "evidence" / "B02" / "differential.json"
+    try:
+        differential_digest = sha256_hex(differential_path.read_bytes())
+    except OSError as exc:
+        raise ValueError(f"pinned B02 differential evidence is unreadable: {exc}") from exc
+    if differential_digest != intake.get("differential_report_sha256"):
+        raise ValueError("pinned B02 differential evidence digest mismatch")
+    return {
+        "receipt_digest": expected_receipt_digest,
+        "intake_digest": intake_digest,
+        "differential_digest": "sha256:" + differential_digest,
+        "companion_commit": intake["commit"],
+        "companion_tree": intake["tree"],
+    }
+
+
+def _manifest_owner_problems(
+    *, entry_label: str, owner_id: Any, selector: Any,
+    task_by_id: dict[str, dict[str, Any]], task_order: dict[str, int],
+    require_audit_id: str | None = None,
+    closure_tasks: set[str] | None = None,
+) -> list[str]:
+    problems: list[str] = []
+    task = task_by_id.get(owner_id) if isinstance(owner_id, str) else None
+    if task is None or task.get("mode") != "AUTO":
+        return [f"{entry_label} has no AUTO owner task"]
+    if task_order.get(owner_id, -1) <= task_order.get("W0-04", -1):
+        problems.append(f"{entry_label} owner task is not after W0-04")
+    relative = _selector_file(selector)
+    if relative is None or not _matches_allowed(relative, task.get("allowed_paths", [])):
+        problems.append(f"{entry_label} selector is outside owner task allowlist")
+    if require_audit_id is not None and require_audit_id not in task.get("audit_ids", []):
+        problems.append(f"{entry_label} owner task does not bind audit id {require_audit_id}")
+    if closure_tasks is not None and owner_id not in closure_tasks:
+        problems.append(f"{entry_label} owner task is not a registered closure task")
+    return problems
+
+
+def _required_test_manifest_problems(
+    manifest: Any, *, root: Path, issue_map: Any, plan: Any,
+    require_pending: bool = False,
+) -> list[str]:
+    """Validate W0-04 taxonomy without executing production code."""
+
+    problems: list[str] = []
+    top_fields = {
+        "schema_version", "required_policy", "pytest_config", "red_sentinel_selector",
+        "suite_aliases", "suites", "required_now", "evidence_tracks",
+        "audit_mutations", "rewrite_at_task",
+    }
+    if not _closed_manifest_fields(manifest, top_fields, "required test manifest", problems):
+        return problems
+    if manifest["schema_version"] != "jc/v4-required-test-manifest/1.0":
+        problems.append("required test manifest schema version drifted")
+    expected_policy = {
+        "current_state": "REQUIRED_NOW",
+        "future_state": "RED_AT_TASK",
+        "activation_state": "ACTIVE_REQUIRED",
+        "rewrite_state": "REWRITE_AT_TASK",
+        "prohibited_outcomes": ["SKIP", "XFAIL"],
+        "unimplemented_behavior": "FAIL",
+    }
+    if manifest["required_policy"] != expected_policy:
+        problems.append("required test policy drifted")
+    if manifest["pytest_config"] != "tests/pytest.ini":
+        problems.append("required pytest config path drifted")
+    expected_aliases = {
+        "contract_v4": "contract",
+        "trust_security": "security",
+        "semantic_mutation": "differential",
+    }
+    if manifest["suite_aliases"] != expected_aliases:
+        problems.append("suite aliases do not reconcile audit and W0-04 taxonomy")
+    suite_aliases = manifest["suite_aliases"] if isinstance(manifest["suite_aliases"], dict) else {}
+    if manifest["red_sentinel_selector"] != "tests/required_red_sentinels.py":
+        problems.append("red sentinel selector drifted")
+    elif not _selector_is_declared(root, manifest["red_sentinel_selector"]):
+        problems.append("red sentinel selector is not declared")
+    elif Path(manifest["red_sentinel_selector"]).name.startswith("test"):
+        problems.append("red sentinel would poison default pytest discovery")
+    else:
+        sentinel_source = (root / manifest["red_sentinel_selector"]).read_text(encoding="utf-8-sig")
+        if _forbidden_test_controls(sentinel_source):
+            problems.append("red sentinel uses a skip or xfail bypass")
+        try:
+            sentinel_tree = ast.parse(sentinel_source)
+        except SyntaxError:
+            sentinel_tree = ast.Module(body=[], type_ignores=[])
+        if any(
+            (isinstance(node, ast.Import) and any(alias.name == "compiler_core" or alias.name.startswith("compiler_core.") for alias in node.names))
+            or (isinstance(node, ast.ImportFrom) and isinstance(node.module, str) and (node.module == "compiler_core" or node.module.startswith("compiler_core.")))
+            for node in ast.walk(sentinel_tree)
+        ):
+            problems.append("red sentinel imports production implementation")
+
+    tracked_gate_inputs = {
+        "tools/remediate_v4.py",
+        "tests/required-v4-tests.json",
+        "tests/pytest.ini",
+        manifest.get("red_sentinel_selector"),
+    }
+    for suite in manifest.get("suites", []):
+        if isinstance(suite, dict) and isinstance(suite.get("path"), str):
+            tracked_gate_inputs.add(f"{suite['path']}/README.md")
+    for required in manifest.get("required_now", []):
+        if isinstance(required, dict):
+            selector_path = _selector_file(required.get("selector"))
+            if selector_path is not None:
+                tracked_gate_inputs.add(selector_path)
+    for registry_name in ("evidence_tracks", "audit_mutations"):
+        for entry in manifest.get(registry_name, []):
+            if isinstance(entry, dict):
+                selector_path = _selector_file(entry.get("selector"))
+                if selector_path is not None and (root / selector_path).is_file():
+                    tracked_gate_inputs.add(selector_path)
+    for entry in manifest.get("rewrite_at_task", []):
+        if not isinstance(entry, dict):
+            continue
+        for field in ("selector", "replacement_selector"):
+            selector_path = _selector_file(entry.get(field))
+            if selector_path is not None and (root / selector_path).is_file():
+                tracked_gate_inputs.add(selector_path)
+    untracked_gate_inputs = _git_untracked_paths(
+        root, (path for path in tracked_gate_inputs if isinstance(path, str))
+    )
+    if untracked_gate_inputs:
+        problems.append(
+            "required gate inputs are not Git-tracked: " + ", ".join(untracked_gate_inputs)
+        )
+    config_path = root / "tests" / "pytest.ini"
+    try:
+        config_text = config_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        config_text = ""
+    problems.extend(_pytest_config_problems(config_text, Path(manifest["red_sentinel_selector"]).name))
+
+    if not isinstance(issue_map, dict) or not isinstance(issue_map.get("issues"), list):
+        problems.append("issue map is unreadable for mutation coverage")
+        issue_ids: list[str] = []
+    else:
+        issue_ids = [item.get("id") for item in issue_map["issues"] if isinstance(item, dict)]
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    } if isinstance(issue_map, dict) else {}
+    if not isinstance(plan, dict) or not isinstance(plan.get("tasks"), list):
+        problems.append("task plan is unreadable for required-test ownership")
+        tasks: list[dict[str, Any]] = []
+    else:
+        tasks = [item for item in plan["tasks"] if isinstance(item, dict)]
+    task_by_id = {item.get("id"): item for item in tasks if isinstance(item.get("id"), str)}
+    task_order = {item.get("id"): index for index, item in enumerate(tasks)}
+
+    suite_fields = {"id", "path", "proof_obligation"}
+    suites = manifest["suites"] if isinstance(manifest["suites"], list) else []
+    if not isinstance(manifest["suites"], list):
+        problems.append("suite taxonomy is not a list")
+    suite_ids = [item.get("id") for item in suites if isinstance(item, dict)]
+    if tuple(suite_ids) != W0_REQUIRED_TEST_SUITES:
+        problems.append("suite taxonomy is not the exact W0-04 eleven-suite contract")
+    suite_by_id: dict[str, dict[str, Any]] = {}
+    for item in suites:
+        if not _closed_manifest_fields(item, suite_fields, "suite", problems):
+            continue
+        suite_id = item["id"]
+        expected_path = f"tests/{suite_id}"
+        if item["path"] != expected_path:
+            problems.append(f"suite path drifted for {suite_id}")
+        if not isinstance(item["proof_obligation"], str) or not item["proof_obligation"].strip():
+            problems.append(f"suite {suite_id} lacks a proof obligation")
+        directory = root / expected_path
+        if not directory.is_dir() or not (directory / "README.md").is_file():
+            problems.append(f"suite {suite_id} lacks a tracked skeleton")
+        if isinstance(suite_id, str):
+            suite_by_id[suite_id] = item
+
+    required_fields = {"id", "suite", "selector", "state", "expected_tests"}
+    required_now = manifest["required_now"] if isinstance(manifest["required_now"], list) else []
+    if not isinstance(manifest["required_now"], list):
+        problems.append("required-now registry is not a list")
+    required_ids: list[str] = []
+    required_selectors: list[str] = []
+    for item in required_now:
+        if not _closed_manifest_fields(item, required_fields, "required-now test", problems):
+            continue
+        required_ids.append(item["id"])
+        required_selectors.append(item["selector"])
+        if item["state"] != "REQUIRED_NOW":
+            problems.append(f"required-now test {item['id']} has a non-required state")
+        if not isinstance(item["expected_tests"], int) or isinstance(item["expected_tests"], bool) or item["expected_tests"] <= 0:
+            problems.append(f"required-now test {item['id']} has no exact execution count")
+        suite = suite_by_id.get(item["suite"])
+        relative = _selector_file(item["selector"])
+        if (
+            suite is None
+            or relative is None
+            or not _selector_matches_suite(relative, item["suite"], suite_aliases)
+        ):
+            problems.append(f"required-now test {item['id']} is outside its suite")
+            continue
+        if not _selector_is_declared(root, item["selector"]):
+            problems.append(f"required-now selector is not declared: {item['selector']}")
+            continue
+        try:
+            source = (root / relative).read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError):
+            source = ""
+        controls = _forbidden_test_controls(source)
+        if controls:
+            problems.append(
+                f"required-now selector uses forbidden test controls: {relative} {controls}"
+            )
+    expected_required_now = [
+        {
+            "id": "W0-FOUNDATION-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_v4_foundation_contract.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 5,
+        },
+        {
+            "id": "W0-REQUIRED-MANIFEST-GATE",
+            "suite": "contract",
+            "selector": "tests/contract/test_required_test_manifest.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 7,
+        },
+    ]
+    if required_now != expected_required_now:
+        problems.append("required-now registry is not the exact W0-04 executable set")
+    if len(required_ids) != len(set(required_ids)) or len(required_selectors) != len(set(required_selectors)):
+        problems.append("required-now registry contains duplicates")
+
+    evidence_fields = {
+        "id", "suite", "selector", "owner_task", "state", "source_kind",
+        "source_binding", "red_failure",
+    }
+    evidence = manifest["evidence_tracks"] if isinstance(manifest["evidence_tracks"], list) else []
+    if not isinstance(manifest["evidence_tracks"], list):
+        problems.append("differential evidence tracks are not a list")
+    expected_self_binding = {
+        "kind": "REPOSITORY_FIXTURE",
+        "fixture_root": "tests/fixtures/v4_contract",
+        "oracle_imports_production": False,
+        "requires_companion_environment": False,
+    }
+    evidence_by_id: dict[str, dict[str, Any]] = {}
+    for item in evidence:
+        if not _closed_manifest_fields(item, evidence_fields, "evidence track", problems):
+            continue
+        if isinstance(item["id"], str):
+            evidence_by_id[item["id"]] = item
+        if item["suite"] != "differential" or item["state"] != "RED_AT_TASK":
+            problems.append(f"evidence track {item['id']} is not differential RED_AT_TASK")
+        relative = _selector_file(item["selector"])
+        if relative is None or not relative.startswith("tests/differential/"):
+            problems.append(f"evidence track {item['id']} selector is outside differential")
+        elif _selector_is_declared(root, item["selector"]):
+            if require_pending:
+                problems.append(
+                    f"evidence track {item['id']} claims RED_AT_TASK but selector is active"
+                )
+            controls = _forbidden_test_controls(
+                (root / relative).read_text(encoding="utf-8-sig")
+            )
+            if controls:
+                problems.append(
+                    f"active evidence selector uses forbidden test controls: {relative} {controls}"
+                )
+        problems.extend(_manifest_owner_problems(
+            entry_label=f"evidence track {item['id']}", owner_id=item["owner_task"],
+            selector=item["selector"], task_by_id=task_by_id, task_order=task_order,
+        ))
+        if not isinstance(item["red_failure"], str) or not item["red_failure"].strip():
+            problems.append(f"evidence track {item['id']} lacks a red failure")
+    self_track = evidence_by_id.get("SELF-CONTAINED-V4-FIXTURES", {})
+    companion_track = evidence_by_id.get("PINNED-COMPANION-SPEC", {})
+    if (
+        set(evidence_by_id) != {"SELF-CONTAINED-V4-FIXTURES", "PINNED-COMPANION-SPEC"}
+        or len(evidence) != 2
+        or self_track.get("source_kind") != "SELF_CONTAINED_REPOSITORY_FIXTURE"
+        or self_track.get("source_binding") != expected_self_binding
+        or companion_track.get("source_kind") != "PINNED_COMPANION_SPEC"
+        or companion_track.get("source_binding") != W0_B02_COMPANION_BINDING
+        or self_track.get("selector") == companion_track.get("selector")
+    ):
+        problems.append("differential evidence tracks are not independently and exactly bound")
+
+    mutation_fields = {
+        "audit_id", "test_id", "suite", "selector", "owner_task", "state",
+        "mutation", "red_failure",
+    }
+    mutations = manifest["audit_mutations"] if isinstance(manifest["audit_mutations"], list) else []
+    if not isinstance(manifest["audit_mutations"], list):
+        problems.append("audit mutation registry is not a list")
+    mutation_ids: list[str] = []
+    mutation_audits: list[str] = []
+    mutation_selectors: list[str] = []
+    used_suites: set[str] = set()
+    for item in mutations:
+        if not _closed_manifest_fields(item, mutation_fields, "audit mutation", problems):
+            continue
+        mutation_ids.append(item["test_id"])
+        mutation_audits.append(item["audit_id"])
+        mutation_selectors.append(item["selector"])
+        canonical_suite = suite_aliases.get(item["suite"], item["suite"])
+        used_suites.add(canonical_suite)
+        if item["state"] != "RED_AT_TASK":
+            problems.append(f"audit mutation {item['test_id']} must be RED_AT_TASK")
+        if not isinstance(item["mutation"], str) or not item["mutation"].strip():
+            problems.append(f"audit mutation {item['test_id']} lacks an operator")
+        if not isinstance(item["red_failure"], str) or not item["red_failure"].strip():
+            problems.append(f"audit mutation {item['test_id']} lacks a red failure")
+        if not isinstance(item["test_id"], str) or not item["test_id"].startswith(
+            f"V4-{item['audit_id']}-"
+        ):
+            problems.append(f"audit mutation id is not bound to {item['audit_id']}")
+        suite = suite_by_id.get(canonical_suite)
+        relative = _selector_file(item["selector"])
+        if (
+            suite is None
+            or relative is None
+            or not _selector_matches_suite(relative, canonical_suite, suite_aliases)
+        ):
+            problems.append(f"audit mutation {item['test_id']} is outside its suite")
+        elif _selector_is_declared(root, item["selector"]):
+            if require_pending:
+                problems.append(
+                    f"audit mutation {item['test_id']} claims RED_AT_TASK but selector is active"
+                )
+            controls = _forbidden_test_controls(
+                (root / relative).read_text(encoding="utf-8-sig")
+            )
+            if controls:
+                problems.append(
+                    f"active audit selector uses forbidden test controls: {relative} {controls}"
+                )
+        problems.extend(_manifest_owner_problems(
+            entry_label=f"audit mutation {item['test_id']}", owner_id=item["owner_task"],
+            selector=item["selector"], task_by_id=task_by_id, task_order=task_order,
+            require_audit_id=item["audit_id"],
+            closure_tasks=set(issue_by_id.get(item["audit_id"], {}).get("closure_tasks", [])),
+        ))
+    counts = {audit_id: mutation_audits.count(audit_id) for audit_id in set(mutation_audits)}
+    if set(mutation_audits) != set(issue_ids) or len(mutation_audits) != len(issue_ids) or any(
+        count != 1 for count in counts.values()
+    ):
+        problems.append("audit mutation coverage is not exactly one entry per registered issue")
+    if len(mutation_ids) != len(set(mutation_ids)):
+        problems.append("audit mutation test ids are duplicated")
+    if len(mutation_selectors) != len(set(mutation_selectors)):
+        problems.append("audit mutation selectors are duplicated")
+    if used_suites != set(W0_REQUIRED_TEST_SUITES):
+        problems.append("audit mutations do not exercise every suite taxonomy class")
+
+    rewrite_fields = {
+        "id", "selector", "rewrite_task", "retirement_task", "state", "reason",
+        "replacement_selector",
+    }
+    rewrites = manifest["rewrite_at_task"] if isinstance(manifest["rewrite_at_task"], list) else []
+    if not isinstance(manifest["rewrite_at_task"], list):
+        problems.append("rewrite queue is not a list")
+    rewrite_ids: list[str] = []
+    rewrite_selectors: list[str] = []
+    replacement_selectors: list[str] = []
+    for item in rewrites:
+        if not _closed_manifest_fields(item, rewrite_fields, "rewrite entry", problems):
+            continue
+        rewrite_ids.append(item["id"])
+        rewrite_selectors.append(item["selector"])
+        replacement_selectors.append(item["replacement_selector"])
+        if item["state"] != "REWRITE_AT_TASK":
+            problems.append(f"rewrite entry {item['id']} has the wrong state")
+        if not isinstance(item["reason"], str) or not item["reason"].strip():
+            problems.append(f"rewrite entry {item['id']} lacks a reason")
+        original_declared = _selector_is_declared(root, item["selector"])
+        if require_pending and not original_declared:
+            problems.append(f"rewrite selector is not declared: {item['selector']}")
+        rewrite_task = task_by_id.get(item["rewrite_task"])
+        replacement = _selector_file(item["replacement_selector"])
+        if (
+            rewrite_task is None
+            or rewrite_task.get("mode") != "AUTO"
+            or replacement is None
+            or not _matches_allowed(replacement, rewrite_task.get("allowed_paths", []))
+        ):
+            problems.append(f"replacement selector is outside rewrite task allowlist: {item['id']}")
+        else:
+            replacement_declared = _selector_is_declared(root, item["replacement_selector"])
+            if require_pending and replacement_declared:
+                problems.append(f"rewrite entry {item['id']} is already active during W0-04")
+            if replacement_declared:
+                controls = _forbidden_test_controls(
+                    (root / replacement).read_text(encoding="utf-8-sig")
+                )
+                if controls:
+                    problems.append(
+                        f"active rewrite replacement uses forbidden test controls: "
+                        f"{replacement} {controls}"
+                    )
+        retirement_task = task_by_id.get(item["retirement_task"])
+        original = _selector_file(item["selector"])
+        if (
+            retirement_task is None
+            or retirement_task.get("mode") != "AUTO"
+            or original is None
+            or not _matches_allowed(original, retirement_task.get("allowed_paths", []))
+        ):
+            problems.append(f"rewrite selector is outside retirement task allowlist: {item['id']}")
+        if (
+            isinstance(item["rewrite_task"], str)
+            and isinstance(item["retirement_task"], str)
+            and not _task_is_ancestor_or_same(
+                item["rewrite_task"], item["retirement_task"], task_by_id
+            )
+        ):
+            problems.append(f"rewrite occurs after retirement task: {item['id']}")
+        if replacement is not None:
+            replacement_parts = replacement.split("/")
+            replacement_namespace = replacement_parts[1] if len(replacement_parts) >= 3 else ""
+            replacement_suite = suite_aliases.get(replacement_namespace, replacement_namespace)
+            if replacement_namespace != "unit" and replacement_suite not in suite_by_id:
+                problems.append(f"replacement selector has no canonical suite: {item['id']}")
+    if set(rewrite_ids) != W0_REQUIRED_REWRITE_IDS or len(rewrite_ids) != len(W0_REQUIRED_REWRITE_IDS):
+        problems.append("rewrite queue does not cover the frozen wrong-behavior inventory")
+    if len(rewrite_selectors) != len(set(rewrite_selectors)):
+        problems.append("rewrite selectors are duplicated")
+    if len(replacement_selectors) != len(set(replacement_selectors)):
+        problems.append("rewrite replacement selectors are duplicated")
+    rewrite_projection = [
+        {
+            key: item[key]
+            for key in (
+                "id", "selector", "rewrite_task", "retirement_task",
+                "replacement_selector",
+            )
+        }
+        for item in rewrites
+        if isinstance(item, dict) and all(
+            key in item
+            for key in (
+                "id", "selector", "rewrite_task", "retirement_task",
+                "replacement_selector",
+            )
+        )
+    ]
+    if _digest_object(rewrite_projection) != W0_REQUIRED_REWRITE_PROJECTION_DIGEST:
+        problems.append("rewrite canonical projection drifted")
+    return sorted(set(problems))
+
+
+def _junit_evidence(path: Path) -> tuple[dict[str, int], list[ET.Element]]:
+    xml_root = ET.parse(path).getroot()
+    test_suites = [xml_root] if xml_root.tag == "testsuite" else list(xml_root.iter("testsuite"))
+    counts = {
+        key: sum(int(item.attrib.get(key, "0")) for item in test_suites)
+        for key in ("tests", "skipped", "failures", "errors")
+    }
+    return counts, list(xml_root.iter("testcase"))
+
+
+def _red_junit_problems(
+    counts: dict[str, int], cases: list[ET.Element], expected_by_id: dict[str, str],
+) -> list[str]:
+    expected_count = len(expected_by_id)
+    problems: list[str] = []
+    if counts != {
+        "tests": expected_count, "skipped": 0, "failures": expected_count, "errors": 0,
+    }:
+        problems.append(f"red sentinel counts drifted: {counts}")
+    observed_ids: list[str] = []
+    marker_pattern = re.compile(r"UNIMPLEMENTED:[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+")
+    name_pattern = re.compile(
+        r"test_red_at_task_is_explicitly_unimplemented\[(?P<red_id>[A-Za-z0-9_.-]+)\]\Z"
+    )
+    for case in cases:
+        name_match = name_pattern.fullmatch(case.attrib.get("name", ""))
+        if name_match is None:
+            problems.append("red sentinel testcase name is not obligation-bound")
+            continue
+        red_id = name_match.group("red_id")
+        observed_ids.append(red_id)
+        expected_marker = expected_by_id.get(red_id)
+        failure = case.find("failure")
+        failure_text = "" if failure is None else (
+            failure.attrib.get("message", "") + "\n" + (failure.text or "")
+        )
+        observed_markers = set(marker_pattern.findall(failure_text))
+        if expected_marker is None or observed_markers != {expected_marker}:
+            problems.append(f"red sentinel testcase is not uniquely bound: {red_id}")
+    if (
+        len(cases) != expected_count
+        or len(observed_ids) != len(set(observed_ids))
+        or set(observed_ids) != set(expected_by_id)
+    ):
+        problems.append("red sentinel testcase ids are not exact")
+    return sorted(set(problems))
+
+
+def cmd_required_test_manifest() -> int:
+    try:
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"W0 required test manifest unreadable: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan, require_pending=True,
+    )
+    if problems:
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT")
+    live_b02_binding: dict[str, str] | None = None
+    if raw_state_root:
+        try:
+            live_b02_binding = _live_b02_binding(Path(raw_state_root).resolve())
+        except (KeyError, OSError, TypeError, ValueError) as exc:
+            print(f"pinned B02 state binding failed: {exc}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+
+    expected_required_count = sum(item["expected_tests"] for item in manifest["required_now"])
+    red_obligations = [
+        (item["id"], item["owner_task"])
+        for item in manifest["evidence_tracks"]
+        if item["state"] == "RED_AT_TASK"
+    ] + [
+        (item["test_id"], item["owner_task"])
+        for item in manifest["audit_mutations"]
+        if item["state"] == "RED_AT_TASK"
+    ]
+    expected_red_by_id = {
+        red_id: f"UNIMPLEMENTED:{red_id}:{owner_task}" for red_id, owner_task in red_obligations
+    }
+    with tempfile.TemporaryDirectory(prefix="jc-v4-w0-04-") as temporary:
+        temporary_root = Path(temporary)
+        environment = _required_pytest_environment()
+
+        red_report = temporary_root / "red-sentinels.xml"
+        try:
+            red_completed = subprocess.run(
+                [
+                    sys.executable, "-B", "-m", "pytest",
+                    "-c", str(REQUIRED_TEST_PYTEST_CONFIG),
+                    "-q", "-p", "no:cacheprovider",
+                    "--basetemp", str(temporary_root / "red-pytest"),
+                    "--junitxml", str(red_report),
+                    manifest["red_sentinel_selector"],
+                ],
+                cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
+                errors="replace", check=False,
+                timeout=120, env=environment,
+            )
+        except subprocess.TimeoutExpired:
+            print("RED_AT_TASK sentinel execution exceeded 120 seconds", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        if red_completed.returncode != 1:
+            print(
+                f"RED_AT_TASK sentinels returned {red_completed.returncode}, expected 1",
+                file=sys.stderr,
+            )
+            if red_completed.stdout:
+                print(red_completed.stdout, file=sys.stderr)
+            if red_completed.stderr:
+                print(red_completed.stderr, file=sys.stderr)
+            return EXIT_GATE_FAIL
+        try:
+            red_counts, red_cases = _junit_evidence(red_report)
+        except (OSError, ET.ParseError, ValueError) as exc:
+            print(f"red sentinel pytest report unreadable: {exc}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        red_problems = _red_junit_problems(red_counts, red_cases, expected_red_by_id)
+        if red_problems:
+            print(
+                "RED_AT_TASK sentinels are not exact explicit failures: "
+                + "; ".join(red_problems),
+                file=sys.stderr,
+            )
+            return EXIT_GATE_FAIL
+        red_case_ids = sorted(
+            item.attrib.get("name", "") for item in red_cases
+        )
+
+        required_evidence: list[dict[str, Any]] = []
+        all_required_case_ids: set[str] = set()
+        for index, required in enumerate(manifest["required_now"], 1):
+            report = temporary_root / f"required-{index:02d}.xml"
+            try:
+                completed = subprocess.run(
+                    [
+                        sys.executable, "-B", "-m", "pytest",
+                        "-c", str(REQUIRED_TEST_PYTEST_CONFIG),
+                        "-q", "-p", "no:cacheprovider",
+                        "--basetemp", str(temporary_root / f"required-{index:02d}-pytest"),
+                        "--junitxml", str(report),
+                        required["selector"],
+                    ],
+                    cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
+                    errors="replace", check=False,
+                    timeout=120, env=environment,
+                )
+            except subprocess.TimeoutExpired:
+                print(
+                    f"required test execution exceeded 120 seconds: {required['id']}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
+            if completed.returncode != 0:
+                print(f"required test execution failed: {required['id']}", file=sys.stderr)
+                if completed.stdout:
+                    print(completed.stdout, file=sys.stderr)
+                if completed.stderr:
+                    print(completed.stderr, file=sys.stderr)
+                return EXIT_GATE_FAIL
+            if "xpass" in (completed.stdout + "\n" + completed.stderr).lower():
+                print(f"required test reported XPASS: {required['id']}", file=sys.stderr)
+                return EXIT_GATE_FAIL
+            try:
+                required_counts, required_cases = _junit_evidence(report)
+            except (OSError, ET.ParseError, ValueError) as exc:
+                print(
+                    f"required pytest report unreadable for {required['id']}: {exc}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
+            case_ids = sorted(
+                f"{item.attrib.get('classname', '')}::{item.attrib.get('name', '')}"
+                for item in required_cases
+            )
+            expected_count = required["expected_tests"]
+            if (
+                required_counts != {
+                    "tests": expected_count, "skipped": 0, "failures": 0, "errors": 0,
+                }
+                or len(case_ids) != expected_count
+                or len(case_ids) != len(set(case_ids))
+                or not all(case_id.split("::", 1)[0] for case_id in case_ids)
+                or all_required_case_ids.intersection(case_ids)
+            ):
+                print(
+                    f"required pytest report is not exact for {required['id']}: "
+                    f"counts={required_counts} cases={len(case_ids)}/{expected_count}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
+            all_required_case_ids.update(case_ids)
+            required_evidence.append({
+                "id": required["id"],
+                "selector": required["selector"],
+                "counts": required_counts,
+                "case_ids": case_ids,
+                "case_ids_digest": _digest_object(case_ids),
+            })
+
+    evidence = {
+        "schema_version": "jc/v4-required-test-evidence/1.0",
+        "task_id": "W0-04",
+        "runner_version": RUNNER_VERSION,
+        "source_commit": _git_checked("rev-parse", "HEAD"),
+        "source_tree": _git_checked("rev-parse", "HEAD^{tree}"),
+        "input_digests": {
+            "runner": "sha256:" + sha256_hex(Path(__file__).read_bytes()),
+            "manifest": "sha256:" + sha256_hex(REQUIRED_TEST_MANIFEST.read_bytes()),
+            "pytest_config": "sha256:" + sha256_hex(REQUIRED_TEST_PYTEST_CONFIG.read_bytes()),
+            "red_sentinel": "sha256:" + sha256_hex(
+                (ROOT / manifest["red_sentinel_selector"]).read_bytes()
+            ),
+            "pinned_companion_binding": _digest_object(W0_B02_COMPANION_BINDING),
+        },
+        "pinned_companion_state": live_b02_binding,
+        "red": {
+            "counts": red_counts,
+            "case_ids": red_case_ids,
+            "obligation_binding_digest": _digest_object(expected_red_by_id),
+        },
+        "required": required_evidence,
+        "totals": {
+            "required_passed": expected_required_count,
+            "future_red": len(expected_red_by_id),
+            "required_skipped": 0,
+            "required_failures": 0,
+            "required_errors": 0,
+            "red_expected_failures": len(expected_red_by_id),
+        },
+    }
+    if raw_state_root:
+        try:
+            evidence_path, evidence_digest = _write_content_addressed_json(
+                Path(raw_state_root).resolve() / "evidence" / "W0-04", evidence
+            )
+        except (OSError, ValueError) as exc:
+            print(f"required test evidence write failed: {exc}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        print(
+            "JC_ARTIFACT\tw0-04-required-tests\t"
+            f"{evidence_path}\t{evidence_digest}"
+        )
+    print(
+        "test governance skeleton OK: "
+        f"{len(W0_REQUIRED_TEST_SUITES)} suites; "
+        f"{len(manifest['audit_mutations'])} audit groups registered; "
+        f"{len(manifest['rewrite_at_task'])} rewrites queued; "
+        f"{expected_required_count} required governance tests passed; "
+        f"{len(expected_red_by_id)} future obligations explicitly RED; "
+        "0 skip/xfail/xpass/collection errors"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -2069,6 +3101,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_foundation_contract(argparse.Namespace(
             jcs=str(JCS_V4_VECTORS), foundation=str(FOUNDATION_V4_CONTRACT)
         ))
+    if args.wave == "W0-04":
+        return cmd_required_test_manifest()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -2093,6 +3127,24 @@ def _atomic_json(path: Path, value: Any) -> None:
         json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     os.replace(temporary, path)
+
+
+def _write_content_addressed_json(
+    directory: Path, value: Any,
+) -> tuple[Path, str]:
+    """Create immutable JSON evidence and reuse only byte-identical content."""
+
+    payload = (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    digest = "sha256:" + sha256_hex(payload)
+    path = directory / f"{digest.split(':', 1)[1]}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("xb") as handle:
+            handle.write(payload)
+    except FileExistsError:
+        if path.read_bytes() != payload:
+            raise ValueError(f"content-addressed evidence collision: {path}")
+    return path.resolve(), digest
 
 
 def _git_checked(*args: str) -> str:
@@ -2243,10 +3295,16 @@ def _run_argv(
     exact_argv = _expanded_argv(argv, state_root)
     timed_out = False
     exit_code: int | None
+    execution_environment = os.environ.copy()
+    execution_environment.update({
+        "JC_REMEDIATION_STATE_ROOT": str(state_root),
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    })
     try:
         cp = subprocess.run(
             exact_argv, cwd=str(ROOT), capture_output=True, check=False,
-            timeout=timeout_seconds, env={**os.environ, "JC_REMEDIATION_STATE_ROOT": str(state_root)},
+            timeout=timeout_seconds, env=execution_environment,
         )
         exit_code = cp.returncode
         stdout = cp.stdout
@@ -2665,6 +3723,8 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
             kind = "pytest"
         elif any(Path(value).name == "jcs_node_oracle.mjs" for value in argv):
             kind = "node-oracle"
+        elif len(argv) >= 2 and argv[-2:] == ["verify-wave", "W0-04"]:
+            kind = "pytest-governance"
         if kind is None:
             continue
         stdout_path = Path(item["stdout"]["path"])
@@ -2680,7 +3740,7 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
             passed = re.search(r"(?:^|\s)(\d+) passed(?:\s|,|$)", stdout_text)
             if passed:
                 report["passed"] = int(passed.group(1))
-        else:
+        elif kind == "node-oracle":
             for field in ("positive", "negative", "canonical_bytes"):
                 match = re.search(rf"(?:^|\s){field}=(\d+)(?:\s|$)", stdout_text)
                 if match:
@@ -2688,6 +3748,33 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
             runtime = re.search(r"(?:^|\s)runtime=(v\d+\.\d+\.\d+)(?:\s|$)", stdout_text)
             if runtime:
                 report["runtime"] = runtime.group(1)
+        else:
+            summary = re.search(
+                r"test governance skeleton OK: (?P<suites>\d+) suites; "
+                r"(?P<audits>\d+) audit groups registered; "
+                r"(?P<rewrites>\d+) rewrites queued; "
+                r"(?P<required>\d+) required governance tests passed; "
+                r"(?P<red>\d+) future obligations explicitly RED; "
+                r"0 skip/xfail/xpass/collection errors",
+                stdout_text,
+            )
+            if summary is None:
+                continue
+            report.update({
+                "suites": int(summary.group("suites")),
+                "audit_groups": int(summary.group("audits")),
+                "rewrites": int(summary.group("rewrites")),
+                "required_passed": int(summary.group("required")),
+                "future_red": int(summary.group("red")),
+                "bypass_or_collection_errors": 0,
+            })
+            for line in stdout_text.splitlines():
+                fields = line.split("\t")
+                if len(fields) == 4 and fields[:2] == ["JC_ARTIFACT", "w0-04-required-tests"]:
+                    report["evidence_label"] = fields[1]
+                    report["evidence_sha256"] = fields[3]
+            if "evidence_sha256" not in report:
+                continue
         reports.append(report)
     return reports
 
@@ -2871,6 +3958,7 @@ def _execute_auto_task(
         state_artifacts = {}
         state_artifact_error = str(exc)
     artifact_digests = {**committed_artifacts, **state_artifacts}
+    test_reports = _structured_test_reports(command_results)
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
     scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
     violations = [path for path in scoped_paths if not _matches_allowed(path, task["allowed_paths"])]
@@ -2897,6 +3985,28 @@ def _execute_auto_task(
             ),
         },
     ])
+    if task["id"] == "W0-04":
+        governance_reports = [
+            report for report in test_reports if report.get("kind") == "pytest-governance"
+        ]
+        evidence_digest = state_artifacts.get("state-artifact:w0-04-required-tests")
+        evidence_bound = (
+            len(governance_reports) == 1
+            and evidence_digest is not None
+            and governance_reports[0].get("evidence_sha256") == evidence_digest
+            and governance_reports[0].get("required_passed") == 12
+            and governance_reports[0].get("future_red") == 46
+            and governance_reports[0].get("bypass_or_collection_errors") == 0
+        )
+        assertions.append({
+            "id": "w0-04-required-test-evidence",
+            "kind": "artifact_binding",
+            "ok": evidence_bound,
+            "detail": (
+                "12 required PASS and 46 explicit RED cases bound to canonical state evidence"
+                if evidence_bound else "W0-04 test report or state evidence binding is incomplete"
+            ),
+        })
     timed_out = any(item["timed_out"] for item in command_results)
     commands_ok = len(command_results) == len(task["argv"]) and all(
         item["exit_code"] == item["expected_exit_code"] and not item["timed_out"]
@@ -2920,7 +4030,7 @@ def _execute_auto_task(
         "result_commit": result_commit, "result_tree": result_tree,
         "command_results": command_results, "changed_paths": changed_paths,
         "allowlist": {"allowed": not violations, "violations": violations},
-        "test_reports": _structured_test_reports(command_results),
+        "test_reports": test_reports,
         "artifact_digests": artifact_digests, "completion_assertions": assertions,
         "previous_receipt_digest": history[-1]["receipt_digest"] if history else None,
         "runner_version": RUNNER_VERSION,
