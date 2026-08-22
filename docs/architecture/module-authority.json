@@ -105,6 +105,7 @@
     {"path": "compiler_core/evidence_chain_validator.py", "class": "REMOVE", "rationale": "Migrate evidence-chain invariants to source_service.py."},
     {"path": "compiler_core/evidence_checklist.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory evidence checklist candidate."},
     {"path": "compiler_core/evidence_evaluation.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory evidence-evaluation candidate."},
+    {"path": "compiler_core/fact_admission.py", "class": "FORMAL_CORE", "rationale": "Sole evidence-bound V4 fact-admission authority; derives gates and signed receipts internally."},
     {"path": "compiler_core/fact_admission_v1.py", "class": "REMOVE", "rationale": "Migrate typed fact gates to fact_admission.py."},
     {"path": "compiler_core/fact_trust_envelope.py", "class": "REMOVE", "rationale": "Merge trust-envelope invariants into V4 fact admission."},
     {"path": "compiler_core/g8_evaluator_patch.py", "class": "REMOVE", "rationale": "Migrate completeness witnesses; delete the patch layer."},

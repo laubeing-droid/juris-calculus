@@ -313,13 +313,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.14.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.15.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -443,6 +443,20 @@ def nested_alias_bypass():
     w2_01_reports[0]["junit_unique_cases"] = 30
     assert RUNNER._w2_01_test_report_problems(w2_01_reports) == [
         "W2-01 pytest junit_unique_cases drifted: 30 != 31"
+    ]
+
+    w2_02_reports = copy.deepcopy(w1_02_reports)
+    w2_02_reports[0].update({
+        "passed": RUNNER.W2_02_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W2_02_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W2_02_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W2_02_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W2_02_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w2_02_test_report_problems(w2_02_reports) == []
+    w2_02_reports[0]["junit_failures"] = 1
+    assert RUNNER._w2_02_test_report_problems(w2_02_reports) == [
+        "W2-02 pytest junit_failures drifted: 1 != 0"
     ]
 
     def stream(name: str, payload: bytes = b"") -> dict:

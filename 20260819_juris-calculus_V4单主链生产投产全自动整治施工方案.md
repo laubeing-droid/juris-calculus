@@ -583,9 +583,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W2-02　Evidence 和 FactAdmissionV4
 
 - **Depends / audit**：`W2-01 / P0-02, P0-04`。
-- **Paths**：新增 `compiler_core/fact_admission.py`；迁移有效三门；fact/evidence tests。
-- **动作**：candidate fact 绑定 proposition/value/type；admission 只消费 verified source/evidence 和 scoped attestation；receipt 由服务内部生成并绑定 request/case scope、nonce/replay policy。
-- **Gate**：caller PASS、手造 receipt、同 ID 覆盖、cross-scope reuse、source/evidence mismatch、expired/revoked、UNKNOWN/DISPUTED/USER_ASSUMED 均不能成为正式 premise。
+- **Paths**：仅以下 11 个 exact paths：本方案、`compiler_core/fact_admission.py`、`compiler_core/source_service.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_fact_admission.py`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_source_service.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；`test_required_test_manifest.py` 仅同步 runner report-version contract；`source_service.py` 及其 contract test 仅纠正 W2-01 暴露的 self-digest bundle 表示与 cache-time expiry，不扩展业务范围；不修改 frozen contracts、resolver、trust 或旧 fact admission 实现。
+- **动作**：candidate fact 绑定 proposition/value/type；服务解析完整 canonical request，从 request 非回指字段派生 content-addressed `case-request-binding` projection，manifest、attestation 和 legal signature evidence 均绑定该 projection；attestation 先于完整 run 生成且不得悬空伪绑 run，最终 receipt 才绑定由 digest-body bytes 可解析的真实 `RunIdentityV4`；SourceBundle、EvidenceManifest、RunIdentity 均以 canonical digest-body bytes 对齐其 self digest，source cache hit 仍检查签名/策略有效期；服务验证 projection/manifest/attestation membership，并从已解析的 candidate、evidence manifest 和 scoped attestation 派生 source/evidence refs；source、interpretation、fact 三门由服务内部执行；最终 service receipt 由服务内部生成、使用真实签名并绑定完整 request_ref、case scope、nonce/replay policy。
+- **Gate**：caller PASS、手造 receipt、伪造签名、同 ID 覆盖、cross-scope reuse、source/evidence mismatch、expired/revoked、UNKNOWN/DISPUTED/USER_ASSUMED 均不能成为正式 premise；同 scope、同内容 retry 幂等返回同一 receipt。
 - **Commit**：`feat(fact): make admission evidence-bound and non-forgeable`。
 
 ### W2-03　RuleV4 和 signed PackManifestV4

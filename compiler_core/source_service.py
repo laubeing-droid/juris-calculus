@@ -126,6 +126,8 @@ class SourceServiceV4:
         self._resolver = resolver
         self._trust = trust
         self._verified: dict[ContentRefV4, SourceSnapshotV4] = {}
+        self._verified_issued_at: dict[ContentRefV4, CanonicalTimeV4] = {}
+        self._verified_expires_at: dict[ContentRefV4, CanonicalTimeV4] = {}
         self._signed_evidence: dict[ContentRefV4, frozenset[ContentRefV4]] = {}
         self._source_ids: dict[str, ContentRefV4] = {}
 
@@ -156,9 +158,28 @@ class SourceServiceV4:
             raise ContractV4Error("SOURCE_JSON_UTF8", f"{kind} must be valid UTF-8") from exc
         if type(document) is not dict:
             _fail("SOURCE_JSON_TYPE", f"{kind} must be a JSON object")
-        value = contract.from_dict(document)
-        if raw != value.canonical_bytes():
-            _fail("SOURCE_NONCANONICAL_JSON", f"{kind} must use canonical V4 bytes")
+        if contract is SourceBundleV4:
+            if "bundle_digest" in document or raw != canonical_bytes(document):
+                _fail(
+                    "SOURCE_NONCANONICAL_JSON",
+                    "source bundle must store its canonical digest body",
+                )
+            value = contract.from_dict({
+                **document,
+                "bundle_digest": str(reference.digest),
+            })
+            if (
+                value.canonical_digest() != reference.digest
+                or value.digest_body() != document
+            ):
+                _fail(
+                    "SOURCE_BUNDLE_DIGEST_MISMATCH",
+                    "source bundle reference does not match its digest body",
+                )
+        else:
+            value = contract.from_dict(document)
+            if raw != value.canonical_bytes():
+                _fail("SOURCE_NONCANONICAL_JSON", f"{kind} must use canonical V4 bytes")
         return value
 
     def _resolve_source_bytes(
@@ -206,6 +227,19 @@ class SourceServiceV4:
             _fail("SOURCE_INPUT_TYPE", "now must be CanonicalTimeV4")
         existing = self._verified.get(snapshot_ref)
         if existing is not None:
+            expires_at = self._verified_expires_at[snapshot_ref]
+            policy = self._trust.policy
+            if (
+                now < existing.retrieved_at
+                or now < self._verified_issued_at[snapshot_ref]
+                or not now < expires_at
+                or now < policy.valid_from
+                or (policy.valid_to is not None and not now < policy.valid_to)
+            ):
+                _fail(
+                    "SOURCE_AUTHENTICITY_EXPIRED",
+                    "cached source authenticity is not active at verification time",
+                )
             return snapshot_ref
         snapshot = self._resolve_json_contract(
             snapshot_ref,
@@ -252,6 +286,11 @@ class SourceServiceV4:
         )
         if type(envelope) is not SignatureEnvelopeV4:
             _fail("SOURCE_CONTRACT_TYPE", "resolved signature envelope has the wrong type")
+        if envelope.issued_at < snapshot.retrieved_at:
+            _fail(
+                "SOURCE_AUTHENTICITY_TIME",
+                "source authenticity signature predates source retrieval",
+            )
         expected_evidence = (
             raw_ref,
             normalized_ref,
@@ -287,6 +326,10 @@ class SourceServiceV4:
         if prior is not None and prior != snapshot_ref:
             _fail("SOURCE_ID_COLLISION", "source_id cannot be rebound to different snapshot bytes")
         self._verified[snapshot_ref] = snapshot
+        if envelope.expires_at is None:
+            _fail("SOURCE_AUTHENTICITY_EXPIRED", "source signature has no expiry")
+        self._verified_issued_at[snapshot_ref] = envelope.issued_at
+        self._verified_expires_at[snapshot_ref] = envelope.expires_at
         self._signed_evidence[snapshot_ref] = signed_evidence
         self._source_ids[snapshot.source_id] = snapshot_ref
         return snapshot_ref

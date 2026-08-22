@@ -155,6 +155,7 @@ class _SourceHarness:
         publication_time: str = "2020-12-24T00:00:00Z",
         effective_from: str = "2021-01-01T00:00:00Z",
         effective_to: str | None = None,
+        retrieved_at: str = "2026-08-01T00:00:00Z",
         register_raw: bool = True,
         normalized_override: bytes | None = None,
         tamper_signature: bool = False,
@@ -223,7 +224,7 @@ class _SourceHarness:
             publication_time=CanonicalTimeV4(publication_time),
             effective_from=CanonicalTimeV4(effective_from),
             effective_to=None if effective_to is None else CanonicalTimeV4(effective_to),
-            retrieved_at=CanonicalTimeV4("2026-08-01T00:00:00Z"),
+            retrieved_at=CanonicalTimeV4(retrieved_at),
             canonical_locator=CanonicalLocatorV4(
                 "uri", f"authority.example/{source_id}", None, None, None
             ),
@@ -372,8 +373,8 @@ class _SourceHarness:
             **body,
             "bundle_digest": str(digest_value(body)),
         })
-        bundle_bytes = bundle.canonical_bytes()
-        bundle_ref = ContentRefV4(SOURCE_BUNDLE_KIND, DigestV4.from_bytes(bundle_bytes))
+        bundle_bytes = canonical_bytes(bundle.digest_body())
+        bundle_ref = ContentRefV4(SOURCE_BUNDLE_KIND, bundle.canonical_digest())
         self._register(
             bundle_ref,
             bundle_bytes,
@@ -468,12 +469,79 @@ def test_real_signed_resolved_bytes_admit_source_snapshot() -> None:
     )
 
 
+def test_cached_source_authenticity_still_obeys_signature_expiry() -> None:
+    harness = _SourceHarness()
+    reference = harness.admit("cached-expiry")
+    assert _error_code(
+        lambda: harness.service.admit_snapshot(
+            reference,
+            now=CanonicalTimeV4("2027-08-22T11:00:00Z"),
+        )
+    ) == "SOURCE_AUTHENTICITY_EXPIRED"
+
+
+def test_cached_source_authenticity_still_obeys_signature_issued_at() -> None:
+    harness = _SourceHarness()
+    reference = harness.admit("cached-issued-at")
+    assert _error_code(
+        lambda: harness.service.admit_snapshot(
+            reference,
+            now=CanonicalTimeV4("2026-08-22T10:00:00Z"),
+        )
+    ) == "SOURCE_AUTHENTICITY_EXPIRED"
+
+
+def test_source_authenticity_signature_cannot_predate_retrieval() -> None:
+    harness = _SourceHarness()
+    reference, _ = harness.stage_snapshot(
+        "signature-before-retrieval",
+        retrieved_at="2026-08-23T00:00:00Z",
+    )
+    assert _error_code(
+        lambda: harness.service.admit_snapshot(
+            reference,
+            now=CanonicalTimeV4("2026-08-24T00:00:00Z"),
+        )
+    ) == "SOURCE_AUTHENTICITY_TIME"
+
+
 def test_same_title_different_raw_bytes_have_different_snapshot_identity() -> None:
     harness = _SourceHarness()
     left = harness.admit("same-title-a", raw=b"version a", title="same-title")
     right = harness.admit("same-title-b", raw=b"version b", title="same-title")
     assert left != right
     assert harness.snapshots[left].raw_digest != harness.snapshots[right].raw_digest
+
+
+def test_source_bundle_full_wire_hash_cannot_replace_self_digest_identity() -> None:
+    harness = _SourceHarness()
+    source_ref = harness.admit("self-digest-bundle")
+    body = {
+        "bundle_id": "full-wire-is-not-logical-identity",
+        "root_source_ref": source_ref.to_dict(),
+        "terminal_source_ref": source_ref.to_dict(),
+        "snapshots": [harness.snapshots[source_ref].to_dict()],
+        "version_edges": [],
+    }
+    bundle = SourceBundleV4.from_dict({
+        **body,
+        "bundle_digest": str(digest_value(body)),
+    })
+    full_wire = bundle.canonical_bytes()
+    wrong_ref = ContentRefV4(SOURCE_BUNDLE_KIND, DigestV4.from_bytes(full_wire))
+    harness._register(
+        wrong_ref,
+        full_wire,
+        artifact_kind=SOURCE_BUNDLE_KIND,
+        media_type="application/json",
+        scope="source-path",
+    )
+    assert _error_code(
+        lambda: harness.service.resolve_applicable(
+            wrong_ref,
+            decision_time=CanonicalTimeV4("2026-08-22T00:00:00Z"),
+        )
+    ) == "SOURCE_NONCANONICAL_JSON"
 
 
 def test_legal_version_chain_is_edge_order_independent() -> None:

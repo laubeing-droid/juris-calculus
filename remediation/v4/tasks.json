@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "95eb653e12fca2d404c2a8ea67777dfcaeacb3e3779febce41c3265a45dac9fb",
+    "plan_sha256": "7a22e559c05d88d4cab13be38ce2a603e191c542c6ce964b3a9fb749fecf1cbe",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -1793,8 +1793,17 @@
       ],
       "objective": "新增 fact_admission.py；candidate fact 绑定 proposition/value/type；receipt 由服务内部生成",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/fact_admission.py",
-        "tests/contract/test_fact_admission.py"
+        "compiler_core/source_service.py",
+        "docs/architecture/module-authority.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_fact_admission.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_source_service.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1804,9 +1813,31 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W2-02"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W2-02",
+          "tests/contract/test_fact_admission.py",
+          "tests/contract/test_source_service.py",
+          "tests/security/test_source_service_attacks.py",
+          "tests/contract/test_required_test_manifest.py",
+          "tests/security/test_artifact_resolver.py::test_caller_claimed_pass_cannot_create_trust",
+          "--junitxml",
+          "{state_root}/evidence/W2-02/fact-admission-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

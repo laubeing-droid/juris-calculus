@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.13.0"
+RUNNER_VERSION = "0.14.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -71,6 +71,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.11.0": 5,
     "0.12.0": 5,
     "0.13.0": 5,
+    "0.14.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -126,6 +127,23 @@ W2_01_CHANGED_PATHS = (
     "tests/contract/test_source_service.py",
     "tests/required-v4-tests.json",
     "tests/security/test_source_service_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W2_02_TEST_CASE_COUNT = 64
+W2_02_TEST_CASE_IDS_DIGEST = (
+    "sha256:e1e251f77691baa859b1dfcc3a2ba4d5d91ecfc3a3f3dc5d8c617dc7b4de2a01"
+)
+W2_02_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/fact_admission.py",
+    "compiler_core/source_service.py",
+    "docs/architecture/module-authority.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_fact_admission.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/contract/test_source_service.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -8101,6 +8119,265 @@ def cmd_w2_01_source_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w2_02_fact_gate() -> int:
+    """Verify W2-02 fact admission, governance bindings, and attack oracles."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = list(W2_02_CHANGED_PATHS)
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W2-02"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W2-02",
+            "tests/contract/test_fact_admission.py",
+            "tests/contract/test_source_service.py",
+            "tests/security/test_source_service_attacks.py",
+            "tests/contract/test_required_test_manifest.py",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+            "--junitxml", "{state_root}/evidence/W2-02/fact-admission-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs/architecture/module-authority.json").read_text(encoding="utf-8")
+        )
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w2_02_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        source_text = (ROOT / "compiler_core/fact_admission.py").read_text(encoding="utf-8")
+        source_tree = ast.parse(source_text)
+        test_text = (ROOT / "tests/contract/test_fact_admission.py").read_text(
+            encoding="utf-8-sig"
+        )
+        source_service_text = (ROOT / "compiler_core/source_service.py").read_text(
+            encoding="utf-8"
+        )
+        source_test_text = (ROOT / "tests/contract/test_source_service.py").read_text(
+            encoding="utf-8-sig"
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError) as exc:
+        print(
+            f"W2-02 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W2-02"), None)
+    if not isinstance(task, dict):
+        fail("W2-02 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W2-01"]:
+            fail("W2-02 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-02", "P0-04"]:
+            fail("W2-02 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W2-02 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W2-02 argv or expected exit codes drifted")
+
+    formal_plan = ROOT / expected_allowed_paths[0]
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W2-02 task, disposition, and generator are not bound to the formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W2-02 file disposition is not reproducible from its generator")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-02-POSITIVE-PRODUCTION": (
+            "P0-02", "W4-07", "RED_AT_TASK",
+            "tests/formal_e2e/test_positive_vertical_slice.py::"
+            "test_signed_pack_produces_verified_result",
+        ),
+        "V4-P0-04-CALLER-TRUST": (
+            "P0-04", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W2-02 required mutation lifecycle drifted: {test_id}")
+    caller_selector = expected_mutations["V4-P0-04-CALLER-TRUST"][3]
+    if not _selector_is_declared(ROOT, caller_selector):
+        fail("W2-02 active caller-trust selector is not declared")
+
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-02": ["W2-02", "W2-05", "W4-07", "W8-06"],
+        "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
+    }
+    for audit_id, closures in expected_closures.items():
+        issue = issue_by_id.get(audit_id, {})
+        if (issue.get("status"), issue.get("closure_tasks")) != ("registered", closures):
+            fail(f"W2-02 issue lifecycle drifted: {audit_id}")
+
+    rules = {
+        item.get("path"): item
+        for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict)
+    }
+    if rules.get("compiler_core/fact_admission.py", {}).get("class") != "FORMAL_CORE":
+        fail("W2-02 fact admission is not FORMAL_CORE")
+    for legacy in (
+        "compiler_core/fact_admission_v1.py",
+        "compiler_core/fact_trust_envelope.py",
+    ):
+        if rules.get(legacy, {}).get("class") != "REMOVE":
+            fail(f"W2-02 legacy fact authority is not retained on REMOVE: {legacy}")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/fact_admission.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/source_service.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "tests/contract/test_fact_admission.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/contract/test_source_service.py": ("TEST_ORACLE", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W2-02 file disposition drifted: {path}")
+
+    imports = {
+        alias.name
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.ImportFrom) and isinstance(node.module, str)
+    }
+    forbidden_imports = {
+        name for name in imports
+        if name in {
+            "compiler_core.fact_admission_v1",
+            "compiler_core.fact_trust_envelope",
+            "compiler_core.source_service_v2",
+        }
+        or name.startswith(("pathlib", "socket", "urllib", "requests", "httpx"))
+        or "private" in name.casefold()
+    }
+    forbidden_calls = {
+        node.func.id
+        for node in ast.walk(source_tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        and node.func.id in {"open", "eval", "exec"}
+    }
+    if forbidden_imports or forbidden_calls or "GateOutcome" in source_text:
+        fail("W2-02 fact service acquired legacy, filesystem, network, or caller-PASS authority")
+    service_class = next(
+        (
+            node for node in source_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "FactAdmissionServiceV4"
+        ),
+        None,
+    )
+    public_methods = {
+        node.name for node in service_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and not node.name.startswith("_")
+    } if service_class is not None else set()
+    if public_methods != {"admit", "verify_receipt"}:
+        fail("W2-02 FactAdmissionServiceV4 public API drifted")
+    required_symbols = {
+        "ArtifactResolverV4", "SourceServiceV4", "TrustVerifierV4",
+        "CaseRequestV4", "EvidenceManifestV4", "FactCandidateV4",
+        "FactAttestationV4", "FactAdmissionReceiptV4",
+        "case-request-binding", "legal-approval", "service-certificate",
+        "source-gate-receipt",
+        "interpretation-gate-receipt", "fact-gate-receipt", "ADMITTED",
+        "UNDISPUTED", "UNKNOWN", "DISPUTED", "USER_ASSUMED",
+    }
+    if any(symbol not in source_text for symbol in required_symbols):
+        fail("W2-02 fact implementation lacks a required evidence or trust invariant")
+    source_symbols = {
+        "bundle_digest", "digest_body", "SOURCE_AUTHENTICITY_EXPIRED",
+        "SOURCE_AUTHENTICITY_TIME", "_verified_issued_at", "_verified_expires_at",
+    }
+    if any(symbol not in source_service_text for symbol in source_symbols):
+        fail("W2-02 source self-digest or cache-time correction is incomplete")
+
+    controls = _forbidden_test_controls(test_text)
+    if controls:
+        fail(f"W2-02 fact tests use forbidden controls: {controls}")
+    required_test_evidence = {
+        "theory_absorption", "p09_fact_admission.json", "Ed25519PrivateKey",
+        "test_same_scope_retry_is_idempotent",
+        "test_caller_cannot_supply_pass_or_receipt",
+        "test_handmade_receipt_cannot_verify",
+    }
+    if any(symbol not in test_text for symbol in required_test_evidence):
+        fail("W2-02 fact tests lack the frozen theory, crypto, replay, or forgery oracle")
+    source_test_evidence = {
+        "test_cached_source_authenticity_still_obeys_signature_expiry",
+        "test_cached_source_authenticity_still_obeys_signature_issued_at",
+        "test_source_authenticity_signature_cannot_predate_retrieval",
+        "bundle.digest_body()",
+    }
+    if any(symbol not in source_test_text for symbol in source_test_evidence):
+        fail("W2-02 source tests lack self-digest or cache-time oracles")
+
+    if problems:
+        for problem in problems:
+            print(f"W2-02 fact gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W2-02 fact gate OK: canonical request-derived source/evidence; three separate "
+        "gates; scoped legal approval; internally signed admission receipt; no caller PASS"
+    )
+    return EXIT_OK
+
+
+def cmd_w2_02_fact_gate() -> int:
+    try:
+        return _cmd_w2_02_fact_gate()
+    except Exception as exc:
+        print(
+            f"W2-02 fact gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -8126,6 +8403,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_06_attack_gate()
     if args.wave == "W2-01":
         return cmd_w2_01_source_gate()
+    if args.wave == "W2-02":
+        return cmd_w2_02_fact_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -9613,6 +9892,42 @@ def _w2_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w2_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W2-02 fact/JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W2-02 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W2_02_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W2_02_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W2_02_TEST_CASE_COUNT,
+        "junit_unique_cases": W2_02_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W2_02_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W2-02 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W2-02 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _recover_state_artifact(
     plan: dict[str, Any], state_root: Path, run_state: dict[str, Any], selector: str,
 ) -> int:
@@ -10262,6 +10577,36 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 11 exact W2-01 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W2-02":
+        report_problems = _w2_02_test_report_problems(test_reports)
+        expected_paths = set(W2_02_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W2_02_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w2-02-exact-fact-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W2_02_TEST_CASE_COUNT} fact/source/governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-02-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 exact W2-02 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })
