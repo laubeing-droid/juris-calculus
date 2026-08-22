@@ -565,9 +565,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W1-06　合同/信任综合攻击门禁
 
-- **Depends / audit**：`W1-03..05 / P0-03..04, P1-01..04, P1-14..15`。
-- **Paths**：只增加/修正 `tests/contract|property|security/**` 和 fixtures；生产修复回到责任 task，不在本 task 顺手改。
-- **Gate**：Hypothesis differential、nested/depth bombs、cross-language JCS、path matrix、signature/revocation mutation；审计中的最小反例全部从“成功”变为预期拒绝。
+- **Depends / audit**：`W1-03..05 / P0-03..04, P1-01..04, P1-14..15, P2-03`。
+- **Paths**：仅以下 8 个 exact paths：本方案、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_contracts.py`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_v4_legacy_rejection.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；生产修复回到责任 task，不在本 task 顺手改。
+- **Gate**：Hypothesis differential、nested/depth bombs、cross-language JCS、path matrix、signature/revocation mutation；engine 3、V3 upgrade 和 V3 schema generation 三项错误正例改为预期拒绝。P1-03/P1-04 的 source 语义保持 RED 到 `W2-01`，P1-15 的完整生产资源预算保持 RED 到 `W5-CUTOVER`。
 - **Commit**：`test(trust): close V4 contract and resolver attack surface`。
 
 ## 9. W2：来源、证据、事实、RuleV4 和 immutable pack

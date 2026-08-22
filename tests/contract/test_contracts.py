@@ -628,6 +628,16 @@ def test_admission_enforcement_order_is_fail_closed() -> None:
     assert _error_code(caught.value) == "ADMISSION_DEADLINE"
 
 
+@pytest.mark.parametrize("depth", (2_048, 3_072))
+def test_deep_json_bombs_fail_as_depth_errors_before_recursive_decode(depth: int) -> None:
+    bomb = b'{"probe":' + b"[" * depth + b"0" + b"]" * depth + b"}"
+    limits = contracts.ResourceLimitsV4.from_dict(_limits_payload())
+
+    with pytest.raises(contracts.ContractV4Error) as caught:
+        contracts.CaseRequestV4.from_json_bytes(bomb, limits=limits)
+    assert _error_code(caught.value) == "JSON_DEPTH_LIMIT"
+
+
 def test_engine_major_four_is_exact() -> None:
     assert contracts.require_engine_match("4.0.0") == "4.0.0"
     assert contracts.require_engine_match("4.0.0rc1") == "4.0.0rc1"

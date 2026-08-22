@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "bb0852c48bbb2846d506e09fd1ed8a8df3ce14104b1421d1709948f39e455e2d",
-  "count": 353,
+  "plan_sha256": "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6",
+  "count": 354,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1737,6 +1737,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/contract/test_v4_legacy_rejection.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W1-06"
     },
     {
       "path": "tests/contract/v4-contract-vectors.json",

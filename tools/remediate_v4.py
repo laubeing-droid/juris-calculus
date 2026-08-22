@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.10.0"
+RUNNER_VERSION = "0.11.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -68,6 +68,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.8.0": 5,
     "0.9.0": 5,
     "0.10.0": 5,
+    "0.11.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -106,6 +107,9 @@ W1_04_TEST_CASE_IDS_DIGEST = (
 )
 W1_05_TEST_CASE_IDS_DIGEST = (
     "sha256:aefc8c254b70bfb3521a8a98aa4dee1d7e58e702aaf17810fe3c7ce576efcdbc"
+)
+W1_06_TEST_CASE_IDS_DIGEST = (
+    "sha256:6ce649d36b96fb6dff1009e39e45d75d237d1562ceab4c84e838c57a6060c1cb"
 )
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
 W1_03_MANIFEST_SHA256 = "5238ec7b357efa9354e7f6a8e5364500185ba5d53c61b4df3f3ed0757008319d"
@@ -4407,7 +4411,7 @@ def cmd_w1_02_contract_gate() -> int:
             fail(f"W1-02 frozen input digest drifted: {path.relative_to(ROOT)}")
 
     baseline_commit = "dfdfab110a7ba34bbb94def6e52945602ab0b0ec"
-    plan_authority_hash = "bb0852c48bbb2846d506e09fd1ed8a8df3ce14104b1421d1709948f39e455e2d"
+    plan_authority_hash = "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6"
     audit_authority_hash = "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
     authority_source_hashes = {
         ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md":
@@ -7572,6 +7576,286 @@ def cmd_w1_05_trust_policy_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w1_06_attack_gate() -> int:
+    """Re-run the W1 contract/trust attack surface without closing future work."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_contracts.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_v4_legacy_rejection.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+    ]
+    expected_audit_ids = [
+        "P0-03", "P0-04", "P1-01", "P1-02", "P1-03", "P1-04",
+        "P1-14", "P1-15", "P2-03",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-06"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-06",
+            "tests/contract/test_jcs_v4.py",
+            "tests/property/test_canonicalization.py",
+            "tests/contract/test_contracts.py",
+            "tests/contract/test_public_version.py",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_v4_legacy_rejection.py",
+            "tests/contract/test_required_test_manifest.py",
+            "tests/security/test_artifact_resolver.py",
+            "tests/property/test_resolver_properties.py",
+            "tests/security/test_trust_policy.py",
+            "--junitxml", "{state_root}/evidence/W1-06/contract-trust-attack-tests.xml",
+        ],
+        [
+            "node", "tests/contract/jcs_node_oracle.mjs",
+            "tests/fixtures/golden/jcs-v4-vectors.json",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w1_06_file_disposition_generator",
+            ROOT / "tools" / "build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, TypeError) as exc:
+        print(
+            f"W1-06 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W1-06"), None)
+    if not isinstance(task, dict):
+        fail("W1-06 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != [
+            "W1-03", "W1-04", "W1-05",
+        ]:
+            fail("W1-06 mode or dependency drifted")
+        if task.get("audit_ids") != expected_audit_ids:
+            fail("W1-06 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-06 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+            fail("W1-06 argv or expected exit codes drifted")
+
+    formal_plan = ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md"
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W1-06 task, disposition, and generator are not bound to the formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W1-06 file disposition is not reproducible from its generator")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-03-DIGEST-COMPOSITION": (
+            "P0-03", "W1-01", "ACTIVE_REQUIRED",
+            "tests/contract/test_jcs_v4.py::"
+            "test_digest_grammar_composes_across_request_receipt_bundle",
+        ),
+        "V4-P0-04-CALLER-TRUST": (
+            "P0-04", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+        ),
+        "V4-P1-01-RFC8785-PROPERTY": (
+            "P1-01", "W1-01", "ACTIVE_REQUIRED",
+            "tests/property/test_canonicalization.py::"
+            "test_rfc8785_cross_language_property_vectors",
+        ),
+        "V4-P1-02-CODEC-DIFFERENTIAL": (
+            "P1-02", "W1-03", "ACTIVE_REQUIRED",
+            "tests/contract/test_python_schema_mcp_differential.py::"
+            "test_python_schema_mcp_acceptance_sets_match",
+        ),
+        "V4-P1-03-TIME-ORDER": (
+            "P1-03", "W2-01", "RED_AT_TASK",
+            "tests/contract/test_source_service.py::"
+            "test_fractional_instants_compare_chronologically",
+        ),
+        "V4-P1-04-DISCONNECTED-SOURCE-PATH": (
+            "P1-04", "W2-01", "RED_AT_TASK",
+            "tests/security/test_source_service_attacks.py::"
+            "test_disconnected_source_path_cannot_pass",
+        ),
+        "V4-P1-14-TOOLSPEC-AUTHORITY": (
+            "P1-14", "W1-03", "ACTIVE_REQUIRED",
+            "tests/contract/test_python_schema_mcp_differential.py::"
+            "test_toolspec_manifest_and_runtime_codec_are_one_authority",
+        ),
+        "V4-P1-15-RESOURCE-BUDGET": (
+            "P1-15", "W5-CUTOVER", "RED_AT_TASK",
+            "tests/security/test_resource_limits.py::"
+            "test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W1-06 audit lifecycle drifted: {test_id}")
+        elif expected[2] == "ACTIVE_REQUIRED" and not _selector_is_declared(ROOT, expected[3]):
+            fail(f"W1-06 active selector is not declared: {test_id}")
+        elif expected[2] == "RED_AT_TASK" and _selector_is_declared(ROOT, expected[3]):
+            fail(f"W1-06 future selector is prematurely active: {test_id}")
+
+    rewrite_projection = [
+        (
+            item.get("id"), item.get("selector"), item.get("rewrite_task"),
+            item.get("retirement_task"), item.get("state"),
+            item.get("replacement_selector"),
+        )
+        for item in manifest.get("rewrite_at_task", [])
+        if isinstance(item, dict) and item.get("rewrite_task") == "W1-06"
+    ]
+    expected_rewrites = [
+        (
+            "REWRITE-ENGINE-3-ACCEPTANCE",
+            "tests/unit/test_contracts_v4.py::TestFailClosed::test_engine_version_mismatch_rejected",
+            "W1-06", "W5-CUTOVER", "REWRITE_AT_TASK",
+            "tests/contract/test_v4_legacy_rejection.py::test_engine_3_payload_fails",
+        ),
+        (
+            "REWRITE-COMPAT-ADAPTER", "tests/unit/test_contracts_v4.py::TestCompatAdapter",
+            "W1-06", "W5-CUTOVER", "REWRITE_AT_TASK",
+            "tests/contract/test_v4_legacy_rejection.py::test_v3_payload_has_no_upgrade_path",
+        ),
+        (
+            "REWRITE-V3-SCHEMA-GENERATION",
+            "tests/unit/test_case_contracts.py::test_committed_schema_is_generated_from_contracts",
+            "W1-06", "W5-CUTOVER", "REWRITE_AT_TASK",
+            "tests/contract/test_v4_legacy_rejection.py::test_only_v4_schema_is_generated",
+        ),
+    ]
+    if rewrite_projection != expected_rewrites:
+        fail("W1-06 legacy rejection rewrite projection drifted")
+    for item in manifest.get("rewrite_at_task", []):
+        if not isinstance(item, dict) or item.get("rewrite_task") != "W1-06":
+            continue
+        if not _selector_is_declared(ROOT, item["replacement_selector"]):
+            fail(f"W1-06 replacement selector is not declared: {item['id']}")
+
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-03": ["W1-01", "W1-02", "W1-03"],
+        "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
+        "P1-01": ["W1-01", "W1-06"],
+        "P1-02": ["W1-02", "W1-03", "W1-06"],
+        "P1-03": ["W0-02", "W2-01"],
+        "P1-04": ["W2-01"],
+        "P1-14": ["W1-03", "W5-CUTOVER", "W5-06"],
+        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER"],
+        "P2-03": ["W1-06", "W2-06", "W4-07", "W5-01"],
+    }
+    for audit_id, closures in expected_closures.items():
+        item = issue_by_id.get(audit_id, {})
+        if (item.get("status"), item.get("closure_tasks")) != ("registered", closures):
+            fail(f"W1-06 issue lifecycle drifted: {audit_id}")
+
+    disposition_by_path = {
+        item.get("path"): item for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    legacy_test_disposition = disposition_by_path.get(
+        "tests/contract/test_v4_legacy_rejection.py", {}
+    )
+    if {
+        key: legacy_test_disposition.get(key)
+        for key in ("disposition", "terminal_state", "closure_task")
+    } != {
+        "disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE",
+        "closure_task": "W1-06",
+    }:
+        fail("W1-06 legacy rejection test disposition drifted")
+
+    test_paths = {
+        _selector_file(selector)
+        for argv in expected_argv[1:2]
+        for selector in argv
+        if isinstance(selector, str) and selector.startswith("tests/")
+    }
+    for relative in sorted(path for path in test_paths if path is not None):
+        try:
+            controls = _forbidden_test_controls((ROOT / relative).read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeError):
+            fail(f"W1-06 test input is unreadable: {relative}")
+            continue
+        if controls:
+            fail(f"W1-06 test input contains bypass controls: {relative} {controls}")
+
+    prerequisite_gates = (
+        ("W1-01", cmd_w1_01_canonical_gate),
+        ("W1-02", cmd_w1_02_contract_gate),
+        ("W1-03", cmd_w1_03_publication_gate),
+        ("W1-04", cmd_w1_04_artifact_resolver_gate),
+        ("W1-05", cmd_w1_05_trust_policy_gate),
+    )
+    for task_id, gate in prerequisite_gates:
+        if gate() != EXIT_OK:
+            fail(f"W1-06 prerequisite machine gate failed: {task_id}")
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-06 file disposition is not closed over the tracked tree")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W1-06 contract/trust attack gate OK: W1-01..05 machine gates green; "
+        "3 legacy-positive replacements active; P1-03/P1-04/full-P1-15 remain "
+        "future RED at their owning tasks"
+    )
+    return EXIT_OK
+
+
+def cmd_w1_06_attack_gate() -> int:
+    """Fail closed on malformed W1-06 attack-gate control inputs."""
+
+    try:
+        return _cmd_w1_06_attack_gate()
+    except Exception as exc:
+        print(
+            f"W1-06 attack gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -7593,6 +7877,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_04_artifact_resolver_gate()
     if args.wave == "W1-05":
         return cmd_w1_05_trust_policy_gate()
+    if args.wave == "W1-06":
+        return cmd_w1_06_attack_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -8739,6 +9025,68 @@ def _w1_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w1_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W1-06 pytest/JUnit and independent Node evidence."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    node_reports = [report for report in test_reports if report.get("kind") == "node-oracle"]
+    if len(pytest_reports) != 1:
+        problems.append("W1-06 must bind exactly one pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0,
+            "terminal_summaries": 1,
+            "passed": 521,
+            "failed": 0,
+            "errors": 0,
+            "skipped": 0,
+            "xfailed": 0,
+            "xpassed": 0,
+            "collection_errors": 0,
+            "junit_valid": True,
+            "junit_tests": 521,
+            "junit_skipped": 0,
+            "junit_failures": 0,
+            "junit_errors": 0,
+            "junit_cases": 521,
+            "junit_unique_cases": 521,
+            "junit_case_ids_digest": W1_06_TEST_CASE_IDS_DIGEST,
+        }
+        for field, expected_value in expected.items():
+            if report.get(field) != expected_value:
+                problems.append(
+                    f"W1-06 pytest {field} drifted: "
+                    f"{report.get(field)!r} != {expected_value!r}"
+                )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W1-06 pytest junit_sha256 is missing or invalid")
+
+    if len(node_reports) != 1:
+        problems.append("W1-06 must bind exactly one Node oracle report")
+    else:
+        report = node_reports[0]
+        runtime_match = re.fullmatch(r"v(?P<major>\d+)\.\d+\.\d+", str(report.get("runtime")))
+        if runtime_match is None or int(runtime_match.group("major")) not in {22, 24}:
+            problems.append("W1-06 Node oracle runtime must be major 22 or 24")
+        expected_node = {
+            "exit_code": 0,
+            "positive": 9,
+            "negative": 16,
+            "canonical_bytes": 295,
+            "float_tokens": "raw-lexical",
+            "duplicate_key": "declaration-only",
+        }
+        for field, expected_value in expected_node.items():
+            if report.get(field) != expected_value:
+                problems.append(
+                    f"W1-06 Node oracle {field} drifted: "
+                    f"{report.get(field)!r} != {expected_value!r}"
+                )
+    return problems
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -9116,6 +9464,18 @@ def _execute_auto_task(
                 "committed test trust policy matches the frozen fixture digest"
                 if not fixture_problem
                 else f"{fixture_key}={artifact_digests.get(fixture_key)!r}"
+            ),
+        })
+    if task["id"] == "W1-06":
+        report_problems = _w1_06_test_report_problems(test_reports)
+        assertions.append({
+            "id": "w1-06-exact-attack-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "521 contract/property/security pytest items plus the Node 24/22 "
+                "JCS oracle are bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

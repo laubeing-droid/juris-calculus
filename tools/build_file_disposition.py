@@ -178,6 +178,7 @@ SPECIAL_CLOSURE_TASKS = {
     "compiler_core/contracts_v4.py": "W1-02",
     "tests/fixtures/v4_contract/object-state-matrix.json": "W1-02",
     "tests/contract/jcs_node_oracle.mjs": "W1-01",
+    "tests/contract/test_v4_legacy_rejection.py": "W1-06",
     "tests/contract/test_v4_foundation_contract.py": "W4-06",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
@@ -378,7 +379,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "bb0852c48bbb2846d506e09fd1ed8a8df3ce14104b1421d1709948f39e455e2d",
+        "plan_sha256": "1bf2a1d9e667a1ab60bdc16475b8489f7388fe2217655eecb288d55c80dc75b6",
         "count": len(entries),
         "paths": entries,
     }
