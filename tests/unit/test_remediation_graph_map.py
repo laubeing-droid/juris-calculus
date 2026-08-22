@@ -41,15 +41,23 @@ def _tracked_files() -> list[str]:
 
 
 def _asset_inventory() -> list[str]:
-    """Asset inventory: every tracked file that CodeGraph did NOT index.
+    """Assets are defined by type, not as tracked minus indexed."""
+    return [
+        path for path in _tracked_files()
+        if Path(path).suffix.lower() not in {".py", ".yaml", ".yml"}
+        or path == "configs/zh_CN/rules.yaml"
+    ]
 
-    CodeGraph 0.9.9 indexes Python + YAML, but it may skip very large YAMLs
-    (configs/zh_CN/rules.yaml is 13.6 MB) or files with parse errors. Asset
-    inventory closes the union so the runner can prove tracked ==
-    codegraph-indexed ∪ asset-inventory (施工方案 §7 B00-CG).
-    """
-    indexed = set(_codegraph_indexed_files())
-    return [p for p in _tracked_files() if p not in indexed]
+
+def _write_asset_inventory(state_root: Path) -> Path:
+    cp = subprocess.run(
+        [sys.executable, "-B", str(RUNNER), "asset-map", "--codegraph",
+         ".codegraph/codegraph.db", "--state-root", str(state_root)],
+        cwd=str(REPO), capture_output=True, text=True,
+    )
+    assert cp.returncode == 0, cp.stderr
+    tree = _git("rev-parse", "HEAD^{tree}").strip()
+    return state_root / "evidence" / "codegraph" / tree / "asset-inventory.json"
 
 
 def _codegraph_indexed_files() -> list[str]:
@@ -152,9 +160,13 @@ def test_cn_legacy_rules_yaml_not_in_codegraph() -> None:
 # ---------------------------------------------------------------------------
 
 def test_runner_graph_map_returns_exit_0_with_real_check() -> None:
+    state_root = REPO.parent / "jc_b00cg_graph_map_test"
+    state_root.mkdir(parents=True, exist_ok=True)
+    inventory = _write_asset_inventory(state_root)
     cp = subprocess.run(
         [sys.executable, "-B", str(RUNNER), "graph-map", "--check",
-         "--codegraph", ".codegraph/codegraph.db", "--all-tracked"],
+         "--codegraph", ".codegraph/codegraph.db", "--all-tracked",
+         "--asset-inventory", str(inventory)],
         cwd=str(REPO),
         capture_output=True,
         text=True,
@@ -173,11 +185,12 @@ def test_runner_graph_map_produces_normalized_receipt() -> None:
         import shutil
         shutil.rmtree(state_root, ignore_errors=True)
     state_root.mkdir(parents=True, exist_ok=True)
+    inventory = _write_asset_inventory(state_root)
     env = {**__import__("os").environ, "JC_REMEDIATION_STATE_ROOT": str(state_root)}
     cp = subprocess.run(
         [sys.executable, "-B", str(RUNNER), "graph-map", "--check",
          "--codegraph", ".codegraph/codegraph.db", "--all-tracked",
-         "--state-root", str(state_root)],
+         "--state-root", str(state_root), "--asset-inventory", str(inventory)],
         cwd=str(REPO),
         capture_output=True,
         text=True,
@@ -199,6 +212,9 @@ def test_runner_graph_map_produces_normalized_receipt() -> None:
         "schema_version",
         "source_tree_id",
         "codegraph_file_count",
+        "codegraph_version",
+        "codegraph_db_sha256",
+        "codegraph_integrity_check",
         "codegraph_node_count",
         "codegraph_edge_count",
         "codegraph_unresolved",

@@ -29,6 +29,7 @@ import base64
 import fnmatch
 import hashlib
 import json
+import mimetypes
 import os
 import shutil
 import sqlite3
@@ -213,14 +214,19 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
 
     codegraph_files = _codegraph_indexed_files(codegraph_db)
     tracked = _git_tracked_files()
-
-    indexed_set = set(codegraph_files)
-    # asset-inventory = tracked files NOT in codegraph-indexed set. We use
-    # set-membership instead of extension-only because CodeGraph may skip
-    # large YAMLs (e.g. configs/zh_CN/rules.yaml at 13.6 MB) and they must
-    # still be accounted for.
-    asset_inventory = [p for p in tracked if p not in indexed_set]
-
+    asset_path = Path(args.asset_inventory).resolve() if args.asset_inventory else None
+    if asset_path is None and getattr(args, "state_root", None):
+        asset_path = Path(args.state_root) / "evidence" / "codegraph" / _git("rev-parse", "HEAD^{tree}").strip() / "asset-inventory.json"
+    if asset_path is None or not asset_path.is_file():
+        print("explicit --asset-inventory is required; tracked-indexed complement is not evidence", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    asset_payload = json.loads(asset_path.read_text(encoding="utf-8"))
+    asset_entries = asset_payload.get("assets", [])
+    required_asset_fields = {"path", "git_blob", "sha256", "bytes", "mime_type", "asset_type", "disposition", "consumer_or_authority", "closure_task"}
+    if any(not required_asset_fields <= set(entry) for entry in asset_entries):
+        print("asset inventory entry missing required metadata", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    asset_inventory = [entry["path"] for entry in asset_entries]
     indexed_set = set(codegraph_files)
     tracked_set = set(tracked)
     assets_set = set(asset_inventory)
@@ -236,6 +242,9 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
         "schema_version": "jc/remediation-v4-graph-receipt/1.0",
         "source_tree_id": _git("rev-parse", "HEAD^{tree}").strip(),
         "codegraph_file_count": len(codegraph_files),
+        "codegraph_version": asset_payload["codegraph_version"],
+        "codegraph_db_sha256": sha256_hex(codegraph_db.read_bytes()),
+        "codegraph_integrity_check": _codegraph_integrity(codegraph_db),
         "codegraph_node_count": _codegraph_count(codegraph_db, "nodes"),
         "codegraph_edge_count": _codegraph_count(codegraph_db, "edges"),
         "codegraph_unresolved": _codegraph_count(codegraph_db, "unresolved_refs"),
@@ -259,6 +268,8 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
         problems.append(f"unresolved refs={payload['codegraph_unresolved']}")
     if payload["codegraph_parse_errors"] != 0:
         problems.append(f"files with parse errors={payload['codegraph_parse_errors']}")
+    if payload["codegraph_integrity_check"] != "ok":
+        problems.append(f"codegraph integrity={payload['codegraph_integrity_check']}")
     if missing:
         problems.append(f"missing_from_union={missing[:5]}{'...' if len(missing) > 5 else ''}")
     if orphan:
@@ -292,6 +303,64 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
         f"{len(tracked)} tracked total; "
         f"unresolved=0 parse_errors=0 missing=0 orphan=0"
     )
+    return EXIT_OK
+
+
+def _codegraph_integrity(db: Path) -> str:
+    conn = sqlite3.connect(str(db))
+    try:
+        return str(conn.execute("PRAGMA integrity_check").fetchone()[0])
+    finally:
+        conn.close()
+
+
+def cmd_asset_map(args: argparse.Namespace) -> int:
+    """Write an explicit, fingerprinted inventory for non-CodeGraph assets."""
+    codegraph_db = Path(args.codegraph).resolve()
+    if not codegraph_db.is_file() or not args.state_root:
+        print("asset-map requires --codegraph and --state-root", file=sys.stderr)
+        return EXIT_USAGE
+    tracked = _git_tracked_files()
+    dispositions = {
+        item["path"]: item
+        for item in json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))["paths"]
+    }
+    assets: list[dict[str, Any]] = []
+    for path in tracked:
+        suffix = Path(path).suffix.lower()
+        if suffix in {".py", ".yaml", ".yml"} and path != "configs/zh_CN/rules.yaml":
+            continue
+        source = ROOT / path
+        disposition = dispositions.get(path)
+        if disposition is None:
+            print(f"asset missing disposition: {path}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        blob = _git_checked("rev-parse", f"HEAD:{path}")
+        payload = source.read_bytes()
+        assets.append({
+            "path": path, "git_blob": blob, "sha256": sha256_hex(payload), "bytes": len(payload),
+            "mime_type": mimetypes.guess_type(path)[0] or "application/octet-stream",
+            "asset_type": suffix.lstrip(".") or "extensionless",
+            "disposition": disposition["disposition"],
+            "consumer_or_authority": disposition.get("audit_role", "UNREVIEWED"),
+            "closure_task": disposition["closure_task"],
+        })
+    version_argv = _expanded_argv(["codegraph", "--version"], Path(args.state_root))
+    version_cp = subprocess.run(version_argv, cwd=str(ROOT), capture_output=True, text=True, check=False)
+    if version_cp.returncode != 0:
+        print(version_cp.stderr, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    tree = _git_checked("rev-parse", "HEAD^{tree}")
+    output = {
+        "schema_version": "jc/remediation-v4-asset-inventory/1.0",
+        "source_commit": _git_checked("rev-parse", "HEAD"), "source_tree": tree,
+        "codegraph_version": version_cp.stdout.strip(), "codegraph_db_sha256": sha256_hex(codegraph_db.read_bytes()),
+        "codegraph_integrity_check": _codegraph_integrity(codegraph_db), "assets": assets,
+    }
+    output["digest"] = _digest_object(output)
+    target = Path(args.state_root) / "evidence" / "codegraph" / tree / "asset-inventory.json"
+    _atomic_json(target, output)
+    print(f"asset-map OK: {len(assets)} explicit assets; {target}")
     return EXIT_OK
 
 
@@ -1366,7 +1435,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--codegraph", default=".codegraph/codegraph.db")
     p.add_argument("--all-tracked", action="store_true")
     p.add_argument("--state-root", default=None)
+    p.add_argument("--asset-inventory", default=None)
     p.set_defaults(func=cmd_graph_map)
+
+    p = sub.add_parser("asset-map", help="Explicit non-CodeGraph asset inventory")
+    p.add_argument("--codegraph", default=".codegraph/codegraph.db")
+    p.add_argument("--state-root", required=True)
+    p.set_defaults(func=cmd_asset_map)
 
     p = sub.add_parser("audit-map", help="44 audit issue closure check")
     p.add_argument("--audit", required=False)

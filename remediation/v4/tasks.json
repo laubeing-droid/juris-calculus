@@ -181,6 +181,16 @@
           "{python}",
           "-B",
           "tools/remediate_v4.py",
+          "asset-map",
+          "--codegraph",
+          ".codegraph/codegraph.db",
+          "--state-root",
+          "{state_root}"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
           "graph-map",
           "--check",
           "--codegraph",
@@ -191,6 +201,7 @@
         ]
       ],
       "expected_exit_codes": [
+        0,
         0,
         0,
         0,
