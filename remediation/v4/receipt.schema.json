@@ -1,56 +1,56 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "jc/remediation-v4-receipt/1.0",
-  "title": "Remediation V4 task receipt",
-  "type": "object",
-  "additionalProperties": false,
+  "$id": "jc/remediation-v4-receipt/2.0",
+  "type": "object", "additionalProperties": false,
   "required": [
-    "schema_version", "run_id", "task_id", "attempt",
-    "start_commit", "start_tree", "result_commit",
-    "changed_paths", "completion_assertions",
-    "audit_ids", "receipt_digest"
+    "schema_version", "run_id", "task_id", "attempt", "status", "input_receipt_digests",
+    "start_commit", "start_tree", "result_commit", "result_tree", "command_results",
+    "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions",
+    "previous_receipt_digest", "runner_version", "receipt_digest"
   ],
   "properties": {
-    "schema_version": {"const": "jc/remediation-v4-receipt/1.0"},
-    "run_id": {"type": "string"},
-    "task_id": {"type": "string"},
+    "schema_version": {"const": "jc/remediation-v4-receipt/2.0"},
+    "run_id": {"type": "string"}, "task_id": {"type": "string"},
     "attempt": {"type": "integer", "minimum": 1},
-    "start_commit": {"type": "string"},
-    "start_tree": {"type": "string"},
-    "result_commit": {"type": ["string", "null"]},
-    "result_tree": {"type": ["string", "null"]},
-    "changed_paths": {
-      "type": "array",
-      "items": {"type": "string"}
-    },
-    "red_command_exit_codes": {
-      "type": "array",
-      "items": {"type": "integer"}
-    },
-    "green_command_exit_codes": {
-      "type": "array",
-      "items": {"type": "integer"}
-    },
-    "completion_assertions": {
+    "status": {"enum": ["COMPLETED", "FAILED", "SCOPE_VIOLATION", "TIMED_OUT"]},
+    "input_receipt_digests": {"type": "object", "additionalProperties": {"type": "string"}},
+    "start_commit": {"type": "string"}, "start_tree": {"type": "string"},
+    "result_commit": {"type": "string"}, "result_tree": {"type": "string"},
+    "command_results": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["name", "ok"],
+        "type": "object", "additionalProperties": false,
+        "required": ["argv", "expected_exit_code", "exit_code", "timed_out", "stdout", "stderr"],
         "properties": {
-          "name": {"type": "string"},
-          "ok": {"type": "boolean"},
-          "detail": {"type": "string"}
+          "argv": {"type": "array", "items": {"type": "string"}},
+          "expected_exit_code": {"type": "integer"}, "exit_code": {"type": ["integer", "null"]},
+          "timed_out": {"type": "boolean"}, "stdout": {"$ref": "#/$defs/stream"},
+          "stderr": {"$ref": "#/$defs/stream"}
         }
       }
     },
-    "audit_ids": {"type": "array", "items": {"type": "string"}},
-    "artifact_digests": {
-      "type": "object",
-      "additionalProperties": {"type": "string"}
+    "changed_paths": {"type": "array", "items": {"type": "string"}},
+    "allowlist": {
+      "type": "object", "additionalProperties": false, "required": ["allowed", "violations"],
+      "properties": {"allowed": {"type": "boolean"}, "violations": {"type": "array", "items": {"type": "string"}}}
     },
+    "test_reports": {"type": "array", "items": {"type": "object"}},
+    "artifact_digests": {"type": "object", "additionalProperties": {"type": "string"}},
+    "completion_assertions": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "kind", "ok", "detail"],
+        "properties": {"id": {"type": "string"}, "kind": {"type": "string"}, "ok": {"type": "boolean"}, "detail": {"type": "string"}}
+      }
+    },
+    "previous_receipt_digest": {"type": ["string", "null"]},
     "runner_version": {"type": "string"},
-    "receipt_digest": {"type": "string"},
-    "previous_receipt_digest": {"type": ["string", "null"]}
+    "receipt_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "stream": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256", "bytes"],
+      "properties": {"path": {"type": "string"}, "sha256": {"type": "string"}, "bytes": {"type": "integer", "minimum": 0}}
+    }
   }
 }

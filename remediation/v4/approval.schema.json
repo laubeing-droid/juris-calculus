@@ -1,16 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "jc/remediation-v4-approval/1.0",
+  "$id": "jc/remediation-v4-approval/2.0",
   "title": "Remediation V4 human/external gate approval envelope",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema_version", "gate_id", "task_id",
+    "schema_version", "evidence_kind", "gate_id", "task_id",
     "request_digest", "decision", "signer",
-    "issued_at", "expires_at", "signature"
+    "subject_digest", "issued_at", "expires_at", "signature"
   ],
   "properties": {
-    "schema_version": {"const": "jc/remediation-v4-approval/1.0"},
+    "schema_version": {"const": "jc/remediation-v4-approval/2.0"},
+    "evidence_kind": {"const": "CRYPTOGRAPHIC_SIGNATURE"},
     "gate_id": {"type": "string"},
     "task_id": {"type": "string"},
     "request_digest": {"type": "string"},
@@ -33,7 +34,7 @@
       "additionalProperties": false,
       "required": ["algorithm", "value"],
       "properties": {
-        "algorithm": {"type": "string"},
+        "algorithm": {"const": "Ed25519"},
         "value": {"type": "string"},
         "public_key_id": {"type": "string"}
       }

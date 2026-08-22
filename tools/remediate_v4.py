@@ -25,12 +25,16 @@ B00 阶段 runner 还提供以下子命令，让 B00 自身的 gate 可机器验
 from __future__ import annotations
 
 import argparse
+import base64
+import fnmatch
 import hashlib
 import json
 import os
 import sqlite3
 import subprocess
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -39,7 +43,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.1.0"
+RUNNER_VERSION = "0.2.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -78,6 +82,8 @@ def cmd_lint_plan(args: argparse.Namespace) -> int:
 
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     schema = json.loads(TASK_SCHEMA.read_text(encoding="utf-8"))
+    receipt_schema = json.loads(RECEIPT_SCHEMA.read_text(encoding="utf-8"))
+    required_receipt_fields = set(receipt_schema["required"])
 
     if Draft202012Validator is None:
         print("jsonschema package is required for lint-plan", file=sys.stderr)
@@ -134,6 +140,24 @@ def cmd_lint_plan(args: argparse.Namespace) -> int:
         if t.get("mode") in {"AUTO", "MIXED"} and not t.get("audit_ids"):
             print(f"task {tid} missing audit_ids", file=sys.stderr)
             return EXIT_GATE_FAIL
+        if t.get("mode") == "AUTO":
+            argv = t.get("argv", [])
+            expected = t.get("expected_exit_codes", [])
+            if len(argv) != len(expected):
+                print(
+                    f"task {tid} argv/expected_exit_codes length mismatch: "
+                    f"{len(argv)} != {len(expected)}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
+            declared_receipt_fields = set(t.get("required_receipt_fields", []))
+            if not required_receipt_fields <= declared_receipt_fields:
+                print(
+                    f"task {tid} missing required receipt fields: "
+                    f"{sorted(required_receipt_fields - declared_receipt_fields)}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
 
     # Issue map must cover all referenced audit IDs.
     referenced = {a for t in tasks for a in t.get("audit_ids", [])}
@@ -704,31 +728,495 @@ def cmd_forbidden_imports(args: argparse.Namespace) -> int:
 
 
 def cmd_verify_wave(args: argparse.Namespace) -> int:
-    wave = args.wave
-    print(f"verify-wave {wave}: B00 stub returns OK once plans are lint-clean")
-    rc = cmd_lint_plan(argparse.Namespace(plan=str(DEFAULT_PLAN)))
-    if rc != EXIT_OK:
-        return rc
-    return EXIT_OK
+    print(
+        f"task {args.wave} has no implemented machine verifier; refusing false PASS",
+        file=sys.stderr,
+    )
+    return EXIT_GATE_FAIL
+
+
+def _canonical_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+
+
+def _digest_object(value: Any) -> str:
+    return "sha256:" + sha256_hex(_canonical_bytes(value))
+
+
+def _atomic_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    os.replace(temporary, path)
+
+
+def _git_checked(*args: str) -> str:
+    cp = subprocess.run(
+        ["git", *args], cwd=str(ROOT), capture_output=True, text=True, check=False
+    )
+    if cp.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args)} failed: {cp.stderr.strip()}")
+    return cp.stdout.strip()
+
+
+def _file_identity(path: Path) -> str:
+    if not path.exists():
+        return "missing"
+    if path.is_file():
+        return sha256_hex(path.read_bytes())
+    return "directory"
+
+
+def _git_status_snapshot() -> dict[str, str]:
+    cp = subprocess.run(
+        ["git", "-c", "core.quotepath=false", "status", "--porcelain=v1", "--untracked-files=all"],
+        cwd=str(ROOT), capture_output=True, text=True, check=False,
+    )
+    if cp.returncode != 0:
+        raise RuntimeError(f"git status failed: {cp.stderr.strip()}")
+    result: dict[str, str] = {}
+    for line in cp.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        path = line[3:]
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        normalized = path.replace("\\", "/")
+        result[normalized] = f"{line[:2]}:{_file_identity(ROOT / normalized)}"
+    return result
+
+
+def _changed_status_paths(before: dict[str, str], after: dict[str, str]) -> list[str]:
+    return sorted(
+        path for path in set(before) | set(after) if before.get(path) != after.get(path)
+    )
+
+
+def _matches_allowed(path: str, patterns: list[str]) -> bool:
+    normalized = path.replace("\\", "/")
+    for raw in patterns:
+        pattern = raw.replace("\\", "/")
+        if pattern.startswith("$JC_REMEDIATION_STATE_ROOT"):
+            continue
+        if pattern.endswith("/**") and (
+            normalized == pattern[:-3] or normalized.startswith(pattern[:-2])
+        ):
+            return True
+        if fnmatch.fnmatchcase(normalized, pattern):
+            return True
+    return False
+
+
+def _expanded_argv(argv: list[str], state_root: Path) -> list[str]:
+    replacements = {
+        "{python}": sys.executable,
+        "{state_root}": str(state_root),
+        "$JC_REMEDIATION_STATE_ROOT": str(state_root),
+    }
+    expanded: list[str] = []
+    for value in argv:
+        current = value
+        for marker, replacement in replacements.items():
+            current = current.replace(marker, replacement)
+        expanded.append(current)
+    return expanded
+
+
+def _stream_record(path: Path, payload: bytes) -> dict[str, Any]:
+    path.write_bytes(payload)
+    return {"path": str(path), "sha256": sha256_hex(payload), "bytes": len(payload)}
+
+
+def _run_argv(
+    argv: list[str], expected_exit_code: int, attempt_dir: Path,
+    index: int, timeout_seconds: float, state_root: Path,
+) -> dict[str, Any]:
+    exact_argv = _expanded_argv(argv, state_root)
+    timed_out = False
+    exit_code: int | None
+    try:
+        cp = subprocess.run(
+            exact_argv, cwd=str(ROOT), capture_output=True, check=False,
+            timeout=timeout_seconds, env={**os.environ, "JC_REMEDIATION_STATE_ROOT": str(state_root)},
+        )
+        exit_code = cp.returncode
+        stdout = cp.stdout
+        stderr = cp.stderr
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        exit_code = None
+        stdout = exc.stdout or b""
+        stderr = exc.stderr or b""
+        if isinstance(stdout, str):
+            stdout = stdout.encode("utf-8", errors="replace")
+        if isinstance(stderr, str):
+            stderr = stderr.encode("utf-8", errors="replace")
+    return {
+        "argv": exact_argv,
+        "expected_exit_code": expected_exit_code,
+        "exit_code": exit_code,
+        "timed_out": timed_out,
+        "stdout": _stream_record(attempt_dir / f"stdout-{index:03d}.bin", stdout),
+        "stderr": _stream_record(attempt_dir / f"stderr-{index:03d}.bin", stderr),
+    }
+
+
+def _evaluate_assertions(
+    task: dict[str, Any], command_results: list[dict[str, Any]], state_root: Path
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    commands_ok = all(
+        not item["timed_out"] and item["exit_code"] == item["expected_exit_code"]
+        for item in command_results
+    )
+    tracked = set(_git_tracked_files())
+    for assertion in task.get("completion_assertions", []):
+        kind = assertion["kind"]
+        detail = ""
+        if kind == "all_commands_passed":
+            ok = commands_ok
+            detail = "all exit codes matched" if ok else "command failure or timeout"
+        elif kind in {"path_exists", "path_absent"}:
+            raw = assertion.get("path", "")
+            path = Path(raw.replace("{state_root}", str(state_root)))
+            if not path.is_absolute():
+                path = ROOT / path
+            exists = path.exists()
+            ok = exists if kind == "path_exists" else not exists
+            detail = f"{path} exists={exists}"
+        elif kind in {"git_tracked", "git_untracked"}:
+            path = assertion.get("path", "").replace("\\", "/")
+            is_tracked = path in tracked
+            ok = is_tracked if kind == "git_tracked" else not is_tracked
+            detail = f"{path} tracked={is_tracked}"
+        else:
+            ok = False
+            detail = "command assertions must be task argv so their output is receipted"
+        results.append({"id": assertion["id"], "kind": kind, "ok": ok, "detail": detail})
+    return results
+
+
+def _receipt_digest(receipt: dict[str, Any]) -> str:
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_digest"}
+    return _digest_object(unsigned)
+
+
+def _validate_stream(stream: dict[str, Any]) -> bool:
+    path = Path(stream["path"])
+    if not path.is_file():
+        return False
+    payload = path.read_bytes()
+    return len(payload) == stream["bytes"] and sha256_hex(payload) == stream["sha256"]
+
+
+def _validate_git_binding(commit: str, tree: str) -> bool:
+    cp = subprocess.run(
+        ["git", "rev-parse", f"{commit}^{{tree}}"], cwd=str(ROOT),
+        capture_output=True, text=True, check=False,
+    )
+    return cp.returncode == 0 and cp.stdout.strip() == tree
+
+
+def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
+    task_dir = state_root / "tasks" / task_id
+    if not task_dir.exists():
+        return []
+    validator = Draft202012Validator(json.loads(RECEIPT_SCHEMA.read_text(encoding="utf-8")))
+    receipts: list[dict[str, Any]] = []
+    previous: str | None = None
+    attempt_dirs = sorted(
+        (path for path in task_dir.iterdir() if path.is_dir() and path.name.isdigit()),
+        key=lambda path: int(path.name),
+    )
+    previous_attempt = 0
+    for index, attempt_dir in enumerate(attempt_dirs):
+        receipt_path = attempt_dir / "receipt.json"
+        if not receipt_path.is_file():
+            interruption = attempt_dir / "interrupted.json"
+            if interruption.exists():
+                continue
+            if index != len(attempt_dirs) - 1:
+                raise ValueError(f"receipt missing before a later attempt: {receipt_path}")
+            if not interruption.exists():
+                _atomic_json(interruption, {
+                    "status": "INTERRUPTED", "detected_at": _iso_now(),
+                    "detail": "attempt directory existed without receipt; preserved for audit",
+                })
+            continue
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        errors = list(validator.iter_errors(receipt))
+        if errors:
+            raise ValueError(f"invalid receipt schema {receipt_path}: {errors[0].message}")
+        attempt_number = int(attempt_dir.name)
+        if receipt["task_id"] != task_id or receipt["attempt"] != attempt_number or attempt_number <= previous_attempt:
+            raise ValueError(f"receipt identity mismatch: {receipt_path}")
+        if receipt["previous_receipt_digest"] != previous:
+            raise ValueError(f"receipt chain broken: {receipt_path}")
+        if receipt["receipt_digest"] != _receipt_digest(receipt):
+            raise ValueError(f"receipt digest mismatch: {receipt_path}")
+        if not _validate_git_binding(receipt["start_commit"], receipt["start_tree"]):
+            raise ValueError(f"start commit/tree mismatch: {receipt_path}")
+        if not _validate_git_binding(receipt["result_commit"], receipt["result_tree"]):
+            raise ValueError(f"result commit/tree mismatch: {receipt_path}")
+        for command in receipt["command_results"]:
+            if not _validate_stream(command["stdout"]) or not _validate_stream(command["stderr"]):
+                raise ValueError(f"stdout/stderr digest mismatch: {receipt_path}")
+        previous = receipt["receipt_digest"]
+        previous_attempt = attempt_number
+        receipts.append(receipt)
+    return receipts
+
+
+def _next_attempt(task_id: str, state_root: Path) -> int:
+    task_dir = state_root / "tasks" / task_id
+    attempts = [int(path.name) for path in task_dir.iterdir() if path.is_dir() and path.name.isdigit()] if task_dir.exists() else []
+    return max(attempts, default=0) + 1
+
+
+def _topological_tasks(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    tasks = plan["tasks"]
+    by_id = {task["id"]: task for task in tasks}
+    remaining = set(by_id)
+    completed: set[str] = set()
+    ordered: list[dict[str, Any]] = []
+    while remaining:
+        ready = [task for task in tasks if task["id"] in remaining and set(task["depends_on"]) <= completed]
+        if not ready:
+            raise ValueError("task DAG has a cycle or missing dependency")
+        task = ready[0]
+        ordered.append(task)
+        completed.add(task["id"])
+        remaining.remove(task["id"])
+    return ordered
+
+
+def _subject_digest(task: dict[str, Any], state_root: Path) -> str:
+    identities: list[dict[str, str]] = []
+    for raw in task["approval"]["subject_paths"]:
+        expanded = raw.replace("$JC_REMEDIATION_STATE_ROOT", str(state_root))
+        base = Path(expanded)
+        matches = list(ROOT.glob(expanded)) if not base.is_absolute() else list(base.parent.glob(base.name))
+        if not matches:
+            identities.append({"path": raw, "sha256": "MISSING"})
+        for path in sorted(matches):
+            identities.append({"path": str(path), "sha256": _file_identity(path)})
+    return _digest_object({"task_id": task["id"], "subject": task["approval"]["subject"], "artifacts": identities})
+
+
+def _gate_request(task: dict[str, Any], state_root: Path, run_id: str) -> dict[str, Any]:
+    approval = task["approval"]
+    subject_digest = _subject_digest(task, state_root)
+    request = {
+        "schema_version": "jc/remediation-v4-gate-request/2.0", "run_id": run_id,
+        "task_id": task["id"], "gate_id": approval["gate_id"], "kind": task["mode"],
+        "subject": approval["subject"], "subject_digest": subject_digest,
+        "required_roles": approval["required_roles"], "allowed_scopes": approval["allowed_scopes"],
+        "minimum_signers": approval["minimum_signers"],
+        "separation_of_duties": approval["separation_of_duties"],
+        "issued_at": _iso_now(),
+    }
+    request["request_digest"] = _digest_object(request)
+    request_dir = state_root / "requests" / task["id"]
+    request_path = request_dir / f"{subject_digest.split(':', 1)[1]}.json"
+    if request_path.exists():
+        return json.loads(request_path.read_text(encoding="utf-8"))
+    _atomic_json(request_path, request)
+    return request
+
+
+def _parse_time(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def _approval_payload(approval: dict[str, Any]) -> bytes:
+    return _canonical_bytes({key: value for key, value in approval.items() if key != "signature"})
+
+
+def _valid_approvals(task: dict[str, Any], request: dict[str, Any], state_root: Path) -> list[dict[str, Any]]:
+    evidence_kind = task["approval"]["evidence_kind"]
+    if evidence_kind == "USER_DIRECTIVE":
+        directive_dir = state_root / "directives" / task["id"]
+        if not directive_dir.is_dir():
+            return []
+        accepted_directives = []
+        for path in sorted(directive_dir.glob("*.json")):
+            try:
+                directive = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if (
+                directive.get("evidence_kind") == "USER_DIRECTIVE"
+                and directive.get("task_id") == task["id"]
+                and directive.get("subject_digest") == request["subject_digest"]
+                and directive.get("scope") in request["allowed_scopes"]
+                and directive.get("authority_source")
+            ):
+                accepted_directives.append(directive)
+        return accepted_directives
+    if evidence_kind == "EXTERNAL_ARTIFACT":
+        return []
+    trust_path = state_root / "trust" / "trusted_keys.json"
+    if not trust_path.is_file():
+        return []
+    trusted = json.loads(trust_path.read_text(encoding="utf-8"))
+    keys = {item["key_id"]: item for item in trusted.get("keys", [])}
+    approval_dir = state_root / "approvals" / task["id"]
+    if not approval_dir.is_dir():
+        return []
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    accepted: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    now = datetime.now(timezone.utc)
+    schema = json.loads(APPROVAL_SCHEMA.read_text(encoding="utf-8"))
+    validator = Draft202012Validator(schema)
+    for path in sorted(approval_dir.glob("*.json")):
+        try:
+            candidate = json.loads(path.read_text(encoding="utf-8"))
+            if list(validator.iter_errors(candidate)):
+                continue
+            signer = candidate["signer"]
+            key = keys.get(signer["key_id"])
+            if not key or signer["key_id"] in seen_keys:
+                continue
+            if candidate["task_id"] != task["id"] or candidate["gate_id"] != request["gate_id"]:
+                continue
+            if candidate["request_digest"] != request["request_digest"] or candidate.get("subject_digest") != request["subject_digest"]:
+                continue
+            if (
+                candidate["decision"] != "APPROVE"
+                or _parse_time(candidate["issued_at"]) > now
+                or _parse_time(candidate["expires_at"]) <= now
+            ):
+                continue
+            if signer["role"] not in request["required_roles"] or signer["scope"] not in request["allowed_scopes"]:
+                continue
+            if signer["role"] not in key.get("roles", []) or signer["scope"] not in key.get("scopes", []):
+                continue
+            signature = candidate["signature"]
+            if signature["algorithm"] != "Ed25519" or signature.get("public_key_id", signer["key_id"]) != signer["key_id"]:
+                continue
+            public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(key["public_key_base64"]))
+            public_key.verify(base64.b64decode(signature["value"]), _approval_payload(candidate))
+        except Exception:
+            continue
+        seen_keys.add(signer["key_id"])
+        accepted.append(candidate)
+    if request["separation_of_duties"] and len(seen_keys) != len(accepted):
+        return []
+    return accepted
+
+
+def _complete_gate_task(
+    task: dict[str, Any], request: dict[str, Any], approvals: list[dict[str, Any]],
+    state_root: Path, run_id: str, input_receipts: dict[str, str],
+    history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    attempt = _next_attempt(task["id"], state_root)
+    attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    commit = _git_checked("rev-parse", "HEAD")
+    tree = _git_checked("rev-parse", "HEAD^{tree}")
+    receipt = {
+        "schema_version": "jc/remediation-v4-receipt/2.0", "run_id": run_id,
+        "task_id": task["id"], "attempt": attempt, "status": "COMPLETED",
+        "input_receipt_digests": input_receipts,
+        "start_commit": commit, "start_tree": tree,
+        "result_commit": commit, "result_tree": tree,
+        "command_results": [], "changed_paths": [],
+        "allowlist": {"allowed": True, "violations": []}, "test_reports": [],
+        "artifact_digests": {
+            "request": request["request_digest"],
+            **{
+                f"approval:{item['signer']['key_id']}": _digest_object(item)
+                for item in approvals
+            },
+        },
+        "completion_assertions": [{
+            "id": "approval-policy", "kind": "cryptographic_approval", "ok": True,
+            "detail": f"{len(approvals)} {task['approval']['evidence_kind']} evidence item(s) bound to subject",
+        }],
+        "previous_receipt_digest": history[-1]["receipt_digest"] if history else None,
+        "runner_version": RUNNER_VERSION,
+    }
+    _write_receipt(attempt_dir, receipt)
+    return receipt
+
+
+def _write_receipt(attempt_dir: Path, receipt: dict[str, Any]) -> None:
+    receipt["receipt_digest"] = _receipt_digest(receipt)
+    schema = json.loads(RECEIPT_SCHEMA.read_text(encoding="utf-8"))
+    errors = list(Draft202012Validator(schema).iter_errors(receipt))
+    if errors:
+        raise ValueError(f"runner produced invalid receipt: {errors[0].message}")
+    path = attempt_dir / "receipt.json"
+    with path.open("x", encoding="utf-8") as handle:
+        json.dump(receipt, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+
+def _execute_auto_task(
+    task: dict[str, Any], state_root: Path, run_id: str,
+    input_receipts: dict[str, str], history: list[dict[str, Any]],
+) -> tuple[int, dict[str, Any]]:
+    attempt = _next_attempt(task["id"], state_root)
+    attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    start_commit = _git_checked("rev-parse", "HEAD")
+    start_tree = _git_checked("rev-parse", "HEAD^{tree}")
+    before = _git_status_snapshot()
+    command_results: list[dict[str, Any]] = []
+    timeout = float(task.get("timeout_seconds", 600))
+    for index, (argv, expected) in enumerate(zip(task["argv"], task["expected_exit_codes"]), 1):
+        command_results.append(_run_argv(argv, expected, attempt_dir, index, timeout, state_root))
+        if command_results[-1]["timed_out"] or command_results[-1]["exit_code"] != expected:
+            break
+    after = _git_status_snapshot()
+    changed_paths = _changed_status_paths(before, after)
+    violations = [path for path in changed_paths if not _matches_allowed(path, task["allowed_paths"])]
+    assertions = _evaluate_assertions(task, command_results, state_root)
+    timed_out = any(item["timed_out"] for item in command_results)
+    commands_ok = len(command_results) == len(task["argv"]) and all(
+        item["exit_code"] == item["expected_exit_code"] and not item["timed_out"]
+        for item in command_results
+    )
+    assertions_ok = all(item["ok"] for item in assertions)
+    status = "COMPLETED" if commands_ok and assertions_ok and not violations else "FAILED"
+    if timed_out:
+        status = "TIMED_OUT"
+    if violations:
+        status = "SCOPE_VIOLATION"
+    result_commit = _git_checked("rev-parse", "HEAD")
+    result_tree = _git_checked("rev-parse", "HEAD^{tree}")
+    receipt = {
+        "schema_version": "jc/remediation-v4-receipt/2.0", "run_id": run_id,
+        "task_id": task["id"], "attempt": attempt, "status": status,
+        "input_receipt_digests": input_receipts,
+        "start_commit": start_commit, "start_tree": start_tree,
+        "result_commit": result_commit, "result_tree": result_tree,
+        "command_results": command_results, "changed_paths": changed_paths,
+        "allowlist": {"allowed": not violations, "violations": violations},
+        "test_reports": [
+            {"command_index": index + 1, "kind": "pytest", "exit_code": item["exit_code"]}
+            for index, item in enumerate(command_results) if "pytest" in item["argv"]
+        ],
+        "artifact_digests": {}, "completion_assertions": assertions,
+        "previous_receipt_digest": history[-1]["receipt_digest"] if history else None,
+        "runner_version": RUNNER_VERSION,
+    }
+    _write_receipt(attempt_dir, receipt)
+    if status == "COMPLETED":
+        return EXIT_OK, receipt
+    if status == "SCOPE_VIOLATION":
+        return EXIT_SCOPE_VIOLATION, receipt
+    return EXIT_GATE_FAIL, receipt
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """唯一启动与续跑命令 (施工方案 §1.3)。
-
-    当前 v4-remediation worktree 已经完成 B00 / B00-CG / B01。下一步
-    受 B02 (EXTERNAL_GATE: legal-math-modeling pinned commit + 5
-    differential fixtures), W0-05 (HUMAN_GATE: Ed25519 verifier), H5-02
-    (HUMAN_GATE: CN legacy fingerprint authorization), H6-02/H6-07/H7-00/
-    H7-05/H8-00/H8-03/H8-04/H8-07/H9-00 等门禁阻塞。
-
-    按施工方案 §1.1 / §22 / §23，这些门禁不能由 runner 自签。Runner 自动
-    调用 tools/remediate_v4_gates.py 把所有 gate envelopes 写到
-    state_root/requests/，并在 console 输出唯一 resume_command，然后
-    退出 code 20 (WAITING_HUMAN) / 21 (WAITING_EXTERNAL)。
-
-    Resume 时只需在同一 state_root 重新跑同一命令；runner 会校验现有
-    approvals/，验证后跳过 WAITING 状态并进入下一 READY task。
-    """
+    """Execute READY tasks and stop only at a reached failure or gate."""
     plan_path = Path(args.plan).resolve()
     state_root = Path(args.state_root).resolve() if args.state_root else None
     through = args.through or "W9"
@@ -739,77 +1227,84 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("--state-root is required for run", file=sys.stderr)
         return EXIT_USAGE
     state_root.mkdir(parents=True, exist_ok=True)
-
-    baseline_commit = _git("rev-parse", "HEAD").strip()
-    (state_root / "run.json").write_text(
-        json.dumps(
-            {
-                "schema_version": "jc/remediation-v4-run/1.0",
-                "runner_version": RUNNER_VERSION,
-                "plan_path": str(plan_path),
-                "through": through,
-                "baseline_commit": baseline_commit,
-                "started_at": _iso_now(),
-                "completed_phases": ["B00", "B00-CG", "B01"],
-                "next_blocking_gates": [
-                    "B02-SPEC-INTAKE",
-                    "W0-05-VERIFIER-DEPENDENCY",
-                    "H5-02-CN-LEGACY-AUTHORIZATION",
-                ],
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
-    # Generate gate envelopes
-    gate_proc = subprocess.run(
-        [sys.executable, "-B", str(ROOT / "tools" / "remediate_v4_gates.py")],
-        cwd=str(ROOT),
-        env={**os.environ, "JC_REMEDIATION_STATE_ROOT": str(state_root)},
-        capture_output=True,
-        text=True,
-    )
-    if gate_proc.returncode != 0:
-        print(f"gate envelope generation failed:\n{gate_proc.stderr}", file=sys.stderr)
-        return EXIT_GATE_FAIL
-
-    index_path = state_root / "requests" / "INDEX.json"
-    if not index_path.is_file():
-        print(f"gate index missing: {index_path}", file=sys.stderr)
-        return EXIT_GATE_FAIL
-    index = json.loads(index_path.read_text(encoding="utf-8"))
-    resume_command = (
-        "py -3.12 -B tools/remediate_v4.py run "
-        "--plan remediation/v4/tasks.json "
-        f"--state-root \"{state_root}\" --through W9"
-    )
-
-    has_external = any(
-        g for g in index["gates"] if g["kind"] == "EXTERNAL_GATE"
-    )
-    has_human = any(
-        g for g in index["gates"] if g["kind"] in {"HUMAN_GATE", "MIXED"}
-    )
-
-    print(f"run bootstrap: plan={plan_path} state_root={state_root} "
-          f"through={through} baseline={baseline_commit}")
-    print(f"B00 / B00-CG / B01 PASSED; completed commits: see git log --oneline -4")
-    print(f"Gate envelopes: {state_root}/requests/ ({index['count']} envelopes)")
-    print(f"Unique resume command: {resume_command}")
-    print()
-    print("Next actions for operator / approver:")
-    for g in index["gates"]:
-        kind = g["kind"]
-        marker = "WAITING_HUMAN" if kind in {"HUMAN_GATE", "MIXED"} else "WAITING_EXTERNAL"
-        print(f"  [{marker}] task={g['task_id']} gate={g['gate_id']} "
-              f"subject_digest={g['subject_digest']} expires_at={g['expires_at']}")
-
-    if has_external:
-        return EXIT_WAITING_EXTERNAL
-    if has_human:
-        return EXIT_WAITING_HUMAN
+    lint_rc = cmd_lint_plan(argparse.Namespace(plan=str(plan_path)))
+    if lint_rc != EXIT_OK:
+        return lint_rc
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    run_path = state_root / "run.json"
+    if run_path.is_file():
+        run_state = json.loads(run_path.read_text(encoding="utf-8"))
+        if Path(run_state["plan_path"]).resolve() != plan_path:
+            print("state root belongs to a different plan", file=sys.stderr)
+            return EXIT_BASELINE_DRIFT
+    else:
+        run_state = {
+            "schema_version": "jc/remediation-v4-run/2.0", "run_id": uuid.uuid4().hex,
+            "runner_version": RUNNER_VERSION, "plan_path": str(plan_path), "through": through,
+            "baseline_commit": _git_checked("rev-parse", "HEAD"),
+            "baseline_tree": _git_checked("rev-parse", "HEAD^{tree}"),
+            "started_at": _iso_now(), "task_status": {},
+        }
+        _atomic_json(run_path, run_state)
+    completed_receipts: dict[str, dict[str, Any]] = {}
+    try:
+        ordered = _topological_tasks(plan)
+        for task in ordered:
+            history = _receipt_history(task["id"], state_root)
+            input_receipts = {
+                dep: completed_receipts[dep]["receipt_digest"] for dep in task["depends_on"]
+            }
+            latest = history[-1] if history else None
+            if latest and latest["status"] == "COMPLETED" and latest["input_receipt_digests"] == input_receipts:
+                assertions = _evaluate_assertions(task, latest["command_results"], state_root)
+                if all(item["ok"] for item in assertions):
+                    completed_receipts[task["id"]] = latest
+                    run_state["task_status"][task["id"]] = "COMPLETED"
+                    continue
+            if task["mode"] == "AUTO":
+                rc, receipt = _execute_auto_task(
+                    task, state_root, run_state["run_id"], input_receipts, history
+                )
+                run_state["task_status"][task["id"]] = receipt["status"]
+                run_state["updated_at"] = _iso_now()
+                _atomic_json(run_path, run_state)
+                if rc != EXIT_OK:
+                    print(f"task {task['id']} {receipt['status']}; receipt={receipt['receipt_digest']}", file=sys.stderr)
+                    return rc
+                completed_receipts[task["id"]] = receipt
+                print(f"task {task['id']} COMPLETED receipt={receipt['receipt_digest']}")
+                continue
+            request = _gate_request(task, state_root, run_state["run_id"])
+            approvals = _valid_approvals(task, request, state_root)
+            if len(approvals) < request["minimum_signers"]:
+                marker = "WAITING_EXTERNAL" if task["mode"] == "EXTERNAL_GATE" else "WAITING_HUMAN"
+                run_state["task_status"][task["id"]] = marker
+                run_state["updated_at"] = _iso_now()
+                _atomic_json(run_path, run_state)
+                print(f"{marker} task={task['id']} gate={request['gate_id']} subject_digest={request['subject_digest']}")
+                print(
+                    "Unique resume command: "
+                    f"py -3.12 -B {Path(__file__).resolve()} run --plan {plan_path} "
+                    f"--state-root {state_root} --through {through}"
+                )
+                return EXIT_WAITING_EXTERNAL if marker == "WAITING_EXTERNAL" else EXIT_WAITING_HUMAN
+            if request["separation_of_duties"] and len({a["signer"]["key_id"] for a in approvals}) < request["minimum_signers"]:
+                print(f"WAITING_HUMAN task={task['id']} separation_of_duties not satisfied")
+                return EXIT_WAITING_HUMAN
+            receipt = _complete_gate_task(
+                task, request, approvals, state_root, run_state["run_id"], input_receipts, history
+            )
+            completed_receipts[task["id"]] = receipt
+            run_state["task_status"][task["id"]] = "COMPLETED"
+            run_state["updated_at"] = _iso_now()
+            _atomic_json(run_path, run_state)
+            print(f"task {task['id']} COMPLETED receipt={receipt['receipt_digest']}")
+    except (ValueError, RuntimeError) as exc:
+        print(f"receipt/run validation failed: {exc}", file=sys.stderr)
+        return EXIT_RECEIPT_FAIL
+    run_state["status"] = "COMPLETED"
+    run_state["updated_at"] = _iso_now()
+    _atomic_json(run_path, run_state)
     return EXIT_OK
 
 
