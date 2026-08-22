@@ -309,6 +309,203 @@ def test_auto_task_binds_nonempty_committed_delta_in_receipt(tmp_path: Path) -> 
     assert git("status", "--porcelain") == ""
 
 
+def test_branching_dag_siblings_bind_sequential_execution_frontier(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+
+    def commit_command(path: str, content: str, message: str) -> str:
+        return (
+            "from pathlib import Path; import subprocess; "
+            f"p=Path({path!r}); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_bytes({content.encode()!r}); "
+            "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+            f"subprocess.run(['git','commit','-qm',{message!r}],check=True)"
+        )
+
+    plan = _write_plan(tmp_path / "plan", [
+        _auto_task(
+            "A", [sys.executable, "-c", commit_command("docs/a.txt", "a\n", "A")],
+            allowed=["docs/a.txt"],
+        ),
+        _auto_task(
+            "B", [sys.executable, "-c", commit_command("docs/b.txt", "b\n", "B")],
+            depends_on=["A"], allowed=["docs/b.txt"],
+        ),
+        _auto_task(
+            "C", [sys.executable, "-c", commit_command("docs/c.txt", "c\n", "C")],
+            depends_on=["A"], allowed=["docs/c.txt"],
+        ),
+        _auto_task(
+            "D", [sys.executable, "-c", commit_command("docs/d.txt", "d\n", "D")],
+            depends_on=["B", "C"], allowed=["docs/d.txt"],
+        ),
+    ])
+    state_root = tmp_path / "state"
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 0, result.stderr
+
+    first = _receipt(state_root, "A")
+    sibling = _receipt(state_root, "B")
+    current = _receipt(state_root, "C")
+    joined = _receipt(state_root, "D")
+    assert sibling["start_commit"] == first["result_commit"]
+    assert current["input_receipt_digests"] == {"A": first["receipt_digest"]}
+    assert current["start_commit"] == sibling["result_commit"]
+    assert current["changed_paths"] == ["docs/c.txt"]
+    assert current["allowlist"] == {"allowed": True, "violations": []}
+    assert joined["input_receipt_digests"] == {
+        "B": sibling["receipt_digest"], "C": current["receipt_digest"],
+    }
+    assert joined["start_commit"] == current["result_commit"]
+    assert joined["changed_paths"] == ["docs/d.txt"]
+
+    resumed = _run_in_repo(repo, plan, state_root)
+    assert resumed.returncode == 0, resumed.stderr
+    assert not (state_root / "tasks" / "C" / "2").exists()
+    assert not (state_root / "tasks" / "D" / "2").exists()
+
+
+def test_branching_dag_failed_sibling_retries_from_same_frontier(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+
+    def commit_command(path: str, content: str, message: str) -> str:
+        return (
+            "from pathlib import Path; import subprocess; "
+            f"p=Path({path!r}); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_bytes({content.encode()!r}); "
+            "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+            f"subprocess.run(['git','commit','-qm',{message!r}],check=True)"
+        )
+
+    retry_command = (
+        "import os, pathlib, subprocess, sys; "
+        "flag=pathlib.Path(os.environ['JC_REMEDIATION_STATE_ROOT'])/'retry-c'; "
+        "sys.exit(9) if not flag.exists() else None; "
+        "p=pathlib.Path('docs/c.txt'); p.parent.mkdir(parents=True,exist_ok=True); "
+        "p.write_bytes(b'c\\n'); "
+        "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+        "subprocess.run(['git','commit','-qm','C'],check=True)"
+    )
+    plan = _write_plan(tmp_path / "plan", [
+        _auto_task(
+            "A", [sys.executable, "-c", commit_command("docs/a.txt", "a\n", "A")],
+            allowed=["docs/a.txt"],
+        ),
+        _auto_task(
+            "B", [sys.executable, "-c", commit_command("docs/b.txt", "b\n", "B")],
+            depends_on=["A"], allowed=["docs/b.txt"],
+        ),
+        _auto_task(
+            "C", [sys.executable, "-c", retry_command],
+            depends_on=["A"], allowed=["docs/c.txt"],
+        ),
+    ])
+    state_root = tmp_path / "state"
+    first_run = _run_in_repo(repo, plan, state_root)
+    assert first_run.returncode == 4, first_run.stderr
+
+    first = _receipt(state_root, "A")
+    sibling = _receipt(state_root, "B")
+    failed = _receipt(state_root, "C")
+    assert failed["status"] == "FAILED"
+    assert failed["input_receipt_digests"] == {"A": first["receipt_digest"]}
+    assert failed["start_commit"] == failed["result_commit"] == sibling["result_commit"]
+    assert failed["changed_paths"] == []
+
+    (state_root / "retry-c").write_text("retry", encoding="utf-8")
+    second_run = _run_in_repo(repo, plan, state_root)
+    assert second_run.returncode == 0, second_run.stderr
+    retried = _receipt(state_root, "C", 2)
+    assert retried["previous_receipt_digest"] == failed["receipt_digest"]
+    assert retried["start_commit"] == sibling["result_commit"]
+    assert retried["changed_paths"] == ["docs/c.txt"]
+    assert not (state_root / "tasks" / "B" / "2").exists()
+
+
+def test_allowed_but_uncommitted_path_fails_and_is_preserved(tmp_path: Path) -> None:
+    repo, git = _isolated_runner_repo(tmp_path)
+    plan = _write_plan(tmp_path / "plan", [
+        _auto_task(
+            "DIRTY",
+            [sys.executable, "-c", (
+                "from pathlib import Path; p=Path('docs/dirty.txt'); "
+                "p.parent.mkdir(parents=True,exist_ok=True); p.write_text('dirty')"
+            )],
+            allowed=["docs/dirty.txt"],
+        ),
+    ])
+    state_root = tmp_path / "state"
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 3, result.stderr
+
+    receipt = _receipt(state_root, "DIRTY")
+    assert receipt["status"] == "FAILED"
+    assert receipt["start_commit"] == receipt["result_commit"]
+    assert receipt["changed_paths"] == []
+    assert not any(
+        key.startswith("result-path:") or key.startswith("deleted-path:")
+        for key in receipt["artifact_digests"]
+    )
+    clean = next(
+        item for item in receipt["completion_assertions"]
+        if item["id"] == "runner-clean-worktree"
+    )
+    assert clean["ok"] is False
+    assert (repo / "docs" / "dirty.txt").read_text(encoding="utf-8") == "dirty"
+    assert git("status", "--porcelain") == "?? docs/"
+
+
+def test_divergent_head_rejects_before_task_command(tmp_path: Path) -> None:
+    repo, git = _isolated_runner_repo(tmp_path)
+    plan_dir = tmp_path / "plan"
+    plan = _write_plan(plan_dir, [
+        _auto_task(
+            "A",
+            [sys.executable, "-c", (
+                "from pathlib import Path; import subprocess; "
+                "p=Path('docs/a.txt'); p.parent.mkdir(parents=True,exist_ok=True); "
+                "p.write_text('a'); subprocess.run(['git','add','--',p.as_posix()],check=True); "
+                "subprocess.run(['git','commit','-qm','A'],check=True)"
+            )],
+            allowed=["docs/a.txt"],
+        ),
+    ])
+    state_root = tmp_path / "state"
+    first_run = _run_in_repo(repo, plan, state_root)
+    assert first_run.returncode == 0, first_run.stderr
+    first = _receipt(state_root, "A")
+
+    git("checkout", "-q", first["start_commit"])
+    (repo / "docs").mkdir()
+    (repo / "docs" / "divergent.txt").write_text("divergent", encoding="utf-8")
+    git("add", "--", "docs/divergent.txt")
+    git("commit", "-qm", "divergent")
+    sentinel_command = (
+        "import os; from pathlib import Path; "
+        "Path(os.environ['JC_REMEDIATION_STATE_ROOT']).joinpath('b-ran').write_text('ran')"
+    )
+    _write_plan(plan_dir, [
+        _auto_task(
+            "A",
+            [sys.executable, "-c", (
+                "from pathlib import Path; import subprocess; "
+                "p=Path('docs/a.txt'); p.parent.mkdir(parents=True,exist_ok=True); "
+                "p.write_text('a'); subprocess.run(['git','add','--',p.as_posix()],check=True); "
+                "subprocess.run(['git','commit','-qm','A'],check=True)"
+            )],
+            allowed=["docs/a.txt"],
+        ),
+        _auto_task(
+            "B", [sys.executable, "-c", sentinel_command],
+            depends_on=["A"], allowed=["docs/b.txt"],
+        ),
+    ])
+    second_run = _run_in_repo(repo, plan, state_root)
+    assert second_run.returncode == 5
+    assert "does not descend from execution frontier" in second_run.stderr
+    assert not (state_root / "b-ran").exists()
+    assert not (state_root / "tasks" / "B").exists()
+
+
 def test_failure_exit_code_is_receipted(tmp_path: Path) -> None:
     plan = _write_plan(tmp_path, [_auto_task("FAIL", ["{python}", "-c", "raise SystemExit(7)"])])
     state_root = tmp_path / "state"

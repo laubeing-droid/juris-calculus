@@ -1404,8 +1404,12 @@
       "objective": "新增 artifact_store.py；ContentRef + bounded resolver；same id same digest 幂等",
       "allowed_paths": [
         "compiler_core/artifact_store.py",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/property/test_resolver_properties.py",
         "tests/security/test_artifact_resolver.py",
-        "tests/property/test_resolver_properties.py"
+        "tests/unit/test_remediation_run.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [

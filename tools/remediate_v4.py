@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.8.0"
+RUNNER_VERSION = "0.9.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -66,6 +66,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.6.0": 3,
     "0.7.0": 4,
     "0.8.0": 5,
+    "0.9.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -6858,19 +6859,28 @@ def _task_start_commit(
     task: dict[str, Any], completed_receipts: dict[str, dict[str, Any]],
     run_baseline_commit: str,
 ) -> str:
-    dependency_commits = [
-        completed_receipts[dependency]["result_commit"]
-        for dependency in task["depends_on"]
-    ]
-    if not dependency_commits:
-        return run_baseline_commit
-    latest = dependency_commits[0]
-    for candidate in dependency_commits[1:]:
+    """Return the latest linear execution frontier, not only a DAG dependency.
+
+    Direct dependency receipts govern readiness and input identity.  Commits in
+    the single remediation worktree are necessarily linear, so a later sibling
+    task must start after every previously completed task instead of rebinding
+    those sibling commits as its own delta.
+    """
+
+    latest = run_baseline_commit
+    for completed in completed_receipts.values():
+        candidate = completed["result_commit"]
         if _git_is_ancestor(latest, candidate):
             latest = candidate
         elif not _git_is_ancestor(candidate, latest):
             raise ValueError(
-                f"task {task['id']} dependency commits are not linearly ordered"
+                f"task {task['id']} completed commits are not linearly ordered"
+            )
+    for dependency in task["depends_on"]:
+        dependency_commit = completed_receipts[dependency]["result_commit"]
+        if not _git_is_ancestor(dependency_commit, latest):
+            raise ValueError(
+                f"task {task['id']} dependency {dependency} is outside the execution frontier"
             )
     return latest
 
@@ -7603,6 +7613,12 @@ def _execute_auto_task(
     gate_approvals: list[dict[str, Any]] | None = None,
     require_committed_delta: bool = False,
 ) -> tuple[int, dict[str, Any]]:
+    current_commit = _git_checked("rev-parse", "HEAD")
+    if not _git_is_ancestor(start_commit, current_commit):
+        raise ValueError(
+            f"task {task['id']} current HEAD {current_commit} does not descend "
+            f"from execution frontier {start_commit}"
+        )
     attempt = _next_attempt(task["id"], state_root)
     attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
     attempt_dir.mkdir(parents=True, exist_ok=False)
@@ -7899,6 +7915,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 latest and latest["status"] == "COMPLETED"
                 and latest.get("task_digest") == _task_digest(task)
                 and latest["input_receipt_digests"] == input_receipts
+                and latest["start_commit"] == task_start_commit
             ):
                 expected_violations = [
                     path for path in latest["changed_paths"]
