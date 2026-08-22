@@ -1,0 +1,146 @@
+{
+  "schema_version": "jc/v4-synthetic-trusted-context/1.0",
+  "scope": "test-only",
+  "production_allowed": false,
+  "verification_time": {
+    "wire": "2026-08-22T12:00:00Z"
+  },
+  "runtime_identity": {
+    "compiler_build_digest": "sha256:293b68ca7f8021944031c0398c14b589ad99dcfa94ab69af94db5495dc94a729",
+    "engine_api": "4.0.0",
+    "schema_digest": "sha256:31839e5d1e7e4fd8858a9b33bf257b00f83e903325ae7c94b12bb5616b04dba1",
+    "source_tree_digest": "sha256:eb5ea2da11d331ae2b2bbcb3b802afddf2120d9c278be302fde219f1b1cd55ad"
+  },
+  "trust_policy": {
+    "allowed_algorithms": [
+      "Ed25519"
+    ],
+    "allowed_artifact_kinds": [
+      "source-snapshot",
+      "legal-approval",
+      "engineering-approval",
+      "service-certificate",
+      "build-attestation",
+      "rule-pack"
+    ],
+    "allowed_issuers": [
+      "synthetic-source-issuer",
+      "synthetic-legal-issuer",
+      "synthetic-engineering-issuer",
+      "synthetic-service-issuer",
+      "synthetic-build-issuer",
+      "synthetic-release-issuer"
+    ],
+    "allowed_roles": [
+      "source_attestor",
+      "legal_reviewer",
+      "engineering_reviewer",
+      "service_signer",
+      "build_attestor",
+      "pack_releaser"
+    ],
+    "allowed_scopes": [
+      "source-authenticity",
+      "legal-approval",
+      "engineering-approval",
+      "service-certificate",
+      "build-attestation",
+      "pack-release"
+    ],
+    "authorization_policy_ref": {
+      "digest": "sha256:6dccfa6783ef662c9d7c55954fc624c059be05d0907408e69e38681cbd2207da",
+      "kind": "trust-authorization-policy"
+    },
+    "policy_digest": "sha256:ca6ba4c2d3572714224c71f505dfa931f7f9bb84f3861cd389396bfcf2bd3015",
+    "policy_id": "jc-v4-synthetic-test-policy",
+    "replay_policy_ref": {
+      "digest": "sha256:ef988343703030e7b35e4f754346f56a6ad11530600516a2a240692b767ca0e5",
+      "kind": "trust-replay-policy"
+    },
+    "revocation_policy_ref": {
+      "digest": "sha256:d1a7540447c3047cc6fa3261ee6f140f590c094d76437bb8aa99c718243f561c",
+      "kind": "trust-revocation-policy"
+    },
+    "revoked_key_ids": [],
+    "separation_of_duties_ref": {
+      "digest": "sha256:f92585716acff26b9b96f9ccf01bc34e429a1120210a4392336bb8d027f7b56c",
+      "kind": "trust-separation-policy"
+    },
+    "trusted_key_ids": [
+      "synthetic-source-key",
+      "synthetic-legal-key",
+      "synthetic-engineering-key",
+      "synthetic-service-key",
+      "synthetic-build-key",
+      "synthetic-release-key"
+    ],
+    "valid_from": {
+      "wire": "2026-01-01T00:00:00Z"
+    },
+    "valid_to": {
+      "wire": "2030-01-01T00:00:00Z"
+    }
+  },
+  "trust_keys": [
+    {
+      "artifact_kinds": ["source-snapshot"],
+      "issuer": "synthetic-source-issuer",
+      "key_id": "synthetic-source-key",
+      "principal_id": "synthetic-source-principal",
+      "production_allowed": false,
+      "public_key_base64": "stH7Bcaw9hDW04zUQ98iTRt5gBbHQ1jHvRC3V333WD8=",
+      "roles": ["source_attestor"],
+      "scopes": ["source-authenticity"]
+    },
+    {
+      "artifact_kinds": ["legal-approval"],
+      "issuer": "synthetic-legal-issuer",
+      "key_id": "synthetic-legal-key",
+      "principal_id": "synthetic-legal-principal",
+      "production_allowed": false,
+      "public_key_base64": "8TbAnAaZE7kwtfGz15Upxn5bhi8NkmFpH2Qje+kWZIc=",
+      "roles": ["legal_reviewer"],
+      "scopes": ["legal-approval"]
+    },
+    {
+      "artifact_kinds": ["engineering-approval"],
+      "issuer": "synthetic-engineering-issuer",
+      "key_id": "synthetic-engineering-key",
+      "principal_id": "synthetic-engineering-principal",
+      "production_allowed": false,
+      "public_key_base64": "y7IceYFc3I7kY6o5SnZW5ZhyUKKUhG2uN1+jucO4rp8=",
+      "roles": ["engineering_reviewer"],
+      "scopes": ["engineering-approval"]
+    },
+    {
+      "artifact_kinds": ["service-certificate"],
+      "issuer": "synthetic-service-issuer",
+      "key_id": "synthetic-service-key",
+      "principal_id": "synthetic-service-principal",
+      "production_allowed": false,
+      "public_key_base64": "rAA74q90hNzfmKB65mY8b34XXs69HMz34e/RvPoWZjg=",
+      "roles": ["service_signer"],
+      "scopes": ["service-certificate"]
+    },
+    {
+      "artifact_kinds": ["build-attestation"],
+      "issuer": "synthetic-build-issuer",
+      "key_id": "synthetic-build-key",
+      "principal_id": "synthetic-build-principal",
+      "production_allowed": false,
+      "public_key_base64": "WhalMRHZ+fEcKfPrb+afc35n3U0/G6spDNzJzBn5FnA=",
+      "roles": ["build_attestor"],
+      "scopes": ["build-attestation"]
+    },
+    {
+      "artifact_kinds": ["rule-pack"],
+      "issuer": "synthetic-release-issuer",
+      "key_id": "synthetic-release-key",
+      "principal_id": "synthetic-release-principal",
+      "production_allowed": false,
+      "public_key_base64": "VIABg6FbjVWJEsfhhW4aK9U/7VdXTb64AScxiun/nlw=",
+      "roles": ["pack_releaser"],
+      "scopes": ["pack-release"]
+    }
+  ]
+}

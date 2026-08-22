@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "d7b86fe5e1c80e1562783a7834f469f128100e9f4b3f3049f41ea7e809518650",
+    "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2061,17 +2061,33 @@
       "wave": "W2",
       "mode": "AUTO",
       "depends_on": [
+        "W2-02",
         "W2-04"
       ],
       "audit_ids": [
         "P0-02",
-        "P0-05"
+        "P0-05",
+        "P1-08"
       ],
-      "objective": "Test-only synthetic signed pack builder；scope=test-only；production trust policy 必拒绝",
+      "objective": "External-trust reproducible test-only signed graph；public verify/idempotent reverify；production 与 signed candidate 必拒绝",
       "allowed_paths": [
+        ".gitignore",
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/rule_packs.py",
+        "compiler_core/source_service.py",
+        "compiler_core/trust.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/issue-map.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_synthetic_pack.py",
+        "tests/fixtures/keys/v4-synthetic-trust.json",
+        "tests/fixtures/packs/synthetic/signed-pack.json",
+        "tests/required-v4-tests.json",
+        "tests/security/test_trust_policy.py",
+        "tools/build_file_disposition.py",
         "tools/build_synthetic_pack.py",
-        "tests/fixtures/packs/synthetic/**",
-        "tests/contract/test_synthetic_pack.py"
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2081,9 +2097,38 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W2-05"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/build_synthetic_pack.py",
+          "--check"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W2-05",
+          "tests/contract/test_synthetic_pack.py",
+          "tests/contract/test_source_service.py",
+          "tests/security/test_pack_attacks.py",
+          "tests/security/test_trust_policy.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W2-05/synthetic-pack-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
       "completion_assertions": [
@@ -2763,7 +2808,7 @@
         "P1-07",
         "P1-16"
       ],
-      "objective": "重写 application.py；唯一编排 ApplicationV4；strict order resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle",
+      "objective": "重写 application.py；唯一编排 ApplicationV4；每请求按 current CanonicalTimeV4 重验 pack；strict order resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle",
       "allowed_paths": [
         "compiler_core/application.py",
         "tests/formal_e2e/**",
@@ -3787,9 +3832,10 @@
       ],
       "audit_ids": [
         "P0-15",
+        "P1-08",
         "P1-20"
       ],
-      "objective": "SBOM/provenance/checksums/attestation",
+      "objective": "SBOM/provenance/checksums/attestation；wrong commit/build evidence fail closed",
       "allowed_paths": [
         "tools/build_provenance.py",
         "tests/packaging/test_provenance.py"

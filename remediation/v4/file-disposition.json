@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "d7b86fe5e1c80e1562783a7834f469f128100e9f4b3f3049f41ea7e809518650",
-  "count": 362,
+  "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
+  "count": 366,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1769,6 +1769,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_synthetic_pack.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_v4_foundation_contract.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -1862,6 +1869,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/fixtures/keys/v4-synthetic-trust.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/fixtures/keys/v4-test-ed25519.json",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -1891,6 +1905,13 @@
       "audit_role": "fixture/generated",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/packs/synthetic/signed-pack.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/fixtures/rule_migration_sample.yaml",
@@ -2842,6 +2863,13 @@
       },
       "target_module": null,
       "target_artifact": null
+    },
+    {
+      "path": "tools/build_synthetic_pack.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tools/fast_path_interceptor.py",

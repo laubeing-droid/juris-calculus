@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.16.0"
+RUNNER_VERSION = "0.17.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -74,6 +74,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.14.0": 5,
     "0.15.0": 5,
     "0.16.0": 5,
+    "0.17.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -178,6 +179,29 @@ W2_04_CHANGED_PATHS = (
     "tests/required-v4-tests.json",
     "tests/security/test_pack_toctou.py",
     "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W2_05_TEST_CASE_COUNT = 98
+W2_05_TEST_CASE_IDS_DIGEST = (
+    "sha256:e8f7acd80f458c47fc17102581195e5d9e767838d324a0f89978e80a38178446"
+)
+W2_05_CHANGED_PATHS = (
+    ".gitignore",
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/rule_packs.py",
+    "compiler_core/source_service.py",
+    "compiler_core/trust.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/issue-map.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/contract/test_synthetic_pack.py",
+    "tests/fixtures/keys/v4-synthetic-trust.json",
+    "tests/fixtures/packs/synthetic/signed-pack.json",
+    "tests/required-v4-tests.json",
+    "tests/security/test_trust_policy.py",
+    "tools/build_file_disposition.py",
+    "tools/build_synthetic_pack.py",
     "tools/remediate_v4.py",
 )
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
@@ -3150,7 +3174,14 @@ def _required_test_manifest_problems(
             "suite": "security",
             "selector": "tests/security/test_trust_policy.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 29,
+            "expected_tests": 31,
+        },
+        {
+            "id": "W2-SYNTHETIC-SIGNED-PACK",
+            "suite": "contract",
+            "selector": "tests/contract/test_synthetic_pack.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 15,
         },
     ]
     if required_now != expected_required_now:
@@ -7307,7 +7338,7 @@ def _cmd_w1_05_trust_policy_gate() -> int:
     if required_trust != [{
         "id": "W1-SCOPED-TRUST-POLICY", "suite": "security",
         "selector": "tests/security/test_trust_policy.py",
-        "state": "REQUIRED_NOW", "expected_tests": 29,
+        "state": "REQUIRED_NOW", "expected_tests": 31,
     }]:
         fail("W1-05 required trust selector is not exact")
 
@@ -8540,7 +8571,7 @@ def _cmd_w2_03_pack_gate() -> int:
     expected_closures = {
         "P0-05": ["W2-03", "W2-04", "W2-05", "W8-05"],
         "P1-07": ["W2-03", "W4-05"],
-        "P1-08": ["W2-03", "W2-04", "W6-06"],
+        "P1-08": ["W2-03", "W2-04", "W2-05", "W6-06"],
         "P1-09": ["W2-03", "W5-02C", "W5-03"],
         "P1-16": ["W2-03", "W4-05"],
     }
@@ -8855,7 +8886,7 @@ def _cmd_w2_04_snapshot_gate() -> int:
     expected_closures = {
         "P0-05": ["W2-03", "W2-04", "W2-05", "W8-05"],
         "P0-11": ["W2-04", "W4-02"],
-        "P1-08": ["W2-03", "W2-04", "W6-06"],
+        "P1-08": ["W2-03", "W2-04", "W2-05", "W6-06"],
         "P1-10": ["W2-04", "W4-02", "W4-03", "W7-03"],
     }
     for audit_id, closures in expected_closures.items():
@@ -9041,6 +9072,350 @@ def cmd_w2_04_snapshot_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w2_05_synthetic_pack_gate() -> int:
+    """Verify the external-trust, reproducible W2-05 synthetic pack fixture."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W2-05"],
+        ["{python}", "-B", "tools/build_synthetic_pack.py", "--check"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W2-05",
+            "tests/contract/test_synthetic_pack.py",
+            "tests/contract/test_source_service.py",
+            "tests/security/test_pack_attacks.py",
+            "tests/security/test_trust_policy.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W2-05/synthetic-pack-tests.xml",
+        ],
+    ]
+    fixture_path = ROOT / "tests/fixtures/packs/synthetic/signed-pack.json"
+    trust_context_path = ROOT / "tests/fixtures/keys/v4-synthetic-trust.json"
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        fixture_raw = fixture_path.read_bytes()
+        fixture = json.loads(fixture_raw)
+        trust_context_raw = trust_context_path.read_bytes()
+        trust_context = json.loads(trust_context_raw)
+        builder_source = (ROOT / "tools/build_synthetic_pack.py").read_text(
+            encoding="utf-8"
+        )
+        synthetic_tests = (ROOT / "tests/contract/test_synthetic_pack.py").read_text(
+            encoding="utf-8-sig"
+        )
+        trust_tests = (ROOT / "tests/security/test_trust_policy.py").read_text(
+            encoding="utf-8-sig"
+        )
+        pack_attack_tests = (ROOT / "tests/security/test_pack_attacks.py").read_text(
+            encoding="utf-8-sig"
+        )
+        trust_source = (ROOT / "compiler_core/trust.py").read_text(encoding="utf-8")
+        source_service_source = (ROOT / "compiler_core/source_service.py").read_text(
+            encoding="utf-8"
+        )
+        formal_plan = ROOT / W2_05_CHANGED_PATHS[1]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        gitignore_text = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w2_05_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        builder_spec = importlib.util.spec_from_file_location(
+            "jc_w2_05_synthetic_builder",
+            ROOT / "tools/build_synthetic_pack.py",
+        )
+        if (
+            generator_spec is None
+            or generator_spec.loader is None
+            or builder_spec is None
+            or builder_spec.loader is None
+        ):
+            raise ImportError("W2-05 generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        synthetic_builder = importlib.util.module_from_spec(builder_spec)
+        builder_spec.loader.exec_module(synthetic_builder)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W2-05 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W2-05"), None)
+    if not isinstance(task, dict):
+        fail("W2-05 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W2-02", "W2-04"]:
+            fail("W2-05 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-02", "P0-05", "P1-08"]:
+            fail("W2-05 audit binding drifted")
+        if task.get("allowed_paths") != list(W2_05_CHANGED_PATHS):
+            fail("W2-05 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+            fail("W2-05 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W2-05 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W2-05 file disposition is not reproducible from its generator")
+    plan_markers = (
+        "仅以下 17 个 exact paths",
+        "外部 pinned test context",
+        "HKDF",
+        "synthetic_test_only",
+        "same verifier reverify",
+        "W4-07/W8-06",
+        "17 个 committed path digests",
+        "PACK_REVIEW_TIME",
+        "point-in-time proof",
+    )
+    if any(marker not in formal_plan_text for marker in plan_markers):
+        fail("W2-05 formal plan lacks its external-trust or deferred-formal boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-02-POSITIVE-PRODUCTION": (
+            "P0-02", "W4-07", "RED_AT_TASK",
+            "tests/formal_e2e/test_positive_vertical_slice.py::"
+            "test_signed_pack_produces_verified_result",
+        ),
+        "V4-P0-05-CANDIDATE-ACTIVATION": (
+            "P0-05", "W2-03", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_attacks.py::test_candidate_cannot_self_activate",
+        ),
+        "V4-P1-08-PACK-ATTESTATION": (
+            "P1-08", "W2-03", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_attacks.py::"
+            "test_empty_official_pack_and_format_only_attestation_fail",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W2-05 required mutation lifecycle drifted: {test_id}")
+        elif expected[2] == "ACTIVE_REQUIRED" and not _selector_is_declared(
+            ROOT, expected[3]
+        ):
+            fail(f"W2-05 active selector is not declared: {test_id}")
+        elif expected[2] == "RED_AT_TASK" and _selector_is_declared(ROOT, expected[3]):
+            fail(f"W2-05 future formal selector is prematurely active: {test_id}")
+
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-02": ["W2-02", "W2-05", "W4-07", "W8-06"],
+        "P0-05": ["W2-03", "W2-04", "W2-05", "W8-05"],
+        "P1-08": ["W2-03", "W2-04", "W2-05", "W6-06"],
+    }
+    for audit_id, closures in expected_closures.items():
+        issue = issue_by_id.get(audit_id, {})
+        if (issue.get("status"), issue.get("closure_tasks")) != ("registered", closures):
+            fail(f"W2-05 issue lifecycle drifted: {audit_id}")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/rule_packs.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/source_service.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/trust.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "remediation/v4/issue-map.json": ("RETAIN_NONPACKAGED", "BUILD_ONLY"),
+        "tests/contract/test_synthetic_pack.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/fixtures/keys/v4-synthetic-trust.json": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/fixtures/packs/synthetic/signed-pack.json": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/security/test_trust_policy.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tools/build_synthetic_pack.py": ("RETAIN_NONPACKAGED", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W2-05 file disposition drifted: {path}")
+    tracked = set(_git_tracked_files())
+    for path in W2_05_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W2-05 exact path is not Git tracked: {path}")
+    for marker in (
+        "!tests/fixtures/keys/v4-synthetic-trust.json",
+        "!tests/fixtures/packs/synthetic/signed-pack.json",
+    ):
+        if marker not in gitignore_text:
+            fail(f"W2-05 exact JSON fixture is not unignored: {marker}")
+
+    try:
+        generated_fixture = synthetic_builder.build_fixture_bytes()
+    except Exception as exc:
+        fail(f"W2-05 synthetic builder failed: {type(exc).__name__}: {exc}")
+        generated_fixture = b""
+    if generated_fixture != fixture_raw:
+        fail("W2-05 committed fixture differs from a clean deterministic build")
+    expected_fixture_fields = {
+        "schema_version", "scope", "production_allowed", "pack_ref",
+        "candidate_pack_ref", "formal_rule_ids", "feature_rules", "case_vectors",
+        "artifacts",
+    }
+    if not isinstance(fixture, dict) or set(fixture) != expected_fixture_fields:
+        fail("W2-05 pack fixture can self-submit trust or runtime identity")
+    if fixture.get("scope") != "test-only" or fixture.get("production_allowed") is not False:
+        fail("W2-05 fixture is not explicitly test-only")
+    expected_context_fields = {
+        "schema_version", "scope", "production_allowed", "verification_time",
+        "runtime_identity", "trust_policy", "trust_keys",
+    }
+    if not isinstance(trust_context, dict) or set(trust_context) != expected_context_fields:
+        fail("W2-05 trusted context has missing or unknown fields")
+    key_rows = trust_context.get("trust_keys", [])
+    try:
+        public_keys = [
+            base64.b64decode(item["public_key_base64"], validate=True)
+            for item in key_rows
+        ]
+        principals = [item["principal_id"] for item in key_rows]
+        key_ids = [item["key_id"] for item in key_rows]
+    except (KeyError, TypeError, ValueError) as exc:
+        fail(f"W2-05 trusted keys are malformed: {exc}")
+        public_keys, principals, key_ids = [], [], []
+    if not (
+        len(key_rows) == len(set(public_keys)) == len(set(principals))
+        == len(set(key_ids)) == 6
+        and all(len(key) == 32 for key in public_keys)
+        and all(item.get("production_allowed") is False for item in key_rows)
+    ):
+        fail("W2-05 trusted context lacks six unique test-only key identities")
+    if b"private_key" in fixture_raw or b"private_key" in trust_context_raw:
+        fail("W2-05 serialized fixture or trusted context contains private-key material")
+    for field in ("pack_ref", "candidate_pack_ref"):
+        row = fixture.get(field, {})
+        if (
+            not isinstance(row, dict)
+            or row.get("kind") != "pack-signature"
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", str(row.get("digest"))) is None
+        ):
+            fail(f"W2-05 fixture {field} is not an exact pack-signature root")
+
+    required_builder_markers = {
+        "TEST_MASTER_KEY_PATH", "v4-test-ed25519.json", "HKDF(",
+        "jc-v4-synthetic-test-only-v1", "TRUST_CONTEXT_PATH",
+        "build_fixture_bytes", "canonical_bytes(_SyntheticPackBuilder().build())",
+        'authority_tier="synthetic_test_only"',
+    }
+    if any(marker not in builder_source for marker in required_builder_markers):
+        fail("W2-05 builder lacks approved deterministic test-key or source boundaries")
+    if any(marker in builder_source for marker in (
+        "import random", "import secrets", "os.urandom", "bytes([1])",
+    )):
+        fail("W2-05 builder contains an unapproved private-key or randomness source")
+    if "public key must bind exactly one key identity" not in trust_source:
+        fail("W2-05 trust verifier permits public-key identity aliases")
+    source_markers = {
+        'snapshot.authority_tier == "synthetic_test_only"',
+        'self._trust.target_environment != "test"',
+        "SOURCE_TEST_FIXTURE_FORBIDDEN",
+    }
+    if any(marker not in source_service_source for marker in source_markers):
+        fail("W2-05 source service lacks a production-closed synthetic tier")
+
+    forbidden_controls = _forbidden_test_controls(
+        synthetic_tests + "\n" + trust_tests + "\n" + pack_attack_tests
+    )
+    if forbidden_controls:
+        fail(f"W2-05 tests use forbidden controls: {forbidden_controls}")
+    if "VerifiedRulePackV4" in synthetic_tests or "object.__new__" in synthetic_tests:
+        fail("W2-05 test constructs or imports a trusted internal pack handle")
+    required_tests = {
+        "test_two_independent_cli_builds_equal_committed_fixture",
+        "test_public_verifier_accepts_fixture_and_same_pack_retry_is_idempotent",
+        "test_fixture_covers_typed_relations_and_future_case_vectors",
+        "test_signed_candidate_pack_cannot_activate",
+        "test_candidate_failure_does_not_poison_formal_verification",
+        "test_new_verifier_with_consumed_live_trust_rejects_signature_replay",
+        "test_synthetic_source_tier_is_rejected_outside_test",
+        "test_cached_synthetic_source_tier_is_rejected_after_environment_switch",
+        "test_source_authenticity_must_precede_rule_reviews",
+        "test_signature_issue_order_must_follow_causal_chain",
+        "test_test_only_release_key_is_rejected_by_production_trust",
+        "test_fixture_has_external_trust_context_no_private_or_orphan_artifacts",
+        "test_builder_fixture_and_private_test_keys_are_absent_from_wheel",
+        "len(signatures) == len(set(signatures)) == 17",
+    }
+    if any(marker not in synthetic_tests for marker in required_tests):
+        fail("W2-05 tests lack reproducibility, trust, replay, candidate, or wheel oracles")
+    if "test_public_key_cannot_alias_another_key_identity" not in trust_tests:
+        fail("W2-05 trust tests lack public-key alias laundering rejection")
+    if "test_candidate_cannot_self_activate" not in pack_attack_tests:
+        fail("W2-05 lane lost the existing candidate activation oracle")
+    if any(marker not in runner_source for marker in (
+        "W2-05 receipt does not bind its exact 17 committed paths",
+        "w2-05-exact-synthetic-pack-reports",
+        "w2-05-exact-fixture-binding",
+        "w2-05-exact-committed-scope",
+        "_w2_05_test_report_problems(reports)",
+    )):
+        fail("W2-05 runner resume does not rebuild its executable receipt contract")
+
+    for task_id, gate in (
+        ("W2-02", cmd_w2_02_fact_gate),
+        ("W2-04", cmd_w2_04_snapshot_gate),
+    ):
+        if gate() != EXIT_OK:
+            fail(f"W2-05 prerequisite machine gate failed: {task_id}")
+
+    if problems:
+        for problem in problems:
+            print(f"W2-05 synthetic pack gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W2-05 synthetic pack gate OK: external test trust; deterministic two-root graph; "
+        "public pack verify plus same-verifier idempotent reverify; Application formal replay deferred"
+    )
+    return EXIT_OK
+
+
+def cmd_w2_05_synthetic_pack_gate() -> int:
+    try:
+        return _cmd_w2_05_synthetic_pack_gate()
+    except Exception as exc:
+        print(
+            f"W2-05 synthetic pack gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -9072,6 +9447,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w2_03_pack_gate()
     if args.wave == "W2-04":
         return cmd_w2_04_snapshot_gate()
+    if args.wave == "W2-05":
+        return cmd_w2_05_synthetic_pack_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -10667,6 +11044,60 @@ def _w2_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w2_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W2-05 synthetic-pack JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W2-05 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W2_05_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W2_05_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W2_05_TEST_CASE_COUNT,
+        "junit_unique_cases": W2_05_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W2_05_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W2-05 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W2-05 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
+AUTO_RUNNER_COMPLETION_ASSERTION_IDS = (
+    "runner-clean-worktree",
+    "runner-committed-delta",
+    "runner-state-artifacts",
+)
+
+
+def _expected_auto_completion_assertion_ids(
+    task: dict[str, Any],
+    *task_specific: str,
+) -> list[str]:
+    return [
+        *(item["id"] for item in task.get("completion_assertions", [])),
+        *AUTO_RUNNER_COMPLETION_ASSERTION_IDS,
+        *task_specific,
+    ]
+
+
 def _auto_receipt_resume_problems(
     task: dict[str, Any],
     receipt: dict[str, Any],
@@ -10756,11 +11187,11 @@ def _auto_receipt_resume_problems(
                 str(artifact_digests.get(f"result-path:{path}")),
             ) is None:
                 problems.append(f"W2-04 receipt lacks committed result digest: {path}")
-        expected_assertion_ids = [
-            *(item["id"] for item in task.get("completion_assertions", [])),
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
             "w2-04-exact-snapshot-reports",
             "w2-04-exact-committed-scope",
-        ]
+        )
         assertions = receipt.get("completion_assertions", [])
         if (
             not isinstance(assertions, list)
@@ -10769,6 +11200,66 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W2-04 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W2-05":
+        problems.extend(_w2_05_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W2_05_CHANGED_PATHS)
+            or len(changed_paths) != len(W2_05_CHANGED_PATHS)
+        ):
+            problems.append("W2-05 receipt does not bind its exact 17 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W2_05_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W2-05 receipt lacks committed result digest: {path}")
+        try:
+            result_commit = receipt["result_commit"]
+            fixture_path = "tests/fixtures/packs/synthetic/signed-pack.json"
+            context_path = "tests/fixtures/keys/v4-synthetic-trust.json"
+            fixture_bytes = _git_path_bytes(result_commit, fixture_path)
+            context_bytes = _git_path_bytes(result_commit, context_path)
+            fixture = json.loads(fixture_bytes) if fixture_bytes is not None else None
+            context = json.loads(context_bytes) if context_bytes is not None else None
+            fixture_bound = (
+                isinstance(fixture, dict)
+                and isinstance(context, dict)
+                and fixture.get("scope") == "test-only"
+                and context.get("scope") == "test-only"
+                and all(
+                    isinstance(fixture.get(field), dict)
+                    and fixture[field].get("kind") == "pack-signature"
+                    and re.fullmatch(
+                        r"sha256:[0-9a-f]{64}", str(fixture[field].get("digest"))
+                    ) is not None
+                    for field in ("pack_ref", "candidate_pack_ref")
+                )
+                and artifact_digests.get(f"result-path:{fixture_path}")
+                == "sha256:" + sha256_hex(fixture_bytes)
+                and artifact_digests.get(f"result-path:{context_path}")
+                == "sha256:" + sha256_hex(context_bytes)
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            fixture_bound = False
+        if not fixture_bound:
+            problems.append("W2-05 receipt fixture/context binding is invalid")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w2-05-exact-synthetic-pack-reports",
+            "w2-05-exact-fixture-binding",
+            "w2-05-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W2-05 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -11511,6 +12002,72 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 11 exact W2-04 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W2-05":
+        report_problems = _w2_05_test_report_problems(test_reports)
+        expected_paths = set(W2_05_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W2_05_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        fixture_problems: list[str] = []
+        try:
+            fixture_path = "tests/fixtures/packs/synthetic/signed-pack.json"
+            context_path = "tests/fixtures/keys/v4-synthetic-trust.json"
+            fixture_bytes = _git_path_bytes(result_commit, fixture_path)
+            context_bytes = _git_path_bytes(result_commit, context_path)
+            if fixture_bytes is None or context_bytes is None:
+                raise ValueError("fixture or context is absent from result commit")
+            fixture = json.loads(fixture_bytes)
+            context = json.loads(context_bytes)
+            if fixture.get("scope") != "test-only" or context.get("scope") != "test-only":
+                fixture_problems.append("fixture/context scope is not test-only")
+            for field in ("pack_ref", "candidate_pack_ref"):
+                row = fixture.get(field, {})
+                if (
+                    not isinstance(row, dict)
+                    or row.get("kind") != "pack-signature"
+                    or re.fullmatch(r"sha256:[0-9a-f]{64}", str(row.get("digest"))) is None
+                ):
+                    fixture_problems.append(f"invalid {field}")
+            for path, raw in ((fixture_path, fixture_bytes), (context_path, context_bytes)):
+                if artifact_digests.get(f"result-path:{path}") != (
+                    "sha256:" + sha256_hex(raw)
+                ):
+                    fixture_problems.append(f"unbound result digest: {path}")
+        except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            fixture_problems.append(f"fixture/context unreadable: {exc}")
+        assertions.append({
+            "id": "w2-05-exact-synthetic-pack-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W2_05_TEST_CASE_COUNT} synthetic/source/trust/governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-05-exact-fixture-binding",
+            "kind": "artifact_binding",
+            "ok": not fixture_problems,
+            "detail": (
+                "test-only fixture/context and both pack roots are result-commit digest-bound"
+                if not fixture_problems else "; ".join(fixture_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-05-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 17 exact W2-05 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

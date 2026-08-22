@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from base64 import b64decode, b64encode
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -155,6 +156,26 @@ def test_six_trust_profiles_are_exact_and_immutable() -> None:
     }
     with pytest.raises(TypeError):
         TRUST_PROFILES_V4["injected-scope"] = ("attacker", "attacker")  # type: ignore[index]
+
+
+@pytest.mark.parametrize("principal_id", (_key().principal_id, "laundered-principal"))
+def test_public_key_cannot_alias_another_key_identity(principal_id: str) -> None:
+    key = _key()
+    alias = replace(
+        key,
+        key_id="aliased-test-key",
+        principal_id=principal_id,
+    )
+    policy = _policy(trusted_key_ids=(key.key_id, alias.key_id))
+    with pytest.raises(
+        ContractV4Error,
+        match="^TRUST_KEY_CONFIG: public key must bind exactly one key identity$",
+    ):
+        TrustVerifierV4(
+            policy=policy,
+            keys=(key, alias),
+            target_environment="test",
+        )
 
 
 @pytest.mark.parametrize(

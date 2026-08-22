@@ -520,7 +520,7 @@ class RulePackVerifierV4:
         reference: ContentRefV4,
         *,
         now: CanonicalTimeV4,
-    ) -> tuple[SourceSnapshotV4, str]:
+    ) -> tuple[SourceSnapshotV4, str, CanonicalTimeV4]:
         source_service = self._active_source_service.get() or self._source_service
         source_service.admit_snapshot(reference, now=now)
         value = self._resolve_contract(
@@ -558,7 +558,7 @@ class RulePackVerifierV4:
                 now=now,
                 separation=(),
             )
-        return value, principal
+        return value, principal, envelope.issued_at
 
     def _validate_rule_components(self, rule: RuleV4, source: SourceSnapshotV4) -> None:
         if rule.modality not in _V4_MODALITIES:
@@ -616,6 +616,7 @@ class RulePackVerifierV4:
         receipt_ref: ContentRefV4,
         *,
         now: CanonicalTimeV4,
+        source_issued_at: CanonicalTimeV4,
     ) -> tuple[RulePromotionReceiptV4, tuple[str, str, str]]:
         subject_ref = rule_promotion_subject_ref(rule)
         subject = self._resolver.resolve_content(
@@ -691,6 +692,8 @@ class RulePackVerifierV4:
             now=now,
             separation=(legal_principal,),
         )
+        if legal.issued_at < source_issued_at or engineering.issued_at < source_issued_at:
+            _v4_fail("PACK_REVIEW_TIME", "rule review predates source authenticity")
         service_evidence = promotion_receipt_evidence_refs(
             subject_ref,
             receipt.legal_review_ref,
@@ -841,6 +844,7 @@ class RulePackVerifierV4:
         }
         source_by_ref = {reference: row[0] for reference, row in source_rows.items()}
         source_principals = {row[1] for row in source_rows.values()}
+        source_issued_at = {reference: row[2] for reference, row in source_rows.items()}
         rules: list[RuleV4] = []
         by_rule_ref: dict[ContentRefV4, RuleV4] = {}
         for reference in manifest.rule_refs:
@@ -924,7 +928,12 @@ class RulePackVerifierV4:
         promotion_receipts: list[RulePromotionReceiptV4] = []
         for rule in rules:
             receipt_ref = rule.promotion_receipt_refs[0]
-            receipt, principals = self._verify_promotion(rule, receipt_ref, now=now)
+            receipt, principals = self._verify_promotion(
+                rule,
+                receipt_ref,
+                now=now,
+                source_issued_at=source_issued_at[rule.source_snapshot_ref],
+            )
             promotion_receipts.append(receipt)
             promotion_principals.extend(principals)
             for role_principals, principal in zip(promotion_principals_by_role, principals):

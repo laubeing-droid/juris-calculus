@@ -109,6 +109,8 @@ class TrustVerifierV4:
         by_id = {key.key_id: key for key in keys}
         if len(by_id) != len(keys):
             _fail("TRUST_KEY_CONFIG", "key_id must be unique")
+        if len({key.public_key for key in keys}) != len(keys):
+            _fail("TRUST_KEY_CONFIG", "public key must bind exactly one key identity")
 
         self.policy = policy
         self.target_environment = target_environment

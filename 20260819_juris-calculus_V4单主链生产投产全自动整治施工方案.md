@@ -606,10 +606,10 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W2-05　Synthetic signed pack builder
 
-- **Depends / audit**：`W2-04 / P0-02, P0-05`。
-- **Paths**：一个 test-only helper/CLI、pack fixtures和tests；不为单一实现建立 builder protocol、registry或interface，不把 helper 放入 runtime wheel。
-- **动作**：构建最小但语义完整的 test-only pack，覆盖正向、例外、priority、permission、temporal、missing/disputed；固定 source bytes、review receipts、test signatures 和 digest。
-- **Gate**：两次 clean build pack bytes 相同；scope 明确 `test-only`；production trust policy 必拒绝该 pack；测试不直接构造 trusted internal object。
+- **Depends / audit**：`W2-02, W2-04 / P0-02, P0-05, P1-08`。
+- **Paths**：仅以下 17 个 exact paths：`.gitignore`、本方案、`compiler_core/rule_packs.py`、`compiler_core/source_service.py`、`compiler_core/trust.py`、`remediation/v4/file-disposition.json`、`remediation/v4/issue-map.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_synthetic_pack.py`、`tests/fixtures/keys/v4-synthetic-trust.json`、`tests/fixtures/packs/synthetic/signed-pack.json`、`tests/required-v4-tests.json`、`tests/security/test_trust_policy.py`、`tools/build_file_disposition.py`、`tools/build_synthetic_pack.py`、`tools/remediate_v4.py`；不建立 builder protocol、registry 或 interface，三个 runtime 修改只收紧既有 pack/source/trust 边界，public API 不变。
+- **动作**：外部 pinned test context 独立提供 trust policy、六个互异公钥及 expected runtime identity；pack fixture 只保存 untrusted artifact graph、formal/candidate roots 与后续 case vectors，不能自行提交 trust root 或 expected build identity。helper 从 W0-05 已批准的唯一 test-only master key 以固定 HKDF role domain 派生六个职责分离 key，构建 canonical fixture但不输出任何私钥。formal pack 通过 public `ArtifactResolverV4 → SourceServiceV4 → RulePackVerifierV4.verify` 装载；exception/priority/permission 使用现有 typed relation 字段，temporal 明确区间；missing/disputed 仅作为引用同一 required `fact_key` 的 `ABSENT/DISPUTED → BLOCKED` 后续场景材料，不冒充已准入 formal premise 或 W4-07 正式结果。candidate 的 build/release envelope 必须先经 public trust crypto 验证，但缺少 promotion receipt 仍不可激活。source authenticity 必须不晚于 rule reviews，否则精确 `PACK_REVIEW_TIME`；review→promotion→build→release 的既有时序继续传递闭合。`TrustVerifierV4` 拒绝一个 public key 的多 key-id/principal 别名，阻断职责分离、replay 与 revocation 身份漂白；`SourceServiceV4` 仅在 test environment 接受 `synthetic_test_only` authority tier，且 cached admission/bundle reader 均重检当前 environment，避免虚构真实法源。
+- **Gate**：两个独立 Python 进程 build 与已提交 fixture bytes 完全相同；fixture scope 精确为 `test-only`，artifact 两 root 可达闭包无 orphan，decoded artifacts 不含 master/派生私钥，独立 context 六个 public key/principal 均唯一且全部 `production_allowed=false`；test policy 下 public pack verify 成功且 same verifier reverify 返回同一 verifier-issued handle，测试不得导入/直接构造 `VerifiedRulePackV4` 或使用 `object.__new__`；production-allowed keys 仍不能放行 synthetic source tier，cached source 也按当前 environment 重检，production trust 精确拒绝 test release key；同 public key 别名在 verifier 初始化期精确拒绝 `TRUST_KEY_CONFIG`；candidate build/release 经 public crypto 验证后仍精确拒绝 `PACK_PROMOTION_REQUIRED`，source/review/promotion/build/release 任一倒序分别精确拒绝 `PACK_REVIEW_TIME`、`PACK_PROMOTION_TIME`、`PACK_BUILD_TIME`、`PACK_RELEASE_TIME`；实际 wheel 中无 `tools/`、`tests/`、fixture/context 或私钥材料。当前 handle 仅是一次 verify(now) 的 point-in-time proof，不是动态 readiness cache；W4-05 必须在每次请求按 current CanonicalTimeV4 重验，失败 retry 不得吊销既有点时证明。P0-02 的 Application formal result/offline replay 仍保持 RED 到 `W4-07/W8-06`。runner 绑定 exact pytest JUnit、fixture/context digests、17 个 committed path digests 与 attempt receipt chain。
 - **Commit**：`test(pack): add reproducible signed synthetic V4 pack`。
 
 ### W2-06　Source→Fact→Pack 纵向门禁
@@ -699,8 +699,8 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 - **Depends / audit**：`W4-04 / P0-01..08, P1-07, P1-16`。
 - **Paths**：重写 `compiler_core/application.py`、application tests。
-- **动作**：严格顺序 resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle；domain/config 只来自 signed pack bytes；所有 early exit 也有 typed result 和 bundle；不调用 advisory certificate/evaluator。
-- **Gate**：synthetic pack 全状态矩阵；missing/review/hypothetical/conflict/unknown/blocked/error 不签 formal；accepted formal 必有可 verify/replay certificate；阶段故障不 fallback。
+- **动作**：严格顺序 resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle；每次请求以 current `CanonicalTimeV4` 调用 pack verifier，旧 handle 只作点时证据而不作 readiness cache；domain/config 只来自 signed pack bytes；所有 early exit 也有 typed result 和 bundle；不调用 advisory certificate/evaluator。
+- **Gate**：synthetic pack 全状态矩阵；pack policy/signature 到期或撤销后的当前请求必须重验失败且不得消费旧 handle；missing/review/hypothetical/conflict/unknown/blocked/error 不签 formal；accepted formal 必有可 verify/replay certificate；阶段故障不 fallback。
 - **Commit**：`feat(application): establish the sole V4 formal spine`。
 
 ### W4-06　隐私、error 和资源闭环
@@ -869,7 +869,7 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 
 ### W6-06　SBOM、provenance、checksums 和 attestation
 
-- **Depends / audit**：`W6-04 / P0-15, P1-20`。
+- **Depends / audit**：`W6-04 / P0-15, P1-08, P1-20`。
 - **Paths**：`tools/build_provenance.py`、supply-chain tooling、provenance tests。
 - **动作**：subject 是 exact wheel；绑定 clean commit/tree、spec commit、builder、locks、Schema、ToolSpec、authority registry、test policy/trust public material；SBOM 覆盖 wheel files+runtime deps；signature/attestation 与法律 pack签名分 scope。
 - **Gate**：dirty tree、错 spec/schema/tool/lock/wheel、unsigned provenance、SBOM/RECORD mismatch 均失败。
@@ -1060,7 +1060,7 @@ Runner 的 `issue-map --check` 必须验证下表。一个 task green 不等于�
 | P1-05 | W3-01, W3-04..05 | 字段守恒；独立oracle；critical field mutations全杀 |
 | P1-06 | W3-02, W3-04..05 | priority/permission/UNDEC/witness/reference parity正确 |
 | P1-07 | W2-03, W4-05 | typed domain/config来自signed pack；runtime advisory patch为零 |
-| P1-08 | W2-03..04, W6-06 | signed build attestation；空/错commit/issue-order失败 |
+| P1-08 | W2-03..05, W6-06 | signed build attestation；空/错commit/issue-order失败 |
 | P1-09 | W2-03, W5-02C..03 | eligibility只来自verified snapshot；CN legacy candidate current-tree删除，其他candidate输出明确 |
 | P1-10 | W2-04, W4-02..03, W7-03 | locks/unique staging/lease/recovery；并发/kill全过 |
 | P1-11 | W4-02..03, W7-01 | file+dir durability；fault injection后complete-or-absent |

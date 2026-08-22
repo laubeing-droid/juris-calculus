@@ -313,13 +313,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.17.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.18.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -506,6 +506,64 @@ def nested_alias_bypass():
     ) == ["AUTO receipt command count does not match the task"]
     assert RUNNER._auto_receipt_resume_problems(
         w2_04_task,
+        {
+            "command_results": [],
+            "completion_assertions": [
+                {"id": "runner-state-artifact-recovery", "ok": True},
+            ],
+            "runner_version": RUNNER.RUNNER_VERSION,
+        },
+        tmp_path,
+    ) == ["state-artifact recovery assertion is only valid for W1-06"]
+
+    w2_05_reports = copy.deepcopy(w1_02_reports)
+    w2_05_reports[0].update({
+        "passed": RUNNER.W2_05_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W2_05_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W2_05_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W2_05_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W2_05_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w2_05_test_report_problems(w2_05_reports) == []
+    w2_05_reports[0]["junit_errors"] = 1
+    assert RUNNER._w2_05_test_report_problems(w2_05_reports) == [
+        "W2-05 pytest junit_errors drifted: 1 != 0"
+    ]
+    w2_05_task = next(
+        item
+        for item in json.loads(RUNNER.DEFAULT_PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W2-05"
+    )
+    assert RUNNER._expected_auto_completion_assertion_ids(
+        w2_05_task,
+        "w2-05-exact-synthetic-pack-reports",
+        "w2-05-exact-fixture-binding",
+        "w2-05-exact-committed-scope",
+    ) == [
+        "all-commands-passed",
+        "runner-clean-worktree",
+        "runner-committed-delta",
+        "runner-state-artifacts",
+        "w2-05-exact-synthetic-pack-reports",
+        "w2-05-exact-fixture-binding",
+        "w2-05-exact-committed-scope",
+    ]
+    assert RUNNER._auto_receipt_resume_problems(
+        w2_05_task,
+        {
+            "command_results": [],
+            "completion_assertions": [
+                {"id": "all-commands-passed", "ok": True},
+                {"id": "w2-05-exact-synthetic-pack-reports", "ok": True},
+                {"id": "w2-05-exact-fixture-binding", "ok": True},
+                {"id": "w2-05-exact-committed-scope", "ok": True},
+            ],
+            "runner_version": RUNNER.RUNNER_VERSION,
+        },
+        tmp_path,
+    ) == ["AUTO receipt command count does not match the task"]
+    assert RUNNER._auto_receipt_resume_problems(
+        w2_05_task,
         {
             "command_results": [],
             "completion_assertions": [

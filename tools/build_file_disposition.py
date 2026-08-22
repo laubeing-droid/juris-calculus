@@ -97,6 +97,7 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tools/supply_chain_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/wheel_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/build_rule_pack_manifests.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tools/build_synthetic_pack.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "TEST_ORACLE"},
     "tools/perf_baseline.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
     "tools/run_trirail_matrix.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
     "tools/fast_path_interceptor.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
@@ -255,7 +256,7 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         "tests/differential/", "tests/formal_e2e/", "tests/security/",
         "tests/storage_chaos/", "tests/windows_security/",
         "tests/mcp_protocol/", "tests/packaging/", "tests/dsh_formal/",
-        "tests/fixtures/golden/", "tests/fixtures/keys/",
+        "tests/fixtures/golden/", "tests/fixtures/keys/", "tests/fixtures/packs/",
     )):
         disp = "TEST_ORACLE"
         terminal = "TEST_ORACLE"
@@ -380,7 +381,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "d7b86fe5e1c80e1562783a7834f469f128100e9f4b3f3049f41ea7e809518650",
+        "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
         "count": len(entries),
         "paths": entries,
     }

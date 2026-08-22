@@ -35,6 +35,8 @@
 !schemas/w1b/*.schema.json
 !tests/fixtures/golden/
 !tests/fixtures/golden/*.json
+!tests/fixtures/keys/v4-synthetic-trust.json
+!tests/fixtures/packs/synthetic/signed-pack.json
 !tests/fixtures/theory_absorption/
 !tests/fixtures/theory_absorption/**
 !docs/architecture/module-authority-v4.json

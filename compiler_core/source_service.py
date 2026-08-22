@@ -133,6 +133,16 @@ class SourceServiceV4:
         self._source_ids: dict[str, ContentRefV4] = {}
         self._admission_lock = RLock()
 
+    def _require_authority_tier(self, snapshot: SourceSnapshotV4) -> None:
+        if snapshot.authority_tier == "synthetic_test_only":
+            if self._trust.target_environment != "test":
+                _fail(
+                    "SOURCE_TEST_FIXTURE_FORBIDDEN",
+                    "synthetic source authority is forbidden outside test",
+                )
+        elif snapshot.authority_tier not in _VERIFIED_AUTHORITY_TIERS:
+            _fail("SOURCE_AUTHORITY_TIER", "source authority tier is not verified")
+
     def _resolve_json_contract(
         self,
         reference: ContentRefV4,
@@ -239,6 +249,7 @@ class SourceServiceV4:
             _fail("SOURCE_INPUT_TYPE", "now must be CanonicalTimeV4")
         existing = self._verified.get(snapshot_ref)
         if existing is not None:
+            self._require_authority_tier(existing)
             expires_at = self._verified_expires_at[snapshot_ref]
             policy = self._trust.policy
             if (
@@ -266,8 +277,7 @@ class SourceServiceV4:
                 "SOURCE_SNAPSHOT_REF_MISMATCH",
                 "snapshot bytes do not match their source reference",
             )
-        if snapshot.authority_tier not in _VERIFIED_AUTHORITY_TIERS:
-            _fail("SOURCE_AUTHORITY_TIER", "source authority tier is not verified")
+        self._require_authority_tier(snapshot)
         if snapshot.retrieved_at < snapshot.publication_time or now < snapshot.retrieved_at:
             _fail(
                 "SOURCE_TIME_ORDER",
@@ -352,6 +362,7 @@ class SourceServiceV4:
         snapshot = self._verified.get(snapshot_ref)
         if snapshot is None:
             _fail("SOURCE_SNAPSHOT_NOT_VERIFIED", "snapshot has not passed source authenticity")
+        self._require_authority_tier(snapshot)
         return snapshot
 
     def resolve_applicable(

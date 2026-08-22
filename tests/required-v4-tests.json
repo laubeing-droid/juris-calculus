@@ -102,7 +102,14 @@
       "suite": "security",
       "selector": "tests/security/test_trust_policy.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 29
+      "expected_tests": 31
+    },
+    {
+      "id": "W2-SYNTHETIC-SIGNED-PACK",
+      "suite": "contract",
+      "selector": "tests/contract/test_synthetic_pack.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 15
     }
   ],
   "evidence_tracks": [

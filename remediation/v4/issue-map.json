@@ -276,6 +276,7 @@
       "closure_tasks": [
         "W2-03",
         "W2-04",
+        "W2-05",
         "W6-06"
       ],
       "proof": "signed build attestation；空/错 commit/issue-order 失败",
