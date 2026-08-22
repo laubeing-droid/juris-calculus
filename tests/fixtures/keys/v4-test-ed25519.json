@@ -1,0 +1,14 @@
+{
+  "schema_version": "jc/test-ed25519-key/1.0",
+  "key_id": "test-ed25519-6e8886d02f26451e",
+  "algorithm": "Ed25519",
+  "scope": "test-only",
+  "production_allowed": false,
+  "private_key_encoding": "raw-base64",
+  "private_key_base64": "zz44cZnfZT2jt7ZaS4Q8KDgTh9OmtWOC6V0PESDCGAw=",
+  "private_key_sha256": "sha256:9fe88276ebf4f03e3dae61c595882b9cec93b3ea9d3484b1489010a1d84c10a2",
+  "public_key_encoding": "raw-base64",
+  "public_key_base64": "BeHdbMTOEOqYYPk6JniUBQFmo6LKHZq71MVPKfMu3jc=",
+  "public_key_sha256": "sha256:6e8886d02f26451ed8bbaa64113f9d684aad51f36e03b59ff8be61cf1edadb85",
+  "notice": "TEST FIXTURE ONLY. Never load this key into production trust policy."
+}

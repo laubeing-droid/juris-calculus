@@ -95,6 +95,10 @@ def _canonical(value: dict) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
+def _raw_digest(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def _install_trusted_key(state_root: Path, private_key: Ed25519PrivateKey, key_id: str = "test-key") -> None:
     public = private_key.public_key().public_bytes(
         encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw
@@ -130,6 +134,107 @@ def _install_approval(state_root: Path, request: dict, private_key: Ed25519Priva
     directory = state_root / "approvals" / request["task_id"]
     directory.mkdir(parents=True, exist_ok=True)
     (directory / filename).write_text(json.dumps(approval), encoding="utf-8")
+
+
+def _user_directive_task(task_id: str, *, mode: str = "HUMAN_GATE",
+                         argv: list[str] | None = None,
+                         allowed: list[str] | None = None,
+                         depends_on: list[str] | None = None,
+                         subject_paths: list[str] | None = None,
+                         minimum_signers: int = 1,
+                         separation: bool = False) -> dict:
+    task = {
+        "id": task_id, "wave": task_id, "mode": mode,
+        "depends_on": depends_on or [], "audit_ids": ["P0-01"],
+        "objective": f"approve and execute {task_id}",
+        "allowed_paths": allowed or ["docs/**"],
+        "approval": {
+            "evidence_kind": "USER_DIRECTIVE",
+            "gate_id": f"{task_id}-APPROVAL", "subject": f"subject {task_id}",
+            "subject_paths": subject_paths or [],
+            "required_roles": ["authorized_reviewer"],
+            "allowed_scopes": [task_id], "minimum_signers": minimum_signers,
+            "separation_of_duties": separation,
+        },
+    }
+    if argv is not None:
+        task.update({
+            "argv": [argv], "expected_exit_codes": [0], "timeout_seconds": 10,
+            "completion_assertions": [{"id": "commands", "kind": "all_commands_passed"}],
+            "rollback": "stop and repair", "required_receipt_fields": REQUIRED_RECEIPT_FIELDS,
+        })
+    return task
+
+
+def _install_user_directive(state_root: Path, request: dict, *,
+                            remove: str | None = None,
+                            decision: str = "APPROVE",
+                            role: str = "authorized_reviewer") -> dict:
+    authority_path = (state_root / "authority" / "user-directive.txt").resolve()
+    authority_path.parent.mkdir(parents=True, exist_ok=True)
+    authority_path.write_bytes(b"test user directive")
+    directive = {
+        "schema_version": "jc/remediation-v4-user-directive/1.0",
+        "evidence_kind": "USER_DIRECTIVE", "run_id": request["run_id"],
+        "gate_id": request["gate_id"], "task_id": request["task_id"],
+        "request_digest": request["request_digest"],
+        "subject_digest": request["subject_digest"], "decision": decision,
+        "scope": request["allowed_scopes"][0],
+        "authority_source": {
+            "locator": str(authority_path),
+            "sha256": _raw_digest(authority_path),
+        },
+        "signer": {
+            "key_id": "authorized-user", "role": role,
+            "scope": request["allowed_scopes"][0],
+        },
+        "issued_at": (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
+    }
+    if remove is not None:
+        directive.pop(remove)
+    directory = state_root / "directives" / request["task_id"]
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "directive.json").write_text(json.dumps(directive), encoding="utf-8")
+    return directive
+
+
+def _isolated_runner_repo(tmp_path: Path):
+    repo = tmp_path / "isolated-repo"
+    sources = [
+        "pyproject.toml",
+        "requirements/core.lock",
+        "tools/remediate_v4.py",
+        "tools/supply_chain_gate.py",
+        "remediation/v4/tasks.json",
+        "remediation/v4/task.schema.json",
+        "remediation/v4/receipt.schema.json",
+        "remediation/v4/approval.schema.json",
+        "remediation/v4/user-directive.schema.json",
+        "remediation/v4/issue-map.json",
+        "remediation/v4/approvals/W0-05-dependency-decision.json",
+        "tests/fixtures/keys/v4-test-ed25519.json",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_remediation_run.py",
+    ]
+    for relative in sources:
+        source = REPO / relative
+        assert source.is_file(), relative
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+    def git(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+        )
+        return completed.stdout.strip()
+
+    git("init", "-q")
+    git("config", "user.name", "Runner Integration")
+    git("config", "user.email", "runner@example.invalid")
+    git("add", ".")
+    git("commit", "-qm", "baseline")
+    return repo, git
 
 
 def test_real_minimal_dag_writes_chained_receipts(tmp_path: Path) -> None:
@@ -418,3 +523,337 @@ def test_old_approval_invalidates_when_subject_artifact_changes(tmp_path: Path) 
     assert result.returncode == 21
     assert len(list((state_root / "requests" / "G1").glob("*.json"))) == 2
     assert not (state_root / "tasks" / "G1").exists()
+
+
+def test_cached_gate_request_tamper_fails_closed(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    plan = _write_plan(tmp_path / "plan", [_user_directive_task("G1")])
+    state_root = tmp_path / "state"
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    request_path = next((state_root / "requests" / "G1").glob("*.json"))
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    request["minimum_signers"] = 0
+    unsigned_request = {
+        key: value for key, value in request.items() if key != "request_digest"
+    }
+    request["request_digest"] = (
+        "sha256:" + hashlib.sha256(_canonical(unsigned_request)).hexdigest()
+    )
+    request_path.write_text(json.dumps(request), encoding="utf-8")
+
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 5, result.stderr
+    assert "gate request" in result.stderr
+    assert not (state_root / "tasks" / "G1").exists()
+
+
+def test_cached_gate_request_binds_current_task_and_dependency_state(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    task = _user_directive_task(
+        "M1", mode="MIXED", argv=[sys.executable, "-c", "print('v1')"],
+    )
+    plan = _write_plan(tmp_path / "plan", [task])
+    state_root = tmp_path / "state"
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    request = json.loads(
+        next((state_root / "requests" / "M1").glob("*.json")).read_text(encoding="utf-8")
+    )
+    assert request["task_digest"] == "sha256:" + hashlib.sha256(_canonical(task)).hexdigest()
+    assert request["input_receipt_digests"] == {}
+    assert request["start_commit"]
+
+    changed_task = _user_directive_task(
+        "M1", mode="MIXED", argv=[sys.executable, "-c", "print('v2')"],
+    )
+    _write_plan(tmp_path / "plan", [changed_task])
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 5, result.stderr
+    assert "current task/state" in result.stderr
+    assert not (state_root / "tasks" / "M1").exists()
+
+
+def test_subject_digest_uses_portable_repo_and_state_labels(tmp_path: Path) -> None:
+    requests = []
+    for name in ("one", "two"):
+        case_root = tmp_path / name
+        repo, _ = _isolated_runner_repo(case_root)
+        state_root = case_root / "state"
+        state_root.mkdir(parents=True)
+        (state_root / "input.txt").write_bytes(b"same state evidence\n")
+        task = _user_directive_task(
+            "G1",
+            subject_paths=[
+                "tools/remediate_v4.py",
+                "$JC_REMEDIATION_STATE_ROOT/input.txt",
+            ],
+        )
+        plan = _write_plan(case_root / "plan", [task])
+        assert _run_in_repo(repo, plan, state_root).returncode == 20
+        requests.append(json.loads(
+            next((state_root / "requests" / "G1").glob("*.json")).read_text(encoding="utf-8")
+        ))
+    assert requests[0]["subject_digest"] == requests[1]["subject_digest"]
+
+
+def test_user_directive_requires_closed_approve_policy_binding(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    cases = [
+        "missing-signer", "reject", "wrong-role", "wrong-request",
+        "wrong-scope", "future-issued-at", "bad-authority-hash",
+        "missing-authority", "extra-field",
+    ]
+    for case in cases:
+        case_root = tmp_path / case
+        plan = _write_plan(case_root / "plan", [_user_directive_task("G1")])
+        state_root = case_root / "state"
+        assert _run_in_repo(repo, plan, state_root).returncode == 20
+        request = json.loads(
+            next((state_root / "requests" / "G1").glob("*.json")).read_text(encoding="utf-8")
+        )
+        directive = _install_user_directive(state_root, request)
+        if case == "missing-signer":
+            directive.pop("signer")
+        elif case == "reject":
+            directive["decision"] = "REJECT"
+        elif case == "wrong-role":
+            directive["signer"]["role"] = "untrusted"
+        elif case == "wrong-request":
+            directive["request_digest"] = "sha256:" + "0" * 64
+        elif case == "wrong-scope":
+            directive["scope"] = directive["signer"]["scope"] = "wrong-scope"
+        elif case == "future-issued-at":
+            directive["issued_at"] = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        elif case == "bad-authority-hash":
+            directive["authority_source"]["sha256"] = "sha256:" + "0" * 64
+        elif case == "missing-authority":
+            directive["authority_source"]["locator"] = str(
+                (state_root / "authority" / "missing.txt").resolve()
+            )
+        elif case == "extra-field":
+            directive["unbound"] = True
+        directive_path = state_root / "directives" / "G1" / "directive.json"
+        directive_path.write_text(json.dumps(directive), encoding="utf-8")
+
+        result = _run_in_repo(repo, plan, state_root)
+        assert result.returncode == 20, (case, result.stderr)
+        assert "Traceback" not in result.stderr, case
+        assert not (state_root / "tasks" / "G1").exists(), case
+
+
+def test_duplicate_user_directive_signer_cannot_meet_threshold(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    plan = _write_plan(tmp_path / "plan", [
+        _user_directive_task("G1", minimum_signers=2, separation=True),
+    ])
+    state_root = tmp_path / "state"
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    request = json.loads(
+        next((state_root / "requests" / "G1").glob("*.json")).read_text(encoding="utf-8")
+    )
+    _install_user_directive(state_root, request)
+    directive_dir = state_root / "directives" / "G1"
+    shutil.copy2(directive_dir / "directive.json", directive_dir / "copy.json")
+
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    assert not (state_root / "tasks" / "G1").exists()
+
+
+def test_mixed_argv_requires_auto_execution_contract_before_request(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    task = _user_directive_task("M1", mode="MIXED")
+    task.update({
+        "argv": [[sys.executable, "-c", "print('unsafe incomplete contract')"]],
+        "expected_exit_codes": [0],
+        "required_receipt_fields": REQUIRED_RECEIPT_FIELDS,
+    })
+    plan = _write_plan(tmp_path / "plan", [task])
+    state_root = tmp_path / "state"
+
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 4, result.stderr
+    assert "completion_assertions" in result.stderr
+    assert "rollback" in result.stderr
+    assert not (state_root / "requests").exists()
+
+
+def test_mixed_gate_with_zero_committed_delta_does_not_complete(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    plan = _write_plan(tmp_path / "plan", [
+        _user_directive_task(
+            "M1", mode="MIXED", argv=[sys.executable, "-c", "print('no delta')"],
+        )
+    ])
+    state_root = tmp_path / "state"
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    request = json.loads(
+        next((state_root / "requests" / "M1").glob("*.json")).read_text(encoding="utf-8")
+    )
+    request_path = next((state_root / "requests" / "M1").glob("*.json"))
+    directive = _install_user_directive(state_root, request)
+    directive_path = state_root / "directives" / "M1" / "directive.json"
+
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 4, result.stderr
+    receipt = _receipt(state_root, "M1")
+    assert receipt["status"] == "FAILED"
+    assert len(receipt["command_results"]) == 1
+    assert receipt["changed_paths"] == []
+    key_id = directive["signer"]["key_id"]
+    assert receipt["artifact_digests"]["request-raw"] == _raw_digest(request_path)
+    assert receipt["artifact_digests"][f"approval-raw:{key_id}"] == _raw_digest(directive_path)
+    assert (
+        receipt["artifact_digests"][f"authority-source:{key_id}"]
+        == directive["authority_source"]["sha256"]
+    )
+    assert any(
+        assertion["id"] == "runner-mixed-committed-delta" and not assertion["ok"]
+        for assertion in receipt["completion_assertions"]
+    )
+
+
+def test_valid_user_directive_mixed_receipt_binds_execution_delta(tmp_path: Path) -> None:
+    repo, git = _isolated_runner_repo(tmp_path)
+    dependency_command = (
+        "from pathlib import Path; import subprocess; "
+        "p=Path('docs/dependency.txt'); p.parent.mkdir(parents=True); "
+        "p.write_bytes(b'dependency\\n'); "
+        "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+        "subprocess.run(['git','commit','-qm','dependency delta'],check=True)"
+    )
+    command = (
+        "from pathlib import Path; import subprocess; "
+        "p=Path('docs/mixed.txt'); p.parent.mkdir(parents=True, exist_ok=True); "
+        "p.write_bytes(b'bound\\n'); "
+        "subprocess.run(['git','add','--',p.as_posix()],check=True); "
+        "subprocess.run(['git','commit','-qm','mixed delta'],check=True)"
+    )
+    plan = _write_plan(tmp_path / "plan", [
+        _auto_task(
+            "A", [sys.executable, "-c", dependency_command],
+            allowed=["docs/dependency.txt"],
+        ),
+        _user_directive_task(
+            "M1", mode="MIXED", argv=[sys.executable, "-c", command],
+            allowed=["docs/mixed.txt"], depends_on=["A"],
+        )
+    ])
+    state_root = tmp_path / "state"
+    baseline_commit = git("rev-parse", "HEAD")
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    dependency_receipt = _receipt(state_root, "A")
+    assert dependency_receipt["start_commit"] == baseline_commit
+    request_path = next((state_root / "requests" / "M1").glob("*.json"))
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    directive = _install_user_directive(state_root, request)
+    directive_path = state_root / "directives" / "M1" / "directive.json"
+    assert request["start_commit"] == dependency_receipt["result_commit"]
+    assert request["input_receipt_digests"] == {"A": dependency_receipt["receipt_digest"]}
+
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 0, result.stderr
+    receipt = _receipt(state_root, "M1")
+    expected = "sha256:" + hashlib.sha256(b"bound\n").hexdigest()
+    assert receipt["status"] == "COMPLETED"
+    assert receipt["start_commit"] == dependency_receipt["result_commit"]
+    assert receipt["result_commit"] == git("rev-parse", "HEAD")
+    assert receipt["changed_paths"] == ["docs/mixed.txt"]
+    assert receipt["artifact_digests"]["result-path:docs/mixed.txt"] == expected
+    assert receipt["artifact_digests"]["request"] == request["request_digest"]
+    assert receipt["artifact_digests"]["request-raw"] == _raw_digest(request_path)
+    key_id = directive["signer"]["key_id"]
+    assert receipt["artifact_digests"][f"approval:{key_id}"] == _digest(directive)
+    assert receipt["artifact_digests"][f"approval-raw:{key_id}"] == _raw_digest(directive_path)
+    assert (
+        receipt["artifact_digests"][f"authority-source:{key_id}"]
+        == directive["authority_source"]["sha256"]
+    )
+    assert len(receipt["command_results"]) == 1
+    assert receipt["allowlist"] == {"allowed": True, "violations": []}
+
+
+def test_manual_mixed_gate_receipts_preapproved_committed_delta(tmp_path: Path) -> None:
+    repo, git = _isolated_runner_repo(tmp_path)
+    plan = _write_plan(tmp_path / "plan", [
+        _user_directive_task("M1", mode="MIXED", allowed=["docs/manual.txt"]),
+    ])
+    state_root = tmp_path / "state"
+    start_commit = git("rev-parse", "HEAD")
+    assert _run_in_repo(repo, plan, state_root).returncode == 20
+    request_path = next((state_root / "requests" / "M1").glob("*.json"))
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+
+    manual_path = repo / "docs" / "manual.txt"
+    manual_path.parent.mkdir(parents=True)
+    manual_path.write_bytes(b"manual approved delta\n")
+    git("add", "--", "docs/manual.txt")
+    git("commit", "-qm", "manual mixed delta")
+    directive = _install_user_directive(state_root, request)
+    directive_path = state_root / "directives" / "M1" / "directive.json"
+
+    result = _run_in_repo(repo, plan, state_root)
+    assert result.returncode == 0, result.stderr
+    receipt = _receipt(state_root, "M1")
+    key_id = directive["signer"]["key_id"]
+    assert receipt["status"] == "COMPLETED"
+    assert receipt["start_commit"] == start_commit
+    assert receipt["result_commit"] == git("rev-parse", "HEAD")
+    assert receipt["command_results"] == []
+    assert receipt["changed_paths"] == ["docs/manual.txt"]
+    assert receipt["allowlist"] == {"allowed": True, "violations": []}
+    assert receipt["artifact_digests"]["request-raw"] == _raw_digest(request_path)
+    assert receipt["artifact_digests"][f"approval-raw:{key_id}"] == _raw_digest(directive_path)
+    assert receipt["artifact_digests"][f"authority-source:{key_id}"] == directive["authority_source"]["sha256"]
+
+
+def test_w0_05_verifier_binds_dependency_key_and_target_matrix(tmp_path: Path) -> None:
+    repo, _ = _isolated_runner_repo(tmp_path)
+    command = [
+        sys.executable, "-B", str(repo / "tools" / "remediate_v4.py"),
+        "verify-wave", "W0-05",
+    ]
+    result = subprocess.run(command, cwd=repo, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "13 exact lock hashes" in result.stdout
+    assert "9 decision artifacts" in result.stdout
+    assert "6 target downloads" in result.stdout
+
+    lock_path = repo / "requirements" / "core.lock"
+    lock_text = lock_path.read_text(encoding="utf-8")
+    lock_path.write_text(lock_text.replace("06a32a98", "16a32a98", 1), encoding="utf-8")
+    tampered = subprocess.run(command, cwd=repo, capture_output=True, text=True)
+    assert tampered.returncode == 4
+    assert "13-hash authority" in tampered.stderr
+
+    lock_path.write_text(lock_text, encoding="utf-8")
+    plan_path = repo / "remediation" / "v4" / "tasks.json"
+    plan_text = plan_path.read_text(encoding="utf-8")
+    plan = json.loads(plan_text)
+    task = next(item for item in plan["tasks"] if item["id"] == "W0-05")
+    install = next(argv for argv in task["argv"] if argv[:5] == ["{python}", "-B", "-m", "pip", "install"])
+    first_link = install.index("--find-links")
+    del install[first_link:first_link + 2]
+    plan_path.write_text(json.dumps(plan, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    incomplete_wheelhouse = subprocess.run(command, cwd=repo, capture_output=True, text=True)
+    assert incomplete_wheelhouse.returncode == 4
+    assert "offline/hash-bound" in incomplete_wheelhouse.stderr
+
+    plan = json.loads(plan_text)
+    task = next(item for item in plan["tasks"] if item["id"] == "W0-05")
+    smoke = next(
+        argv for argv in task["argv"]
+        if argv[:3] == ["{python}", "-B", "-c"] and "locked-runtime" in argv[-1]
+    )
+    smoke[3] = smoke[3].replace("sys.argv[1]", "'.'")
+    plan_path.write_text(json.dumps(plan, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    embedded_path = subprocess.run(command, cwd=repo, capture_output=True, text=True)
+    assert embedded_path.returncode == 4
+    assert "RFC8032 smoke test" in embedded_path.stderr
+
+    plan = json.loads(plan_text)
+    task = next(item for item in plan["tasks"] if item["id"] == "W0-05")
+    task["allowed_paths"][8] = "remediation/v4/approvals/W0-05*"
+    task["approval"]["subject_paths"][8] = "remediation/v4/approvals/W0-05*"
+    plan_path.write_text(json.dumps(plan, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    broadened_scope = subprocess.run(command, cwd=repo, capture_output=True, text=True)
+    assert broadened_scope.returncode == 4
+    assert "exact scoped-path contract" in broadened_scope.stderr

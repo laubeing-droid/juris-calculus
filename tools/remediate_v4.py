@@ -42,6 +42,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import tomllib
 import uuid
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -53,7 +54,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.5.0"
+RUNNER_VERSION = "0.6.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -63,11 +64,49 @@ FILE_DISPOSITION = SCHEMA_DIR / "file-disposition.json"
 TASK_SCHEMA = SCHEMA_DIR / "task.schema.json"
 RECEIPT_SCHEMA = SCHEMA_DIR / "receipt.schema.json"
 APPROVAL_SCHEMA = SCHEMA_DIR / "approval.schema.json"
+USER_DIRECTIVE_SCHEMA = SCHEMA_DIR / "user-directive.schema.json"
 OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-state-matrix.json"
 JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
 REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
+W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
+W0_05_PYPROJECT = ROOT / "pyproject.toml"
+W0_05_DECISION = SCHEMA_DIR / "approvals" / "W0-05-dependency-decision.json"
+W0_05_TEST_KEY = ROOT / "tests" / "fixtures" / "keys" / "v4-test-ed25519.json"
+W0_05_LOCKED_HASHES = {
+    "pyyaml": (
+        "6.0.3",
+        frozenset({
+            "5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b",
+            "9f3bfb4965eb874431221a3ff3fdcddc7e74e3b07799e0e84ca4a0f867d449bf",
+            "b8bb0864c5a28024fac8a632c443c87c5aa6f215c0b126c449ae1a150412f31d",
+            "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc",
+        }),
+    ),
+    "cryptography": (
+        "50.0.0",
+        frozenset({
+            "06a32a980526a6ab9a4b9bf8f7385800791e2bb960903cb6b530e4817509a3b7",
+            "82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f",
+            "b42a28c1844fd9de8f3f7d540e36b66f3a9c83fceac7170ebc7a6a19edd9dcae",
+            "bd1c592e4d5974f0d08d4888e432157adba757c66da0246918e43677fafa2d30",
+        }),
+    ),
+    "cffi": (
+        "2.1.1",
+        frozenset({
+            "34e261f78cb6ceaaa36f42f2613f4380d94d9c759a9c73c769ee6e0247364632",
+            "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+            "c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf",
+            "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        }),
+    ),
+    "pycparser": (
+        "3.0",
+        frozenset({"b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"}),
+    ),
+}
 W0_RESOURCE_PROBE_FILE_DIGEST = (
     "sha256:cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35"
 )
@@ -266,7 +305,22 @@ def cmd_lint_plan(args: argparse.Namespace) -> int:
         if t.get("mode") in {"AUTO", "MIXED"} and not t.get("audit_ids"):
             print(f"task {tid} missing audit_ids", file=sys.stderr)
             return EXIT_GATE_FAIL
-        if t.get("mode") == "AUTO":
+        executes_commands = t.get("mode") == "AUTO" or (
+            t.get("mode") == "MIXED" and bool(t.get("argv"))
+        )
+        if executes_commands:
+            required_execution_fields = {
+                "argv", "expected_exit_codes", "completion_assertions",
+                "rollback", "required_receipt_fields",
+            }
+            missing_execution_fields = sorted(required_execution_fields - set(t))
+            if missing_execution_fields:
+                print(
+                    f"task {tid} missing command execution fields: "
+                    f"{missing_execution_fields}",
+                    file=sys.stderr,
+                )
+                return EXIT_GATE_FAIL
             argv = t.get("argv", [])
             expected = t.get("expected_exit_codes", [])
             if len(argv) != len(expected):
@@ -3094,6 +3148,364 @@ def cmd_required_test_manifest() -> int:
     return EXIT_OK
 
 
+def cmd_w0_05_dependency_gate() -> int:
+    """Bind the selected Ed25519 dependency, target wheels, and test-only key."""
+
+    def fail(message: str) -> int:
+        print(f"W0-05 dependency gate failed: {message}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    required_tracked = {
+        "pyproject.toml",
+        "requirements/core.lock",
+        "remediation/v4/approvals/W0-05-dependency-decision.json",
+        "remediation/v4/tasks.json",
+        "remediation/v4/user-directive.schema.json",
+        "tests/fixtures/keys/v4-test-ed25519.json",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_remediation_run.py",
+        "tools/remediate_v4.py",
+        "tools/supply_chain_gate.py",
+    }
+    tracked = set(_git_tracked_files())
+    missing_tracked = sorted(required_tracked - tracked)
+    if missing_tracked:
+        return fail(f"authoritative inputs are not Git-tracked: {missing_tracked}")
+
+    try:
+        lock_text = W0_05_CORE_LOCK.read_text(encoding="utf-8")
+        pyproject = tomllib.loads(W0_05_PYPROJECT.read_text(encoding="utf-8"))
+        decision = json.loads(W0_05_DECISION.read_text(encoding="utf-8"))
+        fixture = json.loads(W0_05_TEST_KEY.read_text(encoding="utf-8"))
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
+        return fail(f"authoritative input is unreadable: {exc}")
+
+    logical_lock = lock_text.replace("\\\r\n", " ").replace("\\\n", " ")
+    parsed_lock: dict[str, tuple[str, frozenset[str]]] = {}
+    lock_line_pattern = re.compile(
+        r"([A-Za-z0-9_.-]+)==([^\s]+)"
+        r"((?:\s+--hash=sha256:[0-9a-f]{64})+)\s*\Z"
+    )
+    for line in logical_lock.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        match = lock_line_pattern.fullmatch(stripped)
+        if match is None:
+            return fail(f"core.lock contains a noncanonical requirement line: {stripped!r}")
+        package = match.group(1).lower().replace("_", "-")
+        if package in parsed_lock:
+            return fail(f"core.lock repeats package {package}")
+        hashes = frozenset(re.findall(r"--hash=sha256:([0-9a-f]{64})", match.group(3)))
+        parsed_lock[package] = (match.group(2), hashes)
+    if parsed_lock != W0_05_LOCKED_HASHES:
+        return fail("core.lock package/version/hash set does not equal the 13-hash authority")
+    if lock_text.count("--hash=sha256:") != 13:
+        return fail("core.lock must contain exactly 13 hash declarations")
+
+    dependencies = pyproject.get("project", {}).get("dependencies", [])
+    cryptography_dependencies = [
+        item for item in dependencies
+        if isinstance(item, str) and re.match(r"(?i)^cryptography(?:\s|[<>=!~])", item)
+    ]
+    if cryptography_dependencies != ["cryptography==50.0.0"]:
+        return fail(f"pyproject cryptography metadata is not exact: {cryptography_dependencies}")
+    if pyproject.get("project", {}).get("requires-python") != ">=3.11,<3.13":
+        return fail("pyproject Python target must remain >=3.11,<3.13")
+
+    selected = decision.get("selected", {})
+    if (
+        decision.get("schema_version") != "jc/remediation-v4-dependency-decision/1.0"
+        or decision.get("task_id") != "W0-05"
+        or decision.get("decision") != "SELECT"
+        or selected.get("name") != "cryptography"
+        or selected.get("version") != "50.0.0"
+        or selected.get("api") != "cryptography.hazmat.primitives.asymmetric.ed25519"
+    ):
+        return fail("dependency decision does not select cryptography 50.0.0 Ed25519")
+    target_cases = decision.get("target_cases")
+    if target_cases != [
+        {"python": "CPython 3.11", "platform_tags": ["win_amd64"]},
+        {"python": "CPython 3.12", "platform_tags": ["win_amd64"]},
+        {"python": "CPython 3.11", "platform_tags": ["manylinux2014_x86_64"]},
+        {"python": "CPython 3.12", "platform_tags": ["manylinux2014_x86_64"]},
+        {
+            "python": "CPython 3.12",
+            "platform_tags": [
+                "manylinux_2_28_x86_64", "manylinux_2_17_x86_64",
+                "manylinux2014_x86_64",
+            ],
+        },
+        {
+            "python": "CPython 3.12",
+            "platform_tags": [
+                "manylinux_2_34_x86_64", "manylinux_2_28_x86_64",
+                "manylinux_2_17_x86_64", "manylinux2014_x86_64",
+            ],
+        },
+    ] or decision.get("binary_only") is not True:
+        return fail("dependency decision target cases are not the six executed binary-only cases")
+
+    expected_decision_artifacts = {
+        "cryptography-50.0.0-cp311-abi3-win_amd64.whl": (
+            "cryptography", "50.0.0", "bd1c592e4d5974f0d08d4888e432157adba757c66da0246918e43677fafa2d30",
+        ),
+        "cryptography-50.0.0-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl": (
+            "cryptography", "50.0.0", "06a32a980526a6ab9a4b9bf8f7385800791e2bb960903cb6b530e4817509a3b7",
+        ),
+        "cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl": (
+            "cryptography", "50.0.0", "b42a28c1844fd9de8f3f7d540e36b66f3a9c83fceac7170ebc7a6a19edd9dcae",
+        ),
+        "cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl": (
+            "cryptography", "50.0.0", "82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f",
+        ),
+        "cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl": (
+            "cffi", "2.1.1", "34e261f78cb6ceaaa36f42f2613f4380d94d9c759a9c73c769ee6e0247364632",
+        ),
+        "cffi-2.1.1-cp311-cp311-win_amd64.whl": (
+            "cffi", "2.1.1", "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+        ),
+        "cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl": (
+            "cffi", "2.1.1", "c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf",
+        ),
+        "cffi-2.1.1-cp312-cp312-win_amd64.whl": (
+            "cffi", "2.1.1", "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        ),
+        "pycparser-3.0-py3-none-any.whl": (
+            "pycparser", "3.0", "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992",
+        ),
+    }
+    artifacts = decision.get("locked_artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != 9:
+        return fail("dependency decision must bind exactly 9 selected artifacts")
+    actual_decision_artifacts: dict[str, tuple[str, str, str]] = {}
+    for artifact in artifacts:
+        if not isinstance(artifact, dict) or not isinstance(artifact.get("source"), str):
+            return fail("dependency decision contains a malformed artifact")
+        if not artifact["source"].startswith("https://files.pythonhosted.org/"):
+            return fail("dependency artifact source must be an exact files.pythonhosted.org URL")
+        filename = artifact.get("filename")
+        if not isinstance(filename, str) or filename in actual_decision_artifacts:
+            return fail("dependency decision artifact filenames must be unique strings")
+        actual_decision_artifacts[filename] = (
+            artifact.get("package"), artifact.get("version"), artifact.get("sha256"),
+        )
+    if actual_decision_artifacts != expected_decision_artifacts:
+        return fail("dependency decision artifact filename/package/version/hash binding drifted")
+
+    required_fixture_keys = {
+        "schema_version", "key_id", "algorithm", "scope", "production_allowed",
+        "private_key_encoding", "private_key_base64", "private_key_sha256",
+        "public_key_encoding", "public_key_base64", "public_key_sha256", "notice",
+    }
+    if set(fixture) != required_fixture_keys:
+        return fail("test key fixture is not a closed envelope")
+    if (
+        fixture["schema_version"] != "jc/test-ed25519-key/1.0"
+        or fixture["algorithm"] != "Ed25519"
+        or fixture["scope"] != "test-only"
+        or fixture["production_allowed"] is not False
+        or fixture["private_key_encoding"] != "raw-base64"
+        or fixture["public_key_encoding"] != "raw-base64"
+    ):
+        return fail("committed Ed25519 key is not explicitly test-only/non-production")
+    try:
+        private_b64 = fixture["private_key_base64"].encode("ascii")
+        private_bytes = base64.b64decode(private_b64, validate=True)
+        public_bytes = base64.b64decode(fixture["public_key_base64"], validate=True)
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        derived_public = Ed25519PrivateKey.from_private_bytes(private_bytes).public_key().public_bytes_raw()
+    except Exception as exc:
+        return fail(f"test key pair is invalid: {exc}")
+    private_digest = "sha256:" + sha256_hex(private_bytes)
+    public_digest = "sha256:" + sha256_hex(public_bytes)
+    if (
+        len(private_bytes) != 32 or len(public_bytes) != 32
+        or derived_public != public_bytes
+        or fixture["private_key_sha256"] != private_digest
+        or fixture["public_key_sha256"] != public_digest
+        or fixture["key_id"] != f"test-ed25519-{public_digest[7:23]}"
+    ):
+        return fail("test key pair, key id, or declared hashes do not match")
+    decision_key = decision.get("test_key_fixture")
+    if decision_key != {
+        "path": "tests/fixtures/keys/v4-test-ed25519.json",
+        "scope": "test-only", "production_allowed": False,
+        "public_key_sha256": public_digest,
+    }:
+        return fail("dependency decision does not bind the exact test-only key fixture")
+
+    private_base64_hits: list[str] = []
+    private_raw_hits: list[str] = []
+    for relative in sorted(tracked):
+        path = ROOT / relative
+        if not path.is_file():
+            return fail(f"tracked path is unavailable for private-key scan: {relative}")
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            return fail(f"tracked path is unreadable for private-key scan: {relative}: {exc}")
+        if private_b64 in content:
+            private_base64_hits.append(relative)
+        if private_bytes in content:
+            private_raw_hits.append(relative)
+    if private_base64_hits != ["tests/fixtures/keys/v4-test-ed25519.json"] or private_raw_hits:
+        return fail(
+            "test private key escaped its sole fixture: "
+            f"base64={private_base64_hits} raw={private_raw_hits}"
+        )
+
+    tasks = [task for task in plan.get("tasks", []) if task.get("id") == "W0-05"]
+    if len(tasks) != 1:
+        return fail("tasks.json must contain exactly one W0-05 task")
+    task = tasks[0]
+    expected_scoped_paths = [
+        "requirements/core.lock",
+        "pyproject.toml",
+        "tools/remediate_v4.py",
+        "tools/build_file_disposition.py",
+        "remediation/v4/tasks.json",
+        "remediation/v4/task.schema.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/user-directive.schema.json",
+        "remediation/v4/approvals/W0-05-dependency-decision.json",
+        "tests/fixtures/keys/v4-test-ed25519.json",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_remediation_run.py",
+    ]
+    if (
+        task.get("mode") != "MIXED" or task.get("depends_on") != ["W0-04"]
+        or task.get("approval", {}).get("evidence_kind") != "USER_DIRECTIVE"
+        or task.get("approval", {}).get("allowed_scopes") != ["W0-05"]
+        or task.get("allowed_paths") != expected_scoped_paths
+        or task.get("approval", {}).get("subject_paths") != expected_scoped_paths
+    ):
+        return fail("W0-05 dependency, evidence, or exact scoped-path contract drifted")
+    argv_list = task.get("argv")
+    expected_exit_codes = task.get("expected_exit_codes")
+    if not isinstance(argv_list, list) or len(argv_list) != 13 or expected_exit_codes != [0] * 13:
+        return fail("W0-05 must bind exactly 13 successful verification commands")
+    if argv_list[0] != ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-05"]:
+        return fail("W0-05 first command must execute its machine verifier")
+    if ["{python}", "-B", "tools/supply_chain_gate.py", "--requirements", "requirements/core.lock"] not in argv_list:
+        return fail("W0-05 does not execute the supply-chain gate on core.lock")
+    if not any(
+        argv[:4] == ["{python}", "-B", "-m", "pytest"]
+        and "tests/unit/test_remediation_run.py" in argv
+        and "tests/unit/test_release_engineering.py" in argv
+        for argv in argv_list
+    ):
+        return fail("W0-05 does not execute its runner and release-engineering tests")
+
+    def option_values(argv: list[str], option: str) -> tuple[str, ...]:
+        indexes = [index for index, value in enumerate(argv) if value == option]
+        if any(index + 1 >= len(argv) for index in indexes):
+            raise ValueError(f"option {option} is missing a value")
+        return tuple(argv[index + 1] for index in indexes)
+
+    downloads = [
+        argv for argv in argv_list
+        if argv[:5] == ["{python}", "-B", "-m", "pip", "download"]
+    ]
+    try:
+        actual_downloads = {
+            (
+                option_values(argv, "--dest")[0],
+                option_values(argv, "--python-version")[0],
+                option_values(argv, "--platform"),
+                option_values(argv, "--abi"),
+            )
+            for argv in downloads
+            if "--only-binary=:all:" in argv and "--require-hashes" in argv
+            and option_values(argv, "--implementation") == ("cp",)
+            and option_values(argv, "-r") == ("requirements/core.lock",)
+        }
+    except (IndexError, ValueError) as exc:
+        return fail(f"target download command is malformed: {exc}")
+    expected_downloads = {
+        ("{state_root}/tmp/W0-05/win311", "3.11", ("win_amd64",), ("cp311", "abi3")),
+        (
+            "{state_root}/tmp/W0-05/linux312-glibc228", "3.12",
+            ("manylinux_2_28_x86_64", "manylinux_2_17_x86_64", "manylinux2014_x86_64"),
+            ("cp312", "abi3"),
+        ),
+        (
+            "{state_root}/tmp/W0-05/linux312-glibc234", "3.12",
+            (
+                "manylinux_2_34_x86_64", "manylinux_2_28_x86_64",
+                "manylinux_2_17_x86_64", "manylinux2014_x86_64",
+            ),
+            ("cp312", "abi3"),
+        ),
+        ("{state_root}/tmp/W0-05/win312", "3.12", ("win_amd64",), ("cp312", "abi3")),
+        (
+            "{state_root}/tmp/W0-05/linux311", "3.11",
+            ("manylinux2014_x86_64",), ("cp311", "abi3"),
+        ),
+        (
+            "{state_root}/tmp/W0-05/linux312", "3.12",
+            ("manylinux2014_x86_64",), ("cp312", "abi3"),
+        ),
+    }
+    if len(downloads) != 6 or actual_downloads != expected_downloads:
+        return fail("W0-05 target wheel download matrix is incomplete or unpinned")
+
+    install_commands = [
+        argv for argv in argv_list
+        if argv[:5] == ["{python}", "-B", "-m", "pip", "install"]
+    ]
+    if len(install_commands) != 1:
+        return fail("W0-05 must have one offline locked-runtime install")
+    install = install_commands[0]
+    try:
+        install_ok = (
+            "--no-index" in install and "--require-hashes" in install
+            and option_values(install, "--target") == ("{state_root}/tmp/W0-05/locked-runtime",)
+            and option_values(install, "--find-links") == (
+                "{state_root}/tmp/W0-05/win311",
+                "{state_root}/tmp/W0-05/win312",
+                "{state_root}/tmp/W0-05/linux311",
+                "{state_root}/tmp/W0-05/linux312",
+                "{state_root}/tmp/W0-05/linux312-glibc228",
+                "{state_root}/tmp/W0-05/linux312-glibc234",
+            )
+            and option_values(install, "-r") == ("requirements/core.lock",)
+        )
+    except ValueError:
+        install_ok = False
+    if not install_ok:
+        return fail("W0-05 locked runtime install is not offline/hash-bound")
+
+    python_commands = [argv for argv in argv_list if argv[:3] == ["{python}", "-B", "-c"]]
+    if not any(
+        len(argv) == 5 and argv[4] == "{state_root}/tmp/W0-05/locked-runtime"
+        and "{state_root}" not in argv[3] and "sys.argv[1]" in argv[3]
+        and "cryptography.__version__ == '50.0.0'" in argv[3]
+        and "Ed25519PublicKey" in argv[3] and "InvalidSignature" in argv[3]
+        and "key.verify(signature, b'')" in argv[3] and "key.verify(bytes(bad), b'')" in argv[3]
+        for argv in python_commands
+    ):
+        return fail("W0-05 lacks a positive/negative RFC8032 smoke test in the locked runtime")
+    if ["{python}", "-B", "-m", "build", "--wheel", "--outdir", "{state_root}/tmp/W0-05/wheel"] not in argv_list:
+        return fail("W0-05 does not build the release wheel used for key exclusion")
+    if not any(
+        len(argv) == 5 and argv[4] == "{state_root}/tmp/W0-05/wheel"
+        and "{state_root}" not in argv[3] and "sys.argv[1]" in argv[3]
+        and "v4-test-ed25519" in argv[3] and "private_key_base64" in argv[3]
+        and "private_raw" in argv[3] and "archive.read" in argv[3]
+        and "tests/" in argv[3] and "remediation/" in argv[3]
+        for argv in python_commands
+    ):
+        return fail("W0-05 does not prove the test key is absent from the built wheel")
+
+    print(
+        "W0-05 dependency gate OK: 13 exact lock hashes; 9 decision artifacts; "
+        "6 target downloads; test-only Ed25519 pair isolated; RFC8032 and wheel exclusion bound"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -3103,6 +3515,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         ))
     if args.wave == "W0-04":
         return cmd_required_test_manifest()
+    if args.wave == "W0-05":
+        return cmd_w0_05_dependency_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -3553,43 +3967,105 @@ def _task_start_commit(
 def _subject_digest(task: dict[str, Any], state_root: Path) -> str:
     identities: list[dict[str, str]] = []
     for raw in task["approval"]["subject_paths"]:
+        normalized_raw = raw.replace("\\", "/")
+        state_bound = normalized_raw == "$JC_REMEDIATION_STATE_ROOT" or normalized_raw.startswith(
+            "$JC_REMEDIATION_STATE_ROOT/"
+        )
         expanded = raw.replace("$JC_REMEDIATION_STATE_ROOT", str(state_root))
         base = Path(expanded)
         matches = list(ROOT.glob(expanded)) if not base.is_absolute() else list(base.parent.glob(base.name))
         if not matches:
-            identities.append({"path": raw, "sha256": "MISSING"})
-        for path in sorted(matches):
-            identities.append({"path": str(path), "sha256": _file_identity(path)})
+            identities.append({"path": normalized_raw, "sha256": "MISSING"})
+        labeled_matches: list[tuple[str, Path]] = []
+        for path in matches:
+            resolved = path.resolve()
+            if state_bound:
+                relative = resolved.relative_to(state_root.resolve())
+                label = "$JC_REMEDIATION_STATE_ROOT"
+                if relative != Path("."):
+                    label += "/" + relative.as_posix()
+            else:
+                try:
+                    label = resolved.relative_to(ROOT.resolve()).as_posix()
+                except ValueError:
+                    label = resolved.as_posix()
+            labeled_matches.append((label, path))
+        for label, path in sorted(labeled_matches, key=lambda item: item[0]):
+            identities.append({"path": label, "sha256": _file_identity(path)})
     return _digest_object({"task_id": task["id"], "subject": task["approval"]["subject"], "artifacts": identities})
 
 
-def _gate_request(task: dict[str, Any], state_root: Path, run_id: str) -> dict[str, Any]:
+def _gate_request(
+    task: dict[str, Any], state_root: Path, run_id: str,
+    start_commit: str, input_receipts: dict[str, str],
+) -> dict[str, Any]:
     approval = task["approval"]
     subject_digest = _subject_digest(task, state_root)
-    request = {
+    request_fields = {
         "schema_version": "jc/remediation-v4-gate-request/2.0", "run_id": run_id,
         "task_id": task["id"], "gate_id": approval["gate_id"], "kind": task["mode"],
+        "task_digest": _task_digest(task), "start_commit": start_commit,
+        "input_receipt_digests": input_receipts,
         "subject": approval["subject"], "subject_digest": subject_digest,
         "required_roles": approval["required_roles"], "allowed_scopes": approval["allowed_scopes"],
         "minimum_signers": approval["minimum_signers"],
         "separation_of_duties": approval["separation_of_duties"],
-        "issued_at": _iso_now(),
     }
-    request["request_digest"] = _digest_object(request)
     request_dir = state_root / "requests" / task["id"]
     request_path = request_dir / f"{subject_digest.split(':', 1)[1]}.json"
     if request_path.exists():
-        return json.loads(request_path.read_text(encoding="utf-8"))
+        try:
+            cached = json.loads(request_path.read_text(encoding="utf-8"))
+            issued_at = cached["issued_at"]
+            _parse_time(issued_at)
+        except (AttributeError, KeyError, OSError, TypeError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError(f"cached gate request is invalid: {request_path}: {exc}") from exc
+        rebuilt = {**request_fields, "issued_at": issued_at}
+        rebuilt["request_digest"] = _digest_object(rebuilt)
+        if cached != rebuilt:
+            raise ValueError(
+                f"cached gate request does not match current task/state or self-digest: {request_path}"
+            )
+        return cached
+    request = {**request_fields, "issued_at": _iso_now()}
+    request["request_digest"] = _digest_object(request)
     _atomic_json(request_path, request)
     return request
 
 
 def _parse_time(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp must include an explicit UTC offset")
+    return parsed.astimezone(timezone.utc)
 
 
 def _approval_payload(approval: dict[str, Any]) -> bytes:
     return _canonical_bytes({key: value for key, value in approval.items() if key != "signature"})
+
+
+def _evidence_record(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        raw_digest = "sha256:" + sha256_hex(path.read_bytes())
+    except OSError as exc:
+        raise ValueError(f"evidence is unreadable: {path}: {exc}") from exc
+    return {"payload": payload, "path": str(path.resolve()), "raw_digest": raw_digest}
+
+
+def _authority_source_record(source: dict[str, Any]) -> dict[str, str]:
+    locator = Path(source["locator"])
+    if not locator.is_absolute():
+        raise ValueError("authority_source.locator must be an absolute file path")
+    try:
+        resolved = locator.resolve(strict=True)
+        if resolved != locator or not resolved.is_file():
+            raise ValueError("authority_source.locator must be a canonical file path")
+        raw_digest = "sha256:" + sha256_hex(resolved.read_bytes())
+    except OSError as exc:
+        raise ValueError(f"authority source is unreadable: {locator}: {exc}") from exc
+    if raw_digest != source["sha256"]:
+        raise ValueError("authority source digest mismatch")
+    return {"path": str(resolved), "raw_digest": raw_digest}
 
 
 def _valid_approvals(task: dict[str, Any], request: dict[str, Any], state_root: Path) -> list[dict[str, Any]]:
@@ -3598,20 +4074,43 @@ def _valid_approvals(task: dict[str, Any], request: dict[str, Any], state_root: 
         directive_dir = state_root / "directives" / task["id"]
         if not directive_dir.is_dir():
             return []
-        accepted_directives = []
+        try:
+            schema = json.loads(USER_DIRECTIVE_SCHEMA.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"user directive schema is unreadable: {exc}") from exc
+        validator = Draft202012Validator(schema)
+        accepted_directives: list[dict[str, Any]] = []
+        seen_keys: set[str] = set()
+        now = datetime.now(timezone.utc)
         for path in sorted(directive_dir.glob("*.json")):
             try:
                 directive = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
+                if list(validator.iter_errors(directive)):
+                    continue
+                signer = directive["signer"]
+                key_id = signer["key_id"]
+                if key_id in seen_keys:
+                    continue
+                if (
+                    directive["run_id"] != request["run_id"]
+                    or directive["gate_id"] != request["gate_id"]
+                    or directive["task_id"] != task["id"]
+                    or directive["request_digest"] != request["request_digest"]
+                    or directive["subject_digest"] != request["subject_digest"]
+                    or directive["decision"] != "APPROVE"
+                    or directive["scope"] not in task["approval"]["allowed_scopes"]
+                    or signer["scope"] != directive["scope"]
+                    or signer["role"] not in task["approval"]["required_roles"]
+                    or _parse_time(directive["issued_at"]) > now
+                ):
+                    continue
+                authority_source = _authority_source_record(directive["authority_source"])
+                evidence = _evidence_record(path, directive)
+            except (AttributeError, KeyError, OSError, TypeError, UnicodeError, ValueError, json.JSONDecodeError):
                 continue
-            if (
-                directive.get("evidence_kind") == "USER_DIRECTIVE"
-                and directive.get("task_id") == task["id"]
-                and directive.get("subject_digest") == request["subject_digest"]
-                and directive.get("scope") in request["allowed_scopes"]
-                and directive.get("authority_source")
-            ):
-                accepted_directives.append(directive)
+            seen_keys.add(key_id)
+            evidence["authority_source"] = authority_source
+            accepted_directives.append(evidence)
         return accepted_directives
     if evidence_kind == "EXTERNAL_ARTIFACT":
         return []
@@ -3660,41 +4159,118 @@ def _valid_approvals(task: dict[str, Any], request: dict[str, Any], state_root: 
         except Exception:
             continue
         seen_keys.add(signer["key_id"])
-        accepted.append(candidate)
+        accepted.append(_evidence_record(path, candidate))
     if request["separation_of_duties"] and len(seen_keys) != len(accepted):
         return []
     return accepted
 
 
+def _gate_evidence_artifacts(
+    task: dict[str, Any], request: dict[str, Any], approvals: list[dict[str, Any]],
+    state_root: Path,
+) -> dict[str, str]:
+    request_path = (
+        state_root / "requests" / task["id"]
+        / f"{request['subject_digest'].split(':', 1)[1]}.json"
+    )
+    try:
+        request_bytes = request_path.read_bytes()
+        if json.loads(request_bytes.decode("utf-8")) != request:
+            raise ValueError("gate request changed after validation")
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"gate request evidence is unreadable: {exc}") from exc
+    artifacts = {
+        "request": request["request_digest"],
+        "request-raw": "sha256:" + sha256_hex(request_bytes),
+    }
+    for approval in approvals:
+        payload = approval["payload"]
+        key_id = payload["signer"]["key_id"]
+        path = Path(approval["path"])
+        try:
+            raw_digest = "sha256:" + sha256_hex(path.read_bytes())
+        except OSError as exc:
+            raise ValueError(f"approval evidence is unreadable: {path}: {exc}") from exc
+        if raw_digest != approval["raw_digest"]:
+            raise ValueError(f"approval evidence changed after validation: {path}")
+        artifacts[f"approval:{key_id}"] = _digest_object(payload)
+        artifacts[f"approval-raw:{key_id}"] = raw_digest
+        authority_source = approval.get("authority_source")
+        if authority_source is not None:
+            authority_path = Path(authority_source["path"])
+            try:
+                authority_digest = "sha256:" + sha256_hex(authority_path.read_bytes())
+            except OSError as exc:
+                raise ValueError(
+                    f"authority source evidence is unreadable: {authority_path}: {exc}"
+                ) from exc
+            if authority_digest != authority_source["raw_digest"]:
+                raise ValueError(f"authority source changed after validation: {authority_path}")
+            artifacts[f"authority-source:{key_id}"] = authority_digest
+    return artifacts
+
+
+def _gate_approval_assertion(
+    task: dict[str, Any], approvals: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "id": "approval-policy", "kind": "evidence_policy", "ok": True,
+        "detail": (
+            f"{len(approvals)} {task['approval']['evidence_kind']} "
+            "evidence item(s) bound to request and subject"
+        ),
+    }
+
+
 def _complete_gate_task(
     task: dict[str, Any], request: dict[str, Any], approvals: list[dict[str, Any]],
     state_root: Path, run_id: str, input_receipts: dict[str, str],
-    history: list[dict[str, Any]],
+    history: list[dict[str, Any]], start_commit: str,
 ) -> dict[str, Any]:
     attempt = _next_attempt(task["id"], state_root)
     attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
     attempt_dir.mkdir(parents=True, exist_ok=False)
     commit = _git_checked("rev-parse", "HEAD")
     tree = _git_checked("rev-parse", "HEAD^{tree}")
+    if task["mode"] == "MIXED":
+        receipt_start_commit = start_commit
+        receipt_start_tree = _git_checked("rev-parse", f"{start_commit}^{{tree}}")
+        changed_paths, committed_artifacts = _committed_delta(start_commit, commit)
+        violations = [
+            path for path in changed_paths
+            if not _matches_allowed(path, task["allowed_paths"])
+        ]
+        status = "COMPLETED" if changed_paths and not violations else "FAILED"
+        if violations:
+            status = "SCOPE_VIOLATION"
+    else:
+        receipt_start_commit = commit
+        receipt_start_tree = tree
+        changed_paths = []
+        committed_artifacts = {}
+        violations = []
+        status = "COMPLETED"
+    gate_artifacts = _gate_evidence_artifacts(task, request, approvals, state_root)
+    assertions = [_gate_approval_assertion(task, approvals)]
+    if task["mode"] == "MIXED":
+        assertions.append({
+            "id": "runner-mixed-committed-delta", "kind": "artifact_binding",
+            "ok": bool(changed_paths),
+            "detail": (
+                f"{len(changed_paths)} committed path(s) bound from dependency start"
+                if changed_paths else "MIXED task produced no committed delta"
+            ),
+        })
     receipt = {
         "schema_version": "jc/remediation-v4-receipt/2.1", "task_digest": _task_digest(task), "run_id": run_id,
-        "task_id": task["id"], "attempt": attempt, "status": "COMPLETED",
+        "task_id": task["id"], "attempt": attempt, "status": status,
         "input_receipt_digests": input_receipts,
-        "start_commit": commit, "start_tree": tree,
+        "start_commit": receipt_start_commit, "start_tree": receipt_start_tree,
         "result_commit": commit, "result_tree": tree,
-        "command_results": [], "changed_paths": [],
-        "allowlist": {"allowed": True, "violations": []}, "test_reports": [],
-        "artifact_digests": {
-            "request": request["request_digest"],
-            **{
-                f"approval:{item['signer']['key_id']}": _digest_object(item)
-                for item in approvals
-            },
-        },
-        "completion_assertions": [{
-            "id": "approval-policy", "kind": "cryptographic_approval", "ok": True,
-            "detail": f"{len(approvals)} {task['approval']['evidence_kind']} evidence item(s) bound to subject",
-        }],
+        "command_results": [], "changed_paths": changed_paths,
+        "allowlist": {"allowed": not violations, "violations": violations}, "test_reports": [],
+        "artifact_digests": {**committed_artifacts, **gate_artifacts},
+        "completion_assertions": assertions,
         "previous_receipt_digest": history[-1]["receipt_digest"] if history else None,
         "runner_version": RUNNER_VERSION,
     }
@@ -3933,7 +4509,9 @@ def _rebind_dependency_chain_receipt(
 def _execute_auto_task(
     task: dict[str, Any], state_root: Path, run_id: str,
     input_receipts: dict[str, str], history: list[dict[str, Any]],
-    start_commit: str,
+    start_commit: str, *, gate_request: dict[str, Any] | None = None,
+    gate_approvals: list[dict[str, Any]] | None = None,
+    require_committed_delta: bool = False,
 ) -> tuple[int, dict[str, Any]]:
     attempt = _next_attempt(task["id"], state_root)
     attempt_dir = state_root / "tasks" / task["id"] / str(attempt)
@@ -3957,7 +4535,13 @@ def _execute_auto_task(
     except (OSError, UnicodeError, ValueError) as exc:
         state_artifacts = {}
         state_artifact_error = str(exc)
-    artifact_digests = {**committed_artifacts, **state_artifacts}
+    gate_artifacts = (
+        _gate_evidence_artifacts(
+            task, gate_request, gate_approvals or [], state_root,
+        )
+        if gate_request is not None else {}
+    )
+    artifact_digests = {**committed_artifacts, **state_artifacts, **gate_artifacts}
     test_reports = _structured_test_reports(command_results)
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
     scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -3985,6 +4569,17 @@ def _execute_auto_task(
             ),
         },
     ])
+    if gate_request is not None:
+        assertions.append(_gate_approval_assertion(task, gate_approvals or []))
+    if require_committed_delta:
+        assertions.append({
+            "id": "runner-mixed-committed-delta", "kind": "artifact_binding",
+            "ok": bool(changed_paths),
+            "detail": (
+                f"{len(changed_paths)} committed path(s) bound from dependency start"
+                if changed_paths else "MIXED task produced no committed delta"
+            ),
+        })
     if task["id"] == "W0-04":
         governance_reports = [
             report for report in test_reports if report.get("kind") == "pytest-governance"
@@ -4179,9 +4774,13 @@ def cmd_run(args: argparse.Namespace) -> int:
                 completed_receipts[task["id"]] = receipt
                 print(f"task {task['id']} COMPLETED receipt={receipt['receipt_digest']}")
                 continue
-            request = _gate_request(task, state_root, run_state["run_id"])
+            request = _gate_request(
+                task, state_root, run_state["run_id"],
+                task_start_commit, input_receipts,
+            )
             approvals = _valid_approvals(task, request, state_root)
-            if len(approvals) < request["minimum_signers"]:
+            approval_policy = task["approval"]
+            if len(approvals) < approval_policy["minimum_signers"]:
                 marker = "WAITING_EXTERNAL" if task["mode"] == "EXTERNAL_GATE" else "WAITING_HUMAN"
                 run_state["task_status"][task["id"]] = marker
                 run_state["updated_at"] = _iso_now()
@@ -4193,12 +4792,47 @@ def cmd_run(args: argparse.Namespace) -> int:
                     f"--state-root {state_root} --through {through}"
                 )
                 return EXIT_WAITING_EXTERNAL if marker == "WAITING_EXTERNAL" else EXIT_WAITING_HUMAN
-            if request["separation_of_duties"] and len({a["signer"]["key_id"] for a in approvals}) < request["minimum_signers"]:
+            if approval_policy["separation_of_duties"] and len({
+                item["payload"]["signer"]["key_id"] for item in approvals
+            }) < approval_policy["minimum_signers"]:
                 print(f"WAITING_HUMAN task={task['id']} separation_of_duties not satisfied")
                 return EXIT_WAITING_HUMAN
+            if task["mode"] == "MIXED" and task.get("argv"):
+                rc, receipt = _execute_auto_task(
+                    task, state_root, run_state["run_id"], input_receipts, history,
+                    task_start_commit, gate_request=request, gate_approvals=approvals,
+                    require_committed_delta=True,
+                )
+                run_state["task_status"][task["id"]] = receipt["status"]
+                run_state["updated_at"] = _iso_now()
+                _atomic_json(run_path, run_state)
+                if rc != EXIT_OK:
+                    print(
+                        f"task {task['id']} {receipt['status']}; "
+                        f"receipt={receipt['receipt_digest']}",
+                        file=sys.stderr,
+                    )
+                    return rc
+                completed_receipts[task["id"]] = receipt
+                print(f"task {task['id']} COMPLETED receipt={receipt['receipt_digest']}")
+                continue
             receipt = _complete_gate_task(
-                task, request, approvals, state_root, run_state["run_id"], input_receipts, history
+                task, request, approvals, state_root, run_state["run_id"], input_receipts,
+                history, task_start_commit,
             )
+            if receipt["status"] != "COMPLETED":
+                run_state["task_status"][task["id"]] = receipt["status"]
+                run_state["updated_at"] = _iso_now()
+                _atomic_json(run_path, run_state)
+                print(
+                    f"task {task['id']} {receipt['status']}; "
+                    f"receipt={receipt['receipt_digest']}",
+                    file=sys.stderr,
+                )
+                return (
+                    EXIT_SCOPE_VIOLATION
+                    if receipt["status"] == "SCOPE_VIOLATION" else EXIT_GATE_FAIL
+                )
             completed_receipts[task["id"]] = receipt
             run_state["task_status"][task["id"]] = "COMPLETED"
             run_state["updated_at"] = _iso_now()

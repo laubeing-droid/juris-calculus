@@ -1,0 +1,134 @@
+{
+  "schema_version": "jc/remediation-v4-dependency-decision/1.0",
+  "task_id": "W0-05",
+  "evaluated_at": "2026-08-22",
+  "decision": "SELECT",
+  "selected": {
+    "name": "cryptography",
+    "version": "50.0.0",
+    "license_expression": "Apache-2.0 OR BSD-3-Clause",
+    "requires_python": "!=3.9.0,!=3.9.1,>=3.9",
+    "api": "cryptography.hazmat.primitives.asymmetric.ed25519",
+    "source_project": "https://pypi.org/project/cryptography/50.0.0/",
+    "source_repository": "https://github.com/pyca/cryptography",
+    "source_commit_from_pypi_attestation": "dcb7050b807b00392fa9fe2eac7cb362fcf355cc",
+    "selection_reason": "The runner already uses the maintained PyCA Ed25519 API; selecting it avoids a second crypto API and a PyNaCl/libsodium rewrite."
+  },
+  "rejected": [
+    {
+      "name": "PyNaCl",
+      "version": "1.6.2",
+      "license_expression": "Apache-2.0",
+      "reason": "Viable but not minimal: it would replace the existing API and add a separate libsodium-backed surface."
+    },
+    {
+      "name": "python-standard-library",
+      "reason": "CPython 3.11/3.12 has no standard-library Ed25519 verifier API."
+    }
+  ],
+  "target_cases": [
+    {"python": "CPython 3.11", "platform_tags": ["win_amd64"]},
+    {"python": "CPython 3.12", "platform_tags": ["win_amd64"]},
+    {"python": "CPython 3.11", "platform_tags": ["manylinux2014_x86_64"]},
+    {"python": "CPython 3.12", "platform_tags": ["manylinux2014_x86_64"]},
+    {
+      "python": "CPython 3.12",
+      "platform_tags": [
+        "manylinux_2_28_x86_64",
+        "manylinux_2_17_x86_64",
+        "manylinux2014_x86_64"
+      ]
+    },
+    {
+      "python": "CPython 3.12",
+      "platform_tags": [
+        "manylinux_2_34_x86_64",
+        "manylinux_2_28_x86_64",
+        "manylinux_2_17_x86_64",
+        "manylinux2014_x86_64"
+      ]
+    }
+  ],
+  "binary_only": true,
+  "lock_summary": {
+    "existing_pyyaml_hashes": 4,
+    "new_ed25519_dependency_hashes": 9,
+    "total_core_hashes": 13
+  },
+  "locked_artifacts": [
+    {
+      "package": "cryptography",
+      "version": "50.0.0",
+      "filename": "cryptography-50.0.0-cp311-abi3-win_amd64.whl",
+      "sha256": "bd1c592e4d5974f0d08d4888e432157adba757c66da0246918e43677fafa2d30",
+      "source": "https://files.pythonhosted.org/packages/32/2e/c9db68a0c4bfa28e310707527c0ee3a2bd254104d2e02e68f368e197aa4c/cryptography-50.0.0-cp311-abi3-win_amd64.whl"
+    },
+    {
+      "package": "cryptography",
+      "version": "50.0.0",
+      "filename": "cryptography-50.0.0-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "06a32a980526a6ab9a4b9bf8f7385800791e2bb960903cb6b530e4817509a3b7",
+      "source": "https://files.pythonhosted.org/packages/d9/41/029086c34d91052fc3b88bcc8056f709a7c915c7a23b235a54eb800b1c97/cryptography-50.0.0-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl"
+    },
+    {
+      "package": "cryptography",
+      "version": "50.0.0",
+      "filename": "cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl",
+      "sha256": "b42a28c1844fd9de8f3f7d540e36b66f3a9c83fceac7170ebc7a6a19edd9dcae",
+      "source": "https://files.pythonhosted.org/packages/6b/72/a1116d683a6d7ece94590013882515de087edf9ef0e6292aae615a44df73/cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl"
+    },
+    {
+      "package": "cryptography",
+      "version": "50.0.0",
+      "filename": "cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl",
+      "sha256": "82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f",
+      "source": "https://files.pythonhosted.org/packages/da/3a/f05e32c99d440c9bb891ea0e36c9091891e36be5a9a87ab2ee6ea20729f6/cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl"
+    },
+    {
+      "package": "cffi",
+      "version": "2.1.1",
+      "license_expression": "MIT-0",
+      "filename": "cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "34e261f78cb6ceaaa36f42f2613f4380d94d9c759a9c73c769ee6e0247364632",
+      "source": "https://files.pythonhosted.org/packages/f7/a4/4399daaf8f7dfee9d7c3327fdb0426ee041cc63edc358b93911ceb2bfc7a/cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl"
+    },
+    {
+      "package": "cffi",
+      "version": "2.1.1",
+      "license_expression": "MIT-0",
+      "filename": "cffi-2.1.1-cp311-cp311-win_amd64.whl",
+      "sha256": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+      "source": "https://files.pythonhosted.org/packages/73/c0/77ba02423c2f7d7091143c45cd49e0e6575c4c1967394bb542bd923a9b74/cffi-2.1.1-cp311-cp311-win_amd64.whl"
+    },
+    {
+      "package": "cffi",
+      "version": "2.1.1",
+      "license_expression": "MIT-0",
+      "filename": "cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf",
+      "source": "https://files.pythonhosted.org/packages/b1/db/dceb9dd5b231e1da801793f8acc9f3c52a7e1afe40bb1aae37e02b0faad5/cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl"
+    },
+    {
+      "package": "cffi",
+      "version": "2.1.1",
+      "license_expression": "MIT-0",
+      "filename": "cffi-2.1.1-cp312-cp312-win_amd64.whl",
+      "sha256": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+      "source": "https://files.pythonhosted.org/packages/d9/79/615cc094e2fb508cade7de88d3b4f6c4ec2bab695c97bce9153dc65aadf5/cffi-2.1.1-cp312-cp312-win_amd64.whl"
+    },
+    {
+      "package": "pycparser",
+      "version": "3.0",
+      "license_expression": "BSD-3-Clause",
+      "filename": "pycparser-3.0-py3-none-any.whl",
+      "sha256": "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992",
+      "source": "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl"
+    }
+  ],
+  "test_key_fixture": {
+    "path": "tests/fixtures/keys/v4-test-ed25519.json",
+    "scope": "test-only",
+    "production_allowed": false,
+    "public_key_sha256": "sha256:6e8886d02f26451ed8bbaa64113f9d684aad51f36e03b59ff8be61cf1edadb85"
+  }
+}

@@ -64,7 +64,18 @@
       },
       "allOf": [
         {
-          "if": {"properties": {"mode": {"const": "AUTO"}}, "required": ["mode"]},
+          "if": {
+            "anyOf": [
+              {"properties": {"mode": {"const": "AUTO"}}, "required": ["mode"]},
+              {
+                "properties": {
+                  "mode": {"const": "MIXED"},
+                  "argv": {"minItems": 1}
+                },
+                "required": ["mode", "argv"]
+              }
+            ]
+          },
           "then": {
             "required": ["argv", "expected_exit_codes", "completion_assertions", "rollback", "required_receipt_fields"],
             "properties": {"argv": {"minItems": 1}, "completion_assertions": {"minItems": 1}}

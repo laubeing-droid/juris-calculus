@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 318,
+  "count": 339,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1238,6 +1238,14 @@
       "namespace": "docs"
     },
     {
+      "path": "docs/architecture/module-authority.json",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
       "path": "docs/architecture/runtime-path-inventory.md",
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
@@ -1500,6 +1508,13 @@
       "closure_task": "Z02"
     },
     {
+      "path": "remediation/v4/approvals/W0-05-dependency-decision.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
       "path": "remediation/v4/file-disposition.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
@@ -1529,6 +1544,13 @@
     },
     {
       "path": "remediation/v4/tasks.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/user-directive.schema.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
@@ -1637,6 +1659,13 @@
       "namespace": "formal_core"
     },
     {
+      "path": "tests/contract/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/jcs_node_oracle.mjs",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -1644,11 +1673,32 @@
       "closure_task": "W1-01"
     },
     {
+      "path": "tests/contract/test_required_test_manifest.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_v4_foundation_contract.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/differential/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/dsh_formal/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/fixtures/ci_promotion_candidate.json",
@@ -1693,6 +1743,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/fixtures/keys/v4-test-ed25519.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/fixtures/legal_ir_v3_sample.yaml",
@@ -1830,6 +1887,65 @@
       "closure_task": "W1-02"
     },
     {
+      "path": "tests/formal_e2e/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/integration/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/mcp_protocol/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/packaging/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/property/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/pytest.ini",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/required-v4-tests.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/required_red_sentinels.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
       "path": "tests/run_benchmark_zh.py",
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
@@ -1842,6 +1958,20 @@
       },
       "target_module": null,
       "target_artifact": null
+    },
+    {
+      "path": "tests/security/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/stress_test_facts.py",
@@ -1924,6 +2054,14 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_authority_observed_graph.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },
@@ -2503,6 +2641,13 @@
       "target_artifact": null
     },
     {
+      "path": "tests/windows_security/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tools/build_file_disposition.py",
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
@@ -2558,6 +2703,14 @@
     },
     {
       "path": "tools/remediate_v4_verify.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/remediation/observed_graph.py",
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",

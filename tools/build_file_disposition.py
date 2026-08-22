@@ -246,7 +246,13 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     elif rel.startswith("tests/run_benchmark_zh.py") or rel.startswith("tests/stress_test_facts.py"):
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
-    elif rel.startswith("tests/contract/") or rel.startswith("tests/fixtures/golden/"):
+    elif rel.startswith((
+        "tests/contract/", "tests/property/", "tests/integration/",
+        "tests/differential/", "tests/formal_e2e/", "tests/security/",
+        "tests/storage_chaos/", "tests/windows_security/",
+        "tests/mcp_protocol/", "tests/packaging/", "tests/dsh_formal/",
+        "tests/fixtures/golden/", "tests/fixtures/keys/",
+    )):
         disp = "TEST_ORACLE"
         terminal = "TEST_ORACLE"
     elif rel.startswith("tests/fixtures/v4_contract/"):

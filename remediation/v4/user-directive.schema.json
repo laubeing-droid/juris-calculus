@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jc/remediation-v4-user-directive/1.0",
+  "title": "Remediation V4 explicit user directive",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "evidence_kind", "run_id", "gate_id", "task_id",
+    "request_digest", "subject_digest", "decision", "scope",
+    "authority_source", "signer", "issued_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "jc/remediation-v4-user-directive/1.0"},
+    "evidence_kind": {"const": "USER_DIRECTIVE"},
+    "run_id": {"type": "string", "minLength": 1},
+    "gate_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "request_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "subject_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "decision": {"const": "APPROVE"},
+    "scope": {"type": "string", "minLength": 1},
+    "authority_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "sha256"],
+      "properties": {
+        "locator": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "signer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_id", "role", "scope"],
+      "properties": {
+        "key_id": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "scope": {"type": "string", "minLength": 1}
+      }
+    },
+    "issued_at": {"type": "string", "format": "date-time"}
+  }
+}
