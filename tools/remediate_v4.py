@@ -1227,6 +1227,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("--state-root is required for run", file=sys.stderr)
         return EXIT_USAGE
     state_root.mkdir(parents=True, exist_ok=True)
+    (state_root / "tmp").mkdir(parents=True, exist_ok=True)
     lint_rc = cmd_lint_plan(argparse.Namespace(plan=str(plan_path)))
     if lint_rc != EXIT_OK:
         return lint_rc
