@@ -451,7 +451,7 @@ def test_allowed_but_uncommitted_path_fails_and_is_preserved(tmp_path: Path) -> 
     )
     assert clean["ok"] is False
     assert (repo / "docs" / "dirty.txt").read_text(encoding="utf-8") == "dirty"
-    assert git("status", "--porcelain") == "?? docs/"
+    assert git("status", "--porcelain", "--untracked-files=all") == "?? docs/dirty.txt"
 
 
 def test_divergent_head_rejects_before_task_command(tmp_path: Path) -> None:
