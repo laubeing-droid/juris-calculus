@@ -49,7 +49,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.3.0"
+RUNNER_VERSION = "0.4.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -242,6 +242,36 @@ def cmd_authority(args: argparse.Namespace) -> int:
     B00/B01 阶段：仅产生可解析输出，证明 docs/architecture/module-authority.json
     已被读取。后续 W0-03 任务负责真正生成 module-authority.json。
     """
+    record = bool(getattr(args, "record", False))
+    require_clean = bool(getattr(args, "require_clean", False))
+    if record or require_clean:
+        policy = getattr(args, "policy", None)
+        codegraph = getattr(args, "codegraph", None)
+        state_root = getattr(args, "state_root", None)
+        if not policy or not codegraph or not state_root:
+            print(
+                "authority observation requires --policy, --codegraph, and --state-root",
+                file=sys.stderr,
+            )
+            return EXIT_USAGE
+        emitter = ROOT / "tools" / "remediation" / "observed_graph.py"
+        if not emitter.is_file():
+            print(f"authority observed-graph emitter missing: {emitter}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        completed = subprocess.run(
+            [
+                sys.executable, "-B", str(emitter), "--root", str(ROOT),
+                "--policy", str(Path(policy).resolve()),
+                "--codegraph", str(Path(codegraph).resolve()),
+                "--state-root", str(Path(state_root).resolve()),
+                "--mode", "record" if record else "require-clean",
+            ],
+            cwd=str(ROOT), capture_output=True, check=False,
+        )
+        sys.stdout.buffer.write(completed.stdout)
+        sys.stderr.buffer.write(completed.stderr)
+        return completed.returncode
+
     target = ROOT / "docs" / "architecture" / "module-authority.json"
     if target.is_file():
         try:
@@ -2296,6 +2326,42 @@ def _validate_stream(stream: dict[str, Any]) -> bool:
     return len(payload) == stream["bytes"] and sha256_hex(payload) == stream["sha256"]
 
 
+def _declared_state_artifacts(
+    command_results: list[dict[str, Any]], state_root: Path,
+) -> dict[str, str]:
+    """Recompute state evidence declared by receipted command stdout."""
+    evidence_root = (state_root.resolve() / "evidence").resolve()
+    artifacts: dict[str, str] = {}
+    labels: set[str] = set()
+    for command in command_results:
+        stdout_path = Path(command["stdout"]["path"])
+        payload = stdout_path.read_bytes().decode("utf-8", errors="strict")
+        for line in payload.splitlines():
+            if not line.startswith("JC_ARTIFACT\t"):
+                continue
+            fields = line.split("\t")
+            if len(fields) != 4:
+                raise ValueError("invalid JC_ARTIFACT field count")
+            _, label, raw_path, digest = fields
+            if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", label):
+                raise ValueError(f"invalid JC_ARTIFACT label: {label}")
+            if label in labels:
+                raise ValueError(f"duplicate JC_ARTIFACT label: {label}")
+            labels.add(label)
+            if not DIGEST_V4_PATTERN.fullmatch(digest):
+                raise ValueError(f"invalid JC_ARTIFACT digest grammar: {digest}")
+            target = Path(raw_path).resolve(strict=True)
+            if not target.is_file() or not target.is_relative_to(evidence_root):
+                raise ValueError(f"JC_ARTIFACT escapes state evidence root: {target}")
+            actual = "sha256:" + sha256_hex(target.read_bytes())
+            if actual != digest:
+                raise ValueError(
+                    f"JC_ARTIFACT digest mismatch for {label}: {actual} != {digest}"
+                )
+            artifacts[f"state-artifact:{label}"] = digest
+    return artifacts
+
+
 def _validate_git_binding(commit: str, tree: str) -> bool:
     cp = subprocess.run(
         ["git", "rev-parse", f"{commit}^{{tree}}"], cwd=str(ROOT),
@@ -2359,6 +2425,15 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         for command in receipt["command_results"]:
             if not _validate_stream(command["stdout"]) or not _validate_stream(command["stderr"]):
                 raise ValueError(f"stdout/stderr digest mismatch: {receipt_path}")
+        expected_state_artifacts = _declared_state_artifacts(
+            receipt["command_results"], state_root
+        )
+        recorded_state_artifacts = {
+            key: value for key, value in receipt["artifact_digests"].items()
+            if key.startswith("state-artifact:")
+        }
+        if recorded_state_artifacts != expected_state_artifacts:
+            raise ValueError(f"state artifact binding mismatch: {receipt_path}")
         if (
             receipt["runner_version"] == RUNNER_VERSION
             or any(
@@ -2653,7 +2728,7 @@ def _rebind_legacy_auto_receipt(
     if not old_allowlist < new_allowlist:
         return None
     added_allowlist = sorted(new_allowlist - old_allowlist)
-    changed_paths, artifact_digests = _committed_delta(
+    changed_paths, committed_artifacts = _committed_delta(
         start_commit, latest["result_commit"]
     )
     violations = [
@@ -2674,7 +2749,7 @@ def _rebind_legacy_auto_receipt(
         },
         {
             "id": "runner-committed-delta", "kind": "artifact_binding", "ok": True,
-            "detail": f"{len(changed_paths)} committed paths bound to {len(artifact_digests)} digests",
+            "detail": f"{len(changed_paths)} committed paths bound to {len(committed_artifacts)} digests",
         },
         {
             "id": "runner-input-chain-correction", "kind": "receipt_chain_binding", "ok": True,
@@ -2701,7 +2776,8 @@ def _rebind_legacy_auto_receipt(
         "allowlist": {"allowed": True, "violations": []},
         "test_reports": _structured_test_reports(latest["command_results"]),
         "artifact_digests": {
-            **artifact_digests,
+            **committed_artifacts,
+            **_declared_state_artifacts(latest["command_results"], state_root),
             "legacy-task-definition": _task_digest(old_task),
             "corrected-task-definition": _task_digest(task),
             "legacy-input-receipts": _digest_object(latest["input_receipt_digests"]),
@@ -2787,7 +2863,14 @@ def _execute_auto_task(
     after = _git_status_snapshot()
     result_commit = _git_checked("rev-parse", "HEAD")
     result_tree = _git_checked("rev-parse", "HEAD^{tree}")
-    changed_paths, artifact_digests = _committed_delta(start_commit, result_commit)
+    changed_paths, committed_artifacts = _committed_delta(start_commit, result_commit)
+    state_artifact_error: str | None = None
+    try:
+        state_artifacts = _declared_state_artifacts(command_results, state_root)
+    except (OSError, UnicodeError, ValueError) as exc:
+        state_artifacts = {}
+        state_artifact_error = str(exc)
+    artifact_digests = {**committed_artifacts, **state_artifacts}
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
     scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
     violations = [path for path in scoped_paths if not _matches_allowed(path, task["allowed_paths"])]
@@ -2803,7 +2886,15 @@ def _execute_auto_task(
         {
             "id": "runner-committed-delta", "kind": "artifact_binding",
             "ok": True,
-            "detail": f"{len(changed_paths)} committed paths bound to {len(artifact_digests)} digests",
+            "detail": f"{len(changed_paths)} committed paths bound to {len(committed_artifacts)} digests",
+        },
+        {
+            "id": "runner-state-artifacts", "kind": "artifact_binding",
+            "ok": state_artifact_error is None,
+            "detail": (
+                f"{len(state_artifacts)} declared state artifacts rebound from command stdout"
+                if state_artifact_error is None else state_artifact_error
+            ),
         },
     ])
     timed_out = any(item["timed_out"] for item in command_results)
@@ -3050,6 +3141,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("authority", help="Module authority / current docs check")
     p.add_argument("--check", action="store_true")
+    authority_mode = p.add_mutually_exclusive_group()
+    authority_mode.add_argument("--record", action="store_true")
+    authority_mode.add_argument("--require-clean", action="store_true")
+    p.add_argument("--policy", default=None)
+    p.add_argument("--codegraph", default=None)
+    p.add_argument("--state-root", default=None)
     p.set_defaults(func=cmd_authority)
 
     p = sub.add_parser("graph-map", help="CodeGraph reconciliation against tracked tree")
