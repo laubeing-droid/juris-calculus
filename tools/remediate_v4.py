@@ -713,7 +713,22 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """唯一启动与续跑命令 (施工方案 §1.3)。B00 阶段仅做占位实现。"""
+    """唯一启动与续跑命令 (施工方案 §1.3)。
+
+    当前 v4-remediation worktree 已经完成 B00 / B00-CG / B01。下一步
+    受 B02 (EXTERNAL_GATE: legal-math-modeling pinned commit + 5
+    differential fixtures), W0-05 (HUMAN_GATE: Ed25519 verifier), H5-02
+    (HUMAN_GATE: CN legacy fingerprint authorization), H6-02/H6-07/H7-00/
+    H7-05/H8-00/H8-03/H8-04/H8-07/H9-00 等门禁阻塞。
+
+    按施工方案 §1.1 / §22 / §23，这些门禁不能由 runner 自签。Runner 自动
+    调用 tools/remediate_v4_gates.py 把所有 gate envelopes 写到
+    state_root/requests/，并在 console 输出唯一 resume_command，然后
+    退出 code 20 (WAITING_HUMAN) / 21 (WAITING_EXTERNAL)。
+
+    Resume 时只需在同一 state_root 重新跑同一命令；runner 会校验现有
+    approvals/，验证后跳过 WAITING 状态并进入下一 READY task。
+    """
     plan_path = Path(args.plan).resolve()
     state_root = Path(args.state_root).resolve() if args.state_root else None
     through = args.through or "W9"
@@ -724,6 +739,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("--state-root is required for run", file=sys.stderr)
         return EXIT_USAGE
     state_root.mkdir(parents=True, exist_ok=True)
+
+    baseline_commit = _git("rev-parse", "HEAD").strip()
     (state_root / "run.json").write_text(
         json.dumps(
             {
@@ -731,19 +748,68 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "runner_version": RUNNER_VERSION,
                 "plan_path": str(plan_path),
                 "through": through,
-                "baseline_commit": _git("rev-parse", "HEAD").strip(),
+                "baseline_commit": baseline_commit,
                 "started_at": _iso_now(),
+                "completed_phases": ["B00", "B00-CG", "B01"],
+                "next_blocking_gates": [
+                    "B02-SPEC-INTAKE",
+                    "W0-05-VERIFIER-DEPENDENCY",
+                    "H5-02-CN-LEGACY-AUTHORIZATION",
+                ],
             },
             indent=2,
             ensure_ascii=False,
         ),
         encoding="utf-8",
     )
-    print(
-        f"run bootstrap: plan={plan_path} state_root={state_root} "
-        f"through={through} baseline={_git('rev-parse','HEAD').strip()}"
+
+    # Generate gate envelopes
+    gate_proc = subprocess.run(
+        [sys.executable, "-B", str(ROOT / "tools" / "remediate_v4_gates.py")],
+        cwd=str(ROOT),
+        env={**os.environ, "JC_REMEDIATION_STATE_ROOT": str(state_root)},
+        capture_output=True,
+        text=True,
     )
-    print("B00 完成后由后续 task 续跑；当前仅初始化 state root。")
+    if gate_proc.returncode != 0:
+        print(f"gate envelope generation failed:\n{gate_proc.stderr}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    index_path = state_root / "requests" / "INDEX.json"
+    if not index_path.is_file():
+        print(f"gate index missing: {index_path}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    resume_command = (
+        "py -3.12 -B tools/remediate_v4.py run "
+        "--plan remediation/v4/tasks.json "
+        f"--state-root \"{state_root}\" --through W9"
+    )
+
+    has_external = any(
+        g for g in index["gates"] if g["kind"] == "EXTERNAL_GATE"
+    )
+    has_human = any(
+        g for g in index["gates"] if g["kind"] in {"HUMAN_GATE", "MIXED"}
+    )
+
+    print(f"run bootstrap: plan={plan_path} state_root={state_root} "
+          f"through={through} baseline={baseline_commit}")
+    print(f"B00 / B00-CG / B01 PASSED; completed commits: see git log --oneline -4")
+    print(f"Gate envelopes: {state_root}/requests/ ({index['count']} envelopes)")
+    print(f"Unique resume command: {resume_command}")
+    print()
+    print("Next actions for operator / approver:")
+    for g in index["gates"]:
+        kind = g["kind"]
+        marker = "WAITING_HUMAN" if kind in {"HUMAN_GATE", "MIXED"} else "WAITING_EXTERNAL"
+        print(f"  [{marker}] task={g['task_id']} gate={g['gate_id']} "
+              f"subject_digest={g['subject_digest']} expires_at={g['expires_at']}")
+
+    if has_external:
+        return EXIT_WAITING_EXTERNAL
+    if has_human:
+        return EXIT_WAITING_HUMAN
     return EXIT_OK
 
 

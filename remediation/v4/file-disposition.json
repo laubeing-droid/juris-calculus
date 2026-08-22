@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 306,
+  "count": 311,
   "paths": [
     {
       "path": ".gitattributes",
@@ -2260,7 +2260,31 @@
       "namespace": "candidate_asset"
     },
     {
+      "path": "tests/unit/test_remediation_file_map_full.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_remediation_gates.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
       "path": "tests/unit/test_remediation_graph_map.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_remediation_run.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
@@ -2466,6 +2490,14 @@
       "target_artifact": null
     },
     {
+      "path": "tools/build_file_disposition.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
       "path": "tools/build_provenance.py",
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
@@ -2505,6 +2537,14 @@
     },
     {
       "path": "tools/remediate_v4.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
+      "path": "tools/remediate_v4_gates.py",
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
