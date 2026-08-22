@@ -81,7 +81,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_v4_foundation_contract.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 5
+      "expected_tests": 6
     },
     {
       "id": "W0-REQUIRED-MANIFEST-GATE",
@@ -89,6 +89,13 @@
       "selector": "tests/contract/test_required_test_manifest.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 7
+    },
+    {
+      "id": "W1-ARTIFACT-PAGE-LENGTH-POLICY",
+      "suite": "security",
+      "selector": "tests/security/test_artifact_resolver.py::test_resolve_handle_page_length_policy_exact_and_limit_plus_one",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 1
     }
   ],
   "evidence_tracks": [
@@ -174,7 +181,7 @@
       "suite": "security",
       "selector": "tests/security/test_artifact_resolver.py::test_caller_claimed_pass_cannot_create_trust",
       "owner_task": "W1-04",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Replace resolver evidence with caller-provided PASS or trusted text.",
       "red_failure": "Caller assertions must not create source or fact trust."
     },
@@ -234,7 +241,7 @@
       "suite": "security",
       "selector": "tests/security/test_artifact_resolver.py::test_arbitrary_local_unc_and_device_paths_are_rejected",
       "owner_task": "W1-04",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Resolve arbitrary absolute, UNC, or device paths.",
       "red_failure": "Paths outside registered artifact handles must fail."
     },

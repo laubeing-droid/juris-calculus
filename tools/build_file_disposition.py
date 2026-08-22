@@ -28,7 +28,7 @@ OUT = ROOT / "remediation" / "v4" / "file-disposition.json"
 # 施工方案 §19.1 - 原 90 个 compiler_core/*.py 五组
 CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
-        "__init__", "application", "audit", "audit_bundle",
+        "__init__", "application", "artifact_store", "audit", "audit_bundle",
         "canonical_serialization", "cli", "client", "contracts",
         "mcp", "rendering", "resources", "rule_packs", "version",
     ],
@@ -378,7 +378,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
+        "plan_sha256": "ce0164c8808bd18816ba86351423b335123e322b443337d910c51bffdcc82543",
         "count": len(entries),
         "paths": entries,
     }

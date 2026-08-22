@@ -88,8 +88,23 @@
       {"id": "max_proposal_refs", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 512, "boundary": "inclusive", "error_code": "PROPOSAL_REFERENCE_LIMIT"},
       {"id": "admission_deadline_ms", "scope": "request_admission", "unit": "milliseconds", "default": 250, "hard_max": 1000, "boundary": "inclusive", "error_code": "ADMISSION_DEADLINE"}
     ],
+    "artifact_page_policy": {
+      "claim": "LOCAL_RESOLVE_HANDLE_PAGE_LENGTH_POLICY_V1",
+      "profile": "V4_RESOLVE_HANDLE_PAGE_LENGTH_V1",
+      "probe_file": "tests/fixtures/golden/v4-artifact-page-probe.json",
+      "probe_file_sha256": "sha256:3c2a008c3253c6b7aee6079c890da65ce29bd83b716df1f2fc8078c66070c887",
+      "probe_payload_sha256": "sha256:6c7de4f369af92d088727accdff94fcc59e1002df0a72ff90b25dbe1a78333ae",
+      "id": "artifact_page_bytes",
+      "scope": "resolve_handle_page_length",
+      "unit": "bytes",
+      "default": 65536,
+      "hard_max": 262144,
+      "boundary": "inclusive",
+      "error_code": "ARTIFACT_PAGE_LIMIT",
+      "closure_task": "W1-04",
+      "remaining_closure": "W4-03 owns bundle-bound read_artifact handle/chunk semantics only; W4-06 owns cross-stage privacy/error/resource closure; W5-CUTOVER owns actual jc_read_artifact MCP transport wiring and enforcement. W5-01 and W5-06 are contract/matrix verification tasks; this local policy does not close P1-15."
+    },
     "deferred_limits": [
-      {"id": "artifact_page_bytes", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W1-04", "reason": "Artifact resolver and pagination implementation do not exist yet."},
       {"id": "solver_deadline_ms", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W3-03", "reason": "Provider-specific solver and checker benchmarks are required."},
       {"id": "worker_queue_items", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Backpressure topology does not exist yet."},
       {"id": "in_flight_runs", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Concurrency and cancellation tests must define this budget."},

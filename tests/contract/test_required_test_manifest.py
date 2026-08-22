@@ -227,8 +227,8 @@ def nested_alias_bypass():
         + "a" * 64
         + "\n"
         "test governance skeleton OK: 11 suites; 44 audit groups registered; "
-        "25 rewrites queued; 12 required governance tests passed; "
-        "46 future obligations explicitly RED; 0 skip/xfail/xpass/collection errors\n",
+        "25 rewrites queued; 13 required governance tests passed; "
+        "39 future obligations explicitly RED; 0 skip/xfail/xpass/collection errors\n",
         encoding="utf-8",
     )
     w0_governance_commands = [{
@@ -247,8 +247,8 @@ def nested_alias_bypass():
         "suites": 11,
         "audit_groups": 44,
         "rewrites": 25,
-        "required_passed": 12,
-        "future_red": 46,
+        "required_passed": 13,
+        "future_red": 39,
         "bypass_or_collection_errors": 0,
         "evidence_label": "w0-04-required-tests",
         "evidence_sha256": "sha256:" + "a" * 64,
@@ -386,6 +386,20 @@ def nested_alias_bypass():
     assert RUNNER._w1_03_test_report_problems(w1_03_reports) == [
         "W1-03 pytest junit_case_ids_digest drifted: "
         f"{'sha256:' + '0' * 64!r} != {RUNNER.W1_03_TEST_CASE_IDS_DIGEST!r}"
+    ]
+
+    w1_04_reports = copy.deepcopy(w1_02_reports)
+    w1_04_reports[0].update({
+        "passed": 472,
+        "junit_tests": 472,
+        "junit_cases": 472,
+        "junit_unique_cases": 472,
+        "junit_case_ids_digest": RUNNER.W1_04_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w1_04_test_report_problems(w1_04_reports) == []
+    w1_04_reports[0]["junit_cases"] = 471
+    assert RUNNER._w1_04_test_report_problems(w1_04_reports) == [
+        "W1-04 pytest junit_cases drifted: 471 != 472"
     ]
 
     w1_02_reports[0]["skipped"] = 1

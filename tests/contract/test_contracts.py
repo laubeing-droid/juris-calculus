@@ -96,6 +96,8 @@ def _limits_payload(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         item["id"]: item["default"] for item in policy["benchmarked_limits"]
     }
+    page_policy = policy["artifact_page_policy"]
+    payload[page_policy["id"]] = page_policy["default"]
     payload.update({item["id"]: None for item in policy["deferred_limits"]})
     payload.update(overrides)
     return payload
@@ -475,22 +477,34 @@ def test_money_and_rational_vectors_match_foundation() -> None:
 
 def test_engine_limits_match_frozen_foundation() -> None:
     policy = FOUNDATION["resource_limit_policy"]
+    bounded_limits = [
+        *policy["benchmarked_limits"],
+        policy["artifact_page_policy"],
+    ]
     limits = contracts.ResourceLimitsV4.from_dict(_limits_payload())
     assert limits.to_dict() == _limits_payload()
     assert contracts.DEFAULT_RESOURCE_LIMITS_V4 == {
-        item["id"]: item["default"] for item in policy["benchmarked_limits"]
+        item["id"]: item["default"] for item in bounded_limits
     }
     assert contracts.HARD_MAX_RESOURCE_LIMITS_V4 == {
-        item["id"]: item["hard_max"] for item in policy["benchmarked_limits"]
+        item["id"]: item["hard_max"] for item in bounded_limits
     }
     assert contracts.RESOURCE_LIMIT_ERROR_CODES_V4 == {
-        item["id"]: item["error_code"] for item in policy["benchmarked_limits"]
+        item["id"]: item["error_code"] for item in bounded_limits
     }
     for item in policy["deferred_limits"]:
         payload = _limits_payload(**{item["id"]: 1})
         with pytest.raises(contracts.ContractV4Error) as caught:
             contracts.ResourceLimitsV4.from_dict(payload)
         assert _error_code(caught.value) == "DEFERRED_LIMIT"
+
+    page = policy["artifact_page_policy"]
+    accepted = _limits_payload(**{page["id"]: page["hard_max"]})
+    assert contracts.ResourceLimitsV4.from_dict(accepted).to_dict() == accepted
+    rejected = _limits_payload(**{page["id"]: page["hard_max"] + 1})
+    with pytest.raises(contracts.ContractV4Error) as caught:
+        contracts.ResourceLimitsV4.from_dict(rejected)
+    assert _error_code(caught.value) == page["error_code"]
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,127 @@
+{
+  "schema_version": "jc/v4-artifact-page-probe/1.0",
+  "scope": {
+    "claim": "LOCAL_PRIMITIVE_COST_ONLY",
+    "not_claimed": [
+      "MCP response-frame sufficiency",
+      "cross-platform equivalence",
+      "concurrent service throughput",
+      "memory or latency service-level objective",
+      "whole-artifact hashing cost bounded by requested page length",
+      "resolve_content full-artifact return bounded by page policy",
+      "full P1-15 resource-budget closure"
+    ],
+    "repository_mutated_by_probe": false,
+    "baseline_commit": "8164e8c045e00aa029faa3813b3984043bfa1287",
+    "baseline_tree": "aa782d15e606cce60c23570a952b87766240a914"
+  },
+  "environment": {
+    "python": "3.12.5",
+    "python_implementation": "CPython",
+    "python_launcher": "py -3.12",
+    "openssl": "OpenSSL 3.0.13 30 Jan 2024",
+    "os": "Windows 11 Pro 10.0.26200 x64",
+    "machine": "AMD64",
+    "cpu": "AMD Ryzen 7 5800H with Radeon Graphics",
+    "physical_cores": 8,
+    "logical_cores": 16,
+    "maximum_clock_mhz": 3201,
+    "power_plan": "balanced",
+    "system_load_controlled": false
+  },
+  "methodology": {
+    "payload_generator": "byte values 0..255 repeated, then sliced to exact length",
+    "sizes_bytes": [16384, 65536, 262144, 1048576],
+    "operations": {
+      "sha256_hex": "hashlib.sha256(payload).hexdigest()",
+      "base64_encode": "base64.b64encode(payload)",
+      "sha256_plus_base64": "sha256_hex and base64_encode in one timed callable"
+    },
+    "base64_variant": "RFC4648 standard alphabet with padding",
+    "warmup_calls_per_operation_per_size": 20,
+    "trials": 7,
+    "operations_per_trial": 100,
+    "size_order": "ascending",
+    "operation_order": ["sha256_hex", "base64_encode", "sha256_plus_base64"],
+    "timer": "timeit.Timer(callable).repeat",
+    "clock": "QueryPerformanceCounter",
+    "clock_resolution_nanoseconds": 100,
+    "clock_monotonic": true,
+    "gc_during_timed_trial": false,
+    "payload_prebuilt": true,
+    "callable_overhead_included": true,
+    "baseline_subtraction": false,
+    "summary": "median/min/max per-operation nanoseconds across seven raw trials"
+  },
+  "samples": [
+    {
+      "payload_bytes": 16384,
+      "payload_sha256": "sha256:a1f259d4365ed4320c377ce26f5c8c56dcdc9a89e7b641bfd8eabfbbeac86654",
+      "base64_bytes": 21848,
+      "base64_formula_bytes": 21848,
+      "timing_ns_per_operation": {
+        "sha256_hex": {"trials": [8893, 8876, 8830, 8947, 8817, 8808, 8861], "median": 8861, "minimum": 8808, "maximum": 8947},
+        "base64_encode": {"trials": [40432, 39083, 39980, 39705, 38853, 39200, 41284], "median": 39705, "minimum": 38853, "maximum": 41284},
+        "sha256_plus_base64": {"trials": [50262, 50416, 50295, 49966, 49527, 49780, 48322], "median": 49966, "minimum": 48322, "maximum": 50416}
+      }
+    },
+    {
+      "payload_bytes": 65536,
+      "payload_sha256": "sha256:7daca2095d0438260fa849183dfc67faa459fdf4936e1bc91eec6b281b27e4c2",
+      "base64_bytes": 87384,
+      "base64_formula_bytes": 87384,
+      "timing_ns_per_operation": {
+        "sha256_hex": {"trials": [31970, 32406, 32554, 32087, 31743, 31410, 31913], "median": 31970, "minimum": 31410, "maximum": 32554},
+        "base64_encode": {"trials": [156714, 155925, 155386, 155706, 156952, 159955, 158361], "median": 156714, "minimum": 155386, "maximum": 159955},
+        "sha256_plus_base64": {"trials": [196670, 190207, 199537, 196121, 195477, 196816, 195840], "median": 196121, "minimum": 190207, "maximum": 199537}
+      }
+    },
+    {
+      "payload_bytes": 262144,
+      "payload_sha256": "sha256:2312394bd99545d9de131c24efb781e765ac1aec243f2ed9347597a793a415e9",
+      "base64_bytes": 349528,
+      "base64_formula_bytes": 349528,
+      "timing_ns_per_operation": {
+        "sha256_hex": {"trials": [131484, 131140, 131069, 130721, 130950, 130888, 131366], "median": 131069, "minimum": 130721, "maximum": 131484},
+        "base64_encode": {"trials": [648052, 650537, 647467, 647912, 647263, 648498, 647134], "median": 647912, "minimum": 647134, "maximum": 650537},
+        "sha256_plus_base64": {"trials": [781174, 780169, 780412, 779589, 778661, 781715, 778415], "median": 780169, "minimum": 778415, "maximum": 781715}
+      }
+    },
+    {
+      "payload_bytes": 1048576,
+      "payload_sha256": "sha256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+      "base64_bytes": 1398104,
+      "base64_formula_bytes": 1398104,
+      "timing_ns_per_operation": {
+        "sha256_hex": {"trials": [521607, 522190, 522737, 523109, 529669, 525830, 523417], "median": 523109, "minimum": 521607, "maximum": 529669},
+        "base64_encode": {"trials": [2745316, 2734455, 2731026, 2747717, 2758331, 2760303, 2763172], "median": 2747717, "minimum": 2731026, "maximum": 2763172},
+        "sha256_plus_base64": {"trials": [3246797, 3273066, 3272048, 3276785, 3262490, 3261367, 3277872], "median": 3272048, "minimum": 3246797, "maximum": 3277872}
+      }
+    }
+  ],
+  "recommendation": {
+    "profile": "V4_RESOLVE_HANDLE_PAGE_LENGTH_V1",
+    "limit_id": "artifact_page_bytes",
+    "scope": "resolve_handle_page_length",
+    "unit": "bytes",
+    "default": 65536,
+    "hard_max": 262144,
+    "boundary": "inclusive",
+    "error_code": "ARTIFACT_PAGE_LIMIT",
+    "basis": [
+      "A 65536-byte raw page encodes to 87384 Base64 bytes, below the existing 262144-byte default request-frame reference budget before envelope overhead.",
+      "A 262144-byte raw page encodes to 349528 Base64 bytes, above that default but below the existing 1048576-byte hard request-frame reference budget before envelope overhead.",
+      "A 1048576-byte raw page encodes to 1398104 Base64 bytes and already exceeds the 1048576-byte reference budget before envelope overhead.",
+      "Local SHA-256 plus Base64 median primitive cost was below one millisecond at the proposed hard maximum; this is sizing evidence, not resolver timing or an SLO."
+    ],
+    "evidence_kind": "POLICY_SIZING_REFERENCE",
+    "enforced_operation": "ArtifactResolverV4.resolve_handle",
+    "enforced_parameter": "length",
+    "runtime_behavior_selector": "tests/security/test_artifact_resolver.py::test_resolve_handle_page_length_policy_exact_and_limit_plus_one",
+    "cost_not_bounded_by_page": true,
+    "digest_scope": "full_registered_artifact_per_read",
+    "remaining_closure": "W4-03 owns bundle-bound read_artifact handle/chunk semantics only; W4-06 owns cross-stage privacy/error/resource closure; W5-CUTOVER owns actual jc_read_artifact MCP transport wiring and enforcement. W5-01 and W5-06 are contract/matrix verification tasks; this local policy does not close P1-15."
+  },
+  "payload_sha256": "sha256:6c7de4f369af92d088727accdff94fcc59e1002df0a72ff90b25dbe1a78333ae",
+  "payload_sha256_scope": "canonical UTF-8 JSON with payload_sha256 and payload_sha256_scope omitted"
+}

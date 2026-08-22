@@ -87,6 +87,7 @@ OBJECT_STATE_MATRIX = ROOT / "tests" / "fixtures" / "v4_contract" / "object-stat
 JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
 RESOURCE_LIMIT_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-resource-limit-probe.json"
+ARTIFACT_PAGE_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-artifact-page-probe.json"
 V4_CONTRACT_VECTORS = ROOT / "tests" / "contract" / "v4-contract-vectors.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
 REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
@@ -98,8 +99,11 @@ W1_02_TEST_CASE_IDS_DIGEST = (
 W1_03_TEST_CASE_IDS_DIGEST = (
     "sha256:f545a9f5a3dcc8737aff9a34c9ada497742287809c1f5b569592374bd4ff0696"
 )
-W1_03_SCHEMA_SHA256 = "d5e3016a5569f164878b3855a08e905b679143f354506ba715cca093bc05f92b"
-W1_03_MANIFEST_SHA256 = "42caf7983192f970d17b0547122c60ed2f868cf01e0966e66dd0fe9c112d3cd4"
+W1_04_TEST_CASE_IDS_DIGEST = (
+    "sha256:d6873ffd480af7b044e50c76a8dd0ea1e2f7a4f3ce26e44bec59b27d29e5dc20"
+)
+W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
+W1_03_MANIFEST_SHA256 = "5238ec7b357efa9354e7f6a8e5364500185ba5d53c61b4df3f3ed0757008319d"
 W1_03_TOOL_SPEC_DIGEST = (
     "sha256:31fafabfd28ad1a629ca9cfcdd9ff58097476ab8fe111e77f797d5a010bbdee0"
 )
@@ -145,6 +149,12 @@ W0_RESOURCE_PROBE_FILE_DIGEST = (
 )
 W0_RESOURCE_PROBE_PAYLOAD_DIGEST = (
     "sha256:13f79fdd6b5282f5aabfca9569aba6e69064f47765a0572bd8aa43f10c2c5ba1"
+)
+W1_04_ARTIFACT_PAGE_PROBE_FILE_DIGEST = (
+    "sha256:3c2a008c3253c6b7aee6079c890da65ce29bd83b716df1f2fc8078c66070c887"
+)
+W1_04_ARTIFACT_PAGE_PROBE_PAYLOAD_DIGEST = (
+    "sha256:6c7de4f369af92d088727accdff94fcc59e1002df0a72ff90b25dbe1a78333ae"
 )
 SAFE_IJSON_INTEGER = 9_007_199_254_740_991
 DIGEST_V4_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -2045,11 +2055,260 @@ def _probe_sample_problems(probe: dict[str, Any]) -> list[str]:
     return problems
 
 
+def _artifact_page_probe_problems(
+    policy: Any, *, probe_override: Any | None = None,
+) -> list[str]:
+    problems: list[str] = []
+    expected_policy_fields = {
+        "claim", "profile", "probe_file", "probe_file_sha256",
+        "probe_payload_sha256", "id", "scope", "unit", "default",
+        "hard_max", "boundary", "error_code", "closure_task",
+        "remaining_closure",
+    }
+    if not isinstance(policy, dict) or set(policy) != expected_policy_fields:
+        return ["artifact page policy fields are not closed"]
+    expected_policy = {
+        "claim": "LOCAL_RESOLVE_HANDLE_PAGE_LENGTH_POLICY_V1",
+        "profile": "V4_RESOLVE_HANDLE_PAGE_LENGTH_V1",
+        "probe_file": "tests/fixtures/golden/v4-artifact-page-probe.json",
+        "id": "artifact_page_bytes",
+        "scope": "resolve_handle_page_length",
+        "unit": "bytes",
+        "default": 65_536,
+        "hard_max": 262_144,
+        "boundary": "inclusive",
+        "error_code": "ARTIFACT_PAGE_LIMIT",
+        "closure_task": "W1-04",
+        "remaining_closure": (
+            "W4-03 owns bundle-bound read_artifact handle/chunk semantics only; "
+            "W4-06 owns cross-stage privacy/error/resource closure; W5-CUTOVER owns "
+            "actual jc_read_artifact MCP transport wiring and enforcement. W5-01 and "
+            "W5-06 are contract/matrix verification tasks; this local policy does not "
+            "close P1-15."
+        ),
+    }
+    for field, expected in expected_policy.items():
+        if policy.get(field) != expected:
+            problems.append(f"artifact page policy {field} drifted")
+
+    if policy.get("probe_file") != str(ARTIFACT_PAGE_PROBE.relative_to(ROOT)).replace("\\", "/"):
+        return problems + ["artifact page probe path drifted"]
+    if probe_override is None:
+        try:
+            raw_probe = ARTIFACT_PAGE_PROBE.read_bytes()
+            probe = json.loads(raw_probe.decode("utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            return problems + ["artifact page probe is missing or invalid UTF-8 JSON"]
+        actual_file_digest = "sha256:" + sha256_hex(raw_probe)
+        if (
+            actual_file_digest != W1_04_ARTIFACT_PAGE_PROBE_FILE_DIGEST
+            or policy.get("probe_file_sha256") != actual_file_digest
+        ):
+            problems.append("artifact page probe file digest mismatch")
+    else:
+        probe = probe_override
+
+    probe_fields = {
+        "schema_version", "scope", "environment",
+        "methodology", "samples", "recommendation", "payload_sha256",
+        "payload_sha256_scope",
+    }
+    if not isinstance(probe, dict) or set(probe) != probe_fields:
+        return problems + ["artifact page probe fields are not closed"]
+    if probe.get("schema_version") != "jc/v4-artifact-page-probe/1.0":
+        problems.append("artifact page probe schema_version drifted")
+    unsigned_probe = {
+        key: value for key, value in probe.items()
+        if key not in {"payload_sha256", "payload_sha256_scope"}
+    }
+    payload_digest = _digest_object(unsigned_probe)
+    if (
+        payload_digest != W1_04_ARTIFACT_PAGE_PROBE_PAYLOAD_DIGEST
+        or probe.get("payload_sha256") != payload_digest
+        or policy.get("probe_payload_sha256") != payload_digest
+    ):
+        problems.append("artifact page probe payload digest mismatch")
+    if probe.get("payload_sha256_scope") != (
+        "canonical UTF-8 JSON with payload_sha256 and payload_sha256_scope omitted"
+    ):
+        problems.append("artifact page probe payload digest scope drifted")
+    expected_scope = {
+        "claim": "LOCAL_PRIMITIVE_COST_ONLY",
+        "not_claimed": [
+            "MCP response-frame sufficiency", "cross-platform equivalence",
+            "concurrent service throughput", "memory or latency service-level objective",
+            "whole-artifact hashing cost bounded by requested page length",
+            "resolve_content full-artifact return bounded by page policy",
+            "full P1-15 resource-budget closure",
+        ],
+        "repository_mutated_by_probe": False,
+        "baseline_commit": "8164e8c045e00aa029faa3813b3984043bfa1287",
+        "baseline_tree": "aa782d15e606cce60c23570a952b87766240a914",
+    }
+    if probe.get("scope") != expected_scope:
+        problems.append("artifact page probe claim boundary drifted")
+
+    environment = probe.get("environment")
+    environment_fields = {
+        "python", "python_implementation", "python_launcher", "openssl", "os",
+        "machine", "cpu", "physical_cores", "logical_cores",
+        "maximum_clock_mhz", "power_plan", "system_load_controlled",
+    }
+    if not isinstance(environment, dict) or set(environment) != environment_fields:
+        problems.append("artifact page probe environment fields are not closed")
+    elif (
+        environment.get("python_implementation") != "CPython"
+        or environment.get("system_load_controlled") is not False
+        or any(
+            type(environment.get(field)) is not int or environment[field] <= 0
+            for field in ("physical_cores", "logical_cores", "maximum_clock_mhz")
+        )
+        or any(
+            not isinstance(environment.get(field), str) or not environment[field]
+            for field in environment_fields - {
+                "physical_cores", "logical_cores", "maximum_clock_mhz",
+                "system_load_controlled",
+            }
+        )
+    ):
+        problems.append("artifact page probe environment values are invalid")
+
+    methodology = probe.get("methodology")
+    methodology_fields = {
+        "payload_generator", "sizes_bytes", "operations", "base64_variant",
+        "warmup_calls_per_operation_per_size", "trials", "operations_per_trial",
+        "size_order", "operation_order", "timer", "clock",
+        "clock_resolution_nanoseconds", "clock_monotonic",
+        "gc_during_timed_trial", "payload_prebuilt", "callable_overhead_included",
+        "baseline_subtraction", "summary",
+    }
+    if not isinstance(methodology, dict) or set(methodology) != methodology_fields:
+        problems.append("artifact page probe methodology fields are not closed")
+    elif (
+        methodology.get("payload_generator")
+        != "byte values 0..255 repeated, then sliced to exact length"
+        or methodology.get("sizes_bytes") != [16_384, 65_536, 262_144, 1_048_576]
+        or methodology.get("operations") != {
+            "sha256_hex": "hashlib.sha256(payload).hexdigest()",
+            "base64_encode": "base64.b64encode(payload)",
+            "sha256_plus_base64": "sha256_hex and base64_encode in one timed callable",
+        }
+        or methodology.get("base64_variant") != "RFC4648 standard alphabet with padding"
+        or methodology.get("warmup_calls_per_operation_per_size") != 20
+        or methodology.get("trials") != 7
+        or methodology.get("operations_per_trial") != 100
+        or methodology.get("operation_order")
+        != ["sha256_hex", "base64_encode", "sha256_plus_base64"]
+        or methodology.get("clock_monotonic") is not True
+        or methodology.get("gc_during_timed_trial") is not False
+        or methodology.get("payload_prebuilt") is not True
+        or methodology.get("callable_overhead_included") is not True
+        or methodology.get("baseline_subtraction") is not False
+    ):
+        problems.append("artifact page probe methodology values drifted")
+
+    samples = probe.get("samples")
+    expected_sizes = [16_384, 65_536, 262_144, 1_048_576]
+    if not isinstance(samples, list) or len(samples) != len(expected_sizes):
+        problems.append("artifact page probe sample registry is incomplete")
+        samples = []
+    encoded_lengths: dict[int, int] = {}
+    for sample, size in zip(samples, expected_sizes):
+        if not isinstance(sample, dict) or set(sample) != {
+            "payload_bytes", "payload_sha256", "base64_bytes",
+            "base64_formula_bytes", "timing_ns_per_operation",
+        }:
+            problems.append(f"artifact page sample {size} fields are not closed")
+            continue
+        payload = (bytes(range(256)) * ((size + 255) // 256))[:size]
+        encoded = base64.b64encode(payload)
+        expected_encoded_length = 4 * ((size + 2) // 3)
+        encoded_lengths[size] = len(encoded)
+        if (
+            sample.get("payload_bytes") != size
+            or sample.get("payload_sha256") != "sha256:" + sha256_hex(payload)
+            or sample.get("base64_bytes") != len(encoded)
+            or sample.get("base64_formula_bytes") != expected_encoded_length
+            or len(encoded) != expected_encoded_length
+        ):
+            problems.append(f"artifact page sample {size} bytes or digest drifted")
+        timings = sample.get("timing_ns_per_operation")
+        operation_names = {"sha256_hex", "base64_encode", "sha256_plus_base64"}
+        if not isinstance(timings, dict) or set(timings) != operation_names:
+            problems.append(f"artifact page sample {size} timing registry drifted")
+            continue
+        for operation, timing in timings.items():
+            if not isinstance(timing, dict) or set(timing) != {
+                "trials", "median", "minimum", "maximum",
+            }:
+                problems.append(f"artifact page sample {size} {operation} timing fields drifted")
+                continue
+            trials = timing.get("trials")
+            if (
+                not isinstance(trials, list) or len(trials) != 7
+                or any(type(value) is not int or value <= 0 for value in trials)
+            ):
+                problems.append(f"artifact page sample {size} {operation} trials invalid")
+                continue
+            ordered = sorted(trials)
+            if (
+                timing.get("median"), timing.get("minimum"), timing.get("maximum")
+            ) != (ordered[3], ordered[0], ordered[-1]):
+                problems.append(f"artifact page sample {size} {operation} summary drifted")
+    if encoded_lengths and not (
+        encoded_lengths[65_536] < 262_144
+        and 262_144 < encoded_lengths[262_144] < 1_048_576
+        and encoded_lengths[1_048_576] > 1_048_576
+    ):
+        problems.append("artifact page Base64 boundary evidence drifted")
+
+    recommendation = probe.get("recommendation")
+    recommendation_fields = {
+        "profile", "limit_id", "scope", "unit", "default", "hard_max",
+        "boundary", "error_code", "basis", "evidence_kind", "enforced_operation",
+        "enforced_parameter", "runtime_behavior_selector", "cost_not_bounded_by_page",
+        "digest_scope", "remaining_closure",
+    }
+    if not isinstance(recommendation, dict) or set(recommendation) != recommendation_fields:
+        problems.append("artifact page recommendation fields are not closed")
+    else:
+        for field in (
+            "profile", "scope", "unit", "default", "hard_max", "boundary",
+            "error_code", "remaining_closure",
+        ):
+            if recommendation.get(field) != policy.get(field):
+                problems.append(f"artifact page recommendation {field} drifted from policy")
+        if recommendation.get("limit_id") != policy.get("id"):
+            problems.append("artifact page recommendation limit_id drifted from policy")
+        expected_behavior = {
+            "evidence_kind": "POLICY_SIZING_REFERENCE",
+            "enforced_operation": "ArtifactResolverV4.resolve_handle",
+            "enforced_parameter": "length",
+            "runtime_behavior_selector": (
+                "tests/security/test_artifact_resolver.py::"
+                "test_resolve_handle_page_length_policy_exact_and_limit_plus_one"
+            ),
+            "cost_not_bounded_by_page": True,
+            "digest_scope": "full_registered_artifact_per_read",
+        }
+        for field, expected in expected_behavior.items():
+            if recommendation.get(field) != expected:
+                problems.append(f"artifact page recommendation {field} drifted")
+        if (
+            not isinstance(recommendation.get("basis"), list)
+            or len(recommendation["basis"]) != 4
+            or any(not isinstance(item, str) or not item for item in recommendation["basis"])
+        ):
+            problems.append("artifact page recommendation basis is incomplete")
+    return problems
+
+
 def _resource_limit_policy_problems(policy: Any) -> list[str]:
     problems: list[str] = []
     required_fields = {
         "claim", "profile", "probe_file", "probe_file_sha256", "probe_payload_sha256",
-        "benchmarked_limits", "deferred_limits", "enforcement_order",
+        "benchmarked_limits", "artifact_page_policy", "deferred_limits",
+        "enforcement_order",
     }
     if not isinstance(policy, dict) or set(policy) != required_fields:
         return ["resource limit policy fields are not closed"]
@@ -2255,8 +2514,9 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
     if policy.get("enforcement_order") != recommendations.get("enforcement_order"):
         problems.append("resource limit enforcement order drifted from the probe")
 
+    problems.extend(_artifact_page_probe_problems(policy.get("artifact_page_policy")))
+
     deferred_expected = {
-        "artifact_page_bytes": "W1-04",
         "solver_deadline_ms": "W3-03",
         "worker_queue_items": "W4-06",
         "in_flight_runs": "W4-06",
@@ -2299,6 +2559,7 @@ def cmd_foundation_contract(args: argparse.Namespace) -> int:
         f"foundation contract OK: {len(jcs_vectors['positive'])} JCS positive, "
         f"{len(jcs_vectors['negative'])} JCS negative, "
         f"{len(limits['benchmarked_limits'])} benchmarked admission limits, "
+        "1 bounded artifact page, "
         f"{len(limits['deferred_limits'])} explicit deferred operational limits"
     )
     return EXIT_OK
@@ -2781,7 +3042,7 @@ def _required_test_manifest_problems(
             "suite": "contract",
             "selector": "tests/contract/test_v4_foundation_contract.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 5,
+            "expected_tests": 6,
         },
         {
             "id": "W0-REQUIRED-MANIFEST-GATE",
@@ -2789,6 +3050,16 @@ def _required_test_manifest_problems(
             "selector": "tests/contract/test_required_test_manifest.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 7,
+        },
+        {
+            "id": "W1-ARTIFACT-PAGE-LENGTH-POLICY",
+            "suite": "security",
+            "selector": (
+                "tests/security/test_artifact_resolver.py::"
+                "test_resolve_handle_page_length_policy_exact_and_limit_plus_one"
+            ),
+            "state": "REQUIRED_NOW",
+            "expected_tests": 1,
         },
     ]
     if required_now != expected_required_now:
@@ -3751,18 +4022,11 @@ def cmd_w1_01_canonical_gate() -> int:
         test_id for test_id, item in mutation_by_id.items()
         if item.get("state") == "ACTIVE_REQUIRED"
     }
-    if actual_active_ids != set(active_selectors):
+    if not set(active_selectors).issubset(actual_active_ids):
         fail(
-            "W1-01 ACTIVE_REQUIRED audit set drifted: "
+            "W1-01 ACTIVE_REQUIRED audit subset drifted: "
             f"{sorted(actual_active_ids)}"
         )
-    active_evidence_ids = sorted(
-        item.get("id")
-        for item in manifest.get("evidence_tracks", [])
-        if isinstance(item, dict) and item.get("state") == "ACTIVE_REQUIRED"
-    )
-    if active_evidence_ids:
-        fail(f"W1-01 activated future evidence tracks: {active_evidence_ids}")
     for test_id, (audit_id, selector) in active_selectors.items():
         item = mutation_by_id.get(test_id)
         if not isinstance(item, dict) or (
@@ -4073,8 +4337,8 @@ def cmd_w1_02_contract_gate() -> int:
         test_id for test_id, item in mutation_by_id.items()
         if item.get("state") == "ACTIVE_REQUIRED"
     }
-    if actual_active != expected_active:
-        fail(f"W1-02 ACTIVE_REQUIRED audit set drifted: {sorted(actual_active)}")
+    if not expected_active.issubset(actual_active):
+        fail(f"W1-02 ACTIVE_REQUIRED audit subset drifted: {sorted(actual_active)}")
     p2_version = mutation_by_id.get("V4-P2-07-PUBLIC-VERSION")
     if not isinstance(p2_version, dict) or (
         p2_version.get("audit_id"), p2_version.get("owner_task"),
@@ -4110,17 +4374,9 @@ def cmd_w1_02_contract_gate() -> int:
         fail("P1-14 ToolSpec obligation is not the exact active W1-03 selector")
     elif not _selector_is_declared(ROOT, p1_toolspec["selector"]):
         fail("P1-14 ToolSpec selector is not declared")
-    active_evidence = sorted(
-        item.get("id")
-        for item in manifest.get("evidence_tracks", [])
-        if isinstance(item, dict) and item.get("state") == "ACTIVE_REQUIRED"
-    )
-    if active_evidence:
-        fail(f"W1-02 activated future evidence tracks: {active_evidence}")
-
     frozen_hashes = {
         OBJECT_STATE_MATRIX: "96ca196e25eaec0a1a29439643791f0db5fd2b6fcc4e4f6696dc31d59256b822",
-        FOUNDATION_V4_CONTRACT: "80a51050b0dc52a67e00997aa2c5824dd2e0c11a336d4c338983f8b86405edf2",
+        FOUNDATION_V4_CONTRACT: "08b97adf4bd3e516bf59ceabfb3b2f95f8d2e7e806c07341ea49e15fb9d0e658",
         RESOURCE_LIMIT_PROBE: "cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35",
     }
     for path, expected_hash in frozen_hashes.items():
@@ -4133,7 +4389,7 @@ def cmd_w1_02_contract_gate() -> int:
             fail(f"W1-02 frozen input digest drifted: {path.relative_to(ROOT)}")
 
     baseline_commit = "dfdfab110a7ba34bbb94def6e52945602ab0b0ec"
-    plan_authority_hash = "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d"
+    plan_authority_hash = "ce0164c8808bd18816ba86351423b335123e322b443337d910c51bffdcc82543"
     audit_authority_hash = "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
     authority_source_hashes = {
         ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md":
@@ -5619,18 +5875,22 @@ def cmd_w1_02_contract_gate() -> int:
                     fail(f"W1-02 request immutability probe raised {type(exc).__name__}: {exc}")
 
         benchmarked = foundation.get("resource_limit_policy", {}).get("benchmarked_limits", [])
+        artifact_page = foundation.get("resource_limit_policy", {}).get(
+            "artifact_page_policy", {}
+        )
+        bounded = [*benchmarked, artifact_page]
         deferred = foundation.get("resource_limit_policy", {}).get("deferred_limits", [])
         expected_engine_limits = {
             item["id"]: (item["default"], item["hard_max"])
-            for item in benchmarked
+            for item in bounded
         }
         expected_engine_limits.update({item["id"]: (None, None) for item in deferred})
-        expected_defaults = {item["id"]: item["default"] for item in benchmarked}
-        expected_hard_max = {item["id"]: item["hard_max"] for item in benchmarked}
+        expected_defaults = {item["id"]: item["default"] for item in bounded}
+        expected_hard_max = {item["id"]: item["hard_max"] for item in bounded}
         expected_resource_payload = expected_defaults | {
             item["id"]: None for item in deferred
         }
-        expected_error_codes = {item["id"]: item["error_code"] for item in benchmarked}
+        expected_error_codes = {item["id"]: item["error_code"] for item in bounded}
         for name, expected in (
             ("ENGINE_LIMITS_V4", expected_engine_limits),
             ("DEFAULT_RESOURCE_LIMITS_V4", expected_defaults),
@@ -5657,7 +5917,7 @@ def cmd_w1_02_contract_gate() -> int:
                 contracts.validate_resource_limits_v4(resource_value)
             except Exception as exc:
                 fail(f"W1-02 default resource limits raised {type(exc).__name__}: {exc}")
-            for item in benchmarked:
+            for item in bounded:
                 accepted = {**expected_resource_payload, item["id"]: item["hard_max"]}
                 try:
                     if resource_type.from_dict(accepted).to_dict() != accepted:
@@ -6274,8 +6534,8 @@ def _cmd_w1_03_publication_gate() -> int:
         test_id for test_id, item in mutation_by_id.items()
         if item.get("state") == "ACTIVE_REQUIRED"
     }
-    if actual_active != expected_active:
-        fail(f"W1-03 ACTIVE_REQUIRED audit set drifted: {sorted(actual_active)}")
+    if not expected_active.issubset(actual_active):
+        fail(f"W1-03 ACTIVE_REQUIRED audit subset drifted: {sorted(actual_active)}")
     p2_current = mutation_by_id.get("V4-P2-04-CURRENT-AUTHORITY")
     if not isinstance(p2_current, dict) or (
         p2_current.get("audit_id"), p2_current.get("owner_task"), p2_current.get("state")
@@ -6368,6 +6628,482 @@ def cmd_w1_03_publication_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w1_04_artifact_resolver_gate() -> int:
+    """Verify the bounded resolver boundary without claiming cryptographic trust."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/artifact_store.py",
+        "compiler_core/contracts.py",
+        "docs/architecture/module-authority.json",
+        "docs/contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_contracts.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_v4_foundation_contract.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/fixtures/golden/v4-artifact-page-probe.json",
+        "tests/fixtures/golden/v4-foundation-contract.json",
+        "tests/property/test_resolver_properties.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_artifact_resolver.py",
+        "tests/unit/test_remediation_run.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-04"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-04",
+            "tests/security/test_artifact_resolver.py",
+            "tests/property/test_resolver_properties.py",
+            "tests/contract/test_contracts.py",
+            "tests/contract/test_v4_foundation_contract.py",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W1-04/resolver-contract-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        required_manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        foundation = json.loads(FOUNDATION_V4_CONTRACT.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs" / "architecture" / "module-authority.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w1_04_file_disposition_generator",
+            ROOT / "tools" / "build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        inserted_root = str(ROOT) not in sys.path
+        if inserted_root:
+            sys.path.insert(0, str(ROOT))
+        try:
+            from compiler_core.artifact_store import ArtifactResolverV4
+            from compiler_core.canonical_serialization import DigestV4
+            from compiler_core.contracts import (
+                ArtifactHandleV4,
+                ContentRefV4,
+                ContractV4Error,
+                ENGINE_LIMITS_V4,
+                ResourceLimitsV4,
+            )
+        finally:
+            if inserted_root:
+                sys.path.remove(str(ROOT))
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, TypeError) as exc:
+        print(
+            f"W1-04 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W1-04"),
+        None,
+    )
+    if not isinstance(task, dict):
+        fail("W1-04 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W1-03"]:
+            fail("W1-04 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-04", "P0-10", "P1-15", "P1-17"]:
+            fail("W1-04 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-04 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W1-04 argv or expected exit codes drifted")
+
+    problems.extend(_required_test_manifest_problems(
+        required_manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in required_manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-04-CALLER-TRUST": (
+            "P0-04", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_caller_claimed_pass_cannot_create_trust",
+        ),
+        "V4-P0-10-ARBITRARY-PATH": (
+            "P0-10", "W1-04", "ACTIVE_REQUIRED",
+            "tests/security/test_artifact_resolver.py::"
+            "test_arbitrary_local_unc_and_device_paths_are_rejected",
+        ),
+        "V4-P1-15-RESOURCE-BUDGET": (
+            "P1-15", "W5-CUTOVER", "RED_AT_TASK",
+            "tests/security/test_resource_limits.py::"
+            "test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+        ),
+        "V4-P1-17-PATH-PRIVACY": (
+            "P1-17", "W4-06", "RED_AT_TASK",
+            "tests/security/test_privacy_firewall.py::"
+            "test_capabilities_and_errors_never_leak_absolute_paths",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W1-04 lifecycle obligation drifted: {test_id}")
+        elif expected[2] == "ACTIVE_REQUIRED" and not _selector_is_declared(ROOT, expected[3]):
+            fail(f"W1-04 active selector is not declared: {test_id}")
+
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict)
+    }
+    expected_issue_closures = {
+        "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
+        "P0-10": ["W1-04", "W5-CUTOVER", "W9-05"],
+        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER"],
+        "P1-17": ["W1-04", "W4-06", "W5-CUTOVER", "W7-01"],
+    }
+    for audit_id, closure_tasks in expected_issue_closures.items():
+        issue = issue_by_id.get(audit_id)
+        if not isinstance(issue, dict) or (
+            issue.get("status"), issue.get("closure_tasks")
+        ) != ("registered", closure_tasks):
+            fail(f"W1-04 must retain {audit_id} through future closure tasks")
+
+    problems.extend(_foundation_contract_problems(foundation))
+    page_policy = foundation.get("resource_limit_policy", {}).get(
+        "artifact_page_policy", {}
+    )
+    if ENGINE_LIMITS_V4.get("artifact_page_bytes") != (65_536, 262_144):
+        fail("W1-04 artifact_page_bytes engine authority drifted")
+    if page_policy.get("closure_task") != "W1-04":
+        fail("W1-04 artifact page foundation closure drifted")
+    try:
+        ResourceLimitsV4(artifact_page_bytes=262_144)
+        ResourceLimitsV4(artifact_page_bytes=262_145)
+    except ContractV4Error as exc:
+        if exc.code != "ARTIFACT_PAGE_LIMIT":
+            fail(f"W1-04 artifact page hard bound returned {exc.code}")
+    else:
+        fail("W1-04 artifact page hard bound accepted limit+1")
+    default_resolver = ArtifactResolverV4(max_artifact_bytes=262_145)
+    if default_resolver.artifact_page_bytes != 65_536:
+        fail("W1-04 resolver default page bound drifted")
+    try:
+        hard_resolver = ArtifactResolverV4(
+            max_artifact_bytes=262_145, artifact_page_bytes=262_144
+        )
+        ArtifactResolverV4(max_artifact_bytes=262_145, artifact_page_bytes=262_145)
+    except ContractV4Error as exc:
+        if exc.code != "ARTIFACT_PAGE_LIMIT":
+            fail(f"W1-04 resolver hard page bound returned {exc.code}")
+    else:
+        fail("W1-04 resolver constructor accepted page limit+1")
+    try:
+        hard_resolver.resolve_handle(
+            object.__new__(ArtifactHandleV4),
+            expected_artifact_kind="source-bundle",
+            expected_media_type="application/json",
+            expected_scope="formal-run",
+            offset=0,
+            length=262_145,
+        )
+    except ContractV4Error as exc:
+        if exc.code != "ARTIFACT_PAGE_LIMIT":
+            fail(f"W1-04 resolver page read returned {exc.code}")
+    else:
+        fail("W1-04 resolver page read accepted limit+1")
+
+    source_path = ROOT / "compiler_core" / "artifact_store.py"
+    try:
+        resolver_source = source_path.read_text(encoding="utf-8")
+        resolver_tree = ast.parse(resolver_source, filename="compiler_core/artifact_store.py")
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        fail(f"W1-04 resolver source is unreadable: {type(exc).__name__}")
+        resolver_tree = ast.Module(body=[], type_ignores=[])
+    forbidden_import_roots = {
+        "pathlib", "os", "socket", "urllib", "http", "subprocess", "glob",
+        "requests", "aiohttp", "importlib",
+    }
+    import_aliases: dict[str, str] = {}
+    module_functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
+    resolver_class: ast.ClassDef | None = None
+    for node in resolver_tree.body:
+        if isinstance(node, ast.Import):
+            for item in node.names:
+                import_aliases[item.asname or item.name.split(".", 1)[0]] = item.name
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            for item in node.names:
+                import_aliases[item.asname or item.name] = f"{module}.{item.name}"
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            module_functions[node.name] = node
+        elif isinstance(node, ast.ClassDef) and node.name == "ArtifactResolverV4":
+            resolver_class = node
+    if resolver_class is None:
+        fail("W1-04 ArtifactResolverV4 class is missing")
+    else:
+        resolver_methods = {
+            node.name: node for node in resolver_class.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        public_methods = {
+            name for name in resolver_methods if not name.startswith("_")
+        }
+        if public_methods != {"register_bytes", "resolve_content", "resolve_handle"}:
+            fail(f"W1-04 resolver public API drifted: {sorted(public_methods)}")
+        reachable: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {
+            f"method:{name}": resolver_methods[name]
+            for name in ("__init__", "register_bytes", "resolve_content", "resolve_handle")
+            if name in resolver_methods
+        }
+        pending = list(reachable)
+        while pending:
+            current = reachable[pending.pop()]
+            for call in (
+                node for node in ast.walk(current) if isinstance(node, ast.Call)
+            ):
+                raw_name = _ast_dotted_name(call.func)
+                target_key: str | None = None
+                if raw_name.startswith("self."):
+                    method_name = raw_name.removeprefix("self.")
+                    if method_name in resolver_methods:
+                        target_key = f"method:{method_name}"
+                elif raw_name in module_functions:
+                    target_key = f"module:{raw_name}"
+                if target_key is not None and target_key not in reachable:
+                    target = (
+                        resolver_methods[target_key.removeprefix("method:")]
+                        if target_key.startswith("method:")
+                        else module_functions[target_key.removeprefix("module:")]
+                    )
+                    reachable[target_key] = target
+                    pending.append(target_key)
+
+        forbidden_uses: set[str] = set()
+        dangerous_calls = {
+            "open", "eval", "exec", "compile", "__import__", "getattr",
+            "setattr", "globals", "locals", "vars",
+        }
+        dangerous_suffixes = (
+            ".open", ".read_text", ".read_bytes", ".glob", ".rglob",
+            ".resolve", ".stat", ".lstat", ".readlink", ".urlopen",
+            ".connect", ".create_connection", ".popen", ".system", ".run",
+        )
+        for function in reachable.values():
+            for node in ast.walk(function):
+                if isinstance(node, ast.Call):
+                    raw_name = _ast_dotted_name(node.func)
+                    head, separator, tail = raw_name.partition(".")
+                    normalized = import_aliases.get(head, head)
+                    if separator:
+                        normalized = f"{normalized}.{tail}"
+                    if (
+                        normalized in dangerous_calls
+                        or normalized.endswith(dangerous_suffixes)
+                        or normalized.split(".", 1)[0] in forbidden_import_roots
+                    ):
+                        forbidden_uses.add(normalized)
+                elif isinstance(node, ast.Name) and node.id in import_aliases:
+                    normalized = import_aliases[node.id]
+                    if normalized.split(".", 1)[0] in forbidden_import_roots:
+                        forbidden_uses.add(normalized)
+        if forbidden_uses:
+            fail(
+                "W1-04 resolver reachable call graph acquired path/network/process "
+                f"authority: {sorted(forbidden_uses)}"
+            )
+
+    try:
+        content = b"W1-04-known-vector"
+        content_ref = ContentRefV4(
+            kind="opaque-bytes", digest=DigestV4.from_bytes(content)
+        )
+        resolver = ArtifactResolverV4(max_artifact_bytes=65_536)
+        first_ref = resolver.register_bytes(
+            artifact_id="known-vector",
+            content_ref=content_ref,
+            artifact_kind="source-bundle",
+            media_type="application/json",
+            scope="formal-run",
+            content=content,
+        )
+        second_ref = resolver.register_bytes(
+            artifact_id="known-vector",
+            content_ref=content_ref,
+            artifact_kind="source-bundle",
+            media_type="application/json",
+            scope="formal-run",
+            content=content,
+        )
+        if first_ref != second_ref or resolver.resolve_content(
+            content_ref,
+            expected_artifact_kind="source-bundle",
+            expected_media_type="application/json",
+            expected_scope="formal-run",
+            max_bytes=len(content),
+        ) != content:
+            fail("W1-04 known-vector exact round trip or idempotency failed")
+        expected_errors = [
+            (
+                "ARTIFACT_REFERENCE_TYPE",
+                lambda: resolver.resolve_content(
+                    r"\\.\PIPE\jc-canary",
+                    expected_artifact_kind="source-bundle",
+                    expected_media_type="application/json",
+                    expected_scope="formal-run",
+                    max_bytes=len(content),
+                ),
+            ),
+            (
+                "ARTIFACT_SCOPE_MISMATCH",
+                lambda: resolver.resolve_content(
+                    content_ref,
+                    expected_artifact_kind="source-bundle",
+                    expected_media_type="application/json",
+                    expected_scope="other-run",
+                    max_bytes=len(content),
+                ),
+            ),
+            (
+                "ARTIFACT_TOO_LARGE",
+                lambda: resolver.resolve_content(
+                    content_ref,
+                    expected_artifact_kind="source-bundle",
+                    expected_media_type="application/json",
+                    expected_scope="formal-run",
+                    max_bytes=len(content) - 1,
+                ),
+            ),
+            (
+                "ARTIFACT_ID_COLLISION",
+                lambda: resolver.register_bytes(
+                    artifact_id="known-vector",
+                    content_ref=ContentRefV4(
+                        kind="opaque-bytes", digest=DigestV4.from_bytes(b"changed")
+                    ),
+                    artifact_kind="source-bundle",
+                    media_type="application/json",
+                    scope="formal-run",
+                    content=b"changed",
+                ),
+            ),
+        ]
+        for expected_code, operation in expected_errors:
+            try:
+                operation()
+            except ContractV4Error as exc:
+                if exc.code != expected_code or "jc-canary" in str(exc):
+                    fail(
+                        f"W1-04 known-vector expected {expected_code} but got {exc.code}"
+                    )
+            else:
+                fail(f"W1-04 known-vector failed to reject {expected_code}")
+    except Exception as exc:
+        fail(f"W1-04 known-vector crashed: {type(exc).__name__}: {exc}")
+
+    for relative in (
+        "tests/security/test_artifact_resolver.py",
+        "tests/property/test_resolver_properties.py",
+    ):
+        try:
+            controls = _forbidden_test_controls((ROOT / relative).read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as exc:
+            fail(f"W1-04 required test source unreadable: {relative}: {type(exc).__name__}")
+            continue
+        if controls:
+            fail(f"W1-04 required tests contain bypass controls: {relative}: {controls}")
+
+    artifact_rules = [
+        item for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict) and item.get("path") == "compiler_core/artifact_store.py"
+    ]
+    if len(artifact_rules) != 1 or artifact_rules[0].get("class") != "FORMAL_CORE":
+        fail("W1-04 module policy does not classify artifact_store.py as FORMAL_CORE")
+    if disposition != disposition_generator.build_document():
+        fail("W1-04 file disposition is not reproducible from its generator")
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    artifact_disposition = disposition_by_path.get("compiler_core/artifact_store.py", {})
+    if {
+        key: artifact_disposition.get(key)
+        for key in ("disposition", "terminal_state", "namespace")
+    } != {
+        "disposition": "KEEP_REWRITE",
+        "terminal_state": "KEEP_REWRITE",
+        "namespace": "formal_core",
+    }:
+        fail("W1-04 artifact_store.py disposition authority drifted")
+    for relative in (
+        "tests/security/test_artifact_resolver.py",
+        "tests/property/test_resolver_properties.py",
+        "tests/fixtures/golden/v4-artifact-page-probe.json",
+    ):
+        entry = disposition_by_path.get(relative, {})
+        if (
+            entry.get("disposition"), entry.get("terminal_state")
+        ) != ("TEST_ORACLE", "TEST_ORACLE"):
+            fail(f"W1-04 test oracle disposition drifted: {relative}")
+
+    if _generated_publication_problems(
+        V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
+    ):
+        fail("W1-04 generated schema or MCP manifest drifted")
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-04 file disposition is not closed over the tracked tree")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W1-04 artifact resolver gate OK: exact typed refs; bounded immutable bytes; "
+        "zero path/network/process authority; 64KiB default/256KiB hard page-length policy; "
+        "P0-04/P0-10/P1-15/P1-17 remain registered through later closure tasks"
+    )
+    return EXIT_OK
+
+
+def cmd_w1_04_artifact_resolver_gate() -> int:
+    """Fail closed on malformed W1-04 authority or resolver inputs."""
+
+    try:
+        return _cmd_w1_04_artifact_resolver_gate()
+    except Exception as exc:
+        print(
+            f"W1-04 artifact resolver gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -6385,6 +7121,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_02_contract_gate()
     if args.wave == "W1-03":
         return cmd_w1_03_publication_gate()
+    if args.wave == "W1-04":
+        return cmd_w1_04_artifact_resolver_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -7455,6 +8193,44 @@ def _w1_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w1_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W1-04 resolver/contract executable evidence."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W1-04 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": 472,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": 472,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 472,
+        "junit_unique_cases": 472,
+        "junit_case_ids_digest": W1_04_TEST_CASE_IDS_DIGEST,
+    }
+    problems: list[str] = []
+    for field, expected_value in expected.items():
+        if report.get(field) != expected_value:
+            problems.append(
+                f"W1-04 pytest {field} drifted: "
+                f"{report.get(field)!r} != {expected_value!r}"
+            )
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W1-04 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -7708,7 +8484,7 @@ def _execute_auto_task(
             len(governance_reports) == 1
             and evidence_digest is not None
             and governance_reports[0].get("evidence_sha256") == evidence_digest
-            and governance_reports[0].get("required_passed") == 12
+            and governance_reports[0].get("required_passed") == 13
             and governance_reports[0].get("future_red") in accepted_red_counts
             and governance_reports[0].get("bypass_or_collection_errors") == 0
         )
@@ -7717,7 +8493,7 @@ def _execute_auto_task(
             "kind": "artifact_binding",
             "ok": evidence_bound,
             "detail": (
-                "12 required PASS and an exact lifecycle RED set bound to canonical state evidence"
+                "13 required PASS and an exact lifecycle RED set bound to canonical state evidence"
                 if evidence_bound else "W0-04 test report or state evidence binding is incomplete"
             ),
         })
@@ -7770,6 +8546,39 @@ def _execute_auto_task(
             "detail": (
                 "committed Schema and MCP manifest bytes match the frozen publication digests"
                 if not publication_problems else "; ".join(publication_problems)
+            ),
+        })
+    if task["id"] == "W1-04":
+        report_problems = _w1_04_test_report_problems(test_reports)
+        expected_artifacts = {
+            "result-path:tests/fixtures/golden/v4-artifact-page-probe.json": (
+                W1_04_ARTIFACT_PAGE_PROBE_FILE_DIGEST
+            ),
+            "result-path:schemas/jc-v4.schema.json": "sha256:" + W1_03_SCHEMA_SHA256,
+            "result-path:mcp_manifest.json": "sha256:" + W1_03_MANIFEST_SHA256,
+        }
+        artifact_problems = [
+            f"{key}={artifact_digests.get(key)!r}"
+            for key, expected_digest in expected_artifacts.items()
+            if artifact_digests.get(key) != expected_digest
+        ]
+        assertions.append({
+            "id": "w1-04-exact-test-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "472 resolver/security/property/contract/publication pytest items "
+                "bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w1-04-exact-artifacts",
+            "kind": "artifact_binding",
+            "ok": not artifact_problems,
+            "detail": (
+                "artifact-page probe and generated publications match frozen digests"
+                if not artifact_problems else "; ".join(artifact_problems)
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

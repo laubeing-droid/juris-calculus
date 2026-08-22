@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
+    "plan_sha256": "ce0164c8808bd18816ba86351423b335123e322b443337d910c51bffdcc82543",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -1394,21 +1394,36 @@
       "wave": "W1",
       "mode": "AUTO",
       "depends_on": [
-        "W1-02"
+        "W1-03"
       ],
       "audit_ids": [
         "P0-04",
         "P0-10",
+        "P1-15",
         "P1-17"
       ],
       "objective": "新增 artifact_store.py；ContentRef + bounded resolver；same id same digest 幂等",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/artifact_store.py",
+        "compiler_core/contracts.py",
+        "docs/architecture/module-authority.json",
+        "docs/contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
         "remediation/v4/tasks.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_contracts.py",
         "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_v4_foundation_contract.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/fixtures/golden/v4-artifact-page-probe.json",
+        "tests/fixtures/golden/v4-foundation-contract.json",
         "tests/property/test_resolver_properties.py",
+        "tests/required-v4-tests.json",
         "tests/security/test_artifact_resolver.py",
         "tests/unit/test_remediation_run.py",
+        "tools/build_file_disposition.py",
         "tools/remediate_v4.py"
       ],
       "terminal_states": [],
@@ -1419,9 +1434,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W1-04"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W1-04",
+          "tests/security/test_artifact_resolver.py",
+          "tests/property/test_resolver_properties.py",
+          "tests/contract/test_contracts.py",
+          "tests/contract/test_v4_foundation_contract.py",
+          "tests/contract/test_python_schema_mcp_differential.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W1-04/resolver-contract-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

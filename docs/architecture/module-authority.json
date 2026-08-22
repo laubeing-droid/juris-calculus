@@ -70,6 +70,7 @@
     {"path": "compiler_core/admission.py", "class": "REMOVE", "rationale": "Legacy admission invariants must move to the V4 typed admission path before removal."},
     {"path": "compiler_core/analysis.py", "class": "SOURCE_TOOL", "rationale": "Offline advisory analysis source tool; public runtime edges must be cut."},
     {"path": "compiler_core/application.py", "class": "FORMAL_CORE", "rationale": "Sole target ApplicationV4 orchestration sink."},
+    {"path": "compiler_core/artifact_store.py", "class": "FORMAL_CORE", "rationale": "Bounded exact content-addressed byte resolver without path or network authority."},
     {"path": "compiler_core/arbitration_reasoning.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory legal candidate code, not formal runtime."},
     {"path": "compiler_core/argumentation.py", "class": "FORMAL_CORE", "rationale": "Target argument, attack, priority, permission, and grounded semantics."},
     {"path": "compiler_core/argumentation_v2.py", "class": "REMOVE", "rationale": "Merge proven invariants into the unversioned authority and remove the parallel module."},

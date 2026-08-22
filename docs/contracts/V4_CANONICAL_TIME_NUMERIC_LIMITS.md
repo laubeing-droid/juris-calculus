@@ -5,6 +5,7 @@ Machine authority is split by concern without duplicating values:
 - `tests/fixtures/golden/jcs-v4-vectors.json` freezes canonical bytes and digest vectors.
 - `tests/fixtures/golden/v4-foundation-contract.json` freezes time, numeric, admission-limit, and target-platform rules.
 - `tests/fixtures/golden/v4-resource-limit-probe.json` is the measured local basis for the admission limits.
+- `tests/fixtures/golden/v4-artifact-page-probe.json` is the measured local basis for the bounded resolver page.
 
 ## Canonical identity
 
@@ -28,11 +29,13 @@ JSON integers use the same safe range as canonical identity. Money is `{currency
 
 The committed probe contains 48 deterministic Windows/CPython 3.12 sizing samples. The sole runner hard-freezes the probe file and payload digests, regenerates every raw sample, and independently recomputes its byte digest and structural observations; recorded timing distributions are checked for a valid measurement shape but are not expected to reproduce bit-for-bit. The historical `logic_sha256` binds the methodology description, while the committed runner source is the executable reproduction logic.
 
-The probe informs 13 request-admission defaults and hard maxima covering transport bytes, depth, nodes, object/array/string/reference counts, typed reference fields, and the admission deadline. Probe names record generator scale, not an admission result: for example, 32 nested arrays have observed depth 33 because the root value is depth 1, and a `references_2048` request also carries two scalar references. The policy independently defines every limit as inclusive; the corresponding enforcement task must prove that the exact limit passes and `limit+1` returns the named stable error code. The W0 sizing probe itself does not claim that those runtime rejection paths already exist.
+The request probe informs 13 request-admission defaults and hard maxima covering transport bytes, depth, nodes, object/array/string/reference counts, typed reference fields, and the admission deadline. Probe names record generator scale, not an admission result: for example, 32 nested arrays have observed depth 33 because the root value is depth 1, and a `references_2048` request also carries two scalar references. The policy independently defines every limit as inclusive; the corresponding enforcement task must prove that the exact limit passes and `limit+1` returns the named stable error code. The W0 sizing probe itself does not claim that those runtime rejection paths already exist.
 
-The required enforcement order is byte check before decode/parse, bounded depth pre-scan, strict parse, one iterative structural pass, typed contract validation, and a deadline spanning every admission stage. The probe is local sizing evidence, not a throughput or latency service-level objective.
+The required enforcement order is byte check before decode/parse, bounded depth pre-scan, strict parse, one iterative structural pass, typed contract validation, and a deadline spanning every admission stage. The request probe is local sizing evidence, not a throughput or latency service-level objective.
 
-Six operational limits lack an implementation-specific benchmark: artifact pages, solver deadline, worker queue, in-flight runs, state quota, and retention. They are frozen as `DEFERRED_UNBENCHMARKED` with `value=null` and a concrete closure task. No downstream task may replace `null` with a guessed number.
+W1-04 separately freezes `artifact_page_bytes` at a 65,536-byte default and 262,144-byte hard maximum for `ArtifactResolverV4.resolve_handle.length`. The deterministic local probe measures SHA-256 plus RFC 4648 Base64 primitives over 16 KiB, 64 KiB, 256 KiB, and 1 MiB payloads. A 64 KiB payload encodes to 87,384 bytes; a 256 KiB payload encodes to 349,528 bytes; a 1 MiB payload encodes to 1,398,104 bytes. This is policy-sizing reference evidence only: the resolver rehashes the full registered artifact per read, the page limit does not bound resident content or `resolve_content`, and the probe does not prove MCP framing, concurrent throughput, memory use, or an SLO. W4-03 owns bundle-bound read-artifact handle/chunk semantics; W4-06 owns cross-stage privacy/error/resource closure; W5-CUTOVER owns actual `jc_read_artifact` MCP wiring and keeps P1-15 RED until the full production budget closes. W5-01 and W5-06 only verify contracts/matrices.
+
+Five operational limits still lack an implementation-specific benchmark: solver deadline, worker queue, in-flight runs, state quota, and retention. They remain `DEFERRED_UNBENCHMARKED` with `value=null` and a concrete closure task. No downstream task may replace `null` with a guessed number.
 
 ## Platform boundary
 

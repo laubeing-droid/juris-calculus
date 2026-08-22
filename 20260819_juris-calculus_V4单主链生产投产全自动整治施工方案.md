@@ -549,10 +549,10 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W1-04　ContentRef 和 ArtifactResolver
 
-- **Depends / audit**：`W1-02 / P0-04, P0-10, P1-17`。
-- **Paths**：新增 `compiler_core/artifact_store.py` 及 security/property tests。
-- **动作**：只按 typed content/capability ref 取受控 bytes；先限制长度/type/scope，再从同一 bytes 复算 digest；same id/same digest 幂等，same id/different digest collision；formal resolver 禁止 path、网络、模糊搜索。
-- **Gate**：绝对/相对逃逸、UNC、device、pipe、symlink/junction ref、oversize、wrong MIME、digest bit flip、scope reuse 全拒绝且零外部读取。
+- **Depends / audit**：`W1-03 / P0-04, P0-10, P1-15, P1-17`。
+- **Paths**：仅以下 21 个 exact paths：本方案、`compiler_core/artifact_store.py`、`compiler_core/contracts.py`、`docs/architecture/module-authority.json`、`docs/contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md`、`mcp_manifest.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`schemas/jc-v4.schema.json`、`tests/contract/test_contracts.py`、`tests/contract/test_required_test_manifest.py`、`tests/contract/test_v4_foundation_contract.py`、`tests/contract/v4-contract-vectors.json`、`tests/fixtures/golden/v4-artifact-page-probe.json`、`tests/fixtures/golden/v4-foundation-contract.json`、`tests/property/test_resolver_properties.py`、`tests/required-v4-tests.json`、`tests/security/test_artifact_resolver.py`、`tests/unit/test_remediation_run.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。
+- **动作**：只按 typed content/capability ref 取受控 bytes；先限制长度/type/scope，再从同一 bytes 复算 digest；same id/same digest 幂等，same id/different digest collision；formal resolver 禁止 path、网络、模糊搜索。`artifact_page_bytes` 仅约束 `ArtifactResolverV4.resolve_handle.length`，不声称限制整件摘要 CPU、驻留内容内存、`resolve_content` 整件返回或 MCP transport。
+- **Gate**：绝对/相对逃逸、UNC、device、pipe、symlink/junction ref、oversize、wrong MIME、digest bit flip、scope reuse 全拒绝且零外部读取；有效 handle 在 default/hard page exact limit 返回精确 bytes，`limit+1` 返回 `ARTIFACT_PAGE_LIMIT`。P1-15 的完整生产资源预算保持 RED 到 `W5-CUTOVER`。
 - **Commit**：`feat(trust): add bounded content-addressed artifact resolver`。
 
 ### W1-05　TrustPolicy、签名、撤销和角色

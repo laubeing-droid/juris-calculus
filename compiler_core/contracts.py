@@ -134,7 +134,7 @@ _LIMIT_DEFAULTS = {
     "max_fact_attestation_refs": 512,
     "max_proposal_refs": 512,
     "admission_deadline_ms": 250,
-    "artifact_page_bytes": None,
+    "artifact_page_bytes": 65_536,
     "solver_deadline_ms": None,
     "worker_queue_items": None,
     "in_flight_runs": None,
@@ -155,7 +155,7 @@ _LIMIT_HARD_MAXIMA = {
     "max_fact_attestation_refs": 512,
     "max_proposal_refs": 512,
     "admission_deadline_ms": 1_000,
-    "artifact_page_bytes": None,
+    "artifact_page_bytes": 262_144,
     "solver_deadline_ms": None,
     "worker_queue_items": None,
     "in_flight_runs": None,
@@ -176,6 +176,7 @@ _LIMIT_ERROR_CODES = {
     "max_fact_attestation_refs": "FACT_REFERENCE_LIMIT",
     "max_proposal_refs": "PROPOSAL_REFERENCE_LIMIT",
     "admission_deadline_ms": "ADMISSION_DEADLINE",
+    "artifact_page_bytes": "ARTIFACT_PAGE_LIMIT",
 }
 DEFAULT_RESOURCE_LIMITS_V4 = MappingProxyType(
     {name: _LIMIT_DEFAULTS[name] for name in _LIMIT_ERROR_CODES}
@@ -839,7 +840,7 @@ class ResourceLimitsV4(V4Contract):
     max_fact_attestation_refs: int = 512
     max_proposal_refs: int = 512
     admission_deadline_ms: int = 250
-    artifact_page_bytes: int | None = None
+    artifact_page_bytes: int = 65_536
     solver_deadline_ms: int | None = None
     worker_queue_items: int | None = None
     in_flight_runs: int | None = None
