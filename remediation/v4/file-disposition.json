@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 339,
+  "count": 341,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1673,6 +1673,13 @@
       "closure_task": "W1-01"
     },
     {
+      "path": "tests/contract/test_jcs_v4.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_required_test_manifest.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -1916,6 +1923,13 @@
     },
     {
       "path": "tests/property/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/property/test_canonicalization.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
@@ -2403,7 +2417,7 @@
       "closure_task": "W5-02C",
       "history_locator_only": true,
       "frozen_fingerprint": {
-        "git_blob_head": "89a13ed7619175b45c433149df2deb641755cabc",
+        "git_blob_head": "da706db39c6857e828661775ce5483c30ef10776",
         "note": "current HEAD blob locator only; not pre-frozen"
       },
       "target_module": null,

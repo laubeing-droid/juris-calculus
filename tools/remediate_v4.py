@@ -31,6 +31,7 @@ import calendar
 import configparser
 import fnmatch
 import hashlib
+import importlib.util
 import itertools
 import json
 import math
@@ -54,7 +55,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.6.0"
+RUNNER_VERSION = "0.7.0"
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -2370,7 +2371,7 @@ def _pytest_config_problems(config_text: str, sentinel_name: str) -> list[str]:
 
 
 def _required_pytest_environment() -> dict[str, str]:
-    """Remove ambient pytest/Python injection from W0-04 subprocesses."""
+    """Remove ambient pytest/Python injection from required subprocesses."""
 
     environment = os.environ.copy()
     for name in ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTHONHOME", "PYTHONPATH"):
@@ -2475,9 +2476,8 @@ def _manifest_owner_problems(
 
 def _required_test_manifest_problems(
     manifest: Any, *, root: Path, issue_map: Any, plan: Any,
-    require_pending: bool = False,
 ) -> list[str]:
-    """Validate W0-04 taxonomy without executing production code."""
+    """Validate the current required-test lifecycle without executing production code."""
 
     problems: list[str] = []
     top_fields = {
@@ -2688,23 +2688,34 @@ def _required_test_manifest_problems(
             continue
         if isinstance(item["id"], str):
             evidence_by_id[item["id"]] = item
-        if item["suite"] != "differential" or item["state"] != "RED_AT_TASK":
-            problems.append(f"evidence track {item['id']} is not differential RED_AT_TASK")
+        state = item["state"]
+        if item["suite"] != "differential":
+            problems.append(f"evidence track {item['id']} is not differential")
+        if state not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}:
+            problems.append(
+                f"evidence track {item['id']} must be RED_AT_TASK or ACTIVE_REQUIRED"
+            )
         relative = _selector_file(item["selector"])
         if relative is None or not relative.startswith("tests/differential/"):
             problems.append(f"evidence track {item['id']} selector is outside differential")
-        elif _selector_is_declared(root, item["selector"]):
-            if require_pending:
+        else:
+            declared = _selector_is_declared(root, item["selector"])
+            if state == "RED_AT_TASK" and declared:
                 problems.append(
                     f"evidence track {item['id']} claims RED_AT_TASK but selector is active"
                 )
-            controls = _forbidden_test_controls(
-                (root / relative).read_text(encoding="utf-8-sig")
-            )
-            if controls:
+            if state == "ACTIVE_REQUIRED" and not declared:
                 problems.append(
-                    f"active evidence selector uses forbidden test controls: {relative} {controls}"
+                    f"evidence track {item['id']} claims ACTIVE_REQUIRED but selector is not declared"
                 )
+            if declared:
+                controls = _forbidden_test_controls(
+                    (root / relative).read_text(encoding="utf-8-sig")
+                )
+                if controls:
+                    problems.append(
+                        f"active evidence selector uses forbidden test controls: {relative} {controls}"
+                    )
         problems.extend(_manifest_owner_problems(
             entry_label=f"evidence track {item['id']}", owner_id=item["owner_task"],
             selector=item["selector"], task_by_id=task_by_id, task_order=task_order,
@@ -2743,8 +2754,11 @@ def _required_test_manifest_problems(
         mutation_selectors.append(item["selector"])
         canonical_suite = suite_aliases.get(item["suite"], item["suite"])
         used_suites.add(canonical_suite)
-        if item["state"] != "RED_AT_TASK":
-            problems.append(f"audit mutation {item['test_id']} must be RED_AT_TASK")
+        state = item["state"]
+        if state not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}:
+            problems.append(
+                f"audit mutation {item['test_id']} must be RED_AT_TASK or ACTIVE_REQUIRED"
+            )
         if not isinstance(item["mutation"], str) or not item["mutation"].strip():
             problems.append(f"audit mutation {item['test_id']} lacks an operator")
         if not isinstance(item["red_failure"], str) or not item["red_failure"].strip():
@@ -2761,18 +2775,24 @@ def _required_test_manifest_problems(
             or not _selector_matches_suite(relative, canonical_suite, suite_aliases)
         ):
             problems.append(f"audit mutation {item['test_id']} is outside its suite")
-        elif _selector_is_declared(root, item["selector"]):
-            if require_pending:
+        else:
+            declared = _selector_is_declared(root, item["selector"])
+            if state == "RED_AT_TASK" and declared:
                 problems.append(
                     f"audit mutation {item['test_id']} claims RED_AT_TASK but selector is active"
                 )
-            controls = _forbidden_test_controls(
-                (root / relative).read_text(encoding="utf-8-sig")
-            )
-            if controls:
+            if state == "ACTIVE_REQUIRED" and not declared:
                 problems.append(
-                    f"active audit selector uses forbidden test controls: {relative} {controls}"
+                    f"audit mutation {item['test_id']} claims ACTIVE_REQUIRED but selector is not declared"
                 )
+            if declared:
+                controls = _forbidden_test_controls(
+                    (root / relative).read_text(encoding="utf-8-sig")
+                )
+                if controls:
+                    problems.append(
+                        f"active audit selector uses forbidden test controls: {relative} {controls}"
+                    )
         problems.extend(_manifest_owner_problems(
             entry_label=f"audit mutation {item['test_id']}", owner_id=item["owner_task"],
             selector=item["selector"], task_by_id=task_by_id, task_order=task_order,
@@ -2812,7 +2832,7 @@ def _required_test_manifest_problems(
         if not isinstance(item["reason"], str) or not item["reason"].strip():
             problems.append(f"rewrite entry {item['id']} lacks a reason")
         original_declared = _selector_is_declared(root, item["selector"])
-        if require_pending and not original_declared:
+        if not original_declared:
             problems.append(f"rewrite selector is not declared: {item['selector']}")
         rewrite_task = task_by_id.get(item["rewrite_task"])
         replacement = _selector_file(item["replacement_selector"])
@@ -2825,8 +2845,6 @@ def _required_test_manifest_problems(
             problems.append(f"replacement selector is outside rewrite task allowlist: {item['id']}")
         else:
             replacement_declared = _selector_is_declared(root, item["replacement_selector"])
-            if require_pending and replacement_declared:
-                problems.append(f"rewrite entry {item['id']} is already active during W0-04")
             if replacement_declared:
                 controls = _forbidden_test_controls(
                     (root / replacement).read_text(encoding="utf-8-sig")
@@ -2944,7 +2962,7 @@ def cmd_required_test_manifest() -> int:
         print(f"W0 required test manifest unreadable: {exc}", file=sys.stderr)
         return EXIT_GATE_FAIL
     problems = _required_test_manifest_problems(
-        manifest, root=ROOT, issue_map=issue_map, plan=plan, require_pending=True,
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
     )
     if problems:
         for problem in problems:
@@ -3506,6 +3524,312 @@ def cmd_w0_05_dependency_gate() -> int:
     return EXIT_OK
 
 
+def cmd_w1_01_canonical_gate() -> int:
+    """Verify the executable W1-01 JCS, DigestV4, and test-lifecycle contract."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "compiler_core/canonical_serialization.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/jcs_node_oracle.mjs",
+        "tests/contract/test_jcs_v4.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/fixtures/golden/jcs-v4-vectors.json",
+        "tests/property/test_canonicalization.py",
+        "tests/required-v4-tests.json",
+        "tests/unit/test_canonical_serialization.py",
+        "tools/remediate_v4.py",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "-p", "no:cacheprovider", "--basetemp", "{state_root}/tmp/W1-01",
+            "tests/contract/test_jcs_v4.py",
+            "tests/property/test_canonicalization.py",
+            "tests/unit/test_canonical_serialization.py",
+            "tests/contract/test_required_test_manifest.py",
+        ],
+        [
+            "node", "tests/contract/jcs_node_oracle.mjs",
+            "tests/fixtures/golden/jcs-v4-vectors.json",
+        ],
+    ]
+    active_selectors = {
+        "V4-P0-03-DIGEST-COMPOSITION": (
+            "P0-03",
+            "tests/contract/test_jcs_v4.py::"
+            "test_digest_grammar_composes_across_request_receipt_bundle",
+        ),
+        "V4-P1-01-RFC8785-PROPERTY": (
+            "P1-01",
+            "tests/property/test_canonicalization.py::"
+            "test_rfc8785_cross_language_property_vectors",
+        ),
+    }
+    expected_rewrite = {
+        "id": "REWRITE-ENVIRONMENT-EXCLUDED-DIGEST",
+        "selector": (
+            "tests/unit/test_canonical_serialization.py::"
+            "test_semantic_digest_excludes_environment_fields_and_digest_itself"
+        ),
+        "rewrite_task": "W1-01",
+        "retirement_task": "W5-CUTOVER",
+        "state": "REWRITE_AT_TASK",
+        "replacement_selector": (
+            "tests/property/test_canonicalization.py::"
+            "test_every_identity_field_changes_digest"
+        ),
+    }
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        vectors = json.loads(JCS_V4_VECTORS.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"W1-01 control input unreadable: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W1-01"),
+        None,
+    )
+    if not isinstance(task, dict):
+        fail("W1-01 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W0-05"]:
+            fail("W1-01 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-03", "P1-01"]:
+            fail("W1-01 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-01 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+            fail("W1-01 argv or expected exit codes drifted")
+
+    manifest_problems = _required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    )
+    problems.extend(manifest_problems)
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    actual_active_ids = {
+        test_id for test_id, item in mutation_by_id.items()
+        if item.get("state") == "ACTIVE_REQUIRED"
+    }
+    if actual_active_ids != set(active_selectors):
+        fail(
+            "W1-01 ACTIVE_REQUIRED audit set drifted: "
+            f"{sorted(actual_active_ids)}"
+        )
+    active_evidence_ids = sorted(
+        item.get("id")
+        for item in manifest.get("evidence_tracks", [])
+        if isinstance(item, dict) and item.get("state") == "ACTIVE_REQUIRED"
+    )
+    if active_evidence_ids:
+        fail(f"W1-01 activated future evidence tracks: {active_evidence_ids}")
+    for test_id, (audit_id, selector) in active_selectors.items():
+        item = mutation_by_id.get(test_id)
+        if not isinstance(item, dict) or (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) != (audit_id, "W1-01", "ACTIVE_REQUIRED", selector):
+            fail(f"{test_id} is not the exact ACTIVE_REQUIRED W1-01 obligation")
+        elif not _selector_is_declared(ROOT, selector):
+            fail(f"{test_id} selector is not declared")
+
+    rewrite = next(
+        (
+            item for item in manifest.get("rewrite_at_task", [])
+            if isinstance(item, dict) and item.get("id") == expected_rewrite["id"]
+        ),
+        None,
+    )
+    if not isinstance(rewrite, dict) or any(
+        rewrite.get(key) != value for key, value in expected_rewrite.items()
+    ):
+        fail("W1-01 digest rewrite obligation drifted")
+    else:
+        for field in ("selector", "replacement_selector"):
+            selector = expected_rewrite[field]
+            if not _selector_is_declared(ROOT, selector):
+                fail(f"W1-01 digest rewrite {field} is not declared")
+
+    frozen_hashes = {
+        JCS_V4_VECTORS: "26279e5acc19cf7476f01f195a4c5ff22573cad8a7917cecd1d5fa9d2d797fe5",
+        ROOT / "tests" / "contract" / "jcs_node_oracle.mjs": (
+            "99d98fac3a6d113cf7435a1a2efc52482d6b3cf811b2a30c9660763b214964c2"
+        ),
+    }
+    for path, expected_hash in frozen_hashes.items():
+        try:
+            actual_hash = sha256_hex(path.read_bytes())
+        except OSError as exc:
+            fail(f"W1-01 frozen input unreadable: {path}: {exc}")
+            continue
+        if actual_hash != expected_hash:
+            fail(f"W1-01 frozen input digest drifted: {path.relative_to(ROOT)}")
+
+    forbidden_module = "compiler_core.jcs"
+    inspected_sources = [
+        ROOT / "compiler_core" / "canonical_serialization.py",
+        ROOT / "tests" / "contract" / "test_jcs_v4.py",
+        ROOT / "tests" / "property" / "test_canonicalization.py",
+    ]
+    for path in inspected_sources:
+        try:
+            source = path.read_text(encoding="utf-8-sig")
+            tree = ast.parse(source, filename=str(path.relative_to(ROOT)))
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            fail(f"W1-01 source is unreadable or invalid: {path.relative_to(ROOT)}: {exc}")
+            continue
+        imports_forbidden = any(
+            (
+                isinstance(node, ast.Import)
+                and any(alias.name == forbidden_module for alias in node.names)
+            )
+            or (
+                isinstance(node, ast.ImportFrom)
+                and (
+                    node.module == forbidden_module
+                    or (
+                        (node.module == "compiler_core" or node.level > 0)
+                        and any(alias.name == "jcs" for alias in node.names)
+                    )
+                )
+            )
+            or (
+                isinstance(node, ast.Constant)
+                and node.value == forbidden_module
+            )
+            for node in ast.walk(tree)
+        )
+        if imports_forbidden:
+            fail(f"W1-01 source imports the legacy jcs authority: {path.relative_to(ROOT)}")
+        if path.name == "canonical_serialization.py" and any(
+            isinstance(node, ast.Name) and node.id == "NON_SEMANTIC_FIELDS"
+            for node in ast.walk(tree)
+        ):
+            fail("canonical serializer still contains field-name-based digest deletion")
+
+    canonical_path = ROOT / "compiler_core" / "canonical_serialization.py"
+    try:
+        spec = importlib.util.spec_from_file_location("jc_w1_01_canonical_gate", canonical_path)
+        if spec is None or spec.loader is None:
+            raise ImportError("module spec has no loader")
+        canonical = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(canonical)
+    except Exception as exc:
+        fail(f"W1-01 production canonical module cannot load: {type(exc).__name__}: {exc}")
+        canonical = None
+
+    positive_count = 0
+    negative_count = 0
+    if canonical is not None:
+        for vector in vectors.get("positive", []):
+            vector_id = vector.get("id", "<missing>")
+            try:
+                encoded = canonical.canonical_bytes(vector["input"])
+                digest = canonical.digest_value(vector["input"])
+            except Exception as exc:
+                fail(f"W1-01 positive vector {vector_id} raised {type(exc).__name__}: {exc}")
+                continue
+            if encoded.hex() != vector.get("canonical_utf8_hex"):
+                fail(f"W1-01 positive vector bytes drifted: {vector_id}")
+            if str(digest) != vector.get("sha256") or not isinstance(digest, canonical.DigestV4):
+                fail(f"W1-01 positive vector digest drifted: {vector_id}")
+            positive_count += 1
+        for vector in vectors.get("negative", []):
+            vector_id = vector.get("id", "<missing>")
+            try:
+                if vector.get("kind") == "digest_grammar":
+                    canonical.DigestV4.parse(vector.get("value"))
+                else:
+                    canonical.canonicalize_json(vector.get("input_json"))
+            except Exception as exc:
+                if getattr(exc, "code", None) != vector.get("expected_error"):
+                    fail(
+                        f"W1-01 negative vector error drifted: {vector_id}: "
+                        f"{getattr(exc, 'code', type(exc).__name__)}"
+                    )
+            else:
+                fail(f"W1-01 negative vector unexpectedly passed: {vector_id}")
+            negative_count += 1
+
+        try:
+            if canonical.DigestV4.from_bytes("é".encode("utf-8")) == (
+                canonical.DigestV4.from_bytes("e\u0301".encode("utf-8"))
+            ):
+                fail("W1-01 raw source digest normalizes Unicode")
+            if canonical.canonicalize_json('{"text":"\\ud83d\\ude00"}') != (
+                '{"text":"😀"}'.encode("utf-8")
+            ):
+                fail("W1-01 valid surrogate pair handling drifted")
+            direct_rejections = [
+                ({"n": 1.5}, "FLOAT_FORBIDDEN"),
+                ({"n": math.nan}, "NON_JSON_NUMBER"),
+                ({"n": math.inf}, "NON_JSON_NUMBER"),
+                ({"n": 2**53}, "UNSAFE_INTEGER"),
+                ({"n": -(2**53)}, "UNSAFE_INTEGER"),
+                ({"text": "\ud800"}, "LONE_SURROGATE"),
+                ({"text": "\udc00"}, "LONE_SURROGATE"),
+                ({1: "non-string key"}, "OBJECT_KEY_TYPE"),
+                (1, "TOP_LEVEL_SCALAR"),
+            ]
+            for value, expected_code in direct_rejections:
+                try:
+                    canonical.canonical_bytes(value)
+                except Exception as exc:
+                    if getattr(exc, "code", None) != expected_code:
+                        fail(
+                            "W1-01 direct Python rejection drifted: "
+                            f"expected {expected_code}, got "
+                            f"{getattr(exc, 'code', type(exc).__name__)}"
+                        )
+                else:
+                    fail(f"W1-01 direct Python value unexpectedly passed: {expected_code}")
+            identity = {
+                "request_digest": "sha256:" + "0" * 64,
+                "engine_digest": "sha256:" + "1" * 64,
+                "schema_digest": "sha256:" + "2" * 64,
+                "tool_spec_digest": "sha256:" + "3" * 64,
+                "pack_digest": "sha256:" + "4" * 64,
+                "trust_policy_digest": "sha256:" + "5" * 64,
+                "algorithm_profile_digest": "sha256:" + "6" * 64,
+                "lock_digest": "sha256:" + "7" * 64,
+            }
+            baseline = canonical.semantic_digest(identity)
+            for index, field in enumerate(identity, start=8):
+                changed = {**identity, field: "sha256:" + format(index, "x") * 64}
+                if canonical.semantic_digest(changed) == baseline:
+                    fail(f"W1-01 semantic digest ignores identity field: {field}")
+        except Exception as exc:
+            fail(f"W1-01 strict identity checks raised {type(exc).__name__}: {exc}")
+
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-01 file disposition is not closed over the tracked tree")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W1-01 canonical gate OK: {positive_count} positive; {negative_count} negative; "
+        "2 ACTIVE_REQUIRED selectors; 1 rewrite bound; sole DigestV4 grammar"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -3517,6 +3841,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_required_test_manifest()
     if args.wave == "W0-05":
         return cmd_w0_05_dependency_gate()
+    if args.wave == "W1-01":
+        return cmd_w1_01_canonical_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -3709,7 +4035,13 @@ def _run_argv(
     exact_argv = _expanded_argv(argv, state_root)
     timed_out = False
     exit_code: int | None
-    execution_environment = os.environ.copy()
+    if "pytest" in exact_argv:
+        execution_environment = _required_pytest_environment()
+    else:
+        execution_environment = os.environ.copy()
+        if Path(exact_argv[0]).name.lower() in {"node", "node.exe"}:
+            execution_environment.pop("NODE_OPTIONS", None)
+            execution_environment.pop("NODE_PATH", None)
     execution_environment.update({
         "JC_REMEDIATION_STATE_ROOT": str(state_root),
         "PYTHONIOENCODING": "utf-8",
@@ -4321,6 +4653,10 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
                 match = re.search(rf"(?:^|\s){field}=(\d+)(?:\s|$)", stdout_text)
                 if match:
                     report[field] = int(match.group(1))
+            for field in ("float_tokens", "duplicate_key"):
+                match = re.search(rf"(?:^|\s){field}=([a-z-]+)(?:\s|$)", stdout_text)
+                if match:
+                    report[field] = match.group(1)
             runtime = re.search(r"(?:^|\s)runtime=(v\d+\.\d+\.\d+)(?:\s|$)", stdout_text)
             if runtime:
                 report["runtime"] = runtime.group(1)
@@ -4353,6 +4689,41 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
                 continue
         reports.append(report)
     return reports
+
+
+def _w1_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact executable evidence for the W1-01 pytest and Node lanes."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    node_reports = [report for report in test_reports if report.get("kind") == "node-oracle"]
+    if len(pytest_reports) != 1 or (
+        pytest_reports[0].get("exit_code"), pytest_reports[0].get("passed")
+    ) != (0, 38):
+        problems.append("W1-01 pytest report is not exactly 38 passed")
+    if len(node_reports) != 1:
+        problems.append("W1-01 must bind exactly one Node oracle report")
+        return problems
+    node_report = node_reports[0]
+    runtime = node_report.get("runtime")
+    runtime_match = re.fullmatch(r"v(?P<major>\d+)\.\d+\.\d+", str(runtime))
+    if runtime_match is None or int(runtime_match.group("major")) not in {22, 24}:
+        problems.append("W1-01 Node oracle runtime must be major 22 or 24")
+    expected_node = {
+        "exit_code": 0,
+        "positive": 9,
+        "negative": 16,
+        "canonical_bytes": 295,
+        "float_tokens": "raw-lexical",
+        "duplicate_key": "declaration-only",
+    }
+    for field, expected in expected_node.items():
+        if node_report.get(field) != expected:
+            problems.append(
+                f"W1-01 Node oracle {field} drifted: "
+                f"{node_report.get(field)!r} != {expected!r}"
+            )
+    return problems
 
 
 def _rebind_legacy_auto_receipt(
@@ -4585,12 +4956,25 @@ def _execute_auto_task(
             report for report in test_reports if report.get("kind") == "pytest-governance"
         ]
         evidence_digest = state_artifacts.get("state-artifact:w0-04-required-tests")
+        accepted_red_counts = {46}
+        try:
+            current_required_manifest = json.loads(
+                REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8")
+            )
+            accepted_red_counts.add(sum(
+                item.get("state") == "RED_AT_TASK"
+                for registry in ("evidence_tracks", "audit_mutations")
+                for item in current_required_manifest.get(registry, [])
+                if isinstance(item, dict)
+            ))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            pass
         evidence_bound = (
             len(governance_reports) == 1
             and evidence_digest is not None
             and governance_reports[0].get("evidence_sha256") == evidence_digest
             and governance_reports[0].get("required_passed") == 12
-            and governance_reports[0].get("future_red") == 46
+            and governance_reports[0].get("future_red") in accepted_red_counts
             and governance_reports[0].get("bypass_or_collection_errors") == 0
         )
         assertions.append({
@@ -4598,8 +4982,19 @@ def _execute_auto_task(
             "kind": "artifact_binding",
             "ok": evidence_bound,
             "detail": (
-                "12 required PASS and 46 explicit RED cases bound to canonical state evidence"
+                "12 required PASS and an exact lifecycle RED set bound to canonical state evidence"
                 if evidence_bound else "W0-04 test report or state evidence binding is incomplete"
+            ),
+        })
+    if task["id"] == "W1-01":
+        report_problems = _w1_01_test_report_problems(test_reports)
+        assertions.append({
+            "id": "w1-01-exact-test-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "38 pytest items and Node 22/24 9/16/295 oracle evidence bound"
+                if not report_problems else "; ".join(report_problems)
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

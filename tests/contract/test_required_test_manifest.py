@@ -6,6 +6,7 @@ import importlib.util
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from types import SimpleNamespace
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -74,10 +75,36 @@ def test_every_audit_mutation_is_covered_exactly_once() -> None:
 
 def test_future_required_tests_are_explicit_red_work_owned_by_an_allowed_task() -> None:
     payload = _baseline()
-    payload["audit_mutations"][0]["state"] = "PLANNED"
-    payload["audit_mutations"][0]["red_failure"] = ""
-    assert any("must be RED_AT_TASK" in problem for problem in _problems(payload))
+    active = next(
+        item for item in payload["audit_mutations"] if item["owner_task"] == "W1-01"
+    )
+    active["state"] = "PLANNED"
+    active["red_failure"] = ""
+    assert any(
+        "must be RED_AT_TASK or ACTIVE_REQUIRED" in problem
+        for problem in _problems(payload)
+    )
     assert any("red failure" in problem for problem in _problems(payload))
+
+    payload = _baseline()
+    active = next(
+        item for item in payload["audit_mutations"] if item["owner_task"] == "W1-01"
+    )
+    active["state"] = "RED_AT_TASK"
+    assert any(
+        "claims RED_AT_TASK but selector is active" in problem
+        for problem in _problems(payload)
+    )
+
+    payload = _baseline()
+    future = next(
+        item for item in payload["audit_mutations"] if item["state"] == "RED_AT_TASK"
+    )
+    future["state"] = "ACTIVE_REQUIRED"
+    assert any(
+        "claims ACTIVE_REQUIRED but selector is not declared" in problem
+        for problem in _problems(payload)
+    )
 
     payload = _baseline()
     payload["audit_mutations"][0]["owner_task"] = "H6-02"
@@ -233,6 +260,72 @@ def nested_alias_bypass():
         "stdout": {"path": str(empty_stdout), "sha256": "d" * 64},
         "stderr": {"path": str(tmp_path / "old-stderr.bin"), "sha256": "e" * 64},
     }]) == []
+
+    w1_pytest_stdout = tmp_path / "w1-01-pytest-stdout.bin"
+    w1_pytest_stdout.write_text("38 passed in 7.00s\n", encoding="utf-8")
+    w1_node_stdout = tmp_path / "w1-01-node-stdout.bin"
+    w1_node_stdout.write_text(
+        "PASS jcs_node_oracle runtime=v24.16.0 "
+        "schema_version=jc/v4-jcs-vectors/1.0 positive=9 negative=16 "
+        "canonical_bytes=295 float_tokens=raw-lexical "
+        "duplicate_key=declaration-only\n",
+        encoding="utf-8",
+    )
+    w1_reports = RUNNER._structured_test_reports([
+        {
+            "argv": ["py", "-m", "pytest", "tests/contract/test_jcs_v4.py"],
+            "exit_code": 0,
+            "stdout": {"path": str(w1_pytest_stdout), "sha256": "f" * 64},
+            "stderr": {"path": str(tmp_path / "w1-pytest-stderr.bin"), "sha256": "0" * 64},
+        },
+        {
+            "argv": ["node", "tests/contract/jcs_node_oracle.mjs", "vectors.json"],
+            "exit_code": 0,
+            "stdout": {"path": str(w1_node_stdout), "sha256": "1" * 64},
+            "stderr": {"path": str(tmp_path / "w1-node-stderr.bin"), "sha256": "2" * 64},
+        },
+    ])
+    assert RUNNER._w1_01_test_report_problems(w1_reports) == []
+    tampered_reports = copy.deepcopy(w1_reports)
+    tampered_reports[0]["passed"] = 37
+    tampered_reports[1]["runtime"] = "v23.0.0"
+    assert len(RUNNER._w1_01_test_report_problems(tampered_reports)) == 2
+
+    captured_environment: dict[str, str] = {}
+
+    def fake_run(*_args, **kwargs):
+        captured_environment.update(kwargs["env"])
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    attempt_dir = tmp_path / "runner-attempt"
+    attempt_dir.mkdir()
+    monkeypatch.setattr(RUNNER.subprocess, "run", fake_run)
+    RUNNER._run_argv(
+        ["py", "-m", "pytest", "tests/contract/test_jcs_v4.py"],
+        0,
+        attempt_dir,
+        1,
+        10,
+        tmp_path,
+    )
+    assert "PYTEST_ADDOPTS" not in captured_environment
+    assert "PYTEST_PLUGINS" not in captured_environment
+    assert "PYTHONPATH" not in captured_environment
+    assert captured_environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
+
+    monkeypatch.setenv("NODE_OPTIONS", "--require hostile-preload.js")
+    monkeypatch.setenv("NODE_PATH", "hostile-node-modules")
+    captured_environment.clear()
+    RUNNER._run_argv(
+        ["node", "tests/contract/jcs_node_oracle.mjs", "vectors.json"],
+        0,
+        attempt_dir,
+        2,
+        10,
+        tmp_path,
+    )
+    assert "NODE_OPTIONS" not in captured_environment
+    assert "NODE_PATH" not in captured_environment
 
     evidence_path, evidence_digest = RUNNER._write_content_addressed_json(
         tmp_path / "evidence", {"test": "immutable"}

@@ -153,16 +153,22 @@ def test_aaf_serialization_does_not_expose_nested_claim_objects():
 
 
 def test_semantic_digest_excludes_environment_fields_and_digest_itself():
-    first = {
+    """Legacy name: the serializer must not silently delete submitted fields."""
+    semantic = {
         "claims": ["A"],
+        "request_digest": "sha256:" + "0" * 64,
+        "result_digest": "sha256:" + "1" * 64,
+    }
+    first = {
+        **semantic,
         "timestamp": "2026-01-01T00:00:00Z",
-        "nested": {"output_path": "one", "result_digest": "old"},
+        "output_path": "one",
     }
     second = {
-        "claims": ["A"],
+        **semantic,
         "timestamp": "2030-01-01T00:00:00Z",
-        "nested": {"output_path": "two", "result_digest": "new"},
+        "output_path": "two",
     }
 
-    assert semantic_digest(first) == semantic_digest(second)
-    assert content_id("case", first) == content_id("case", second)
+    assert semantic_digest(first) != semantic_digest(second)
+    assert content_id("case", first) != content_id("case", second)

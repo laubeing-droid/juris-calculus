@@ -164,7 +164,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_jcs_v4.py::test_digest_grammar_composes_across_request_receipt_bundle",
       "owner_task": "W1-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Change any request, receipt, or bundle digest to legacy grammar.",
       "red_failure": "Mixed or legacy digest grammar must fail composition."
     },
@@ -294,7 +294,7 @@
       "suite": "property",
       "selector": "tests/property/test_canonicalization.py::test_rfc8785_cross_language_property_vectors",
       "owner_task": "W1-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Perturb number, string, or key ordering away from RFC 8785 bytes.",
       "red_failure": "Cross-language canonical bytes and digests must diverge on the mutation."
     },

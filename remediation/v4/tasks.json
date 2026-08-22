@@ -1136,10 +1136,16 @@
       "objective": "重写 canonical_serialization.py；统一 DigestV4；Node oracle 向量同构",
       "allowed_paths": [
         "compiler_core/canonical_serialization.py",
-        "tests/contract/test_jcs_v4.py",
-        "tests/property/test_canonicalization.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/contract/jcs_node_oracle.mjs",
-        "tests/fixtures/golden/jcs-v4-vectors.json"
+        "tests/contract/test_jcs_v4.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/fixtures/golden/jcs-v4-vectors.json",
+        "tests/property/test_canonicalization.py",
+        "tests/required-v4-tests.json",
+        "tests/unit/test_canonical_serialization.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -1149,9 +1155,33 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W1-01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W1-01",
+          "tests/contract/test_jcs_v4.py",
+          "tests/property/test_canonicalization.py",
+          "tests/unit/test_canonical_serialization.py",
+          "tests/contract/test_required_test_manifest.py"
+        ],
+        [
+          "node",
+          "tests/contract/jcs_node_oracle.mjs",
+          "tests/fixtures/golden/jcs-v4-vectors.json"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
       "completion_assertions": [
