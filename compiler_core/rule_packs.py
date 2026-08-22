@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import date
 from functools import wraps
@@ -10,6 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from threading import RLock
 from typing import Any, Iterable, Mapping
 import weakref
 
@@ -332,11 +334,38 @@ class RulePackVerifierV4:
         self._expected_schema_digest = expected_schema_digest
         self._signature_principals: dict[tuple[object, ...], str] = {}
         self._verified: dict[ContentRefV4, VerifiedRulePackV4] = {}
+        self._verify_lock = RLock()
+        self._active_trust: ContextVar[TrustVerifierV4 | None] = ContextVar(
+            f"rule-pack-trust-v4-{id(self)}", default=None
+        )
+        self._active_source_service: ContextVar[SourceServiceV4 | None] = ContextVar(
+            f"rule-pack-source-v4-{id(self)}", default=None
+        )
+        self._active_preadmitted_sources: ContextVar[
+            frozenset[ContentRefV4] | None
+        ] = ContextVar(f"rule-pack-preadmitted-sources-v4-{id(self)}", default=None)
 
-    def _trust_state(self) -> tuple[object, ...]:
+    def _trust_verifier(self) -> TrustVerifierV4:
+        return self._active_trust.get() or self._trust
+
+    @staticmethod
+    def _copy_trust(trust: TrustVerifierV4) -> TrustVerifierV4:
+        return TrustVerifierV4(
+            policy=trust.policy,
+            keys=tuple(key for _, key in sorted(trust._keys.items())),
+            target_environment=trust.target_environment,
+            revoked_subject_digests=tuple(sorted(trust._revoked_subjects, key=str)),
+            revoked_nonces=tuple(sorted(trust._revoked_nonces)),
+        )
+
+    def _trust_state(
+        self,
+        trust: TrustVerifierV4 | None = None,
+    ) -> tuple[object, ...]:
+        selected = self._trust_verifier() if trust is None else trust
         return (
-            self._trust.target_environment,
-            self._trust.policy.canonical_bytes(),
+            selected.target_environment,
+            selected.policy.canonical_bytes(),
             tuple(
                 (
                     key_id,
@@ -348,10 +377,10 @@ class RulePackVerifierV4:
                     key.public_key,
                     key.production_allowed,
                 )
-                for key_id, key in sorted(self._trust._keys.items())
+                for key_id, key in sorted(selected._keys.items())
             ),
-            tuple(sorted(str(digest) for digest in self._trust._revoked_subjects)),
-            tuple(sorted(self._trust._revoked_nonces)),
+            tuple(sorted(str(digest) for digest in selected._revoked_subjects)),
+            tuple(sorted(selected._revoked_nonces)),
         )
 
     def _resolve_json(
@@ -421,7 +450,7 @@ class RulePackVerifierV4:
         principal: str,
         separation: tuple[str, ...],
     ) -> None:
-        policy = self._trust.policy
+        policy = self._trust_verifier().policy
         if (
             now < policy.valid_from
             or (policy.valid_to is not None and not now < policy.valid_to)
@@ -467,7 +496,7 @@ class RulePackVerifierV4:
                 separation=separation,
             )
             return cached
-        principal = self._trust.verify(
+        principal = self._trust_verifier().verify(
             envelope,
             expected_subject_digest=expected_subject,
             expected_payload_digest=expected_payload,
@@ -492,7 +521,8 @@ class RulePackVerifierV4:
         *,
         now: CanonicalTimeV4,
     ) -> tuple[SourceSnapshotV4, str]:
-        self._source_service.admit_snapshot(reference, now=now)
+        source_service = self._active_source_service.get() or self._source_service
+        source_service.admit_snapshot(reference, now=now)
         value = self._resolve_contract(
             reference,
             kind=SOURCE_SNAPSHOT_KIND,
@@ -510,26 +540,24 @@ class RulePackVerifierV4:
         if type(envelope_value) is not SignatureEnvelopeV4:
             _v4_fail("PACK_SOURCE_TYPE", "source receipt is not a signature envelope")
         envelope = envelope_value
-        current_trust = TrustVerifierV4(
-            policy=self._trust.policy,
-            keys=tuple(key for _, key in sorted(self._trust._keys.items())),
-            target_environment=self._trust.target_environment,
-            revoked_subject_digests=tuple(
-                sorted(self._trust._revoked_subjects, key=str)
-            ),
-            revoked_nonces=tuple(sorted(self._trust._revoked_nonces)),
-        )
-        principal = current_trust.verify(
-            envelope,
-            expected_subject_digest=value.raw_digest,
-            expected_payload_digest=source_authenticity_payload_digest(value),
-            required_role="source_attestor",
-            required_scope="source-authenticity",
-            required_artifact_kind=SOURCE_SNAPSHOT_KIND,
-            expected_status="APPROVED",
-            now=now,
-            separation_from_principals=(),
-        )
+        if reference in (self._active_preadmitted_sources.get() or ()):
+            key = self._trust_verifier()._keys.get(envelope.key_id)
+            if key is None:
+                _v4_fail("PACK_SOURCE_KEY", "verified source key is absent from trust snapshot")
+            principal = key.principal_id
+        else:
+            principal = self._verify_signature(
+                value.authenticity_receipt_ref,
+                envelope,
+                expected_subject=value.raw_digest,
+                expected_payload=source_authenticity_payload_digest(value),
+                role="source_attestor",
+                scope="source-authenticity",
+                artifact_kind=SOURCE_SNAPSHOT_KIND,
+                status="APPROVED",
+                now=now,
+                separation=(),
+            )
         return value, principal
 
     def _validate_rule_components(self, rule: RuleV4, source: SourceSnapshotV4) -> None:
@@ -632,7 +660,7 @@ class RulePackVerifierV4:
         engineering = engineering_value
         for envelope, detail in ((legal, "legal review"), (engineering, "engineering review")):
             self._signature_without_run(envelope, detail=detail)
-        replay_ref = self._trust.policy.replay_policy_ref
+        replay_ref = self._trust_verifier().policy.replay_policy_ref
         legal_evidence = rule_review_evidence_refs(rule, subject_ref, replay_ref, "legal")
         engineering_evidence = rule_review_evidence_refs(
             rule, subject_ref, replay_ref, "engineering"
@@ -756,6 +784,15 @@ class RulePackVerifierV4:
             or type(now) is not CanonicalTimeV4
         ):
             _v4_fail("PACK_INPUT_TYPE", "verify requires a pack-signature ref and canonical time")
+        with self._resolver._snapshot():
+            return self._verify_snapshot(pack_ref, now=now)
+
+    def _verify_snapshot(
+        self,
+        pack_ref: ContentRefV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> VerifiedRulePackV4:
         signature_value = self._resolve_contract(
             pack_ref,
             kind=PACK_SIGNATURE_KIND,
@@ -793,7 +830,7 @@ class RulePackVerifierV4:
             _v4_fail("PACK_BUILD_IDENTITY", "pack build, source tree, or schema identity is wrong")
         expected_policy_ref = ContentRefV4(
             TRUST_POLICY_KIND,
-            self._trust.policy.canonical_digest(),
+            self._trust_verifier().policy.canonical_digest(),
         )
         if manifest.trust_policy_ref != expected_policy_ref:
             _v4_fail("PACK_TRUST_POLICY", "pack does not bind the active trust policy")
@@ -1021,16 +1058,139 @@ def _bind_verified_handle_issuance() -> None:
         *,
         now: CanonicalTimeV4,
     ) -> VerifiedRulePackV4:
-        handle = verify_impl(self, pack_ref, now=now)
-        identity = id(handle)
-        issued[identity] = (
-            weakref.ref(
-                handle,
-                lambda _reference, key=identity: issued.pop(key, None),
-            ),
-            weakref.ref(self),
-            self._trust_state(),
-        )
+        with self._verify_lock:
+            initial_signature_keys = frozenset(self._signature_principals)
+            completed = False
+            live_trust = self._trust
+            live_source_service = self._source_service
+            try:
+                verified_trust_state = self._trust_state(live_trust)
+                trust_snapshot = self._copy_trust(live_trust)
+                if (
+                    self._trust_state(trust_snapshot) != verified_trust_state
+                    or self._trust_state(live_trust) != verified_trust_state
+                ):
+                    _v4_fail("PACK_TRUST_STATE_CHANGED", "trust changed while taking its snapshot")
+                with live_source_service._admission_lock:
+                    with live_trust._nonce_lock:
+                        initial_nonces = frozenset(live_trust._seen_nonces)
+                        initial_source_ids = dict(live_source_service._source_ids)
+                        preadmitted_sources = frozenset(
+                            live_source_service._verified
+                        )
+                trust_snapshot._seen_nonces.update(initial_nonces)
+                source_snapshot = SourceServiceV4(
+                    self._resolver,
+                    self._copy_trust(trust_snapshot),
+                )
+                source_snapshot._source_ids.update(initial_source_ids)
+                trust_token = self._active_trust.set(trust_snapshot)
+                source_token = self._active_source_service.set(source_snapshot)
+                preadmitted_token = self._active_preadmitted_sources.set(
+                    preadmitted_sources
+                )
+                try:
+                    handle = verify_impl(self, pack_ref, now=now)
+                finally:
+                    self._active_preadmitted_sources.reset(preadmitted_token)
+                    self._active_source_service.reset(source_token)
+                    self._active_trust.reset(trust_token)
+                if self._trust_state(live_trust) != verified_trust_state:
+                    _v4_fail("PACK_TRUST_STATE_CHANGED", "trust state changed during pack verification")
+                with trust_snapshot._nonce_lock:
+                    consumed_nonces = trust_snapshot._seen_nonces - initial_nonces
+                verified_sources = dict(source_snapshot._verified)
+                verified_source_ids = {
+                    snapshot.source_id: reference
+                    for reference, snapshot in verified_sources.items()
+                }
+                verified_source_issued_at = {
+                    reference: source_snapshot._verified_issued_at[reference]
+                    for reference in verified_sources
+                }
+                verified_source_expires_at = {
+                    reference: source_snapshot._verified_expires_at[reference]
+                    for reference in verified_sources
+                }
+                verified_source_evidence = {
+                    reference: source_snapshot._signed_evidence[reference]
+                    for reference in verified_sources
+                }
+                identity = id(handle)
+                issued_entry = (
+                    weakref.ref(
+                        handle,
+                        lambda _reference, key=identity: issued.pop(key, None),
+                    ),
+                    weakref.ref(self),
+                    verified_trust_state,
+                )
+                with live_source_service._admission_lock:
+                    with live_trust._nonce_lock:
+                        if consumed_nonces & (live_trust._seen_nonces - initial_nonces):
+                            _v4_fail(
+                                "TRUST_REPLAY",
+                                "a pack signature nonce was consumed concurrently",
+                            )
+                        if any(
+                            live_source_service._source_ids.get(source_id)
+                            not in {None, reference}
+                            for source_id, reference in verified_source_ids.items()
+                        ):
+                            _v4_fail(
+                                "SOURCE_ID_COLLISION",
+                                "source_id was rebound during pack verification",
+                            )
+                        nonce_state_before = set(live_trust._seen_nonces)
+                        verified_before = dict(live_source_service._verified)
+                        issued_at_before = dict(live_source_service._verified_issued_at)
+                        expires_at_before = dict(live_source_service._verified_expires_at)
+                        evidence_before = dict(live_source_service._signed_evidence)
+                        source_ids_before = dict(live_source_service._source_ids)
+                        issued_before = issued.get(identity)
+                        try:
+                            live_trust._seen_nonces.update(consumed_nonces)
+                            live_source_service._verified.update(verified_sources)
+                            live_source_service._verified_issued_at.update(
+                                verified_source_issued_at
+                            )
+                            live_source_service._verified_expires_at.update(
+                                verified_source_expires_at
+                            )
+                            live_source_service._signed_evidence.update(
+                                verified_source_evidence
+                            )
+                            live_source_service._source_ids.update(verified_source_ids)
+                            issued[identity] = issued_entry
+                            if self._trust_state(live_trust) != verified_trust_state:
+                                _v4_fail(
+                                    "PACK_TRUST_STATE_CHANGED",
+                                    "trust state changed while committing pack verification",
+                                )
+                        except BaseException:
+                            if issued_before is None:
+                                issued.pop(identity, None)
+                            else:
+                                issued[identity] = issued_before
+                            live_trust._seen_nonces.clear()
+                            live_trust._seen_nonces.update(nonce_state_before)
+                            live_source_service._verified.clear()
+                            live_source_service._verified.update(verified_before)
+                            live_source_service._verified_issued_at.clear()
+                            live_source_service._verified_issued_at.update(issued_at_before)
+                            live_source_service._verified_expires_at.clear()
+                            live_source_service._verified_expires_at.update(expires_at_before)
+                            live_source_service._signed_evidence.clear()
+                            live_source_service._signed_evidence.update(evidence_before)
+                            live_source_service._source_ids.clear()
+                            live_source_service._source_ids.update(source_ids_before)
+                            raise
+                completed = True
+            finally:
+                if not completed:
+                    for key in tuple(self._signature_principals):
+                        if key not in initial_signature_keys:
+                            del self._signature_principals[key]
         return handle
 
     def verifier_issued(handle: VerifiedRulePackV4) -> bool:

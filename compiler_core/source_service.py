@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from threading import RLock
 import unicodedata
 
 from compiler_core.artifact_store import ArtifactResolverV4
@@ -130,6 +131,7 @@ class SourceServiceV4:
         self._verified_expires_at: dict[ContentRefV4, CanonicalTimeV4] = {}
         self._signed_evidence: dict[ContentRefV4, frozenset[ContentRefV4]] = {}
         self._source_ids: dict[str, ContentRefV4] = {}
+        self._admission_lock = RLock()
 
     def _resolve_json_contract(
         self,
@@ -220,6 +222,16 @@ class SourceServiceV4:
         now: CanonicalTimeV4,
     ) -> ContentRefV4:
         """Resolve, recompute, authenticate, then register one immutable snapshot."""
+
+        with self._admission_lock:
+            return self._admit_snapshot(snapshot_ref, now=now)
+
+    def _admit_snapshot(
+        self,
+        snapshot_ref: ContentRefV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> ContentRefV4:
 
         if type(snapshot_ref) is not ContentRefV4:
             _fail("SOURCE_INPUT_TYPE", "snapshot_ref must be ContentRefV4")
@@ -324,6 +336,8 @@ class SourceServiceV4:
         )
         prior = self._source_ids.get(snapshot.source_id)
         if prior is not None and prior != snapshot_ref:
+            with self._trust._nonce_lock:
+                self._trust._seen_nonces.discard((envelope.key_id, envelope.nonce))
             _fail("SOURCE_ID_COLLISION", "source_id cannot be rebound to different snapshot bytes")
         self._verified[snapshot_ref] = snapshot
         if envelope.expires_at is None:
@@ -347,6 +361,16 @@ class SourceServiceV4:
         decision_time: CanonicalTimeV4,
     ) -> ContentRefV4:
         """Verify a connected DAG independent of edge order and select one active version."""
+
+        with self._admission_lock:
+            return self._resolve_applicable(bundle_ref, decision_time=decision_time)
+
+    def _resolve_applicable(
+        self,
+        bundle_ref: ContentRefV4,
+        *,
+        decision_time: CanonicalTimeV4,
+    ) -> ContentRefV4:
 
         if type(decision_time) is not CanonicalTimeV4:
             _fail("SOURCE_INPUT_TYPE", "decision_time must be CanonicalTimeV4")

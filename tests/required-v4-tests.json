@@ -258,7 +258,7 @@
       "suite": "security",
       "selector": "tests/security/test_pack_toctou.py::test_verified_bytes_are_the_executed_bytes",
       "owner_task": "W2-04",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Swap pack bytes after verification and before evaluation.",
       "red_failure": "Executed bytes must be the immutable verified bytes."
     },

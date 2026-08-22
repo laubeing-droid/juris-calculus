@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 import re
 from threading import Lock
+from types import MappingProxyType
 
 from compiler_core.canonical_serialization import DigestV4
 from compiler_core.contracts import (
@@ -90,6 +94,34 @@ class ArtifactResolverV4:
         self._by_id: dict[str, _ArtifactRecordV4] = {}
         self._by_ref: dict[ContentRefV4, _ArtifactRecordV4] = {}
         self._lock = Lock()
+        self._active_snapshot: ContextVar[
+            Mapping[ContentRefV4, _ArtifactRecordV4] | None
+        ] = ContextVar(f"artifact-resolver-v4-{id(self)}", default=None)
+
+    @contextmanager
+    def _snapshot(self) -> Iterator[None]:
+        """Pin one immutable record set for a complete in-process verification."""
+
+        if self._active_snapshot.get() is not None:
+            yield
+            return
+        with self._lock:
+            records = MappingProxyType({
+                reference: _ArtifactRecordV4(
+                    artifact_id=record.artifact_id,
+                    content_ref=record.content_ref,
+                    artifact_kind=record.artifact_kind,
+                    media_type=record.media_type,
+                    scope=record.scope,
+                    content=record.content,
+                )
+                for reference, record in self._by_ref.items()
+            })
+        token = self._active_snapshot.set(records)
+        try:
+            yield
+        finally:
+            self._active_snapshot.reset(token)
 
     @staticmethod
     def _metadata(
@@ -173,8 +205,12 @@ class ArtifactResolverV4:
 
     def _record(self, content_ref: object) -> _ArtifactRecordV4:
         exact_ref = _content_ref(content_ref)
-        with self._lock:
-            record = self._by_ref.get(exact_ref)
+        snapshot = self._active_snapshot.get()
+        if snapshot is None:
+            with self._lock:
+                record = self._by_ref.get(exact_ref)
+        else:
+            record = snapshot.get(exact_ref)
         if record is None:
             _fail("ARTIFACT_NOT_FOUND", "content_ref is not registered")
         return record

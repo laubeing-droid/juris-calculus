@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.15.0"
+RUNNER_VERSION = "0.16.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -73,6 +73,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.13.0": 5,
     "0.14.0": 5,
     "0.15.0": 5,
+    "0.16.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -159,6 +160,23 @@ W2_03_CHANGED_PATHS = (
     "tests/contract/test_rule_packs.py",
     "tests/required-v4-tests.json",
     "tests/security/test_pack_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W2_04_TEST_CASE_COUNT = 150
+W2_04_TEST_CASE_IDS_DIGEST = (
+    "sha256:01334e89847f201040bfd512b9bb638583b4df3634e9437d1fbb67779de9762a"
+)
+W2_04_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/artifact_store.py",
+    "compiler_core/rule_packs.py",
+    "compiler_core/source_service.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_pack_toctou.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -8687,6 +8705,342 @@ def cmd_w2_03_pack_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w2_04_snapshot_gate() -> int:
+    """Verify W2-04 immutable resolver snapshots and one-handle concurrency."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W2-04"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W2-04",
+            "tests/contract/test_rule_packs.py",
+            "tests/contract/test_source_service.py",
+            "tests/security/test_pack_attacks.py",
+            "tests/security/test_pack_toctou.py",
+            "tests/security/test_artifact_resolver.py",
+            "tests/property/test_resolver_properties.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W2-04/pack-toctou-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        artifact_source = (ROOT / "compiler_core/artifact_store.py").read_text(
+            encoding="utf-8"
+        )
+        pack_source = (ROOT / "compiler_core/rule_packs.py").read_text(encoding="utf-8")
+        source_service_source = (ROOT / "compiler_core/source_service.py").read_text(
+            encoding="utf-8"
+        )
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        artifact_tree = ast.parse(artifact_source)
+        pack_tree = ast.parse(pack_source)
+        toctou_tests = (ROOT / "tests/security/test_pack_toctou.py").read_text(
+            encoding="utf-8-sig"
+        )
+        regression_tests = "\n".join(
+            (ROOT / path).read_text(encoding="utf-8-sig")
+            for path in (
+                "tests/contract/test_rule_packs.py",
+                "tests/contract/test_source_service.py",
+                "tests/security/test_pack_attacks.py",
+                "tests/security/test_artifact_resolver.py",
+                "tests/property/test_resolver_properties.py",
+                "tests/contract/test_required_test_manifest.py",
+            )
+        )
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w2_04_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError) as exc:
+        print(
+            f"W2-04 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W2-04"), None)
+    if not isinstance(task, dict):
+        fail("W2-04 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W2-03", "W1-04"]:
+            fail("W2-04 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-05", "P0-11", "P1-08", "P1-10"]:
+            fail("W2-04 audit binding drifted")
+        if task.get("allowed_paths") != list(W2_04_CHANGED_PATHS):
+            fail("W2-04 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W2-04 argv or expected exit codes drifted")
+
+    formal_plan = ROOT / W2_04_CHANGED_PATHS[0]
+    formal_plan_text = formal_plan.read_text(encoding="utf-8")
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W2-04 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W2-04 file disposition is not reproducible from its generator")
+    plan_markers = (
+        "仅以下 11 个 exact paths", "ContextVar", "同一 handle", "W4-02",
+        "durable/cross-process", "不获得 filesystem/path authority",
+    )
+    if any(marker not in formal_plan_text for marker in plan_markers):
+        fail("W2-04 formal plan lacks its narrowed in-process/deferred-storage boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-05-CANDIDATE-ACTIVATION": (
+            "P0-05", "W2-03", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_attacks.py::test_candidate_cannot_self_activate",
+        ),
+        "V4-P0-11-PACK-TOCTOU": (
+            "P0-11", "W2-04", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_toctou.py::test_verified_bytes_are_the_executed_bytes",
+        ),
+        "V4-P1-08-PACK-ATTESTATION": (
+            "P1-08", "W2-03", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_attacks.py::"
+            "test_empty_official_pack_and_format_only_attestation_fail",
+        ),
+        "V4-P1-10-MULTIPROCESS-RECOVERY": (
+            "P1-10", "W4-02", "RED_AT_TASK",
+            "tests/storage_chaos/test_multiprocess_recovery.py::"
+            "test_cross_process_lock_and_stale_staging_recovery",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id)
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            fail(f"W2-04 required mutation lifecycle drifted: {test_id}")
+    for test_id in (
+        "V4-P0-05-CANDIDATE-ACTIVATION",
+        "V4-P0-11-PACK-TOCTOU",
+        "V4-P1-08-PACK-ATTESTATION",
+    ):
+        if not _selector_is_declared(ROOT, expected_mutations[test_id][3]):
+            fail(f"W2-04 active required selector is not declared: {test_id}")
+
+    issue_by_id = {
+        item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
+    }
+    expected_closures = {
+        "P0-05": ["W2-03", "W2-04", "W2-05", "W8-05"],
+        "P0-11": ["W2-04", "W4-02"],
+        "P1-08": ["W2-03", "W2-04", "W6-06"],
+        "P1-10": ["W2-04", "W4-02", "W4-03", "W7-03"],
+    }
+    for audit_id, closures in expected_closures.items():
+        issue = issue_by_id.get(audit_id, {})
+        if (issue.get("status"), issue.get("closure_tasks")) != ("registered", closures):
+            fail(f"W2-04 issue lifecycle drifted: {audit_id}")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/artifact_store.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/rule_packs.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "tests/security/test_pack_toctou.py": ("TEST_ORACLE", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W2-04 file disposition drifted: {path}")
+
+    resolver_class = next(
+        (
+            node for node in artifact_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "ArtifactResolverV4"
+        ),
+        None,
+    )
+    resolver_public = {
+        node.name for node in resolver_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and not node.name.startswith("_")
+    } if resolver_class is not None else set()
+    resolver_text = (
+        ast.get_source_segment(artifact_source, resolver_class) or ""
+        if resolver_class is not None else ""
+    )
+    if resolver_public != {"register_bytes", "resolve_content", "resolve_handle"}:
+        fail("W2-04 ArtifactResolverV4 public API drifted")
+    resolver_symbols = {
+        "ContextVar", "MappingProxyType", "_active_snapshot", "_snapshot",
+        "token", "finally", "snapshot.get", "_ArtifactRecordV4",
+    }
+    if any(symbol not in artifact_source for symbol in resolver_symbols):
+        fail("W2-04 resolver lacks an immutable reset-safe record snapshot")
+    if any(symbol in resolver_text for symbol in (
+        "Path(", "open(", "os.", "socket.", "requests.", "urllib.", "\\\\?\\",
+    )):
+        fail("W2-04 resolver acquired filesystem, device, or network authority")
+
+    verifier_class = next(
+        (
+            node for node in pack_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "RulePackVerifierV4"
+        ),
+        None,
+    )
+    verifier_public = {
+        node.name for node in verifier_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and not node.name.startswith("_")
+    } if verifier_class is not None else set()
+    if verifier_public != {"verify"}:
+        fail("W2-04 RulePackVerifierV4 public API drifted")
+    verify_method = next(
+        (
+            node for node in verifier_class.body
+            if isinstance(node, ast.FunctionDef) and node.name == "verify"
+        ),
+        None,
+    ) if verifier_class is not None else None
+    verify_args = (
+        [item.arg for item in verify_method.args.args]
+        + [item.arg for item in verify_method.args.kwonlyargs]
+        if verify_method is not None else []
+    )
+    if verify_args != ["self", "pack_ref", "now"]:
+        fail("W2-04 verifier accepts caller status, path, lock, or snapshot controls")
+    pack_symbols = {
+        "RLock", "_verify_lock", "_resolver._snapshot()", "_verify_snapshot",
+        "with self._verify_lock", "issued[identity]", "self._verified.get(pack_ref)",
+        "return existing", "verified_trust_state", "PACK_TRUST_STATE_CHANGED",
+        "_copy_trust", "_active_trust", "_active_source_service", "trust_snapshot",
+        "_active_preadmitted_sources", "preadmitted_sources",
+        "initial_signature_keys", "initial_nonces", "consumed_nonces",
+        "live_trust._seen_nonces.update(consumed_nonces)",
+        "initial_source_ids", "verified_source_ids",
+        "verified_sources", "live_source_service._verified.update(verified_sources)",
+        "verified_source_issued_at", "verified_source_expires_at",
+        "verified_source_evidence",
+        "live_source_service._verified_issued_at.update(",
+        "live_source_service._verified_expires_at.update(",
+        "live_source_service._signed_evidence.update(",
+        "live_source_service._source_ids.update(verified_source_ids)",
+        "live_source_service._admission_lock", "nonce_state_before",
+        "issued_before = issued.get(identity)", "issued[identity] = issued_before",
+        "except BaseException", "trust state changed while committing pack verification",
+        "with live_trust._nonce_lock:\n                        initial_nonces",
+    }
+    if any(symbol not in pack_source for symbol in pack_symbols):
+        fail("W2-04 verifier lacks locked snapshot-to-issued-handle identity")
+    source_service_symbols = {
+        "from threading import RLock", "self._admission_lock = RLock()",
+        "with self._admission_lock", "def _admit_snapshot(",
+        "def _resolve_applicable(",
+        "self._trust._seen_nonces.discard((envelope.key_id, envelope.nonce))",
+    }
+    if any(symbol not in source_service_source for symbol in source_service_symbols):
+        fail("W2-04 source admission lacks one shared check-and-commit lock")
+    if source_service_source.count("with self._admission_lock") != 2:
+        fail("W2-04 source admission writer and applicability reader do not share one lock")
+
+    controls = _forbidden_test_controls(toctou_tests + "\n" + regression_tests)
+    if controls:
+        fail(f"W2-04 tests use forbidden controls: {controls}")
+    required_tests = {
+        "test_verified_bytes_are_the_executed_bytes", "PACK_MANIFEST_KIND",
+        "RULE_KIND", "SOURCE_SNAPSHOT_KIND", "PACK_CONFIG_KIND", "replace(",
+        "test_corrupt_cache_retry_blocks_then_restore_returns_same_handle",
+        "restored is first",
+        "test_concurrent_pack_loads_return_one_verified_handle", "ThreadPoolExecutor",
+        "Barrier", "handle is handles[0]", "test_snapshot_hides_late_registration_until_exit",
+        "test_trust_change_before_issuance_cannot_activate_handle",
+        "test_transient_live_key_swap_cannot_change_trust_snapshot",
+        "test_successful_snapshot_commits_nonces_and_retry_stays_idempotent",
+        "test_preadmitted_source_can_enter_first_pack_without_replay",
+        "test_existing_source_identity_ledger_survives_fresh_snapshot",
+        "test_source_identity_rebound_during_snapshot_cannot_issue_handle",
+        "test_source_admission_check_and_commit_share_one_lock",
+        "test_source_applicability_reader_shares_admission_lock",
+        "test_trust_change_at_commit_rolls_back_all_live_state",
+        "test_failed_retry_preserves_existing_issued_handle",
+        "test_previously_consumed_nonce_blocks_without_poisoning_retry",
+        "test_nonce_consumed_during_snapshot_cannot_issue_cached_handle",
+        "test_external_file_replacement_cannot_rebind_registered_pack_bytes",
+    }
+    if any(symbol not in toctou_tests for symbol in required_tests):
+        fail("W2-04 tests lack a required replace, concurrency, snapshot, or path oracle")
+    if "test_prewarmed_source_cache_cannot_survive_public_key_rotation" not in regression_tests:
+        fail("W2-04 lane lost the current-trust source-cache regression")
+    if any(marker not in regression_tests for marker in (
+        "_auto_receipt_resume_problems",
+        "AUTO receipt command count does not match the task",
+        "state-artifact recovery assertion is only valid for W1-06",
+    )):
+        fail("W2-04 governance tests lack the false-resume regression")
+    if any(marker not in runner_source for marker in (
+        "receipt executable completion binding mismatch",
+        "W2-04 receipt does not bind its exact 11 committed paths",
+        "all 11 exact W2-04 result paths are committed and digest-bound",
+        "_w2_04_test_report_problems(reports)",
+        "_state_artifact_recovery_matches",
+    )):
+        fail("W2-04 runner resume does not rebuild its executable receipt contract")
+
+    for task_id, gate in (
+        ("W1-04", cmd_w1_04_artifact_resolver_gate),
+        ("W2-03", cmd_w2_03_pack_gate),
+    ):
+        if gate() != EXIT_OK:
+            fail(f"W2-04 prerequisite machine gate failed: {task_id}")
+
+    if problems:
+        for problem in problems:
+            print(f"W2-04 snapshot gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W2-04 snapshot gate OK: one immutable resolver record set per verification; "
+        "one verifier-issued handle under concurrent first load; filesystem durability deferred to W4-02"
+    )
+    return EXIT_OK
+
+
+def cmd_w2_04_snapshot_gate() -> int:
+    try:
+        return _cmd_w2_04_snapshot_gate()
+    except Exception as exc:
+        print(
+            f"W2-04 snapshot gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -8716,6 +9070,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w2_02_fact_gate()
     if args.wave == "W2-03":
         return cmd_w2_03_pack_gate()
+    if args.wave == "W2-04":
+        return cmd_w2_04_snapshot_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -10275,6 +10631,147 @@ def _w2_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w2_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W2-04 snapshot/JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W2-04 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W2_04_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W2_04_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W2_04_TEST_CASE_COUNT,
+        "junit_unique_cases": W2_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W2_04_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W2-04 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W2-04 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
+def _auto_receipt_resume_problems(
+    task: dict[str, Any],
+    receipt: dict[str, Any],
+    state_root: Path,
+) -> list[str]:
+    """Rebuild the executable completion contract before accepting AUTO resume."""
+
+    recovery_assertion = any(
+        item.get("id") == "runner-state-artifact-recovery"
+        for item in receipt.get("completion_assertions", [])
+        if isinstance(item, dict)
+    )
+    problems: list[str] = []
+    if recovery_assertion:
+        if task.get("id") != "W1-06":
+            return ["state-artifact recovery assertion is only valid for W1-06"]
+        try:
+            source_digest = receipt["artifact_digests"]["recovery-source-receipt"]
+            source = next(
+                candidate
+                for path in sorted(
+                    (state_root / "tasks" / "W1-06").glob("*/receipt.json")
+                )
+                if (candidate := json.loads(path.read_text(encoding="utf-8"))).get(
+                    "receipt_digest"
+                ) == source_digest
+            )
+            recorded = {
+                key: value for key, value in source["artifact_digests"].items()
+                if key.startswith("state-artifact:")
+            }
+            observed = _declared_state_artifacts(source["command_results"], state_root)
+            if not _state_artifact_recovery_matches(
+                source, recorded, observed, receipt, state_root,
+            ):
+                problems.append("W1-06 state-artifact recovery proof is invalid")
+        except (
+            KeyError, OSError, StopIteration, TypeError, UnicodeError, ValueError,
+            json.JSONDecodeError,
+        ) as exc:
+            problems.append(f"W1-06 state-artifact recovery proof is unreadable: {exc}")
+        return problems
+    commands = receipt.get("command_results")
+    task_argv = task.get("argv")
+    exit_codes = task.get("expected_exit_codes")
+    if (
+        not isinstance(commands, list)
+        or not isinstance(task_argv, list)
+        or not isinstance(exit_codes, list)
+        or len(commands) != len(task_argv)
+        or len(commands) != len(exit_codes)
+    ):
+        return ["AUTO receipt command count does not match the task"]
+    for index, (command, raw_argv, expected_exit_code) in enumerate(
+        zip(commands, task_argv, exit_codes), 1
+    ):
+        expected_argv = _expanded_argv(raw_argv, state_root)
+        if (
+            command.get("argv") != expected_argv
+            or command.get("expected_exit_code") != expected_exit_code
+            or command.get("exit_code") != expected_exit_code
+            or command.get("timed_out") is not False
+        ):
+            problems.append(f"AUTO receipt command {index} does not bind its exact argv/result")
+
+    try:
+        reports = _structured_test_reports(commands, runner_version=receipt["runner_version"])
+    except (KeyError, OSError, UnicodeError, ValueError) as exc:
+        problems.append(f"AUTO receipt structured reports cannot be rebuilt: {exc}")
+        reports = []
+    if receipt.get("test_reports") != reports:
+        problems.append("AUTO receipt structured reports drifted")
+
+    if task.get("id") == "W2-04":
+        problems.extend(_w2_04_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W2_04_CHANGED_PATHS)
+            or len(changed_paths) != len(W2_04_CHANGED_PATHS)
+        ):
+            problems.append("W2-04 receipt does not bind its exact 11 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W2_04_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W2-04 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = [
+            *(item["id"] for item in task.get("completion_assertions", [])),
+            "w2-04-exact-snapshot-reports",
+            "w2-04-exact-committed-scope",
+        ]
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W2-04 receipt completion assertions are incomplete or false")
+    return problems
+
+
 def _recover_state_artifact(
     plan: dict[str, Any], state_root: Path, run_state: dict[str, Any], selector: str,
 ) -> int:
@@ -10987,6 +11484,36 @@ def _execute_auto_task(
                 if not path_problems else "; ".join(path_problems)
             ),
         })
+    if task["id"] == "W2-04":
+        report_problems = _w2_04_test_report_problems(test_reports)
+        expected_paths = set(W2_04_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W2_04_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w2-04-exact-snapshot-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W2_04_TEST_CASE_COUNT} pack/snapshot/governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-04-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 exact W2-04 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
     timed_out = any(item["timed_out"] for item in command_results)
     commands_ok = len(command_results) == len(task["argv"]) and all(
         item["exit_code"] == item["expected_exit_code"] and not item["timed_out"]
@@ -11141,6 +11668,14 @@ def cmd_run(args: argparse.Namespace) -> int:
                 and latest["input_receipt_digests"] == input_receipts
                 and latest["start_commit"] == task_start_commit
             ):
+                resume_problems = _auto_receipt_resume_problems(
+                    task, latest, state_root,
+                ) if task["mode"] == "AUTO" else []
+                if resume_problems:
+                    raise ValueError(
+                        f"receipt executable completion binding mismatch: {task['id']}: "
+                        + "; ".join(resume_problems)
+                    )
                 expected_violations = [
                     path for path in latest["changed_paths"]
                     if not _matches_allowed(path, task["allowed_paths"])
