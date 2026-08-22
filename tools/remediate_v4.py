@@ -30,6 +30,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -823,6 +824,14 @@ def _expanded_argv(argv: list[str], state_root: Path) -> list[str]:
         for marker, replacement in replacements.items():
             current = current.replace(marker, replacement)
         expanded.append(current)
+    if expanded[0].lower() == "codegraph":
+        wrapper = shutil.which(expanded[0])
+        if wrapper and wrapper.lower().endswith(".cmd"):
+            installation = Path(wrapper).resolve().parent.parent
+            node = installation / "node.exe"
+            script = installation / "lib" / "dist" / "bin" / "codegraph.js"
+            if node.is_file() and script.is_file():
+                return [str(node), "--liftoff-only", str(script), *expanded[1:]]
     return expanded
 
 
@@ -855,6 +864,10 @@ def _run_argv(
             stdout = stdout.encode("utf-8", errors="replace")
         if isinstance(stderr, str):
             stderr = stderr.encode("utf-8", errors="replace")
+    except OSError as exc:
+        exit_code = 127
+        stdout = b""
+        stderr = str(exc).encode("utf-8", errors="replace")
     return {
         "argv": exact_argv,
         "expected_exit_code": expected_exit_code,

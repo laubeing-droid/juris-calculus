@@ -149,6 +149,16 @@ def test_failure_exit_code_is_receipted(tmp_path: Path) -> None:
     assert receipt["command_results"][0]["exit_code"] == 7
 
 
+def test_missing_executable_is_receipted_not_raised(tmp_path: Path) -> None:
+    plan = _write_plan(tmp_path, [_auto_task("MISSING", ["definitely-not-a-real-executable-7f9d"])])
+    state_root = tmp_path / "state"
+    result = _run(plan, state_root)
+    assert result.returncode == 4
+    receipt = _receipt(state_root, "MISSING")
+    assert receipt["status"] == "FAILED"
+    assert receipt["command_results"][0]["exit_code"] == 127
+
+
 def test_timeout_is_receipted(tmp_path: Path) -> None:
     plan = _write_plan(tmp_path, [
         _auto_task("SLOW", ["{python}", "-c", "import time; time.sleep(2)"], timeout=0.05)
