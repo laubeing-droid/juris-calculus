@@ -380,6 +380,267 @@ def cmd_file_map(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_consumer_map(args: argparse.Namespace) -> int:
+    """施工方案 §7 B00-CG: emit a per-target consumer report combining
+    CodeGraph observations and ripgrep AST/string supplements. Targets come
+    from --target flags (may repeat). The report is content-addressed and
+    written under $JC_REMEDIATION_STATE_ROOT/evidence/consumers/$SOURCE_TREE_ID/.
+    """
+    targets = list(getattr(args, "target", []) or [])
+    if not targets:
+        print("--target is required (may repeat)", file=sys.stderr)
+        return EXIT_USAGE
+
+    codegraph_db = Path(getattr(args, "codegraph", ".codegraph/codegraph.db")).resolve()
+    if not codegraph_db.is_file():
+        print(f"codegraph db missing: {codegraph_db}", file=sys.stderr)
+        return EXIT_BASELINE_DRIFT
+
+    consumers: list[dict[str, Any]] = []
+    indexed_files = set(_codegraph_indexed_files(codegraph_db))
+    for target in targets:
+        rg_matches = _ripgrep(target)
+        cg_matches = _codegraph_target_references(codegraph_db, target, indexed_files)
+
+        seen: set[tuple[str, str]] = set()
+        direct_paths: set[str] = set()
+        for path, line in rg_matches:
+            key = (path, "string_ref")
+            if key in seen:
+                continue
+            seen.add(key)
+            direct_paths.add(path)
+            consumers.append(
+                {
+                    "target": target,
+                    "path": path,
+                    "line": line,
+                    "evidence_kind": "string_ref",
+                    "via": "ripgrep",
+                }
+            )
+        for path, kind in cg_matches:
+            key = (path, kind)
+            if key in seen:
+                continue
+            seen.add(key)
+            direct_paths.add(path)
+            consumers.append(
+                {
+                    "target": target,
+                    "path": path,
+                    "evidence_kind": kind,
+                    "via": "codegraph",
+                }
+            )
+
+        # Secondary direct consumers: code paths that, while not literally
+        # naming the target, construct the path at runtime or operate on
+        # the pack ID. The 施工方案 §7 B00-CG supplement covers these by
+        # ripgrep-ing symbols like `rules_path` / `cn-legacy-corpus`.
+        pack_id_match = target.rsplit("/", 1)[-1].replace(".yaml", "").replace(".json", "")
+        if pack_id_match:
+            for sym in ["rules_path", "cn-legacy-corpus", pack_id_match]:
+                for path, line in _ripgrep(sym):
+                    if path in direct_paths:
+                        continue
+                    key = (path, f"symbol_ref:{sym}")
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    direct_paths.add(path)
+                    consumers.append(
+                        {
+                            "target": target,
+                            "path": path,
+                            "line": line,
+                            "evidence_kind": f"symbol_ref:{sym}",
+                            "via": "ripgrep",
+                        }
+                    )
+
+        # Transitive consumer expansion via CodeGraph imports. Any tracked
+        # file that imports (directly or via package path) a direct consumer
+        # is itself a transitive consumer. This catches tests that import
+        # e.g. compiler_core.prc_collision_engine without naming rules.yaml.
+        transitive = _transitive_importers(codegraph_db, direct_paths, indexed_files)
+        for path in transitive:
+            if path in direct_paths:
+                continue
+            key = (path, "transitive_import")
+            if key in seen:
+                continue
+            seen.add(key)
+            consumers.append(
+                {
+                    "target": target,
+                    "path": path,
+                    "evidence_kind": "transitive_import",
+                    "via": "codegraph",
+                }
+            )
+
+    payload = {
+        "schema_version": "jc/remediation-v4-consumer-map/1.0",
+        "source_tree_id": _git("rev-parse", "HEAD^{tree}").strip(),
+        "codegraph_db": str(codegraph_db),
+        "target_paths": targets,
+        "consumers": consumers,
+    }
+    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    payload["digest"] = "sha256:" + hashlib.sha256(canon.encode("utf-8")).hexdigest()
+
+    state_root = getattr(args, "state_root", None)
+    if state_root:
+        evidence_dir = (
+            Path(state_root) / "evidence" / "consumers" / payload["source_tree_id"]
+        )
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        out_path = evidence_dir / "cn_legacy_corpus.json"
+        out_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"consumer-map receipt: {out_path}")
+
+    if not getattr(args, "check", False):
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return EXIT_OK
+
+    print(f"consumer-map OK: {len(consumers)} consumer edges for {len(targets)} targets")
+    return EXIT_OK
+
+
+def _ripgrep(pattern: str) -> list[tuple[str, int]]:
+    """Return [(path, line_no), ...] for matches of pattern under REPO.
+
+    Tries ripgrep first; falls back to a Python substring scan across tracked
+    text files if rg is unavailable.
+    """
+    try:
+        cp = subprocess.run(
+            ["rg", "--no-heading", "--line-number", "--hidden",
+             "-g", "!.codegraph/**", "-g", "!.git/**",
+             "-g", "!build/**", "-g", "!dist/**",
+             pattern, "."],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if cp.returncode in (0, 1):
+            out: list[tuple[str, int]] = []
+            for line in cp.stdout.splitlines():
+                parts = line.split(":", 2)
+                if len(parts) >= 2:
+                    rel = parts[0].lstrip("./\\").replace("\\", "/")
+                    if rel.startswith("./"):
+                        rel = rel[2:]
+                    out.append((rel, int(parts[1])))
+            return out
+    except FileNotFoundError:
+        pass
+    needle = pattern.replace("\\", "/")
+    out_list: list[tuple[str, int]] = []
+    cp = subprocess.run(
+        ["git", "ls-files"],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    for rel in cp.stdout.splitlines():
+        rel = rel.strip().replace("\\", "/")
+        try:
+            content = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for i, line in enumerate(content.splitlines(), start=1):
+            if needle in line:
+                out_list.append((rel, i))
+    return out_list
+
+
+def _codegraph_target_references(
+    db: Path,
+    target: str,
+    indexed_files: set[str],
+) -> list[tuple[str, str]]:
+    """Return [(path, kind), ...] where the codegraph database shows an edge
+    referencing target. Kind is one of 'string_ref' / 'dynamic_import'."""
+    needle = target.replace("\\", "/")
+    short = needle.split("/")[-1]
+    out: list[tuple[str, str]] = []
+    conn = sqlite3.connect(str(db))
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT source, target, kind, metadata FROM edges "
+            "WHERE target LIKE ? OR metadata LIKE ?",
+            (f"%{short}%", f"%{needle}%"),
+        ).fetchall()
+        for source, _target_name, edge_kind, _metadata in rows:
+            file_row = conn.execute(
+                "SELECT file_path FROM nodes WHERE qualified_name = ? LIMIT 1",
+                (source,),
+            ).fetchone()
+            if not file_row:
+                continue
+            file_path = file_row[0].replace("\\", "/")
+            if file_path in indexed_files:
+                kind = "dynamic_import" if edge_kind == "imports" else "string_ref"
+                out.append((file_path, kind))
+    finally:
+        conn.close()
+    return out
+
+
+def _transitive_importers(
+    db: Path,
+    direct_paths: set[str],
+    indexed_files: set[str],
+) -> list[str]:
+    """Return paths of tracked files that transitively import any direct
+    consumer of target. Uses CodeGraph 'imports' edges; join to import
+    nodes by module qualified name."""
+    if not direct_paths:
+        return []
+    conn = sqlite3.connect(str(db))
+    try:
+        # Build a set of dotted module names whose file paths are direct
+        # consumers. Direct paths are file paths, but the import node's
+        # qualified_name is dotted: compiler_core.prc_collision_engine.
+        # Match by replacing / with . in the direct path tail.
+        target_module_prefixes: set[str] = set()
+        for p in direct_paths:
+            stem = p.replace("\\", "/")
+            if stem.endswith(".py"):
+                stem = stem[:-3]
+            dotted = stem.replace("/", ".")
+            target_module_prefixes.add(dotted)
+
+        # Find files whose imports edges point to import nodes whose
+        # qualified_name starts with one of our target modules.
+        importer_files: set[str] = set()
+        for prefix in target_module_prefixes:
+            rows = conn.execute(
+                """
+                SELECT DISTINCT src.file_path
+                FROM edges e
+                JOIN nodes imp ON imp.id = e.target AND imp.kind = 'import'
+                JOIN nodes src ON src.id = e.source AND src.kind = 'file'
+                WHERE e.kind = 'imports' AND imp.qualified_name = ?
+                """,
+                (prefix,),
+            ).fetchall()
+            for (file_path,) in rows:
+                fpath = file_path.replace("\\", "/")
+                if fpath in indexed_files:
+                    importer_files.add(fpath)
+        return sorted(importer_files)
+    finally:
+        conn.close()
+
+
 def cmd_legacy_cn_corpus(args: argparse.Namespace) -> int:
     """施工方案 §7 W5-02C: 校验物理和 tracked 删除都已发生。"""
     cn_rules = ROOT / "configs" / "zh_CN" / "rules.yaml"
@@ -539,6 +800,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--expect-terminal")
     p.add_argument("--graph-receipt-task")
     p.set_defaults(func=cmd_file_map)
+
+    p = sub.add_parser("consumer-map", help="Per-target consumer report (B00-CG)")
+    p.add_argument("--check", action="store_true")
+    p.add_argument("--codegraph", default=".codegraph/codegraph.db")
+    p.add_argument("--target", action="append", default=[])
+    p.add_argument("--state-root", default=None)
+    p.set_defaults(func=cmd_consumer_map)
 
     p = sub.add_parser("legacy-cn-corpus", help="W5-02C CN legacy corpus removal gate")
     p.add_argument("--check-removed", action="store_true")
