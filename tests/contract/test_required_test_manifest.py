@@ -231,12 +231,13 @@ def nested_alias_bypass():
         "46 future obligations explicitly RED; 0 skip/xfail/xpass/collection errors\n",
         encoding="utf-8",
     )
-    reports = RUNNER._structured_test_reports([{
+    w0_governance_commands = [{
         "argv": ["py", "tools/remediate_v4.py", "verify-wave", "W0-04"],
         "exit_code": 0,
         "stdout": {"path": str(stdout), "sha256": "b" * 64},
         "stderr": {"path": str(tmp_path / "stderr.bin"), "sha256": "c" * 64},
-    }])
+    }]
+    reports = RUNNER._structured_test_reports(w0_governance_commands)
     assert reports == [{
         "command_index": 1,
         "kind": "pytest-governance",
@@ -252,6 +253,12 @@ def nested_alias_bypass():
         "evidence_label": "w0-04-required-tests",
         "evidence_sha256": "sha256:" + "a" * 64,
     }]
+    assert RUNNER._structured_test_reports(
+        w0_governance_commands, runner_version="0.4.0"
+    ) == []
+    assert RUNNER._structured_test_reports(
+        w0_governance_commands, runner_version="0.5.0"
+    ) == reports
     empty_stdout = tmp_path / "old-w0-04-stdout.bin"
     empty_stdout.write_bytes(b"")
     assert RUNNER._structured_test_reports([{
@@ -271,7 +278,7 @@ def nested_alias_bypass():
         "duplicate_key=declaration-only\n",
         encoding="utf-8",
     )
-    w1_reports = RUNNER._structured_test_reports([
+    w1_commands = [
         {
             "argv": ["py", "-m", "pytest", "tests/contract/test_jcs_v4.py"],
             "exit_code": 0,
@@ -284,8 +291,21 @@ def nested_alias_bypass():
             "stdout": {"path": str(w1_node_stdout), "sha256": "1" * 64},
             "stderr": {"path": str(tmp_path / "w1-node-stderr.bin"), "sha256": "2" * 64},
         },
-    ])
+    ]
+    w1_reports = RUNNER._structured_test_reports(w1_commands)
     assert RUNNER._w1_01_test_report_problems(w1_reports) == []
+    legacy_reports = RUNNER._structured_test_reports(
+        w1_commands,
+        runner_version="0.3.0",
+    )
+    assert "float_tokens" not in legacy_reports[1]
+    assert "duplicate_key" not in legacy_reports[1]
+    try:
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.8.0")
+    except ValueError as exc:
+        assert "unsupported structured report runner version" in str(exc)
+    else:
+        raise AssertionError("unknown runner versions must fail closed")
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
     tampered_reports[1]["runtime"] = "v23.0.0"

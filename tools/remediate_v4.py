@@ -56,6 +56,13 @@ except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
 RUNNER_VERSION = "0.7.0"
+STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
+    "0.3.0": 2,
+    "0.4.0": 2,
+    "0.5.0": 3,
+    "0.6.0": 3,
+    "0.7.0": 4,
+}
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
@@ -4238,13 +4245,19 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         }
         if recorded_state_artifacts != expected_state_artifacts:
             raise ValueError(f"state artifact binding mismatch: {receipt_path}")
-        if (
+        must_rebuild_test_reports = (
             receipt["runner_version"] == RUNNER_VERSION
             or any(
                 assertion["id"].startswith("runner-")
                 for assertion in receipt["completion_assertions"]
             )
-        ) and receipt["test_reports"] != _structured_test_reports(receipt["command_results"]):
+        )
+        if (
+            must_rebuild_test_reports
+            and receipt["test_reports"] != _structured_test_reports(
+                receipt["command_results"], runner_version=receipt["runner_version"]
+            )
+        ):
             raise ValueError(f"structured test report binding mismatch: {receipt_path}")
         previous = receipt["receipt_digest"]
         previous_attempt = attempt_number
@@ -4622,7 +4635,13 @@ def _write_receipt(attempt_dir: Path, receipt: dict[str, Any]) -> None:
         handle.write("\n")
 
 
-def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _structured_test_reports(
+    command_results: list[dict[str, Any]], *, runner_version: str = RUNNER_VERSION,
+) -> list[dict[str, Any]]:
+    try:
+        report_format = STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION[runner_version]
+    except KeyError as exc:
+        raise ValueError(f"unsupported structured report runner version: {runner_version!r}") from exc
     reports: list[dict[str, Any]] = []
     for index, item in enumerate(command_results, 1):
         argv = item["argv"]
@@ -4631,7 +4650,11 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
             kind = "pytest"
         elif any(Path(value).name == "jcs_node_oracle.mjs" for value in argv):
             kind = "node-oracle"
-        elif len(argv) >= 2 and argv[-2:] == ["verify-wave", "W0-04"]:
+        elif (
+            report_format >= 3
+            and len(argv) >= 2
+            and argv[-2:] == ["verify-wave", "W0-04"]
+        ):
             kind = "pytest-governance"
         if kind is None:
             continue
@@ -4641,9 +4664,11 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
             "command_index": index,
             "kind": kind,
             "exit_code": item["exit_code"],
+        }
+        report.update({
             "stdout_sha256": item["stdout"]["sha256"],
             "stderr_sha256": item["stderr"]["sha256"],
-        }
+        })
         if kind == "pytest":
             passed = re.search(r"(?:^|\s)(\d+) passed(?:\s|,|$)", stdout_text)
             if passed:
@@ -4653,10 +4678,11 @@ def _structured_test_reports(command_results: list[dict[str, Any]]) -> list[dict
                 match = re.search(rf"(?:^|\s){field}=(\d+)(?:\s|$)", stdout_text)
                 if match:
                     report[field] = int(match.group(1))
-            for field in ("float_tokens", "duplicate_key"):
-                match = re.search(rf"(?:^|\s){field}=([a-z-]+)(?:\s|$)", stdout_text)
-                if match:
-                    report[field] = match.group(1)
+            if report_format >= 4:
+                for field in ("float_tokens", "duplicate_key"):
+                    match = re.search(rf"(?:^|\s){field}=([a-z-]+)(?:\s|$)", stdout_text)
+                    if match:
+                        report[field] = match.group(1)
             runtime = re.search(r"(?:^|\s)runtime=(v\d+\.\d+\.\d+)(?:\s|$)", stdout_text)
             if runtime:
                 report["runtime"] = runtime.group(1)
