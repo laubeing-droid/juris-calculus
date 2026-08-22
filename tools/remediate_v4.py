@@ -89,8 +89,18 @@ RESOURCE_LIMIT_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-resource-lim
 V4_CONTRACT_VECTORS = ROOT / "tests" / "contract" / "v4-contract-vectors.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
 REQUIRED_TEST_PYTEST_CONFIG = ROOT / "tests" / "pytest.ini"
+V4_SCHEMA_PUBLICATION = ROOT / "schemas" / "jc-v4.schema.json"
+MCP_MANIFEST_PUBLICATION = ROOT / "mcp_manifest.json"
 W1_02_TEST_CASE_IDS_DIGEST = (
     "sha256:99b49c631f7a40a45aa064ca60c26ff57d7a7dc27f0546e947e803c6275573f7"
+)
+W1_03_TEST_CASE_IDS_DIGEST = (
+    "sha256:f545a9f5a3dcc8737aff9a34c9ada497742287809c1f5b569592374bd4ff0696"
+)
+W1_03_SCHEMA_SHA256 = "d5e3016a5569f164878b3855a08e905b679143f354506ba715cca093bc05f92b"
+W1_03_MANIFEST_SHA256 = "42caf7983192f970d17b0547122c60ed2f868cf01e0966e66dd0fe9c112d3cd4"
+W1_03_TOOL_SPEC_DIGEST = (
+    "sha256:31fafabfd28ad1a629ca9cfcdd9ff58097476ab8fe111e77f797d5a010bbdee0"
 )
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -1090,17 +1100,110 @@ def cmd_legacy_cn_corpus(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _load_w1_03_mcp_authority() -> Any:
+    root_text = str(ROOT)
+    inserted = root_text not in sys.path
+    if inserted:
+        sys.path.insert(0, root_text)
+    try:
+        import compiler_core.mcp as module
+    finally:
+        if inserted:
+            sys.path.remove(root_text)
+    return module
+
+
+def _generated_publication_problems(
+    schema_path: Path,
+    manifest_path: Path,
+) -> list[str]:
+    """Compare both committed publications with the in-wheel typed authority."""
+
+    problems: list[str] = []
+    try:
+        mcp_authority = _load_w1_03_mcp_authority()
+        expected_schema = mcp_authority.schema_bytes()
+        expected_manifest = mcp_authority.manifest_bytes()
+        runtime_tools = mcp_authority.runtime_tools_list()
+    except Exception as exc:
+        return [f"generated authority cannot load: {type(exc).__name__}: {exc}"]
+    try:
+        schema_bytes = schema_path.read_bytes()
+    except OSError as exc:
+        problems.append(f"schema publication unreadable: {type(exc).__name__}")
+        schema_bytes = b""
+    try:
+        manifest_bytes = manifest_path.read_bytes()
+    except OSError as exc:
+        problems.append(f"manifest publication unreadable: {type(exc).__name__}")
+        manifest_bytes = b""
+    if schema_bytes != expected_schema:
+        problems.append("schema bytes differ from the deterministic typed-contract emitter")
+    if manifest_bytes != expected_manifest:
+        problems.append("manifest bytes differ from the deterministic ToolSpec emitter")
+    try:
+        schema = json.loads(schema_bytes.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        problems.append(f"schema publication is not strict UTF-8 JSON: {type(exc).__name__}")
+        schema = None
+    try:
+        manifest = json.loads(manifest_bytes.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        problems.append(f"manifest publication is not strict UTF-8 JSON: {type(exc).__name__}")
+        manifest = None
+    if isinstance(schema, dict):
+        if Draft202012Validator is None:
+            problems.append("jsonschema package is required for generated publication checks")
+        else:
+            try:
+                Draft202012Validator.check_schema(schema)
+            except Exception as exc:
+                problems.append(f"schema publication is invalid Draft 2020-12: {exc}")
+        if schema_bytes and _canonical_bytes(schema) != schema_bytes:
+            problems.append("schema publication is not exact canonical UTF-8 bytes")
+    if isinstance(manifest, dict):
+        if manifest != runtime_tools:
+            problems.append("manifest document differs from runtime tools/list")
+        if manifest_bytes and _canonical_bytes(manifest) != manifest_bytes:
+            problems.append("manifest publication is not exact canonical UTF-8 bytes")
+    return problems
+
+
+def _replace_publication(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        temporary.write_bytes(payload)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def cmd_generated(args: argparse.Namespace) -> int:
-    """施工方案 §8 W1-03: 验证 Schema/ToolSpec/manifest 发布物由 emitter 产生。"""
-    target = ROOT / "schemas" / "jc-v4.schema.json"
-    if not target.is_file():
-        print(f"missing: {target}", file=sys.stderr)
+    """施工方案 §8 W1-03: emit or verify exact Schema/manifest publications."""
+
+    try:
+        mcp_authority = _load_w1_03_mcp_authority()
+    except Exception as exc:
+        print(f"generated authority cannot load: {type(exc).__name__}: {exc}", file=sys.stderr)
         return EXIT_GATE_FAIL
-    payload = json.loads(target.read_text(encoding="utf-8"))
-    if "$defs" not in payload and "definitions" not in payload:
-        print("jc-v4.schema.json missing $defs; emitter contract violated", file=sys.stderr)
+    if not args.check:
+        _replace_publication(V4_SCHEMA_PUBLICATION, mcp_authority.schema_bytes())
+        _replace_publication(MCP_MANIFEST_PUBLICATION, mcp_authority.manifest_bytes())
+    problems = _generated_publication_problems(
+        V4_SCHEMA_PUBLICATION,
+        MCP_MANIFEST_PUBLICATION,
+    )
+    if problems:
+        for problem in problems:
+            print(problem, file=sys.stderr)
         return EXIT_GATE_FAIL
-    print("jc-v4.schema.json contains $defs")
+    action = "verified" if args.check else "emitted"
+    print(
+        f"V4 publications {action}: 73 schema defs; 4 ToolSpecs; "
+        f"schema_sha256={sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes())}; "
+        f"manifest_sha256={sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes())}"
+    )
     return EXIT_OK
 
 
@@ -3887,12 +3990,15 @@ def cmd_w1_02_contract_gate() -> int:
     ]
     expected_w1_03_allowed_paths = [
         "compiler_core/mcp.py",
+        "docs/architecture/module-authority.json",
         "mcp_manifest.json",
         "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "schemas/jc-v4.schema.json",
         "tests/contract/test_python_schema_mcp_differential.py",
         "tests/contract/test_required_test_manifest.py",
         "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
         "tools/remediate_v4.py",
     ]
     expected_w1_03_argv = [
@@ -3958,6 +4064,8 @@ def cmd_w1_02_contract_gate() -> int:
     expected_active = {
         "V4-P0-03-DIGEST-COMPOSITION",
         "V4-P1-01-RFC8785-PROPERTY",
+        "V4-P1-02-CODEC-DIFFERENTIAL",
+        "V4-P1-14-TOOLSPEC-AUTHORITY",
         "V4-P2-07-PUBLIC-VERSION",
     }
     actual_active = {
@@ -3982,11 +4090,25 @@ def cmd_w1_02_contract_gate() -> int:
         p1_codec.get("audit_id"), p1_codec.get("owner_task"),
         p1_codec.get("state"), p1_codec.get("selector"),
     ) != (
-        "P1-02", "W1-03", "RED_AT_TASK",
+        "P1-02", "W1-03", "ACTIVE_REQUIRED",
         "tests/contract/test_python_schema_mcp_differential.py::"
         "test_python_schema_mcp_acceptance_sets_match",
     ):
-        fail("P1-02 differential obligation must remain RED_AT_TASK for W1-03")
+        fail("P1-02 differential obligation is not the exact active W1-03 selector")
+    elif not _selector_is_declared(ROOT, p1_codec["selector"]):
+        fail("P1-02 differential selector is not declared")
+    p1_toolspec = mutation_by_id.get("V4-P1-14-TOOLSPEC-AUTHORITY")
+    if not isinstance(p1_toolspec, dict) or (
+        p1_toolspec.get("audit_id"), p1_toolspec.get("owner_task"),
+        p1_toolspec.get("state"), p1_toolspec.get("selector"),
+    ) != (
+        "P1-14", "W1-03", "ACTIVE_REQUIRED",
+        "tests/contract/test_python_schema_mcp_differential.py::"
+        "test_toolspec_manifest_and_runtime_codec_are_one_authority",
+    ):
+        fail("P1-14 ToolSpec obligation is not the exact active W1-03 selector")
+    elif not _selector_is_declared(ROOT, p1_toolspec["selector"]):
+        fail("P1-14 ToolSpec selector is not declared")
     active_evidence = sorted(
         item.get("id")
         for item in manifest.get("evidence_tracks", [])
@@ -4148,7 +4270,9 @@ def cmd_w1_02_contract_gate() -> int:
     if inserted_root:
         sys.path.insert(0, str(ROOT))
     try:
-        spec = importlib.util.spec_from_file_location(module_name, contracts_path)
+        spec = importlib.util.spec_from_file_location(
+            "jc_w1_02_contract_gate", contracts_path
+        )
         if spec is None or spec.loader is None:
             raise ImportError("module spec has no loader")
         contracts = importlib.util.module_from_spec(spec)
@@ -5859,6 +5983,390 @@ def cmd_w1_02_contract_gate() -> int:
     return EXIT_OK
 
 
+def _cmd_w1_03_publication_gate() -> int:
+    """Verify the staged V4 protocol surface and deterministic publications.
+
+    This gate proves the frozen wire/structural corpus and strict JSON admission
+    profile.  Deep contract semantics remain owned by the W1-02 typed codecs;
+    installed stdio cutover remains owned by W5-CUTOVER.
+    """
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_allowed_paths = [
+        "compiler_core/mcp.py",
+        "docs/architecture/module-authority.json",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_python_schema_mcp_differential.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W1-03"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W1-03",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W1-03/contract-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        required_manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs" / "architecture" / "module-authority.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        schema = json.loads(V4_SCHEMA_PUBLICATION.read_text(encoding="utf-8"))
+        manifest = json.loads(MCP_MANIFEST_PUBLICATION.read_text(encoding="utf-8"))
+        mcp_authority = _load_w1_03_mcp_authority()
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w1_03_file_disposition_generator",
+            ROOT / "tools" / "build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file-disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, ImportError, TypeError) as exc:
+        print(f"W1-03 control input unreadable: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W1-03"),
+        None,
+    )
+    if not isinstance(task, dict):
+        fail("W1-03 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W1-02"]:
+            fail("W1-03 mode or dependency drifted")
+        if task.get("audit_ids") != ["P1-02", "P1-14", "P2-04"]:
+            fail("W1-03 audit binding drifted")
+        if task.get("allowed_paths") != expected_allowed_paths:
+            fail("W1-03 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W1-03 argv or expected exit codes drifted")
+
+    problems.extend(_generated_publication_problems(
+        V4_SCHEMA_PUBLICATION,
+        MCP_MANIFEST_PUBLICATION,
+    ))
+    if sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W1_03_SCHEMA_SHA256:
+        fail("W1-03 frozen schema publication digest drifted")
+    if sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W1_03_MANIFEST_SHA256:
+        fail("W1-03 frozen manifest publication digest drifted")
+    if mcp_authority.tool_spec_digest() != W1_03_TOOL_SPEC_DIGEST:
+        fail("W1-03 frozen ToolSpec semantic digest drifted")
+
+    assignment_locations: list[str] = []
+    for relative in _git_tracked_files():
+        if not relative.endswith(".py"):
+            continue
+        try:
+            tree = ast.parse((ROOT / relative).read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            fail(f"W1-03 cannot parse tracked Python path {relative}: {type(exc).__name__}")
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(target, ast.Name) and target.id == "TOOL_SPECS" for target in targets):
+                assignment_locations.append(relative)
+    if assignment_locations != ["compiler_core/mcp.py"]:
+        fail(f"TOOL_SPECS authority is not unique: {assignment_locations}")
+
+    mcp_source = (ROOT / "compiler_core" / "mcp.py").read_text(encoding="utf-8")
+    mcp_tree = ast.parse(mcp_source)
+    assigned_names: list[str] = []
+    forbidden_calls: list[str] = []
+
+    def call_name(node: ast.AST) -> str:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            prefix = call_name(node.value)
+            return f"{prefix}.{node.attr}" if prefix else node.attr
+        return ""
+
+    for node in ast.walk(mcp_tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            assigned_names.extend(
+                target.id for target in targets if isinstance(target, ast.Name)
+            )
+        elif isinstance(node, ast.Call):
+            name = call_name(node.func)
+            if name in {"open", "Path.open"} or name.endswith((".read_text", ".read_bytes")):
+                forbidden_calls.append(name)
+    if assigned_names.count("TOOL_SPECS") != 1:
+        fail("compiler_core/mcp.py must assign TOOL_SPECS exactly once")
+    if "DEFAULT_MANIFEST" in assigned_names or any(
+        name.startswith("CAPABILITIES") for name in assigned_names
+    ):
+        fail("compiler_core/mcp.py contains a manifest or capabilities snapshot authority")
+    if forbidden_calls or "manifest_path" in mcp_source:
+        fail(f"compiler_core/mcp.py contains repository publication I/O: {forbidden_calls}")
+
+    expected_specs = (
+        ("jc_capabilities", "MCPCapabilitiesInputV4", "MCPCapabilitiesOutputV4", "MCPCapabilitiesErrorV4"),
+        ("jc_evaluate", "MCPEvaluateInputV4", "MCPEvaluateOutputV4", "MCPEvaluateErrorV4"),
+        ("jc_verify_run", "MCPVerifyRunInputV4", "MCPVerifyRunOutputV4", "MCPVerifyRunErrorV4"),
+        ("jc_read_artifact", "MCPReadArtifactInputV4", "MCPReadArtifactOutputV4", "MCPReadArtifactErrorV4"),
+    )
+    actual_specs = tuple(
+        (spec.name, spec.input_type, spec.output_type, spec.error_type)
+        for spec in mcp_authority.TOOL_SPECS
+    )
+    if actual_specs != expected_specs:
+        fail(f"W1-03 four-tool mapping drifted: {actual_specs}")
+    if mcp_authority.runtime_resources_list() != {"resources": []}:
+        fail("W1-03 staged runtime must publish zero MCP resources")
+
+    definitions = schema.get("$defs") if isinstance(schema, dict) else None
+    contract_types = mcp_authority.V4_TYPE_REGISTRY
+    object_types = mcp_authority.V4_OBJECT_REGISTRY
+    if set(schema) != {"$schema", "$id", "title", "description", "$defs"}:
+        fail("W1-03 schema root fields drifted from the structural publication contract")
+    if not isinstance(definitions, dict) or set(definitions) != set(W0_REQUIRED_OBJECT_IDS):
+        fail("W1-03 schema definitions are not the exact frozen 73-type registry")
+        definitions = {}
+    if len(object_types) != 68 or len(contract_types) != 73:
+        fail("W1-03 runtime registry is not exactly 68 objects and 73 total types")
+
+    for type_name, contract_type in object_types.items():
+        definition = definitions.get(type_name, {})
+        expected_fields = [item.name for item in dataclasses.fields(contract_type)]
+        expected_required = [
+            item.name
+            for item in dataclasses.fields(contract_type)
+            if item.default is dataclasses.MISSING
+            and item.default_factory is dataclasses.MISSING
+        ]
+        if (
+            definition.get("type") != "object"
+            or definition.get("additionalProperties") is not False
+            or set(definition.get("properties", {})) != set(expected_fields)
+            or definition.get("required") != expected_required
+        ):
+            fail(f"W1-03 object definition drifted: {type_name}")
+            continue
+        for item in dataclasses.fields(contract_type):
+            published = definition["properties"][item.name]
+            if item.default is dataclasses.MISSING:
+                if "default" in published:
+                    fail(f"W1-03 unexpected schema default: {type_name}.{item.name}")
+            elif published.get("default", dataclasses.MISSING) != item.default:
+                fail(f"W1-03 schema default drifted: {type_name}.{item.name}")
+
+    digest_definition = definitions.get("DigestV4")
+    if digest_definition != {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}:
+        fail("W1-03 DigestV4 schema grammar drifted")
+    for type_name in (
+        "ExecutionStatusV4", "DecisionStatusV4", "CompletenessStateV4", "CertificateKindV4",
+    ):
+        contract_type = contract_types.get(type_name)
+        expected_definition = {
+            "type": "string",
+            "enum": [item.value for item in contract_type] if contract_type else [],
+        }
+        if definitions.get(type_name) != expected_definition:
+            fail(f"W1-03 scalar enum definition drifted: {type_name}")
+    canonical_wire = (
+        definitions.get("CanonicalTimeV4", {})
+        .get("properties", {})
+        .get("wire", {})
+    )
+    if canonical_wire.get("format") != "jc-canonical-time":
+        fail("W1-03 CanonicalTimeV4 must publish the strict JC calendar profile")
+
+    references: set[str] = set()
+    stack: list[Any] = [schema]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            reference = current.get("$ref")
+            if isinstance(reference, str) and reference.startswith("#/$defs/"):
+                references.add(reference.removeprefix("#/$defs/"))
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            stack.extend(current)
+    dangling = references - set(definitions)
+    if dangling:
+        fail(f"W1-03 schema contains dangling references: {sorted(dangling)}")
+
+    limit_properties = definitions.get("ResourceLimitsV4", {}).get("properties", {})
+    engine_limits = mcp_authority._contracts.ENGINE_LIMITS_V4
+    if len(engine_limits) != 19 or set(limit_properties) != set(engine_limits):
+        fail("W1-03 ResourceLimitsV4 is not the exact 19-field authority")
+    else:
+        for name, (default, hard_maximum) in engine_limits.items():
+            published = limit_properties[name]
+            if published.get("default", dataclasses.MISSING) != default:
+                fail(f"W1-03 resource default drifted: {name}")
+            if hard_maximum is None:
+                if (published.get("type"), published.get("const")) != ("null", None):
+                    fail(f"W1-03 unbounded resource field drifted: {name}")
+            elif (
+                published.get("type"), published.get("minimum"),
+                published.get("maximum"), published.get("x-jc-integer-token"),
+            ) != ("integer", 1, hard_maximum, True):
+                fail(f"W1-03 resource bounds drifted: {name}")
+
+    runtime_tools = mcp_authority.runtime_tools_list()
+    if manifest != runtime_tools or not isinstance(manifest.get("tools"), list):
+        fail("W1-03 manifest is not the exact staged runtime tools/list document")
+    else:
+        for tool, spec in zip(manifest["tools"], mcp_authority.TOOL_SPECS, strict=True):
+            if (
+                tool.get("name") != spec.name
+                or tool.get("description") != spec.description
+                or tool.get("inputSchema") != mcp_authority.standalone_type_schema(spec.input_type)
+                or tool.get("outputSchema") != mcp_authority.standalone_type_schema(spec.output_type)
+                or tool.get("x-jc-errorSchema") != mcp_authority.standalone_type_schema(spec.error_type)
+            ):
+                fail(f"W1-03 manifest schema mapping drifted: {spec.name}")
+    publication_text = json.dumps(
+        {"schema": schema, "manifest": manifest}, sort_keys=True, ensure_ascii=False
+    )
+    forbidden_publication_terms = {
+        "contracts_v4", "DEFAULT_MANIFEST", "WorkBuddy", "jc_lookup_rule",
+        "jc_analyze_strategy", "jc_analyze_similar_cases", "input_path", "index_path",
+    }
+    stale_terms = sorted(term for term in forbidden_publication_terms if term in publication_text)
+    if stale_terms:
+        fail(f"W1-03 publications retain legacy/path authority terms: {stale_terms}")
+
+    problems.extend(_required_test_manifest_problems(
+        required_manifest,
+        root=ROOT,
+        issue_map=issue_map,
+        plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in required_manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_active = {
+        "V4-P0-03-DIGEST-COMPOSITION",
+        "V4-P1-01-RFC8785-PROPERTY",
+        "V4-P1-02-CODEC-DIFFERENTIAL",
+        "V4-P1-14-TOOLSPEC-AUTHORITY",
+        "V4-P2-07-PUBLIC-VERSION",
+    }
+    actual_active = {
+        test_id for test_id, item in mutation_by_id.items()
+        if item.get("state") == "ACTIVE_REQUIRED"
+    }
+    if actual_active != expected_active:
+        fail(f"W1-03 ACTIVE_REQUIRED audit set drifted: {sorted(actual_active)}")
+    p2_current = mutation_by_id.get("V4-P2-04-CURRENT-AUTHORITY")
+    if not isinstance(p2_current, dict) or (
+        p2_current.get("audit_id"), p2_current.get("owner_task"), p2_current.get("state")
+    ) != ("P2-04", "W5-05", "RED_AT_TASK"):
+        fail("W1-03 must leave P2-04 current-authority closure RED at W5-05")
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict)
+    }
+    expected_open_closures = {
+        "P1-02": ["W1-02", "W1-03", "W1-06"],
+        "P1-14": ["W1-03", "W5-CUTOVER", "W5-06"],
+        "P2-04": ["W0-03", "W5-05", "W6-08"],
+    }
+    for audit_id, closure_tasks in expected_open_closures.items():
+        issue = issue_by_id.get(audit_id)
+        if not isinstance(issue, dict) or (
+            issue.get("closure_tasks"), issue.get("status")
+        ) != (closure_tasks, "registered"):
+            fail(
+                f"W1-03 must retain {audit_id} as registered through "
+                f"future closure tasks {closure_tasks}"
+            )
+    prematurely_closed = [
+        audit_id for audit_id in ("P1-02", "P1-14", "P2-04")
+        if issue_by_id.get(audit_id, {}).get("status") == "closed"
+    ]
+    if prematurely_closed:
+        fail(f"W1-03 prematurely closes global audit issues: {prematurely_closed}")
+
+    mcp_policy_rules = [
+        item for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict) and item.get("path") == "compiler_core/mcp.py"
+    ]
+    if len(mcp_policy_rules) != 1 or mcp_policy_rules[0].get("class") != "PUBLIC_ADAPTER":
+        fail("W1-03 module policy does not classify compiler_core/mcp.py as PUBLIC_ADAPTER")
+
+    regenerated_disposition = disposition_generator.build_document()
+    if disposition != regenerated_disposition:
+        fail("W1-03 file disposition is not reproducible from its declared generator")
+    mcp_dispositions = [
+        item for item in disposition.get("paths", [])
+        if isinstance(item, dict) and item.get("path") == "compiler_core/mcp.py"
+    ]
+    if len(mcp_dispositions) != 1 or {
+        key: mcp_dispositions[0].get(key)
+        for key in (
+            "disposition", "terminal_state", "audit_role", "closure_task", "namespace"
+        )
+    } != {
+        "disposition": "KEEP_REWRITE",
+        "terminal_state": "KEEP_REWRITE",
+        "audit_role": "CLI/Client/MCP",
+        "closure_task": "W5-CUTOVER",
+        "namespace": "formal_core",
+    }:
+        fail("W1-03 compiler_core/mcp.py disposition authority drifted")
+
+    if cmd_file_map(argparse.Namespace(
+        check=True, all_tracked=True, require_semantic_targets=True,
+    )) != EXIT_OK:
+        fail("W1-03 file disposition is not closed over the tracked tree")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(problem, file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W1-03 staged publication gate OK: 217 frozen structural corpus cases; "
+        "73 defs/68 closed objects/5 scalars/19 limits; 4 ToolSpecs; 0 resources; "
+        f"schema_sha256={W1_03_SCHEMA_SHA256}; manifest_sha256={W1_03_MANIFEST_SHA256}; "
+        "strict raw-JSON and typed codecs remain semantic authority; P1-02/P1-14/P2-04 "
+        "remain registered through W1-06/W5/W6 closure tasks"
+    )
+    return EXIT_OK
+
+
+def cmd_w1_03_publication_gate() -> int:
+    """Fail closed on malformed publications or an unloadable staged authority."""
+
+    try:
+        return _cmd_w1_03_publication_gate()
+    except Exception as exc:
+        print(
+            f"W1-03 publication gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -5874,6 +6382,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w1_01_canonical_gate()
     if args.wave == "W1-02":
         return cmd_w1_02_contract_gate()
+    if args.wave == "W1-03":
+        return cmd_w1_03_publication_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -6216,7 +6726,7 @@ def _declared_state_artifacts(
                     f"JC_ARTIFACT digest mismatch for {label}: {actual} != {digest}"
                 )
             artifacts[f"state-artifact:{label}"] = digest
-        junit_path = _pytest_junit_path(command["argv"])
+        junit_path = _pytest_junit_path(command.get("argv", []))
         if junit_path is not None:
             target = junit_path.resolve(strict=True)
             if not target.is_file() or not target.is_relative_to(evidence_root):
@@ -6897,6 +7407,44 @@ def _w1_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w1_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W1-03 publication/differential executable evidence."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W1-03 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": 237,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": 237,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": 237,
+        "junit_unique_cases": 237,
+        "junit_case_ids_digest": W1_03_TEST_CASE_IDS_DIGEST,
+    }
+    problems: list[str] = []
+    for field, expected_value in expected.items():
+        if report.get(field) != expected_value:
+            problems.append(
+                f"W1-03 pytest {field} drifted: "
+                f"{report.get(field)!r} != {expected_value!r}"
+            )
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W1-03 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -7177,6 +7725,35 @@ def _execute_auto_task(
             "detail": (
                 "173 focused contract/version/governance pytest items bound with zero bypass"
                 if not report_problems else "; ".join(report_problems)
+            ),
+        })
+    if task["id"] == "W1-03":
+        report_problems = _w1_03_test_report_problems(test_reports)
+        expected_publications = {
+            "result-path:schemas/jc-v4.schema.json": "sha256:" + W1_03_SCHEMA_SHA256,
+            "result-path:mcp_manifest.json": "sha256:" + W1_03_MANIFEST_SHA256,
+        }
+        publication_problems = [
+            f"{key}={artifact_digests.get(key)!r}"
+            for key, expected_digest in expected_publications.items()
+            if artifact_digests.get(key) != expected_digest
+        ]
+        assertions.append({
+            "id": "w1-03-exact-test-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                "237 focused publication/differential pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w1-03-exact-publications",
+            "kind": "artifact_binding",
+            "ok": not publication_problems,
+            "detail": (
+                "committed Schema and MCP manifest bytes match the frozen publication digests"
+                if not publication_problems else "; ".join(publication_problems)
             ),
         })
     timed_out = any(item["timed_out"] for item in command_results)

@@ -30,7 +30,7 @@ CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "audit", "audit_bundle",
         "canonical_serialization", "cli", "client", "contracts",
-        "rendering", "resources", "rule_packs", "version",
+        "mcp", "rendering", "resources", "rule_packs", "version",
     ],
     "MERGE_DELETE": [
         "argumentation", "argumentation_v2", "backend_router_v1",
@@ -224,6 +224,8 @@ def _classify_core(stem: str) -> tuple[str, str]:
 
 def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     rel = path.replace("\\", "/")
+    if rel == "compiler_core/mcp.py":
+        audit_role = "CLI/Client/MCP"
     # OTHER_DIRECTORIES overrides generic prefix matching
     if rel in OTHER_DIRECTORIES:
         disp = OTHER_DIRECTORIES[rel]["disposition"]
@@ -360,7 +362,9 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     return entry
 
 
-def main() -> int:
+def build_document() -> dict[str, Any]:
+    """Build the complete tracked-path disposition from declared sources."""
+
     audit_entries = _parse_appendix_a()
     tracked = _git_tracked()
     paths = sorted(tracked)
@@ -370,7 +374,7 @@ def main() -> int:
         rel = path.replace("\\", "/")
         audit_role = audit_role_map.get(rel, "new_after_audit")
         entries.append(build_entry(rel, audit_role))
-    payload = {
+    return {
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
@@ -378,12 +382,16 @@ def main() -> int:
         "count": len(entries),
         "paths": entries,
     }
+
+
+def main() -> int:
+    payload = build_document()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    print(f"file-disposition: {len(entries)} entries written to {OUT}")
+    print(f"file-disposition: {payload['count']} entries written to {OUT}")
     return 0
 
 

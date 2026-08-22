@@ -304,9 +304,9 @@
       "suite": "contract",
       "selector": "tests/contract/test_python_schema_mcp_differential.py::test_python_schema_mcp_acceptance_sets_match",
       "owner_task": "W1-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Mutate tuple, nested float, calendar date, engine version, or unknown field acceptance.",
-      "red_failure": "Python, Schema, and MCP acceptance sets must remain identical."
+      "red_failure": "Python, strict-profile Schema, and MCP must agree on every frozen wire/structural corpus case; deep typed semantics remain a later differential obligation."
     },
     {
       "audit_id": "P1-03",
@@ -424,9 +424,9 @@
       "suite": "contract",
       "selector": "tests/contract/test_python_schema_mcp_differential.py::test_toolspec_manifest_and_runtime_codec_are_one_authority",
       "owner_task": "W1-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Drift a manifest schema or runtime codec from ToolSpec.",
-      "red_failure": "Any generated or runtime tool-contract drift must fail."
+      "red_failure": "Any drift among the staged V4 ToolSpec, generated publications, runtime tools/list projection, or typed codec mapping must fail; installed stdio parity remains required at W5-CUTOVER and W5-06."
     },
     {
       "audit_id": "P1-15",

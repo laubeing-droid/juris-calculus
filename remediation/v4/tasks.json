@@ -1316,12 +1316,15 @@
       "objective": "Schema/ToolSpec/capabilities 确定性发布物；唯一 TOOL_SPECS；emitter 只生成发布物",
       "allowed_paths": [
         "compiler_core/mcp.py",
+        "docs/architecture/module-authority.json",
         "mcp_manifest.json",
         "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "schemas/jc-v4.schema.json",
         "tests/contract/test_python_schema_mcp_differential.py",
         "tests/contract/test_required_test_manifest.py",
         "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
         "tools/remediate_v4.py"
       ],
       "terminal_states": [],

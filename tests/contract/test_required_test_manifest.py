@@ -372,6 +372,22 @@ def nested_alias_bypass():
         "junit_case_ids_digest": RUNNER.W1_02_TEST_CASE_IDS_DIGEST,
     })
     assert RUNNER._w1_02_test_report_problems(w1_02_reports) == []
+
+    w1_03_reports = copy.deepcopy(w1_02_reports)
+    w1_03_reports[0].update({
+        "passed": 237,
+        "junit_tests": 237,
+        "junit_cases": 237,
+        "junit_unique_cases": 237,
+        "junit_case_ids_digest": RUNNER.W1_03_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w1_03_test_report_problems(w1_03_reports) == []
+    w1_03_reports[0]["junit_case_ids_digest"] = "sha256:" + "0" * 64
+    assert RUNNER._w1_03_test_report_problems(w1_03_reports) == [
+        "W1-03 pytest junit_case_ids_digest drifted: "
+        f"{'sha256:' + '0' * 64!r} != {RUNNER.W1_03_TEST_CASE_IDS_DIGEST!r}"
+    ]
+
     w1_02_reports[0]["skipped"] = 1
     assert RUNNER._w1_02_test_report_problems(w1_02_reports) == [
         "W1-02 pytest skipped drifted: 1 != 0"

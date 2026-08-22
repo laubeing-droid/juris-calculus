@@ -120,6 +120,7 @@
     {"path": "compiler_core/legal_reasoning.py", "class": "CANDIDATE_ASSET", "rationale": "Legacy advisory reasoning candidate."},
     {"path": "compiler_core/legal_spec_ivl.py", "class": "REMOVE", "rationale": "Migrate proven translation invariants to legal_ir.py."},
     {"path": "compiler_core/litigation_engineering.py", "class": "REMOVE", "rationale": "Move certificate witnesses to certificates.py and keep strategy content nonproduction."},
+    {"path": "compiler_core/mcp.py", "class": "PUBLIC_ADAPTER", "rationale": "Sole four-tool V4 ToolSpec, typed protocol codec, and deterministic publication adapter."},
     {"path": "compiler_core/output_firewall.py", "class": "REMOVE", "rationale": "Migrate stable privacy and error invariants into the V4 output boundary."},
     {"path": "compiler_core/plugin_registry.py", "class": "EXPERIMENT_ONLY", "rationale": "Dynamic addon discovery belongs only to the isolated experiment component."},
     {"path": "compiler_core/prc_collision_engine.py", "class": "EXPERIMENT_ONLY", "rationale": "TriRail/collision experiment component; excluded from production."},

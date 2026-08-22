@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "41ffbd0245faac0d7bd01161adc80018d3ff24f75ecdd91a25bd20f3e329812d",
-  "count": 344,
+  "count": 346,
   "paths": [
     {
       "path": ".gitattributes",
@@ -623,6 +623,14 @@
       "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
       "audit_role": "production-code",
       "closure_task": "W5-CUTOVER"
+    },
+    {
+      "path": "compiler_core/mcp.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "CLI/Client/MCP",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "compiler_core/output_firewall.py",
@@ -1688,6 +1696,13 @@
     },
     {
       "path": "tests/contract/test_public_version.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/contract/test_python_schema_mcp_differential.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
