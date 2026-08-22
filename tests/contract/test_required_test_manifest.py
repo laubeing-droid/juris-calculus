@@ -313,13 +313,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.13.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.14.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -444,6 +444,197 @@ def nested_alias_bypass():
     assert RUNNER._w2_01_test_report_problems(w2_01_reports) == [
         "W2-01 pytest junit_unique_cases drifted: 30 != 31"
     ]
+
+    def stream(name: str, payload: bytes = b"") -> dict:
+        path = tmp_path / f"{name}.bin"
+        path.write_bytes(payload)
+        return {"path": str(path), "sha256": RUNNER.sha256_hex(payload), "bytes": len(payload)}
+
+    lost_junit = tmp_path / "evidence" / "lost.xml"
+    lost_junit.parent.mkdir(parents=True, exist_ok=True)
+    lost_junit.write_text("overwritten", encoding="utf-8")
+    historical_task = {
+        "id": "W1-06",
+        "argv": [
+            ["py", "gate"],
+            [
+                "py", "-m", "pytest", "--basetemp", str(tmp_path / "tmp" / "W1-06"),
+                "--junitxml", str(lost_junit),
+            ],
+            ["node", "oracle"],
+        ],
+        "expected_exit_codes": [0, 0, 0],
+    }
+    task_digest = RUNNER._task_digest(historical_task)
+    lost_commands = [
+        {
+            "argv": argv, "expected_exit_code": 0, "exit_code": 0, "timed_out": False,
+            "stdout": stream(f"lost-{index}-stdout"),
+            "stderr": stream(f"lost-{index}-stderr"),
+        }
+        for index, argv in enumerate(historical_task["argv"], 1)
+    ]
+    recorded_state = {"state-artifact:pytest-junit-002": "sha256:" + "1" * 64}
+    observed_state = {
+        "state-artifact:pytest-junit-002": "sha256:" + RUNNER.sha256_hex(lost_junit.read_bytes())
+    }
+    assertion = {
+        "id": "all-commands-passed", "kind": "all_commands_passed",
+        "ok": True, "detail": "all exit codes matched",
+    }
+    lost_receipt = {
+        "schema_version": "jc/remediation-v4-receipt/2.1",
+        "task_digest": task_digest,
+        "run_id": "test-run",
+        "task_id": "W1-06",
+        "attempt": 2,
+        "status": "COMPLETED",
+        "input_receipt_digests": {},
+        "start_commit": "start",
+        "start_tree": "start-tree",
+        "result_commit": "result",
+        "result_tree": "result-tree",
+        "command_results": lost_commands,
+        "changed_paths": [],
+        "allowlist": {"allowed": True, "violations": []},
+        "test_reports": [],
+        "artifact_digests": recorded_state,
+        "completion_assertions": [assertion],
+        "previous_receipt_digest": None,
+        "runner_version": "0.13.0",
+    }
+    lost_receipt["receipt_digest"] = RUNNER._receipt_digest(lost_receipt)
+
+    with monkeypatch.context() as recovery_patch:
+        old_plan_bytes = json.dumps({"tasks": [historical_task]}).encode("utf-8")
+        recovery_patch.setattr(RUNNER, "_git_path_bytes", lambda *_args: old_plan_bytes)
+        recovery_patch.setattr(RUNNER, "_w1_06_test_report_problems", lambda _reports: [])
+        recovery_patch.setattr(RUNNER, "_validate_git_binding", lambda *_args: True)
+        recovery_patch.setattr(RUNNER, "_committed_delta", lambda *_args: ([], {}))
+        _, replay_argvs = RUNNER._state_artifact_recovery_replay(
+            lost_receipt, tmp_path, 3,
+        )
+        replay_junit = RUNNER._pytest_junit_path(replay_argvs[1])
+        assert replay_junit is not None
+        replay_junit.parent.mkdir(parents=True, exist_ok=True)
+        replay_junit.write_text(
+            '<testsuites><testsuite tests="1" skipped="0" failures="0" errors="0">'
+            '<testcase classname="recovery" name="test_replay" />'
+            "</testsuite></testsuites>",
+            encoding="utf-8",
+        )
+        replay_commands = [
+            {
+                "argv": argv, "expected_exit_code": 0, "exit_code": 0,
+                "timed_out": False,
+                "stdout": stream(
+                    f"replay-{index}-stdout",
+                    b"1 passed in 0.01s\n" if index == 2 else b"",
+                ),
+                "stderr": stream(f"replay-{index}-stderr"),
+            }
+            for index, argv in enumerate(replay_argvs, 1)
+        ]
+        replay_reports = RUNNER._structured_test_reports(replay_commands)
+        replay_state = RUNNER._declared_state_artifacts(replay_commands, tmp_path)
+        artifact_key = "state-artifact:pytest-junit-002"
+        recovery_record = {
+            "schema_version": "jc/state-artifact-recovery/1.0",
+            "task_id": "W1-06",
+            "lost_attempt": 2,
+            "lost_receipt_digest": lost_receipt["receipt_digest"],
+            "artifact_key": artifact_key,
+            "artifact_path": str(lost_junit.resolve()),
+            "expected_digest": recorded_state[artifact_key],
+            "observed_digest": observed_state[artifact_key],
+            "action": "REPLAY_AT_RESULT_COMMIT",
+            "replay_commit": "result",
+            "replay_attempt": 3,
+            "replay_argv_digest": RUNNER._digest_object(replay_argvs),
+            "replacement_digest": replay_state[artifact_key],
+        }
+        _, recovery_record_digest = RUNNER._write_content_addressed_json(
+            tmp_path / "evidence" / "state-recoveries", recovery_record,
+        )
+        recovery_receipt = {
+            **{key: value for key, value in lost_receipt.items() if key != "receipt_digest"},
+            "attempt": 3,
+            "command_results": replay_commands,
+            "test_reports": replay_reports,
+            "artifact_digests": {
+                **replay_state,
+                "recovery-record": recovery_record_digest,
+                "recovery-source-receipt": lost_receipt["receipt_digest"],
+                "recovery-loss-observation": RUNNER._digest_object({
+                    "recorded": recorded_state,
+                    "observed": observed_state,
+                }),
+            },
+            "completion_assertions": [{
+                "id": "runner-state-artifact-recovery", "kind": "artifact_binding",
+                "ok": True, "detail": "historical replay bound",
+            }],
+            "previous_receipt_digest": lost_receipt["receipt_digest"],
+        }
+        recovery_receipt["receipt_digest"] = RUNNER._receipt_digest(recovery_receipt)
+        assert RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, recovery_receipt, tmp_path,
+        )
+
+        forged_replay = copy.deepcopy(recovery_receipt)
+        forged_replay["command_results"][0]["argv"] = ["not-a-replay"]
+        forged_replay["receipt_digest"] = RUNNER._receipt_digest(forged_replay)
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, forged_replay, tmp_path,
+        )
+        missing_node_lane = copy.deepcopy(recovery_receipt)
+        missing_node_lane["command_results"].pop()
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, missing_node_lane, tmp_path,
+        )
+        wrong_replay_digest = copy.deepcopy(recovery_receipt)
+        wrong_replay_digest["artifact_digests"][artifact_key] = "sha256:" + "6" * 64
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, wrong_replay_digest, tmp_path,
+        )
+        wrong_task = copy.deepcopy(recovery_receipt)
+        wrong_task["task_id"] = "W2-01"
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, wrong_task, tmp_path,
+        )
+        recovery_patch.setattr(
+            RUNNER, "_w1_06_test_report_problems", lambda _reports: ["bad W1-06 replay"],
+        )
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, recovery_receipt, tmp_path,
+        )
+        recovery_patch.setattr(RUNNER, "_w1_06_test_report_problems", lambda _reports: [])
+        forged_observed = dict(observed_state)
+        forged_observed[artifact_key] = "sha256:" + "5" * 64
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, forged_observed, recovery_receipt, tmp_path,
+        )
+        forged_record = copy.deepcopy(recovery_receipt)
+        forged_record["artifact_digests"]["recovery-record"] = "sha256:../../escape"
+        assert not RUNNER._state_artifact_recovery_matches(
+            lost_receipt, recorded_state, observed_state, forged_record, tmp_path,
+        )
+
+        task_dir = tmp_path / "tasks" / "W1-06"
+        (task_dir / "2").mkdir(parents=True)
+        (task_dir / "3").mkdir()
+        (task_dir / "2" / "receipt.json").write_text(
+            json.dumps(lost_receipt), encoding="utf-8",
+        )
+        (task_dir / "3" / "receipt.json").write_text(
+            json.dumps(forged_replay), encoding="utf-8",
+        )
+        try:
+            RUNNER._receipt_history("W1-06", tmp_path)
+        except ValueError as exc:
+            assert "state artifact binding mismatch" in str(exc)
+        else:
+            raise AssertionError("non-replay recovery receipt must not wash lost state evidence")
 
     w1_02_reports[0]["skipped"] = 1
     assert RUNNER._w1_02_test_report_problems(w1_02_reports) == [

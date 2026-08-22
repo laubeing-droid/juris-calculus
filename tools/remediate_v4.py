@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.12.0"
+RUNNER_VERSION = "0.13.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -70,6 +70,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.10.0": 5,
     "0.11.0": 5,
     "0.12.0": 5,
+    "0.13.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -8326,7 +8327,7 @@ def _pytest_junit_path(argv: list[str]) -> Path | None:
 
 def _run_argv(
     argv: list[str], expected_exit_code: int, attempt_dir: Path,
-    index: int, timeout_seconds: float, state_root: Path,
+    index: int, timeout_seconds: float, state_root: Path, *, cwd: Path = ROOT,
 ) -> dict[str, Any]:
     exact_argv = _expanded_argv(argv, state_root)
     junit_path = _pytest_junit_path(exact_argv)
@@ -8353,7 +8354,7 @@ def _run_argv(
     })
     try:
         cp = subprocess.run(
-            exact_argv, cwd=str(ROOT), capture_output=True, check=False,
+            exact_argv, cwd=str(cwd), capture_output=True, check=False,
             timeout=timeout_seconds, env=execution_environment,
         )
         exit_code = cp.returncode
@@ -8486,6 +8487,224 @@ def _validate_git_binding(commit: str, tree: str) -> bool:
     return cp.returncode == 0 and cp.stdout.strip() == tree
 
 
+def _state_artifact_recovery_replay(
+    receipt: dict[str, Any], state_root: Path, recovery_attempt: int,
+) -> tuple[dict[str, Any], list[list[str]]]:
+    """Return the exact historical task and its only permitted replay argv projection."""
+
+    old_plan_bytes = _git_path_bytes(receipt["result_commit"], "remediation/v4/tasks.json")
+    if old_plan_bytes is None:
+        raise ValueError("result commit does not contain the historical plan")
+    old_plan = json.loads(old_plan_bytes.decode("utf-8"))
+    old_task = next(
+        (
+            item for item in old_plan.get("tasks", [])
+            if item.get("id") == receipt.get("task_id")
+        ),
+        None,
+    )
+    if (
+        old_task is None
+        or old_task.get("id") != "W1-06"
+        or _task_digest(old_task) != receipt.get("task_digest")
+        or receipt.get("status") != "COMPLETED"
+        or recovery_attempt <= receipt.get("attempt", 0)
+    ):
+        raise ValueError("historical W1-06 task definition or recovery attempt is invalid")
+    commands = receipt.get("command_results")
+    raw_argv = old_task.get("argv")
+    exit_codes = old_task.get("expected_exit_codes")
+    if (
+        not isinstance(commands, list)
+        or not isinstance(raw_argv, list)
+        or not isinstance(exit_codes, list)
+        or len(commands) != 3
+        or len(commands) != len(raw_argv)
+        or len(commands) != len(exit_codes)
+    ):
+        raise ValueError("historical W1-06 replay must contain its exact three lanes")
+
+    replay_evidence = (
+        state_root / "evidence" / "state-recoveries" / "W1-06" / str(recovery_attempt)
+    )
+    replay_tmp = state_root / "tmp" / "state-recoveries" / "W1-06" / str(recovery_attempt)
+    replay_argvs: list[list[str]] = []
+    for index, (command, task_argv, expected_exit_code) in enumerate(
+        zip(commands, raw_argv, exit_codes), 1
+    ):
+        original_argv = _expanded_argv(task_argv, state_root)
+        if (
+            command.get("argv") != original_argv
+            or command.get("expected_exit_code") != expected_exit_code
+            or command.get("exit_code") != expected_exit_code
+            or command.get("timed_out") is not False
+        ):
+            raise ValueError("lost receipt does not bind the historical W1-06 argv")
+        replay_argv = list(original_argv)
+        junit_flags = 0
+        basetemp_flags = 0
+        position = 0
+        while position < len(replay_argv):
+            value = replay_argv[position]
+            if value in {"--junitxml", "--basetemp"}:
+                if position + 1 >= len(replay_argv):
+                    raise ValueError(f"{value} requires a path")
+                if value == "--junitxml":
+                    junit_flags += 1
+                    replacement = replay_evidence / f"pytest-junit-{index:03d}.xml"
+                else:
+                    basetemp_flags += 1
+                    replacement = replay_tmp
+                replay_argv[position + 1] = str(replacement)
+                position += 2
+                continue
+            if value.startswith("--junitxml="):
+                junit_flags += 1
+                replay_argv[position] = (
+                    "--junitxml=" + str(replay_evidence / f"pytest-junit-{index:03d}.xml")
+                )
+            elif value.startswith("--basetemp="):
+                basetemp_flags += 1
+                replay_argv[position] = "--basetemp=" + str(replay_tmp)
+            position += 1
+        if junit_flags > 1 or basetemp_flags > 1:
+            raise ValueError("historical replay argv contains duplicate redirected flags")
+        replay_argvs.append(replay_argv)
+    if (
+        sum(_pytest_junit_path(argv) is not None for argv in replay_argvs) != 1
+        or sum(
+            value == "--basetemp" or value.startswith("--basetemp=")
+            for argv in replay_argvs
+            for value in argv
+        ) != 1
+    ):
+        raise ValueError("historical W1-06 replay must redirect one JUnit and one basetemp")
+    return old_task, replay_argvs
+
+
+def _state_artifact_recovery_matches(
+    receipt: dict[str, Any],
+    recorded: dict[str, str],
+    observed: dict[str, str],
+    recovery: dict[str, Any] | None,
+    state_root: Path,
+) -> bool:
+    """Accept one lost JUnit only when the next append-only receipt proves replay."""
+
+    differing = [key for key in recorded if recorded.get(key) != observed.get(key)]
+    if (
+        recovery is None
+        or receipt.get("task_id") != "W1-06"
+        or recovery.get("task_id") != "W1-06"
+        or set(recorded) != set(observed)
+        or len(differing) != 1
+        or not differing[0].startswith("state-artifact:pytest-junit-")
+    ):
+        return False
+    artifact_key = differing[0]
+    try:
+        command_index = int(artifact_key.rsplit("-", 1)[1])
+        artifact_path = _pytest_junit_path(
+            receipt["command_results"][command_index - 1]["argv"]
+        )
+        old_task, replay_argvs = _state_artifact_recovery_replay(
+            receipt, state_root, recovery["attempt"]
+        )
+        recovery_commands = recovery["command_results"]
+        if len(recovery_commands) != len(replay_argvs):
+            return False
+        for command, expected_argv, expected_exit_code in zip(
+            recovery_commands, replay_argvs, old_task["expected_exit_codes"]
+        ):
+            if (
+                command.get("argv") != expected_argv
+                or command.get("expected_exit_code") != expected_exit_code
+                or command.get("exit_code") != expected_exit_code
+                or command.get("timed_out") is not False
+                or not _validate_stream(command["stdout"])
+                or not _validate_stream(command["stderr"])
+            ):
+                return False
+        replay_reports = _structured_test_reports(
+            recovery_commands, runner_version=recovery["runner_version"]
+        )
+        if (
+            recovery.get("test_reports") != replay_reports
+            or _w1_06_test_report_problems(replay_reports)
+        ):
+            return False
+        replay_state = _declared_state_artifacts(recovery_commands, state_root)
+        recorded_replay_state = {
+            key: value for key, value in recovery["artifact_digests"].items()
+            if key.startswith("state-artifact:")
+        }
+        if recorded_replay_state != replay_state or artifact_key not in replay_state:
+            return False
+        record_digest = recovery["artifact_digests"]["recovery-record"]
+        if not isinstance(record_digest, str) or DIGEST_V4_PATTERN.fullmatch(record_digest) is None:
+            return False
+        record_path = (
+            state_root / "evidence" / "state-recoveries"
+            / f"{record_digest.split(':', 1)[1]}.json"
+        )
+        record_bytes = record_path.read_bytes()
+        record = json.loads(record_bytes.decode("utf-8"))
+    except (
+        IndexError, KeyError, OSError, TypeError, UnicodeError, ValueError,
+        json.JSONDecodeError,
+    ):
+        return False
+    if artifact_path is None:
+        return False
+    expected_record = {
+        "schema_version": "jc/state-artifact-recovery/1.0",
+        "task_id": receipt["task_id"],
+        "lost_attempt": receipt["attempt"],
+        "lost_receipt_digest": receipt["receipt_digest"],
+        "artifact_key": artifact_key,
+        "artifact_path": str(artifact_path.resolve()),
+        "expected_digest": recorded[artifact_key],
+        "observed_digest": observed[artifact_key],
+        "action": "REPLAY_AT_RESULT_COMMIT",
+        "replay_commit": receipt["result_commit"],
+        "replay_attempt": recovery["attempt"],
+        "replay_argv_digest": _digest_object(replay_argvs),
+        "replacement_digest": replay_state[artifact_key],
+    }
+    recovery_assertion = next(
+        (
+            item for item in recovery.get("completion_assertions", [])
+            if item.get("id") == "runner-state-artifact-recovery"
+        ),
+        None,
+    )
+    return (
+        "sha256:" + sha256_hex(record_bytes) == record_digest
+        and record == expected_record
+        and recovery.get("status") == "COMPLETED"
+        and recovery.get("task_id") == receipt["task_id"]
+        and isinstance(recovery.get("attempt"), int)
+        and recovery["attempt"] > receipt["attempt"]
+        and recovery.get("task_digest") == receipt.get("task_digest")
+        and recovery.get("runner_version") in KNOWN_RUNNER_VERSIONS
+        and recovery.get("run_id") == receipt.get("run_id")
+        and recovery.get("input_receipt_digests") == receipt.get("input_receipt_digests")
+        and recovery.get("start_commit") == receipt["start_commit"]
+        and recovery.get("start_tree") == receipt.get("start_tree")
+        and recovery.get("result_commit") == receipt["result_commit"]
+        and recovery.get("result_tree") == receipt.get("result_tree")
+        and recovery.get("changed_paths") == receipt.get("changed_paths")
+        and recovery.get("allowlist") == receipt.get("allowlist")
+        and recovery.get("previous_receipt_digest") == receipt["receipt_digest"]
+        and recovery.get("artifact_digests", {}).get("recovery-source-receipt")
+        == receipt["receipt_digest"]
+        and recovery.get("artifact_digests", {}).get("recovery-loss-observation")
+        == _digest_object({"recorded": recorded, "observed": observed})
+        and isinstance(recovery_assertion, dict)
+        and recovery_assertion.get("ok") is True
+    )
+
+
 def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
     task_dir = state_root / "tasks" / task_id
     if not task_dir.exists():
@@ -8497,6 +8716,16 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         (path for path in task_dir.iterdir() if path.is_dir() and path.name.isdigit()),
         key=lambda path: int(path.name),
     )
+    raw_receipts: dict[int, dict[str, Any]] = {}
+    for attempt_dir in attempt_dirs:
+        receipt_path = attempt_dir / "receipt.json"
+        if receipt_path.is_file():
+            try:
+                raw_receipts[int(attempt_dir.name)] = json.loads(
+                    receipt_path.read_text(encoding="utf-8")
+                )
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"receipt unreadable: {receipt_path}: {exc}") from exc
     previous_attempt = 0
     for index, attempt_dir in enumerate(attempt_dirs):
         receipt_path = attempt_dir / "receipt.json"
@@ -8550,7 +8779,21 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             key: value for key, value in receipt["artifact_digests"].items()
             if key.startswith("state-artifact:")
         }
-        if recorded_state_artifacts != expected_state_artifacts:
+        state_recovered = _state_artifact_recovery_matches(
+            receipt,
+            recorded_state_artifacts,
+            expected_state_artifacts,
+            next(
+                (
+                    raw_receipts[number]
+                    for number in sorted(raw_receipts)
+                    if number > attempt_number
+                ),
+                None,
+            ),
+            state_root,
+        )
+        if recorded_state_artifacts != expected_state_artifacts and not state_recovered:
             raise ValueError(f"state artifact binding mismatch: {receipt_path}")
         must_rebuild_test_reports = (
             receipt["runner_version"] == RUNNER_VERSION
@@ -8564,6 +8807,7 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             and receipt["test_reports"] != _structured_test_reports(
                 receipt["command_results"], runner_version=receipt["runner_version"]
             )
+            and not state_recovered
         ):
             raise ValueError(f"structured test report binding mismatch: {receipt_path}")
         previous = receipt["receipt_digest"]
@@ -9369,6 +9613,237 @@ def _w2_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _recover_state_artifact(
+    plan: dict[str, Any], state_root: Path, run_state: dict[str, Any], selector: str,
+) -> int:
+    """Replay one lost W1-06 JUnit at its bound result commit and append a receipt."""
+
+    match = re.fullmatch(r"(W1-06):(\d+)", selector)
+    if match is None:
+        raise ValueError("state recovery selector must be W1-06:<attempt>")
+    task_id, attempt_wire = match.groups()
+    lost_attempt = int(attempt_wire)
+    task = next(item for item in plan["tasks"] if item["id"] == task_id)
+    receipt_path = state_root / "tasks" / task_id / str(lost_attempt) / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    schema = json.loads(RECEIPT_SCHEMA.read_text(encoding="utf-8"))
+    errors = list(Draft202012Validator(schema).iter_errors(receipt))
+    if errors or receipt.get("receipt_digest") != _receipt_digest(receipt):
+        raise ValueError("lost-artifact receipt is not structurally intact")
+    if (
+        receipt.get("task_id") != task_id
+        or receipt.get("attempt") != lost_attempt
+        or receipt.get("status") != "COMPLETED"
+        or receipt.get("task_digest") != _task_digest(task)
+        or not _validate_git_binding(receipt["start_commit"], receipt["start_tree"])
+        or not _validate_git_binding(receipt["result_commit"], receipt["result_tree"])
+    ):
+        raise ValueError("lost-artifact receipt identity or Git binding is invalid")
+    replay_attempt = _next_attempt(task_id, state_root)
+    for prior_attempt in range(lost_attempt + 1, replay_attempt):
+        prior_dir = state_root / "tasks" / task_id / str(prior_attempt)
+        if (prior_dir / "receipt.json").exists() or not (prior_dir / "interrupted.json").is_file():
+            raise ValueError("state recovery may only cross preserved interrupted attempts")
+    previous_path = state_root / "tasks" / task_id / str(lost_attempt - 1) / "receipt.json"
+    previous = json.loads(previous_path.read_text(encoding="utf-8"))
+    if (
+        previous.get("receipt_digest") != _receipt_digest(previous)
+        or receipt.get("previous_receipt_digest") != previous.get("receipt_digest")
+    ):
+        raise ValueError("lost-artifact receipt chain is broken")
+    changed_paths, committed_artifacts = _committed_delta(
+        receipt["start_commit"], receipt["result_commit"]
+    )
+    recorded_committed = {
+        key: value for key, value in receipt["artifact_digests"].items()
+        if key.startswith("result-path:") or key.startswith("deleted-path:")
+    }
+    if receipt["changed_paths"] != changed_paths or recorded_committed != committed_artifacts:
+        raise ValueError("lost-artifact receipt committed delta is invalid")
+    if any(
+        not _validate_stream(command[stream])
+        for command in receipt["command_results"]
+        for stream in ("stdout", "stderr")
+    ):
+        raise ValueError("lost-artifact receipt command stream is invalid")
+
+    recorded_state = {
+        key: value for key, value in receipt["artifact_digests"].items()
+        if key.startswith("state-artifact:")
+    }
+    observed_state = _declared_state_artifacts(receipt["command_results"], state_root)
+    differing = [key for key in recorded_state if recorded_state.get(key) != observed_state.get(key)]
+    if (
+        set(recorded_state) != set(observed_state)
+        or len(differing) != 1
+        or not differing[0].startswith("state-artifact:pytest-junit-")
+    ):
+        raise ValueError("state recovery requires exactly one overwritten pytest JUnit")
+    observed_reports = _structured_test_reports(
+        receipt["command_results"], runner_version=receipt["runner_version"]
+    )
+    report_projection = lambda reports: [
+        {key: value for key, value in report.items() if key != "junit_sha256"}
+        for report in reports
+    ]
+    if report_projection(receipt["test_reports"]) != report_projection(observed_reports):
+        raise ValueError("overwritten JUnit changed semantic test evidence")
+    artifact_key = differing[0]
+    command_index = int(artifact_key.rsplit("-", 1)[1])
+    lost_path = _pytest_junit_path(receipt["command_results"][command_index - 1]["argv"])
+    if lost_path is None:
+        raise ValueError("lost JUnit path is not bound by command argv")
+    old_task, replay_argvs = _state_artifact_recovery_replay(
+        receipt, state_root, replay_attempt
+    )
+    recovery_record = {
+        "schema_version": "jc/state-artifact-recovery/1.0",
+        "task_id": task_id,
+        "lost_attempt": lost_attempt,
+        "lost_receipt_digest": receipt["receipt_digest"],
+        "artifact_key": artifact_key,
+        "artifact_path": str(lost_path.resolve()),
+        "expected_digest": recorded_state[artifact_key],
+        "observed_digest": observed_state[artifact_key],
+        "action": "REPLAY_AT_RESULT_COMMIT",
+        "replay_commit": receipt["result_commit"],
+        "replay_attempt": replay_attempt,
+        "replay_argv_digest": _digest_object(replay_argvs),
+    }
+    if old_task != task:
+        raise ValueError("historical W1-06 task definition drifted")
+
+    attempt_dir = state_root / "tasks" / task_id / str(replay_attempt)
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    replay_evidence = state_root / "evidence" / "state-recoveries" / task_id / str(replay_attempt)
+    replay_tmp = state_root / "tmp" / "state-recoveries" / task_id / str(replay_attempt)
+    replay_tmp.parent.mkdir(parents=True, exist_ok=True)
+    command_results: list[dict[str, Any]] = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="jc-v4-state-recovery-") as temporary:
+            temporary_root = Path(temporary).resolve()
+            checkout = temporary_root / "worktree"
+            add = subprocess.run(
+                [
+                    "git", "-c", "core.autocrlf=false", "worktree", "add",
+                    "--detach", str(checkout), receipt["result_commit"],
+                ],
+                cwd=str(ROOT), capture_output=True, check=False,
+            )
+            if add.returncode != 0:
+                raise ValueError(
+                    "detached recovery worktree failed: "
+                    + add.stderr.decode("utf-8", errors="replace").strip()
+                )
+            try:
+                if not checkout.resolve().is_relative_to(temporary_root):
+                    raise ValueError("recovery worktree escaped its temporary root")
+                for index, (replay_argv, expected) in enumerate(
+                    zip(replay_argvs, old_task["expected_exit_codes"]), 1
+                ):
+                    result = _run_argv(
+                        replay_argv,
+                        expected,
+                        attempt_dir,
+                        index,
+                        float(old_task.get("timeout_seconds", 600)),
+                        state_root,
+                        cwd=checkout,
+                    )
+                    command_results.append(result)
+                    if result["timed_out"] or result["exit_code"] != expected:
+                        raise ValueError(f"historical replay command {index} failed")
+            finally:
+                remove = subprocess.run(
+                    ["git", "worktree", "remove", "--force", str(checkout)],
+                    cwd=str(ROOT), capture_output=True, check=False,
+                )
+                if remove.returncode != 0:
+                    raise ValueError(
+                        "recovery worktree cleanup failed: "
+                        + remove.stderr.decode("utf-8", errors="replace").strip()
+                    )
+
+        test_reports = _structured_test_reports(command_results)
+        report_problems = _w1_06_test_report_problems(test_reports)
+        if report_problems:
+            raise ValueError("; ".join(report_problems))
+        state_artifacts = _declared_state_artifacts(command_results, state_root)
+        if artifact_key not in state_artifacts:
+            raise ValueError("historical replay did not produce the lost JUnit lane")
+        recovery_record["replacement_digest"] = state_artifacts[artifact_key]
+        _, recovery_record_digest = _write_content_addressed_json(
+            state_root / "evidence" / "state-recoveries", recovery_record,
+        )
+        assertions = _evaluate_assertions(old_task, command_results, state_root)
+        assertions.extend([
+            {
+                "id": "w1-06-exact-attack-reports",
+                "kind": "artifact_binding",
+                "ok": True,
+                "detail": "521 pytest items and the Node oracle were replayed at result_commit",
+            },
+            {
+                "id": "runner-state-artifact-recovery",
+                "kind": "artifact_binding",
+                "ok": True,
+                "detail": (
+                    f"append-only recovery {recovery_record_digest}; lost receipt retained; "
+                    f"replacement={state_artifacts[artifact_key]}"
+                ),
+            },
+        ])
+        recovery_receipt = {
+            "schema_version": "jc/remediation-v4-receipt/2.1",
+            "task_digest": receipt["task_digest"],
+            "run_id": receipt["run_id"],
+            "task_id": task_id,
+            "attempt": replay_attempt,
+            "status": "COMPLETED",
+            "input_receipt_digests": receipt["input_receipt_digests"],
+            "start_commit": receipt["start_commit"],
+            "start_tree": receipt["start_tree"],
+            "result_commit": receipt["result_commit"],
+            "result_tree": receipt["result_tree"],
+            "command_results": command_results,
+            "changed_paths": changed_paths,
+            "allowlist": receipt["allowlist"],
+            "test_reports": test_reports,
+            "artifact_digests": {
+                **committed_artifacts,
+                **state_artifacts,
+                "recovery-record": recovery_record_digest,
+                "recovery-source-receipt": receipt["receipt_digest"],
+                "recovery-loss-observation": _digest_object({
+                    "recorded": recorded_state,
+                    "observed": observed_state,
+                }),
+            },
+            "completion_assertions": assertions,
+            "previous_receipt_digest": receipt["receipt_digest"],
+            "runner_version": RUNNER_VERSION,
+        }
+        if not _state_artifact_recovery_matches(
+            receipt, recorded_state, observed_state, recovery_receipt, state_root,
+        ):
+            raise ValueError("runner produced an invalid state recovery binding")
+        _write_receipt(attempt_dir, recovery_receipt)
+        _receipt_history(task_id, state_root)
+    except Exception as exc:
+        if not (attempt_dir / "receipt.json").exists():
+            _atomic_json(attempt_dir / "interrupted.json", {
+                "status": "INTERRUPTED",
+                "detected_at": _iso_now(),
+                "detail": f"state artifact recovery failed: {type(exc).__name__}: {exc}",
+            })
+        raise
+    print(
+        f"task {task_id} state artifact recovered append-only "
+        f"receipt={recovery_receipt['receipt_digest']}"
+    )
+    return EXIT_OK
+
+
 def _rebind_legacy_auto_receipt(
     task: dict[str, Any], latest: dict[str, Any], start_commit: str,
     state_root: Path, run_id: str, input_receipts: dict[str, str],
@@ -9874,6 +10349,15 @@ def cmd_run(args: argparse.Namespace) -> int:
             "started_at": _iso_now(), "task_status": {},
         }
         _atomic_json(run_path, run_state)
+    recovery_selector = getattr(args, "recover_state_artifact", None)
+    if recovery_selector:
+        try:
+            return _recover_state_artifact(
+                plan, state_root, run_state, recovery_selector,
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"state artifact recovery failed: {exc}", file=sys.stderr)
+            return EXIT_RECEIPT_FAIL
     completed_receipts: dict[str, dict[str, Any]] = {}
     try:
         ordered = _topological_tasks(plan)
@@ -10156,6 +10640,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--plan", required=True)
     p.add_argument("--state-root", required=True)
     p.add_argument("--through", default="W9")
+    p.add_argument(
+        "--recover-state-artifact",
+        default=None,
+        metavar="TASK:ATTEMPT",
+        help="append a detached-result-commit replay receipt for one lost JUnit",
+    )
     p.set_defaults(func=cmd_run)
 
     return parser
