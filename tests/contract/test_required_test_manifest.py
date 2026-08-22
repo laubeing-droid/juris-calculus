@@ -313,13 +313,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.18.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.19.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -574,10 +574,124 @@ def nested_alias_bypass():
         tmp_path,
     ) == ["state-artifact recovery assertion is only valid for W1-06"]
 
+    w2_06_reports = copy.deepcopy(w1_02_reports)
+    w2_06_reports[0].update({
+        "passed": RUNNER.W2_06_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W2_06_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W2_06_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W2_06_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W2_06_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w2_06_test_report_problems(w2_06_reports) == []
+    w2_06_reports[0]["passed"] -= 1
+    assert RUNNER._w2_06_test_report_problems(w2_06_reports) == [
+        "W2-06 pytest passed drifted: "
+        f"{RUNNER.W2_06_TEST_CASE_COUNT - 1} != {RUNNER.W2_06_TEST_CASE_COUNT}"
+    ]
+    w2_06_reports[0]["passed"] = RUNNER.W2_06_TEST_CASE_COUNT
+    wrong_w2_06_digest = "sha256:" + "f" * 64
+    if wrong_w2_06_digest == RUNNER.W2_06_TEST_CASE_IDS_DIGEST:
+        wrong_w2_06_digest = "sha256:" + "e" * 64
+    w2_06_reports[0]["junit_case_ids_digest"] = wrong_w2_06_digest
+    assert RUNNER._w2_06_test_report_problems(w2_06_reports) == [
+        "W2-06 pytest junit_case_ids_digest drifted: "
+        f"{wrong_w2_06_digest!r} != {RUNNER.W2_06_TEST_CASE_IDS_DIGEST!r}"
+    ]
+    w2_06_reports[0]["junit_case_ids_digest"] = RUNNER.W2_06_TEST_CASE_IDS_DIGEST
+    w2_06_task = next(
+        item
+        for item in json.loads(RUNNER.DEFAULT_PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W2-06"
+    )
+    assert list(RUNNER.W2_06_CHANGED_PATHS) == w2_06_task["allowed_paths"]
+    w2_06_assertion_ids = [
+        "all-commands-passed",
+        "runner-clean-worktree",
+        "runner-committed-delta",
+        "runner-state-artifacts",
+        "w2-06-exact-trust-chain-reports",
+        "w2-06-exact-committed-scope",
+    ]
+    assert RUNNER._expected_auto_completion_assertion_ids(
+        w2_06_task,
+        "w2-06-exact-trust-chain-reports",
+        "w2-06-exact-committed-scope",
+    ) == w2_06_assertion_ids
+
     def stream(name: str, payload: bytes = b"") -> dict:
         path = tmp_path / f"{name}.bin"
         path.write_bytes(payload)
         return {"path": str(path), "sha256": RUNNER.sha256_hex(payload), "bytes": len(payload)}
+
+    w2_06_commands = [
+        {
+            "argv": RUNNER._expanded_argv(argv, tmp_path),
+            "expected_exit_code": expected,
+            "exit_code": expected,
+            "timed_out": False,
+            "stdout": stream(f"w2-06-{index}-stdout"),
+            "stderr": stream(f"w2-06-{index}-stderr"),
+        }
+        for index, (argv, expected) in enumerate(
+            zip(w2_06_task["argv"], w2_06_task["expected_exit_codes"]), 1
+        )
+    ]
+    w2_06_receipt = {
+        "command_results": w2_06_commands,
+        "test_reports": copy.deepcopy(w2_06_reports),
+        "changed_paths": list(RUNNER.W2_06_CHANGED_PATHS),
+        "artifact_digests": {
+            f"result-path:{path}": "sha256:" + "a" * 64
+            for path in RUNNER.W2_06_CHANGED_PATHS
+        },
+        "completion_assertions": [
+            {"id": assertion_id, "ok": True}
+            for assertion_id in w2_06_assertion_ids
+        ],
+        "runner_version": RUNNER.RUNNER_VERSION,
+    }
+    with monkeypatch.context() as resume_patch:
+        resume_patch.setattr(
+            RUNNER,
+            "_structured_test_reports",
+            lambda *_args, **_kwargs: copy.deepcopy(w2_06_reports),
+        )
+        assert RUNNER._auto_receipt_resume_problems(
+            w2_06_task, w2_06_receipt, tmp_path,
+        ) == []
+
+        wrong_command = copy.deepcopy(w2_06_receipt)
+        wrong_command["command_results"][0]["argv"] = ["wrong-command"]
+        assert any(
+            "command 1" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w2_06_task, wrong_command, tmp_path,
+            )
+        )
+
+        wrong_report = copy.deepcopy(w2_06_receipt)
+        wrong_report["test_reports"][0]["passed"] -= 1
+        assert "AUTO receipt structured reports drifted" in (
+            RUNNER._auto_receipt_resume_problems(w2_06_task, wrong_report, tmp_path)
+        )
+
+        wrong_paths = copy.deepcopy(w2_06_receipt)
+        wrong_paths["changed_paths"].pop()
+        assert any(
+            "exact" in problem and "committed paths" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w2_06_task, wrong_paths, tmp_path,
+            )
+        )
+
+        wrong_assertion = copy.deepcopy(w2_06_receipt)
+        wrong_assertion["completion_assertions"][-1]["ok"] = False
+        assert any(
+            "completion assertions" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w2_06_task, wrong_assertion, tmp_path,
+            )
+        )
 
     lost_junit = tmp_path / "evidence" / "lost.xml"
     lost_junit.parent.mkdir(parents=True, exist_ok=True)

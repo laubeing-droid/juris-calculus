@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.17.0"
+RUNNER_VERSION = "0.18.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -75,6 +75,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.15.0": 5,
     "0.16.0": 5,
     "0.17.0": 5,
+    "0.18.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -202,6 +203,24 @@ W2_05_CHANGED_PATHS = (
     "tests/security/test_trust_policy.py",
     "tools/build_file_disposition.py",
     "tools/build_synthetic_pack.py",
+    "tools/remediate_v4.py",
+)
+W2_06_TEST_CASE_COUNT = 30
+W2_06_TEST_CASE_IDS_DIGEST = (
+    "sha256:6fb50738ba63aeb2230fc182567e458d444fdd050890c0acfa12aa119935251c"
+)
+W2_06_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/fact_admission.py",
+    "compiler_core/source_service.py",
+    "compiler_core/trust.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/integration/test_trust_chain.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_trust_chain_attacks.py",
+    "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
@@ -3182,6 +3201,20 @@ def _required_test_manifest_problems(
             "selector": "tests/contract/test_synthetic_pack.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 15,
+        },
+        {
+            "id": "W2-VERTICAL-TRUST-CHAIN",
+            "suite": "integration",
+            "selector": "tests/integration/test_trust_chain.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 6,
+        },
+        {
+            "id": "W2-VERTICAL-TRUST-ATTACKS",
+            "suite": "security",
+            "selector": "tests/security/test_trust_chain_attacks.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 17,
         },
     ]
     if required_now != expected_required_now:
@@ -9416,6 +9449,339 @@ def cmd_w2_05_synthetic_pack_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w2_06_trust_chain_gate() -> int:
+    """Verify the W2-06 source/fact/pack vertical trust-chain closure."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W2-06"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W2-06",
+            "tests/integration/test_trust_chain.py",
+            "tests/security/test_trust_chain_attacks.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W2-06/trust-chain-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W2_06_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        integration_tests = (ROOT / "tests/integration/test_trust_chain.py").read_text(
+            encoding="utf-8-sig"
+        )
+        attack_tests = (ROOT / "tests/security/test_trust_chain_attacks.py").read_text(
+            encoding="utf-8-sig"
+        )
+        trust_source = (ROOT / "compiler_core/trust.py").read_text(encoding="utf-8")
+        source_service_source = (ROOT / "compiler_core/source_service.py").read_text(
+            encoding="utf-8"
+        )
+        fact_source = (ROOT / "compiler_core/fact_admission.py").read_text(
+            encoding="utf-8"
+        )
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w2_06_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W2-06 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W2-06 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W2-06"), None)
+    if not isinstance(task, dict):
+        fail("W2-06 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != [
+            "W2-01", "W2-02", "W2-03", "W2-04", "W2-05",
+        ]:
+            fail("W2-06 mode or dependency drifted")
+        if task.get("audit_ids") != [
+            "P0-02", "P0-04", "P0-05", "P1-03", "P1-04", "P1-07",
+            "P1-08", "P1-09", "P1-16", "P2-03",
+        ]:
+            fail("W2-06 audit binding drifted")
+        if task.get("objective") != (
+            "同一 request/source/trust 生成 signed fact receipt 与 verifier-issued "
+            "loaded RuleV4；Application formal sink 保持 RED"
+        ):
+            fail("W2-06 objective drifted")
+        if task.get("allowed_paths") != list(W2_06_CHANGED_PATHS):
+            fail("W2-06 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W2-06 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W2-06 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W2-06 file disposition is not reproducible from its generator")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 12 个 exact paths",
+        "六个 P2-03 replacement selectors",
+        "V4-P2-03-DERIVED-TRUST",
+        "W4-05/W4-07/W8-06",
+    )):
+        fail("W2-06 formal plan lacks its exact scope, derived-trust, or deferred sink boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W0-REQUIRED-MANIFEST-GATE": (
+            "contract", "tests/contract/test_required_test_manifest.py", 7,
+        ),
+        "W2-VERTICAL-TRUST-CHAIN": (
+            "integration", "tests/integration/test_trust_chain.py", 6,
+        ),
+        "W2-VERTICAL-TRUST-ATTACKS": (
+            "security", "tests/security/test_trust_chain_attacks.py", 17,
+        ),
+    }
+    for required_id, expected in expected_required.items():
+        item = required_by_id.get(required_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"), item.get("expected_tests"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or item.get("state") != "REQUIRED_NOW":
+            fail(f"W2-06 required-now binding drifted: {required_id}")
+    if sum(item[2] for item in expected_required.values()) != W2_06_TEST_CASE_COUNT:
+        fail("W2-06 exact test count does not equal integration, security, and governance lanes")
+
+    expected_rewrites = [
+        (
+            "REWRITE-SOURCE-CALLER-PASS",
+            "tests/unit/test_source_service_v2.py::TestSourceSnapshot::"
+            "test_positive_official_snapshot_passes_source_gate",
+            "tests/integration/test_trust_chain.py::"
+            "test_source_trust_is_derived_from_resolved_bytes",
+        ),
+        (
+            "REWRITE-SOURCE-APPLICABILITY-PASS",
+            "tests/unit/test_source_service_v2.py::TestApplicabilityGate::"
+            "test_rule_effective_at_decision_time_passes",
+            "tests/integration/test_trust_chain.py::"
+            "test_applicability_consumes_verified_source_version_path",
+        ),
+        (
+            "REWRITE-SOURCE-PATH-PASS",
+            "tests/unit/test_source_service_v2.py::TestSourcePath::"
+            "test_positive_path_with_terminal_binding_passes",
+            "tests/integration/test_trust_chain.py::"
+            "test_source_path_is_bound_to_resolved_authority_root",
+        ),
+        (
+            "REWRITE-FACT-CALLER-PASS",
+            "tests/unit/test_fact_admission_v1.py::TestFactGate::"
+            "test_positive_attestation_admits_fact",
+            "tests/integration/test_trust_chain.py::"
+            "test_fact_admission_consumes_verified_source_receipt",
+        ),
+        (
+            "REWRITE-LEGACY-VERIFIED-FACT",
+            "tests/unit/test_fact_admission.py::"
+            "test_only_complete_verified_fact_can_enter_formal_kernel",
+            "tests/integration/test_trust_chain.py::"
+            "test_public_fact_cannot_self_issue_admission",
+        ),
+        (
+            "REWRITE-RULE-CALLER-RECEIPT",
+            "tests/unit/test_rule_platform_cn.py::TestPromotionGate::"
+            "test_full_promotion_requires_receipt_and_ready_domain",
+            "tests/integration/test_trust_chain.py::"
+            "test_rule_activation_consumes_verified_promotion_and_pack",
+        ),
+    ]
+    rewrite_rows = [
+        item for item in manifest.get("rewrite_at_task", [])
+        if isinstance(item, dict) and item.get("rewrite_task") == "W2-06"
+    ]
+    actual_rewrites = [
+        (item.get("id"), item.get("selector"), item.get("replacement_selector"))
+        for item in rewrite_rows
+    ]
+    if actual_rewrites != expected_rewrites:
+        fail("W2-06 P2-03 rewrite selector inventory drifted")
+    for item in rewrite_rows:
+        if (
+            item.get("state") != "REWRITE_AT_TASK"
+            or item.get("retirement_task") != "W5-CUTOVER"
+            or not _selector_is_declared(ROOT, item.get("replacement_selector", ""))
+        ):
+            fail(f"W2-06 replacement selector is not active and retirement-bound: {item.get('id')}")
+
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict)
+    }
+    p2_03 = issue_by_id.get("P2-03", {})
+    if (p2_03.get("status"), p2_03.get("closure_tasks")) != (
+        "registered", ["W1-06", "W2-06", "W4-07", "W5-01"],
+    ):
+        fail("W2-06 P2-03 issue lifecycle drifted")
+    p2_mutation = next((
+        item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict) and item.get("test_id") == "V4-P2-03-DERIVED-TRUST"
+    ), {})
+    if (
+        p2_mutation.get("audit_id"), p2_mutation.get("owner_task"),
+        p2_mutation.get("state"), p2_mutation.get("selector"),
+    ) != (
+        "P2-03", "W5-01", "RED_AT_TASK",
+        "tests/formal_e2e/test_public_boundary_inputs.py::"
+        "test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
+    ) or _selector_is_declared(ROOT, p2_mutation.get("selector", "")):
+        fail("W2-06 full public derived-trust obligation is not preserved RED to W5-01")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in (
+        "tests/contract/test_required_test_manifest.py",
+        "tests/integration/test_trust_chain.py",
+        "tests/security/test_trust_chain_attacks.py",
+    ):
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != (
+            "TEST_ORACLE", "TEST_ORACLE",
+        ):
+            fail(f"W2-06 test disposition drifted: {path}")
+    tracked = set(_git_tracked_files())
+    for path in W2_06_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W2-06 exact path is not Git tracked: {path}")
+
+    trust_chain_tests = integration_tests + "\n" + attack_tests
+    controls = _forbidden_test_controls(trust_chain_tests)
+    if controls:
+        fail(f"W2-06 tests use forbidden controls: {controls}")
+    if "VerifiedRulePackV4" in trust_chain_tests or "object.__new__" in trust_chain_tests:
+        fail("W2-06 tests construct or import an internal trusted pack handle")
+    legacy_test_tokens = {
+        "source_service_v2", "fact_admission_v1", "fact_trust_envelope",
+        "rule_platform_cn",
+    }
+    if any(token in trust_chain_tests for token in legacy_test_tokens):
+        fail("W2-06 tests depend on a legacy source, fact, trust, or rule module")
+    integration_markers = {
+        "test_source_trust_is_derived_from_resolved_bytes",
+        "test_applicability_consumes_verified_source_version_path",
+        "test_source_path_is_bound_to_resolved_authority_root",
+        "test_fact_admission_consumes_verified_source_receipt",
+        "test_public_fact_cannot_self_issue_admission",
+        "test_rule_activation_consumes_verified_promotion_and_pack",
+        "harness.admit_fact()",
+        "harness.verify_pack()",
+        'verified.status == "VERIFIED_ACTIVE" and verified.verifier_issued',
+    }
+    if any(marker not in integration_tests for marker in integration_markers):
+        fail("W2-06 integration tests lack one public source/fact/pack trust-chain oracle")
+    attack_markers = {
+        "test_signature_bit_flip_blocks_exact_chain_layer",
+        "test_cached_chain_rechecks_rotated_public_keys",
+        "test_cached_chain_rechecks_revoked_nonces",
+        "test_fresh_service_cannot_replay_consumed_chain",
+        "test_same_service_retry_is_idempotent_across_the_chain",
+        "test_cached_test_chain_cannot_cross_into_production",
+        "test_candidate_is_discoverable_but_never_formal",
+        "harness.source_service.resolve_applicable(",
+        "assert _error_code(harness.verify_pack)",
+        "TRUST_SIGNATURE_INVALID", "TRUST_SIGNATURE_REVOKED", "TRUST_REPLAY",
+        "SOURCE_TEST_FIXTURE_FORBIDDEN", "PACK_PROMOTION_REQUIRED",
+    }
+    if any(marker not in attack_tests for marker in attack_markers):
+        fail("W2-06 attacks lack bit-flip, rotation, revocation, replay, environment, or candidate oracles")
+    if "def _fresh_without_replay" not in trust_source:
+        fail("W2-06 trust verifier lacks a replay-isolated current-policy verifier")
+    if any(marker not in source_service_source for marker in (
+        "self._trust._fresh_without_replay()",
+        "snapshot = self._resolve_json_contract(",
+        "raw_ref, normalized_ref = self._resolve_source_bytes(snapshot)",
+        "verification_trust.verify(",
+        "now=self._verified_issued_at[snapshot_ref]",
+    )):
+        fail("W2-06 source cache does not re-resolve and reverify current bytes/trust")
+    if fact_source.count("self._trust._fresh_without_replay()") != 2 or any(
+        marker not in fact_source for marker in (
+            "legal_principal = verification_trust.verify(",
+            "verification_trust.verify(\n            receipt.signature,",
+        )
+    ):
+        fail("W2-06 fact caches do not reverify legal and service signatures")
+    if any(marker not in runner_source for marker in (
+        "W2-06 receipt does not bind its exact 12 committed paths",
+        "w2-06-exact-trust-chain-reports",
+        "w2-06-exact-committed-scope",
+        "_w2_06_test_report_problems(reports)",
+    )):
+        fail("W2-06 runner resume does not rebuild its executable receipt contract")
+
+    for task_id, gate in (
+        ("W2-01", cmd_w2_01_source_gate),
+        ("W2-02", cmd_w2_02_fact_gate),
+        ("W2-03", cmd_w2_03_pack_gate),
+        ("W2-04", cmd_w2_04_snapshot_gate),
+        ("W2-05", cmd_w2_05_synthetic_pack_gate),
+    ):
+        if gate() != EXIT_OK:
+            fail(f"W2-06 prerequisite machine gate failed: {task_id}")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W2-06 trust-chain gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W2-06 trust-chain gate OK: 6 integration plus 17 attack cases; "
+        "public Application formal sink remains RED"
+    )
+    return EXIT_OK
+
+
+def cmd_w2_06_trust_chain_gate() -> int:
+    try:
+        return _cmd_w2_06_trust_chain_gate()
+    except Exception as exc:
+        print(
+            f"W2-06 trust-chain gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -9449,6 +9815,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w2_04_snapshot_gate()
     if args.wave == "W2-05":
         return cmd_w2_05_synthetic_pack_gate()
+    if args.wave == "W2-06":
+        return cmd_w2_06_trust_chain_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -11080,6 +11448,42 @@ def _w2_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w2_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W2-06 vertical trust-chain JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W2-06 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W2_06_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W2_06_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W2_06_TEST_CASE_COUNT,
+        "junit_unique_cases": W2_06_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W2_06_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W2-06 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W2-06 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 AUTO_RUNNER_COMPLETION_ASSERTION_IDS = (
     "runner-clean-worktree",
     "runner-committed-delta",
@@ -11260,6 +11664,35 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W2-05 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W2-06":
+        problems.extend(_w2_06_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W2_06_CHANGED_PATHS)
+            or len(changed_paths) != len(W2_06_CHANGED_PATHS)
+        ):
+            problems.append("W2-06 receipt does not bind its exact 12 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W2_06_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W2-06 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w2-06-exact-trust-chain-reports",
+            "w2-06-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W2-06 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -12068,6 +12501,37 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 17 exact W2-05 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W2-06":
+        report_problems = _w2_06_test_report_problems(test_reports)
+        expected_paths = set(W2_06_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W2_06_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w2-06-exact-trust-chain-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W2_06_TEST_CASE_COUNT} integration/security/governance pytest items "
+                "bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w2-06-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 12 exact W2-06 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

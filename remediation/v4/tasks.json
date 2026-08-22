@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
+    "plan_sha256": "f87326ea01f4d20d94f8261604056b17a0b5c95f5a9fc5d64152872f46bb73cc",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2181,12 +2181,23 @@
         "P1-07",
         "P1-08",
         "P1-09",
-        "P1-16"
+        "P1-16",
+        "P2-03"
       ],
-      "objective": "Source→Fact→Pack 纵向门禁",
+      "objective": "同一 request/source/trust 生成 signed fact receipt 与 verifier-issued loaded RuleV4；Application formal sink 保持 RED",
       "allowed_paths": [
-        "tests/integration/**",
-        "tests/security/**"
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/fact_admission.py",
+        "compiler_core/source_service.py",
+        "compiler_core/trust.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/integration/test_trust_chain.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_trust_chain_attacks.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2196,9 +2207,29 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W2-06"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W2-06",
+          "tests/integration/test_trust_chain.py",
+          "tests/security/test_trust_chain_attacks.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W2-06/trust-chain-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

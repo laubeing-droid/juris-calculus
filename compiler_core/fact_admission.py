@@ -570,8 +570,12 @@ class FactAdmissionServiceV4:
         if cached is not None:
             if cached[:4] != expected_context:
                 _fail("FACT_LEGAL_CONTEXT", "cached legal context differs from canonical inputs")
-            return *expected_context, cached[4]
-        legal_principal = self._trust.verify(
+        verification_trust = (
+            self._trust._fresh_without_replay()
+            if cached is not None
+            else self._trust
+        )
+        legal_principal = verification_trust.verify(
             attestation.signature,
             expected_subject_digest=candidate_ref.digest,
             expected_payload_digest=digest_value(attestation.signature_body()),
@@ -582,6 +586,10 @@ class FactAdmissionServiceV4:
             now=now,
             separation_from_principals=(),
         )
+        if cached is not None:
+            if cached[4] != legal_principal:
+                _fail("FACT_LEGAL_CONTEXT", "cached legal signer identity changed")
+            return *expected_context, legal_principal
         result = (*expected_context, legal_principal)
         self._legal_contexts[legal_key] = result
         return result
@@ -1026,8 +1034,12 @@ class FactAdmissionServiceV4:
         if cached is not None:
             if cached != expected_context:
                 _fail("FACT_RECEIPT_SCOPE", "cached receipt context differs")
-            return receipt.fact_ref
-        self._trust.verify(
+        verification_trust = (
+            self._trust._fresh_without_replay()
+            if cached is not None
+            else self._trust
+        )
+        verification_trust.verify(
             receipt.signature,
             expected_subject_digest=receipt.fact_ref.digest,
             expected_payload_digest=digest_value(receipt.signature_body()),
@@ -1038,5 +1050,7 @@ class FactAdmissionServiceV4:
             now=now,
             separation_from_principals=(legal_principal,),
         )
+        if cached is not None:
+            return receipt.fact_ref
         self._receipt_contexts[receipt_ref] = expected_context
         return receipt.fact_ref

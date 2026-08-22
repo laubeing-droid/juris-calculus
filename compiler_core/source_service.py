@@ -263,7 +263,11 @@ class SourceServiceV4:
                     "SOURCE_AUTHENTICITY_EXPIRED",
                     "cached source authenticity is not active at verification time",
                 )
-            return snapshot_ref
+        verification_trust = (
+            self._trust._fresh_without_replay()
+            if existing is not None
+            else self._trust
+        )
         snapshot = self._resolve_json_contract(
             snapshot_ref,
             kind=SOURCE_SNAPSHOT_KIND,
@@ -333,7 +337,7 @@ class SourceServiceV4:
                 "SOURCE_SIGNATURE_EVIDENCE",
                 "authenticity signature does not bind source evidence",
             )
-        self._trust.verify(
+        verification_trust.verify(
             envelope,
             expected_subject_digest=snapshot.raw_digest,
             expected_payload_digest=source_authenticity_payload_digest(snapshot),
@@ -346,8 +350,9 @@ class SourceServiceV4:
         )
         prior = self._source_ids.get(snapshot.source_id)
         if prior is not None and prior != snapshot_ref:
-            with self._trust._nonce_lock:
-                self._trust._seen_nonces.discard((envelope.key_id, envelope.nonce))
+            if verification_trust is self._trust:
+                with self._trust._nonce_lock:
+                    self._trust._seen_nonces.discard((envelope.key_id, envelope.nonce))
             _fail("SOURCE_ID_COLLISION", "source_id cannot be rebound to different snapshot bytes")
         self._verified[snapshot_ref] = snapshot
         if envelope.expires_at is None:
@@ -362,8 +367,11 @@ class SourceServiceV4:
         snapshot = self._verified.get(snapshot_ref)
         if snapshot is None:
             _fail("SOURCE_SNAPSHOT_NOT_VERIFIED", "snapshot has not passed source authenticity")
-        self._require_authority_tier(snapshot)
-        return snapshot
+        self._admit_snapshot(
+            snapshot_ref,
+            now=self._verified_issued_at[snapshot_ref],
+        )
+        return self._verified[snapshot_ref]
 
     def resolve_applicable(
         self,

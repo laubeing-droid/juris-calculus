@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
-  "count": 366,
+  "plan_sha256": "f87326ea01f4d20d94f8261604056b17a0b5c95f5a9fc5d64152872f46bb73cc",
+  "count": 368,
   "paths": [
     {
       "path": ".gitattributes",
@@ -2039,6 +2039,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/integration/test_trust_chain.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/mcp_protocol/README.md",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2141,6 +2148,13 @@
     },
     {
       "path": "tests/security/test_source_service_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/security/test_trust_chain_attacks.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",

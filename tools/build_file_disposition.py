@@ -98,6 +98,8 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tools/wheel_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/build_rule_pack_manifests.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tools/build_synthetic_pack.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "TEST_ORACLE"},
+    "tests/integration/test_trust_chain.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/security/test_trust_chain_attacks.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tools/perf_baseline.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
     "tools/run_trirail_matrix.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
     "tools/fast_path_interceptor.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "CANDIDATE_ASSET"},
@@ -381,7 +383,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "8eb1d8d440d2f9d632f353cc68b687969efb5c567d7fa20e8560f03317b4c703",
+        "plan_sha256": "f87326ea01f4d20d94f8261604056b17a0b5c95f5a9fc5d64152872f46bb73cc",
         "count": len(entries),
         "paths": entries,
     }

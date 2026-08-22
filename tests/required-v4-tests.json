@@ -110,6 +110,20 @@
       "selector": "tests/contract/test_synthetic_pack.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 15
+    },
+    {
+      "id": "W2-VERTICAL-TRUST-CHAIN",
+      "suite": "integration",
+      "selector": "tests/integration/test_trust_chain.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 6
+    },
+    {
+      "id": "W2-VERTICAL-TRUST-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_trust_chain_attacks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 17
     }
   ],
   "evidence_tracks": [

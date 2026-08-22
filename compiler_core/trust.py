@@ -120,6 +120,17 @@ class TrustVerifierV4:
         self._seen_nonces: set[tuple[str, str]] = set()
         self._nonce_lock = Lock()
 
+    def _fresh_without_replay(self) -> "TrustVerifierV4":
+        """Copy current trust configuration without reusing the live nonce ledger."""
+
+        return TrustVerifierV4(
+            policy=self.policy,
+            keys=tuple(key for _, key in sorted(self._keys.items())),
+            target_environment=self.target_environment,
+            revoked_subject_digests=tuple(sorted(self._revoked_subjects, key=str)),
+            revoked_nonces=tuple(sorted(self._revoked_nonces)),
+        )
+
     def verify(
         self,
         envelope: SignatureEnvelopeV4,
