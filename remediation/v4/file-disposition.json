@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "f87326ea01f4d20d94f8261604056b17a0b5c95f5a9fc5d64152872f46bb73cc",
-  "count": 368,
+  "plan_sha256": "e61a800f2e3838bf8fa3a16b7b4ef5a0e5718d6daa78f5b234337d9127a67644",
+  "count": 372,
   "paths": [
     {
       "path": ".gitattributes",
@@ -602,6 +602,14 @@
       "audit_role": "production-code",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/legal_ir.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "compiler_core/legal_ir_v3.py",
@@ -1734,6 +1742,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_legal_ir.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_public_version.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2074,6 +2089,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/property/test_ir_properties.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/property/test_resolver_properties.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2162,6 +2184,13 @@
     },
     {
       "path": "tests/security/test_trust_policy.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/semantic_mutation/test_ir_mutation.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",

@@ -625,9 +625,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W3-01　RuleV4→LegalSpecV4→LegalIVLV4 信息守恒
 
 - **Depends / audit**：`W2-06 / P1-05`。
-- **Paths**：新增 `compiler_core/legal_ir.py`；迁移 `legal_spec_ivl.py`；contract/property/mutation tests。
-- **动作**：每个语义字段必须 `preserve|lower|explicitly_unsupported`；formal 路径不允许 loss/default；translation receipt 从 before/after canonical bytes 自动生成；interpretation choice 绑定审批。
-- **Gate**：逐字段 mutation，尤其 authority/source locator/terms/interpretation/modality/temporal；删除或变更任一字段必须改变 receipt 或失败；reference oracle 不导入 production lowering。
+- **Paths**：仅以下 12 个 exact paths：本方案、`compiler_core/legal_ir.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_legal_ir.py`、`tests/contract/test_required_test_manifest.py`、`tests/property/test_ir_properties.py`、`tests/required-v4-tests.json`、`tests/semantic_mutation/test_ir_mutation.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。`compiler_core/legal_spec_ivl.py` 与 `tests/unit/test_legal_spec_ivl.py` 本 task 只作为旧实现/回归输入，不修改、不删除；其 `REWRITE-SHARED-IR-ORACLE` replacement selector 保持未声明并继续归 `W3-05`。
+- **动作**：新增唯一 `legal_ir.py` lowering authority；每个 `RuleV4` 语义字段必须 `preserve|lower|explicitly_unsupported`，formal 路径不允许 silent loss/default。两跳 translation receipt 从 before/after canonical bytes 与 artifact refs 自动生成，interpretation choice 必须绑定 approval refs；P1-05 mutation 从 `RED_AT_TASK` 转为 `ACTIVE_REQUIRED`。runner 仅执行 `verify-wave W3-01`，随后以外部 JUnit 绑定 contract、property、semantic mutation、旧 IVL unit 与 required-manifest governance 五个 exact pytest 文件。
+- **Gate**：逐字段 mutation 覆盖 authority/source locator/terms/interpretation/modality/temporal；删除或变更任一字段必须改变 receipt 或 fail closed。reference oracle 的独立 projection 不调用 production lowering，测试零 skip/xfail；module authority 将 `legal_ir.py` 精确列为 `FORMAL_CORE`，file disposition 可重现。runner 绑定 exact JUnit case identity、12 个 committed path digests、attempt 1→2 receipt chain 与 `w3-01-exact-lossless-ir-reports`、`w3-01-exact-committed-scope` 两个专属 assertions；本 task 只关闭 P1-05 的字段守恒部分，独立 oracle replacement 与 critical survivor 全杀继续留给 `W3-05`。
 - **Commit**：`feat(ir): enforce loss-accounted V4 lowering`。
 
 ### W3-02　ArgumentationV4

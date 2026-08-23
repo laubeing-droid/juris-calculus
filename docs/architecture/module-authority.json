@@ -117,6 +117,7 @@
     {"path": "compiler_core/ip_valuation.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory valuation candidate; no formal authority."},
     {"path": "compiler_core/jcs.py", "class": "REMOVE", "rationale": "Merge the frozen canonicalization profile into canonical_serialization.py."},
     {"path": "compiler_core/kg_recall.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate retrieval code; cannot admit facts or rules."},
+    {"path": "compiler_core/legal_ir.py", "class": "FORMAL_CORE", "rationale": "Sole loss-accounted RuleV4 to LegalSpecV4 to LegalIVLV4 lowering authority."},
     {"path": "compiler_core/legal_ir_v3.py", "class": "REMOVE", "rationale": "V3 IR is rejected after V4 cutover."},
     {"path": "compiler_core/legal_memory.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate retrieval/memory code; excluded from formal runtime."},
     {"path": "compiler_core/legal_reasoning.py", "class": "CANDIDATE_ASSET", "rationale": "Legacy advisory reasoning candidate."},

@@ -30,7 +30,7 @@ CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "artifact_store", "audit", "audit_bundle",
         "canonical_serialization", "cli", "client", "contracts",
-        "fact_admission", "mcp", "rendering", "resources", "rule_packs",
+        "fact_admission", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
         "source_service", "trust", "version",
     ],
     "MERGE_DELETE": [
@@ -254,7 +254,8 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
     elif rel.startswith((
-        "tests/contract/", "tests/property/", "tests/integration/",
+        "tests/contract/", "tests/property/", "tests/semantic_mutation/",
+        "tests/integration/",
         "tests/differential/", "tests/formal_e2e/", "tests/security/",
         "tests/storage_chaos/", "tests/windows_security/",
         "tests/mcp_protocol/", "tests/packaging/", "tests/dsh_formal/",
@@ -383,7 +384,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "f87326ea01f4d20d94f8261604056b17a0b5c95f5a9fc5d64152872f46bb73cc",
+        "plan_sha256": "e61a800f2e3838bf8fa3a16b7b4ef5a0e5718d6daa78f5b234337d9127a67644",
         "count": len(entries),
         "paths": entries,
     }

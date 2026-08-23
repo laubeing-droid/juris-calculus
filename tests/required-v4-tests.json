@@ -124,6 +124,27 @@
       "selector": "tests/security/test_trust_chain_attacks.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 17
+    },
+    {
+      "id": "W3-LOSSLESS-IR-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_legal_ir.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 11
+    },
+    {
+      "id": "W3-LOSSLESS-IR-PROPERTY",
+      "suite": "property",
+      "selector": "tests/property/test_ir_properties.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 47
+    },
+    {
+      "id": "W3-LOSSLESS-IR-MUTATION",
+      "suite": "differential",
+      "selector": "tests/semantic_mutation/test_ir_mutation.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
     }
   ],
   "evidence_tracks": [
@@ -369,7 +390,7 @@
       "suite": "property",
       "selector": "tests/property/test_ir_properties.py::test_every_legal_ir_field_survives_lowering_or_blocks",
       "owner_task": "W3-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Drop authority, terms, interpretation, or source during lowering.",
       "red_failure": "Every semantic loss must block instead of issuing PASS."
     },

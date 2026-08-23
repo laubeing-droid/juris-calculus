@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.18.0"
+RUNNER_VERSION = "0.19.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -76,6 +76,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.16.0": 5,
     "0.17.0": 5,
     "0.18.0": 5,
+    "0.19.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -220,6 +221,24 @@ W2_06_CHANGED_PATHS = (
     "tests/integration/test_trust_chain.py",
     "tests/required-v4-tests.json",
     "tests/security/test_trust_chain_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W3_01_TEST_CASE_COUNT = 86
+W3_01_TEST_CASE_IDS_DIGEST = (
+    "sha256:3c7bd65ece97024dec63164f9531937a1395b364556567a55ddc191ba73b835c"
+)
+W3_01_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/legal_ir.py",
+    "docs/architecture/module-authority.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_legal_ir.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/property/test_ir_properties.py",
+    "tests/required-v4-tests.json",
+    "tests/semantic_mutation/test_ir_mutation.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -3215,6 +3234,27 @@ def _required_test_manifest_problems(
             "selector": "tests/security/test_trust_chain_attacks.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 17,
+        },
+        {
+            "id": "W3-LOSSLESS-IR-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_legal_ir.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 11,
+        },
+        {
+            "id": "W3-LOSSLESS-IR-PROPERTY",
+            "suite": "property",
+            "selector": "tests/property/test_ir_properties.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 47,
+        },
+        {
+            "id": "W3-LOSSLESS-IR-MUTATION",
+            "suite": "differential",
+            "selector": "tests/semantic_mutation/test_ir_mutation.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 7,
         },
     ]
     if required_now != expected_required_now:
@@ -9782,6 +9822,309 @@ def cmd_w2_06_trust_chain_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w3_01_lossless_ir_gate() -> int:
+    """Verify the W3-01 loss-accounted RuleV4 to LegalIVLV4 lowering closure."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W3-01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W3-01",
+            "tests/contract/test_legal_ir.py",
+            "tests/property/test_ir_properties.py",
+            "tests/semantic_mutation/test_ir_mutation.py",
+            "tests/unit/test_legal_spec_ivl.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W3-01/lossless-ir-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        authority = json.loads(
+            (ROOT / "docs/architecture/module-authority.json").read_text(encoding="utf-8")
+        )
+        formal_plan = ROOT / W3_01_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        legal_ir_source = (ROOT / "compiler_core/legal_ir.py").read_text(encoding="utf-8")
+        contract_tests = (ROOT / "tests/contract/test_legal_ir.py").read_text(
+            encoding="utf-8-sig"
+        )
+        property_tests = (ROOT / "tests/property/test_ir_properties.py").read_text(
+            encoding="utf-8-sig"
+        )
+        mutation_tests = (
+            ROOT / "tests/semantic_mutation/test_ir_mutation.py"
+        ).read_text(encoding="utf-8-sig")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w3_01_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W3-01 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W3-01 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-01"), None)
+    if not isinstance(task, dict):
+        fail("W3-01 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W2-06"]:
+            fail("W3-01 mode or dependency drifted")
+        if task.get("audit_ids") != ["P1-05"]:
+            fail("W3-01 audit binding drifted")
+        if task.get("objective") != (
+            "新增 legal_ir.py；RuleV4→LegalSpecV4→LegalIVLV4 信息守恒；"
+            "reference oracle 不导入 production"
+        ):
+            fail("W3-01 objective drifted")
+        if task.get("allowed_paths") != list(W3_01_CHANGED_PATHS):
+            fail("W3-01 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W3-01 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W3-01 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W3-01 file disposition is not reproducible from its generator")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 12 个 exact paths",
+        "P1-05 mutation",
+        "REWRITE-SHARED-IR-ORACLE",
+        "replacement selector 保持未声明",
+        "w3-01-exact-lossless-ir-reports",
+        "W3-05",
+    )):
+        fail("W3-01 formal plan lacks its exact scope or deferred-oracle boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W3-LOSSLESS-IR-CONTRACT": (
+            "contract", "tests/contract/test_legal_ir.py",
+        ),
+        "W3-LOSSLESS-IR-PROPERTY": (
+            "property", "tests/property/test_ir_properties.py",
+        ),
+        "W3-LOSSLESS-IR-MUTATION": (
+            "differential", "tests/semantic_mutation/test_ir_mutation.py",
+        ),
+    }
+    w3_required_count = 0
+    for required_id, expected in expected_required.items():
+        item = required_by_id.get(required_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"),
+        ) if isinstance(item, dict) else None
+        count = item.get("expected_tests") if isinstance(item, dict) else None
+        if (
+            actual != expected
+            or item.get("state") != "REQUIRED_NOW"
+            or not isinstance(count, int)
+            or isinstance(count, bool)
+            or count <= 0
+        ):
+            fail(f"W3-01 required-now binding drifted: {required_id}")
+        else:
+            w3_required_count += count
+    if w3_required_count + 14 + 7 != W3_01_TEST_CASE_COUNT:
+        fail("W3-01 exact test count does not equal three new, legacy, and governance lanes")
+    if W3_01_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W3-01 JUnit case identity digest is not frozen")
+
+    p1_mutation = next((
+        item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict) and item.get("test_id") == "V4-P1-05-IR-LOSS"
+    ), {})
+    if (
+        p1_mutation.get("audit_id"), p1_mutation.get("owner_task"),
+        p1_mutation.get("state"), p1_mutation.get("suite"),
+        p1_mutation.get("selector"),
+    ) != (
+        "P1-05", "W3-01", "ACTIVE_REQUIRED", "property",
+        "tests/property/test_ir_properties.py::"
+        "test_every_legal_ir_field_survives_lowering_or_blocks",
+    ) or not _selector_is_declared(ROOT, p1_mutation.get("selector", "")):
+        fail("W3-01 P1-05 mutation is not exactly ACTIVE_REQUIRED")
+
+    shared_oracle_rewrite = next((
+        item for item in manifest.get("rewrite_at_task", [])
+        if isinstance(item, dict) and item.get("id") == "REWRITE-SHARED-IR-ORACLE"
+    ), {})
+    if (
+        shared_oracle_rewrite.get("selector"),
+        shared_oracle_rewrite.get("rewrite_task"),
+        shared_oracle_rewrite.get("retirement_task"),
+        shared_oracle_rewrite.get("state"),
+        shared_oracle_rewrite.get("replacement_selector"),
+    ) != (
+        "tests/unit/test_legal_spec_ivl.py::TestDifferential",
+        "W3-05", "W5-CUTOVER", "REWRITE_AT_TASK",
+        "tests/semantic_mutation/test_ir_mutation.py::"
+        "test_independent_oracle_kills_ir_semantic_mutations",
+    ) or _selector_is_declared(
+        ROOT, shared_oracle_rewrite.get("replacement_selector", "")
+    ):
+        fail("W3-01 shared-oracle replacement is not preserved undeclared to W3-05")
+
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict)
+    }
+    p1_05 = issue_by_id.get("P1-05", {})
+    if (p1_05.get("status"), p1_05.get("closure_tasks")) != (
+        "registered", ["W3-01", "W3-04", "W3-05"],
+    ):
+        fail("W3-01 P1-05 issue lifecycle drifted")
+
+    authority_by_path = {
+        item.get("path"): item
+        for item in authority.get("path_rules", [])
+        if isinstance(item, dict)
+    }
+    legal_ir_authority = authority_by_path.get("compiler_core/legal_ir.py", {})
+    if legal_ir_authority.get("class") != "FORMAL_CORE":
+        fail("W3-01 legal_ir.py is not the declared FORMAL_CORE authority")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/legal_ir.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "tests/contract/test_legal_ir.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/property/test_ir_properties.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/semantic_mutation/test_ir_mutation.py": ("TEST_ORACLE", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W3-01 file disposition drifted: {path}")
+    tracked = set(_git_tracked_files())
+    for path in W3_01_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W3-01 exact path is not Git tracked: {path}")
+
+    all_new_tests = "\n".join((contract_tests, property_tests, mutation_tests))
+    controls = _forbidden_test_controls(all_new_tests)
+    if controls:
+        fail(f"W3-01 tests use forbidden controls: {controls}")
+    if any(token in legal_ir_source for token in (
+        "compiler_core.legal_spec_ivl", "compiler_core.legal_ir_v3",
+        "tests.", "evaluate_direct_oracle", "differential_check",
+    )):
+        fail("W3-01 production lowering imports a legacy or test oracle")
+    if any(marker not in legal_ir_source for marker in (
+        "class LegalIRCompilationV4",
+        "class LegalIRCompilerV4",
+        "pack_verifier: RulePackVerifierV4",
+        "self._pack_verifier._verified.get(pack.pack_ref) is not pack",
+        "def compile_rule(",
+        "def _project_rule_to_spec(",
+        "def _project_spec_to_ivl(",
+        "field_coverage=tuple(item.name for item in fields(",
+        '"lost_fields": []',
+        '"defaulted_fields": []',
+        '"unsupported_fields": []',
+    )):
+        fail("W3-01 production lowering lacks typed two-hop loss accounting")
+    if any(marker not in contract_tests for marker in (
+        "test_public_compiler_consumes_verified_pack_and_emits_exact_typed_chain",
+        "test_each_receipt_is_computed_from_exact_canonical_hop",
+        "test_interpretation_choices_bind_the_verified_legal_approval",
+        "test_caller_cannot_assert_pass_or_compile_a_bare_rule",
+        "test_rule_ref_must_be_an_exact_member_of_the_verified_pack",
+        "test_compiler_rejects_verified_pack_after_live_trust_state_drift",
+        "test_production_lowering_imports_no_legacy_or_test_oracle",
+    )):
+        fail("W3-01 contract tests lack pack, receipt, approval, or trust-bound oracles")
+    if "test_every_legal_ir_field_survives_lowering_or_blocks" not in property_tests:
+        fail("W3-01 property test lacks the required P1-05 selector")
+    try:
+        mutation_tree = ast.parse(mutation_tests)
+        independent_projection = next(
+            node for node in mutation_tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "_independent_structural_projection"
+        )
+        independent_source = ast.get_source_segment(
+            mutation_tests, independent_projection,
+        ) or ""
+    except (SyntaxError, StopIteration):
+        independent_source = ""
+    if not independent_source or any(token in independent_source for token in (
+        "LegalIRCompilerV4", "compile_rule(", "_project_rule_to_spec(",
+        "_project_spec_to_ivl(", "compiler_core.legal_ir",
+    )):
+        fail("W3-01 independent projection is absent or calls production lowering")
+    if "test_independent_oracle_kills_ir_semantic_mutations" in mutation_tests:
+        fail("W3-01 prematurely declares the W3-05 shared-oracle replacement")
+    if any(marker not in runner_source for marker in (
+        "W3-01 receipt does not bind its exact 12 committed paths",
+        "w3-01-exact-lossless-ir-reports",
+        "w3-01-exact-committed-scope",
+        "_w3_01_test_report_problems(reports)",
+    )):
+        fail("W3-01 runner resume does not rebuild its executable receipt contract")
+
+    if cmd_w2_06_trust_chain_gate() != EXIT_OK:
+        fail("W3-01 prerequisite machine gate failed: W2-06")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W3-01 lossless IR gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W3-01 lossless IR gate OK: {W3_01_TEST_CASE_COUNT} contract/property/"
+        "mutation/legacy/governance cases"
+    )
+    return EXIT_OK
+
+
+def cmd_w3_01_lossless_ir_gate() -> int:
+    try:
+        return _cmd_w3_01_lossless_ir_gate()
+    except Exception as exc:
+        print(
+            f"W3-01 lossless IR gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -9817,6 +10160,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w2_05_synthetic_pack_gate()
     if args.wave == "W2-06":
         return cmd_w2_06_trust_chain_gate()
+    if args.wave == "W3-01":
+        return cmd_w3_01_lossless_ir_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -11484,6 +11829,42 @@ def _w2_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w3_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W3-01 lossless-IR JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W3-01 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W3_01_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W3_01_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W3_01_TEST_CASE_COUNT,
+        "junit_unique_cases": W3_01_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W3_01_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W3-01 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W3-01 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 AUTO_RUNNER_COMPLETION_ASSERTION_IDS = (
     "runner-clean-worktree",
     "runner-committed-delta",
@@ -11693,6 +12074,35 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W2-06 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W3-01":
+        problems.extend(_w3_01_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W3_01_CHANGED_PATHS)
+            or len(changed_paths) != len(W3_01_CHANGED_PATHS)
+        ):
+            problems.append("W3-01 receipt does not bind its exact 12 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W3_01_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W3-01 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w3-01-exact-lossless-ir-reports",
+            "w3-01-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W3-01 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -12532,6 +12942,37 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 12 exact W2-06 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W3-01":
+        report_problems = _w3_01_test_report_problems(test_reports)
+        expected_paths = set(W3_01_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W3_01_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w3-01-exact-lossless-ir-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W3_01_TEST_CASE_COUNT} contract/property/mutation/legacy/governance "
+                "pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-01-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 12 exact W3-01 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })
