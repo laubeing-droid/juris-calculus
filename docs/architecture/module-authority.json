@@ -60,6 +60,10 @@
     "certificate_issuer": {
       "target_path": "compiler_core/certificates.py",
       "closure_task": "W4-04"
+    },
+    "independent_checker": {
+      "target_path": "compiler_core/independent_checker.py",
+      "closure_task": "W3-04"
     }
   },
   "path_rules": [
@@ -114,6 +118,7 @@
     {"path": "compiler_core/grounded_smt_verifier.py", "class": "TEST_ONLY", "rationale": "Independent semantic oracle only."},
     {"path": "compiler_core/horn_completeness.py", "class": "REMOVE", "rationale": "Migrate completeness and truncation witnesses into V4 results."},
     {"path": "compiler_core/incremental_grounded.py", "class": "CANDIDATE_ASSET", "rationale": "Research candidate, not certified runtime semantics."},
+    {"path": "compiler_core/independent_checker.py", "class": "FORMAL_CORE", "rationale": "Sole independent V4 semantic verification authority; recomputes from canonical artifacts without provider, compiler, or evaluator internal state."},
     {"path": "compiler_core/independent_grounded_checker.py", "class": "REMOVE", "rationale": "Migrate checker invariants to independent_checker.py."},
     {"path": "compiler_core/invariance_metrics.py", "class": "TEST_ONLY", "rationale": "Differential and mutation metric oracle only."},
     {"path": "compiler_core/ip_valuation.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory valuation candidate; no formal authority."},

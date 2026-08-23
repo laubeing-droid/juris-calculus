@@ -30,7 +30,7 @@ CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "artifact_store", "audit", "audit_bundle", "backend_router",
         "canonical_serialization", "cli", "client", "contracts",
-        "argumentation", "fact_admission", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
+        "argumentation", "fact_admission", "independent_checker", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
         "source_service", "trust", "version",
     ],
     "MERGE_DELETE": [
@@ -200,6 +200,9 @@ MIGRATION_TARGETS = {
     "compiler_core/backend_router_v1.py": (
         "compiler_core/backend_router.py", "tests/contract/test_backend_router.py",
     ),
+    "compiler_core/independent_grounded_checker.py": (
+        "compiler_core/independent_checker.py", "tests/contract/test_independent_checker.py",
+    ),
     "compiler_core/contracts_v4.py": ("compiler_core/contracts.py", "tests/contract/test_contracts.py"),
 }
 
@@ -229,7 +232,7 @@ def _git_tracked() -> set[str]:
 
 def _classify_core(stem: str) -> tuple[str, str]:
     """Return (disposition, terminal_state) for a compiler_core file stem."""
-    if stem in {"argumentation_v2", "backend_router_v1"}:
+    if stem in {"argumentation_v2", "backend_router_v1", "independent_grounded_checker"}:
         return "MERGE_DELETE", "MIGRATED_GREEN"
     for grp, stems in CORE_GROUPS.items():
         if stem in stems:
@@ -394,7 +397,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
+        "plan_sha256": "e67cfaa0906ddde0f448fd6e0b214f41d1e466001b62bd2c8d8571edf88d7cb0",
         "count": len(entries),
         "paths": entries,
     }

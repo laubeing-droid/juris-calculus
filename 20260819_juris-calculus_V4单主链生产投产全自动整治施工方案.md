@@ -648,10 +648,10 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W3-04　Independent checker
 
-- **Depends / audit**：`W3-03 / P0-06..07, P1-05..06`。
-- **Paths**：新增 `compiler_core/independent_checker.py`；迁移经证明的 checker 逻辑；独立 tests。
-- **动作**：只读 canonical IR/graph/backend result；独立重算 type、translation zero-loss、backend result、grounded labels、claim projection、pack/source/fact binding；不调用 production provider 内部状态，不接其 PASS。
-- **Gate**：production algorithm 单点 mutation 能被 checker/reference 检出；wrong subject/run/build、少/多 witness、same-bug oracle 防护测试通过。
+- **Depends / audit**：`W3-03 / P0-06, P1-05..06`。P0-07 的 certificate issuer/verifier closure 仍只属于 W4-03..04，本 task 不冒充 certificate closure。
+- **Paths**：仅以下 11 个 exact paths：本方案、`compiler_core/independent_checker.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_independent_checker.py`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/security/test_checker_independence.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。不修改 production provider、lowering、argumentation、Application、DecisionStatus、certificate、Schema 或 MCP publication。
+- **动作**：新增唯一 `IndependentCheckerV4`，caller 只提交 run identity ref 与 solver receipt ref，不能提交 PASS、graph、result、witness 或 checker build。checker 在 resolver 的 immutable snapshot 中沿 receipt→invocation→canonical problem/result/proof refs 读取字节，独立重建 Rule→Spec→IVL 零损投影、signed pack 中的 rule/source 归属、同 run/request/case-scope fact admission、Horn least-fixpoint 与 deontic applicability、typed AAF graph/grounded labels/witness/claim projection/permission/exception/priority cycle、exact integer/rational/Gregorian 结果；不得导入或调用 `backend_router`、`backends`、`legal_ir`、`argumentation`、`FactAdmissionServiceV4` 或 `RulePackVerifierV4` 的 production 算法或内部 PASS。只复用 frozen contracts、canonical bytes、bounded resolver 和 trust crypto，输出 build/profile/input/output/exact witnesses 全绑定且带可信签名的 `CheckerReceiptV4`；checker receipt 不产生 `DecisionStatus` 或 certificate。
+- **Gate**：真实 W3-03 Horn execution 可签发并重验 checker receipt；direct Horn/AAF/empty-AAF/exact vectors 的 result 与 proof 必须逐字等于独立重算。任一 production result/proof/translation/fact/pack/run/subject/build/graph/label/claim projection/permission/constraint mutation、少或多 witness、caller PASS、cross-run/cross-result、wrong signer 或 signature evidence 均 fail closed。AST/import 与 monkeypatch same-bug gates 证明 checker 不调用 production lowering/provider/grounded oracle；外部 JUnit 精确绑定新 contract/security、既有 IR/argumentation mutation、legacy checker 与 required-manifest governance 六条 lane，零 skip/xfail。runner 绑定 exact case identity、11 个 committed path digests、attempt 1→2 receipt chain，以及 `w3-04-exact-checker-reports`、`w3-04-exact-independence`、`w3-04-exact-committed-scope` 三个专属 assertions。
 - **Commit**：`feat(checker): add independent V4 semantic verification`。
 
 ### W3-05　Semantic mutation gate

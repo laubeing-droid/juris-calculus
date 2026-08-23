@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.21.0"
+RUNNER_VERSION = "0.22.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -79,6 +79,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.19.0": 5,
     "0.20.0": 5,
     "0.21.0": 5,
+    "0.22.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -305,6 +306,23 @@ W1_03_TOOL_SPEC_DIGEST = (
 W3_03_SCHEMA_SHA256 = "66798822c3f62fdc55b5d061357c45bf1605e2e355ab558406b1e9d639c67fa8"
 W3_03_MANIFEST_SHA256 = "d298e5adbed9a579b087f0af14216a7fd6d73d9a23b2ca45e364768cc576e16e"
 W3_03_TOOL_SPEC_DIGEST = W1_03_TOOL_SPEC_DIGEST
+W3_04_TEST_CASE_COUNT = 68
+W3_04_TEST_CASE_IDS_DIGEST = (
+    "sha256:eb85be9fcf48f80814df398df96680b5cc8a6a4f611c16f7eaf9bee63eec3788"
+)
+W3_04_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/independent_checker.py",
+    "docs/architecture/module-authority.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_independent_checker.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_checker_independence.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
 W0_05_DECISION = SCHEMA_DIR / "approvals" / "W0-05-dependency-decision.json"
@@ -3565,6 +3583,11 @@ def _required_test_manifest_problems(
             problems.append(
                 f"required-now selector uses forbidden test controls: {relative} {controls}"
             )
+    required_count_by_id = {
+        item.get("id"): item.get("expected_tests")
+        for item in required_now
+        if isinstance(item, dict)
+    }
     expected_required_now = [
         {
             "id": "W0-FOUNDATION-CONTRACT",
@@ -3666,6 +3689,20 @@ def _required_test_manifest_problems(
             "selector": "tests/security/test_backend_attacks.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 30,
+        },
+        {
+            "id": "W3-INDEPENDENT-CHECKER-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_independent_checker.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 5,
+        },
+        {
+            "id": "W3-INDEPENDENT-CHECKER-ATTACKS",
+            "suite": "security",
+            "selector": "tests/security/test_checker_independence.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 31,
         },
     ]
     if required_now != expected_required_now:
@@ -10936,8 +10973,8 @@ def _cmd_w3_03_backend_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-03 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 379:
-        fail("W3-03 file disposition is not the reproducible 379-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 382:
+        fail("W3-03 file disposition is not the current reproducible 382-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 21 个 exact paths",
         "可 kill 的 `spawn` 子进程",
@@ -11127,6 +11164,418 @@ def cmd_w3_03_backend_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _w3_04_independence_problems() -> list[str]:
+    """Validate the checker boundary shared by gate, postflight, and resume."""
+
+    problems: list[str] = []
+    try:
+        checker_source = (ROOT / "compiler_core/independent_checker.py").read_text(
+            encoding="utf-8"
+        )
+        checker_tree = ast.parse(checker_source)
+        authority = json.loads(
+            (ROOT / "docs/architecture/module-authority.json").read_text(encoding="utf-8")
+        )
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, SyntaxError, TypeError, ValueError,
+    ) as exc:
+        return [f"W3-04 independence inputs are unreadable: {type(exc).__name__}: {exc}"]
+
+    forbidden_modules = (
+        "compiler_core.backend_router",
+        "compiler_core.backends",
+        "compiler_core.legal_ir",
+        "compiler_core.argumentation",
+        "compiler_core.fact_admission",
+        "compiler_core.rule_packs",
+        "tests",
+        "importlib",
+        "multiprocessing",
+        "subprocess",
+    )
+    forbidden_symbols = {
+        "ArgumentGraphV4",
+        "BackendRouterV4",
+        "FactAdmissionServiceV4",
+        "LegalIRCompilerV4",
+        "RulePackVerifierV4",
+        "admit",
+        "build_argument_graph",
+        "compile_pack",
+        "compile_rule",
+        "evaluate_argument_graph",
+        "execute",
+        "execute_aaf",
+        "execute_exact",
+        "execute_horn",
+        "grounded_semantics",
+        "import_module",
+        "project_claim",
+        "provider_runtime_identity",
+        "replay",
+        "solve",
+        "verify_translation_receipt",
+    }
+    allowed_compiler_modules = {
+        "compiler_core.artifact_store",
+        "compiler_core.canonical_serialization",
+        "compiler_core.contracts",
+        "compiler_core.trust",
+    }
+    imported_targets: list[str] = []
+    imported_symbols: list[str] = []
+    for node in ast.walk(checker_tree):
+        if isinstance(node, ast.Import):
+            imported_targets.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                base = "compiler_core" + (f".{node.module}" if node.module else "")
+            else:
+                base = node.module or ""
+            if base in {"", "compiler_core"}:
+                imported_targets.extend(
+                    f"{base}.{alias.name}".lstrip(".") for alias in node.names
+                )
+            else:
+                imported_targets.append(base)
+            imported_symbols.extend(alias.name for alias in node.names)
+    forbidden_imports = sorted({
+        target
+        for target in imported_targets
+        if target == "compiler_core"
+        or (target.startswith("compiler_core.") and target not in allowed_compiler_modules)
+        or any(target == prefix or target.startswith(prefix + ".") for prefix in forbidden_modules)
+    })
+    forbidden_import_symbols = sorted({
+        symbol for symbol in imported_symbols if symbol.rsplit(".", 1)[-1] in forbidden_symbols
+    })
+    if forbidden_imports or forbidden_import_symbols:
+        problems.append(
+            "checker imports production/test/dynamic execution authority: "
+            f"modules={forbidden_imports!r} symbols={forbidden_import_symbols!r}"
+        )
+
+    def call_name(node: ast.AST) -> str:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            prefix = call_name(node.value)
+            return f"{prefix}.{node.attr}" if prefix else node.attr
+        return ""
+
+    forbidden_calls: list[str] = []
+    for node in ast.walk(checker_tree):
+        if not isinstance(node, ast.Call) or not (name := call_name(node.func)):
+            continue
+        leaf = name.rsplit(".", 1)[-1]
+        if leaf in forbidden_symbols:
+            forbidden_calls.append(name)
+        if leaf == "__import__":
+            fromlist = next(
+                (keyword.value for keyword in node.keywords if keyword.arg == "fromlist"),
+                None,
+            )
+            imports_self = (
+                bool(node.args)
+                and isinstance(node.args[0], ast.Name)
+                and node.args[0].id == "__name__"
+                and isinstance(fromlist, (ast.List, ast.Tuple))
+                and bool(fromlist.elts)
+                and all(
+                    isinstance(element, ast.Constant) and isinstance(element.value, str)
+                    for element in fromlist.elts
+                )
+            )
+            if not imports_self:
+                forbidden_calls.append(name)
+    forbidden_calls = sorted(set(forbidden_calls))
+    if forbidden_calls:
+        problems.append(f"checker calls production or dynamic oracle: {forbidden_calls!r}")
+    if any(
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "sys"
+        and node.attr == "modules"
+        for node in ast.walk(checker_tree)
+    ):
+        problems.append("checker accesses sys.modules and can recover a production oracle")
+    checker_classes = [
+        node for node in checker_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "IndependentCheckerV4"
+    ]
+    if len(checker_classes) != 1:
+        problems.append("checker must define exactly one IndependentCheckerV4 authority")
+    elif not {"check", "verify_receipt"} <= {
+        node.name for node in checker_classes[0].body if isinstance(node, ast.FunctionDef)
+    }:
+        problems.append("IndependentCheckerV4 lacks check or verify_receipt entrypoint")
+    if "DecisionStatusV4" in checker_source or "formal=True" in checker_source:
+        problems.append("checker source claims formal decision or certificate authority")
+
+    expected_role = {
+        "target_path": "compiler_core/independent_checker.py",
+        "closure_task": "W3-04",
+    }
+    if authority.get("authority_roles", {}).get("independent_checker") != expected_role:
+        problems.append("independent checker authority role drifted")
+    authority_by_path = {
+        item.get("path"): item
+        for item in authority.get("path_rules", [])
+        if isinstance(item, dict)
+    }
+    checker_authority = authority_by_path.get("compiler_core/independent_checker.py", {})
+    if (
+        checker_authority.get("class") != "FORMAL_CORE"
+        or "Sole independent V4 semantic verification authority" not in checker_authority.get(
+            "rationale", ""
+        )
+    ):
+        problems.append("independent checker path authority drifted")
+    if authority_by_path.get("compiler_core/independent_grounded_checker.py", {}).get(
+        "class"
+    ) != "REMOVE":
+        problems.append("legacy independent checker path is not REMOVE")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    checker_disposition = disposition_by_path.get("compiler_core/independent_checker.py", {})
+    if (
+        checker_disposition.get("disposition"),
+        checker_disposition.get("terminal_state"),
+        checker_disposition.get("namespace"),
+    ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core"):
+        problems.append("independent checker file disposition drifted")
+    legacy_disposition = disposition_by_path.get(
+        "compiler_core/independent_grounded_checker.py", {}
+    )
+    if (
+        legacy_disposition.get("disposition"),
+        legacy_disposition.get("terminal_state"),
+        legacy_disposition.get("target_module"),
+        legacy_disposition.get("target_test"),
+    ) != (
+        "MERGE_DELETE",
+        "MIGRATED_GREEN",
+        "compiler_core/independent_checker.py",
+        "tests/contract/test_independent_checker.py",
+    ):
+        problems.append("legacy independent checker migration binding drifted")
+    for path in (
+        "tests/contract/test_independent_checker.py",
+        "tests/security/test_checker_independence.py",
+    ):
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != (
+            "TEST_ORACLE", "TEST_ORACLE",
+        ):
+            problems.append(f"independent checker test disposition drifted: {path}")
+
+    required_expectations = {
+        "W3-INDEPENDENT-CHECKER-CONTRACT": (
+            "contract", "tests/contract/test_independent_checker.py", 5,
+        ),
+        "W3-INDEPENDENT-CHECKER-ATTACKS": (
+            "security", "tests/security/test_checker_independence.py", 31,
+        ),
+    }
+    for required_id, (suite, selector, expected_count) in required_expectations.items():
+        matches = [
+            item for item in manifest.get("required_now", [])
+            if isinstance(item, dict) and item.get("id") == required_id
+        ]
+        if len(matches) != 1:
+            problems.append(f"checker required-now id is not unique: {required_id}")
+            continue
+        item = matches[0]
+        count = item.get("expected_tests")
+        if (
+            item.get("suite"), item.get("selector"), item.get("state"), count
+        ) != (suite, selector, "REQUIRED_NOW", expected_count):
+            problems.append(f"checker required-now binding drifted: {required_id}")
+    return problems
+
+
+def _cmd_w3_04_checker_gate() -> int:
+    """Verify the independent checker boundary without executing the task runner."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W3-04"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W3-04",
+            "tests/contract/test_independent_checker.py",
+            "tests/security/test_checker_independence.py",
+            "tests/semantic_mutation/test_ir_mutation.py",
+            "tests/semantic_mutation/test_argumentation_mutation.py",
+            "tests/unit/test_independent_checker.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W3-04/checker-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W3_04_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        test_sources = {
+            path: (ROOT / path).read_text(encoding="utf-8-sig")
+            for path in (
+                "tests/contract/test_independent_checker.py",
+                "tests/security/test_checker_independence.py",
+                "tests/semantic_mutation/test_ir_mutation.py",
+                "tests/semantic_mutation/test_argumentation_mutation.py",
+                "tests/unit/test_independent_checker.py",
+                "tests/contract/test_required_test_manifest.py",
+            )
+        }
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w3_04_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W3-04 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W3-04 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-04"), None)
+    if not isinstance(task, dict):
+        fail("W3-04 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W3-03"]:
+            fail("W3-04 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-06", "P1-05", "P1-06"]:
+            fail("W3-04 audit binding drifted")
+        if task.get("objective") != (
+            "新增 independent_checker.py；只按 immutable refs 读取 canonical IR、pack/source/fact/backend "
+            "artifacts；独立重算 translation、Horn/AAF/exact、grounded "
+            "labels/witness/projection；不调用 production provider/compiler/evaluator 内部状态"
+        ):
+            fail("W3-04 objective drifted")
+        if task.get("allowed_paths") != list(W3_04_CHANGED_PATHS):
+            fail("W3-04 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W3-04 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W3-04 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition or disposition.get("count") != 382:
+        fail("W3-04 file disposition is not the reproducible 382-path ledger")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 11 个 exact paths",
+        "immutable snapshot",
+        "不得导入或调用",
+        "不产生 `DecisionStatus` 或 certificate",
+        "attempt 1→2 receipt chain",
+        "w3-04-exact-checker-reports",
+        "w3-04-exact-independence",
+        "w3-04-exact-committed-scope",
+    )):
+        fail("W3-04 formal plan lacks its exact scope, independence, or receipt boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    problems.extend(_w3_04_independence_problems())
+    if W3_04_TEST_CASE_COUNT <= 0 or W3_04_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W3-04 JUnit case identity is not frozen")
+
+    issue_by_id = {
+        item.get("id"): item
+        for item in issue_map.get("issues", [])
+        if isinstance(item, dict)
+    }
+    expected_issue_lifecycle = {
+        "P0-06": ("registered", ["W3-03", "W3-04"]),
+        "P1-05": ("registered", ["W3-01", "W3-04", "W3-05"]),
+        "P1-06": ("registered", ["W3-02", "W3-04", "W3-05"]),
+    }
+    for issue_id, expected in expected_issue_lifecycle.items():
+        item = issue_by_id.get(issue_id, {})
+        if (item.get("status"), item.get("closure_tasks")) != expected:
+            fail(f"W3-04 {issue_id} lifecycle drifted")
+
+    controls = {
+        path: found
+        for path, source in test_sources.items()
+        if (found := _forbidden_test_controls(source))
+    }
+    if controls:
+        fail(f"W3-04 tests use forbidden controls: {controls}")
+    tracked = set(_git_tracked_files())
+    for path in W3_04_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W3-04 exact path is not Git tracked: {path}")
+    resume_report_call = "_w3_04_test_report_problems(" + "reports)"
+    postflight_report_call = "_w3_04_test_report_problems(" + "test_reports)"
+    independence_call = "_w3_04_independence_problems(" + ")"
+    resume_scope_marker = "W3-04 receipt does not bind its exact " + "11 committed paths"
+    runner_markers_bound = (
+        runner_source.count(resume_report_call) == 1
+        and runner_source.count(postflight_report_call) == 1
+        and runner_source.count(independence_call) == 4
+        and runner_source.count(resume_scope_marker) == 1
+        and all(
+            runner_source.count("w3-04-exact-" + suffix) == 3
+            for suffix in ("checker-reports", "independence", "committed-scope")
+        )
+    )
+    if not runner_markers_bound:
+        fail("W3-04 runner resume or postflight does not rebuild its receipt contract")
+    if cmd_w3_03_backend_gate() != EXIT_OK:
+        fail("W3-04 prerequisite machine gate failed: W3-03")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W3-04 checker gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W3-04 checker gate OK: {W3_04_TEST_CASE_COUNT} contract/security/mutation/"
+        "legacy/governance cases; independent semantic recomputation"
+    )
+    return EXIT_OK
+
+
+def cmd_w3_04_checker_gate() -> int:
+    try:
+        return _cmd_w3_04_checker_gate()
+    except Exception as exc:
+        print(
+            f"W3-04 checker gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -11168,6 +11617,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w3_02_argumentation_gate()
     if args.wave == "W3-03":
         return cmd_w3_03_backend_gate()
+    if args.wave == "W3-04":
+        return cmd_w3_04_checker_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -12956,6 +13407,42 @@ def _w3_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w3_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the frozen W3-04 independent-checker JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W3-04 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W3_04_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W3_04_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W3_04_TEST_CASE_COUNT,
+        "junit_unique_cases": W3_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W3_04_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W3-04 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W3-04 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
     """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
 
@@ -13280,6 +13767,37 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W3-03 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W3-04":
+        problems.extend(_w3_04_test_report_problems(reports))
+        problems.extend(_w3_04_independence_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W3_04_CHANGED_PATHS)
+            or len(changed_paths) != len(W3_04_CHANGED_PATHS)
+        ):
+            problems.append("W3-04 receipt does not bind its exact 11 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W3_04_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W3-04 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w3-04-exact-checker-reports",
+            "w3-04-exact-independence",
+            "w3-04-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W3-04 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -14243,6 +14761,47 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 21 exact W3-03 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W3-04":
+        report_problems = _w3_04_test_report_problems(test_reports)
+        independence_problems = _w3_04_independence_problems()
+        expected_paths = set(W3_04_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W3_04_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w3-04-exact-checker-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W3_04_TEST_CASE_COUNT} contract/security/mutation/legacy/governance "
+                "pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-04-exact-independence",
+            "kind": "artifact_binding",
+            "ok": not independence_problems,
+            "detail": (
+                "checker AST, imports, calls, authority, disposition, and required lanes are independent"
+                if not independence_problems else "; ".join(independence_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-04-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 exact W3-04 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

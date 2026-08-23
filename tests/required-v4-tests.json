@@ -173,6 +173,20 @@
       "selector": "tests/security/test_backend_attacks.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 30
+    },
+    {
+      "id": "W3-INDEPENDENT-CHECKER-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_independent_checker.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 5
+    },
+    {
+      "id": "W3-INDEPENDENT-CHECKER-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_checker_independence.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 31
     }
   ],
   "evidence_tracks": [

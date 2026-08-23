@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
-  "count": 379,
+  "plan_sha256": "e67cfaa0906ddde0f448fd6e0b214f41d1e466001b62bd2c8d8571edf88d7cb0",
+  "count": 382,
   "paths": [
     {
       "path": ".gitattributes",
@@ -587,11 +587,21 @@
       "namespace": "candidate_asset"
     },
     {
+      "path": "compiler_core/independent_checker.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
       "path": "compiler_core/independent_grounded_checker.py",
       "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "target_module": "compiler_core/independent_checker.py",
+      "target_test": "tests/contract/test_independent_checker.py"
     },
     {
       "path": "compiler_core/invariance_metrics.py",
@@ -1770,6 +1780,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_independent_checker.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_jcs_v4.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2198,6 +2215,13 @@
     },
     {
       "path": "tests/security/test_backend_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/security/test_checker_independence.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",

@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
+    "plan_sha256": "e67cfaa0906ddde0f448fd6e0b214f41d1e466001b62bd2c8d8571edf88d7cb0",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2552,15 +2552,22 @@
       ],
       "audit_ids": [
         "P0-06",
-        "P0-07",
         "P1-05",
         "P1-06"
       ],
-      "objective": "新增 independent_checker.py；只读 canonical IR；独立重算；不调用 production provider 内部状态",
+      "objective": "新增 independent_checker.py；只按 immutable refs 读取 canonical IR、pack/source/fact/backend artifacts；独立重算 translation、Horn/AAF/exact、grounded labels/witness/projection；不调用 production provider/compiler/evaluator 内部状态",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/independent_checker.py",
+        "docs/architecture/module-authority.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/contract/test_independent_checker.py",
-        "tests/security/test_checker_independence.py"
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_checker_independence.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2570,9 +2577,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W3-04"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W3-04",
+          "tests/contract/test_independent_checker.py",
+          "tests/security/test_checker_independence.py",
+          "tests/semantic_mutation/test_ir_mutation.py",
+          "tests/semantic_mutation/test_argumentation_mutation.py",
+          "tests/unit/test_independent_checker.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W3-04/checker-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

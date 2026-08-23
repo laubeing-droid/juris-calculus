@@ -409,13 +409,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.22.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.23.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -1030,6 +1030,136 @@ def nested_alias_bypass():
             for problem in RUNNER._auto_receipt_resume_problems(
                 w3_02_task, wrong_assertion, tmp_path,
             )
+        )
+
+    w3_04_reports = copy.deepcopy(w1_02_reports)
+    w3_04_reports[0].update({
+        "passed": RUNNER.W3_04_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W3_04_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W3_04_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W3_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W3_04_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w3_04_test_report_problems(w3_04_reports) == []
+
+    wrong_w3_04_count = copy.deepcopy(w3_04_reports)
+    wrong_w3_04_count[0]["passed"] = RUNNER.W3_04_TEST_CASE_COUNT + 1
+    assert RUNNER._w3_04_test_report_problems(wrong_w3_04_count) == [
+        "W3-04 pytest passed drifted: "
+        f"{RUNNER.W3_04_TEST_CASE_COUNT + 1} != {RUNNER.W3_04_TEST_CASE_COUNT}"
+    ]
+
+    wrong_w3_04_digest = "sha256:" + "f" * 64
+    if wrong_w3_04_digest == RUNNER.W3_04_TEST_CASE_IDS_DIGEST:
+        wrong_w3_04_digest = "sha256:" + "e" * 64
+    wrong_digest_report = copy.deepcopy(w3_04_reports)
+    wrong_digest_report[0]["junit_case_ids_digest"] = wrong_w3_04_digest
+    assert RUNNER._w3_04_test_report_problems(wrong_digest_report) == [
+        "W3-04 pytest junit_case_ids_digest drifted: "
+        f"{wrong_w3_04_digest!r} != {RUNNER.W3_04_TEST_CASE_IDS_DIGEST!r}"
+    ]
+
+    for bypass_field in (
+        "failed", "errors", "skipped", "xfailed", "xpassed", "collection_errors",
+        "junit_skipped", "junit_failures", "junit_errors",
+    ):
+        bypass_report = copy.deepcopy(w3_04_reports)
+        bypass_report[0][bypass_field] = 1
+        assert any(
+            f"W3-04 pytest {bypass_field} drifted" in problem
+            for problem in RUNNER._w3_04_test_report_problems(bypass_report)
+        )
+
+    w3_04_task = next(
+        item
+        for item in json.loads(RUNNER.DEFAULT_PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W3-04"
+    )
+    assert list(RUNNER.W3_04_CHANGED_PATHS) == w3_04_task["allowed_paths"]
+    w3_04_assertion_ids = [
+        "all-commands-passed",
+        "runner-clean-worktree",
+        "runner-committed-delta",
+        "runner-state-artifacts",
+        "w3-04-exact-checker-reports",
+        "w3-04-exact-independence",
+        "w3-04-exact-committed-scope",
+    ]
+    assert RUNNER._expected_auto_completion_assertion_ids(
+        w3_04_task,
+        "w3-04-exact-checker-reports",
+        "w3-04-exact-independence",
+        "w3-04-exact-committed-scope",
+    ) == w3_04_assertion_ids
+    w3_04_commands = [
+        {
+            "argv": RUNNER._expanded_argv(argv, tmp_path),
+            "expected_exit_code": expected,
+            "exit_code": expected,
+            "timed_out": False,
+            "stdout": stream(f"w3-04-{index}-stdout"),
+            "stderr": stream(f"w3-04-{index}-stderr"),
+        }
+        for index, (argv, expected) in enumerate(
+            zip(w3_04_task["argv"], w3_04_task["expected_exit_codes"]), 1
+        )
+    ]
+    w3_04_receipt = {
+        "command_results": w3_04_commands,
+        "test_reports": copy.deepcopy(w3_04_reports),
+        "changed_paths": list(RUNNER.W3_04_CHANGED_PATHS),
+        "artifact_digests": {
+            f"result-path:{path}": "sha256:" + "a" * 64
+            for path in RUNNER.W3_04_CHANGED_PATHS
+        },
+        "completion_assertions": [
+            {"id": assertion_id, "ok": True}
+            for assertion_id in w3_04_assertion_ids
+        ],
+        "runner_version": RUNNER.RUNNER_VERSION,
+    }
+    with monkeypatch.context() as resume_patch:
+        resume_patch.setattr(
+            RUNNER,
+            "_structured_test_reports",
+            lambda *_args, **_kwargs: copy.deepcopy(w3_04_reports),
+        )
+        resume_patch.setattr(RUNNER, "_w3_04_independence_problems", lambda: [])
+        assert RUNNER._auto_receipt_resume_problems(
+            w3_04_task, w3_04_receipt, tmp_path,
+        ) == []
+
+        wrong_report = copy.deepcopy(w3_04_receipt)
+        wrong_report["test_reports"][0]["passed"] = RUNNER.W3_04_TEST_CASE_COUNT + 1
+        assert "AUTO receipt structured reports drifted" in (
+            RUNNER._auto_receipt_resume_problems(w3_04_task, wrong_report, tmp_path)
+        )
+
+        missing_path = copy.deepcopy(w3_04_receipt)
+        missing_path["changed_paths"].pop()
+        assert any(
+            "exact 11 committed paths" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w3_04_task, missing_path, tmp_path,
+            )
+        )
+
+        wrong_assertion = copy.deepcopy(w3_04_receipt)
+        wrong_assertion["completion_assertions"][-2]["id"] = "wrong-independence"
+        assert any(
+            "completion assertions" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w3_04_task, wrong_assertion, tmp_path,
+            )
+        )
+
+        resume_patch.setattr(
+            RUNNER,
+            "_w3_04_independence_problems",
+            lambda: ["forced independence drift"],
+        )
+        assert "forced independence drift" in RUNNER._auto_receipt_resume_problems(
+            w3_04_task, w3_04_receipt, tmp_path,
         )
 
     lost_junit = tmp_path / "evidence" / "lost.xml"
