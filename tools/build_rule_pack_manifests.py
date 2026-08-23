@@ -29,16 +29,6 @@ PACK_SPECS = (
         "config_files": (),
     },
     {
-        "pack_id": "cn-legacy-corpus",
-        "kind": "legacy_corpus",
-        "status": "candidate",
-        "jurisdiction": "CN",
-        "governing_law": "PRC",
-        "rule_files": ("zh_CN/rules.yaml",),
-        "source_files": ("zh_CN/source_manifest.yaml",),
-        "config_files": ("zh_CN/domain_config.example.yaml", "zh_CN/ontology_map.yaml"),
-    },
-    {
         "pack_id": "hk-legacy-corpus",
         "kind": "legacy_corpus",
         "status": "candidate",

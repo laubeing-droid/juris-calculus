@@ -9,5 +9,5 @@ budgets:
   audit_event_count: 100
   audit_bundle_bytes: 1048576
 notes:
-  - Budgets are regression ceilings for the fixed synthetic fixture, not throughput claims for the 21144-rule candidate corpus.
+  - Budgets are regression ceilings for the fixed synthetic fixture, not throughput claims for external or retired corpora.
   - Performance must not omit audit events, source checks, or certificate checks.

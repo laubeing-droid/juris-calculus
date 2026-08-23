@@ -47,42 +47,6 @@ def test_doctor_blocks_when_cn_official_is_empty() -> None:
     assert "C:\\" not in completed.stdout
 
 
-def test_rules_lookup_accepts_stdin_and_returns_candidate_corpus_result() -> None:
-    """--input -消费stdin，且不把legacy语料描述成official pack。"""
-
-    completed = _run("rules", "lookup", "--input", "-", "--limit", "1", "--json", stdin="PC-001\n")
-    assert completed.returncode == 0
-    assert completed.stderr == ""
-    payload = json.loads(completed.stdout)
-    assert payload["pack_id"] == "cn-legacy-corpus"
-    assert payload["match_count"] >= 1
-    assert payload["results"][0]["rule_id"] == "PC-001"
-
-
-def test_json_stdout_is_utf8_when_windows_default_encoding_is_not_utf8() -> None:
-    completed = _run(
-        "rules", "lookup", "--input", "-", "--limit", "1", "--json",
-        stdin="PC-001\n",
-        environment={"PYTHONIOENCODING": "cp1252"},
-    )
-
-    assert completed.returncode == 0
-    assert json.loads(completed.stdout)["results"][0]["rule_id"] == "PC-001"
-
-
-def test_json_usage_error_has_exit_2_and_no_stdout() -> None:
-    """缺少查询时argparse也必须遵守机器错误schema。"""
-
-    completed = _run("rules", "lookup", "--json")
-    payload = json.loads(completed.stderr)
-
-    assert completed.returncode == 2
-    assert completed.stdout == ""
-    assert payload["code"] == "CLI_USAGE_ERROR"
-    assert set(payload) == {"code", "message", "details", "retryable"}
-    assert "Traceback" not in completed.stderr
-
-
 def test_packs_list_is_deterministic_and_ignores_implicit_environment_override(monkeypatch) -> None:
     """环境变量本身不得静默替换bundled manifests。"""
 
@@ -92,7 +56,7 @@ def test_packs_list_is_deterministic_and_ignores_implicit_environment_override(m
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert payload["pack_count"] == 5
+    assert payload["pack_count"] == 4
     assert payload["development_override"] is False
     assert [item["pack_id"] for item in payload["packs"]] == sorted(
         item["pack_id"] for item in payload["packs"]

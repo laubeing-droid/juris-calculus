@@ -3606,6 +3606,7 @@
         "compiler_core/config_paths.py",
         "compiler_core/prc_collision_engine.py",
         "pipeline/fix_single_premise.py",
+        "tools/build_file_disposition.py",
         "tools/build_rule_pack_manifests.py",
         "tools/run_trirail_matrix.py",
         "tools/remediate_v4.py",
@@ -3626,7 +3627,7 @@
         "tests/unit/test_zh_rules.py",
         "tests/unit/test_remediation_legacy_cn_corpus.py",
         "tests/packaging/test_legacy_cn_corpus_absent.py",
-        "tests/mcp_protocol/test_legacy_cn_corpus_absent.py"
+        "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py"
       ],
       "terminal_states": [
         "DELETE_CURRENT"
@@ -3638,9 +3639,38 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W5-02C"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W5-02C",
+          "tests/unit/test_adversarial.py",
+          "tests/unit/test_plugin_registry.py",
+          "tests/unit/test_rule_pack_manifest.py::test_duplicate_pack_id_and_missing_optional_pack_do_not_fallback",
+          "tests/unit/test_rule_pack_manifest.py::test_bundled_manifests_are_hash_and_count_consistent",
+          "tests/unit/test_rule_pack_manifest.py::test_manifest_machine_result_contains_no_absolute_paths",
+          "tests/unit/test_rule_pack_manifest_builder.py",
+          "tests/unit/test_trirail_collision.py",
+          "tests/unit/test_trirail_runtime.py",
+          "tests/unit/test_zh_rules.py",
+          "tests/unit/test_remediation_legacy_cn_corpus.py",
+          "tests/packaging/test_legacy_cn_corpus_absent.py",
+          "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W5-02C.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

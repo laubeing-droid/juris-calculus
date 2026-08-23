@@ -234,24 +234,21 @@ def test_duplicate_pack_id_and_missing_optional_pack_do_not_fallback(tmp_path) -
 
 
 def test_bundled_manifests_are_hash_and_count_consistent() -> None:
-    """当前五个发布manifest均完整，official为空时只报告BLOCKED。"""
+    """四个 current manifests 完整；退役 CN corpus 不得被发现。"""
 
     results = {result.pack_id: result for result in RulePackRegistry(configs_root()).verify_all()}
 
     assert set(results) == {
         "cn-official",
-        "cn-legacy-corpus",
         "hk-legacy-corpus",
         "us-federal-legacy-corpus",
         "us-l0-adapter-legacy-corpus",
     }
     assert all(result.integrity_valid for result in results.values())
     assert results["cn-official"].reasoning_ready is False
-    assert results["cn-legacy-corpus"].inventory == {
-        "corpus_total": 21144,
-        "reasoning_eligible_total": 0,
-        "candidate_only_total": 21144,
-    }
+    with pytest.raises(RulePackError) as retired:
+        RulePackRegistry(configs_root()).verify("cn-" + "legacy-corpus")
+    assert retired.value.code == "PACK_NOT_INSTALLED"
     assert results["hk-legacy-corpus"].inventory["corpus_total"] == 133
     assert results["us-federal-legacy-corpus"].inventory["corpus_total"] == 123
     assert results["us-l0-adapter-legacy-corpus"].inventory["corpus_total"] == 81

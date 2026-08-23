@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.31.0"
+RUNNER_VERSION = "0.32.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -89,6 +89,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.29.0": 5,
     "0.30.0": 5,
     "0.31.0": 5,
+    "0.32.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -559,6 +560,50 @@ W5_01_ALLOWED_PATHS = (
     "tests/required-v4-tests.json",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
+)
+W5_02C_RETIRED_PATHS = (
+    "configs/zh_CN/rules.yaml",
+    "configs/packs/cn-legacy-corpus/manifest.yaml",
+    "pipeline/fix_single_premise.py",
+    "tests/run_benchmark_zh.py",
+    "tests/stress_test_facts.py",
+)
+W5_02C_NEGATIVE_TEST_PATHS = (
+    "tests/unit/test_remediation_legacy_cn_corpus.py",
+    "tests/packaging/test_legacy_cn_corpus_absent.py",
+    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
+)
+W5_02C_TEST_CASE_COUNT = 25
+W5_02C_TEST_CASE_IDS_DIGEST = (
+    "sha256:498c6a8f4a1c1fdf6b3cea2fa5bc1cf8b231713785a057240d12d81f249ce4a0"
+)
+W5_02C_REQUIRED_CHANGED_PATHS = (
+    *W5_02C_RETIRED_PATHS,
+    ".github/workflows/auto-release.yml",
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "addons/cn/__init__.py",
+    "addons/cn/adapter.py",
+    "compiler_core/cli.py",
+    "compiler_core/config_paths.py",
+    "compiler_core/prc_collision_engine.py",
+    "configs/perf_patterns.yaml",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    *W5_02C_NEGATIVE_TEST_PATHS,
+    "tests/unit/test_adversarial.py",
+    "tests/unit/test_cli_contract.py",
+    "tests/unit/test_cli_subprocess.py",
+    "tests/unit/test_plugin_registry.py",
+    "tests/unit/test_rule_pack_manifest.py",
+    "tests/unit/test_rule_pack_manifest_builder.py",
+    "tests/unit/test_trirail_collision.py",
+    "tests/unit/test_trirail_runtime.py",
+    "tests/unit/test_zh_rules.py",
+    "tools/build_file_disposition.py",
+    "tools/build_rule_pack_manifests.py",
+    "tools/remediate_v4.py",
+    "tools/run_trirail_matrix.py",
 )
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
@@ -1221,12 +1266,29 @@ def cmd_file_map(args: argparse.Namespace) -> int:
 
     by_path = {p["path"]: p for p in paths}
     tracked = set(_git_tracked_files())
-    if set(by_path) != tracked:
+    retired_history = {
+        "configs/zh_CN/rules.yaml",
+        "configs/packs/cn-legacy-corpus/manifest.yaml",
+        "pipeline/fix_single_premise.py",
+        "tests/run_benchmark_zh.py",
+        "tests/stress_test_facts.py",
+    }
+    expected_paths = tracked | retired_history
+    if set(by_path) != expected_paths:
         print(
-            f"file-disposition coverage mismatch missing={sorted(tracked-set(by_path))[:10]} "
-            f"extra={sorted(set(by_path)-tracked)[:10]}", file=sys.stderr,
+            f"file-disposition coverage mismatch missing={sorted(expected_paths-set(by_path))[:10]} "
+            f"extra={sorted(set(by_path)-expected_paths)[:10]}", file=sys.stderr,
         )
         return EXIT_GATE_FAIL
+    for path in retired_history - tracked:
+        entry = by_path[path]
+        if (
+            entry.get("disposition") != "DELETE_CURRENT"
+            or entry.get("terminal_state") != "HISTORY_BOUND"
+            or entry.get("history_locator_only") is not True
+        ):
+            print(f"retired path lacks a history-only disposition: {path}", file=sys.stderr)
+            return EXIT_GATE_FAIL
     cn_rules = by_path.get("configs/zh_CN/rules.yaml")
     if not cn_rules:
         print("configs/zh_CN/rules.yaml missing from file-disposition", file=sys.stderr)
@@ -1542,10 +1604,23 @@ def _transitive_importers(
 
 
 def cmd_legacy_cn_corpus(args: argparse.Namespace) -> int:
-    """施工方案 §7 W5-02C: 校验物理和 tracked 删除都已发生。"""
+    """施工方案 §7 W5-02C: 校验物理删除、历史指纹和用户授权。"""
+
+    expected_sha256 = "032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44"
+    expected_bytes = 13620766
+    expected_rules = 21144
+    for label, actual, expected in (
+        ("sha256", getattr(args, "expected_sha256", None), expected_sha256),
+        ("bytes", getattr(args, "expected_bytes", None), expected_bytes),
+        ("rules", getattr(args, "expected_rules", None), expected_rules),
+    ):
+        if actual is not None and actual != expected:
+            print(f"legacy fingerprint argument mismatch: {label}={actual!r}", file=sys.stderr)
+            return EXIT_GATE_FAIL
+
     cn_rules = ROOT / "configs" / "zh_CN" / "rules.yaml"
     cn_manifest = ROOT / "configs" / "packs" / "cn-legacy-corpus" / "manifest.yaml"
-    problems = []
+    problems: list[str] = []
     if cn_rules.exists():
         problems.append(f"physical file still exists: {cn_rules}")
     if cn_manifest.exists():
@@ -1563,11 +1638,101 @@ def cmd_legacy_cn_corpus(args: argparse.Namespace) -> int:
             "configs/packs/cn-legacy-corpus/manifest.yaml",
         }:
             problems.append(f"tracked path still present: {line}")
+    tag_commit = subprocess.run(
+        ["git", "rev-parse", "v3.0.2^{}"], cwd=ROOT,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
+    )
+    if tag_commit.returncode != 0 or tag_commit.stdout.strip() != "aa0e038daf066bfc0baa4d27ee54adef12c3ae16":
+        problems.append("v3.0.2 annotated commit locator drifted")
+
+    history_bytes: dict[str, bytes] = {}
+    expected_blobs = {
+        "configs/zh_CN/rules.yaml": "8f51fdfd1db3e343812e8f35a321418fa854f4f7",
+        "configs/packs/cn-legacy-corpus/manifest.yaml": (
+            "1b29b412ee97563381f5a9b32e8b8efb9f62e90c"
+        ),
+    }
+    for path, expected_blob in expected_blobs.items():
+        completed = subprocess.run(
+            ["git", "show", f"v3.0.2:{path}"], cwd=ROOT,
+            capture_output=True, check=False,
+        )
+        if completed.returncode != 0:
+            problems.append(f"history locator is unreadable: v3.0.2:{path}")
+        else:
+            history_bytes[path] = completed.stdout
+        blob = subprocess.run(
+            ["git", "rev-parse", f"v3.0.2:{path}"], cwd=ROOT,
+            capture_output=True, text=True, check=False,
+        )
+        if blob.returncode != 0 or blob.stdout.strip() != expected_blob:
+            problems.append(f"historical Git blob drifted: {path}")
+
+    rules_bytes = history_bytes.get("configs/zh_CN/rules.yaml")
+    if rules_bytes is not None:
+        if len(rules_bytes) != expected_bytes:
+            problems.append("historical rules byte count drifted")
+        if sha256_hex(rules_bytes) != expected_sha256:
+            problems.append("historical rules SHA-256 drifted")
+        try:
+            import yaml
+
+            document = yaml.safe_load(rules_bytes)
+            rules = document["rules"]
+            rule_ids = [rule["id"] for rule in rules]
+            if len(rule_ids) != expected_rules or len(set(rule_ids)) != expected_rules:
+                problems.append("historical rules IDs are not exactly 21,144 unique values")
+        except (ImportError, KeyError, TypeError, yaml.YAMLError) as exc:
+            problems.append(f"historical rules YAML is invalid: {type(exc).__name__}")
+
+    manifest_bytes = history_bytes.get("configs/packs/cn-legacy-corpus/manifest.yaml")
+    if manifest_bytes is not None:
+        if len(manifest_bytes) != 885:
+            problems.append("historical manifest byte count drifted")
+        if sha256_hex(manifest_bytes) != (
+            "5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7"
+        ):
+            problems.append("historical manifest SHA-256 drifted")
+
+    authorization_path = ROOT / "remediation/v4/approvals/H5-02-user-authorized-history-bound.json"
+    try:
+        authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+        history_bound = authorization["history_bound_paths"]
+        exact_paths = [item["path"] for item in history_bound]
+        if authorization.get("decision") != "USER_AUTHORIZED_HISTORY_BOUND":
+            problems.append("history-bound user decision is missing")
+        if authorization.get("evidence_kind") != "USER_DIRECTIVE":
+            problems.append("history-bound evidence is not a USER_DIRECTIVE")
+        if authorization.get("authority_source", {}).get("cryptographic_signature") is not False:
+            problems.append("USER_DIRECTIVE was misrepresented as a signature")
+        expected_paths = [
+            "configs/zh_CN/rules.yaml",
+            "configs/packs/cn-legacy-corpus/manifest.yaml",
+        ]
+        if exact_paths != expected_paths:
+            problems.append("history-bound authorization scope drifted")
+        elif (
+            history_bound[0].get("sha256") != "sha256:" + expected_sha256
+            or history_bound[0].get("bytes") != expected_bytes
+            or history_bound[0].get("unique_rule_id_count") != expected_rules
+            or history_bound[0].get("git_blob") != expected_blobs[expected_paths[0]]
+            or history_bound[1].get("sha256")
+            != "sha256:5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7"
+            or history_bound[1].get("bytes") != 885
+            or history_bound[1].get("git_blob") != expected_blobs[expected_paths[1]]
+        ):
+            problems.append("history-bound authorization fingerprint drifted")
+    except (KeyError, OSError, UnicodeError, json.JSONDecodeError) as exc:
+        problems.append(f"history-bound authorization is unreadable: {type(exc).__name__}")
+
     if problems:
         for p in problems:
             print(p, file=sys.stderr)
         return EXIT_GATE_FAIL
-    print("legacy-cn-corpus absent from both worktree and git index")
+    print(
+        "legacy-cn-corpus absent from worktree/index; v3.0.2 history reproduces "
+        "13,620,766 bytes and 21,144 unique IDs under USER_DIRECTIVE authority"
+    )
     return EXIT_OK
 
 
@@ -14407,6 +14572,179 @@ def cmd_w5_01_entrypoint_red_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _w5_02c_legacy_cn_contract_problems() -> list[str]:
+    """Require one reproducible history locator and zero current consumers."""
+
+    problems: list[str] = []
+    builder_path = ROOT / "tools/build_file_disposition.py"
+    try:
+        import yaml as yaml_module
+    except ImportError as exc:
+        return [f"W5-02C requires PyYAML: {exc}"]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        authorization = json.loads((
+            ROOT / "remediation/v4/approvals/H5-02-user-authorized-history-bound.json"
+        ).read_text(encoding="utf-8"))
+        official = yaml_module.safe_load((
+            ROOT / "configs/packs/cn-official/manifest.yaml"
+        ).read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_02c_file_disposition", builder_path,
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, yaml_module.YAMLError,
+        ImportError, SyntaxError, TypeError, ValueError,
+    ) as exc:
+        return [f"W5-02C governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W5-02C"), {}
+    )
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-02C",
+        "tests/unit/test_adversarial.py",
+        "tests/unit/test_plugin_registry.py",
+        "tests/unit/test_rule_pack_manifest.py::test_duplicate_pack_id_and_missing_optional_pack_do_not_fallback",
+        "tests/unit/test_rule_pack_manifest.py::test_bundled_manifests_are_hash_and_count_consistent",
+        "tests/unit/test_rule_pack_manifest.py::test_manifest_machine_result_contains_no_absolute_paths",
+        "tests/unit/test_rule_pack_manifest_builder.py",
+        "tests/unit/test_trirail_collision.py",
+        "tests/unit/test_trirail_runtime.py",
+        "tests/unit/test_zh_rules.py",
+        *W5_02C_NEGATIVE_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-02C.xml",
+    ]
+    if task.get("depends_on") != ["H5-02"]:
+        problems.append("W5-02C must depend only on reached gate H5-02")
+    if task.get("audit_ids") != ["P0-14", "P1-09", "P2-04", "P3-01", "P3-02"]:
+        problems.append("W5-02C audit projection drifted")
+    if task.get("terminal_states") != ["DELETE_CURRENT"]:
+        problems.append("W5-02C terminal state is not DELETE_CURRENT")
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-02C"],
+        expected_pytest_argv,
+    ]
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-02C exact gate/pytest argv drifted")
+    allowed_paths = task.get("allowed_paths", [])
+    for path in W5_02C_REQUIRED_CHANGED_PATHS:
+        if not _matches_allowed(path, allowed_paths):
+            problems.append(f"W5-02C required path is outside its allowlist: {path}")
+
+    if disposition != generated_disposition:
+        problems.append("W5-02C file disposition is not reproducible from its generator")
+    by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    for path in W5_02C_RETIRED_PATHS:
+        item = by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"),
+            item.get("closure_task"), item.get("history_locator_only"),
+        ) != ("DELETE_CURRENT", "HISTORY_BOUND", "W5-02C", True):
+            problems.append(f"W5-02C history-only disposition drifted: {path}")
+
+    adjacent_paths = (
+        "configs/zh_CN/source_manifest.yaml",
+        "configs/zh_CN/domain_config.example.yaml",
+        "configs/zh_CN/ontology_map.yaml",
+    )
+    for path in adjacent_paths:
+        if not (ROOT / path).is_file():
+            problems.append(f"unauthorized adjacent asset removal: {path}")
+    if not isinstance(official, dict) or (
+        official.get("status"), official.get("rule_files"), official.get("inventory", {}).get(
+            "reasoning_eligible_total"
+        )
+    ) != ("blocked", [], 0):
+        problems.append("cn-official was promoted or populated during legacy retirement")
+
+    candidate_decision = authorization.get("candidate_advisory_decision", {})
+    if any(candidate_decision.get(field) != [] for field in (
+        "no_relevant_semantics_approved", "additional_deletions_approved",
+        "in_repo_moves_approved", "post_release_rfcs",
+    )):
+        problems.append("H5-02 authorization was expanded beyond the two frozen assets")
+    if authorization.get("excluded_adjacent_paths") != list(adjacent_paths):
+        problems.append("H5-02 excluded adjacent path projection drifted")
+
+    forbidden_by_path = {
+        "addons/cn/__init__.py": ("rules_path", "cn-legacy-corpus"),
+        "addons/cn/adapter.py": ("rules_path", "cn-legacy-corpus"),
+        "compiler_core/cli.py": (
+            "configs/zh_CN/rules.yaml", "cn-legacy-corpus", "_handle_rules_lookup",
+        ),
+        "compiler_core/config_paths.py": ("def rules_path", "zh_CN/rules.yaml"),
+        "compiler_core/prc_collision_engine.py": (
+            "cn_rules_path", "_run_cn_track", "CROSS_JURISDICTION_FACT_BRIDGE",
+            "cn_rule_count", "_compute_bridge_health",
+        ),
+        "tools/build_rule_pack_manifests.py": ("cn-legacy-corpus", "zh_CN/rules.yaml"),
+        "tools/run_trirail_matrix.py": (
+            "PRC_CN", "cn_claims_count", "cn_rules_total", "bridge_health",
+        ),
+        ".github/workflows/ci.yml": ("configs/zh_CN/rules.yaml", "cn-legacy-corpus"),
+        ".github/workflows/auto-release.yml": (
+            "configs/zh_CN/rules.yaml", "cn-legacy-corpus",
+        ),
+    }
+    for path, markers in forbidden_by_path.items():
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8-sig")
+            if path.endswith(".py"):
+                ast.parse(source, filename=path)
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            problems.append(f"W5-02C consumer source is unreadable: {path}: {exc}")
+            continue
+        for marker in markers:
+            if marker in source:
+                problems.append(f"W5-02C current consumer survived: {path}: {marker}")
+
+    tracked = set(_git_tracked_files())
+    for path in W5_02C_RETIRED_PATHS:
+        if (ROOT / path).exists() or path in tracked:
+            problems.append(f"W5-02C retired path remains current: {path}")
+    for path in W5_02C_NEGATIVE_TEST_PATHS:
+        if path not in tracked:
+            problems.append(f"W5-02C negative test is not Git tracked: {path}")
+            continue
+        source = (ROOT / path).read_text(encoding="utf-8-sig")
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-02C negative test uses skip/xfail: {path}")
+    return problems
+
+
+def cmd_w5_02c_legacy_cn_gate() -> int:
+    legacy_rc = cmd_legacy_cn_corpus(argparse.Namespace(
+        expected_sha256="032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
+        expected_bytes=13620766,
+        expected_rules=21144,
+    ))
+    problems = _w5_02c_legacy_cn_contract_problems()
+    if legacy_rc != EXIT_OK:
+        problems.append("frozen history/authority/absence gate failed")
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-02C legacy retirement gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W5-02C legacy retirement gate OK: five current paths retired, two frozen "
+        "assets reproducible from v3.0.2, all current consumers disconnected, and "
+        "cn-official remains blocked"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -14468,6 +14806,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w4_07_vertical_gate()
     if args.wave == "W5-01":
         return cmd_w5_01_entrypoint_red_gate()
+    if args.wave == "W5-02C":
+        return cmd_w5_02c_legacy_cn_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -16617,6 +16957,62 @@ def _w5_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w5_02c_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact green retirement evidence with no bypass or collection error."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-02C must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_02C_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_02C_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_02C_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_02C_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_02C_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-02C pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-02C pytest junit_sha256 is missing or invalid")
+    return problems
+
+
+def _w5_02c_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-02C changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-02C artifact_digests is not an object"]
+    missing = sorted(set(W5_02C_REQUIRED_CHANGED_PATHS) - set(changed_paths))
+    if missing:
+        problems.append(f"W5-02C required committed paths are missing: {missing!r}")
+    for path in W5_02C_REQUIRED_CHANGED_PATHS:
+        prefix = "deleted-path" if path in W5_02C_RETIRED_PATHS else "result-path"
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(artifact_digests.get(f"{prefix}:{path}")),
+        ) is None:
+            problems.append(f"W5-02C lacks committed {prefix} digest: {path}")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -17341,6 +17737,26 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-01 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-02C":
+        problems.extend(_w5_02c_test_report_problems(reports))
+        problems.extend(_w5_02c_legacy_cn_contract_problems())
+        problems.extend(_w5_02c_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-02c-exact-green-reports",
+            "w5-02c-history-bound-retirement-contract",
+            "w5-02c-required-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-02C receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -18828,6 +19244,42 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 10 W5-01 paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-02C":
+        report_problems = _w5_02c_test_report_problems(test_reports)
+        contract_problems = _w5_02c_legacy_cn_contract_problems()
+        path_problems = _w5_02c_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-02c-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_02C_TEST_CASE_COUNT} retirement/runtime/packaging/MCP cases passed "
+                "with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-02c-history-bound-retirement-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "legacy consumers are disconnected, history remains reproducible, adjacent "
+                "assets remain, and cn-official is blocked"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-02c-required-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all required W5-02C removals, rewrites, governance files, and negative "
+                "tests are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

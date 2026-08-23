@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 411,
+  "count": 414,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1534,11 +1534,17 @@
     },
     {
       "path": "pipeline/fix_single_premise.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "closure_task": "W5-02C",
+      "frozen_fingerprint": {
+        "git_blob_head": "5f0109ebbb0785f8a062ec78990e8132b3238f74",
+        "note": "retired current-tree mutator; Git history locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "pipeline/guardian.py",
@@ -2213,6 +2219,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-02C"
+    },
+    {
       "path": "tests/mcp_protocol/w5_transport_red.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2225,6 +2238,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/packaging/test_legacy_cn_corpus_absent.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/property/README.md",
@@ -2284,11 +2304,11 @@
       "terminal_state": "HISTORY_BOUND",
       "audit_role": "tests",
       "closure_task": "W5-02C",
-      "history_locator_only": true,
       "frozen_fingerprint": {
         "git_blob_head": "92eb07be371db5fd753fe646244a76712247c974",
-        "note": "current HEAD blob locator only; not pre-frozen"
+        "note": "retired current-tree benchmark; Git history locator only"
       },
+      "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
     },
@@ -2473,11 +2493,11 @@
       "terminal_state": "HISTORY_BOUND",
       "audit_role": "tests",
       "closure_task": "W5-02C",
-      "history_locator_only": true,
       "frozen_fingerprint": {
-        "git_blob_head": "34cf9823073e25938f706dd6cb932b476bf3e465",
-        "note": "current HEAD blob locator only; not pre-frozen"
+        "git_blob_head": "34cf9823073e25938f0b4e92ecf9a38839b3c2155",
+        "note": "retired current-tree stress script; Git history locator only"
       },
+      "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
     },
@@ -2499,17 +2519,10 @@
     },
     {
       "path": "tests/unit/test_adversarial.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "24f7aa30519ef4fe319370a643a50c62500fa0ef",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_advisory_governance.py",
@@ -2601,17 +2614,10 @@
     },
     {
       "path": "tests/unit/test_cli_contract.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "734b1118d5115ce4b54e147f6e4f74fc5098ac31",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_cli_evaluate_subprocess.py",
@@ -2829,17 +2835,10 @@
     },
     {
       "path": "tests/unit/test_plugin_registry.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "87f6dd0d08a933e556f1334d0cd5705e9e6866c8",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_reasoning_boundary_conflict_certificate.py",
@@ -2936,6 +2935,13 @@
       "namespace": "candidate_asset"
     },
     {
+      "path": "tests/unit/test_remediation_legacy_cn_corpus.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-02C"
+    },
+    {
       "path": "tests/unit/test_remediation_run.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
@@ -2984,17 +2990,10 @@
     },
     {
       "path": "tests/unit/test_rule_pack_manifest_builder.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "01c5d4df48c93e1e9951919f093086c8ca748e48",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_rule_platform_cn.py",
@@ -3054,31 +3053,17 @@
     },
     {
       "path": "tests/unit/test_trirail_collision.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "f7cba14aa5537c2efb52d03e659dd190c0646ace",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_trirail_runtime.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "17ec7b7cc180ed38f0b4e92ecf9a38839b3c2155",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_trust_labels.py",
@@ -3130,17 +3115,10 @@
     },
     {
       "path": "tests/unit/test_zh_rules.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "a18819b9e92d34d6ac9d6bfeae4d9b64aa42159d",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-02C"
     },
     {
       "path": "tests/windows_security/README.md",
@@ -3181,17 +3159,11 @@
     },
     {
       "path": "tools/build_rule_pack_manifests.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
-      "frozen_fingerprint": {
-        "git_blob_head": "36f7ef8c0732a12a78a096ed0c84cabda2c6f764",
-        "note": "current HEAD blob locator only; not pre-frozen"
-      },
-      "target_module": null,
-      "target_artifact": null
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "tools/build_synthetic_pack.py",

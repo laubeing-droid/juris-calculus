@@ -291,7 +291,6 @@ class TriRailCollider:
         self.pack_digests = {
             "HK": registry.verify("hk-legacy-corpus").content_digest,
             "US": registry.verify("us-l0-adapter-legacy-corpus").content_digest,
-            "PRC_CN": registry.verify("cn-legacy-corpus").content_digest,
             "PRC_CBL": sha256_file(base / "configs" / "prc_us_alignment" / "blocking_rules.yaml"),
             "PRC_SPC": sha256_file(base / "configs" / "prc_us_alignment" / "spc_rules.yaml"),
         }
@@ -409,10 +408,7 @@ class TriRailCollider:
                     "force_suppress": [],
                     "mapping_override": [],
                     "spc_claims_count": 0,
-                    "cn_claims_count": 0,
-                    "cn_rules_total": self.rule_inventory["PRC"]["tracks"]["cn"]["corpus_total"],
                     "blocked_claims": [target_rule] if target_rule else [],
-                    "bridge_health": {"status": "NOT_RUN"},
                 },
                 "fast_path": True,
                 "threat_signature": threat_hit.get("signature_id", ""),
@@ -472,10 +468,7 @@ class TriRailCollider:
                 "force_suppress": blocking["FORCE_SUPPRESS"],
                 "mapping_override": blocking["MAPPING_OVERRIDE"],
                 "spc_claims_count": len(prc_tree.spc_tendencies),
-                "cn_claims_count": len(prc_tree.cn_claims),
-                "cn_rules_total": self.rule_inventory["PRC"]["tracks"]["cn"]["corpus_total"],
                 "blocked_claims": sorted(prc_tree.blocked_claims),
-                "bridge_health": dict(sorted(prc_tree.bridge_health.items())),
             },
             "fast_path": False,
             "rule_inventory": self.rule_inventory,
@@ -516,9 +509,8 @@ class TriRailCollider:
             hk_c = len(result["hk"]["claims"])
             us_c = len(result["us"]["claims"])
             prc_c = result["prc"]["overrides_count"]
-            cn_c = result["prc"].get("cn_claims_count", 0)
             spc_c = result["prc"].get("spc_claims_count", 0)
-            print(f"  {tag} {sid}: HK={result['hk']['state']}({hk_c}c) US={result['us']['state']}({us_c}c) PRC={prc_c}ov CN={cn_c}c SPC={spc_c}c")
+            print(f"  {tag} {sid}: HK={result['hk']['state']}({hk_c}c) US={result['us']['state']}({us_c}c) PRC={prc_c}ov SPC={spc_c}c")
 
         return results
 
@@ -533,8 +525,7 @@ class TriRailCollider:
             (
                 f"  HK ({hk_count}) x US ({us_count}) x PRC "
                 f"(CBL={prc_tracks['blocking']['reasoning_eligible_total']} + "
-                f"SPC={prc_tracks['spc']['reasoning_eligible_total']} + "
-                f"CN={prc_tracks['cn']['reasoning_eligible_total']})"
+                f"SPC={prc_tracks['spc']['reasoning_eligible_total']})"
             ),
             "=" * 70,
             "",
@@ -559,10 +550,9 @@ class TriRailCollider:
                 lines.append(f"  PRC FORCE_SUPPRESS: {r['prc']['force_suppress']}")
             if r["prc"]["mapping_override"]:
                 lines.append(f"  PRC MAPPING_OVERRIDE: {r['prc']['mapping_override']}")
-            cn_c = r["prc"].get("cn_claims_count", 0)
             spc_c = r["prc"].get("spc_claims_count", 0)
-            if cn_c or spc_c:
-                lines.append(f"  PRC CN={cn_c}c SPC={spc_c}c (total={r['prc'].get('cn_rules_total', 0)} rules)")
+            if spc_c:
+                lines.append(f"  PRC SPC={spc_c}c")
             lines.append("")
 
         lines.append("=" * 70)

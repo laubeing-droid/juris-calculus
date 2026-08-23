@@ -3,7 +3,7 @@
 import yaml
 
 from compiler_core.version import __version__
-from tools.build_rule_pack_manifests import CONFIGS, stale_manifests
+from tools.build_rule_pack_manifests import CONFIGS, PACK_SPECS, stale_manifests
 
 
 BUILD_COMMIT = "2053843f397d2ee1c0797831f05f80ba89841e79"
@@ -22,3 +22,4 @@ def test_current_manifests_match_generator_without_writes() -> None:
         yaml.safe_load(path.read_text(encoding="utf-8"))["version"]
         for path in before
     } == {__version__}
+    assert "cn-" + "legacy-corpus" not in {spec["pack_id"] for spec in PACK_SPECS}

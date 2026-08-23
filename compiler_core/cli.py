@@ -28,7 +28,6 @@ from compiler_core.analysis import AnalysisError, analyze_similar_cases, analyze
 from compiler_core.rendering import RendererError, render_run
 from compiler_core.rule_governance import audit_pack, write_governance_report
 from compiler_core.training import export_corpus_pack
-from compiler_core.types import build_rule_inventory, normalize_rule_admission
 from compiler_core.version import __version__
 
 
@@ -96,13 +95,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     rules = commands.add_parser("rules", help="inspect published rule corpora")
     rule_commands = rules.add_subparsers(dest="rules_command", required=True)
-    lookup = rule_commands.add_parser("lookup", help="search the CN legacy candidate corpus")
-    source = lookup.add_mutually_exclusive_group(required=True)
-    source.add_argument("query", nargs="?", help="literal search text")
-    source.add_argument("--input", metavar="PATH", help="read search text from PATH or '-' for stdin")
-    lookup.add_argument("--limit", type=int, default=10)
-    lookup.add_argument("--json", action="store_true", dest="json_output")
-    lookup.set_defaults(handler=_handle_rules_lookup)
     audit = rule_commands.add_parser("audit", help="audit a versioned rule corpus without promoting candidates")
     audit.add_argument("pack_id")
     audit.add_argument("--tests-root", metavar="PATH", help="explicit tests directory for rule-ID coverage")
@@ -212,54 +204,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return error.exit_code
 
 
-def _handle_rules_lookup(args: argparse.Namespace) -> dict[str, Any]:
-    """在legacy candidate corpus中确定性检索，不把命中项晋升为正式规则。"""
-
-    query = _read_query(args.query, args.input)
-    if args.limit < 1 or args.limit > 100:
-        raise CLIError("INVALID_LIMIT", "--limit must be between 1 and 100")
-    rules_path = configs_root() / "zh_CN" / "rules.yaml"
-    try:
-        document = yaml.safe_load(rules_path.read_text(encoding="utf-8")) or {}
-    except (OSError, yaml.YAMLError) as exc:
-        raise CLIError(
-            "RULE_CORPUS_UNAVAILABLE",
-            "published CN candidate corpus cannot be read",
-            exit_code=EXIT_OPTIONAL_COMPONENT_MISSING,
-            details={"resource": "configs/zh_CN/rules.yaml", "error_type": type(exc).__name__},
-        ) from exc
-    rules = document.get("rules", []) if isinstance(document, dict) else []
-    if not isinstance(rules, list):
-        raise CLIError("INVALID_RULE_CORPUS", "rules must be an array", exit_code=EXIT_ADMISSION_BLOCKED)
-    needle = query.casefold()
-    matches: list[dict[str, Any]] = []
-    for raw_rule in rules:
-        if not isinstance(raw_rule, dict):
-            continue
-        normalized = normalize_rule_admission(raw_rule)
-        searchable = "\n".join(
-            str(normalized.get(field, ""))
-            for field in ("id", "head_claim", "description", "legal_basis", "citation")
-        ).casefold()
-        if needle in searchable:
-            matches.append({
-                "rule_id": str(normalized.get("id", "")),
-                "head_claim": str(normalized.get("head_claim", "")),
-                "source_anchor": str(normalized.get("source_anchor", "")),
-                "admission": "reasoning_eligible" if normalized.get("source_anchor") else "candidate_only",
-            })
-    matches.sort(key=lambda item: (item["rule_id"], item["head_claim"]))
-    return {
-        "command": "rules.lookup",
-        "status": "ok",
-        "pack_id": "cn-legacy-corpus",
-        "query": query,
-        "inventory": build_rule_inventory(rules),
-        "match_count": len(matches),
-        "results": matches[: args.limit],
-    }
-
-
 def _handle_capabilities(args: argparse.Namespace) -> dict[str, Any]:
     """发布宿主无关能力清单（W1b 合同；stdout 单 UTF-8 JSON，stderr 只诊断）。"""
 
@@ -285,7 +229,7 @@ def _handle_capabilities(args: argparse.Namespace) -> dict[str, Any]:
         "features": ["agent_executor_optional", "formal_reasoning", "audit_bundle", "replay", "rule_admission"],
         "data_root": str(configs_root()),
         "capabilities": {
-            "read_only": ["capabilities", "rules.lookup", "rules.audit", "packs.list", "packs.verify", "render", "analyze"],
+            "read_only": ["capabilities", "rules.audit", "packs.list", "packs.verify", "render", "analyze"],
             "writable": ["evaluate", "replay", "training.export"],
         },
         "schema_digests": schema_digests,
@@ -293,12 +237,11 @@ def _handle_capabilities(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _handle_doctor(args: argparse.Namespace) -> dict[str, Any]:
-    """检查独立安装所需的核心schema、profile和候选语料。"""
+    """检查独立安装所需的核心 schema、profile 和正式规则包。"""
 
     resources = {
         "schema": schemas_root() / "jc-v3.schema.json",
         "neutral_profile": neutral_profile_path(),
-        "cn_legacy_corpus": configs_root() / "zh_CN" / "rules.yaml",
     }
     checks = {
         name: {"present": path.is_file(), "resource": _public_resource_name(path)}
@@ -622,11 +565,7 @@ def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
         print(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
         return
     print(f"{payload['command']}: {payload['status']}")
-    if payload["command"] == "rules.lookup":
-        print(f"matches: {payload['match_count']}")
-        for item in payload["results"]:
-            print(f"- {item['rule_id']}: {item['head_claim']} [{item['admission']}]")
-    elif payload["command"] == "doctor":
+    if payload["command"] == "doctor":
         for name, check in sorted(payload["checks"].items()):
             ready = check.get("reasoning_ready", check["present"])
             print(f"- {name}: {'PASS' if check['present'] and ready else 'BLOCKED'}")

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""CN adapter — Chinese jurisdiction with three-track collision engine.
+"""CN adapter — Chinese jurisdiction with bounded CBL+SPC experiment.
 
 Extends JurisdictionAdapter with:
   - map_to_L0: CN law concepts → L0 primitives (loaded from 207 term alignments)
   - validate_against_guardrails: CN-specific guardrail checks
-  - run_collision: three-track collision (CBL + SPC + CN)
+  - run_collision: candidate collision experiment (CBL + SPC)
   - get_legal_family: "civil_law"
   - get_modal_mapping: 应当/不得/可以 → OBLIGATION/PROHIBITION/PERMISSION
   - get_claim_tables: (cn_table, en_table) for LanguageRenderer
@@ -38,7 +38,6 @@ class CNAdapter(JurisdictionAdapter):
     """中国法适配器 — 含三轨对撞模式。"""
 
     jurisdiction = "CN"
-    rules_path = "configs/zh_CN/rules.yaml"
     overrides_path = "configs/L0_overrides_cn.yaml"
 
     _MODAL_MAPPING: Dict[str, str] = {
@@ -147,7 +146,7 @@ class CNAdapter(JurisdictionAdapter):
         return dict(self._MODAL_MAPPING)
 
     def run_collision(self, facts: Dict[str, LegalFact]) -> ProofTree:
-        """执行三轨对撞，返回 ProofTree。"""
+        """执行 CBL+SPC 候选实验，返回 ProofTree。"""
         if self._collision_engine is None:
             self._collision_engine = PRCCollisionEngine()
         return self._collision_engine.run(facts)

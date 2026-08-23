@@ -5,12 +5,8 @@ All config file paths in juris-calculus should go through this module.
 Formal runtime always resolves bundled resources. A development override must
 be passed explicitly; merely setting JURIS_CONFIG_DIR cannot replace a pack.
 
-Usage:
-    from compiler_core.config_paths import rules_path
-    rules = load_rules_from_yaml(rules_path("zh_CN"))
-
-Enables "same algorithm, personal YAML" — each lawyer maintains their own
-config root, and jc engine resolves everything through JURIS_CONFIG_DIR.
+Formal resources are addressed through signed pack manifests. This module is
+limited to non-rule configuration and explicit development roots.
 """
 from pathlib import Path
 
@@ -23,15 +19,6 @@ def config_root(*, development: bool = False, override: str | Path | None = None
     if override is not None and not development:
         raise ValueError("config override requires development=True")
     return Path(override).resolve() if development and override is not None else configs_root()
-
-
-def rules_path(jurisdiction: str = "zh_CN") -> str:
-    """Path to rules.yaml for a given jurisdiction.
-
-    Args:
-        jurisdiction: "zh_CN" | "hk" | "en_US" | "uk"
-    """
-    return str(config_root() / jurisdiction / "rules.yaml")
 
 
 def config_dir(jurisdiction: str = "zh_CN") -> str:

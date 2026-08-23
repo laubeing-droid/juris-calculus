@@ -46,11 +46,9 @@ class TestPluginRegistry(unittest.TestCase):
         self.assertFalse(registry.is_installed("eu"))
         self.assertFalse(registry.is_installed("jp"))
 
-    def test_get_rules_path(self):
-        """get_rules_path returns a path for registered addons."""
-        path = registry.get_rules_path("cn")
-        self.assertIsNotNone(path)
-        self.assertIn("rules.yaml", path)
+    def test_cn_addon_has_no_default_rules_path(self):
+        """The CN experiment cannot discover a retired corpus by default."""
+        self.assertFalse(registry.get_rules_path("cn"))
 
     def test_get_by_family(self):
         """get_by_family returns a dict (may be empty if no family metadata set)."""

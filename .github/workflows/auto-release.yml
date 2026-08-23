@@ -41,6 +41,9 @@ jobs:
       - name: Run supply-chain gate
         run: python tools/supply_chain_gate.py --requirements requirements/core.lock
 
+      - name: Run retired CN corpus negative gate
+        run: python -m pytest tests/unit/test_remediation_legacy_cn_corpus.py tests/packaging/test_legacy_cn_corpus_absent.py tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py -q -p no:cacheprovider
+
       - name: Run real MCP stdio lifecycle gate
         run: python -m pytest tests/unit/test_mcp_stdio_protocol.py -q
 
@@ -49,9 +52,6 @@ jobs:
 
       - name: Run MCP manifest smoke
         run: python mcp_server.py --test
-
-      - name: Lint rules.yaml
-        run: python -c "import yaml; yaml.safe_load(open('configs/zh_CN/rules.yaml','r',encoding='utf-8')); print('rules.yaml OK')"
 
   release:
     name: Create GitHub Release

@@ -52,6 +52,9 @@ jobs:
       - name: Supply-chain gate
         run: python tools/supply_chain_gate.py --requirements requirements/core.lock --output reports/supply-chain.json
 
+      - name: Retired CN corpus negative gate
+        run: python -m pytest tests/unit/test_remediation_legacy_cn_corpus.py tests/packaging/test_legacy_cn_corpus_absent.py tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py -q -p no:cacheprovider
+
       - name: Full tests
         run: python -m pytest tests/ -q
 

@@ -87,9 +87,6 @@ configs/en_US/combined_all_terms.json
 configs/en_US/llm_distilled_batch*.json
 configs/en_US/llm_distilled_pilot.json
 configs/en_US/pdf_glossary_terms.json
-configs/zh_CN/rules.yaml.bak.*
-configs/zh_CN/rules_augmented.yaml
-configs/zh_CN/rules_pre_inject.yaml
 /.planning/
 /.codegraph/
 reports/asymmetry_distillation_v1.1.0.json

@@ -97,7 +97,7 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tools/build_provenance.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/supply_chain_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/wheel_gate.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "tools/build_rule_pack_manifests.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tools/build_rule_pack_manifests.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/build_synthetic_pack.py": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "TEST_ORACLE"},
     "tests/integration/test_trust_chain.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/security/test_trust_chain_attacks.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
@@ -117,17 +117,18 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "remediation/v4": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "BUILD_ONLY"},
     "tests/run_benchmark_zh.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/stress_test_facts.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_zh_rules.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_adversarial.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_trirail_collision.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_trirail_runtime.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tests/unit/test_zh_rules.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_adversarial.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_trirail_collision.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_trirail_runtime.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/unit/test_cli_subprocess.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/unit/test_cli_evaluate_subprocess.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
-    "tests/unit/test_cli_contract.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
-    "tests/unit/test_plugin_registry.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tests/unit/test_cli_contract.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_plugin_registry.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
     "tests/unit/test_release_engineering.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
     "tests/unit/test_rule_pack_manifest.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
-    "tests/unit/test_rule_pack_manifest_builder.py": {"disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND"},
+    "tests/unit/test_rule_pack_manifest_builder.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
+    "tests/unit/test_remediation_legacy_cn_corpus.py": {"disposition": "TEST_ORACLE", "terminal_state": "TEST_ORACLE"},
 }
 
 
@@ -153,6 +154,24 @@ CN_FINGERPRINTS: dict[str, dict[str, Any]] = {
     },
     "configs/zh_CN/domain_config.example.yaml": {
         "_note": "domain config example, not CN legacy corpus",
+    },
+}
+
+
+RETIRED_HISTORY_PATHS: dict[str, dict[str, Any]] = {
+    "configs/zh_CN/rules.yaml": {},
+    "configs/packs/cn-legacy-corpus/manifest.yaml": {},
+    "pipeline/fix_single_premise.py": {
+        "git_blob_head": "5f0109ebbb0785f8a062ec78990e8132b3238f74",
+        "note": "retired current-tree mutator; Git history locator only",
+    },
+    "tests/run_benchmark_zh.py": {
+        "git_blob_head": "92eb07be371db5fd753fe646244a76712247c974",
+        "note": "retired current-tree benchmark; Git history locator only",
+    },
+    "tests/stress_test_facts.py": {
+        "git_blob_head": "34cf9823073e25938f0b4e92ecf9a38839b3c2155",
+        "note": "retired current-tree stress script; Git history locator only",
     },
 }
 
@@ -206,6 +225,16 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/contract/w5_package_red.py": "W5-01",
     "tests/formal_e2e/w5_entrypoint_red.py": "W5-01",
     "tests/mcp_protocol/w5_transport_red.py": "W5-01",
+    "tests/unit/test_adversarial.py": "W5-02C",
+    "tests/unit/test_cli_contract.py": "W5-02C",
+    "tests/unit/test_plugin_registry.py": "W5-02C",
+    "tests/unit/test_rule_pack_manifest_builder.py": "W5-02C",
+    "tests/unit/test_trirail_collision.py": "W5-02C",
+    "tests/unit/test_trirail_runtime.py": "W5-02C",
+    "tests/unit/test_zh_rules.py": "W5-02C",
+    "tests/unit/test_remediation_legacy_cn_corpus.py": "W5-02C",
+    "tests/packaging/test_legacy_cn_corpus_absent.py": "W5-02C",
+    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py": "W5-02C",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
@@ -266,7 +295,10 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     if rel == "compiler_core/mcp.py":
         audit_role = "CLI/Client/MCP"
     # OTHER_DIRECTORIES overrides generic prefix matching
-    if rel in OTHER_DIRECTORIES:
+    if rel in RETIRED_HISTORY_PATHS:
+        disp = "DELETE_CURRENT"
+        terminal = "HISTORY_BOUND"
+    elif rel in OTHER_DIRECTORIES:
         disp = OTHER_DIRECTORIES[rel]["disposition"]
         terminal = OTHER_DIRECTORIES[rel]["terminal_state"]
     elif rel.startswith("compiler_core/") and rel.endswith(".py"):
@@ -359,6 +391,8 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     }
     if rel in CN_FINGERPRINTS:
         entry["frozen_fingerprint"] = CN_FINGERPRINTS[rel]
+    elif rel in RETIRED_HISTORY_PATHS:
+        entry["frozen_fingerprint"] = RETIRED_HISTORY_PATHS[rel]
     if terminal == "HISTORY_BOUND":
         entry["history_locator_only"] = True
         # paths without CN frozen fingerprint still need at least a Git locator
@@ -407,7 +441,7 @@ def build_document() -> dict[str, Any]:
 
     audit_entries = _parse_appendix_a()
     tracked = _git_tracked()
-    paths = sorted(tracked)
+    paths = sorted(tracked | set(RETIRED_HISTORY_PATHS))
     entries: list[dict[str, Any]] = []
     audit_role_map = dict(audit_entries)
     for path in paths:
