@@ -172,7 +172,7 @@
       "suite": "security",
       "selector": "tests/security/test_backend_attacks.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 30
+      "expected_tests": 33
     },
     {
       "id": "W3-INDEPENDENT-CHECKER-CONTRACT",
@@ -186,7 +186,14 @@
       "suite": "security",
       "selector": "tests/security/test_checker_independence.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 31
+      "expected_tests": 33
+    },
+    {
+      "id": "W4-COMPLETE-RUN-IDENTITY",
+      "suite": "contract",
+      "selector": "tests/contract/test_run_identity.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 47
     }
   ],
   "evidence_tracks": [
@@ -350,8 +357,8 @@
       "audit_id": "P0-12",
       "test_id": "V4-P0-12-BUNDLE-RESULT-MIX",
       "suite": "contract",
-      "selector": "tests/contract/test_run_identity.py::test_existing_bundle_cannot_mix_old_digest_with_new_result",
-      "owner_task": "W4-01",
+      "selector": "tests/contract/test_audit_bundle.py::test_existing_bundle_cannot_mix_old_digest_with_new_result",
+      "owner_task": "W4-03",
       "state": "RED_AT_TASK",
       "mutation": "Reuse an old COMPLETE bundle with a new result.",
       "red_failure": "Run identity mismatch must prevent bundle reuse."

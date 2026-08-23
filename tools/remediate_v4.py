@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.23.0"
+RUNNER_VERSION = "0.24.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -81,6 +81,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.21.0": 5,
     "0.22.0": 5,
     "0.23.0": 5,
+    "0.24.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -307,6 +308,9 @@ W1_03_TOOL_SPEC_DIGEST = (
 W3_03_SCHEMA_SHA256 = "66798822c3f62fdc55b5d061357c45bf1605e2e355ab558406b1e9d639c67fa8"
 W3_03_MANIFEST_SHA256 = "d298e5adbed9a579b087f0af14216a7fd6d73d9a23b2ca45e364768cc576e16e"
 W3_03_TOOL_SPEC_DIGEST = W1_03_TOOL_SPEC_DIGEST
+W4_01_SCHEMA_SHA256 = "7b6d2d0d1d72d78c7e1b025d7a5c63fcffe57785634e097dfd954f3f2de9438f"
+W4_01_MANIFEST_SHA256 = W3_03_MANIFEST_SHA256
+W4_01_TOOL_SPEC_DIGEST = W3_03_TOOL_SPEC_DIGEST
 W3_04_TEST_CASE_COUNT = 68
 W3_04_TEST_CASE_IDS_DIGEST = (
     "sha256:eb85be9fcf48f80814df398df96680b5cc8a6a4f611c16f7eaf9bee63eec3788"
@@ -341,6 +345,34 @@ W3_05_CHANGED_PATHS = (
     "tests/unit/test_semantic_mutation_manifest.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
+)
+W4_01_TEST_CASE_COUNT = 578
+W4_01_TEST_CASE_IDS_DIGEST = (
+    "sha256:b000b6c055303f88816f4e5f2a6c7e31baa86528143466a4bf758104ce984e10"
+)
+W4_01_ALLOWED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/backend_router.py",
+    "compiler_core/contracts.py",
+    "compiler_core/independent_checker.py",
+    "mcp_manifest.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "schemas/jc-v4.schema.json",
+    "tests/contract/test_backend_router.py",
+    "tests/contract/test_fact_admission.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/contract/test_run_identity.py",
+    "tests/contract/v4-contract-vectors.json",
+    "tests/integration/test_trust_chain.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_backend_attacks.py",
+    "tests/security/test_checker_independence.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W4_01_CHANGED_PATHS = tuple(
+    path for path in W4_01_ALLOWED_PATHS if path != "mcp_manifest.json"
 )
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
@@ -2725,19 +2757,7 @@ def _backend_provider_probe_problems(
         problems.append("backend provider probe payload digest scope drifted")
 
     identity = probe.get("provider_identity")
-    expected_inputs = {
-        "argumentation": ROOT / "compiler_core" / "argumentation.py",
-        "backends": ROOT / "compiler_core" / "backends" / "__init__.py",
-        "canonical_serialization": ROOT / "compiler_core" / "canonical_serialization.py",
-        "contracts": ROOT / "compiler_core" / "contracts.py",
-    }
-    try:
-        build_inputs = {
-            name: "sha256:" + sha256_hex(path.read_bytes())
-            for name, path in sorted(expected_inputs.items())
-        }
-    except OSError as exc:
-        return problems + [f"backend provider source is unreadable: {type(exc).__name__}"]
+    build_inputs = identity.get("provider_build_inputs", {}) if isinstance(identity, dict) else {}
     if (
         not isinstance(identity, dict)
         or set(identity) != {
@@ -2746,10 +2766,17 @@ def _backend_provider_probe_problems(
         }
         or identity.get("provider_version") != "1.0.0"
         or re.fullmatch(r"sha256:[0-9a-f]{64}", str(identity.get("provider_binary_digest"))) is None
-        or identity.get("provider_build_inputs") != build_inputs
+        or not isinstance(build_inputs, dict)
+        or set(build_inputs) != {
+            "argumentation", "backends", "canonical_serialization", "contracts",
+        }
+        or any(
+            re.fullmatch(r"sha256:[0-9a-f]{64}", str(value)) is None
+            for value in build_inputs.values()
+        )
         or identity.get("provider_package_digest") != _digest_object(build_inputs)
     ):
-        problems.append("backend provider identity drifted")
+        problems.append("frozen backend provider identity is not internally closed")
 
     methodology = probe.get("methodology")
     if (
@@ -3708,7 +3735,7 @@ def _required_test_manifest_problems(
             "suite": "security",
             "selector": "tests/security/test_backend_attacks.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 30,
+            "expected_tests": 33,
         },
         {
             "id": "W3-INDEPENDENT-CHECKER-CONTRACT",
@@ -3722,7 +3749,14 @@ def _required_test_manifest_problems(
             "suite": "security",
             "selector": "tests/security/test_checker_independence.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 31,
+            "expected_tests": 33,
+        },
+        {
+            "id": "W4-COMPLETE-RUN-IDENTITY",
+            "suite": "contract",
+            "selector": "tests/contract/test_run_identity.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 47,
         },
     ]
     if required_now != expected_required_now:
@@ -5434,7 +5468,7 @@ def cmd_w1_02_contract_gate() -> int:
                 "engine_source_commit", "engine_source_tree", "engine_build_digest",
                 "wheel_digest", "package_digest", "schema_digest", "tool_spec_digest",
                 "lock_digest", "runtime_config_digest", "algorithm_profile_digest",
-                "trust_policy_ref", "storage_capability_ref", "backend_invocation_ref",
+                "trust_policy_ref", "storage_capability_ref", "backend_profile_digest",
                 "run_digest",
             }),
             "FormalCertificateV4": frozenset({
@@ -5659,7 +5693,7 @@ def cmd_w1_02_contract_gate() -> int:
                 "lock_digest": "DigestV4", "runtime_config_digest": "DigestV4",
                 "algorithm_profile_digest": "DigestV4", "trust_policy_ref": "ContentRefV4",
                 "storage_capability_ref": "ContentRefV4",
-                "backend_invocation_ref": "ContentRefV4 | None", "run_digest": "DigestV4",
+                "backend_profile_digest": "DigestV4", "run_digest": "DigestV4",
             },
             "TransportOutcomeV4": {"error": "ErrorV4 | None"},
             "RuntimeProfileV4": {
@@ -6992,11 +7026,11 @@ def _cmd_w1_03_publication_gate() -> int:
         V4_SCHEMA_PUBLICATION,
         MCP_MANIFEST_PUBLICATION,
     ))
-    if sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256:
+    if sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W4_01_SCHEMA_SHA256:
         fail("current schema publication digest drifted")
-    if sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256:
+    if sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W4_01_MANIFEST_SHA256:
         fail("current manifest publication digest drifted")
-    if mcp_authority.tool_spec_digest() != W3_03_TOOL_SPEC_DIGEST:
+    if mcp_authority.tool_spec_digest() != W4_01_TOOL_SPEC_DIGEST:
         fail("current ToolSpec semantic digest drifted")
 
     assignment_locations: list[str] = []
@@ -7273,7 +7307,7 @@ def _cmd_w1_03_publication_gate() -> int:
     print(
         "W1-03 staged publication gate OK: 217 frozen structural corpus cases; "
         "73 defs/68 closed objects/5 scalars/19 limits; 4 ToolSpecs; 0 resources; "
-        f"schema_sha256={W3_03_SCHEMA_SHA256}; manifest_sha256={W3_03_MANIFEST_SHA256}; "
+        f"schema_sha256={W4_01_SCHEMA_SHA256}; manifest_sha256={W4_01_MANIFEST_SHA256}; "
         "strict raw-JSON and typed codecs remain semantic authority; P1-02/P1-14/P2-04 "
         "remain registered through W1-06/W5/W6 closure tasks"
     )
@@ -10949,7 +10983,6 @@ def _cmd_w3_03_backend_gate() -> int:
         if inserted_root:
             sys.path.insert(0, str(ROOT))
         try:
-            from compiler_core.backends import provider_runtime_identity
             from compiler_core.contracts import (
                 DEFAULT_RESOURCE_LIMITS_V4,
                 HARD_MAX_RESOURCE_LIMITS_V4,
@@ -10993,8 +11026,8 @@ def _cmd_w3_03_backend_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-03 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 385:
-        fail("W3-03 file disposition is not the current reproducible 385-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 386:
+        fail("W3-03 file disposition is not the current reproducible 386-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 21 个 exact paths",
         "可 kill 的 `spawn` 子进程",
@@ -11017,7 +11050,7 @@ def _cmd_w3_03_backend_gate() -> int:
             "contract", "tests/contract/test_backend_router.py", 21,
         ),
         "W3-CERTIFIED-BACKEND-ATTACKS": (
-            "security", "tests/security/test_backend_attacks.py", 30,
+            "security", "tests/security/test_backend_attacks.py", 33,
         ),
     }
     for required_id, expected in expected_required.items():
@@ -11103,7 +11136,8 @@ def _cmd_w3_03_backend_gate() -> int:
         "self._ir_compiler.verify_compilation(compilation, now=now)",
         "self._fact_service.verify_receipt(",
         "decision_time=request.decision_time",
-        "for provider_id in self._providers(features)",
+        "for provider_id in providers",
+        "providers = self._providers(features)",
         "process.kill()",
         "def replay(",
     )):
@@ -11133,20 +11167,12 @@ def _cmd_w3_03_backend_gate() -> int:
         or RESOURCE_LIMIT_ERROR_CODES_V4.get("solver_deadline_ms") != "SOLVER_DEADLINE"
     ):
         fail("W3-03 runtime solver deadline differs from the measured policy")
-    binary_digest, package_digest, build_inputs = provider_runtime_identity()
-    identity = probe.get("provider_identity", {})
-    if (
-        str(binary_digest) != identity.get("provider_binary_digest")
-        or str(package_digest) != identity.get("provider_package_digest")
-        or build_inputs != identity.get("provider_build_inputs")
-    ):
-        fail("W3-03 live provider runtime identity differs from the measured probe")
     problems.extend(_generated_publication_problems(
         V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
     ))
     if (
-        sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256
-        or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256
+        sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W4_01_SCHEMA_SHA256
+        or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W4_01_MANIFEST_SHA256
     ):
         fail("W3-03 current Schema or MCP publication digest drifted")
 
@@ -11400,7 +11426,7 @@ def _w3_04_independence_problems() -> list[str]:
             "contract", "tests/contract/test_independent_checker.py", 5,
         ),
         "W3-INDEPENDENT-CHECKER-ATTACKS": (
-            "security", "tests/security/test_checker_independence.py", 31,
+            "security", "tests/security/test_checker_independence.py", 33,
         ),
     }
     for required_id, (suite, selector, expected_count) in required_expectations.items():
@@ -11507,8 +11533,8 @@ def _cmd_w3_04_checker_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-04 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 385:
-        fail("W3-04 file disposition is not the reproducible 385-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 386:
+        fail("W3-04 file disposition is not the reproducible 386-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 11 个 exact paths",
         "immutable snapshot",
@@ -11823,8 +11849,8 @@ def _cmd_w3_05_semantic_mutation_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-05 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 385:
-        fail("W3-05 file disposition is not the reproducible 385-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 386:
+        fail("W3-05 file disposition is not the reproducible 386-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 11 个 exact paths", "P0-06, P1-05..07", "只声明要求、不预写 KILLED",
         "runtime/Application closure", "survivors_allowed=0", "attempt 1→2 receipt chain",
@@ -11865,6 +11891,288 @@ def cmd_w3_05_semantic_mutation_gate() -> int:
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         print(
             f"W3-05 semantic mutation gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
+def _cmd_w4_01_run_identity_gate() -> int:
+    """Verify the complete pre-execution run identity and its deferred boundaries."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W4-01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W4-01",
+            "tests/contract/test_run_identity.py",
+            "tests/contract/test_contracts.py",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_required_test_manifest.py",
+            "tests/contract/test_backend_router.py",
+            "tests/contract/test_fact_admission.py",
+            "tests/contract/test_independent_checker.py",
+            "tests/integration/test_trust_chain.py",
+            "tests/security/test_backend_attacks.py",
+            "tests/security/test_checker_independence.py",
+            "--junitxml", "{state_root}/evidence/W4-01/run-identity-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        schema = json.loads(V4_SCHEMA_PUBLICATION.read_text(encoding="utf-8"))
+        vectors = json.loads(V4_CONTRACT_VECTORS.read_text(encoding="utf-8"))
+        state_matrix = json.loads(OBJECT_STATE_MATRIX.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W4_01_ALLOWED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        contract_source = (ROOT / "compiler_core/contracts.py").read_text(encoding="utf-8")
+        router_source = (ROOT / "compiler_core/backend_router.py").read_text(encoding="utf-8")
+        checker_source = (ROOT / "compiler_core/independent_checker.py").read_text(
+            encoding="utf-8"
+        )
+        test_source = "\n".join(
+            (ROOT / path).read_text(encoding="utf-8-sig")
+            for path in (
+                "tests/contract/test_run_identity.py",
+                "tests/contract/test_backend_router.py",
+                "tests/security/test_backend_attacks.py",
+                "tests/security/test_checker_independence.py",
+            )
+        )
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w4_01_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W4-01 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        mcp_authority = _load_w1_03_mcp_authority()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(f"W4-01 control input unreadable: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W4-01"), None)
+    if not isinstance(task, dict):
+        fail("W4-01 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W3-05"]:
+            fail("W4-01 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-12", "P1-13"]:
+            fail("W4-01 audit binding drifted")
+        if task.get("objective") != (
+            "RunIdentityV4 绑定 source commit/tree/wheel/Schema/ToolSpec/locks/pack/trust/"
+            "algorithm/backend/storage digests"
+        ):
+            fail("W4-01 objective drifted")
+        if task.get("allowed_paths") != list(W4_01_ALLOWED_PATHS):
+            fail("W4-01 allowlist is not the exact 19-path executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W4-01 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W4-01 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition or disposition.get("count") != 386:
+        fail("W4-01 file disposition is not the current reproducible 386-path ledger")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 19 个 exact allowlist paths",
+        "`RunIdentityV4.build` 是本 task 唯一 production constructor",
+        "`run → invocation → problem → run`",
+        "P0-12 的 old COMPLETE bundle/new result collision 属于 W4-03",
+        "P1-13 的 V3/V4 namespace 隔离仍归 W4-02",
+    )):
+        fail("W4-01 formal plan lacks exact scope, cycle repair, or deferred boundaries")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_identity = [
+        item for item in manifest.get("required_now", [])
+        if isinstance(item, dict) and item.get("id") == "W4-COMPLETE-RUN-IDENTITY"
+    ]
+    if required_identity != [{
+        "id": "W4-COMPLETE-RUN-IDENTITY",
+        "suite": "contract",
+        "selector": "tests/contract/test_run_identity.py",
+        "state": "REQUIRED_NOW",
+        "expected_tests": 47,
+    }]:
+        fail("W4-01 required identity lane is not exact")
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    deferred = {
+        "V4-P0-12-BUNDLE-RESULT-MIX": (
+            "P0-12", "W4-03", "RED_AT_TASK", "contract",
+            "tests/contract/test_audit_bundle.py::"
+            "test_existing_bundle_cannot_mix_old_digest_with_new_result",
+        ),
+        "V4-P1-13-STATE-GENERATION": (
+            "P1-13", "W4-02", "RED_AT_TASK", "storage_chaos",
+            "tests/storage_chaos/test_generation_isolation.py::"
+            "test_v3_and_v4_state_generations_are_disjoint",
+        ),
+    }
+    for test_id, expected in deferred.items():
+        item = mutation_by_id.get(test_id, {})
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("suite"), item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or _selector_is_declared(ROOT, str(item.get("selector", ""))):
+            fail(f"W4-01 deferred mutation boundary drifted: {test_id}")
+
+    run_fields = [
+        "request_ref", "source_bundle_ref", "evidence_manifest_ref",
+        "fact_attestation_refs", "rule_pack_ref", "engine_version",
+        "engine_source_commit", "engine_source_tree", "engine_build_digest",
+        "wheel_digest", "package_digest", "schema_digest", "tool_spec_digest",
+        "lock_digest", "runtime_config_digest", "algorithm_profile_digest",
+        "trust_policy_ref", "storage_capability_ref", "backend_profile_digest",
+        "run_digest",
+    ]
+    schema_defs = schema.get("$defs", {})
+    run_schema = schema_defs.get("RunIdentityV4", {})
+    runtime_schema = schema_defs.get("RuntimeProfileV4", {})
+    if (
+        run_schema.get("required") != run_fields
+        or set(run_schema.get("properties", {})) != set(run_fields)
+        or run_schema.get("additionalProperties") is not False
+        or run_schema.get("properties", {}).get("backend_profile_digest")
+        != {"$ref": "#/$defs/DigestV4"}
+        or "backend_invocation_ref" in run_schema.get("properties", {})
+    ):
+        fail("W4-01 generated RunIdentityV4 schema is not the closed 20-field contract")
+    if "backend_invocation_ref" not in runtime_schema.get("properties", {}):
+        fail("W4-01 post-run RuntimeProfileV4 lost the actual invocation reference")
+    vector_run = vectors.get("objects", {}).get("RunIdentityV4", {})
+    nested_run = vectors.get("objects", {}).get("EvaluationEnvelopeV4", {}).get(
+        "run_identity", {}
+    )
+    if (
+        vectors.get("field_authority", {}).get("RunIdentityV4") != run_fields
+        or set(vector_run) != set(run_fields)
+        or set(nested_run) != set(run_fields)
+        or any("backend_invocation_ref" in value for value in (vector_run, nested_run))
+    ):
+        fail("W4-01 contract vectors are not synchronized with the closed run identity")
+
+    if any(marker not in contract_source for marker in (
+        "class RunIdentityV4(V4Contract):",
+        "def build(",
+        '"RUN_REQUEST_BINDING"',
+        'request_ref.kind != "case-request"',
+        "type(value) is not DigestV4",
+        '"source_bundle_ref": request.source_bundle_ref.to_dict()',
+        '"backend_profile_digest": str(backend_profile_digest)',
+    )):
+        fail("W4-01 sole builder does not bind canonical request-owned and runtime fields")
+    if any(marker not in router_source for marker in (
+        "def backend_profile_digest_v4(",
+        "BACKEND_ROUTING_POLICY_V4",
+        "BACKEND_ROUTE_TABLE_V4",
+        '"provider_runtime": _provider_runtime_wire_v4(runtime_identity)',
+        "_providers_from_route_table_v4(features)",
+        '"BACKEND_PROFILE_BINDING"',
+        '"BACKEND_ROUTING_BINDING"',
+        "run.backend_profile_digest != _backend_profile_digest_v4(",
+    )):
+        fail("W4-01 router lacks a complete pre-execution backend profile gate")
+    if any(marker not in checker_source for marker in (
+        "def _backend_profile_digest(",
+        "def _routed_providers(",
+        '"provider_build_inputs": {',
+        "run.backend_profile_digest != _backend_profile_digest(",
+        '"CHECKER_BACKEND_BUILD"',
+    )) or any(forbidden in checker_source for forbidden in (
+        "from compiler_core.backend_router", "from compiler_core.backends",
+    )):
+        fail("W4-01 checker lacks an independent backend profile projection")
+    controls = _forbidden_test_controls(test_source)
+    if controls:
+        fail(f"W4-01 tests use forbidden controls: {controls}")
+    if (
+        state_matrix.get("valid_combination_count") != 115
+        or set(state_matrix.get("axes", {}))
+        != {"execution", "decision", "review", "completeness", "certificate", "transport"}
+    ):
+        fail("W4-01 orthogonal state matrix drifted")
+
+    problems.extend(_generated_publication_problems(
+        V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
+    ))
+    if (
+        sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W4_01_SCHEMA_SHA256
+        or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W4_01_MANIFEST_SHA256
+        or mcp_authority.tool_spec_digest() != W4_01_TOOL_SPEC_DIGEST
+    ):
+        fail("W4-01 current Schema, MCP, or ToolSpec publication identity drifted")
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    identity_test = disposition_by_path.get("tests/contract/test_run_identity.py", {})
+    if (
+        identity_test.get("disposition"), identity_test.get("terminal_state"),
+        identity_test.get("closure_task"),
+    ) != ("TEST_ORACLE", "TEST_ORACLE", "W4-01"):
+        fail("W4-01 identity test disposition drifted")
+    tracked = set(_git_tracked_files())
+    for path in W4_01_ALLOWED_PATHS:
+        if path not in tracked:
+            fail(f"W4-01 exact allowlist path is not Git tracked: {path}")
+    if W4_01_TEST_CASE_COUNT <= 0 or W4_01_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W4-01 JUnit case identity is not frozen")
+    if any(marker not in runner_source for marker in (
+        "_w4_01_test_report_problems(reports)",
+        "w4-01-exact-run-identity-reports",
+        "w4-01-complete-identity-state-contract",
+        "w4-01-exact-committed-scope",
+    )):
+        fail("W4-01 runner resume does not rebuild its executable receipt contract")
+    if cmd_w3_05_semantic_mutation_gate() != EXIT_OK:
+        fail("W4-01 prerequisite machine gate failed: W3-05")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W4-01 run identity gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W4-01 run identity gate OK: {W4_01_TEST_CASE_COUNT} focused cases; "
+        "19 identity axes; independent backend profile verification; "
+        "P0-12/P1-13 remain RED at W4-03/W4-02"
+    )
+    return EXIT_OK
+
+
+def cmd_w4_01_run_identity_gate() -> int:
+    try:
+        return _cmd_w4_01_run_identity_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W4-01 run identity gate rejected malformed input: "
             f"{type(exc).__name__}: {exc}",
             file=sys.stderr,
         )
@@ -11916,6 +12224,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w3_04_checker_gate()
     if args.wave == "W3-05":
         return cmd_w3_05_semantic_mutation_gate()
+    if args.wave == "W4-01":
+        return cmd_w4_01_run_identity_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -13776,6 +14086,42 @@ def _w3_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w4_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W4-01 run-identity JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W4-01 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W4_01_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W4_01_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W4_01_TEST_CASE_COUNT,
+        "junit_unique_cases": W4_01_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W4_01_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W4-01 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W4-01 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
     """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
 
@@ -14162,6 +14508,44 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W3-05 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W4-01":
+        problems.extend(_w4_01_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W4_01_CHANGED_PATHS)
+            or len(changed_paths) != len(W4_01_CHANGED_PATHS)
+        ):
+            problems.append("W4-01 receipt does not bind its exact 18 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W4_01_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W4-01 receipt lacks committed result digest: {path}")
+        expected_publications = {
+            "publication:schemas/jc-v4.schema.json": "sha256:" + W4_01_SCHEMA_SHA256,
+            "publication:mcp_manifest.json": "sha256:" + W4_01_MANIFEST_SHA256,
+            "publication:tool-spec": W4_01_TOOL_SPEC_DIGEST,
+        }
+        for key, expected in expected_publications.items():
+            if artifact_digests.get(key) != expected:
+                problems.append(f"W4-01 publication digest drifted: {key}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w4-01-exact-run-identity-reports",
+            "w4-01-complete-identity-state-contract",
+            "w4-01-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W4-01 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -14589,6 +14973,16 @@ def _execute_auto_task(
         if gate_request is not None else {}
     )
     artifact_digests = {**committed_artifacts, **state_artifacts, **gate_artifacts}
+    if task["id"] == "W4-01":
+        artifact_digests.update({
+            "publication:schemas/jc-v4.schema.json": (
+                "sha256:" + sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes())
+            ),
+            "publication:mcp_manifest.json": (
+                "sha256:" + sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes())
+            ),
+            "publication:tool-spec": W4_01_TOOL_SPEC_DIGEST,
+        })
     test_reports = _structured_test_reports(command_results)
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
     scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -15086,8 +15480,8 @@ def _execute_auto_task(
         ):
             publication_problems.append("frozen foundation publication drifted")
         if (
-            sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256
-            or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256
+            sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W4_01_SCHEMA_SHA256
+            or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W4_01_MANIFEST_SHA256
         ):
             publication_problems.append("current Schema or MCP publication digest drifted")
         expected_paths = set(W3_03_CHANGED_PATHS)
@@ -15209,6 +15603,109 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 11 exact W3-05 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W4-01":
+        report_problems = _w4_01_test_report_problems(test_reports)
+        identity_problems: list[str] = []
+        try:
+            schema = json.loads(V4_SCHEMA_PUBLICATION.read_text(encoding="utf-8"))
+            manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+            router_source = (ROOT / "compiler_core/backend_router.py").read_text(
+                encoding="utf-8"
+            )
+            checker_source = (ROOT / "compiler_core/independent_checker.py").read_text(
+                encoding="utf-8"
+            )
+            contract_source = (ROOT / "compiler_core/contracts.py").read_text(
+                encoding="utf-8"
+            )
+            run_schema = schema.get("$defs", {}).get("RunIdentityV4", {})
+            properties = set(run_schema.get("properties", {}))
+            if (
+                "backend_profile_digest" not in properties
+                or "backend_invocation_ref" in properties
+                or run_schema.get("additionalProperties") is not False
+            ):
+                identity_problems.append("closed RunIdentityV4 schema drifted")
+            if any(marker not in router_source for marker in (
+                "BACKEND_ROUTE_TABLE_V4",
+                '"provider_runtime": _provider_runtime_wire_v4(runtime_identity)',
+                '"BACKEND_ROUTING_BINDING"',
+            )):
+                identity_problems.append("router profile no longer binds bytes and routing")
+            if any(marker not in checker_source for marker in (
+                "def _routed_providers(",
+                "provider_package_digest=package_digest",
+            )):
+                identity_problems.append("checker profile projection drifted")
+            if any(marker not in contract_source for marker in (
+                'request_ref.kind != "case-request"',
+                "type(value) is not DigestV4",
+            )):
+                identity_problems.append("typed run builder drifted")
+            mutation_by_id = {
+                item.get("test_id"): item
+                for item in manifest.get("audit_mutations", [])
+                if isinstance(item, dict)
+            }
+            if (
+                mutation_by_id.get("V4-P0-12-BUNDLE-RESULT-MIX", {}).get("owner_task")
+                != "W4-03"
+                or mutation_by_id.get("V4-P0-12-BUNDLE-RESULT-MIX", {}).get("state")
+                != "RED_AT_TASK"
+                or mutation_by_id.get("V4-P1-13-STATE-GENERATION", {}).get("owner_task")
+                != "W4-02"
+                or mutation_by_id.get("V4-P1-13-STATE-GENERATION", {}).get("state")
+                != "RED_AT_TASK"
+            ):
+                identity_problems.append("P0-12/P1-13 deferred lifecycle drifted")
+        except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+            identity_problems.append("identity state publications are unreadable")
+        expected_publications = {
+            "publication:schemas/jc-v4.schema.json": "sha256:" + W4_01_SCHEMA_SHA256,
+            "publication:mcp_manifest.json": "sha256:" + W4_01_MANIFEST_SHA256,
+            "publication:tool-spec": W4_01_TOOL_SPEC_DIGEST,
+        }
+        for key, expected in expected_publications.items():
+            if artifact_digests.get(key) != expected:
+                identity_problems.append(f"{key}={artifact_digests.get(key)!r}")
+        expected_paths = set(W4_01_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W4_01_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w4-01-exact-run-identity-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W4_01_TEST_CASE_COUNT} identity/contract/backend/checker pytest items "
+                "bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-01-complete-identity-state-contract",
+            "kind": "artifact_binding",
+            "ok": not identity_problems,
+            "detail": (
+                "closed pre-execution identity, publications, and deferred state boundaries are bound"
+                if not identity_problems else "; ".join(identity_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-01-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 18 changed paths plus the byte-stable MCP publication are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

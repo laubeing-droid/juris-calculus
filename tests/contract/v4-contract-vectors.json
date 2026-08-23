@@ -1685,11 +1685,8 @@
         "kind": "runidentity-storage-capability-ref",
         "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
       },
-      "backend_invocation_ref": {
-        "kind": "runidentity-backend-invocation-ref",
-        "digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03"
-      },
-      "run_digest": "sha256:280a76644e75db514a6a8c97e4aa841ccc18af2b225837c4c08df5680eeac02f"
+      "backend_profile_digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03",
+      "run_digest": "sha256:bc12b271740398bdfad2b1e1d501f998a27907bf4fcc31673d24e01634aa57e5"
     },
     "FormalCertificateV4": {
       "request_ref": {
@@ -2058,9 +2055,9 @@
         ],
         "run_identity_ref": {
           "kind": "semanticresult-run-identity-ref",
-          "digest": "sha256:389d222ffdb4a38f89e32b59f9d7fb7b80315662fb1b24351c712223287bc1a4"
+          "digest": "sha256:4f53c93a99666a522979eac9087cf6a8320985c0f0f37a61337f345084751f32"
         },
-        "result_digest": "sha256:baa411f8f9beebf0139a02d64c73ce7cea62b89efed8ac210b6e8ac3f933a376"
+        "result_digest": "sha256:2cee674b9d830dd771d0cde73ccc1fe97ee745636661ab2ee37c51974b2bfe03"
       },
       "run_identity": {
         "request_ref": {
@@ -2104,11 +2101,8 @@
           "kind": "runidentity-storage-capability-ref",
           "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
         },
-        "backend_invocation_ref": {
-          "kind": "runidentity-backend-invocation-ref",
-          "digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03"
-        },
-        "run_digest": "sha256:389d222ffdb4a38f89e32b59f9d7fb7b80315662fb1b24351c712223287bc1a4"
+        "backend_profile_digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03",
+        "run_digest": "sha256:4f53c93a99666a522979eac9087cf6a8320985c0f0f37a61337f345084751f32"
       },
       "certificate": {
         "kind": "none",
@@ -3448,7 +3442,7 @@
       "algorithm_profile_digest",
       "trust_policy_ref",
       "storage_capability_ref",
-      "backend_invocation_ref",
+      "backend_profile_digest",
       "run_digest"
     ],
     "FormalCertificateV4": [

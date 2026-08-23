@@ -1653,7 +1653,7 @@ class RunIdentityV4(V4Contract):
     algorithm_profile_digest: DigestV4
     trust_policy_ref: ContentRefV4
     storage_capability_ref: ContentRefV4
-    backend_invocation_ref: ContentRefV4 | None
+    backend_profile_digest: DigestV4
     run_digest: DigestV4
 
     def _validate(self) -> None:
@@ -1662,6 +1662,78 @@ class RunIdentityV4(V4Contract):
             value = getattr(self, field_name)
             if re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", value) is None:
                 _fail("SOURCE_IDENTITY", f"{field_name} must be a 40- or 64-hex Git identity")
+
+    @classmethod
+    def build(
+        cls,
+        request: CaseRequestV4,
+        request_ref: ContentRefV4,
+        *,
+        engine_version: str,
+        engine_source_commit: str,
+        engine_source_tree: str,
+        engine_build_digest: DigestV4,
+        wheel_digest: DigestV4,
+        package_digest: DigestV4,
+        schema_digest: DigestV4,
+        tool_spec_digest: DigestV4,
+        lock_digest: DigestV4,
+        runtime_config_digest: DigestV4,
+        algorithm_profile_digest: DigestV4,
+        trust_policy_ref: ContentRefV4,
+        storage_capability_ref: ContentRefV4,
+        backend_profile_digest: DigestV4,
+    ) -> RunIdentityV4:
+        """Build one run from canonical request and trusted runtime materials."""
+
+        if (
+            type(request) is not CaseRequestV4
+            or type(request_ref) is not ContentRefV4
+            or type(trust_policy_ref) is not ContentRefV4
+            or type(storage_capability_ref) is not ContentRefV4
+            or any(
+                type(value) is not DigestV4
+                for value in (
+                    engine_build_digest,
+                    wheel_digest,
+                    package_digest,
+                    schema_digest,
+                    tool_spec_digest,
+                    lock_digest,
+                    runtime_config_digest,
+                    algorithm_profile_digest,
+                    backend_profile_digest,
+                )
+            )
+        ):
+            _fail("RUN_IDENTITY_INPUT", "run identity requires exact V4 contract inputs")
+        if (
+            request_ref.kind != "case-request"
+            or request_ref.digest != request.canonical_digest()
+        ):
+            _fail("RUN_REQUEST_BINDING", "request_ref does not bind the canonical request")
+        body = {
+            "request_ref": request_ref.to_dict(),
+            "source_bundle_ref": request.source_bundle_ref.to_dict(),
+            "evidence_manifest_ref": request.evidence_manifest_ref.to_dict(),
+            "fact_attestation_refs": [item.to_dict() for item in request.fact_attestation_refs],
+            "rule_pack_ref": request.rule_pack_ref.to_dict(),
+            "engine_version": engine_version,
+            "engine_source_commit": engine_source_commit,
+            "engine_source_tree": engine_source_tree,
+            "engine_build_digest": str(engine_build_digest),
+            "wheel_digest": str(wheel_digest),
+            "package_digest": str(package_digest),
+            "schema_digest": str(schema_digest),
+            "tool_spec_digest": str(tool_spec_digest),
+            "lock_digest": str(lock_digest),
+            "runtime_config_digest": str(runtime_config_digest),
+            "algorithm_profile_digest": str(algorithm_profile_digest),
+            "trust_policy_ref": trust_policy_ref.to_dict(),
+            "storage_capability_ref": storage_capability_ref.to_dict(),
+            "backend_profile_digest": str(backend_profile_digest),
+        }
+        return cls.from_dict({**body, "run_digest": str(digest_value(body))})
 
 
 @dataclass(frozen=True, slots=True)
@@ -2050,10 +2122,6 @@ class EvaluationEnvelopeV4(V4Contract):
             or profile.engine_build_digest != self.run_identity.engine_build_digest
             or profile.trust_policy_ref != self.run_identity.trust_policy_ref
             or profile.storage_capability_ref != self.run_identity.storage_capability_ref
-            or (
-                profile.backend_invocation_ref is not None
-                and profile.backend_invocation_ref != self.run_identity.backend_invocation_ref
-            )
         ):
             _fail("RUNTIME_BINDING_MISMATCH", "runtime profile does not match the run identity")
         if self.audit_bundle_index.manifest_ref != self.audit_manifest_ref:

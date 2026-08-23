@@ -49,8 +49,12 @@ def _error_code(call: Callable[[], object]) -> str:
     return caught.value.code
 
 
-def _backend(rule_ids: tuple[str, ...] = ("synthetic-positive",)):
-    harness = _ChainHarness()
+def _backend(
+    rule_ids: tuple[str, ...] = ("synthetic-positive",),
+    *,
+    backend_profile_digest: DigestV4 | None = None,
+):
+    harness = _ChainHarness(backend_profile_digest=backend_profile_digest)
     fact_receipt_ref, fact_ref = harness.admit_fact()
     pack = harness.verify_pack()
     compiler = LegalIRCompilerV4(
@@ -169,6 +173,67 @@ def _caller_field_is_rejected(forged_field: str) -> None:
             receipt_ref,
             **{forged_field: {"status": "COMPLETED"}},
         )
+
+
+def test_router_rejects_run_with_wrong_backend_profile_before_provider_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrong_profile = digest_value({"backend-profile": "wrong"})
+    harness, _, router, compilations, receipt_ref, _ = _backend(
+        backend_profile_digest=wrong_profile
+    )
+
+    def forbidden(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("provider must not run for a mismatched backend profile")
+
+    monkeypatch.setattr(router, "_invoke_provider", forbidden)
+    assert _error_code(
+        lambda: _execute(router, harness, compilations, receipt_ref)
+    ) == "BACKEND_PROFILE_BINDING"
+
+
+def test_router_rejects_provider_byte_drift_before_provider_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness, _, router, compilations, receipt_ref, _ = _backend()
+    binary_digest, _, build_inputs = backend_module.provider_runtime_identity()
+    changed_inputs = {**build_inputs, "backends": str(digest_value({"tampered": True}))}
+    changed_package = DigestV4.from_bytes(canonical_bytes(changed_inputs))
+
+    def forbidden(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("provider must not run after provider byte drift")
+
+    monkeypatch.setattr(
+        backend_module,
+        "provider_runtime_identity",
+        lambda: (binary_digest, changed_package, changed_inputs),
+    )
+    monkeypatch.setattr(router, "_invoke_provider", forbidden)
+
+    assert _error_code(
+        lambda: _execute(router, harness, compilations, receipt_ref)
+    ) == "BACKEND_PROFILE_BINDING"
+
+
+def test_router_rejects_route_function_drift_before_provider_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness, _, router, compilations, receipt_ref, _ = _backend(
+        ("synthetic-permission-temporal", "synthetic-positive")
+    )
+
+    def forbidden(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("provider must not run after routing drift")
+
+    monkeypatch.setattr(router, "_providers", lambda features: (HORN_PROVIDER_ID,))
+    monkeypatch.setattr(router, "_invoke_provider", forbidden)
+
+    assert _error_code(
+        lambda: _execute(router, harness, compilations, receipt_ref)
+    ) == "BACKEND_ROUTING_BINDING"
 
 
 def test_caller_cannot_supply_backend_features() -> None:

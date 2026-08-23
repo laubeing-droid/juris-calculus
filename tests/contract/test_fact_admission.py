@@ -513,7 +513,9 @@ class _Harness:
             "algorithm_profile_digest": str(_digest("algorithm")),
             "trust_policy_ref": trust_policy_ref.to_dict(),
             "storage_capability_ref": _ref("storage-capability", "storage").to_dict(),
-            "backend_invocation_ref": None,
+            "backend_profile_digest": str(
+                digest_value({"backend_profile": "fact-admission"})
+            ),
         }
         run = RunIdentityV4.from_dict(
             {**run_body, "run_digest": str(digest_value(run_body))}

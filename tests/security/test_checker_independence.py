@@ -14,6 +14,7 @@ import compiler_core.independent_checker as checker_module
 import compiler_core.legal_ir as legal_ir_module
 from compiler_core.canonical_serialization import (
     DigestV4,
+    canonical_bytes,
     digest_value,
 )
 from compiler_core.contracts import (
@@ -126,6 +127,7 @@ def _stage_solver_documents(
     execution,
     *,
     problem: dict[str, object] | None = None,
+    capability: dict[str, object] | None = None,
     result: dict[str, object] | None = None,
     proof: dict[str, object] | None = None,
 ) -> ContentRefV4:
@@ -138,6 +140,24 @@ def _stage_solver_documents(
             invocation,
             invocation_id=f"backend-{problem_ref.digest.hex}",
             ir_ref=problem_ref,
+        )
+        invocation_ref = harness._contract(
+            BACKEND_INVOCATION_KIND,
+            BACKEND_SCOPE,
+            invocation,
+        )
+    if capability is not None:
+        capability_ref = harness._json(
+            checker_module.BACKEND_CAPABILITY_KIND,
+            BACKEND_SCOPE,
+            capability,
+        )
+        invocation = replace(
+            invocation,
+            provider_binary_digest=DigestV4.parse(capability["provider_binary_digest"]),
+            provider_package_digest=DigestV4.parse(capability["provider_package_digest"]),
+            provider_build_digest=DigestV4.parse(capability["provider_build_digest"]),
+            provider_capability_ref=capability_ref,
         )
         invocation_ref = harness._contract(
             BACKEND_INVOCATION_KIND,
@@ -441,6 +461,61 @@ def test_trusted_resigned_exact_constraint_tamper_fails_closed() -> None:
             now=harness.now,
         )
     ).startswith("CHECKER_")
+
+
+def test_checker_rejects_wrong_profile_accepted_by_compromised_router(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrong_profile = digest_value({"backend-profile": "compromised-router"})
+    monkeypatch.setattr(
+        backend_module,
+        "_backend_profile_digest_v4",
+        lambda **kwargs: wrong_profile,
+    )
+    harness, _, _, _, _, executions = _execute(
+        "synthetic-positive",
+        backend_profile_digest=wrong_profile,
+    )
+    horn = _provider(executions, HORN_PROVIDER_ID)
+
+    assert _error_code(
+        lambda: _checker(harness).check(
+            run_identity_ref=harness.run_identity_ref,
+            solver_receipt_ref=horn.receipt_ref,
+            now=harness.now,
+        )
+    ) == "CHECKER_BACKEND_BUILD"
+
+
+def test_checker_rejects_self_consistent_provider_bytes_outside_run_profile() -> None:
+    harness, _, _, _, _, executions = _execute("synthetic-positive")
+    horn = _provider(executions, HORN_PROVIDER_ID)
+    capability = _json(
+        harness,
+        horn.invocation.provider_capability_ref,
+        kind=checker_module.BACKEND_CAPABILITY_KIND,
+        scope=BACKEND_SCOPE,
+    )
+    changed_inputs = {
+        **capability["provider_build_inputs"],
+        "backends": str(digest_value({"changed-provider-bytes": True})),
+    }
+    capability["provider_build_inputs"] = changed_inputs
+    capability["provider_package_digest"] = str(
+        DigestV4.from_bytes(canonical_bytes(changed_inputs))
+    )
+    build_body = dict(capability)
+    del build_body["provider_build_digest"]
+    capability["provider_build_digest"] = str(digest_value(build_body))
+    forged_ref = _stage_solver_documents(harness, horn, capability=capability)
+
+    assert _error_code(
+        lambda: _checker(harness).check(
+            run_identity_ref=harness.run_identity_ref,
+            solver_receipt_ref=forged_ref,
+            now=harness.now,
+        )
+    ) == "CHECKER_BACKEND_BUILD"
 
 
 def test_checker_ast_has_no_production_semantic_import_or_call() -> None:

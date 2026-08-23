@@ -78,6 +78,18 @@ BACKEND_PROOF_KIND = "backend-proof-v4"
 SOLVER_RECEIPT_KIND = "solver-receipt-v4"
 RUN_IDENTITY_KIND = "run-identity"
 RUN_IDENTITY_SCOPE = "run"
+BACKEND_PROFILE_SCHEMA_V4 = "jc/backend-profile/1.0"
+BACKEND_ROUTING_POLICY_V4 = "horn-base-plus-feature-routes-v1"
+CERTIFIED_PROVIDER_IDS_V4 = (
+    HORN_PROVIDER_ID,
+    AAF_PROVIDER_ID,
+    EXACT_PROVIDER_ID,
+)
+BACKEND_ROUTE_TABLE_V4 = (
+    (HORN_PROVIDER_ID, ()),
+    (AAF_PROVIDER_ID, ("conflict_structure",)),
+    (EXACT_PROVIDER_ID, ("temporal_constraints", "numeric_constraints")),
+)
 
 _FAILURE_EXIT_STATUS = {
     "UNSUPPORTED_SEMANTICS": 65,
@@ -136,6 +148,100 @@ class BackendExecutionV4:
 
 def _fail(code: str, detail: str) -> None:
     raise BackendV4Error(code, detail)
+
+
+def _routing_policy_wire_v4() -> dict[str, object]:
+    return {
+        "policy_id": BACKEND_ROUTING_POLICY_V4,
+        "routes": [
+            {"provider_id": provider_id, "any_features": list(any_features)}
+            for provider_id, any_features in BACKEND_ROUTE_TABLE_V4
+        ],
+    }
+
+
+def _provider_runtime_wire_v4(
+    runtime_identity: tuple[DigestV4, DigestV4, dict[str, str]],
+) -> dict[str, object]:
+    if type(runtime_identity) is not tuple or len(runtime_identity) != 3:
+        _fail("BACKEND_PROFILE", "provider runtime identity is invalid")
+    binary_digest, package_digest, build_inputs = runtime_identity
+    if (
+        type(binary_digest) is not DigestV4
+        or type(package_digest) is not DigestV4
+        or type(build_inputs) is not dict
+        or not build_inputs
+        or any(type(key) is not str or not key for key in build_inputs)
+        or any(type(value) is not str for value in build_inputs.values())
+    ):
+        _fail("BACKEND_PROFILE", "provider runtime identity is invalid")
+    try:
+        parsed_inputs = {
+            key: str(DigestV4.parse(value)) for key, value in sorted(build_inputs.items())
+        }
+    except (TypeError, ValueError) as exc:
+        raise BackendV4Error(
+            "BACKEND_PROFILE", "provider build inputs are invalid"
+        ) from exc
+    if package_digest != DigestV4.from_bytes(canonical_bytes(parsed_inputs)):
+        _fail("BACKEND_PROFILE", "provider package digest does not bind build inputs")
+    return {
+        "provider_binary_digest": str(binary_digest),
+        "provider_package_digest": str(package_digest),
+        "provider_build_inputs": parsed_inputs,
+    }
+
+
+def _backend_profile_digest_v4(
+    *,
+    solver_deadline_ms: int,
+    seed: int,
+    provider_ids: tuple[str, ...],
+    runtime_identity: tuple[DigestV4, DigestV4, dict[str, str]],
+) -> DigestV4:
+    if (
+        type(solver_deadline_ms) is not int
+        or solver_deadline_ms <= 0
+        or type(seed) is not int
+        or type(provider_ids) is not tuple
+        or not provider_ids
+        or any(type(item) is not str or not item for item in provider_ids)
+        or len(set(provider_ids)) != len(provider_ids)
+    ):
+        _fail("BACKEND_PROFILE", "backend profile inputs are invalid")
+    return digest_value({
+        "schema_version": BACKEND_PROFILE_SCHEMA_V4,
+        "provider_ids": list(provider_ids),
+        "provider_version": PROVIDER_VERSION,
+        "routing_policy": _routing_policy_wire_v4(),
+        "provider_runtime": _provider_runtime_wire_v4(runtime_identity),
+        "solver_deadline_ms": solver_deadline_ms,
+        "seed": seed,
+    })
+
+
+def backend_profile_digest_v4(
+    *,
+    solver_deadline_ms: int,
+    seed: int = 0,
+    provider_ids: tuple[str, ...] = CERTIFIED_PROVIDER_IDS_V4,
+) -> DigestV4:
+    """Commit the complete pre-execution provider and routing policy."""
+
+    return _backend_profile_digest_v4(
+        solver_deadline_ms=solver_deadline_ms,
+        seed=seed,
+        provider_ids=provider_ids,
+        runtime_identity=provider_runtime_identity(),
+    )
+
+
+def _providers_from_route_table_v4(features: BackendFeaturesV4) -> tuple[str, ...]:
+    return tuple(
+        provider_id
+        for provider_id, any_features in BACKEND_ROUTE_TABLE_V4
+        if not any_features or any(getattr(features, name) for name in any_features)
+    )
 
 
 class BackendRouterV4:
@@ -484,12 +590,7 @@ class BackendRouterV4:
 
     @staticmethod
     def _providers(features: BackendFeaturesV4) -> tuple[str, ...]:
-        providers = [HORN_PROVIDER_ID]
-        if features.conflict_structure:
-            providers.append(AAF_PROVIDER_ID)
-        if features.temporal_constraints or features.numeric_constraints:
-            providers.append(EXACT_PROVIDER_ID)
-        return tuple(providers)
+        return _providers_from_route_table_v4(features)
 
     def _register(self, kind: str, payload: dict[str, object]) -> ContentRefV4:
         raw = canonical_bytes(payload)
@@ -679,8 +780,11 @@ class BackendRouterV4:
         provider_id: str,
         features: BackendFeaturesV4,
         limits: ResourceLimitsV4,
+        runtime_identity: tuple[DigestV4, DigestV4, dict[str, str]] | None = None,
     ) -> tuple[dict[str, object], ContentRefV4]:
-        binary_digest, package_digest, build_inputs = provider_runtime_identity()
+        runtime_wire = _provider_runtime_wire_v4(
+            provider_runtime_identity() if runtime_identity is None else runtime_identity
+        )
         capability = {
             "schema_version": "jc/backend-capability/1.0",
             "provider_id": provider_id,
@@ -695,9 +799,7 @@ class BackendRouterV4:
             "features": features.to_dict(),
             "solver_deadline_ms": limits.solver_deadline_ms,
             "implementation_kind": "pure-python-source",
-            "provider_binary_digest": str(binary_digest),
-            "provider_package_digest": str(package_digest),
-            "provider_build_inputs": build_inputs,
+            **runtime_wire,
         }
         build_digest = digest_value(capability)
         capability["provider_build_digest"] = str(build_digest)
@@ -938,6 +1040,7 @@ class BackendRouterV4:
         now: CanonicalTimeV4,
         seed: int,
         cancel_check: Callable[[], bool] | None,
+        runtime_identity: tuple[DigestV4, DigestV4, dict[str, str]],
     ) -> BackendExecutionV4:
         problem, problem_ref = self._problem(
             compilations,
@@ -951,7 +1054,9 @@ class BackendRouterV4:
             features=features,
             seed=seed,
         )
-        capability, capability_ref = self._provider_identity(provider_id, features, limits)
+        capability, capability_ref = self._provider_identity(
+            provider_id, features, limits, runtime_identity
+        )
         invocation = BackendInvocationV4(
             invocation_id=f"backend-{problem_ref.digest.hex}",
             provider_id=provider_id,
@@ -1060,6 +1165,17 @@ class BackendRouterV4:
         ):
             _fail("BACKEND_INPUT_TYPE", "backend context is invalid")
         run = self._resolve_run(run_identity_ref)
+        runtime_identity = provider_runtime_identity()
+        if run.backend_profile_digest != _backend_profile_digest_v4(
+            solver_deadline_ms=limits.solver_deadline_ms,
+            seed=seed,
+            provider_ids=CERTIFIED_PROVIDER_IDS_V4,
+            runtime_identity=runtime_identity,
+        ):
+            _fail(
+                "BACKEND_PROFILE_BINDING",
+                "run identity does not bind the active backend profile",
+            )
         request = self._request(run)
         compilations = self._compilations(
             compilations,
@@ -1067,6 +1183,12 @@ class BackendRouterV4:
             now=now,
         )
         features = self._features(compilations)
+        providers = self._providers(features)
+        if providers != _providers_from_route_table_v4(features):
+            _fail(
+                "BACKEND_ROUTING_BINDING",
+                "provider selection differs from the bound routing table",
+            )
         limits_ref = self._register(BACKEND_LIMITS_KIND, {
             "schema_version": "jc/backend-limits/1.0",
             "solver_deadline_ms": limits.solver_deadline_ms,
@@ -1086,8 +1208,9 @@ class BackendRouterV4:
                 now=now,
                 seed=seed,
                 cancel_check=cancel_check,
+                runtime_identity=runtime_identity,
             )
-            for provider_id in self._providers(features)
+            for provider_id in providers
         )
 
     def replay(

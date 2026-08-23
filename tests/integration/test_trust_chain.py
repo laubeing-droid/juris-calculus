@@ -9,6 +9,7 @@ from typing import Callable
 import pytest
 
 from compiler_core.artifact_store import ArtifactResolverV4
+from compiler_core.backend_router import backend_profile_digest_v4
 from compiler_core.canonical_serialization import (
     DigestV4,
     canonical_bytes,
@@ -130,10 +131,15 @@ class _ChainHarness:
         fixture: dict[str, object] | None = None,
         policy: TrustPolicyV4 | None = None,
         tamper_fact_signature: bool = False,
+        backend_profile_digest: DigestV4 | None = None,
     ) -> None:
         self.fixture = _document(FIXTURE_PATH) if fixture is None else fixture
         self.trusted = _document(TRUST_CONTEXT_PATH)
         self.policy = policy or TrustPolicyV4.from_dict(self.trusted["trust_policy"])
+        self.backend_profile_digest = (
+            backend_profile_digest
+            or backend_profile_digest_v4(solver_deadline_ms=2500)
+        )
         self.now = CanonicalTimeV4.from_dict(self.trusted["verification_time"])
         self.resolver = ArtifactResolverV4(max_artifact_bytes=262_144)
         for row in self.fixture["artifacts"]:
@@ -481,7 +487,7 @@ class _ChainHarness:
             "storage_capability_ref": _ref(
                 "storage-capability", "w2-06-storage"
             ).to_dict(),
-            "backend_invocation_ref": None,
+            "backend_profile_digest": str(self.backend_profile_digest),
         }
         self.run = RunIdentityV4.from_dict(
             {**run_body, "run_digest": str(digest_value(run_body))}

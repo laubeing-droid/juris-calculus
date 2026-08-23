@@ -231,8 +231,11 @@ def _constraint(
     }
 
 
-def _system(*rule_ids: str):
-    harness = _ChainHarness()
+def _system(
+    *rule_ids: str,
+    backend_profile_digest: DigestV4 | None = None,
+):
+    harness = _ChainHarness(backend_profile_digest=backend_profile_digest)
     pack = harness.verify_pack()
     compiler = LegalIRCompilerV4(
         harness.pack_verifier,
@@ -261,9 +264,13 @@ def _system(*rule_ids: str):
     return harness, compilations, fact_receipt_ref, admitted_fact_ref, router
 
 
-def _execute(*rule_ids: str):
+def _execute(
+    *rule_ids: str,
+    backend_profile_digest: DigestV4 | None = None,
+):
     harness, compilations, fact_receipt_ref, admitted_fact_ref, router = _system(
-        *rule_ids
+        *rule_ids,
+        backend_profile_digest=backend_profile_digest,
     )
     executions = router.execute(
         compilations,

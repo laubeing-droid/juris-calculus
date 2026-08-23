@@ -127,6 +127,18 @@ HORN_PROVIDER_ID = "jc-horn-fixpoint"
 AAF_PROVIDER_ID = "jc-aaf-grounded"
 EXACT_PROVIDER_ID = "jc-exact-temporal-numeric"
 PROVIDER_VERSION = "1.0.0"
+BACKEND_PROFILE_SCHEMA_V4 = "jc/backend-profile/1.0"
+BACKEND_ROUTING_POLICY_V4 = "horn-base-plus-feature-routes-v1"
+CERTIFIED_PROVIDER_IDS_V4 = (
+    HORN_PROVIDER_ID,
+    AAF_PROVIDER_ID,
+    EXACT_PROVIDER_ID,
+)
+BACKEND_ROUTE_TABLE_V4 = (
+    (HORN_PROVIDER_ID, ()),
+    (AAF_PROVIDER_ID, ("conflict_structure",)),
+    (EXACT_PROVIDER_ID, ("temporal_constraints", "numeric_constraints")),
+)
 
 CheckerSignerV4 = Callable[
     [
@@ -151,6 +163,60 @@ class IndependentCheckerV4Error(ValueError):
 
 def _fail(code: str, detail: str) -> None:
     raise IndependentCheckerV4Error(code, detail)
+
+
+def _routing_policy_wire() -> dict[str, object]:
+    return {
+        "policy_id": BACKEND_ROUTING_POLICY_V4,
+        "routes": [
+            {"provider_id": provider_id, "any_features": list(any_features)}
+            for provider_id, any_features in BACKEND_ROUTE_TABLE_V4
+        ],
+    }
+
+
+def _routed_providers(features: object) -> tuple[str, ...]:
+    feature_names = {
+        "conflict_structure", "temporal_constraints", "numeric_constraints",
+    }
+    if (
+        type(features) is not dict
+        or set(features) != feature_names
+        or any(type(features[name]) is not bool for name in feature_names)
+    ):
+        _fail("CHECKER_FEATURE_BINDING", "backend features are not closed booleans")
+    return tuple(
+        provider_id
+        for provider_id, any_features in BACKEND_ROUTE_TABLE_V4
+        if not any_features or any(features[name] for name in any_features)
+    )
+
+
+def _backend_profile_digest(
+    solver_deadline_ms: int,
+    seed: int,
+    *,
+    provider_binary_digest: DigestV4,
+    provider_package_digest: DigestV4,
+    provider_build_inputs: dict[str, str],
+) -> DigestV4:
+    """Independently project the pre-execution backend policy."""
+
+    return digest_value({
+        "schema_version": BACKEND_PROFILE_SCHEMA_V4,
+        "provider_ids": list(CERTIFIED_PROVIDER_IDS_V4),
+        "provider_version": PROVIDER_VERSION,
+        "routing_policy": _routing_policy_wire(),
+        "provider_runtime": {
+            "provider_binary_digest": str(provider_binary_digest),
+            "provider_package_digest": str(provider_package_digest),
+            "provider_build_inputs": {
+                key: provider_build_inputs[key] for key in sorted(provider_build_inputs)
+            },
+        },
+        "solver_deadline_ms": solver_deadline_ms,
+        "seed": seed,
+    })
 
 
 def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
@@ -1131,6 +1197,7 @@ class IndependentCheckerV4:
     def _backend_identity(
         self,
         reader: _Reader,
+        run: RunIdentityV4,
         invocation: BackendInvocationV4,
         problem: dict[str, object],
         problem_ref: ContentRefV4,
@@ -1187,6 +1254,10 @@ class IndependentCheckerV4:
             binary_digest = DigestV4.parse(capability["provider_binary_digest"])
             package_digest = DigestV4.parse(capability["provider_package_digest"])
             build_digest = DigestV4.parse(capability["provider_build_digest"])
+            build_inputs = {
+                key: str(DigestV4.parse(value))
+                for key, value in sorted(capability["provider_build_inputs"].items())
+            }
         except (TypeError, ValueError) as exc:
             raise IndependentCheckerV4Error(
                 "CHECKER_BACKEND_BUILD", "backend build digests are malformed"
@@ -1194,10 +1265,22 @@ class IndependentCheckerV4:
         build_body = dict(capability)
         del build_body["provider_build_digest"]
         if (
-            binary_digest != invocation.provider_binary_digest
+            set(build_inputs)
+            != {"argumentation", "backends", "canonical_serialization", "contracts"}
+            or build_inputs != capability["provider_build_inputs"]
+            or package_digest != DigestV4.from_bytes(canonical_bytes(build_inputs))
+            or binary_digest != invocation.provider_binary_digest
             or package_digest != invocation.provider_package_digest
             or build_digest != invocation.provider_build_digest
             or build_digest != digest_value(build_body)
+            or invocation.provider_id not in _routed_providers(problem.get("features"))
+            or run.backend_profile_digest != _backend_profile_digest(
+                limits["solver_deadline_ms"],
+                invocation.seed,
+                provider_binary_digest=binary_digest,
+                provider_package_digest=package_digest,
+                provider_build_inputs=build_inputs,
+            )
         ):
             _fail("CHECKER_BACKEND_BUILD", "backend invocation does not bind capability bytes")
 
@@ -2051,7 +2134,7 @@ class IndependentCheckerV4:
             "facts", "clauses",
         }:
             _fail("CHECKER_PROBLEM", "backend problem is not a closed artifact")
-        self._backend_identity(reader, invocation, problem, problem_ref)
+        self._backend_identity(reader, run, invocation, problem, problem_ref)
         result = reader.json(
             receipt.backend_result_ref, kind=BACKEND_RESULT_KIND, scope=BACKEND_SCOPE
         )

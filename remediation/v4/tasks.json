@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "f8e83505e495e52c2466c925ab5f0c58b91f3a414d09c5353c076f2e6aa3a639",
+    "plan_sha256": "82726738b0f172cb547b9032c3cf040999e23da7cc0a27760d33d156ba317370",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2747,9 +2747,25 @@
       ],
       "objective": "RunIdentityV4 绑定 source commit/tree/wheel/Schema/ToolSpec/locks/pack/trust/algorithm/backend/storage digests",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/backend_router.py",
         "compiler_core/contracts.py",
-        "compiler_core/application.py",
-        "tests/contract/test_run_identity.py"
+        "compiler_core/independent_checker.py",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "schemas/jc-v4.schema.json",
+        "tests/contract/test_backend_router.py",
+        "tests/contract/test_fact_admission.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_run_identity.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/integration/test_trust_chain.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_backend_attacks.py",
+        "tests/security/test_checker_independence.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2759,9 +2775,36 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-01",
+          "tests/contract/test_run_identity.py",
+          "tests/contract/test_contracts.py",
+          "tests/contract/test_python_schema_mcp_differential.py",
+          "tests/contract/test_required_test_manifest.py",
+          "tests/contract/test_backend_router.py",
+          "tests/contract/test_fact_admission.py",
+          "tests/contract/test_independent_checker.py",
+          "tests/integration/test_trust_chain.py",
+          "tests/security/test_backend_attacks.py",
+          "tests/security/test_checker_independence.py",
+          "--junitxml",
+          "{state_root}/evidence/W4-01/run-identity-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [
