@@ -299,7 +299,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W5-05",
+      "closure_task": "W4-07",
       "namespace": "formal_core"
     },
     {

@@ -316,7 +316,7 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/contract/test_audit_bundle.py": "W4-03",
     "tests/security/test_audit_bundle_attacks.py": "W4-03",
     "tests/storage_chaos/test_audit_bundle_recovery.py": "W4-03",
-    "compiler_core/audit_bundle.py": "W5-05",
+    "compiler_core/audit_bundle.py": "W4-07",
     "compiler_core/certificates.py": "W4-04",
     "tests/contract/test_certificates.py": "W4-04",
     "tests/security/test_certificate_attacks.py": "W4-04",
