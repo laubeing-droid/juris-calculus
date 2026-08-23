@@ -3470,7 +3470,7 @@
         "remediation/v4/tasks.json",
         "tests/contract/test_required_test_manifest.py",
         "tests/contract/w5_package_red.py",
-        "tests/**",
+        "tests/formal_e2e/w5_entrypoint_red.py",
         "tests/mcp_protocol/w5_transport_red.py",
         "tests/required-v4-tests.json",
         "tools/build_file_disposition.py",
