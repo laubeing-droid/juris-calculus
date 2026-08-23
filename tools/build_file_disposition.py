@@ -30,11 +30,11 @@ CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "artifact_store", "audit", "audit_bundle",
         "canonical_serialization", "cli", "client", "contracts",
-        "fact_admission", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
+        "argumentation", "fact_admission", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
         "source_service", "trust", "version",
     ],
     "MERGE_DELETE": [
-        "argumentation", "argumentation_v2", "backend_router_v1",
+        "argumentation_v2", "backend_router_v1",
         "certificate_v1", "evaluator", "fact_admission_v1",
         "independent_grounded_checker", "legal_spec_ivl",
         "source_service_v2",
@@ -192,6 +192,9 @@ SPECIAL_CLOSURE_TASKS = {
 
 MIGRATION_TARGETS = {
     "addons/workbuddy_mcp.py": ("compiler_core/mcp.py", "tests/unit/test_mcp_stdio_protocol.py"),
+    "compiler_core/argumentation_v2.py": (
+        "compiler_core/argumentation.py", "tests/contract/test_argumentation.py",
+    ),
     "compiler_core/contracts_v4.py": ("compiler_core/contracts.py", "tests/contract/test_contracts.py"),
 }
 
@@ -221,6 +224,8 @@ def _git_tracked() -> set[str]:
 
 def _classify_core(stem: str) -> tuple[str, str]:
     """Return (disposition, terminal_state) for a compiler_core file stem."""
+    if stem == "argumentation_v2":
+        return "MERGE_DELETE", "MIGRATED_GREEN"
     for grp, stems in CORE_GROUPS.items():
         if stem in stems:
             return grp, grp
@@ -384,7 +389,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "e61a800f2e3838bf8fa3a16b7b4ef5a0e5718d6daa78f5b234337d9127a67644",
+        "plan_sha256": "4afd224e6ab1a3a62501baeb2ebe27bf42b93373774e60b9baf3509d1f68477e",
         "count": len(entries),
         "paths": entries,
     }

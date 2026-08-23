@@ -145,6 +145,20 @@
       "selector": "tests/semantic_mutation/test_ir_mutation.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 7
+    },
+    {
+      "id": "W3-ARGUMENTATION-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_argumentation.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 22
+    },
+    {
+      "id": "W3-ARGUMENTATION-MUTATION",
+      "suite": "differential",
+      "selector": "tests/semantic_mutation/test_argumentation_mutation.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
     }
   ],
   "evidence_tracks": [
@@ -400,8 +414,8 @@
       "suite": "contract",
       "selector": "tests/contract/test_argumentation.py::test_priority_permission_attack_mutations_change_result",
       "owner_task": "W3-02",
-      "state": "RED_AT_TASK",
-      "mutation": "Remove or reorder priority, permission, attack, or witness semantics.",
+      "state": "ACTIVE_REQUIRED",
+      "mutation": "Remove or reverse priority endpoints, permission, attack, or witness semantics.",
       "red_failure": "Each semantic mutation must change labels or fail verification."
     },
     {

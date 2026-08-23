@@ -14,7 +14,465 @@ B3 fixes:
   - Deterministic output ordering
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+from compiler_core.canonical_serialization import DigestV4, canonical_bytes
+from compiler_core.contracts import (
+    ArgumentV4,
+    AttackV4,
+    ContentRefV4,
+    ExceptionResolutionV4,
+    PermissionResolutionV4,
+    PriorityEdgeV4,
+)
+
+
+ARGUMENT_GRAPH_KIND_V4 = "argument-graph-v4"
+ARGUMENT_KIND_V4 = "argument-v4"
+_ARGUMENT_LABELS_V4 = frozenset({"IN", "OUT", "UNDEC"})
+_GRAPH_STATES_V4 = frozenset({"accepted", "cycle_blocked", "disputed"})
+
+
+class ArgumentationV4Error(ValueError):
+    """Stable fail-closed error for canonical V4 argument graphs."""
+
+    def __init__(self, code: str, detail: str) -> None:
+        self.code = code
+        self.detail = detail
+        super().__init__(f"{code}: {detail}")
+
+
+def _v4_fail(code: str, detail: str) -> None:
+    raise ArgumentationV4Error(code, detail)
+
+
+def _v4_nonempty(value: object, field_name: str) -> str:
+    if type(value) is not str or not value:
+        _v4_fail("ARGUMENT_GRAPH_FIELD", f"{field_name} must be a non-empty string")
+    return value
+
+
+def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
+    return reference.kind, str(reference.digest)
+
+
+def _sorted_refs(references: tuple[ContentRefV4, ...]) -> tuple[ContentRefV4, ...]:
+    return tuple(sorted(set(references), key=_ref_key))
+
+
+def argument_ref_v4(argument: ArgumentV4) -> ContentRefV4:
+    """Return the canonical content identity of an admitted V4 argument."""
+
+    if type(argument) is not ArgumentV4:
+        _v4_fail("ARGUMENT_GRAPH_TYPE", "argument must be exact ArgumentV4")
+    return ContentRefV4(ARGUMENT_KIND_V4, argument.canonical_digest())
+
+
+@dataclass(frozen=True, slots=True)
+class PermissionRelationV4:
+    """Bind a permission claim to its opposing prohibition claim."""
+
+    permission_id: str
+    permission_claim_ref: ContentRefV4
+    prohibition_claim_ref: ContentRefV4 | None
+    source_ref: ContentRefV4
+
+    def __post_init__(self) -> None:
+        _v4_nonempty(self.permission_id, "PermissionRelationV4.permission_id")
+        if type(self.permission_claim_ref) is not ContentRefV4:
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "permission claim ref must be ContentRefV4")
+        if (
+            self.prohibition_claim_ref is not None
+            and type(self.prohibition_claim_ref) is not ContentRefV4
+        ):
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "prohibition claim ref must be ContentRefV4")
+        if type(self.source_ref) is not ContentRefV4:
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "permission source ref must be ContentRefV4")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "permission_id": self.permission_id,
+            "permission_claim_ref": self.permission_claim_ref.to_dict(),
+            "prohibition_claim_ref": (
+                self.prohibition_claim_ref.to_dict()
+                if self.prohibition_claim_ref is not None
+                else None
+            ),
+            "source_ref": self.source_ref.to_dict(),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ArgumentLabelV4:
+    argument_ref: ContentRefV4
+    label: str
+    witness_refs: tuple[ContentRefV4, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.argument_ref) is not ContentRefV4:
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "label argument ref must be ContentRefV4")
+        if self.label not in _ARGUMENT_LABELS_V4:
+            _v4_fail("ARGUMENT_LABEL", f"unsupported label {self.label!r}")
+        if (
+            type(self.witness_refs) is not tuple
+            or any(type(item) is not ContentRefV4 for item in self.witness_refs)
+            or len(set(self.witness_refs)) != len(self.witness_refs)
+        ):
+            _v4_fail("ARGUMENT_WITNESS", "label witnesses must be unique ContentRefV4 values")
+        object.__setattr__(self, "witness_refs", _sorted_refs(self.witness_refs))
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "argument_ref": self.argument_ref.to_dict(),
+            "label": self.label,
+            "witness_refs": [item.to_dict() for item in self.witness_refs],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimProjectionV4:
+    claim_ref: ContentRefV4
+    argument_refs: tuple[ContentRefV4, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.claim_ref) is not ContentRefV4:
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "claim projection key must be ContentRefV4")
+        if (
+            type(self.argument_refs) is not tuple
+            or not self.argument_refs
+            or any(type(item) is not ContentRefV4 for item in self.argument_refs)
+            or len(set(self.argument_refs)) != len(self.argument_refs)
+        ):
+            _v4_fail(
+                "ARGUMENT_WITNESS",
+                "claim projection must preserve one or more unique argument witnesses",
+            )
+        object.__setattr__(self, "argument_refs", _sorted_refs(self.argument_refs))
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "claim_ref": self.claim_ref.to_dict(),
+            "argument_refs": [item.to_dict() for item in self.argument_refs],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ArgumentGraphV4:
+    """Canonical typed graph; an included priority edge is already applicable."""
+
+    arguments: tuple[ArgumentV4, ...]
+    attacks: tuple[AttackV4, ...] = ()
+    priority_edges: tuple[PriorityEdgeV4, ...] = ()
+    permission_relations: tuple[PermissionRelationV4, ...] = ()
+
+    def __post_init__(self) -> None:
+        typed_groups = (
+            ("arguments", self.arguments, ArgumentV4),
+            ("attacks", self.attacks, AttackV4),
+            ("priority_edges", self.priority_edges, PriorityEdgeV4),
+            ("permission_relations", self.permission_relations, PermissionRelationV4),
+        )
+        for name, values, expected_type in typed_groups:
+            if type(values) is not tuple or any(type(item) is not expected_type for item in values):
+                _v4_fail(
+                    "ARGUMENT_GRAPH_TYPE",
+                    f"ArgumentGraphV4.{name} must contain exact {expected_type.__name__} values",
+                )
+        if not self.arguments:
+            _v4_fail("ARGUMENT_GRAPH_EMPTY", "an argument graph requires at least one argument")
+
+        id_groups = (
+            ("argument", [item.argument_id for item in self.arguments]),
+            ("attack", [item.attack_id for item in self.attacks]),
+            ("priority", [item.edge_id for item in self.priority_edges]),
+            ("permission", [item.permission_id for item in self.permission_relations]),
+        )
+        for name, identities in id_groups:
+            if any(type(item) is not str or not item for item in identities):
+                _v4_fail("ARGUMENT_GRAPH_FIELD", f"{name} identities must be non-empty")
+            if len(identities) != len(set(identities)):
+                _v4_fail("ARGUMENT_GRAPH_DUPLICATE", f"duplicate {name} identity")
+
+        ordered_arguments = tuple(sorted(self.arguments, key=lambda item: item.argument_id))
+        ordered_attacks = tuple(sorted(self.attacks, key=lambda item: item.attack_id))
+        ordered_priorities = tuple(sorted(self.priority_edges, key=lambda item: item.edge_id))
+        ordered_permissions = tuple(
+            sorted(self.permission_relations, key=lambda item: item.permission_id)
+        )
+        object.__setattr__(self, "arguments", ordered_arguments)
+        object.__setattr__(self, "attacks", ordered_attacks)
+        object.__setattr__(self, "priority_edges", ordered_priorities)
+        object.__setattr__(self, "permission_relations", ordered_permissions)
+
+        known = {argument_ref_v4(item) for item in ordered_arguments}
+        known_claims = {item.claim_ref for item in ordered_arguments}
+        if len(known) != len(ordered_arguments):
+            _v4_fail("ARGUMENT_GRAPH_DUPLICATE", "duplicate canonical argument identity")
+        for attack in ordered_attacks:
+            if attack.attacker_ref not in known or attack.target_ref not in known:
+                _v4_fail("ARGUMENT_GRAPH_ENDPOINT", f"unknown endpoint in {attack.attack_id}")
+        for edge in ordered_priorities:
+            if edge.preferred_ref not in known or edge.defeated_ref not in known:
+                _v4_fail("ARGUMENT_GRAPH_ENDPOINT", f"unknown endpoint in {edge.edge_id}")
+        for relation in ordered_permissions:
+            if relation.permission_claim_ref not in known_claims or (
+                relation.prohibition_claim_ref is not None
+                and relation.prohibition_claim_ref not in known_claims
+            ):
+                _v4_fail(
+                    "ARGUMENT_GRAPH_ENDPOINT",
+                    f"unknown endpoint in {relation.permission_id}",
+                )
+
+    def canonical_payload(self) -> dict[str, object]:
+        return {
+            "schema_version": "jc/argument-graph-v4/1.0",
+            "arguments": [item.to_dict() for item in self.arguments],
+            "attacks": [item.to_dict() for item in self.attacks],
+            "priority_edges": [item.to_dict() for item in self.priority_edges],
+            "permission_relations": [item.to_dict() for item in self.permission_relations],
+        }
+
+    def canonical_bytes(self) -> bytes:
+        return canonical_bytes(self.canonical_payload())
+
+    def canonical_digest(self) -> DigestV4:
+        return DigestV4.from_bytes(self.canonical_bytes())
+
+    def content_ref(self) -> ContentRefV4:
+        return ContentRefV4(ARGUMENT_GRAPH_KIND_V4, self.canonical_digest())
+
+
+@dataclass(frozen=True, slots=True)
+class ArgumentationEvaluationV4:
+    graph_ref: ContentRefV4
+    labels: tuple[ArgumentLabelV4, ...]
+    effective_attacks: tuple[AttackV4, ...]
+    permission_resolutions: tuple[PermissionResolutionV4, ...]
+    exception_resolutions: tuple[ExceptionResolutionV4, ...]
+    claim_projection: tuple[ClaimProjectionV4, ...]
+    priority_cycles: tuple[tuple[ContentRefV4, ...], ...]
+    state: str
+
+    def __post_init__(self) -> None:
+        if type(self.graph_ref) is not ContentRefV4:
+            _v4_fail("ARGUMENT_GRAPH_TYPE", "evaluation graph ref must be ContentRefV4")
+        typed_groups = (
+            (self.labels, ArgumentLabelV4),
+            (self.effective_attacks, AttackV4),
+            (self.permission_resolutions, PermissionResolutionV4),
+            (self.exception_resolutions, ExceptionResolutionV4),
+            (self.claim_projection, ClaimProjectionV4),
+        )
+        for values, expected_type in typed_groups:
+            if type(values) is not tuple or any(type(item) is not expected_type for item in values):
+                _v4_fail("ARGUMENT_GRAPH_TYPE", f"evaluation requires {expected_type.__name__}")
+        if self.state not in _GRAPH_STATES_V4:
+            _v4_fail("ARGUMENT_GRAPH_STATE", f"unsupported graph state {self.state!r}")
+        if type(self.priority_cycles) is not tuple or any(
+            type(cycle) is not tuple
+            or not cycle
+            or any(type(item) is not ContentRefV4 for item in cycle)
+            for cycle in self.priority_cycles
+        ):
+            _v4_fail("ARGUMENT_PRIORITY_CYCLE", "priority cycles must contain argument refs")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema_version": "jc/argumentation-evaluation-v4/1.0",
+            "graph_ref": self.graph_ref.to_dict(),
+            "labels": [item.to_dict() for item in self.labels],
+            "effective_attacks": [item.to_dict() for item in self.effective_attacks],
+            "permission_resolutions": [item.to_dict() for item in self.permission_resolutions],
+            "exception_resolutions": [item.to_dict() for item in self.exception_resolutions],
+            "claim_projection": [item.to_dict() for item in self.claim_projection],
+            "priority_cycles": [
+                [reference.to_dict() for reference in cycle]
+                for cycle in self.priority_cycles
+            ],
+            "state": self.state,
+        }
+
+    def canonical_bytes(self) -> bytes:
+        return canonical_bytes(self.to_dict())
+
+    def canonical_digest(self) -> DigestV4:
+        return DigestV4.from_bytes(self.canonical_bytes())
+
+
+def _effective_attacks_v4(graph: ArgumentGraphV4) -> tuple[AttackV4, ...]:
+    attacks = list(graph.attacks)
+    attacks.extend(
+        AttackV4(
+            attack_id=f"priority::{edge.edge_id}",
+            attacker_ref=edge.preferred_ref,
+            target_ref=edge.defeated_ref,
+            attack_type="priority_defeat",
+            target_aspect="claim",
+        )
+        for edge in graph.priority_edges
+    )
+    identities = [item.attack_id for item in attacks]
+    if len(identities) != len(set(identities)):
+        _v4_fail("ARGUMENT_GRAPH_DUPLICATE", "explicit and derived attack identities collide")
+    return tuple(sorted(attacks, key=lambda item: item.attack_id))
+
+
+def _priority_cycles_v4(
+    graph: ArgumentGraphV4,
+    argument_by_ref: dict[ContentRefV4, ArgumentV4],
+) -> tuple[tuple[ContentRefV4, ...], ...]:
+    claims = [{"id": item.argument_id} for item in graph.arguments]
+    id_by_ref = {reference: argument.argument_id for reference, argument in argument_by_ref.items()}
+    ref_by_id = {value: key for key, value in id_by_ref.items()}
+    edges = [
+        (id_by_ref[item.preferred_ref], id_by_ref[item.defeated_ref])
+        for item in graph.priority_edges
+    ]
+    cycles = find_cycles(claims, edges)
+    return tuple(
+        sorted(
+            (tuple(sorted((ref_by_id[item] for item in cycle), key=_ref_key)) for cycle in cycles),
+            key=lambda cycle: tuple(_ref_key(item) for item in cycle),
+        )
+    )
+
+
+def evaluate_argument_graph(graph: ArgumentGraphV4) -> ArgumentationEvaluationV4:
+    """Evaluate one canonical V4 graph with the repository's sole grounded oracle."""
+
+    if type(graph) is not ArgumentGraphV4:
+        _v4_fail("ARGUMENT_GRAPH_TYPE", "evaluate_argument_graph requires ArgumentGraphV4")
+    argument_by_ref = {argument_ref_v4(item): item for item in graph.arguments}
+    ref_by_id = {item.argument_id: reference for reference, item in argument_by_ref.items()}
+    id_by_ref = {reference: item.argument_id for reference, item in argument_by_ref.items()}
+    effective_attacks = _effective_attacks_v4(graph)
+    attack_pairs = [
+        (id_by_ref[item.attacker_ref], id_by_ref[item.target_ref])
+        for item in effective_attacks
+    ]
+    result = grounded_extension(
+        [{"id": item.argument_id} for item in graph.arguments],
+        attack_pairs,
+    )
+    if not result["convergent"] or result["truncated"]:
+        _v4_fail("ARGUMENT_GROUNDED_TRUNCATED", "grounded evaluation did not converge")
+
+    accepted = set(result["accepted"])
+    rejected = set(result["rejected"])
+    undecided = set(result["undecided"])
+    label_by_id = {
+        **{item: "IN" for item in accepted},
+        **{item: "OUT" for item in rejected},
+        **{item: "UNDEC" for item in undecided},
+    }
+    reasons = label_reasons(
+        [{"id": item.argument_id} for item in graph.arguments],
+        attack_pairs,
+        result,
+    )
+
+    labels: list[ArgumentLabelV4] = []
+    for argument in graph.arguments:
+        label = label_by_id[argument.argument_id]
+        witnesses = reasons[argument.argument_id]["witnesses"]
+        labels.append(
+            ArgumentLabelV4(
+                argument_ref=ref_by_id[argument.argument_id],
+                label=label,
+                witness_refs=tuple(ref_by_id[item] for item in witnesses),
+            )
+        )
+    label_by_ref = {item.argument_ref: item.label for item in labels}
+    arguments_by_claim: dict[ContentRefV4, list[tuple[ContentRefV4, ArgumentV4]]] = {}
+    for reference, argument in argument_by_ref.items():
+        arguments_by_claim.setdefault(argument.claim_ref, []).append((reference, argument))
+
+    permission_resolutions: list[PermissionResolutionV4] = []
+    for relation in graph.permission_relations:
+        permission_arguments = arguments_by_claim[relation.permission_claim_ref]
+        prohibition_arguments = (
+            arguments_by_claim[relation.prohibition_claim_ref]
+            if relation.prohibition_claim_ref is not None
+            else []
+        )
+        permission_labels = {label_by_ref[reference] for reference, _ in permission_arguments}
+        prohibition_labels = {label_by_ref[reference] for reference, _ in prohibition_arguments}
+        if "UNDEC" in permission_labels | prohibition_labels:
+            status = "disputed"
+        elif "IN" in permission_labels and "IN" not in prohibition_labels:
+            status = "holds"
+        elif "IN" not in permission_labels and "IN" in prohibition_labels:
+            status = "does_not_hold"
+        else:
+            status = "disputed"
+        witnesses = [
+            relation.source_ref,
+            *(reference for reference, _ in permission_arguments),
+            *(reference for reference, _ in prohibition_arguments),
+        ]
+        permission_resolutions.append(
+            PermissionResolutionV4(
+                permission_id=relation.permission_id,
+                claim_ref=relation.permission_claim_ref,
+                prohibition_ref=relation.prohibition_claim_ref,
+                status=status,
+                witness_refs=_sorted_refs(tuple(witnesses)),
+            )
+        )
+
+    exception_resolutions: list[ExceptionResolutionV4] = []
+    for attack in effective_attacks:
+        if attack.attack_type != "exception":
+            continue
+        attacker_label = label_by_ref[attack.attacker_ref]
+        target_label = label_by_ref[attack.target_ref]
+        if attacker_label == "IN" and target_label == "OUT":
+            status = "applied"
+        elif attacker_label == "OUT" and target_label == "IN":
+            status = "defeated"
+        else:
+            status = "disputed"
+        exception_resolutions.append(
+            ExceptionResolutionV4(
+                exception_id=attack.attack_id,
+                claim_ref=argument_by_ref[attack.target_ref].claim_ref,
+                target_ref=attack.target_ref,
+                target_aspect=attack.target_aspect,
+                status=status,
+                witness_refs=_sorted_refs((attack.attacker_ref, attack.target_ref)),
+            )
+        )
+
+    projection: dict[ContentRefV4, list[ContentRefV4]] = {}
+    for argument in graph.arguments:
+        reference = ref_by_id[argument.argument_id]
+        projection.setdefault(argument.claim_ref, []).append(reference)
+    claim_projection = tuple(
+        ClaimProjectionV4(claim_ref, tuple(argument_refs))
+        for claim_ref, argument_refs in sorted(projection.items(), key=lambda item: _ref_key(item[0]))
+    )
+
+    priority_cycles = _priority_cycles_v4(graph, argument_by_ref)
+    if priority_cycles:
+        state = "cycle_blocked"
+    elif any(item.status == "disputed" for item in permission_resolutions):
+        state = "disputed"
+    elif undecided:
+        state = "disputed"
+    else:
+        state = "accepted"
+    return ArgumentationEvaluationV4(
+        graph_ref=graph.content_ref(),
+        labels=tuple(labels),
+        effective_attacks=effective_attacks,
+        permission_resolutions=tuple(permission_resolutions),
+        exception_resolutions=tuple(exception_resolutions),
+        claim_projection=claim_projection,
+        priority_cycles=priority_cycles,
+        state=state,
+    )
 
 
 def grounded_extension(

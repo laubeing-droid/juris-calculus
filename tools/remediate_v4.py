@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.19.0"
+RUNNER_VERSION = "0.20.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -77,6 +77,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.17.0": 5,
     "0.18.0": 5,
     "0.19.0": 5,
+    "0.20.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -239,6 +240,22 @@ W3_01_CHANGED_PATHS = (
     "tests/property/test_ir_properties.py",
     "tests/required-v4-tests.json",
     "tests/semantic_mutation/test_ir_mutation.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W3_02_TEST_CASE_COUNT = 76
+W3_02_TEST_CASE_IDS_DIGEST = (
+    "sha256:e81477f95c35d67477e23418cf9bf8f7b8a61102e9f2971fb64f7987a9184c3e"
+)
+W3_02_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/argumentation.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_argumentation.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/semantic_mutation/test_argumentation_mutation.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -2906,7 +2923,13 @@ def _required_pytest_environment() -> dict[str, str]:
     """Remove ambient pytest/Python injection from required subprocesses."""
 
     environment = os.environ.copy()
-    for name in ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTHONHOME", "PYTHONPATH"):
+    for name in (
+        "LEGAL_MATH_MODELING_ROOT",
+        "PYTEST_ADDOPTS",
+        "PYTEST_PLUGINS",
+        "PYTHONHOME",
+        "PYTHONPATH",
+    ):
         environment.pop(name, None)
     environment.update({
         "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
@@ -2919,8 +2942,56 @@ def _required_pytest_environment() -> dict[str, str]:
     return environment
 
 
+def _companion_checkout_problems(
+    repo: Path, binding: dict[str, Any] | None = None,
+) -> list[str]:
+    """Verify the exact clean companion checkout used by shadow execution."""
+
+    expected = W0_B02_COMPANION_BINDING if binding is None else binding
+    if not repo.is_dir() or not (repo / ".git").exists():
+        return ["pinned companion checkout is missing"]
+    observed: dict[str, str] = {}
+    for field, argv in (
+        ("commit", ["rev-parse", "HEAD"]),
+        ("tree", ["rev-parse", "HEAD^{tree}"]),
+        ("status", ["status", "--porcelain=v1", "--untracked-files=all"]),
+    ):
+        completed = subprocess.run(
+            ["git", "-C", str(repo), *argv],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            return [f"pinned companion git {field} is unreadable"]
+        observed[field] = completed.stdout.strip()
+    problems: list[str] = []
+    if observed["commit"] != expected["commit"]:
+        problems.append("pinned companion commit drifted")
+    if observed["tree"] != expected["tree"]:
+        problems.append("pinned companion tree drifted")
+    if observed["status"]:
+        problems.append("pinned companion checkout is dirty")
+    for relative, digest in expected["required_files"].items():
+        path = repo / relative
+        try:
+            actual = sha256_hex(path.read_bytes())
+        except OSError:
+            problems.append(f"pinned companion required file is missing: {relative}")
+            continue
+        if actual != digest:
+            problems.append(f"pinned companion required file drifted: {relative}")
+    return problems
+
+
 def _live_b02_binding(state_root: Path) -> dict[str, str]:
-    """Rebind the pinned companion declaration to preserved B02 state bytes."""
+    """Rebind preserved B02 evidence and the live pinned companion checkout."""
+
+    checkout_problems = _companion_checkout_problems(
+        state_root / "inputs" / "legal-math-modeling"
+    )
+    if checkout_problems:
+        raise ValueError("; ".join(checkout_problems))
 
     expected_receipt_digest = W0_B02_COMPANION_BINDING["receipt_digest"]
     receipt_paths = sorted(
@@ -3255,6 +3326,20 @@ def _required_test_manifest_problems(
             "selector": "tests/semantic_mutation/test_ir_mutation.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 7,
+        },
+        {
+            "id": "W3-ARGUMENTATION-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_argumentation.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 22,
+        },
+        {
+            "id": "W3-ARGUMENTATION-MUTATION",
+            "suite": "differential",
+            "selector": "tests/semantic_mutation/test_argumentation_mutation.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 8,
         },
     ]
     if required_now != expected_required_now:
@@ -10125,6 +10210,298 @@ def cmd_w3_01_lossless_ir_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w3_02_argumentation_gate() -> int:
+    """Verify the W3-02 canonical argumentation and pinned-semantics closure."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W3-02"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W3-02",
+            "tests/contract/test_argumentation.py",
+            "tests/semantic_mutation/test_argumentation_mutation.py",
+            "tests/unit/test_grounded_g9a.py",
+            "tests/unit/test_argumentation_v2.py",
+            "tests/unit/test_spec_shadow_harness.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W3-02/argumentation-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W3_02_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        argumentation_source = (ROOT / "compiler_core/argumentation.py").read_text(
+            encoding="utf-8"
+        )
+        contract_tests = (ROOT / "tests/contract/test_argumentation.py").read_text(
+            encoding="utf-8-sig"
+        )
+        mutation_tests = (
+            ROOT / "tests/semantic_mutation/test_argumentation_mutation.py"
+        ).read_text(encoding="utf-8-sig")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w3_02_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W3-02 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W3-02 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-02"), None)
+    if not isinstance(task, dict):
+        fail("W3-02 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W3-01"]:
+            fail("W3-02 mode or dependency drifted")
+        if task.get("audit_ids") != ["P1-06"]:
+            fail("W3-02 audit binding drifted")
+        if task.get("objective") != (
+            "重写 argumentation.py；priority 实际改变 defeat；permission 三态可达；"
+            "UNDEC 不 accepted"
+        ):
+            fail("W3-02 objective drifted")
+        if task.get("allowed_paths") != list(W3_02_CHANGED_PATHS):
+            fail("W3-02 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W3-02 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W3-02 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W3-02 file disposition is not reproducible from its generator")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 10 个 exact paths",
+        "preferred/winner → defeated/loser",
+        "不生成也不决定 slice `DecisionStatus`",
+        "不发明 suppression",
+        "w3-02-exact-argumentation-reports",
+        "W3-04/W3-05",
+    )):
+        fail("W3-02 formal plan lacks its exact scope or semantic boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W3-ARGUMENTATION-CONTRACT": (
+            "contract", "tests/contract/test_argumentation.py", 22,
+        ),
+        "W3-ARGUMENTATION-MUTATION": (
+            "differential", "tests/semantic_mutation/test_argumentation_mutation.py", 8,
+        ),
+    }
+    new_test_count = 0
+    for required_id, expected in expected_required.items():
+        item = required_by_id.get(required_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"), item.get("expected_tests"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or item.get("state") != "REQUIRED_NOW":
+            fail(f"W3-02 required-now binding drifted: {required_id}")
+        else:
+            new_test_count += expected[2]
+    if new_test_count + 20 + 14 + 5 + 7 != W3_02_TEST_CASE_COUNT:
+        fail("W3-02 exact test count does not equal new, legacy, B02, and governance lanes")
+    if W3_02_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W3-02 JUnit case identity digest is not frozen")
+
+    p1_mutation = next((
+        item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+        and item.get("test_id") == "V4-P1-06-ARGUMENT-MUTATION"
+    ), {})
+    if (
+        p1_mutation.get("audit_id"), p1_mutation.get("owner_task"),
+        p1_mutation.get("state"), p1_mutation.get("suite"),
+        p1_mutation.get("selector"),
+    ) != (
+        "P1-06", "W3-02", "ACTIVE_REQUIRED", "contract",
+        "tests/contract/test_argumentation.py::"
+        "test_priority_permission_attack_mutations_change_result",
+    ) or not _selector_is_declared(ROOT, p1_mutation.get("selector", "")):
+        fail("W3-02 P1-06 mutation is not exactly ACTIVE_REQUIRED")
+
+    p1_06 = next((
+        item for item in issue_map.get("issues", [])
+        if isinstance(item, dict) and item.get("id") == "P1-06"
+    ), {})
+    if (p1_06.get("status"), p1_06.get("closure_tasks")) != (
+        "registered", ["W3-02", "W3-04", "W3-05"],
+    ):
+        fail("W3-02 P1-06 issue lifecycle drifted")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/argumentation.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/argumentation_v2.py": ("MERGE_DELETE", "MIGRATED_GREEN"),
+        "tests/contract/test_argumentation.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/semantic_mutation/test_argumentation_mutation.py": (
+            "TEST_ORACLE", "TEST_ORACLE",
+        ),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W3-02 file disposition drifted: {path}")
+    tracked = set(_git_tracked_files())
+    for path in W3_02_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W3-02 exact path is not Git tracked: {path}")
+
+    controls = _forbidden_test_controls(contract_tests + "\n" + mutation_tests)
+    if controls:
+        fail(f"W3-02 tests use forbidden controls: {controls}")
+    if any(token in argumentation_source for token in (
+        "argumentation_v2", "reference_semantics", "legal-math-modeling", "tests.",
+        "DecisionStatusV4", "compiler_core.application",
+    )):
+        fail("W3-02 production graph imports a legacy, test, companion, or decision oracle")
+    if any(marker not in argumentation_source for marker in (
+        "class ArgumentGraphV4",
+        "class ArgumentationEvaluationV4",
+        "class PermissionRelationV4",
+        "def evaluate_argument_graph(",
+        "attack_type=\"priority_defeat\"",
+        "reasons = label_reasons(",
+        "projection.setdefault(argument.claim_ref, []).append(reference)",
+        "if attack.attack_type != \"exception\"",
+        "elif undecided:\n        state = \"disputed\"",
+    )):
+        fail("W3-02 production graph lacks typed defeat, witness, or fail-closed semantics")
+    legacy_markers = (
+        "def grounded_extension(", "def scc_decomposition(", "def find_cycles(",
+        "def label_reasons(", "def proof_trace(",
+        "def build_attack_graph_from_evaluator(", "def build_attack_edges_from_rules(",
+    )
+    if any(marker not in argumentation_source for marker in legacy_markers):
+        fail("W3-02 removed a required legacy compatibility surface before W5")
+    if any(marker not in contract_tests for marker in (
+        "test_priority_permission_attack_mutations_change_result",
+        "test_permission_three_state_is_a_graph_label_observation",
+        "test_self_mutual_and_cycle_are_undecided_and_never_accepted",
+        "test_claim_projection_retains_out_and_undecided_argument_witnesses",
+        "test_collection_permutation_has_identical_graph_and_evaluation_bytes",
+        "test_disconnected_argument_does_not_change_existing_component_labels",
+        "test_production_argumentation_imports_no_v2_test_or_companion_oracle",
+    )):
+        fail("W3-02 contract tests lack the required graph and boundary matrix")
+    try:
+        mutation_tree = ast.parse(mutation_tests)
+        independent_oracle = next(
+            node for node in mutation_tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "_independent_grounded"
+        )
+        independent_source = ast.get_source_segment(
+            mutation_tests, independent_oracle,
+        ) or ""
+    except (SyntaxError, StopIteration):
+        independent_source = ""
+    if not independent_source or "evaluate_argument_graph(" in independent_source:
+        fail("W3-02 independent mutation oracle is absent or calls production evaluation")
+    if any(marker not in mutation_tests for marker in (
+        "test_pinned_b02_winner_to_loser_priority_direction_matches_independent_oracle",
+        "test_priority_ignored_and_reversed_mutants_are_killed",
+        "test_undecided_accepted_mutant_is_killed",
+        "test_permission_dispute_collapse_mutant_is_killed",
+        "test_duplicate_claim_dictionary_overwrite_mutant_is_killed",
+        "test_priority_must_not_suppress_an_independent_reverse_attack",
+    )):
+        fail("W3-02 semantic mutation lane lacks a required independent kill")
+    if any(marker not in runner_source for marker in (
+        "W3-02 receipt does not bind its exact 10 committed paths",
+        "w3-02-exact-argumentation-reports",
+        "w3-02-exact-committed-scope",
+        "_w3_02_test_report_problems(reports)",
+    )):
+        fail("W3-02 runner resume does not rebuild its executable receipt contract")
+    live_binding_call = "_w3_02_live_binding_problems(" + "state_root)"
+    if runner_source.count(live_binding_call) != 2:
+        fail("W3-02 runner lacks exact companion postflight and resume binding")
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        fail("W3-02 pinned B02 state root is unavailable")
+    else:
+        try:
+            live_b02 = _live_b02_binding(Path(raw_state_root).resolve())
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+            fail(f"W3-02 pinned B02 binding failed: {type(exc).__name__}: {exc}")
+        else:
+            if live_b02 != {
+                "receipt_digest": W0_B02_COMPANION_BINDING["receipt_digest"],
+                "intake_digest": W0_B02_COMPANION_BINDING["intake_digest"],
+                "differential_digest": "sha256:"
+                + sha256_hex(
+                    (Path(raw_state_root).resolve() / "evidence" / "B02" / "differential.json").read_bytes()
+                ),
+                "companion_commit": W0_B02_COMPANION_BINDING["commit"],
+                "companion_tree": W0_B02_COMPANION_BINDING["tree"],
+            }:
+                fail("W3-02 pinned B02 live binding drifted")
+
+    if cmd_w3_01_lossless_ir_gate() != EXIT_OK:
+        fail("W3-02 prerequisite machine gate failed: W3-01")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W3-02 argumentation gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W3-02 argumentation gate OK: {W3_02_TEST_CASE_COUNT} contract/mutation/"
+        "legacy/B02/governance cases"
+    )
+    return EXIT_OK
+
+
+def cmd_w3_02_argumentation_gate() -> int:
+    try:
+        return _cmd_w3_02_argumentation_gate()
+    except Exception as exc:
+        print(
+            f"W3-02 argumentation gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -10162,6 +10539,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w2_06_trust_chain_gate()
     if args.wave == "W3-01":
         return cmd_w3_01_lossless_ir_gate()
+    if args.wave == "W3-02":
+        return cmd_w3_02_argumentation_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -10388,27 +10767,40 @@ def _run_argv(
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
     })
-    try:
-        cp = subprocess.run(
-            exact_argv, cwd=str(cwd), capture_output=True, check=False,
-            timeout=timeout_seconds, env=execution_environment,
-        )
-        exit_code = cp.returncode
-        stdout = cp.stdout
-        stderr = cp.stderr
-    except subprocess.TimeoutExpired as exc:
-        timed_out = True
-        exit_code = None
-        stdout = exc.stdout or b""
-        stderr = exc.stderr or b""
-        if isinstance(stdout, str):
-            stdout = stdout.encode("utf-8", errors="replace")
-        if isinstance(stderr, str):
-            stderr = stderr.encode("utf-8", errors="replace")
-    except OSError as exc:
-        exit_code = 127
+    pinned_spec = state_root.resolve() / "inputs" / "legal-math-modeling"
+    preflight_error = ""
+    if "tests/unit/test_spec_shadow_harness.py" in exact_argv:
+        checkout_problems = _companion_checkout_problems(pinned_spec)
+        if checkout_problems:
+            preflight_error = "; ".join(checkout_problems)
+        else:
+            execution_environment["LEGAL_MATH_MODELING_ROOT"] = str(pinned_spec)
+    if preflight_error:
+        exit_code = EXIT_GATE_FAIL
         stdout = b""
-        stderr = str(exc).encode("utf-8", errors="replace")
+        stderr = preflight_error.encode("utf-8")
+    else:
+        try:
+            cp = subprocess.run(
+                exact_argv, cwd=str(cwd), capture_output=True, check=False,
+                timeout=timeout_seconds, env=execution_environment,
+            )
+            exit_code = cp.returncode
+            stdout = cp.stdout
+            stderr = cp.stderr
+        except subprocess.TimeoutExpired as exc:
+            timed_out = True
+            exit_code = None
+            stdout = exc.stdout or b""
+            stderr = exc.stderr or b""
+            if isinstance(stdout, str):
+                stdout = stdout.encode("utf-8", errors="replace")
+            if isinstance(stderr, str):
+                stderr = stderr.encode("utf-8", errors="replace")
+        except OSError as exc:
+            exit_code = 127
+            stdout = b""
+            stderr = str(exc).encode("utf-8", errors="replace")
     return {
         "argv": exact_argv,
         "expected_exit_code": expected_exit_code,
@@ -11865,6 +12257,55 @@ def _w3_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w3_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W3-02 argumentation JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W3-02 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W3_02_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W3_02_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W3_02_TEST_CASE_COUNT,
+        "junit_unique_cases": W3_02_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W3_02_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W3-02 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W3-02 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
+def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
+    """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
+
+    try:
+        _live_b02_binding(state_root.resolve())
+    except Exception as exc:
+        return [
+            "W3-02 live companion binding is invalid: "
+            f"{type(exc).__name__}: {exc}"
+        ]
+    return []
+
+
 AUTO_RUNNER_COMPLETION_ASSERTION_IDS = (
     "runner-clean-worktree",
     "runner-committed-delta",
@@ -12103,6 +12544,36 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W3-01 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W3-02":
+        problems.extend(_w3_02_test_report_problems(reports))
+        problems.extend(_w3_02_live_binding_problems(state_root))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W3_02_CHANGED_PATHS)
+            or len(changed_paths) != len(W3_02_CHANGED_PATHS)
+        ):
+            problems.append("W3-02 receipt does not bind its exact 10 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W3_02_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W3-02 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w3-02-exact-argumentation-reports",
+            "w3-02-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W3-02 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -12973,6 +13444,40 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 12 exact W3-01 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W3-02":
+        report_problems = [
+            *_w3_02_test_report_problems(test_reports),
+            *_w3_02_live_binding_problems(state_root),
+        ]
+        expected_paths = set(W3_02_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W3_02_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w3-02-exact-argumentation-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W3_02_TEST_CASE_COUNT} contract/mutation/legacy/B02/governance "
+                "pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-02-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 10 exact W3-02 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

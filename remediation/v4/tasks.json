@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "e61a800f2e3838bf8fa3a16b7b4ef5a0e5718d6daa78f5b234337d9127a67644",
+    "plan_sha256": "4afd224e6ab1a3a62501baeb2ebe27bf42b93373774e60b9baf3509d1f68477e",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2364,9 +2364,16 @@
       ],
       "objective": "重写 argumentation.py；priority 实际改变 defeat；permission 三态可达；UNDEC 不 accepted",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/argumentation.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/contract/test_argumentation.py",
-        "tests/semantic_mutation/test_argumentation_mutation.py"
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/semantic_mutation/test_argumentation_mutation.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2376,9 +2383,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W3-02"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W3-02",
+          "tests/contract/test_argumentation.py",
+          "tests/semantic_mutation/test_argumentation_mutation.py",
+          "tests/unit/test_grounded_g9a.py",
+          "tests/unit/test_argumentation_v2.py",
+          "tests/unit/test_spec_shadow_harness.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W3-02/argumentation-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

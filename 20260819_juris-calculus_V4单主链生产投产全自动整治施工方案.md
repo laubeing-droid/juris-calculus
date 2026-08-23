@@ -633,9 +633,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W3-02　ArgumentationV4
 
 - **Depends / audit**：`W3-01 / P1-06`。
-- **Paths**：重写 `compiler_core/argumentation.py`；reference fixtures/tests。`argumentation_v2.py` 待 W5 删除。
-- **动作**：priority 实际改变 defeat；permission 三态可达；exception/rebuttal/undercut typed；graph state 从 labels 推导；claim→arguments 用多值集合保留 witnesses；快慢路同 oracle。
-- **Gate**：self/mutual/cycle/UNDEC/priority reversal/permission conflict/duplicate claim/disconnected graph/edge permutation mutations 全杀；UNDEC 不 accepted。
+- **Paths**：仅以下 10 个 exact paths：本方案、`compiler_core/argumentation.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_argumentation.py`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/semantic_mutation/test_argumentation_mutation.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。`compiler_core/argumentation_v2.py`、既有 grounded/V2/spec-shadow tests 仅作不修改回归输入，待 W5 删除或切断；不修改 frozen contracts、module authority、Application、DecisionStatus 或 issue map。
+- **动作**：以 B02 pinned companion receipt/intake/differential 为受保护语义边界：active priority 只新增 `preferred/winner → defeated/loser` 的 typed `priority_defeat`，不发明 suppression；exception/rebuttal/undercut 均作为保留类型的有向 Dung edge，只有 exception 生成 exception resolution。新增 canonical graph/evaluation envelope，permission `holds|does_not_hold|disputed` 只观察相关 claim 的全部 IN/OUT/UNDEC labels，不生成也不决定 slice `DecisionStatus`；graph state 从 labels 推导，claim→arguments 保存全部多值 witnesses。移除 caller-controlled 快慢路，统一复用一个 grounded oracle；P1-06 mutation 从 `RED_AT_TASK` 转为 `ACTIVE_REQUIRED`。
+- **Gate**：self/mutual/cycle/UNDEC/priority reversal/permission conflict/duplicate claim/disconnected graph/edge collection permutation mutations 全杀；priority endpoint reversal 必须改变结果，但 collection 重排必须 canonical/result 不变；UNDEC 不 accepted，priority cycle 明确 `cycle_blocked`。外部 JUnit 精确绑定新 contract/mutation、既有 grounded/V2、B02 spec-shadow 与 required-manifest governance 六个文件，零 skip/xfail；runner 绑定 exact case identity、10 个 committed path digests、attempt 1→2 receipt chain 与 `w3-02-exact-argumentation-reports`、`w3-02-exact-committed-scope` 两个专属 assertions。P1-06 仍保持 registered，独立 checker/reference replacement 与 critical survivor 全杀继续留给 `W3-04/W3-05`。
 - **Commit**：`fix(argument): implement priority permission and complete witness semantics`。
 
 ### W3-03　Certified backend invocation

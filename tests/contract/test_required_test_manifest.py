@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
@@ -214,12 +215,107 @@ def nested_alias_bypass():
     monkeypatch.setenv("PYTEST_ADDOPTS", "--runxfail")
     monkeypatch.setenv("PYTEST_PLUGINS", "hostile_plugin")
     monkeypatch.setenv("PYTHONPATH", "hostile-import-root")
+    monkeypatch.setenv("LEGAL_MATH_MODELING_ROOT", "hostile-companion-root")
     environment = RUNNER._required_pytest_environment()
     assert "PYTEST_ADDOPTS" not in environment
     assert "PYTEST_PLUGINS" not in environment
     assert "PYTHONPATH" not in environment
+    assert "LEGAL_MATH_MODELING_ROOT" not in environment
     assert environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
     assert environment["PYTHONIOENCODING"] == "utf-8"
+
+    companion = tmp_path / "state" / "inputs" / "legal-math-modeling"
+    reference = companion / "theory" / "spec" / "reference_semantics.py"
+    certificate = companion / "theory" / "spec" / "certificate_schema.py"
+    reference.parent.mkdir(parents=True)
+    reference.write_text("REFERENCE = 1\n", encoding="utf-8")
+    certificate.write_text("CERTIFICATE = 1\n", encoding="utf-8")
+
+    def companion_git(*argv: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(companion), *argv],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+    subprocess.run(
+        ["git", "init", "--quiet", str(companion)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    companion_git("add", ".")
+    companion_git(
+        "-c", "user.name=V4 Test", "-c", "user.email=v4@example.invalid",
+        "commit", "--quiet", "-m", "pinned",
+    )
+    companion_binding = {
+        "commit": companion_git("rev-parse", "HEAD"),
+        "tree": companion_git("rev-parse", "HEAD^{tree}"),
+        "required_files": {
+            "theory/spec/reference_semantics.py": RUNNER.sha256_hex(reference.read_bytes()),
+            "theory/spec/certificate_schema.py": RUNNER.sha256_hex(certificate.read_bytes()),
+        },
+    }
+    assert RUNNER._companion_checkout_problems(companion, companion_binding) == []
+    assert RUNNER._companion_checkout_problems(
+        tmp_path / "missing-companion", companion_binding,
+    ) == ["pinned companion checkout is missing"]
+
+    production_companion_binding = RUNNER.W0_B02_COMPANION_BINDING
+    monkeypatch.setattr(RUNNER, "W0_B02_COMPANION_BINDING", companion_binding)
+    attempt_dir = tmp_path / "companion-attempt"
+    attempt_dir.mkdir()
+    companion_command = RUNNER._run_argv(
+        [
+            "{python}", "-B", "-c",
+            "import os; print(os.environ['LEGAL_MATH_MODELING_ROOT'])",
+            "tests/unit/test_spec_shadow_harness.py",
+        ],
+        0,
+        attempt_dir,
+        1,
+        30,
+        tmp_path / "state",
+    )
+    assert companion_command["exit_code"] == 0
+    assert Path(companion_command["stdout"]["path"]).read_text(
+        encoding="utf-8",
+    ).strip() == str(companion.resolve())
+
+    reference.write_text("REFERENCE = 2\n", encoding="utf-8")
+    dirty_problems = RUNNER._companion_checkout_problems(companion, companion_binding)
+    assert "pinned companion checkout is dirty" in dirty_problems
+    assert any("required file drifted" in item for item in dirty_problems)
+    dirty_command = RUNNER._run_argv(
+        [
+            "{python}", "-B", "-c", "raise SystemExit(0)",
+            "tests/unit/test_spec_shadow_harness.py",
+        ],
+        0,
+        attempt_dir,
+        2,
+        30,
+        tmp_path / "state",
+    )
+    assert dirty_command["exit_code"] == RUNNER.EXIT_GATE_FAIL
+    assert "dirty" in Path(dirty_command["stderr"]["path"]).read_text(encoding="utf-8")
+
+    reference.write_text("REFERENCE = 1\n", encoding="utf-8")
+    extra = companion / "extra.txt"
+    extra.write_text("new tree\n", encoding="utf-8")
+    companion_git("add", "extra.txt")
+    companion_git(
+        "-c", "user.name=V4 Test", "-c", "user.email=v4@example.invalid",
+        "commit", "--quiet", "-m", "repointed",
+    )
+    repointed = RUNNER._companion_checkout_problems(companion, companion_binding)
+    assert "pinned companion commit drifted" in repointed
+    assert "pinned companion tree drifted" in repointed
+    monkeypatch.setattr(
+        RUNNER, "W0_B02_COMPANION_BINDING", production_companion_binding,
+    )
 
     stdout = tmp_path / "w0-04-stdout.bin"
     stdout.write_text(
@@ -313,13 +409,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.20.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.21.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -803,6 +899,136 @@ def nested_alias_bypass():
             "completion assertions" in problem
             for problem in RUNNER._auto_receipt_resume_problems(
                 w3_01_task, wrong_assertion, tmp_path,
+            )
+        )
+
+    w3_02_reports = copy.deepcopy(w1_02_reports)
+    w3_02_reports[0].update({
+        "passed": RUNNER.W3_02_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W3_02_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W3_02_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W3_02_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W3_02_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w3_02_test_report_problems(w3_02_reports) == []
+    w3_02_reports[0]["junit_cases"] -= 1
+    assert RUNNER._w3_02_test_report_problems(w3_02_reports) == [
+        "W3-02 pytest junit_cases drifted: "
+        f"{RUNNER.W3_02_TEST_CASE_COUNT - 1} != {RUNNER.W3_02_TEST_CASE_COUNT}"
+    ]
+    w3_02_reports[0]["junit_cases"] = RUNNER.W3_02_TEST_CASE_COUNT
+    wrong_w3_02_digest = "sha256:" + "f" * 64
+    if wrong_w3_02_digest == RUNNER.W3_02_TEST_CASE_IDS_DIGEST:
+        wrong_w3_02_digest = "sha256:" + "e" * 64
+    w3_02_reports[0]["junit_case_ids_digest"] = wrong_w3_02_digest
+    assert RUNNER._w3_02_test_report_problems(w3_02_reports) == [
+        "W3-02 pytest junit_case_ids_digest drifted: "
+        f"{wrong_w3_02_digest!r} != {RUNNER.W3_02_TEST_CASE_IDS_DIGEST!r}"
+    ]
+    w3_02_reports[0]["junit_case_ids_digest"] = RUNNER.W3_02_TEST_CASE_IDS_DIGEST
+    w3_02_task = next(
+        item
+        for item in json.loads(RUNNER.DEFAULT_PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W3-02"
+    )
+    assert list(RUNNER.W3_02_CHANGED_PATHS) == w3_02_task["allowed_paths"]
+    w3_02_assertion_ids = [
+        "all-commands-passed",
+        "runner-clean-worktree",
+        "runner-committed-delta",
+        "runner-state-artifacts",
+        "w3-02-exact-argumentation-reports",
+        "w3-02-exact-committed-scope",
+    ]
+    assert RUNNER._expected_auto_completion_assertion_ids(
+        w3_02_task,
+        "w3-02-exact-argumentation-reports",
+        "w3-02-exact-committed-scope",
+    ) == w3_02_assertion_ids
+    w3_02_commands = [
+        {
+            "argv": RUNNER._expanded_argv(argv, tmp_path),
+            "expected_exit_code": expected,
+            "exit_code": expected,
+            "timed_out": False,
+            "stdout": stream(f"w3-02-{index}-stdout"),
+            "stderr": stream(f"w3-02-{index}-stderr"),
+        }
+        for index, (argv, expected) in enumerate(
+            zip(w3_02_task["argv"], w3_02_task["expected_exit_codes"]), 1
+        )
+    ]
+    w3_02_receipt = {
+        "command_results": w3_02_commands,
+        "test_reports": copy.deepcopy(w3_02_reports),
+        "changed_paths": list(RUNNER.W3_02_CHANGED_PATHS),
+        "artifact_digests": {
+            f"result-path:{path}": "sha256:" + "a" * 64
+            for path in RUNNER.W3_02_CHANGED_PATHS
+        },
+        "completion_assertions": [
+            {"id": assertion_id, "ok": True}
+            for assertion_id in w3_02_assertion_ids
+        ],
+        "runner_version": RUNNER.RUNNER_VERSION,
+    }
+    with monkeypatch.context() as resume_patch:
+        resume_patch.setattr(
+            RUNNER,
+            "_structured_test_reports",
+            lambda *_args, **_kwargs: copy.deepcopy(w3_02_reports),
+        )
+        resume_patch.setattr(
+            RUNNER, "_live_b02_binding", lambda _state_root: {"state": "pinned"},
+        )
+        assert RUNNER._auto_receipt_resume_problems(
+            w3_02_task, w3_02_receipt, tmp_path,
+        ) == []
+
+        for drift in ("missing", "dirty", "repointed"):
+            def reject_live_binding(_state_root, detail=drift):
+                raise ValueError(detail)
+
+            resume_patch.setattr(RUNNER, "_live_b02_binding", reject_live_binding)
+            assert RUNNER._auto_receipt_resume_problems(
+                w3_02_task, w3_02_receipt, tmp_path,
+            ) == [
+                "W3-02 live companion binding is invalid: ValueError: " + drift,
+            ]
+        resume_patch.setattr(
+            RUNNER, "_live_b02_binding", lambda _state_root: {"state": "pinned"},
+        )
+
+        wrong_command = copy.deepcopy(w3_02_receipt)
+        wrong_command["command_results"][1]["argv"] = ["wrong-pytest-command"]
+        assert any(
+            "command 2" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w3_02_task, wrong_command, tmp_path,
+            )
+        )
+
+        wrong_report = copy.deepcopy(w3_02_receipt)
+        wrong_report["test_reports"][0]["passed"] -= 1
+        assert "AUTO receipt structured reports drifted" in (
+            RUNNER._auto_receipt_resume_problems(w3_02_task, wrong_report, tmp_path)
+        )
+
+        wrong_paths = copy.deepcopy(w3_02_receipt)
+        wrong_paths["changed_paths"].pop()
+        assert any(
+            "exact" in problem and "committed paths" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w3_02_task, wrong_paths, tmp_path,
+            )
+        )
+
+        wrong_assertion = copy.deepcopy(w3_02_receipt)
+        wrong_assertion["completion_assertions"][-2]["id"] = "wrong-report-assertion"
+        assert any(
+            "completion assertions" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w3_02_task, wrong_assertion, tmp_path,
             )
         )
 
