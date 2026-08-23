@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.43.0"
+RUNNER_VERSION = "0.44.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -103,6 +103,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.41.0": 5,
     "0.42.0": 5,
     "0.43.0": 5,
+    "0.44.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17138,7 +17139,7 @@ def _w6_04_build_evidence(
             raise ValueError("COMMITTED_LOCK_ARCHIVE_UNREADABLE")
         committed_locks: dict[str, Path] = {}
         with zipfile.ZipFile(lock_archive) as archive:
-            if set(archive.namelist()) != set(lock_members):
+            if set(archive.namelist()) != {"requirements/", *lock_members}:
                 raise ValueError("COMMITTED_LOCK_ARCHIVE_MEMBER_DRIFT")
             for profile in ("build", "core", "test"):
                 lock_path = committed_lock_root / f"{profile}.lock"
