@@ -683,11 +683,11 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W4-03　AuditBundleV4 writer、verify、replay
 
 - **Depends / audit**：`W4-02, W3-04 / P0-07, P0-12, P1-10..13`。
-- **Paths**：重写 `compiler_core/audit_bundle.py`、audit tests。
+- **Allowed paths**：精确 14 项：`20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md`、`compiler_core/artifact_store.py`、`compiler_core/audit_bundle.py`、`compiler_core/independent_checker.py`、`compiler_core/storage.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_audit_bundle.py`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/security/test_audit_bundle_attacks.py`、`tests/storage_chaos/test_audit_bundle_recovery.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；其中 `artifact_store.py`、`independent_checker.py`、`storage.py` 必须 byte-stable，仅以 frozen digest 绑定，实际 changed paths 恰为其余 11 项。
 - **固定文件集**：`input.json`、`source-index.json`、`fact-admission.json`、`rule-pack.json`、translation/backend/checker receipts、`events.jsonl`、`graph.json`、`result.json`、`certificate.json`、`manifest.json`、`checksums.sha256`、`COMPLETE`。
 - **动作**：先算不含 certificate/full manifest/checksums/COMPLETE 的 core digest，certificate 绑定 core；full manifest 再绑定 certificate 和所有 files；本地 full verify 成功后 COMPLETE-last。已有 COMPLETE 只返回磁盘验证解码对象；差异为 `RUN_ID_COLLISION`。
 - **动作**：`verify_run` 必须从 COMPLETE 独立重算 manifest、certificate、receipt DAG、签名/撤销、build 和全部摘要，不信 evaluate 返回的 status；run ref 是 opaque capability。`read_artifact` handle 绑定 run/artifact/scope/expiry/max-bytes，每块返回 offset/length/next/chunk digest/content type，不返回宿主路径。
-- **Gate**：少/多/替换/重排/bit flip 任一文件，old digest+new result、提前 COMPLETE、当前代码重放旧 build、V3 bundle、跨 run/过期/越界 handle 均失败；offline replay 只从封存 runtime/pack/trust/config/provider/build 材料执行，禁网、禁当前环境 fallback、禁写原 run。
+- **Gate**：少/多/替换/重排/bit flip 任一文件，old digest+new result、提前 COMPLETE、当前代码重放旧 build、V3 bundle、跨 run/过期/越界 handle 均失败；offline replay 只从封存 runtime/pack/trust/config/provider/build 材料执行，禁网、禁当前环境 fallback、禁写原 run。真实 receipt 必须由 byte-stable `IndependentCheckerV4` 从封存 bytes 重算，caller gate/status/digest 不得触发证书签发；两处中断点均只允许 complete-or-absent 并在续写前 quarantine。runner 绑定 `w4-03-exact-audit-reports`、`w4-03-independent-atomic-bundle-contract`、`w4-03-exact-committed-scope` 三项专属 assertions。
 - **Commit**：`feat(audit): write verify and replay atomic V4 bundles`。
 
 ### W4-04　CertificateV4 issuer/verifier

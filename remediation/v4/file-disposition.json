@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "0908f01937ffe1d308645e65d185d36ac164e9ad84e784fad3146e72cdb42d2e",
-  "count": 392,
+  "plan_sha256": "3ab9bc81cf46e7b228cb1634704c94f5074e46a67b52042041f53fb703e76a49",
+  "count": 395,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1767,6 +1767,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_audit_bundle.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-03"
+    },
+    {
       "path": "tests/contract/test_backend_router.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2229,6 +2236,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/security/test_audit_bundle_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-03"
+    },
+    {
       "path": "tests/security/test_backend_attacks.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2311,6 +2325,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/test_audit_bundle_recovery.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-03"
     },
     {
       "path": "tests/storage_chaos/test_generation_isolation.py",

@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "0908f01937ffe1d308645e65d185d36ac164e9ad84e784fad3146e72cdb42d2e",
+    "plan_sha256": "3ab9bc81cf46e7b228cb1634704c94f5074e46a67b52042041f53fb703e76a49",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2951,13 +2951,25 @@
         "P0-12",
         "P1-10",
         "P1-11",
+        "P1-12",
         "P1-13"
       ],
       "objective": "重写 audit_bundle.py；AuditBundleV4 writer/verify/replay；read_artifact handle 绑定 run/artifact/scope/expiry/max-bytes",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/artifact_store.py",
         "compiler_core/audit_bundle.py",
+        "compiler_core/independent_checker.py",
+        "compiler_core/storage.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/contract/test_audit_bundle.py",
-        "tests/security/test_audit_bundle_attacks.py"
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_audit_bundle_attacks.py",
+        "tests/storage_chaos/test_audit_bundle_recovery.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2967,9 +2979,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-03",
+          "tests/contract/test_audit_bundle.py",
+          "tests/security/test_audit_bundle_attacks.py",
+          "tests/storage_chaos/test_audit_bundle_recovery.py",
+          "tests/contract/test_independent_checker.py::test_real_horn_execution_issues_and_verifies_bound_receipt",
+          "tests/storage_chaos/test_generation_isolation.py::test_v3_and_v4_state_generations_are_disjoint",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W4-03.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

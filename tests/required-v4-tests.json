@@ -344,7 +344,7 @@
       "suite": "security",
       "selector": "tests/security/test_audit_bundle_attacks.py::test_caller_gate_and_digest_cannot_issue_certificate",
       "owner_task": "W4-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Self-report all PASS gates and receipt digests.",
       "red_failure": "Caller gate strings and digests must not issue a certificate."
     },
@@ -394,7 +394,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_audit_bundle.py::test_existing_bundle_cannot_mix_old_digest_with_new_result",
       "owner_task": "W4-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Reuse an old COMPLETE bundle with a new result.",
       "red_failure": "Run identity mismatch must prevent bundle reuse."
     },

@@ -186,6 +186,9 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/contract/test_v4_legacy_rejection.py": "W1-06",
     "tests/contract/test_v4_foundation_contract.py": "W4-06",
     "tests/contract/test_run_identity.py": "W4-01",
+    "tests/contract/test_audit_bundle.py": "W4-03",
+    "tests/security/test_audit_bundle_attacks.py": "W4-03",
+    "tests/storage_chaos/test_audit_bundle_recovery.py": "W4-03",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
@@ -398,7 +401,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "0908f01937ffe1d308645e65d185d36ac164e9ad84e784fad3146e72cdb42d2e",
+        "plan_sha256": "3ab9bc81cf46e7b228cb1634704c94f5074e46a67b52042041f53fb703e76a49",
         "count": len(entries),
         "paths": entries,
     }
