@@ -1,1107 +1,1639 @@
-﻿"""JC v3内部唯一案件求值编排；Phase 4完成审计包前不作为公共API导出。"""
+"""The sole V4 formal evaluation spine."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
-from itertools import product
-from datetime import date
-from pathlib import Path
-from typing import Any, Iterable, Mapping
+from dataclasses import dataclass
 
-from compiler_core.argumentation import build_attack_graph_from_evaluator, grounded_extension
-from compiler_core.audit import AuditRecorder
-from compiler_core.canonical_serialization import content_id, semantic_digest, serialize_aaf
+from compiler_core.argumentation import (
+    ArgumentGraphV4,
+    ArgumentationV4Error,
+    PermissionRelationV4,
+    argument_ref_v4,
+    evaluate_argument_graph,
+)
+from compiler_core.artifact_store import ArtifactResolverV4
+from compiler_core.audit_bundle import (
+    AuditArtifactV4,
+    AuditBundleMaterialsV4,
+    AuditBundleStoreV4,
+    AuditEventV4,
+)
+from compiler_core.backend_router import (
+    BACKEND_RESULT_KIND,
+    BACKEND_SCOPE,
+    BackendExecutionV4,
+    BackendRouterV4,
+    BackendV4Error,
+)
+from compiler_core.backends import AAF_PROVIDER_ID, EXACT_PROVIDER_ID, HORN_PROVIDER_ID
+from compiler_core.canonical_serialization import (
+    DigestV4,
+    canonical_bytes,
+    digest_value,
+    parse_json_document,
+)
+from compiler_core.certificates import CertificateIssuerV4
 from compiler_core.contracts import (
-    BranchResult,
-    CertificateKind,
-    CaseRequest,
-    ExecutionStatus,
-    MissingFactReview,
-    ResultStatus,
-    RulePackDescriptor,
-    SCHEMA_VERSION,
-    SemanticResult,
-    emit_audit_event,
+    ArgumentV4,
+    AttackV4,
+    BranchResultV4,
+    CanonicalTimeV4,
+    CaseRequestV4,
+    CertificateKindV4,
+    ClaimResultV4,
+    CompletenessStateV4,
+    ContentRefV4,
+    ContractV4Error,
+    DecisionStatusV4,
+    ErrorV4,
+    EvaluationEnvelopeV4,
+    EvidenceManifestV4,
+    ExecutionStatusV4,
+    FactAttestationV4,
+    FactCandidateV4,
+    InterruptionStateV4,
+    MissingFactRequirementV4,
+    PriorityEdgeV4,
+    ProofReceiptV4,
+    ResourceLimitsV4,
+    ReviewStateV4,
+    RuleV4,
+    RunIdentityV4,
+    RuntimeProfileV4,
+    SemanticResultV4,
+    SignatureEnvelopeV4,
+    SourceBundleV4,
+    TransportOutcomeV4,
 )
-from compiler_core.domain_config import get_domain_config
-from compiler_core.evaluator import FixpointEvaluator
-from compiler_core.independent_grounded_checker import check_grounded
-from compiler_core.litigation_engineering import generate_certificate
-from compiler_core.source_manifest import SourceManifest
-from compiler_core.types import (
-    FactTrustStatus,
-    IRState,
-    LegalDomain,
-    LegalFact,
-    LegalRule,
-    is_rule_reasoning_eligible,
+from compiler_core.fact_admission import (
+    CASE_EVIDENCE_SCOPE,
+    CASE_REQUEST_KIND,
+    CASE_REQUEST_SCOPE,
+    EVIDENCE_MANIFEST_KIND,
+    FACT_ADMISSION_SCOPE,
+    FACT_ATTESTATION_KIND,
+    FACT_CANDIDATE_KIND,
+    FACT_PROPOSITION_KIND,
+    LEGAL_APPROVAL_SCOPE,
+    RUN_IDENTITY_KIND,
+    RUN_IDENTITY_SCOPE,
+    FactAdmissionServiceV4,
+    case_request_binding_ref,
 )
-from compiler_core.version import __version__
+from compiler_core.independent_checker import (
+    ARGUMENT_GRAPH_KIND,
+    CHECKER_SCOPE,
+    CheckerExecutionV4,
+    IndependentCheckerV4,
+    IndependentCheckerV4Error,
+)
+from compiler_core.legal_ir import LegalIRCompilationV4, LegalIRCompilerV4
+from compiler_core.rule_packs import (
+    JSON_MEDIA_TYPE,
+    PACK_CONFIG_KIND,
+    RULE_COMPONENT_SCOPE,
+    RULE_KIND,
+    RULE_PACK_SCOPE,
+    RULE_PREMISE_KIND,
+    RulePackVerifierV4,
+    VerifiedRulePackV4,
+)
+from compiler_core.source_service import (
+    SOURCE_BUNDLE_KIND,
+    SourceServiceV4,
+    source_snapshot_ref,
+)
+from compiler_core.trust import TrustVerifierV4
 
 
-ENGINE_VERSION = __version__
-THEOREM_REFS = ("Lean.Dung1995.Grounded.unique", "Lean.Dung1995.Grounded.lfp")
+ReceiptSignerV4 = Callable[
+    [
+        DigestV4,
+        DigestV4,
+        tuple[ContentRefV4, ...],
+        ContentRefV4,
+        CanonicalTimeV4,
+    ],
+    SignatureEnvelopeV4,
+]
 
 
-def evaluate_case(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    rules: Iterable[LegalRule],
-    *,
-    source_manifest: SourceManifest,
-    audit_sink=None,
-    pack_config_files: tuple[Path, ...] = (),
-    checker_strict: bool = False,
-) -> SemanticResult:
-    """按固定顺序编排事实准入、现有求值器、AAF、独立checker和结果校验。"""
+class ApplicationV4Error(RuntimeError):
+    """Stable error for a request that cannot reach the typed-result boundary."""
 
-    if not rule_pack.kind or str(rule_pack.kind).lower() != "official":
-        return _pack_admission_blocked_result(
-            request, rule_pack, pack_config_files, checker_strict,
-            ("RULE_PACK_NOT_FORMAL_READY",), audit_sink,
-        )
-    if rule_pack.review_only:
-        labels = ("RULE_PACK_DEVELOPMENT",) if rule_pack.development_override else ("RULE_PACK_REVIEW_ONLY",)
-        return _pack_admission_blocked_result(
-            request, rule_pack, pack_config_files, checker_strict, labels, audit_sink,
-        )
-    if rule_pack.distribution_channel == "review":
-        return _pack_admission_blocked_result(
-            request, rule_pack, pack_config_files, checker_strict,
-            ("RULE_PACK_REVIEW_CHANNEL",), audit_sink,
-        )
-    if rule_pack.development_override:
-        return _pack_admission_blocked_result(
-            request, rule_pack, pack_config_files, checker_strict,
-            ("RULE_PACK_DEVELOPMENT",), audit_sink,
-        )
-    try:
-        domain = _resolve_rule_pack_context(request, rule_pack)
-    except ValueError as exc:
-        return _pack_admission_blocked_result(
-            request, rule_pack, pack_config_files, checker_strict,
-            ("RULE_PACK_CONTEXT_MISMATCH", str(exc)), audit_sink,
-        )
-    checker_ontology, checker_overrides = _resolve_checker_config_paths(
-        pack_config_files,
-        strict=checker_strict,
-    )
-    run_id = _run_id_for_case(
-        request,
-        rule_pack,
-        domain,
-        tuple(rule_pack.config_files),
-        checker_strict,
-    )
-    recorder = _audit_recorder(run_id, audit_sink)
-    run_profile = _run_profile_for_case(
-        request,
-        rule_pack,
-        domain,
-        tuple(rule_pack.config_files),
-        checker_strict,
-    )
-    try:
-        emit_audit_event(recorder, {
-            "event_type": "RUN_STARTED",
-            "engine_version": ENGINE_VERSION,
-            "run_profile_digest": semantic_digest(run_profile),
-        })
-        emit_audit_event(recorder, {
-            "event_type": "REQUEST_VALIDATED",
-            "request_digest": semantic_digest(request.to_dict()),
-        })
-        all_rules = tuple(rules)
-        relevant_rule_ids = _relevant_rule_ids(request.facts, all_rules)
-        emit_audit_event(recorder, {
-            "event_type": "RELEVANCE_SET_BUILT",
-            "algorithm_version": "premise-closure-v1",
-            "candidate_rule_count": len(relevant_rule_ids),
-            "rule_ids_digest": semantic_digest(relevant_rule_ids),
-        })
-        prepared_rules, candidate_rules = _prepare_rules(
-            request,
-            rule_pack,
-            all_rules,
-            relevant_rule_ids,
-            source_manifest,
-            recorder,
-        )
-        for fact in request.facts:
-            emit_audit_event(recorder, {
-                "event_type": "FACT_ADMISSION",
-                "fact_id": fact.id,
-                "status": fact.status.value,
-                "admitted": fact.can_enter_formal_kernel(),
-                "source_ids": fact.source_ids,
-                "reasoning_tier": fact.reasoning_tier,
-            })
-        unknown = tuple(sorted(fact.id for fact in request.facts if fact.status == FactTrustStatus.UNKNOWN))
-        if unknown:
-            reviews = tuple(_missing_fact_review(fact_id, prepared_rules) for fact_id in unknown)
-            for fact_id in unknown:
-                review = next(item for item in reviews if item.fact_id == fact_id)
-                emit_audit_event(recorder, {
-                    "event_type": "MISSING_FACT",
-                    "fact_id": fact_id,
-                    "reason": "UNKNOWN",
-                    "impacted_rule_ids": review.impacted_rule_ids,
-                    "impacted_claim_ids": review.impacted_claim_ids,
-                    "allowed_answer_types": review.allowed_answer_types,
-                    "source_requirement": review.source_requirement,
-                })
-            return _result(
-                request,
-                run_id,
-                result_status=ResultStatus.MISSING_REQUIRED_FACT,
-                execution_status=ExecutionStatus.ADMISSION_BLOCKED,
-                review_required=True,
-                missing_fact_ids=unknown,
-                missing_fact_review=reviews,
-                risk_labels=("MISSING_REQUIRED_FACT",),
-                audit_sink=recorder,
+    def __init__(self, code: str, detail: str) -> None:
+        self.code = code
+        self.detail = detail
+        super().__init__(f"{code}: {detail}")
+
+
+@dataclass(frozen=True, slots=True)
+class _Failure:
+    stage: str
+    code: str
+
+
+@dataclass(frozen=True, slots=True)
+class _FactState:
+    receipt_refs: tuple[ContentRefV4, ...]
+    admitted_refs: tuple[ContentRefV4, ...]
+    rejected_refs: tuple[ContentRefV4, ...]
+    observed: tuple[tuple[str, ContentRefV4], ...]
+    unresolved_refs: tuple[ContentRefV4, ...]
+    release_condition_refs: tuple[ContentRefV4, ...]
+    hypothetical: bool
+    review: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _ArgumentOutcome:
+    state: str
+    labels: tuple[tuple[ContentRefV4, str, tuple[ContentRefV4, ...]], ...]
+    argument_refs: tuple[ContentRefV4, ...]
+    attack_refs: tuple[ContentRefV4, ...]
+    exception_refs: tuple[ContentRefV4, ...]
+    permission_refs: tuple[ContentRefV4, ...]
+
+
+_EXPECTED_FAILURES = (
+    ContractV4Error,
+    BackendV4Error,
+    IndependentCheckerV4Error,
+    ArgumentationV4Error,
+)
+
+
+def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
+    return reference.kind, reference.digest.hex
+
+
+def _sorted_refs(references: tuple[ContentRefV4, ...]) -> tuple[ContentRefV4, ...]:
+    return tuple(sorted(set(references), key=_ref_key))
+
+
+def _semantic_digest(body: dict[str, object]) -> DigestV4:
+    projection = deepcopy(body)
+    runtime = projection["runtime_profile"]
+    if type(runtime) is not dict:
+        raise ApplicationV4Error("APPLICATION_RESULT", "runtime profile is not an object")
+    runtime.pop("backend_receipt_ref")
+    claims = projection["claims"]
+    if type(claims) is not list:
+        raise ApplicationV4Error("APPLICATION_RESULT", "claims are not an array")
+    for claim in claims:
+        if type(claim) is not dict:
+            raise ApplicationV4Error("APPLICATION_RESULT", "claim is not an object")
+        claim.pop("proof_receipt_refs")
+        claim.pop("checker_receipt_refs")
+    projection.pop("receipt_refs")
+    return digest_value(projection)
+
+
+class ApplicationV4:
+    """Compose the already verified V4 components without an advisory fallback."""
+
+    def __init__(
+        self,
+        resolver: ArtifactResolverV4,
+        trust: TrustVerifierV4,
+        source_service: SourceServiceV4,
+        fact_service: FactAdmissionServiceV4,
+        pack_verifier: RulePackVerifierV4,
+        ir_compiler: LegalIRCompilerV4,
+        backend_router: BackendRouterV4,
+        checker: IndependentCheckerV4,
+        audit_store: AuditBundleStoreV4,
+        certificate_issuer: CertificateIssuerV4,
+        *,
+        receipt_signer: ReceiptSignerV4,
+        clock: Callable[[], CanonicalTimeV4],
+    ) -> None:
+        if (
+            type(resolver) is not ArtifactResolverV4
+            or type(trust) is not TrustVerifierV4
+            or type(source_service) is not SourceServiceV4
+            or type(fact_service) is not FactAdmissionServiceV4
+            or type(pack_verifier) is not RulePackVerifierV4
+            or type(ir_compiler) is not LegalIRCompilerV4
+            or type(backend_router) is not BackendRouterV4
+            or type(checker) is not IndependentCheckerV4
+            or type(audit_store) is not AuditBundleStoreV4
+            or type(certificate_issuer) is not CertificateIssuerV4
+            or not callable(receipt_signer)
+            or not callable(clock)
+        ):
+            raise ApplicationV4Error(
+                "APPLICATION_DEPENDENCY", "ApplicationV4 dependencies are invalid"
             )
-        disputed = tuple(fact for fact in request.facts if fact.status == FactTrustStatus.DISPUTED)
-        if disputed:
-            if request.branch_limit_exceeded:
-                return _result(
-                    request,
-                    run_id,
-                    result_status=ResultStatus.REVIEW_ONLY_RESULT,
-                    execution_status=ExecutionStatus.ADMISSION_BLOCKED,
-                    review_required=True,
-                    risk_labels=("BRANCH_LIMIT_EXCEEDED",),
-                    audit_sink=recorder,
-                )
-            return _evaluate_disputed(
-                request,
-                prepared_rules,
-                candidate_rules,
-                source_manifest,
-                domain=domain,
-                run_id=run_id,
-                disputed=disputed,
-                ontology_path=checker_ontology,
-                overrides_path=checker_overrides,
-                checker_strict=checker_strict,
-                audit_sink=recorder,
+        if (
+            source_service._resolver is not resolver
+            or source_service._trust is not trust
+            or fact_service._resolver is not resolver
+            or fact_service._source_service is not source_service
+            or fact_service._trust is not trust
+            or pack_verifier._resolver is not resolver
+            or pack_verifier._source_service is not source_service
+            or pack_verifier._trust is not trust
+            or ir_compiler._pack_verifier is not pack_verifier
+            or backend_router._ir_compiler is not ir_compiler
+            or backend_router._fact_service is not fact_service
+            or checker._resolver is not resolver
+            or checker._trust is not trust
+            or certificate_issuer._verifier._trust is not trust
+            or audit_store._trust_material.policy != trust.policy
+            or audit_store._trust_material.target_environment != trust.target_environment
+            or audit_store._trust_material.revoked_subject_digests
+            != tuple(sorted(trust._revoked_subjects, key=str))
+            or audit_store._trust_material.revoked_nonces
+            != tuple(sorted(trust._revoked_nonces))
+        ):
+            raise ApplicationV4Error(
+                "APPLICATION_DEPENDENCY_DRIFT",
+                "formal components do not share one resolver, trust, and storage authority",
             )
-        outcome = _evaluate_once(
-            request,
-            request.facts,
-            prepared_rules,
-            candidate_rules,
-            source_manifest,
-            domain=domain,
-            run_id=run_id,
-            ontology_path=checker_ontology,
-            overrides_path=checker_overrides,
-            checker_strict=checker_strict,
-            audit_sink=recorder,
+        self._resolver = resolver
+        self._trust = trust
+        self._source_service = source_service
+        self._fact_service = fact_service
+        self._pack_verifier = pack_verifier
+        self._ir_compiler = ir_compiler
+        self._backend_router = backend_router
+        self._checker = checker
+        self._audit_store = audit_store
+        self._certificate_issuer = certificate_issuer
+        self._receipt_signer = receipt_signer
+        self._clock = clock
+
+    def _document(
+        self,
+        reference: ContentRefV4,
+        *,
+        kind: str,
+        scope: str,
+    ) -> dict[str, object]:
+        raw = self._resolver.resolve_content(
+            reference,
+            expected_artifact_kind=kind,
+            expected_media_type=JSON_MEDIA_TYPE,
+            expected_scope=scope,
+            max_bytes=self._resolver.max_artifact_bytes,
         )
-        return _result_from_outcome(request, run_id, outcome, recorder)
-    except Exception as exc:
         try:
-            emit_audit_event(recorder, {"event_type": "ENGINE_ERROR", "error_type": type(exc).__name__})
-        except Exception:
-            pass
-        return _result(
-            request,
-            run_id,
-            result_status=ResultStatus.ENGINE_ERROR,
-            execution_status=ExecutionStatus.ENGINE_ERROR,
-            review_required=True,
-            risk_labels=("ENGINE_ERROR", type(exc).__name__),
-            audit_sink=None,
-        )
+            value = parse_json_document(raw)
+        except (TypeError, ValueError) as exc:
+            raise ContractV4Error("APPLICATION_JSON", f"{kind} is not strict JSON") from exc
+        if type(value) is not dict or raw != canonical_bytes(value):
+            raise ContractV4Error("APPLICATION_JSON", f"{kind} is not canonical JSON")
+        return value
 
+    def _contract(
+        self,
+        reference: ContentRefV4,
+        *,
+        kind: str,
+        scope: str,
+        contract: type[object],
+        digest_field: str | None = None,
+    ) -> object:
+        document = self._document(reference, kind=kind, scope=scope)
+        if digest_field is None:
+            value = contract.from_dict(document)
+            if value.canonical_digest() != reference.digest:
+                raise ContractV4Error(
+                    "APPLICATION_ARTIFACT_BINDING", f"{kind} bytes differ from their reference"
+                )
+            return value
+        if digest_field in document:
+            raise ContractV4Error(
+                "APPLICATION_DIGEST_BODY", f"{kind} stores a recursive digest field"
+            )
+        value = contract.from_dict({**document, digest_field: str(reference.digest)})
+        if value.canonical_digest() != reference.digest or value.digest_body() != document:
+            raise ContractV4Error(
+                "APPLICATION_ARTIFACT_BINDING", f"{kind} digest body is inconsistent"
+            )
+        return value
 
-def _run_profile_for_case(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    domain: LegalDomain,
-    pack_config_files: tuple[str, ...],
-    checker_strict: bool,
-) -> dict[str, Any]:
-    """构建执行身份，仅用于可复验 run id。"""
+    @staticmethod
+    def _failure(stage: str, exc: Exception) -> _Failure:
+        code = getattr(exc, "code", None)
+        return _Failure(stage, code if type(code) is str and code else "APPLICATION_STAGE_ERROR")
 
-    config = get_domain_config(domain)
-    return {
-        "engine_version": ENGINE_VERSION,
-        "checker_profile": {
-            "name": "independent_grounded_checker.check_grounded",
-            "theorem_refs": list(THEOREM_REFS),
-            "strict_mode": checker_strict,
-            "config_files": sorted(pack_config_files),
-        },
-        "compiler_profile": {"name": "FixpointEvaluator", "domain": domain.value},
-        "semantics_profile": {
-            "implementation": "fixpoint+grounded",
-            "critical_streak_max": config.critical_streak_max,
-            "critical_score_threshold": config.critical_score_threshold,
-            "k_max": config.k_max,
-            "taint_threshold": config.taint_threshold,
-            "hard_audit_threshold": config.hard_audit_threshold,
-            "weights": list(config.weights),
-            "enable_discretionary_taint": config.enable_discretionary_taint,
-            "concept_registry_digest": semantic_digest(sorted(config.concept_registry)),
-            "transition_signature": semantic_digest({
-                step: sorted(next_targets)
-                for step, next_targets in sorted(config.valid_transitions.items())
-            }),
-        },
-        "pack_profile": {
-            "pack_id": rule_pack.pack_id,
-            "pack_version": rule_pack.version,
-            "pack_digest": rule_pack.content_digest,
-            "kind": rule_pack.kind,
-            "jurisdiction": request.jurisdiction,
-            "governing_law": request.governing_law,
-            "distribution_channel": rule_pack.distribution_channel,
-            "review_only": rule_pack.review_only,
-            "development_override": rule_pack.development_override,
-            "config_files": sorted(pack_config_files),
-        },
-    }
+    def _resolve_input(
+        self,
+        request_ref: ContentRefV4,
+        run_identity_ref: ContentRefV4,
+    ) -> tuple[CaseRequestV4, RunIdentityV4]:
+        try:
+            request = self._contract(
+                request_ref,
+                kind=CASE_REQUEST_KIND,
+                scope=CASE_REQUEST_SCOPE,
+                contract=CaseRequestV4,
+            )
+            run = self._contract(
+                run_identity_ref,
+                kind=RUN_IDENTITY_KIND,
+                scope=RUN_IDENTITY_SCOPE,
+                contract=RunIdentityV4,
+                digest_field="run_digest",
+            )
+        except _EXPECTED_FAILURES as exc:
+            failure = self._failure("resolver", exc)
+            raise ApplicationV4Error(failure.code, "request or run identity did not resolve") from exc
+        if type(request) is not CaseRequestV4 or type(run) is not RunIdentityV4:
+            raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "resolved input has a wrong type")
+        expected_policy_ref = ContentRefV4("trust-policy", self._trust.policy.canonical_digest())
+        if (
+            run.request_ref != request_ref
+            or run.source_bundle_ref != request.source_bundle_ref
+            or run.evidence_manifest_ref != request.evidence_manifest_ref
+            or run.fact_attestation_refs != request.fact_attestation_refs
+            or run.rule_pack_ref != request.rule_pack_ref
+            or run.trust_policy_ref != expected_policy_ref
+            or run_identity_ref != ContentRefV4(RUN_IDENTITY_KIND, run.canonical_digest())
+        ):
+            raise ApplicationV4Error(
+                "APPLICATION_RUN_BINDING", "run identity does not bind the canonical request"
+            )
+        if self._audit_store._current_engine_build_digest != run.engine_build_digest:
+            raise ApplicationV4Error(
+                "APPLICATION_BUILD_BINDING", "audit authority and run use different builds"
+            )
+        return request, run
 
+    def _trust_failure(self, run: RunIdentityV4, now: CanonicalTimeV4) -> _Failure | None:
+        policy = self._trust.policy
+        if run.trust_policy_ref != ContentRefV4("trust-policy", policy.canonical_digest()):
+            return _Failure("trust", "TRUST_POLICY_MISMATCH")
+        if now < policy.valid_from or (policy.valid_to is not None and not now < policy.valid_to):
+            return _Failure("trust", "TRUST_POLICY_INACTIVE")
+        return None
 
-def _run_id_for_case(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    domain: LegalDomain,
-    pack_config_files: tuple[str, ...],
-    checker_strict: bool,
-) -> str:
-    """带身份的 run id，防止配置变更后误复用旧缓存。"""
-
-    return content_id("run", {
-        "request": request.to_dict(),
-        "run_profile": _run_profile_for_case(
-            request,
-            rule_pack,
-            domain,
-            pack_config_files,
-            checker_strict,
-        ),
-    })
-
-
-def run_id_for_case(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    pack_config_files: tuple[str, ...] = (),
-    checker_strict: bool = False,
-) -> str:
-    """按应用级上下文规则计算run_id，供外部持久化/重放复用。"""
-
-    domain = _resolve_rule_pack_context(request, rule_pack)
-    return _run_id_for_case(request, rule_pack, domain, pack_config_files, checker_strict)
-
-
-def _pack_admission_blocked_result(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    pack_config_files: tuple[Path, ...],
-    checker_strict: bool,
-    risk_labels: tuple[str, ...],
-    audit_sink,
-) -> SemanticResult:
-    """让所有pack早期阻断共享执行身份与最小审计事件。"""
-
-    try:
-        run_id = run_id_for_case(
-            request,
-            rule_pack,
-            tuple(rule_pack.config_files),
-            checker_strict,
-        )
-    except ValueError:
-        run_id = content_id("run", {
-            "request": request.to_dict(),
-            "run_profile": {
-                "engine_version": ENGINE_VERSION,
-                "checker_strict": checker_strict,
-                "config_files": sorted(str(path) for path in pack_config_files),
-                "pack": rule_pack.to_dict(),
-                "context_status": "unresolved",
-            },
-        })
-    recorder = _audit_recorder(run_id, audit_sink)
-    emit_audit_event(recorder, {
-        "event_type": "RUN_STARTED",
-        "engine_version": ENGINE_VERSION,
-    })
-    emit_audit_event(recorder, {
-        "event_type": "REQUEST_VALIDATED",
-        "request_digest": semantic_digest(request.to_dict()),
-    })
-    return _result(
-        request,
-        run_id,
-        result_status=ResultStatus.REVIEW_ONLY_RESULT,
-        execution_status=ExecutionStatus.ADMISSION_BLOCKED,
-        formal_kernel_used=False,
-        review_required=True,
-        checker_accepted=False,
-        certificate_kind=CertificateKind.NONE,
-        claims=(),
-        used_fact_ids=(),
-        used_rule_ids=(),
-        source_ids=(),
-        risk_labels=risk_labels,
-        audit_sink=recorder,
-    )
-
-
-def _resolve_checker_config_paths(
-    pack_config_files: tuple[Path, ...],
-    *,
-    strict: bool,
-) -> tuple[str | None, str | None]:
-    """按 pack 配置路径解析 checker 约束配置；严格模式下缺省项直接失败。"""
-
-    ontology_path: str | None = None
-    overrides_path: str | None = None
-    for candidate in pack_config_files:
-        file_name = Path(candidate).name
-        if file_name == "core_ontology.yaml":
-            ontology_path = str(candidate)
-        elif file_name == "L0_overrides_hk.yaml":
-            overrides_path = str(candidate)
-    if strict and ontology_path is None:
-        raise ValueError("checker strict mode requires core_ontology.yaml in pack_config_files")
-    if strict and overrides_path is None:
-        raise ValueError("checker strict mode requires L0_overrides_hk.yaml in pack_config_files")
-    return ontology_path, overrides_path
-
-
-def _prepare_rules(
-    request: CaseRequest,
-    rule_pack: RulePackDescriptor,
-    rules: tuple[LegalRule, ...],
-    relevant_rule_ids: tuple[str, ...],
-    source_manifest: SourceManifest,
-    audit_sink,
-) -> tuple[tuple[LegalRule, ...], tuple[LegalRule, ...]]:
-    """验证内部pack描述并返回已声明规则的审计可追踪集合。"""
-
-    if (
-        request.rule_pack_id != rule_pack.pack_id
-        or request.rule_pack_version != rule_pack.version
-        or request.rule_pack_digest != rule_pack.content_digest
-    ):
-        raise ValueError("request rule pack does not match verified descriptor")
-    ids = [rule.id for rule in rules]
-    if len(ids) != len(set(ids)):
-        raise ValueError("duplicate rule id")
-    by_id = {rule.id: rule for rule in rules}
-    declared_ids = tuple(
-        rule_id
-        for rule_id in (
-            *rule_pack.verified_rule_ids,
-            *rule_pack.candidate_rule_ids,
-            *rule_pack.rejected_rule_ids,
-        )
-    )
-    if not declared_ids:
-        declared_ids = tuple(rule.id for rule in rules)
-    declared_ids = tuple(dict.fromkeys(declared_ids))
-    missing = sorted(set(declared_ids) - set(by_id))
-    if missing:
-        raise ValueError(f"declared rules missing from runtime pack: {missing}")
-    verified_ids = set(rule_pack.verified_rule_ids)
-    admitted: list[LegalRule] = []
-    candidates: list[LegalRule] = []
-    relevant = set(relevant_rule_ids)
-    for rule_id in declared_ids:
-        if rule_id not in relevant:
-            continue
-        rule = by_id[rule_id]
-        source_verdict = source_manifest.validate_anchor(rule.source_anchor)
-        eligible = (
-            rule_id in verified_ids
-            and is_rule_reasoning_eligible(rule)
-            and source_verdict.get("status") == "VERIFIED"
-        )
-        if rule.id in relevant:
-            emit_audit_event(audit_sink, {
-                "event_type": "RULE_ADMISSION",
-                "rule_id": rule.id,
-                "source_status": source_verdict.get("status", "UNKNOWN"),
-                "source_ids": (
-                    (str(source_verdict["source_snapshot_id"]),)
-                    if source_verdict.get("source_snapshot_id")
-                    else ()
-                ),
-                "admitted": eligible,
-            })
-        (admitted if eligible else candidates).append(rule)
-    return tuple(admitted), tuple(candidates)
-
-
-def _evaluate_disputed(
-    request: CaseRequest,
-    rules: tuple[LegalRule, ...],
-    candidate_rules: tuple[LegalRule, ...],
-    source_manifest: SourceManifest,
-    *,
-    domain: LegalDomain,
-    run_id: str,
-    disputed: tuple[LegalFact, ...],
-    ontology_path: str | None,
-    overrides_path: str | None,
-    checker_strict: bool,
-    audit_sink,
-) -> SemanticResult:
-    """对争议事实做稳定笛卡尔分支；整体永远不升级为正式certificate。"""
-
-    alternatives = [fact.alternatives or ({"value": False}, {"value": True}) for fact in disputed]
-    branches: list[BranchResult] = []
-    used_facts: set[str] = set()
-    used_rules: set[str] = set()
-    sources: set[str] = set()
-    formal_kernel_used = False
-    for index, selected in enumerate(product(*alternatives)):
-        branch_facts = deepcopy(list(request.facts))
-        selected_by_id = {fact.id: alternative for fact, alternative in zip(disputed, selected)}
-        for fact in branch_facts:
-            if fact.id in selected_by_id:
-                fact.status = FactTrustStatus.USER_ASSUMED
-                fact.value = selected_by_id[fact.id].get("value")
-        branch_id = content_id("branch", {"request": request.to_dict(), "alternatives": selected_by_id})
-        emit_audit_event(audit_sink, {
-            "event_type": "BRANCH_CREATED",
-            "branch_id": branch_id,
-            "branch_index": index,
-            "assumptions_digest": semantic_digest(selected_by_id),
-        })
-        outcome = _evaluate_once(
-            request,
-            tuple(branch_facts),
-            rules,
-            candidate_rules,
-            source_manifest,
-            domain=domain,
-            run_id=branch_id,
-            ontology_path=ontology_path,
-            overrides_path=overrides_path,
-            checker_strict=checker_strict,
-            audit_sink=audit_sink,
-        )
-        branches.append(BranchResult(
-            branch_id=branch_id,
-            result_status=outcome["result_status"],
-            claims=outcome["claims"],
-            taint=tuple(sorted(set(outcome["taint"]) | {"disputed"})),
-        ))
-        used_facts.update(outcome["used_fact_ids"])
-        used_rules.update(outcome["used_rule_ids"])
-        sources.update(outcome["source_ids"])
-        formal_kernel_used = formal_kernel_used or outcome["formal_kernel_used"]
-    return _result(
-        request,
-        run_id,
-        result_status=ResultStatus.REVIEW_ONLY_RESULT,
-        execution_status=ExecutionStatus.COMPLETED,
-        review_required=True,
-        formal_kernel_used=formal_kernel_used,
-        branches=tuple(branches),
-        used_fact_ids=tuple(used_facts),
-        used_rule_ids=tuple(used_rules),
-        source_ids=tuple(sources),
-        taint=("disputed",),
-        risk_labels=("DISPUTED_BRANCHES",),
-        audit_sink=audit_sink,
-    )
-
-
-def _evaluate_once(
-    request: CaseRequest,
-    facts: tuple[LegalFact, ...],
-    rules: tuple[LegalRule, ...],
-    candidate_rules: tuple[LegalRule, ...],
-    source_manifest: SourceManifest,
-    domain: LegalDomain,
-    run_id: str,
-    audit_sink,
-    ontology_path: str | None = None,
-    overrides_path: str | None = None,
-    checker_strict: bool = False,
-) -> dict[str, Any]:
-    """运行一条无争议分支；底层算法全部复用现有实现。"""
-
-    admitted = [fact for fact in facts if fact.can_enter_formal_kernel()]
-    assumed = [fact for fact in facts if fact.status == FactTrustStatus.USER_ASSUMED]
-    available = admitted + assumed
-    available_ids = {fact.id for fact in available}
-    relevant_candidate_ids = sorted({
-        fact.id
-        for fact in facts
-        if fact.id not in available_ids
-        and any(fact.id in rule.premise_atoms for rule in rules)
-    })
-    relevant_candidate_rule_ids = sorted(
-        rule.id
-        for rule in candidate_rules
-        if not rule.premise_atoms or set(rule.premise_atoms) & available_ids
-    )
-    state = IRState(
-        facts={fact.id: deepcopy(fact) for fact in available},
-        world_id=run_id,
-        domain=domain,
-        temporal_scope={"fact_date": request.as_of_date, "governing_law": request.governing_law},
-        jurisdiction=request.jurisdiction,
-    )
-    evaluator = FixpointEvaluator(
-        list(rules),
-        get_domain_config(domain),
-        case_date=request.as_of_date,
-        ontology_path=ontology_path,
-        overrides_path=overrides_path,
-        strict=checker_strict,
-    )
-    evaluated_state = evaluator.evaluate(state)
-    rules_by_id = {rule.id: rule for rule in rules}
-    evaluator_events = tuple(
-        _enrich_evaluator_event(_without_runtime_fields(event), rules_by_id)
-        for event in evaluator.audit_log
-    )
-    for event in evaluator_events:
-        emit_audit_event(audit_sink, event)
-    active_claims = {
-        claim_id: claim
-        for claim_id, claim in evaluated_state.claims.items()
-        if claim.confidence > 0 and claim_id not in evaluated_state.blocked_claims
-    }
-    material_event_types = {"RULE_APPLIED", "RULE_EXCEPTION_TRIGGERED", "PROHIBITION_BLOCK"}
-    material_rule_ids = {
-        str(event["rule_id"])
-        for event in evaluator_events
-        if event.get("event_type") in material_event_types and event.get("rule_id")
-    }
-    satisfied_ids = set(evaluated_state.facts) | set(evaluated_state.claims)
-    supporting_rule_ids = {
-        rule.id
-        for rule in rules
-        if rule.head_claim in active_claims
-        and set(rule.premise_atoms).issubset(satisfied_ids)
-    }
-    used_rule_ids = tuple(sorted(material_rule_ids | supporting_rule_ids))
-    argument_witnesses = _argument_witnesses(
-        run_id,
-        used_rule_ids,
-        rules,
-        active_claims,
-        source_manifest,
-    )
-    arguments = [{"id": witness["argument_id"]} for witness in argument_witnesses]
-    claim_attacks = sorted(build_attack_graph_from_evaluator(
-        list(rules),
-        {"labels": {claim_id: claim_id for claim_id in active_claims}},
-    ))
-    priority_edges = _priority_edges(rules)
-    for source, target in claim_attacks:
-        emit_audit_event(audit_sink, {"event_type": "ATTACK", "source": source, "target": target})
-        for priority_rule_id in priority_edges.get((source, target), ()):
-            emit_audit_event(audit_sink, {
-                "event_type": "PRIORITY",
-                "rule_id": priority_rule_id,
-                "source": source,
-                "target": target,
-            })
-    attack_witnesses = _attack_witnesses(argument_witnesses, claim_attacks, rules)
-    argument_attacks = [
-        (witness["source_argument_id"], witness["target_argument_id"])
-        for witness in attack_witnesses
-    ]
-    grounded = grounded_extension(arguments, argument_attacks)
-    labels = {
-        claim_id: label
-        for label, field in (("IN", "accepted"), ("OUT", "rejected"), ("UNDEC", "undecided"))
-        for claim_id in grounded[field]
-    }
-    emit_audit_event(audit_sink, {
-        "event_type": "CHECKER_STARTED",
-        "theorem_refs_digest": semantic_digest(THEOREM_REFS),
-    })
-    serialized_aaf = serialize_aaf(arguments, argument_attacks)
-    checker = check_grounded(serialized_aaf, labels, list(THEOREM_REFS))
-    accepted_argument_ids = set(grounded["accepted"])
-    accepted_claims = tuple(sorted({
-        str(witness["claim_id"])
-        for witness in argument_witnesses
-        if witness["argument_id"] in accepted_argument_ids
-    }))
-    checker_receipt = {
-        "receipt_kind": "independent_grounded_checker",
-        "valid": bool(checker["valid"]),
-        "violations": list(sorted(checker["violations"])),
-        "aaf_digest": semantic_digest({
-            "arguments": arguments,
-            "attacks": argument_attacks,
-        }),
-        "argument_witnesses": list(argument_witnesses),
-        "attack_witnesses": list(attack_witnesses),
-        "claim_projection": {
-            "accepted_argument_ids": sorted(accepted_argument_ids),
-            "accepted_claim_ids": list(accepted_claims),
-        },
-    }
-    emit_audit_event(audit_sink, {
-        "event_type": "CHECKER_VERDICT",
-        "accepted": bool(checker["valid"]),
-        "violations": tuple(sorted(checker["violations"])),
-    })
-    certificates = [
-        generate_certificate(argument_id, arguments, argument_attacks, grounded)
-        for argument_id in sorted(accepted_argument_ids)
-    ]
-    certificates_valid = bool(certificates) and all(certificate.verifiable for certificate in certificates)
-    used_fact_ids = tuple(sorted({
-        premise
-        for rule in rules
-        if rule.id in used_rule_ids
-        for premise in rule.premise_atoms
-        if premise in available_ids
-    }))
-    source_ids, unverified_rules = _verified_sources(used_rule_ids, rules, source_manifest)
-    formal_kernel_used = bool(used_rule_ids)
-    risk_labels: set[str] = set()
-    if relevant_candidate_ids:
-        risk_labels.add("RELEVANT_FACT_NOT_ADMITTED")
-    if relevant_candidate_rule_ids:
-        risk_labels.add("RELEVANT_RULE_NOT_ADMITTED")
-    if unverified_rules:
-        risk_labels.add("USED_RULE_SOURCE_UNVERIFIED")
-    if not grounded["convergent"]:
-        risk_labels.add("GROUNDED_TRUNCATED")
-    permission_used = any(
-        rule.id in used_rule_ids and rule.norm_modality == "PERMISSION"
-        for rule in rules
-    )
-    prohibition_used = bool(evaluated_state.blocked_claims)
-    claim_tainted = any(
-        claim.taint_chain or claim.requires_human_review
-        for claim in active_claims.values()
-    )
-    if permission_used:
-        risk_labels.add("PERMISSION_REQUIRES_REVIEW")
-        for rule in rules:
-            if rule.id in used_rule_ids and rule.norm_modality == "PERMISSION":
-                emit_audit_event(audit_sink, {
-                    "event_type": "PERMISSION",
-                    "rule_id": rule.id,
-                    "claim_id": rule.head_claim,
-                })
-    if prohibition_used:
-        risk_labels.add("PROHIBITION_APPLIED")
-    if claim_tainted:
-        risk_labels.add("TAINT_REQUIRES_REVIEW")
-        for claim_id, claim in sorted(active_claims.items()):
-            if claim.taint_chain or claim.requires_human_review:
-                emit_audit_event(audit_sink, {
-                    "event_type": "TAINT",
-                    "claim_id": claim_id,
-                    "rule_id": next((rule.id for rule in rules if rule.head_claim == claim_id), ""),
-                    "taint": ("claim_taint",),
-                    "taint_source": "formalizable_or_review_threshold",
-                })
-    if grounded["undecided"]:
-        result_status = ResultStatus.CONFLICT_CERTIFICATE
-        certificate_kind = CertificateKind.CONFLICT
-        review_required = True
-        checker_accepted = bool(checker["valid"])
-    elif assumed:
-        result_status = ResultStatus.HYPOTHETICAL_RESULT
-        certificate_kind = CertificateKind.NONE
-        review_required = True
-        checker_accepted = False
-    elif (
-        accepted_claims
-        and checker["valid"]
-        and certificates_valid
-        and formal_kernel_used
-        and not relevant_candidate_ids
-        and not relevant_candidate_rule_ids
-        and not unverified_rules
-        and not permission_used
-        and not claim_tainted
-    ):
-        result_status = ResultStatus.ACCEPTED_FORMAL_RESULT
-        certificate_kind = CertificateKind.FORMAL
-        review_required = False
-        checker_accepted = True
-    else:
-        result_status = ResultStatus.REVIEW_ONLY_RESULT
-        certificate_kind = CertificateKind.NONE
-        review_required = True
-        checker_accepted = False
-    return {
-        "result_status": result_status,
-        "execution_status": ExecutionStatus.COMPLETED,
-        "formal_kernel_used": formal_kernel_used,
-        "review_required": review_required,
-        "checker_accepted": checker_accepted,
-        "certificate_kind": certificate_kind,
-        "claims": accepted_claims,
-        "used_fact_ids": used_fact_ids,
-        "used_rule_ids": used_rule_ids,
-        "source_ids": source_ids,
-        "missing_fact_ids": (),
-        "checker_receipt": checker_receipt,
-        "taint": tuple(sorted(
-            ({"assumption"} if assumed else set())
-            | ({"claim_taint"} if claim_tainted else set())
-        )),
-        "risk_labels": tuple(sorted(risk_labels)),
-    }
-
-
-def _verified_sources(
-    used_rule_ids: tuple[str, ...],
-    rules: tuple[LegalRule, ...],
-    source_manifest: SourceManifest,
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """只接受manifest精确匹配且具备内容hash的规则来源。"""
-
-    by_id = {rule.id: rule for rule in rules}
-    source_ids: set[str] = set()
-    unverified: list[str] = []
-    for rule_id in used_rule_ids:
-        anchor = by_id[rule_id].source_anchor
-        verdict = source_manifest.validate_anchor(anchor)
-        if verdict.get("status") == "VERIFIED":
-            source_ids.add(str(verdict["source_snapshot_id"]))
-        else:
-            unverified.append(rule_id)
-    return tuple(sorted(source_ids)), tuple(sorted(unverified))
-
-
-def _result_from_outcome(request: CaseRequest, run_id: str, outcome: Mapping[str, Any], audit_sink) -> SemanticResult:
-    """把单分支执行结果交给统一不可变契约校验。"""
-
-    return _result(request, run_id, audit_sink=audit_sink, **dict(outcome))
-
-
-def _result(
-    request: CaseRequest,
-    run_id: str,
-    *,
-    result_status: ResultStatus,
-    execution_status: ExecutionStatus,
-    review_required: bool,
-    formal_kernel_used: bool = False,
-    checker_accepted: bool = False,
-    certificate_kind: CertificateKind = CertificateKind.NONE,
-    claims: tuple[str, ...] = (),
-    branches: tuple[BranchResult, ...] = (),
-    used_fact_ids: tuple[str, ...] = (),
-    used_rule_ids: tuple[str, ...] = (),
-    source_ids: tuple[str, ...] = (),
-    missing_fact_ids: tuple[str, ...] = (),
-    missing_fact_review: tuple[MissingFactReview, ...] = (),
-    taint: tuple[str, ...] = (),
-    risk_labels: tuple[str, ...] = (),
-    checker_receipt: Mapping[str, Any] | None = None,
-    audit_sink=None,
-) -> SemanticResult:
-    """先计算不含digest自身的投影，再构造并验证SemanticResult。"""
-
-    values = {
-        "schema_version": SCHEMA_VERSION,
-        "run_id": run_id,
-        "execution_status": execution_status,
-        "result_status": result_status,
-        "formal_kernel_used": formal_kernel_used,
-        "review_required": review_required,
-        "checker_accepted": checker_accepted,
-        "certificate_kind": certificate_kind,
-        "engine_version": ENGINE_VERSION,
-        "pack_id": request.rule_pack_id,
-        "pack_version": request.rule_pack_version,
-        "pack_digest": request.rule_pack_digest,
-        "claims": claims,
-        "branches": branches,
-        "used_fact_ids": used_fact_ids,
-        "used_rule_ids": used_rule_ids,
-        "source_ids": source_ids,
-        "missing_fact_ids": missing_fact_ids,
-        "missing_fact_review": missing_fact_review,
-        "taint": taint,
-        "risk_labels": risk_labels,
-        "checker_receipt": dict(checker_receipt or {}),
-    }
-    projection = {
-        key: (
-            value.value
-            if isinstance(value, (ExecutionStatus, ResultStatus, CertificateKind))
-            else [branch.to_dict() for branch in value]
-            if key == "branches"
-            else [item.to_dict() for item in value]
-            if key == "missing_fact_review"
-            else value
-        )
-        for key, value in values.items()
-    }
-    result = SemanticResult(result_digest=semantic_digest(projection), **values)
-    emit_audit_event(audit_sink, {
-        "event_type": "RESULT_FINALIZED",
-        "result_status": result.result_status.value,
-        "result_digest": result.result_digest,
-    })
-    return result
-
-
-def _missing_fact_review(fact_id: str, rules: tuple[LegalRule, ...]) -> MissingFactReview:
-    """从已准入规则构建UNKNOWN事实的确定性影响范围。"""
-
-    impacted = tuple(sorted(rule.id for rule in rules if fact_id in rule.premise_atoms))
-    claims = tuple(sorted({rule.head_claim for rule in rules if rule.id in impacted and rule.head_claim}))
-    return MissingFactReview(
-        fact_id=fact_id,
-        impacted_rule_ids=impacted,
-        impacted_claim_ids=claims,
-    )
-
-
-def _without_runtime_fields(event: Mapping[str, Any]) -> dict[str, Any]:
-    """Phase 2内存事件移除时间戳；持久化seq/run字段留给Phase 4。"""
-
-    return {key: deepcopy(value) for key, value in event.items() if key != "timestamp"}
-
-
-def _audit_recorder(run_id: str, audit_sink) -> AuditRecorder:
-    """每次运行只创建一个recorder，并允许测试观察规范事件副本。"""
-
-    if isinstance(audit_sink, AuditRecorder):
-        if audit_sink.run_id != run_id:
-            raise ValueError("audit recorder run_id mismatch")
-        return audit_sink
-    return AuditRecorder(run_id, downstream=audit_sink)
-
-
-def _priority_edges(rules: tuple[LegalRule, ...]) -> dict[tuple[str, str], tuple[str, ...]]:
-    """将priority_over按头claim对索引为固定的法条ID集合。"""
-
-    edges: dict[tuple[str, str], list[str]] = {}
-    for rule in rules:
-        source = rule.head_claim
-        if not source:
-            continue
-        for target in rule.priority_over:
-            edges.setdefault((source, target), []).append(rule.id)
-    return {key: tuple(sorted(set(ids))) for key, ids in edges.items()}
-
-
-def _argument_witnesses(
-    run_id: str,
-    used_rule_ids: tuple[str, ...],
-    rules: tuple[LegalRule, ...],
-    active_claims: Mapping[str, Any],
-    source_manifest: SourceManifest,
-) -> tuple[dict[str, Any], ...]:
-    """为每个实际触发规则保留独立argument identity。"""
-
-    by_id = {rule.id: rule for rule in rules}
-    witnesses: list[dict[str, Any]] = []
-    for rule_id in used_rule_ids:
-        rule = by_id[rule_id]
-        if not rule.head_claim or rule.head_claim not in active_claims:
-            continue
-        source_verdict = source_manifest.validate_anchor(rule.source_anchor)
-        payload = {
-            "run_id": run_id,
-            "rule_id": rule.id,
-            "claim_id": rule.head_claim,
-            "premise_ids": sorted(rule.premise_atoms),
-            "source_snapshot_id": str(source_verdict.get("source_snapshot_id", "")),
-        }
-        witnesses.append({
-            "argument_id": content_id("argument", payload),
-            "rule_id": rule.id,
-            "claim_id": rule.head_claim,
-            "premise_ids": list(payload["premise_ids"]),
-            "source_snapshot_id": payload["source_snapshot_id"],
-        })
-    return tuple(sorted(witnesses, key=lambda item: item["argument_id"]))
-
-
-def _attack_witnesses(
-    argument_witnesses: tuple[dict[str, Any], ...],
-    claim_attacks: list[tuple[str, str]],
-    rules: tuple[LegalRule, ...],
-) -> tuple[dict[str, Any], ...]:
-    """把claim relation提升为argument笛卡尔边并绑定来源规则。"""
-
-    by_claim: dict[str, list[dict[str, Any]]] = {}
-    for witness in argument_witnesses:
-        by_claim.setdefault(str(witness["claim_id"]), []).append(witness)
-    witnesses: list[dict[str, Any]] = []
-    for source_claim, target_claim in claim_attacks:
-        origins = _claim_attack_origins(rules, source_claim, target_claim)
-        for source in by_claim.get(source_claim, ()):
-            for target in by_claim.get(target_claim, ()):
-                witnesses.append({
-                    "source_argument_id": source["argument_id"],
-                    "target_argument_id": target["argument_id"],
-                    "source_claim_id": source_claim,
-                    "target_claim_id": target_claim,
-                    "origins": list(origins),
-                })
-    return tuple(sorted(
-        witnesses,
-        key=lambda item: (item["source_argument_id"], item["target_argument_id"]),
-    ))
-
-
-def _claim_attack_origins(
-    rules: tuple[LegalRule, ...],
-    source_claim: str,
-    target_claim: str,
-) -> tuple[dict[str, str], ...]:
-    """记录attack的typed relation与原始规则ID。"""
-
-    by_id = {rule.id: rule for rule in rules}
-    origins: set[tuple[str, str]] = set()
-    for rule in rules:
-        if rule.head_claim == source_claim:
-            for kind, refs in (
-                ("explicit", rule.attacks),
-                ("priority", rule.priority_over),
-                ("exception_to", getattr(rule, "exception_to", ())),
+    def _source_and_evidence(
+        self,
+        request: CaseRequestV4,
+        *,
+        case_scope: str,
+        now: CanonicalTimeV4,
+    ) -> tuple[SourceBundleV4 | None, ContentRefV4 | None, _Failure | None]:
+        try:
+            bundle = self._contract(
+                request.source_bundle_ref,
+                kind=SOURCE_BUNDLE_KIND,
+                scope="source-path",
+                contract=SourceBundleV4,
+                digest_field="bundle_digest",
+            )
+            if type(bundle) is not SourceBundleV4:
+                raise ContractV4Error("APPLICATION_SOURCE", "source bundle has a wrong type")
+            for snapshot in bundle.snapshots:
+                self._source_service.admit_snapshot(source_snapshot_ref(snapshot), now=now)
+            applicable = self._source_service.resolve_applicable(
+                request.source_bundle_ref,
+                decision_time=request.decision_time,
+            )
+        except _EXPECTED_FAILURES as exc:
+            return None, None, self._failure("source", exc)
+        try:
+            manifest = self._contract(
+                request.evidence_manifest_ref,
+                kind=EVIDENCE_MANIFEST_KIND,
+                scope=CASE_EVIDENCE_SCOPE,
+                contract=EvidenceManifestV4,
+                digest_field="manifest_digest",
+            )
+            if (
+                type(manifest) is not EvidenceManifestV4
+                or manifest.request_ref != case_request_binding_ref(request)
+                or manifest.case_scope != case_scope
             ):
-                for ref in refs:
-                    resolved = by_id.get(str(ref))
-                    if str(ref) == target_claim or (resolved and resolved.head_claim == target_claim):
-                        origins.add((kind, rule.id))
-        if rule.head_claim == target_claim:
-            for ref in rule.exception_chain:
-                resolved = by_id.get(str(ref))
-                if str(ref) == source_claim or (resolved and resolved.head_claim == source_claim):
-                    origins.add(("exception_chain", rule.id))
-    if not origins:
-        origins.add(("relation", ""))
-    return tuple(
-        {"kind": kind, "origin_rule_id": rule_id}
-        for kind, rule_id in sorted(origins)
-    )
+                raise ContractV4Error(
+                    "APPLICATION_EVIDENCE_BINDING",
+                    "evidence manifest binds another request or case scope",
+                )
+        except _EXPECTED_FAILURES as exc:
+            return bundle, applicable, self._failure("evidence", exc)
+        return bundle, applicable, None
+
+    def _fact_key(self, candidate: FactCandidateV4) -> str:
+        proposition = self._document(
+            candidate.proposition_ref,
+            kind=FACT_PROPOSITION_KIND,
+            scope=FACT_ADMISSION_SCOPE,
+        )
+        if (
+            set(proposition) != {"schema_version", "proposition"}
+            or proposition.get("schema_version") != "jc/fact-proposition/1.0"
+            or type(proposition.get("proposition")) is not str
+            or not proposition["proposition"]
+        ):
+            raise ContractV4Error(
+                "APPLICATION_FACT_PROPOSITION", "fact proposition is not a closed fact key"
+            )
+        return proposition["proposition"]
+
+    def _facts(
+        self,
+        request: CaseRequestV4,
+        request_ref: ContentRefV4,
+        run_identity_ref: ContentRefV4,
+        *,
+        case_scope: str,
+        now: CanonicalTimeV4,
+        enabled: bool,
+    ) -> tuple[_FactState, _Failure | None]:
+        receipts: list[ContentRefV4] = []
+        admitted: list[ContentRefV4] = []
+        rejected: list[ContentRefV4] = []
+        observed: list[tuple[str, ContentRefV4]] = []
+        unresolved: list[ContentRefV4] = []
+        release_conditions: list[ContentRefV4] = []
+        hypothetical = False
+        review = False
+        for attestation_ref in request.fact_attestation_refs:
+            try:
+                attestation = self._contract(
+                    attestation_ref,
+                    kind=FACT_ATTESTATION_KIND,
+                    scope=LEGAL_APPROVAL_SCOPE,
+                    contract=FactAttestationV4,
+                )
+                if type(attestation) is not FactAttestationV4:
+                    raise ContractV4Error(
+                        "APPLICATION_FACT_TYPE", "fact attestation has a wrong type"
+                    )
+                candidate = self._contract(
+                    attestation.candidate_ref,
+                    kind=FACT_CANDIDATE_KIND,
+                    scope=FACT_ADMISSION_SCOPE,
+                    contract=FactCandidateV4,
+                )
+                if type(candidate) is not FactCandidateV4:
+                    raise ContractV4Error(
+                        "APPLICATION_FACT_TYPE", "fact candidate has a wrong type"
+                    )
+                fact_key = self._fact_key(candidate)
+                observed.append((fact_key, attestation.candidate_ref))
+                if not enabled:
+                    continue
+                try:
+                    receipt_ref = self._fact_service.admit(
+                        request_ref,
+                        attestation.candidate_ref,
+                        attestation_ref,
+                        case_scope=case_scope,
+                        run_identity_ref=run_identity_ref,
+                        now=now,
+                    )
+                except ContractV4Error as exc:
+                    if exc.code != "FACT_NOT_FORMAL":
+                        raise
+                    rejected.append(attestation.candidate_ref)
+                    unresolved.append(attestation.candidate_ref)
+                    release_conditions.append(attestation_ref)
+                    hypothetical = hypothetical or (
+                        attestation.assumption_state != "NONE"
+                        or attestation.dispute_state == "USER_ASSUMED"
+                    )
+                    review = review or attestation.dispute_state in {"UNKNOWN", "DISPUTED"}
+                    continue
+                fact_ref = self._fact_service.verify_receipt(
+                    receipt_ref,
+                    request_ref=request_ref,
+                    case_scope=case_scope,
+                    run_identity_ref=run_identity_ref,
+                    now=now,
+                )
+                receipts.append(receipt_ref)
+                admitted.append(fact_ref)
+            except _EXPECTED_FAILURES as exc:
+                return (
+                    _FactState(
+                        _sorted_refs(tuple(receipts)),
+                        _sorted_refs(tuple(admitted)),
+                        _sorted_refs(tuple(rejected)),
+                        tuple(sorted(observed, key=lambda item: (item[0], _ref_key(item[1])))),
+                        _sorted_refs(tuple(unresolved)),
+                        _sorted_refs(tuple(release_conditions)),
+                        hypothetical,
+                        review,
+                    ),
+                    self._failure("fact", exc),
+                )
+        return (
+            _FactState(
+                _sorted_refs(tuple(receipts)),
+                _sorted_refs(tuple(admitted)),
+                _sorted_refs(tuple(rejected)),
+                tuple(sorted(observed, key=lambda item: (item[0], _ref_key(item[1])))),
+                _sorted_refs(tuple(unresolved)),
+                _sorted_refs(tuple(release_conditions)),
+                hypothetical,
+                review,
+            ),
+            None,
+        )
+
+    def _rule_requirements(self, rule: RuleV4) -> tuple[str, ...]:
+        keys: list[str] = []
+        for premise_ref in rule.premise_refs:
+            premise = self._document(
+                premise_ref,
+                kind=RULE_PREMISE_KIND,
+                scope=RULE_COMPONENT_SCOPE,
+            )
+            if (
+                set(premise) != {"schema_version", "rule_id", "fact_key", "required"}
+                or premise.get("schema_version") != "jc/rule-premise/1.0"
+                or premise.get("rule_id") != rule.rule_id
+                or type(premise.get("fact_key")) is not str
+                or not premise["fact_key"]
+                or type(premise.get("required")) is not bool
+            ):
+                raise ContractV4Error(
+                    "APPLICATION_RULE_PREMISE", "signed rule premise is not closed and typed"
+                )
+            if premise["required"]:
+                keys.append(premise["fact_key"])
+        return tuple(sorted(set(keys)))
+
+    def _select_rules(
+        self,
+        request: CaseRequestV4,
+        pack: VerifiedRulePackV4,
+        observed_keys: frozenset[str],
+    ) -> tuple[tuple[ContentRefV4, RuleV4, tuple[str, ...]], ...]:
+        bindings = {
+            (domain_id, namespace): refs
+            for domain_id, namespace, refs in pack.domain_bindings
+        }
+        domain_refs: list[tuple[ContentRefV4, ...]] = []
+        for config_ref in pack.manifest.config_refs:
+            config = self._document(
+                config_ref,
+                kind=PACK_CONFIG_KIND,
+                scope=RULE_PACK_SCOPE,
+            )
+            if set(config) != {
+                "schema_version",
+                "domain_id",
+                "namespace",
+                "jurisdiction",
+                "governing_law",
+                "rule_refs",
+            } or config.get("schema_version") != "jc/domain-config/1.0":
+                raise ContractV4Error(
+                    "APPLICATION_DOMAIN_CONFIG",
+                    "signed domain configuration is not closed",
+                )
+            try:
+                config_rules = tuple(
+                    ContentRefV4.from_dict(item) for item in config["rule_refs"]
+                )
+            except (TypeError, ValueError, ContractV4Error) as exc:
+                raise ContractV4Error(
+                    "APPLICATION_DOMAIN_CONFIG",
+                    "signed domain rule references are invalid",
+                ) from exc
+            if bindings.get((config["domain_id"], config["namespace"])) != config_rules:
+                raise ContractV4Error(
+                    "APPLICATION_DOMAIN_CONFIG",
+                    "verified domain projection differs from signed config bytes",
+                )
+            if (config["jurisdiction"], config["governing_law"]) == (
+                request.legal_context.jurisdiction,
+                request.legal_context.governing_law,
+            ):
+                domain_refs.append(config_rules)
+        if len(domain_refs) != 1:
+            raise ContractV4Error(
+                "APPLICATION_DOMAIN_CONFIG",
+                "signed pack has no unique configuration for the legal context",
+            )
+        allowed = set(domain_refs[0])
+        by_ref = {
+            reference: rule
+            for reference, rule in zip(pack.manifest.rule_refs, pack.rules, strict=True)
+            if reference in allowed
+            and rule.effective_from <= request.decision_time
+            and (rule.effective_to is None or request.decision_time < rule.effective_to)
+        }
+        if request.proposal_refs:
+            requested = set(request.proposal_refs)
+            if any(reference.kind != RULE_KIND for reference in requested) or not requested <= set(by_ref):
+                raise ContractV4Error(
+                    "APPLICATION_RULE_SELECTION",
+                    "proposal_refs contain a rule outside the signed domain configuration",
+                )
+        else:
+            requested = set()
+        selected: list[tuple[ContentRefV4, RuleV4, tuple[str, ...]]] = []
+        for reference, rule in sorted(by_ref.items(), key=lambda item: _ref_key(item[0])):
+            requirements = self._rule_requirements(rule)
+            if reference in requested or (not requested and set(requirements) & observed_keys):
+                selected.append((reference, rule, requirements))
+        return tuple(selected)
+
+    @staticmethod
+    def _runtime_profile(
+        run: RunIdentityV4,
+        *,
+        formal_kernel: bool,
+        execution: BackendExecutionV4 | None = None,
+    ) -> RuntimeProfileV4:
+        return RuntimeProfileV4(
+            run.engine_version,
+            run.engine_build_digest,
+            formal_kernel,
+            None if execution is None else execution.invocation_ref,
+            None if execution is None else execution.receipt_ref,
+            run.trust_policy_ref,
+            run.storage_capability_ref,
+        )
+
+    def _result(
+        self,
+        request_ref: ContentRefV4,
+        run_identity_ref: ContentRefV4,
+        runtime_profile: RuntimeProfileV4,
+        *,
+        execution: ExecutionStatusV4,
+        decision: DecisionStatusV4,
+        review: ReviewStateV4,
+        completeness: CompletenessStateV4,
+        interruption: InterruptionStateV4 | None,
+        certificate: CertificateKindV4,
+        claims: tuple[ClaimResultV4, ...] = (),
+        branches: tuple[object, ...] = (),
+        missing_facts: tuple[MissingFactRequirementV4, ...] = (),
+        admitted_fact_refs: tuple[ContentRefV4, ...] = (),
+        rejected_fact_refs: tuple[ContentRefV4, ...] = (),
+        applicable_rule_refs: tuple[ContentRefV4, ...] = (),
+        inapplicable_rule_refs: tuple[ContentRefV4, ...] = (),
+        argument_refs: tuple[ContentRefV4, ...] = (),
+        attack_refs: tuple[ContentRefV4, ...] = (),
+        exception_resolution_refs: tuple[ContentRefV4, ...] = (),
+        permission_resolution_refs: tuple[ContentRefV4, ...] = (),
+        decision_reason_codes: tuple[str, ...] = (),
+        receipt_refs: tuple[ContentRefV4, ...] = (),
+    ) -> SemanticResultV4:
+        body = {
+            "request_ref": request_ref.to_dict(),
+            "execution_status": execution.value,
+            "decision_status": decision.value,
+            "review_state": review.to_dict(),
+            "completeness_state": completeness.value,
+            "interruption_state": None if interruption is None else interruption.to_dict(),
+            "certificate_kind": certificate.value,
+            "runtime_profile": runtime_profile.to_dict(),
+            "claims": [item.to_dict() for item in claims],
+            "branches": [item.to_dict() for item in branches],
+            "missing_facts": [item.to_dict() for item in missing_facts],
+            "admitted_fact_refs": [item.to_dict() for item in _sorted_refs(admitted_fact_refs)],
+            "rejected_fact_refs": [item.to_dict() for item in _sorted_refs(rejected_fact_refs)],
+            "applicable_rule_refs": [item.to_dict() for item in _sorted_refs(applicable_rule_refs)],
+            "inapplicable_rule_refs": [item.to_dict() for item in _sorted_refs(inapplicable_rule_refs)],
+            "argument_refs": [item.to_dict() for item in _sorted_refs(argument_refs)],
+            "attack_refs": [item.to_dict() for item in _sorted_refs(attack_refs)],
+            "exception_resolution_refs": [
+                item.to_dict() for item in _sorted_refs(exception_resolution_refs)
+            ],
+            "permission_resolution_refs": [
+                item.to_dict() for item in _sorted_refs(permission_resolution_refs)
+            ],
+            "priority_resolution_refs": [],
+            "temporal_result_refs": [],
+            "numeric_result_refs": [],
+            "decision_reason_codes": list(decision_reason_codes),
+            "taint_codes": [],
+            "risk_codes": [],
+            "receipt_refs": [item.to_dict() for item in _sorted_refs(receipt_refs)],
+            "run_identity_ref": run_identity_ref.to_dict(),
+        }
+        return SemanticResultV4.from_dict(
+            {**body, "result_digest": str(_semantic_digest(body))}
+        )
+
+    @staticmethod
+    def _review_state(
+        unresolved: tuple[ContentRefV4, ...],
+        release_conditions: tuple[ContentRefV4, ...],
+    ) -> ReviewStateV4:
+        if not unresolved:
+            return ReviewStateV4("not_required", (), None, (), None)
+        return ReviewStateV4(
+            "required",
+            _sorted_refs(unresolved),
+            "legal_reviewer",
+            _sorted_refs(release_conditions or unresolved),
+            None,
+        )
+
+    def _nonformal_result(
+        self,
+        request: CaseRequestV4,
+        run: RunIdentityV4,
+        run_identity_ref: ContentRefV4,
+        pack: VerifiedRulePackV4 | None,
+        facts: _FactState,
+        selected: tuple[tuple[ContentRefV4, RuleV4, tuple[str, ...]], ...],
+        *,
+        failure: _Failure | None = None,
+        decision: DecisionStatusV4 | None = None,
+        execution: ExecutionStatusV4 | None = None,
+        interruption: InterruptionStateV4 | None = None,
+        backend_execution: BackendExecutionV4 | None = None,
+        missing: tuple[MissingFactRequirementV4, ...] = (),
+        branches: tuple[object, ...] = (),
+        reasons: tuple[str, ...] = (),
+        extra_receipts: tuple[ContentRefV4, ...] = (),
+    ) -> SemanticResultV4:
+        if failure is not None:
+            decision = (
+                DecisionStatusV4.ENGINE_ERROR
+                if execution is ExecutionStatusV4.ENGINE_ERROR
+                else DecisionStatusV4.BLOCKED
+            )
+            execution = execution or ExecutionStatusV4.ADMISSION_BLOCKED
+            reasons = reasons or (f"{failure.stage}:{failure.code}",)
+        elif decision is None or execution is None:
+            raise ApplicationV4Error("APPLICATION_RESULT", "nonformal state is incomplete")
+        unresolved = facts.unresolved_refs
+        release = facts.release_condition_refs
+        if decision is DecisionStatusV4.MISSING_REQUIRED_FACT:
+            unresolved = tuple(
+                reference
+                for _, rule, requirements in selected
+                for reference in rule.premise_refs
+                if requirements
+            )
+            release = unresolved
+        review = self._review_state(unresolved, release)
+        if decision in {DecisionStatusV4.BLOCKED, DecisionStatusV4.ENGINE_ERROR}:
+            review = ReviewStateV4("not_required", (), None, (), None)
+        applicable = tuple(reference for reference, _, _ in selected)
+        all_rules = () if pack is None else pack.manifest.rule_refs
+        return self._result(
+            run.request_ref,
+            run_identity_ref,
+            self._runtime_profile(
+                run,
+                formal_kernel=False,
+                execution=backend_execution,
+            ),
+            execution=execution,
+            decision=decision,
+            review=review,
+            completeness=CompletenessStateV4.PARTIAL,
+            interruption=interruption,
+            certificate=CertificateKindV4.NONE,
+            branches=branches,
+            missing_facts=missing,
+            admitted_fact_refs=facts.admitted_refs,
+            rejected_fact_refs=facts.rejected_refs,
+            applicable_rule_refs=applicable,
+            inapplicable_rule_refs=tuple(set(all_rules) - set(applicable)),
+            decision_reason_codes=reasons,
+            receipt_refs=(*facts.receipt_refs, *extra_receipts),
+        )
+
+    def _compile(
+        self,
+        pack: VerifiedRulePackV4,
+        selected: tuple[tuple[ContentRefV4, RuleV4, tuple[str, ...]], ...],
+        *,
+        run_identity_ref: ContentRefV4,
+        now: CanonicalTimeV4,
+    ) -> tuple[LegalIRCompilationV4, ...]:
+        return tuple(
+            self._ir_compiler.compile_rule(
+                pack,
+                rule_ref=reference,
+                run_identity_ref=run_identity_ref,
+                now=now,
+            )
+            for reference, _, _ in selected
+        )
+
+    @staticmethod
+    def _primary_execution(
+        executions: tuple[BackendExecutionV4, ...],
+    ) -> BackendExecutionV4 | None:
+        by_provider = {item.invocation.provider_id: item for item in executions}
+        rich = [
+            by_provider[provider]
+            for provider in (AAF_PROVIDER_ID, EXACT_PROVIDER_ID)
+            if provider in by_provider
+        ]
+        if len(rich) > 1:
+            return None
+        if rich:
+            return rich[0]
+        return by_provider.get(HORN_PROVIDER_ID)
+
+    def _register_contract(self, kind: str, value: object) -> ContentRefV4:
+        raw = value.canonical_bytes()
+        reference = ContentRefV4(kind, DigestV4.from_bytes(raw))
+        return self._resolver.register_bytes(
+            artifact_id=f"{kind}-{reference.digest.hex}",
+            content_ref=reference,
+            artifact_kind=kind,
+            media_type=JSON_MEDIA_TYPE,
+            scope=CHECKER_SCOPE,
+            content=raw,
+        )
+
+    def _argument_outcome(
+        self,
+        execution: BackendExecutionV4,
+        checked: CheckerExecutionV4,
+    ) -> _ArgumentOutcome:
+        graph_document = self._document(
+            checked.receipt.argument_graph_ref,
+            kind=ARGUMENT_GRAPH_KIND,
+            scope=CHECKER_SCOPE,
+        )
+        result_document = self._document(
+            execution.receipt.backend_result_ref,
+            kind=BACKEND_RESULT_KIND,
+            scope=BACKEND_SCOPE,
+        )
+        outputs = result_document.get("outputs")
+        if type(outputs) is not dict:
+            raise ContractV4Error("APPLICATION_BACKEND_RESULT", "backend outputs are not an object")
+        if execution.invocation.provider_id != AAF_PROVIDER_ID:
+            semantic_state = graph_document.get("semantic_state")
+            if (
+                type(semantic_state) is not dict
+                or semantic_state.get("outcome") != result_document.get("outcome")
+                or semantic_state.get("outputs_digest") != str(digest_value(outputs))
+                or graph_document.get("arguments") != []
+            ):
+                raise ContractV4Error(
+                    "APPLICATION_ARGUMENT_BINDING",
+                    "checker semantic-state graph differs from the backend result",
+                )
+            if execution.invocation.provider_id == HORN_PROVIDER_ID:
+                missing = outputs.get("missing_fact_keys")
+                norms = outputs.get("applicable_norms")
+                state = "missing" if missing else "accepted" if norms else "empty"
+            else:
+                state = "accepted"
+            return _ArgumentOutcome(
+                state,
+                (),
+                (checked.receipt.argument_graph_ref,),
+                (),
+                (),
+                (),
+            )
+        arguments_wire = graph_document.get("arguments")
+        if type(arguments_wire) is not list:
+            raise ContractV4Error("APPLICATION_ARGUMENT_GRAPH", "arguments are not an array")
+        if not arguments_wire:
+            if outputs.get("state") != "empty":
+                raise ContractV4Error(
+                    "APPLICATION_ARGUMENT_BINDING", "empty graph has a non-empty result state"
+                )
+            return _ArgumentOutcome("empty", (), (checked.receipt.argument_graph_ref,), (), (), ())
+        try:
+            graph = ArgumentGraphV4(
+                tuple(ArgumentV4.from_dict(item) for item in arguments_wire),
+                tuple(AttackV4.from_dict(item) for item in graph_document["attacks"]),
+                tuple(PriorityEdgeV4.from_dict(item) for item in graph_document["priority_edges"]),
+                tuple(
+                    PermissionRelationV4(
+                        item["permission_id"],
+                        ContentRefV4.from_dict(item["permission_claim_ref"]),
+                        None
+                        if item["prohibition_claim_ref"] is None
+                        else ContentRefV4.from_dict(item["prohibition_claim_ref"]),
+                        ContentRefV4.from_dict(item["source_ref"]),
+                    )
+                    for item in graph_document["permission_relations"]
+                ),
+            )
+            evaluation = evaluate_argument_graph(graph)
+        except (KeyError, TypeError, ValueError, ContractV4Error) as exc:
+            raise ContractV4Error(
+                "APPLICATION_ARGUMENT_GRAPH", "checker graph is not canonical ArgumentGraphV4"
+            ) from exc
+        if evaluation.to_dict() != outputs:
+            raise ContractV4Error(
+                "APPLICATION_ARGUMENT_BINDING",
+                "independent argument evaluation differs from checked backend outputs",
+            )
+        argument_by_ref = {argument_ref_v4(item): item for item in graph.arguments}
+        labels = tuple(
+            (
+                argument_by_ref[label.argument_ref].rule_ref,
+                label.label,
+                (label.argument_ref,),
+            )
+            for label in evaluation.labels
+        )
+        attack_refs = tuple(
+            self._register_contract("attack-v4", item) for item in evaluation.effective_attacks
+        )
+        exception_refs = tuple(
+            self._register_contract("exception-resolution-v4", item)
+            for item in evaluation.exception_resolutions
+        )
+        permission_refs = tuple(
+            self._register_contract("permission-resolution-v4", item)
+            for item in evaluation.permission_resolutions
+        )
+        return _ArgumentOutcome(
+            evaluation.state,
+            labels,
+            tuple(argument_ref_v4(item) for item in graph.arguments),
+            attack_refs,
+            exception_refs,
+            permission_refs,
+        )
+
+    def _proof_receipt(
+        self,
+        claim_ref: ContentRefV4,
+        execution: BackendExecutionV4,
+        checked: CheckerExecutionV4,
+        *,
+        run_identity_ref: ContentRefV4,
+        now: CanonicalTimeV4,
+    ) -> ContentRefV4:
+        proof_ref = execution.receipt.proof_ref
+        if proof_ref is None:
+            raise ContractV4Error("APPLICATION_PROOF", "completed backend has no proof")
+        trusted = _sorted_refs((proof_ref, checked.receipt_ref))
+        body = {
+            "receipt_id": f"proof-{claim_ref.digest.hex}",
+            "run_identity_ref": run_identity_ref.to_dict(),
+            "subject_ref": claim_ref.to_dict(),
+            "proof_kind": "independent-checker-confirmed-backend-proof",
+            "proof_ref": proof_ref.to_dict(),
+            "checker_receipt_ref": checked.receipt_ref.to_dict(),
+            "proof_build_digest": str(checked.receipt.checker_build_digest),
+            "trusted_computing_base_refs": [item.to_dict() for item in trusted],
+            "status": "PASS",
+            "issued_at": now.to_dict(),
+        }
+        signature = self._receipt_signer(
+            claim_ref.digest,
+            digest_value(body),
+            _sorted_refs((claim_ref, proof_ref, checked.receipt_ref)),
+            run_identity_ref,
+            now,
+        )
+        if type(signature) is not SignatureEnvelopeV4:
+            raise ContractV4Error("APPLICATION_PROOF_SIGNATURE", "proof signer returned a wrong type")
+        proof = ProofReceiptV4.from_dict({**body, "signature": signature.to_dict()})
+        return self._register_contract("proof-receipt-v4", proof)
+
+    def _formal_result(
+        self,
+        request: CaseRequestV4,
+        run: RunIdentityV4,
+        run_identity_ref: ContentRefV4,
+        pack: VerifiedRulePackV4,
+        facts: _FactState,
+        selected: tuple[tuple[ContentRefV4, RuleV4, tuple[str, ...]], ...],
+        compilations: tuple[LegalIRCompilationV4, ...],
+        execution: BackendExecutionV4,
+        checked: CheckerExecutionV4,
+        argument: _ArgumentOutcome,
+        source_bundle: SourceBundleV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> SemanticResultV4:
+        labels = {reference: (label, arguments) for reference, label, arguments in argument.labels}
+        claims: list[ClaimResultV4] = []
+        proof_refs: list[ContentRefV4] = []
+        for reference, rule, _ in selected:
+            label, argument_refs = labels.get(
+                reference,
+                ("IN", (checked.receipt.argument_graph_ref,)),
+            )
+            proof_ref = self._proof_receipt(
+                rule.conclusion_ref,
+                execution,
+                checked,
+                run_identity_ref=run_identity_ref,
+                now=now,
+            )
+            proof_refs.append(proof_ref)
+            claims.append(
+                ClaimResultV4(
+                    rule.rule_id,
+                    rule.conclusion_ref,
+                    "accepted" if label == "IN" else "rejected" if label == "OUT" else "undecided",
+                    label,
+                    argument_refs,
+                    facts.admitted_refs,
+                    (reference,),
+                    (rule.source_snapshot_ref,),
+                    (proof_ref,),
+                    (checked.receipt_ref,),
+                )
+            )
+        if not claims or not any(item.label == "IN" for item in claims):
+            raise ContractV4Error("APPLICATION_NO_ACCEPTED_CLAIM", "formal run has no accepted claim")
+        source_receipts = tuple(
+            snapshot.authenticity_receipt_ref for snapshot in source_bundle.snapshots
+        )
+        promotions = tuple(
+            receipt
+            for _, rule, _ in selected
+            for receipt in rule.promotion_receipt_refs
+        )
+        translations = tuple(
+            receipt
+            for compilation in compilations
+            for receipt in (
+                compilation.rule_to_spec_receipt_ref,
+                compilation.spec_to_ivl_receipt_ref,
+            )
+        )
+        receipts = _sorted_refs((
+            *source_receipts,
+            request.evidence_manifest_ref,
+            *facts.receipt_refs,
+            *promotions,
+            *translations,
+            execution.receipt_ref,
+            *proof_refs,
+            checked.receipt_ref,
+        ))
+        conflict = argument.state in {"disputed", "cycle_blocked"}
+        review = (
+            self._review_state(argument.attack_refs, argument.attack_refs)
+            if conflict
+            else ReviewStateV4("not_required", (), None, (), None)
+        )
+        applicable = tuple(reference for reference, _, _ in selected)
+        return self._result(
+            run.request_ref,
+            run_identity_ref,
+            self._runtime_profile(run, formal_kernel=True, execution=execution),
+            execution=ExecutionStatusV4.COMPLETED,
+            decision=(
+                DecisionStatusV4.CONFLICT_CERTIFICATE
+                if conflict
+                else DecisionStatusV4.ACCEPTED_FORMAL_RESULT
+            ),
+            review=review,
+            completeness=CompletenessStateV4.COMPLETE,
+            interruption=None,
+            certificate=(
+                CertificateKindV4.CONFLICT_VERIFIED
+                if conflict
+                else CertificateKindV4.FORMAL_VERIFIED
+            ),
+            claims=tuple(claims),
+            admitted_fact_refs=facts.admitted_refs,
+            rejected_fact_refs=facts.rejected_refs,
+            applicable_rule_refs=applicable,
+            inapplicable_rule_refs=tuple(set(pack.manifest.rule_refs) - set(applicable)),
+            argument_refs=argument.argument_refs,
+            attack_refs=argument.attack_refs,
+            exception_resolution_refs=argument.exception_refs,
+            permission_resolution_refs=argument.permission_refs,
+            decision_reason_codes=("argument_conflict",) if conflict else (),
+            receipt_refs=receipts,
+        )
+
+    @staticmethod
+    def _wire_references(value: object) -> set[ContentRefV4]:
+        references: set[ContentRefV4] = set()
+        pending = [value]
+        while pending:
+            current = pending.pop()
+            if type(current) is dict:
+                if set(current) == {"kind", "digest"}:
+                    try:
+                        references.add(ContentRefV4.from_dict(current))
+                    except (ContractV4Error, TypeError, ValueError):
+                        pass
+                    continue
+                pending.extend(current.values())
+            elif type(current) is list:
+                pending.extend(current)
+        return references
+
+    def _artifact_groups(
+        self,
+        auto: frozenset[ContentRefV4],
+        roots: set[ContentRefV4],
+    ) -> dict[str, tuple[AuditArtifactV4, ...]]:
+        groups: dict[str, list[AuditArtifactV4]] = {
+            "source_artifacts": [],
+            "fact_artifacts": [],
+            "rule_pack_artifacts": [],
+            "translation_artifacts": [],
+            "backend_artifacts": [],
+            "checker_artifacts": [],
+            "graph_artifacts": [],
+        }
+        with self._resolver._lock:
+            records = dict(self._resolver._by_ref)
+        selected: dict[ContentRefV4, object] = {}
+        pending = list(roots)
+        while pending:
+            reference = pending.pop()
+            if reference in selected or reference in auto:
+                continue
+            record = records.get(reference)
+            if record is None:
+                continue
+            selected[reference] = record
+            if record.media_type != JSON_MEDIA_TYPE:
+                continue
+            try:
+                document = parse_json_document(record.content)
+            except (TypeError, ValueError):
+                continue
+            pending.extend(self._wire_references(document) - set(selected))
+        for record in selected.values():
+            if record.content_ref in auto:
+                continue
+            artifact = AuditArtifactV4(
+                record.artifact_id,
+                record.content_ref,
+                record.artifact_kind,
+                record.media_type,
+                record.scope,
+                record.content,
+            )
+            if record.scope == CHECKER_SCOPE:
+                group = "checker_artifacts"
+            elif record.scope == BACKEND_SCOPE:
+                group = "backend_artifacts"
+            elif record.scope == "legal-ir":
+                group = "translation_artifacts"
+            elif record.scope in {RULE_PACK_SCOPE, RULE_COMPONENT_SCOPE}:
+                group = "rule_pack_artifacts"
+            elif record.scope in {FACT_ADMISSION_SCOPE, LEGAL_APPROVAL_SCOPE, CASE_EVIDENCE_SCOPE}:
+                group = "fact_artifacts"
+            else:
+                group = "source_artifacts"
+            groups[group].append(artifact)
+        return {
+            name: tuple(sorted(values, key=lambda item: item.sort_key))
+            for name, values in groups.items()
+        }
+
+    def _finish(
+        self,
+        request: CaseRequestV4,
+        run: RunIdentityV4,
+        run_identity_ref: ContentRefV4,
+        result: SemanticResultV4,
+        events: list[tuple[str, ContentRefV4]],
+        *,
+        now: CanonicalTimeV4,
+        failure: _Failure | None,
+    ) -> EvaluationEnvelopeV4:
+        result_ref = ContentRefV4("semantic-result", result.canonical_digest())
+        events.append(("result", result_ref))
+        roots = self._wire_references({
+            "request": request.to_dict(),
+            "run": run.to_dict(),
+            "result": result.to_dict(),
+            "events": [reference.to_dict() for _, reference in events],
+        })
+        materials = AuditBundleMaterialsV4(
+            request=request,
+            run_identity=run,
+            replay_policy_ref=self._trust.policy.replay_policy_ref,
+            result=result,
+            events=tuple(
+                AuditEventV4(index, stage, reference)
+                for index, (stage, reference) in enumerate(events)
+            ),
+            **self._artifact_groups(
+                frozenset((run.request_ref, run_identity_ref)),
+                roots,
+            ),
+        )
+        capability = self._audit_store.capability_for(run_identity_ref)
+        completed = self._audit_store.write_run(
+            capability,
+            materials,
+            now=now,
+            certificate_factory=(
+                None
+                if result.certificate_kind is CertificateKindV4.NONE
+                else self._certificate_issuer
+            ),
+        )
+        completed = self._audit_store.verify_run(capability, now=now)
+        if failure is None:
+            transport = TransportOutcomeV4("success", None)
+        else:
+            correlation = digest_value({
+                "run_identity_ref": run_identity_ref.to_dict(),
+                "stage": failure.stage,
+                "code": failure.code,
+            }).hex[:24]
+            transport = TransportOutcomeV4(
+                "error",
+                ErrorV4(
+                    failure.code,
+                    f"formal evaluation stopped at {failure.stage}",
+                    failure.stage,
+                    False,
+                    correlation,
+                    (),
+                ),
+            )
+        return EvaluationEnvelopeV4(
+            completed.request,
+            completed.result,
+            completed.run_identity,
+            completed.certificate,
+            transport,
+            completed.bundle_index.manifest_ref,
+            completed.bundle_index,
+        )
+
+    def evaluate(
+        self,
+        request_ref: ContentRefV4,
+        run_identity_ref: ContentRefV4,
+        *,
+        case_scope: str,
+        limits: ResourceLimitsV4 | None = None,
+        seed: int = 0,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> EvaluationEnvelopeV4:
+        """Execute one request through the sole V4 formal spine and seal its final bundle."""
+
+        if (
+            type(request_ref) is not ContentRefV4
+            or type(run_identity_ref) is not ContentRefV4
+            or type(case_scope) is not str
+            or not case_scope
+            or type(seed) is not int
+            or (cancel_check is not None and not callable(cancel_check))
+        ):
+            raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "evaluation context is invalid")
+        admitted_limits = ResourceLimitsV4() if limits is None else limits
+        if type(admitted_limits) is not ResourceLimitsV4:
+            raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "limits must be ResourceLimitsV4")
+        now = self._clock()
+        if type(now) is not CanonicalTimeV4:
+            raise ApplicationV4Error("APPLICATION_CLOCK", "clock returned a non-canonical time")
+        request, run = self._resolve_input(request_ref, run_identity_ref)
+        events: list[tuple[str, ContentRefV4]] = [("resolver", request_ref)]
+
+        failure = self._trust_failure(run, now)
+        events.append(("trust", run_identity_ref))
+        source_bundle, applicable_source, source_failure = self._source_and_evidence(
+            request,
+            case_scope=case_scope,
+            now=now,
+        )
+        failure = failure or source_failure
+        if applicable_source is not None:
+            events.append(("source", applicable_source))
+        events.append(("evidence", request.evidence_manifest_ref))
+
+        facts, fact_failure = self._facts(
+            request,
+            request_ref,
+            run_identity_ref,
+            case_scope=case_scope,
+            now=now,
+            enabled=failure is None,
+        )
+        failure = failure or fact_failure
+        events.append(
+            (
+                "fact",
+                facts.receipt_refs[-1]
+                if facts.receipt_refs
+                else request.evidence_manifest_ref,
+            )
+        )
+
+        pack: VerifiedRulePackV4 | None = None
+        try:
+            pack = self._pack_verifier.verify(request.rule_pack_ref, now=now)
+        except _EXPECTED_FAILURES as exc:
+            failure = failure or self._failure("pack", exc)
+        events.append(("pack", request.rule_pack_ref))
+        if failure is not None or pack is None or source_bundle is None:
+            failure = failure or _Failure("pack", "PACK_NOT_VERIFIED")
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                (),
+                failure=failure,
+            )
+            return self._finish(
+                request,
+                run,
+                run_identity_ref,
+                result,
+                events,
+                now=now,
+                failure=failure,
+            )
+
+        try:
+            selected = self._select_rules(
+                request,
+                pack,
+                frozenset(key for key, _ in facts.observed),
+            )
+        except _EXPECTED_FAILURES as exc:
+            failure = self._failure("pack", exc)
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                (),
+                failure=failure,
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+
+        if facts.hypothetical or facts.review:
+            decision = (
+                DecisionStatusV4.HYPOTHETICAL_RESULT
+                if facts.hypothetical
+                else DecisionStatusV4.REVIEW_ONLY_RESULT
+            )
+            branches: tuple[object, ...] = ()
+            if decision is DecisionStatusV4.HYPOTHETICAL_RESULT:
+                branch_body = {
+                    "branch_id": "caller-assumption",
+                    "assumption_refs": [item.to_dict() for item in facts.rejected_refs],
+                    "claim_refs": [rule.conclusion_ref.to_dict() for _, rule, _ in selected],
+                    "decision_status": DecisionStatusV4.HYPOTHETICAL_RESULT.value,
+                }
+                branches = (
+                    BranchResultV4.from_dict({
+                        **branch_body,
+                        "branch_digest": str(digest_value(branch_body)),
+                    }),
+                )
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                decision=decision,
+                execution=ExecutionStatusV4.COMPLETED,
+                branches=branches,
+                reasons=("nonformal_fact_input",),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=None
+            )
+
+        admitted_keys = frozenset(
+            key for key, candidate_ref in facts.observed if candidate_ref not in facts.rejected_refs
+        )
+        missing = tuple(
+            MissingFactRequirementV4(
+                fact_key,
+                (reference,),
+                (rule.conclusion_ref,),
+                ("typed-v4-fact-value",),
+                ("signed-source-snapshot",),
+                1,
+            )
+            for reference, rule, requirements in selected
+            for fact_key in requirements
+            if fact_key not in admitted_keys
+        )
+        if missing:
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                decision=DecisionStatusV4.MISSING_REQUIRED_FACT,
+                execution=ExecutionStatusV4.COMPLETED,
+                missing=missing,
+                reasons=("missing_required_fact",),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=None
+            )
+        if not selected:
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                decision=DecisionStatusV4.UNKNOWN,
+                execution=ExecutionStatusV4.COMPLETED,
+                reasons=("no_applicable_rule",),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=None
+            )
+
+        try:
+            compilations = self._compile(
+                pack,
+                selected,
+                run_identity_ref=run_identity_ref,
+                now=now,
+            )
+            events.append(("ir", compilations[-1].spec_to_ivl_receipt_ref))
+            executions = self._backend_router.execute(
+                compilations,
+                run_identity_ref=run_identity_ref,
+                fact_admission_receipt_refs=facts.receipt_refs,
+                limits=admitted_limits,
+                now=now,
+                seed=seed,
+                cancel_check=cancel_check,
+            )
+        except _EXPECTED_FAILURES as exc:
+            stage = "ir" if not events or events[-1][0] != "ir" else "backend"
+            failure = self._failure(stage, exc)
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                failure=failure,
+                execution=(
+                    ExecutionStatusV4.ENGINE_ERROR if stage == "backend" else None
+                ),
+                interruption=(
+                    InterruptionStateV4(failure.code, stage)
+                    if stage == "backend"
+                    else None
+                ),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+        if not executions:
+            failure = _Failure("backend", "BACKEND_NO_EXECUTION")
+            result = self._nonformal_result(
+                request, run, run_identity_ref, pack, facts, selected, failure=failure
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+        events.append(("backend", executions[-1].receipt_ref))
+        failed = next((item for item in executions if not item.completed), None)
+        if failed is not None:
+            status = failed.receipt.status
+            if status in {"TIMEOUT", "RESOURCE_EXHAUSTED"}:
+                execution_status = ExecutionStatusV4.RESOURCE_EXHAUSTED
+            elif status == "UNSUPPORTED_SEMANTICS":
+                execution_status = ExecutionStatusV4.UNSUPPORTED
+            else:
+                execution_status = ExecutionStatusV4.ENGINE_ERROR
+            failure = _Failure("backend", f"BACKEND_{status}")
+            interruption = (
+                InterruptionStateV4(failure.code, "backend")
+                if execution_status
+                in {ExecutionStatusV4.RESOURCE_EXHAUSTED, ExecutionStatusV4.ENGINE_ERROR}
+                else None
+            )
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                failure=failure,
+                execution=execution_status,
+                interruption=interruption,
+                backend_execution=failed,
+                extra_receipts=(failed.receipt_ref,),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+        primary = self._primary_execution(executions)
+        if primary is None:
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                decision=DecisionStatusV4.UNKNOWN,
+                execution=ExecutionStatusV4.COMPLETED,
+                reasons=("composite_backend_semantics",),
+                extra_receipts=tuple(item.receipt_ref for item in executions),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=None
+            )
+        try:
+            for execution_row in executions:
+                if not self._backend_router.replay(execution_row, now=now):
+                    raise BackendV4Error(
+                        "BACKEND_REPLAY_MISMATCH", "backend replay did not reproduce semantic bytes"
+                    )
+            checked = self._checker.check(
+                run_identity_ref=run_identity_ref,
+                solver_receipt_ref=primary.receipt_ref,
+                now=now,
+            )
+            events.append(("checker", checked.receipt_ref))
+            argument = self._argument_outcome(primary, checked)
+            events.append(("argument", checked.receipt.argument_graph_ref))
+        except _EXPECTED_FAILURES as exc:
+            stage = "checker" if not events or events[-1][0] != "checker" else "argument"
+            failure = self._failure(stage, exc)
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                failure=failure,
+                execution=ExecutionStatusV4.ENGINE_ERROR,
+                interruption=InterruptionStateV4(failure.code, stage),
+                backend_execution=primary,
+                extra_receipts=(primary.receipt_ref,),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+        if argument.state in {"empty", "missing"}:
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                decision=DecisionStatusV4.UNKNOWN,
+                execution=ExecutionStatusV4.COMPLETED,
+                backend_execution=primary,
+                reasons=(f"argument_{argument.state}",),
+                extra_receipts=(primary.receipt_ref, checked.receipt_ref),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=None
+            )
+        try:
+            result = self._formal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                compilations,
+                primary,
+                checked,
+                argument,
+                source_bundle,
+                now=now,
+            )
+        except _EXPECTED_FAILURES as exc:
+            failure = self._failure("result", exc)
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                failure=failure,
+                execution=ExecutionStatusV4.ENGINE_ERROR,
+                interruption=InterruptionStateV4(failure.code, "result"),
+                backend_execution=primary,
+                extra_receipts=(primary.receipt_ref, checked.receipt_ref),
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+        return self._finish(
+            request, run, run_identity_ref, result, events, now=now, failure=None
+        )
 
 
-def _rule_pack_context(request: CaseRequest, rule_pack: RulePackDescriptor) -> tuple[str, str]:
-    """返回规则包上下文并做法域一致性校验。"""
-
-    request_law = _normalise_governing_law(request.governing_law)
-    request_jur = _normalise_jurisdiction(request.jurisdiction)
-    pack_law = _normalise_governing_law(rule_pack.governing_law)
-    pack_jur = _normalise_jurisdiction(rule_pack.jurisdiction)
-    request_case_date = _parse_iso_date(request.as_of_date)
-    if rule_pack.effective_from:
-        if request_case_date < _parse_iso_date(rule_pack.effective_from):
-            raise ValueError("request as_of_date before rule pack effective_from")
-    if rule_pack.effective_to:
-        if request_case_date > _parse_iso_date(rule_pack.effective_to):
-            raise ValueError("request as_of_date after rule pack effective_to")
-    if pack_jur and pack_jur != request_jur:
-        raise ValueError("jurisdiction mismatch between request and rule pack")
-    if pack_law and request_law and pack_law != request_law:
-        raise ValueError("governing_law mismatch between request and rule pack")
-    return (
-        request_law or pack_law,
-        request_jur or pack_jur,
-    )
-
-
-def _resolve_rule_pack_context(request: CaseRequest, rule_pack: RulePackDescriptor) -> LegalDomain:
-    """从上下文确定评估法律域；不允许未识别法域自动回落。"""
-
-    governing_law, jurisdiction = _rule_pack_context(request, rule_pack)
-    if jurisdiction == "":
-        raise ValueError("jurisdiction is required for formal evaluation")
-    if governing_law == "CRIMINAL":
-        return LegalDomain.CRIMINAL
-    if governing_law == "ADMINISTRATIVE":
-        return LegalDomain.ADMINISTRATIVE
-    if jurisdiction not in {"CN", "HK", "US"}:
-        raise ValueError(f"unsupported jurisdiction for rule packing: {jurisdiction}")
-    return LegalDomain.CIVIL
-
-
-def _parse_iso_date(value: str) -> date:
-    """从可信输入中解析 ISO 日期；保留异常用于上层 admission blocked。"""
-
-    return date.fromisoformat(str(value))
-
-
-def _normalise_governing_law(value: str) -> str:
-    text = str(value or "").upper().replace(" ", "")
-    if any(token in text for token in ("刑事", "CRIMINAL", "PENAL")):
-        return "CRIMINAL"
-    if any(token in text for token in ("行政", "ADMINISTRATIVE")):
-        return "ADMINISTRATIVE"
-    if any(token in text for token in ("PRC", "CN", "CHINA", "中华人民共和国", "中国", "民事")):
-        return "CN"
-    if "HK" in text or "HONGKONG" in text:
-        return "HK"
-    if "US" in text or "USA" in text:
-        return "US"
-    return ""
-
-
-def _normalise_jurisdiction(value: str) -> str:
-    text = str(value or "").strip().upper().replace("-", "").replace("_", "").replace(" ", "")
-    if text in {"CN", "PRC", "CIVIL", "中华人民共和国", "CHINA", "中国"}:
-        return "CN"
-    if text in {"HK", "HONGKONG", "香港", "HKSAR"}:
-        return "HK"
-    if text in {"US", "USA", "ENGLISH", "ENUS", "UNITEDSTATES"}:
-        return "US"
-    return text
-
-
-def _relevant_rule_ids(facts: tuple[LegalFact, ...], rules: tuple[LegalRule, ...]) -> tuple[str, ...]:
-    """按事实前提及exception/priority可达关系构建稳定相关规则集合。"""
-
-    fact_ids = {fact.id for fact in facts}
-    by_id = {rule.id: rule for rule in rules}
-    by_head: dict[str, set[str]] = {}
-    by_premise: dict[str, set[str]] = {}
-    for rule in rules:
-        if rule.head_claim:
-            by_head.setdefault(rule.head_claim, set()).add(rule.id)
-        for premise in rule.premise_atoms:
-            by_premise.setdefault(premise, set()).add(rule.id)
-    relevant = {
-        rule.id
-        for rule in rules
-        if not rule.premise_atoms or fact_ids.intersection(rule.premise_atoms)
-    }
-    changed = True
-    while changed:
-        changed = False
-        for rule_id in tuple(sorted(relevant)):
-            rule = by_id[rule_id]
-            dependencies = set(rule.exception_chain)
-            for target in rule.priority_over:
-                dependencies.update(by_head.get(target, set()))
-                mapped = by_id.get(str(target))
-                if mapped and mapped.id in by_id:
-                    dependencies.add(mapped.id)
-            if rule.head_claim:
-                dependencies.update(by_head.get(rule.head_claim, set()))
-                dependencies.update(by_premise.get(rule.head_claim, set()))
-            before = len(relevant)
-            relevant.update(item for item in dependencies if item in by_id)
-            changed = changed or len(relevant) != before
-    return tuple(sorted(relevant))
-
-
-def _enrich_evaluator_event(
-    event: Mapping[str, Any],
-    rules_by_id: Mapping[str, LegalRule],
-) -> dict[str, Any]:
-    """只补充现有规则对象中的modality，不加工法律内容。"""
-
-    enriched = dict(event)
-    rule = rules_by_id.get(str(event.get("rule_id", "")))
-    enriched["modality"] = rule.norm_modality if rule is not None else ""
-    return enriched
+__all__ = ["ApplicationV4", "ApplicationV4Error"]

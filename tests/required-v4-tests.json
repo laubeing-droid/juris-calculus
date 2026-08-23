@@ -243,6 +243,27 @@
       "selector": "tests/security/test_certificate_attacks.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 12
+    },
+    {
+      "id": "W4-APPLICATION-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_application.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
+    },
+    {
+      "id": "W4-APPLICATION-FORMAL-E2E",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_single_chain.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 2
+    },
+    {
+      "id": "W4-APPLICATION-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_application_attacks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 1
     }
   ],
   "evidence_tracks": [
@@ -297,7 +318,7 @@
       "test_id": "V4-P0-01-ENTRYPOINT-V3",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_single_chain.py::test_public_entrypoints_reject_v3_route",
-      "owner_task": "W4-05",
+      "owner_task": "W5-CUTOVER",
       "state": "RED_AT_TASK",
       "mutation": "Route any public entrypoint to V3 or a second application.",
       "red_failure": "The test fails while any public entrypoint is not the sole ApplicationV4 chain."
@@ -368,7 +389,7 @@
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_single_chain.py::test_advisory_boolean_cannot_be_formal",
       "owner_task": "W4-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Replace a formal certificate with an advisory verifiable boolean.",
       "red_failure": "A boolean must never satisfy formal result admission."
     },
@@ -505,12 +526,12 @@
     {
       "audit_id": "P1-07",
       "test_id": "V4-P1-07-DOMAIN-PATCH",
-      "suite": "formal_e2e",
-      "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_namespace_domain_patch_changes_evaluation",
+      "suite": "contract",
+      "selector": "tests/contract/test_application.py::test_signed_domain_config_has_no_global_fallback",
       "owner_task": "W4-05",
-      "state": "RED_AT_TASK",
-      "mutation": "Discard namespace or domain patch values before evaluation.",
-      "red_failure": "The end-to-end result must expose the discarded configuration."
+      "state": "ACTIVE_REQUIRED",
+      "mutation": "Ignore signed jurisdiction or governing law and use a global default.",
+      "red_failure": "A request outside the signed domain configuration must block without fallback."
     },
     {
       "audit_id": "P1-08",

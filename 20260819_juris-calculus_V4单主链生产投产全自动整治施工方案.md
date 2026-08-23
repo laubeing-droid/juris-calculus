@@ -701,9 +701,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W4-05　ApplicationV4 唯一编排
 
 - **Depends / audit**：`W4-04 / P0-01..08, P1-07, P1-16`。
-- **Paths**：重写 `compiler_core/application.py`、application tests。
-- **动作**：严格顺序 resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle；每次请求以 current `CanonicalTimeV4` 调用 pack verifier，旧 handle 只作点时证据而不作 readiness cache；domain/config 只来自 signed pack bytes；所有 early exit 也有 typed result 和 bundle；不调用 advisory certificate/evaluator。
-- **Gate**：synthetic pack 全状态矩阵；pack policy/signature 到期或撤销后的当前请求必须重验失败且不得消费旧 handle；missing/review/hypothetical/conflict/unknown/blocked/error 不签 formal；accepted formal 必有可 verify/replay certificate；阶段故障不 fallback。
+- **Paths**：精确 11 项：本方案、`compiler_core/application.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_application.py`、`tests/contract/test_required_test_manifest.py`、`tests/formal_e2e/test_single_chain.py`、`tests/required-v4-tests.json`、`tests/security/test_application_attacks.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；实际 changed paths 恰为全部 11 项。
+- **动作**：严格顺序 resolver→trust→source/evidence→fact→pack→IR→backend→checker→argument→result→audit core→certificate→final bundle；每次请求以 current `CanonicalTimeV4` 调用 pack verifier，旧 handle 只作点时证据而不作 readiness cache；domain/config 只来自 signed pack bytes；所有 early exit 也有 typed result 和 bundle；不调用 advisory certificate/evaluator。P0-01 在本 task 关闭 Application core 内的 V3 兼容面，三个 public entrypoint 的唯一 sink 仍由 `W5-CUTOVER` 关闭，不在这里伪报跨入口完成。
+- **Gate**：17 个 application/formal/attack/governance focused cases 全绿且 JUnit case identity 冻结；synthetic pack 全状态矩阵；pack policy/signature 到期或撤销后的当前请求必须重验失败且不得消费旧 handle；signed jurisdiction/governing law 不匹配时 BLOCKED、无 global fallback；missing/review/hypothetical/conflict/unknown/blocked/error 不签 formal；accepted formal 必有可 verify/replay certificate；阶段故障不 fallback。runner 绑定 `w4-05-exact-application-reports`、`w4-05-single-formal-spine-contract`、`w4-05-exact-committed-scope` 三项专属 assertions。
 - **Commit**：`feat(application): establish the sole V4 formal spine`。
 
 ### W4-06　隐私、error 和资源闭环
