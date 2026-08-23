@@ -741,7 +741,7 @@
       "suite": "packaging",
       "selector": "tests/packaging/test_current_authority_docs.py::test_current_claims_have_one_authority",
       "owner_task": "W5-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Restore a conflicting current architecture registry or status claim.",
       "red_failure": "Conflicting current authority claims must fail the gate."
     },

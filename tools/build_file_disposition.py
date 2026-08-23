@@ -274,6 +274,18 @@ CLOSURE_TASK: dict[str, str] = {
 }
 
 SPECIAL_CLOSURE_TASKS = {
+    "compiler_core/audit.py": "W5-05",
+    "compiler_core/rule_packs.py": "W5-05",
+    "docs/architecture/contract-authority-v4.md": "W5-05",
+    "docs/architecture/module-authority.json": "W5-05",
+    "docs/architecture/runtime-path-inventory.md": "W5-05",
+    "remediation/v4/file-disposition.json": "W5-05",
+    "remediation/v4/tasks.json": "W5-05",
+    "tests/contract/test_required_test_manifest.py": "W5-05",
+    "tests/packaging/test_current_authority_docs.py": "W5-05",
+    "tests/required-v4-tests.json": "W5-05",
+    "tools/build_file_disposition.py": "W5-05",
+    "tools/remediate_v4.py": "W5-05",
     "configs/perf_patterns.yaml": "W5-02C",
     "tools/wheel_gate.py": "W6-01",
     "requirements/core.lock": "W6-03",
@@ -304,7 +316,7 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/contract/test_audit_bundle.py": "W4-03",
     "tests/security/test_audit_bundle_attacks.py": "W4-03",
     "tests/storage_chaos/test_audit_bundle_recovery.py": "W4-03",
-    "compiler_core/audit_bundle.py": "W4-07",
+    "compiler_core/audit_bundle.py": "W5-05",
     "compiler_core/certificates.py": "W4-04",
     "tests/contract/test_certificates.py": "W4-04",
     "tests/security/test_certificate_attacks.py": "W4-04",

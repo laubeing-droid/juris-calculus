@@ -3932,11 +3932,26 @@
       ],
       "objective": "全仓 current authority 复扫；任何语义回归回责任 task",
       "allowed_paths": [
-        "docs/**",
+        "compiler_core/audit.py",
+        "compiler_core/audit_bundle.py",
+        "compiler_core/rule_packs.py",
+        "docs/architecture/contract-authority-v4.md",
+        "docs/architecture/module-authority-registry.json",
+        "docs/architecture/module-authority-v4.json",
+        "docs/architecture/module-authority.json",
+        "docs/architecture/runtime-path-inventory.md",
         "remediation/v4/file-disposition.json",
-        "tests/**"
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/packaging/test_current_authority_docs.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "CURRENT_AUTHORITY_GREEN",
+        "REGRESSIONS_ROUTED"
+      ],
       "argv": [
         [
           "{python}",
@@ -3944,9 +3959,27 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W5-05"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W5-05",
+          "tests/packaging/test_current_authority_docs.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W5-05.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

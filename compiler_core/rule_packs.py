@@ -43,9 +43,6 @@ from compiler_core.source_service import (
     source_authenticity_payload_digest,
 )
 from compiler_core.trust import TrustVerifierV4
-from compiler_core.types import DataQuality, normalize_rule_admission
-
-
 PACK_SCHEMA_VERSION = "1.0"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _ALLOWED_MODALITIES = {"OBLIGATION", "PROHIBITION", "PERMISSION", "CONSTITUTIVE", "UNKNOWN", ""}
@@ -1709,6 +1706,8 @@ def _official_rule_eligible(
     issues: list[dict[str, str]],
 ) -> bool:
     """执行official规则的来源、质量、日期和modality准入。"""
+
+    from compiler_core.types import DataQuality, normalize_rule_admission
 
     rule = normalize_rule_admission(raw_rule)
     rule_id = str(rule.get("id", ""))

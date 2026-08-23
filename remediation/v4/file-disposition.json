@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 415,
+  "count": 414,
   "paths": [
     {
       "path": ".gitattributes",
@@ -291,7 +291,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W5-05",
       "namespace": "formal_core"
     },
     {
@@ -299,7 +299,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W4-07",
+      "closure_task": "W5-05",
       "namespace": "formal_core"
     },
     {
@@ -863,7 +863,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W5-05",
       "namespace": "formal_core"
     },
     {
@@ -1367,23 +1367,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/architecture/module-authority-registry.json",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/architecture/module-authority-v4.json",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "closure_task": "W5-05",
       "namespace": "docs"
     },
     {
@@ -1391,7 +1375,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
+      "closure_task": "W5-05",
       "namespace": "docs"
     },
     {
@@ -1399,7 +1383,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "closure_task": "W5-05",
       "namespace": "docs"
     },
     {
@@ -1681,7 +1665,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "Z02"
+      "closure_task": "W5-05"
     },
     {
       "path": "remediation/v4/issue-map.json",
@@ -1709,7 +1693,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "Z02"
+      "closure_task": "W5-05"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -1947,7 +1931,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "closure_task": "W5-05"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -2318,6 +2302,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/packaging/test_current_authority_docs.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-05"
+    },
+    {
       "path": "tests/packaging/test_legacy_cn_corpus_absent.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2365,7 +2356,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
+      "closure_task": "W5-05",
       "namespace": "candidate_asset"
     },
     {
@@ -3232,7 +3223,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W5-05",
       "namespace": "formal_core"
     },
     {
@@ -3279,7 +3270,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W5-05",
       "namespace": "formal_core"
     },
     {

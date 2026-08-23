@@ -18,6 +18,7 @@ from types import MappingProxyType
 import uuid
 
 from compiler_core.artifact_store import ArtifactResolverV4
+from compiler_core.audit import AuditEventV4, EVENT_SCHEMA_V4
 from compiler_core.canonical_serialization import (
     DigestV4,
     canonical_bytes,
@@ -73,7 +74,6 @@ from compiler_core.trust import TrustKeyV4, TrustVerifierV4
 BUNDLE_SCHEMA_V4 = "jc/audit-bundle/4.0"
 ARTIFACT_SET_SCHEMA_V4 = "jc/audit-artifact-set/4.0"
 INPUT_SCHEMA_V4 = "jc/audit-input/4.0"
-EVENT_SCHEMA_V4 = "jc/audit-event/4.0"
 CERTIFICATE_BINDING_SCHEMA_V4 = "jc/audit-certificate-binding/4.0"
 COMPLETE_SCHEMA_V4 = "jc/audit-complete/4.0"
 CAPABILITY_SCHEMA_V4 = "jc/audit-run-capability/4.0"
@@ -365,29 +365,6 @@ class AuditTrustMaterialV4:
 
 
 @dataclass(frozen=True, slots=True)
-class AuditEventV4:
-    sequence: int
-    stage: str
-    artifact_ref: ContentRefV4
-
-    def __post_init__(self) -> None:
-        if type(self.sequence) is not int or self.sequence < 0:
-            _fail("AUDIT_EVENT", "event sequence must be a non-negative integer")
-        _identifier(self.stage, "event stage")
-        if type(self.artifact_ref) is not ContentRefV4:
-            _fail("AUDIT_EVENT", "event artifact_ref must be ContentRefV4")
-
-    def to_wire(self, run_identity_ref: ContentRefV4) -> dict[str, object]:
-        return {
-            "schema_version": EVENT_SCHEMA_V4,
-            "sequence": self.sequence,
-            "stage": self.stage,
-            "run_identity_ref": run_identity_ref.to_dict(),
-            "artifact_ref": self.artifact_ref.to_dict(),
-        }
-
-
-@dataclass(frozen=True, slots=True)
 class AuditBundleMaterialsV4:
     request: CaseRequestV4
     run_identity: RunIdentityV4
@@ -643,11 +620,11 @@ class AuditBundleStoreV4:
             try:
                 event_run = ContentRefV4.from_dict(payload["run_identity_ref"])
                 event_ref = ContentRefV4.from_dict(payload["artifact_ref"])
+                event = AuditEventV4(payload["sequence"], payload["stage"], event_ref)
             except (ContractV4Error, TypeError, ValueError) as exc:
                 raise AuditBundleV4Error(
                     "AUDIT_EVENT_STREAM", "event reference is invalid"
                 ) from exc
-            event = AuditEventV4(payload["sequence"], payload["stage"], event_ref)
             if event_run != run_ref or event.artifact_ref not in known_refs:
                 _fail("AUDIT_EVENT_BINDING", "event differs from the sealed run artifacts")
             events.append(event)

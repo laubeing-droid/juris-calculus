@@ -33,6 +33,7 @@ import dataclasses
 import enum
 import fnmatch
 import hashlib
+import importlib
 import importlib.util
 import itertools
 import json
@@ -58,7 +59,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.35.0"
+RUNNER_VERSION = "0.36.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -93,6 +94,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.33.0": 5,
     "0.34.0": 5,
     "0.35.0": 5,
+    "0.36.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -706,6 +708,35 @@ W5_CUTOVER_REQUIRED_CHANGED_PATHS = (
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
+W5_05_TEST_PATHS = (
+    "tests/packaging/test_current_authority_docs.py",
+)
+W5_05_TEST_CASE_COUNT = 4
+W5_05_TEST_CASE_IDS_DIGEST = (
+    "sha256:69856e14e7cc0774ab00bbbeec8bd29fabfb1ad751d82e0f8ef698fdd2886934"
+)
+W5_05_RETIRED_PATHS = (
+    "docs/architecture/module-authority-registry.json",
+    "docs/architecture/module-authority-v4.json",
+)
+W5_05_ALLOWED_PATHS = (
+    "compiler_core/audit.py",
+    "compiler_core/audit_bundle.py",
+    "compiler_core/rule_packs.py",
+    "docs/architecture/contract-authority-v4.md",
+    "docs/architecture/module-authority-registry.json",
+    "docs/architecture/module-authority-v4.json",
+    "docs/architecture/module-authority.json",
+    "docs/architecture/runtime-path-inventory.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/packaging/test_current_authority_docs.py",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_05_REQUIRED_CHANGED_PATHS = W5_05_ALLOWED_PATHS
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -15270,6 +15301,209 @@ def cmd_w5_cutover_gate() -> int:
     return EXIT_OK
 
 
+def _w5_05_current_authority_problems() -> list[str]:
+    """Require one importable V4 authority registry and public application sink."""
+
+    problems: list[str] = []
+    policy_path = ROOT / "docs/architecture/module-authority.json"
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_05_file_disposition", ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W5-05 governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W5-05"), {})
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-05", *W5_05_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-05.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-05"],
+        expected_pytest_argv,
+    ]
+    if task.get("depends_on") != ["W5-CUTOVER"]:
+        problems.append("W5-05 must depend only on W5-CUTOVER")
+    if task.get("audit_ids") != ["P0-01", "P0-08", "P0-14", "P2-04", "P3-02"]:
+        problems.append("W5-05 audit projection drifted")
+    if task.get("allowed_paths") != list(W5_05_ALLOWED_PATHS):
+        problems.append("W5-05 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-05 exact gate/pytest argv drifted")
+    if task.get("terminal_states") != ["CURRENT_AUTHORITY_GREEN", "REGRESSIONS_ROUTED"]:
+        problems.append("W5-05 terminal states drifted")
+    if disposition != generated_disposition:
+        problems.append("W5-05 file disposition is not reproducible from its generator")
+
+    for path in W5_05_RETIRED_PATHS:
+        if (ROOT / path).exists():
+            problems.append(f"W5-05 competing authority registry remains: {path}")
+    for path in W5_05_TEST_PATHS:
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-05 test is unreadable: {path}: {exc}")
+            continue
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-05 test uses skip/xfail: {path}")
+    if W5_05_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W5-05 JUnit case identity is not frozen")
+    try:
+        required_tests = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        problems.append(f"W5-05 required-test manifest is unreadable: {exc}")
+    else:
+        current_mutation = next(
+            (
+                row for row in required_tests.get("audit_mutations", [])
+                if row.get("test_id") == "V4-P2-04-CURRENT-AUTHORITY"
+            ),
+            {},
+        )
+        if (
+            current_mutation.get("audit_id"),
+            current_mutation.get("owner_task"),
+            current_mutation.get("state"),
+            current_mutation.get("selector"),
+        ) != (
+            "P2-04",
+            "W5-05",
+            "ACTIVE_REQUIRED",
+            "tests/packaging/test_current_authority_docs.py::test_current_claims_have_one_authority",
+        ):
+            problems.append("W5-05 required current-authority mutation binding drifted")
+
+    rules = policy.get("path_rules", [])
+    if not isinstance(rules, list) or any(not isinstance(row, dict) for row in rules):
+        return [*problems, "W5-05 authority path_rules is malformed"]
+    by_path = {row.get("path"): row for row in rules}
+    if len(by_path) != len(rules):
+        problems.append("W5-05 authority path_rules contains duplicates")
+    expected_roles = {"application", "certificate_issuer", "contract", "independent_checker"}
+    roles = policy.get("authority_roles", {})
+    if set(roles) != expected_roles:
+        problems.append("W5-05 authority role set drifted")
+    for role, declaration in roles.items():
+        target = declaration.get("target_path") if isinstance(declaration, dict) else None
+        if by_path.get(target, {}).get("class") != "FORMAL_CORE":
+            problems.append(f"W5-05 authority role is not formal: {role}")
+
+    retired_current_rules = sorted(
+        path for path in W5_CUTOVER_RETIRED_PATHS if path in by_path
+    )
+    if retired_current_rules:
+        problems.append(f"W5-05 retired paths remain in current policy: {retired_current_rules!r}")
+
+    deployable = {"FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT"}
+    modules: dict[str, str] = {}
+    for path, row in by_path.items():
+        if row.get("class") not in deployable or not str(path).endswith(".py"):
+            continue
+        module = str(path)[:-3].replace("/", ".").removesuffix(".__init__")
+        modules[module] = str(path)
+        if not (ROOT / str(path)).is_file():
+            problems.append(f"W5-05 declared current module is absent: {path}")
+
+    graph: dict[str, set[str]] = {path: set() for path in modules.values()}
+    for module, source_path in modules.items():
+        try:
+            tree = ast.parse(
+                (ROOT / source_path).read_text(encoding="utf-8-sig"),
+                filename=source_path,
+            )
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            problems.append(f"W5-05 current source is unreadable: {source_path}: {exc}")
+            continue
+        allowed = set(policy.get("classes", {}).get(by_path[source_path].get("class"), {}).get("may_import", []))
+        imported_modules: set[str] = set()
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                imported_modules.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                imported_modules.add(node.module)
+        for imported in imported_modules:
+            target = modules.get(imported)
+            if target is None:
+                continue
+            if by_path[target].get("class") not in allowed:
+                problems.append(f"W5-05 forbidden deployable import: {source_path} -> {target}")
+            graph[source_path].add(target)
+
+    sink = roles.get("application", {}).get("target_path") if isinstance(roles, dict) else None
+    for source_path, row in by_path.items():
+        if row.get("class") != "PUBLIC_ADAPTER" or source_path not in graph:
+            continue
+        seen = {source_path}
+        pending = [source_path]
+        while pending:
+            current = pending.pop()
+            for target in graph[current] - seen:
+                seen.add(target)
+                pending.append(target)
+        if sink not in seen:
+            problems.append(f"W5-05 public adapter does not reach application: {source_path}")
+
+    sys.path.insert(0, str(ROOT))
+    try:
+        for module in sorted(modules):
+            importlib.import_module(module)
+        from compiler_core.audit import AuditEventV4
+        from compiler_core.audit_bundle import AuditEventV4 as BundledAuditEventV4
+        if AuditEventV4 is not BundledAuditEventV4 or AuditEventV4.__module__ != "compiler_core.audit":
+            problems.append("W5-05 audit event has competing Python authorities")
+    except (ImportError, AttributeError, TypeError, ValueError) as exc:
+        problems.append(f"W5-05 current import failed: {type(exc).__name__}: {exc}")
+    finally:
+        sys.path.remove(str(ROOT))
+
+    current_docs = (
+        policy_path,
+        ROOT / "docs/architecture/contract-authority-v4.md",
+        ROOT / "docs/architecture/runtime-path-inventory.md",
+    )
+    try:
+        joined = "\n".join(path.read_text(encoding="utf-8") for path in current_docs)
+        project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+        problems.append(f"W5-05 current docs are unreadable: {exc}")
+    else:
+        for marker in W5_CUTOVER_RETIRED_PATHS:
+            if marker in joined:
+                problems.append(f"W5-05 retired authority claim remains: {marker}")
+        if project.get("project", {}).get("scripts") != {"jc": "compiler_core.cli:main"}:
+            problems.append("W5-05 public script authority drifted")
+    return problems
+
+
+def cmd_w5_05_current_authority_gate() -> int:
+    try:
+        problems = _w5_05_current_authority_problems()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        problems = [f"malformed input: {type(exc).__name__}: {exc}"]
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-05 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W5-05 gate OK: one importable V4 authority registry, one application sink, "
+        "one audit-event definition, and no competing current architecture claims"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -15337,6 +15571,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_03_nonproduction_gate()
     if args.wave == "W5-CUTOVER":
         return cmd_w5_cutover_gate()
+    if args.wave == "W5-05":
+        return cmd_w5_05_current_authority_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -17591,6 +17827,41 @@ def _w5_cutover_test_report_problems(test_reports: list[dict[str, Any]]) -> list
     return problems
 
 
+def _w5_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact current-authority suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-05 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_05_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_05_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_05_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_05_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_05_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-05 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-05 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -17657,6 +17928,30 @@ def _w5_cutover_committed_scope_problems(
             str(artifact_digests.get(f"{prefix}:{path}")),
         ) is None:
             problems.append(f"W5-CUTOVER lacks committed {prefix} digest: {path}")
+    return problems
+
+
+def _w5_05_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-05 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-05 artifact_digests is not an object"]
+    expected = set(W5_05_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W5-05 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W5_05_REQUIRED_CHANGED_PATHS:
+        prefix = "deleted-path" if path in W5_05_RETIRED_PATHS else "result-path"
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"{prefix}:{path}")),
+        ) is None:
+            problems.append(f"W5-05 lacks committed {prefix} digest: {path}")
     return problems
 
 
@@ -18451,6 +18746,27 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-CUTOVER receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-05":
+        problems.extend(_w5_05_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w5_05_current_authority_problems())
+        problems.extend(_w5_05_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-05-exact-green-reports",
+            "w5-05-current-authority-contract",
+            "w5-05-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-05 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -20045,6 +20361,39 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W5-CUTOVER rewrites and retired paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-05":
+        report_problems = _w5_05_test_report_problems(test_reports)
+        contract_problems = _w5_05_current_authority_problems()
+        path_problems = _w5_05_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-05-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_05_TEST_CASE_COUNT} current-authority cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-05-current-authority-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "one V4 registry, one application sink, and one typed audit-event authority"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-05-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W5-05 authority, regression, governance, and test paths are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

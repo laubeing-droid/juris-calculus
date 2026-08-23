@@ -1,40 +1,26 @@
-# Runtime path inventory
+# V4 current runtime path inventory
 
-- root: `compiler_core`
-  - path: `compiler_core/client.py` (唯一公开 Python facade；重建外部请求并使用随包配置)
-  - path: `compiler_core/application.py` (main evaluation chain, run identity + gate checks)
-  - path: `compiler_core/contracts.py` (semantic/result/fact contracts)
-  - path: `compiler_core/rule_packs.py` (pack verification + descriptor)
-  - path: `compiler_core/constraint_validator.py` (ontology/override loading)
-  - path: `compiler_core/evaluator.py` (fixpoint and convergence outcome)
-  - path: `compiler_core/stratified_evaluator.py` (shadow/compare path)
-  - path: `compiler_core/argumentation.py` (argument node与attack关系构图)
-  - path: `compiler_core/fact_trust_envelope.py` (fact 入场门禁与降级)
-  - path: `compiler_core/types.py` (事实/结果类型系统)
-  - path: `compiler_core/audit_bundle.py` (replay, cache policy, safe request)
+状态：W5-05 current。唯一人工分类来源为 `module-authority.json`；本页只给出公共运行链的可读投影。
 
-- root: `configs/packs`
-  - path: `configs/packs/cn-official` (official pack registry entry remains inactive/blocked)
-  - path: `configs/packs` (pack manifests and runtime checks)
-  - path: `configs/README.md`（配置根与配置入口说明）
+## 公共入口
 
-- root: `tests`
-  - path: `tests/fixtures` (baseline fixtures)
-  - path: `tests/fixtures/p0_regressions` (P0 回归清单与待执行资产)
-  - path: `tests/unit` (unit regression coverage)
-  - path: `tests/e2e` (interface parity targets)
+- `compiler_core/client.py` — 唯一 Python facade
+- `compiler_core/cli.py` — `jc` CLI adapter
+- `compiler_core/mcp.py` — 唯一四工具 MCP adapter
+- `mcp_server.py` — installed stdio launcher
 
-- root: `schemas`
-  - path: `schemas/jc-v3.schema.json` (contract source of truth)
+四个入口共同进入 `compiler_core/application.py`，不得直接调用候选、实验或离线 source tool。
 
-- root: `docs/contracts`
-  - path: `docs/contracts/*.md` (single-source contract references)
+## 正式运行链
 
-- root: `addons`
-  - path: `addons/workbuddy_mcp.py` (MCP protocol facade, advisory/read-write parity gate)
+`contracts.py` → `source_service.py` / `fact_admission.py` / `rule_packs.py` → `legal_ir.py` → `backend_router.py` / `backends/__init__.py` / `argumentation.py` → `independent_checker.py` → `certificates.py` → `audit.py` / `audit_bundle.py`。
 
-- root: `pipeline`
-  - path: `pipeline/experimental/llm_client.py` (proposal-only；显式 `real` / `regex` provider，无 mock fallback)
-  - path: `pipeline/llm_client.py` (兼容导入层，不进入 formal kernel)
+支撑模块为 `canonical_serialization.py`、`trust.py`、`artifact_store.py`、`storage.py`、`resources.py` 和 `version.py`。`rendering.py` 只消费 `VerifiedAuditBundleV4`，不得重新求值。
 
-公开包根仅导出 `JCClient`，不导出 `evaluate_case`、`evaluate_to_audit_bundle`、`evaluate_registered_case`。内部求值服务仍供 CLI、MCP、replay 使用。
+## 发布物
+
+- `schemas/jc-v4.schema.json` — 由 `contracts.py` 生成
+- `mcp_manifest.json` — 由 V4 ToolSpec 生成
+- `pyproject.toml` — 只声明 `jc` 公共脚本；wheel 精确清单由 W6-01 门禁管理
+
+`addons/`、`pipeline/`、离线 source tools、候选资产、实验模块、测试和 remediation 工具均为非生产内容，不是 current formal authority。
