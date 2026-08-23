@@ -327,6 +327,13 @@
       "selector": "tests/packaging/test_hash_locks.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 9
+    },
+    {
+      "id": "W6-INSTALLED-WHEEL-E2E",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_wheel_exact_set.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
     }
   ],
   "evidence_tracks": [
@@ -512,7 +519,7 @@
       "suite": "packaging",
       "selector": "tests/packaging/test_wheel_exact_set.py::test_nonformal_module_injection_fails_exact_record_gate",
       "owner_task": "W6-04",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Inject V3, compat, candidate, addon, or pipeline code into the wheel.",
       "red_failure": "The wheel RECORD must equal the authority-derived positive set."
     },

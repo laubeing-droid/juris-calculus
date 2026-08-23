@@ -4425,10 +4425,19 @@
       ],
       "objective": "双构建和 clean installed-wheel E2E",
       "allowed_paths": [
-        "tests/packaging/**",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/packaging/test_wheel_exact_set.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
         "tools/wheel_gate.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "LOCKED_DUAL_BUILD_IDENTICAL",
+        "CLEAN_INSTALLED_WHEEL_E2E_GREEN"
+      ],
       "argv": [
         [
           "{python}",
@@ -4436,11 +4445,30 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W6-04"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W6-04",
+          "tests/packaging/test_wheel_exact_set.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W6-04.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",

@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.40.0"
+RUNNER_VERSION = "0.41.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -100,6 +100,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.38.0": 5,
     "0.39.0": 5,
     "0.40.0": 5,
+    "0.41.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -931,6 +932,26 @@ W6_03_RETIRED_PATHS = frozenset({
     "requirements/dev.lock", "requirements/documents.lock",
     "requirements/pipeline.lock", "requirements/render.lock",
 })
+W6_04_TEST_PATHS = ("tests/packaging/test_wheel_exact_set.py",)
+W6_04_TEST_CASE_COUNT = 8
+W6_04_TEST_CASE_IDS_DIGEST = (
+    "sha256:0a05349abae3c14f0292fd3cfb9af06a1d47648d4ce1d592fc824c057d4afe07"
+)
+W6_04_INSTALLED_TEST_CASE_COUNT = 15
+W6_04_INSTALLED_TEST_CASE_IDS_DIGEST = (
+    "sha256:e5adc321d783ad344086bde2a6352bb4ee2f6f57fc54745172cbebed5d1897d4"
+)
+W6_04_ALLOWED_PATHS = (
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    *W6_04_TEST_PATHS,
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+    "tools/wheel_gate.py",
+)
+W6_04_REQUIRED_CHANGED_PATHS = W6_04_ALLOWED_PATHS
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4607,6 +4628,13 @@ def _required_test_manifest_problems(
             "selector": "tests/packaging/test_hash_locks.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 9,
+        },
+        {
+            "id": "W6-INSTALLED-WHEEL-E2E",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_wheel_exact_set.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 8,
         },
     ]
     if required_now != expected_required_now:
@@ -16940,6 +16968,436 @@ def cmd_w6_03_supply_chain_gate() -> int:
     return EXIT_OK
 
 
+def _w6_04_contract_problems() -> list[str]:
+    """Bind locked dual builds, the installed E2E harness, and exact scope."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        gate = _w6_01_load_wheel_gate(ROOT / "tools/wheel_gate.py")
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        generated_disposition = generator.build_document()
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W6-04 governance input is unreadable: {type(exc).__name__}: {exc}"]
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W6-04"), {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W6-04"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W6-04", *W6_04_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W6-04.xml",
+        ],
+    ]
+    if (
+        task.get("depends_on") != ["W6-03"]
+        or task.get("audit_ids") != ["P0-14", "P1-19", "P2-06"]
+    ):
+        problems.append("W6-04 dependency/audit projection drifted")
+    if task.get("allowed_paths") != list(W6_04_ALLOWED_PATHS):
+        problems.append("W6-04 exact allowlist drifted")
+    if task.get("terminal_states") != [
+        "LOCKED_DUAL_BUILD_IDENTICAL", "CLEAN_INSTALLED_WHEEL_E2E_GREEN",
+    ]:
+        problems.append("W6-04 terminal states drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W6-04 exact gate/pytest argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W6-04 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W6-04 file disposition is not reproducible from its generator")
+
+    if (
+        gate.INSTALLED_TEST_CASE_COUNT != W6_04_INSTALLED_TEST_CASE_COUNT
+        or gate.INSTALLED_TEST_CASE_IDS_SHA256 != W6_04_INSTALLED_TEST_CASE_IDS_DIGEST
+        or tuple(gate.REJECTED_IMPORTS) != (
+            "addons", "pipeline", "compiler_core.adapter_base", "compiler_core.analysis",
+            "compiler_core.compat_v3_v4", "compiler_core.contracts_v4", "schemas.w1b",
+        )
+    ):
+        problems.append("W6-04 installed harness identity drifted")
+    gate_source = (ROOT / "tools/wheel_gate.py").read_text(encoding="utf-8")
+    for marker in (
+        "run_installed_e2e", "validate_installed_e2e_report", "PIP_NO_INDEX",
+        "--require-hashes", "mcp-stdio-lifecycle", "formal-e2e",
+    ):
+        if marker not in gate_source:
+            problems.append(f"W6-04 installed gate marker is missing: {marker}")
+
+    required_row = next(
+        (item for item in required.get("required_now", [])
+         if item.get("id") == "W6-INSTALLED-WHEEL-E2E"), {}
+    )
+    if required_row != {
+        "id": "W6-INSTALLED-WHEEL-E2E", "suite": "packaging",
+        "selector": W6_04_TEST_PATHS[0], "state": "REQUIRED_NOW",
+        "expected_tests": W6_04_TEST_CASE_COUNT,
+    }:
+        problems.append("W6-04 required-now test binding drifted")
+    mutations = {
+        item.get("test_id"): item for item in required.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-14-WHEEL-INJECTION": (
+            "P0-14", "W6-04", "ACTIVE_REQUIRED",
+            "tests/packaging/test_wheel_exact_set.py::"
+            "test_nonformal_module_injection_fails_exact_record_gate",
+        ),
+        "V4-P1-19-WHEEL-POSITIVE-SET": (
+            "P1-19", "W6-01", "ACTIVE_REQUIRED",
+            "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted",
+        ),
+        "V4-P2-06-NO-GIT-ARCHIVE": (
+            "P2-06", "W6-01", "ACTIVE_REQUIRED",
+            "tests/packaging/test_wheel_gate_v4.py::"
+            "test_gate_requires_a_gitless_source_and_has_no_static_blacklist",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        row = mutations.get(test_id, {})
+        observed = (
+            row.get("audit_id"), row.get("owner_task"), row.get("state"),
+            row.get("selector"),
+        )
+        if observed != expected or not _selector_is_declared(ROOT, str(row.get("selector", ""))):
+            problems.append(f"W6-04 active audit mutation drifted: {test_id}")
+
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W6_04_REQUIRED_CHANGED_PATHS:
+        if by_path.get(path, {}).get("closure_task") != "W6-04":
+            problems.append(f"W6-04 disposition closure drifted: {path}")
+    return problems
+
+
+def _w6_04_run(
+    label: str,
+    command: list[str],
+    *,
+    cwd: Path,
+    environment: dict[str, str],
+    timeout: int = 600,
+) -> dict[str, Any]:
+    completed = subprocess.run(
+        command, cwd=cwd, env=environment, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=False, timeout=timeout,
+    )
+    if completed.returncode != 0:
+        detail = " ".join((completed.stderr or completed.stdout).split())[-1600:]
+        raise ValueError(f"{label.upper().replace('-', '_')}_FAILED:{detail}")
+    return {
+        "label": label,
+        "return_code": completed.returncode,
+        "stdout_sha256": "sha256:" + sha256_hex(completed.stdout.encode("utf-8")),
+        "stderr_sha256": "sha256:" + sha256_hex(completed.stderr.encode("utf-8")),
+    }
+
+
+def _w6_04_venv_python(environment_root: Path) -> Path:
+    return environment_root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def _w6_04_build_evidence(
+    state_root: Path,
+) -> tuple[Path, str, Path, str, Path, str, Path, str]:
+    temporary_parent = state_root / "tmp"
+    temporary_parent.mkdir(parents=True, exist_ok=True)
+    commit = _git_checked("rev-parse", "HEAD")
+    tree = _git_checked("rev-parse", "HEAD^{tree}")
+    source_date_epoch = int(_git_checked("show", "-s", "--format=%ct", "HEAD"))
+    gate = _w6_01_load_wheel_gate(ROOT / "tools/wheel_gate.py")
+
+    with tempfile.TemporaryDirectory(prefix="W6-04-", dir=temporary_parent) as raw:
+        temporary = Path(raw)
+        wheelhouse = temporary / "wheelhouse"
+        wheelhouse.mkdir()
+        online_environment = os.environ.copy()
+        online_environment.pop("PYTHONPATH", None)
+        online_environment.pop("PIP_NO_INDEX", None)
+        online_environment.pop("PIP_FIND_LINKS", None)
+        online_environment["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+        acquisitions = []
+        for profile in ("build", "core", "test"):
+            acquisitions.append(_w6_04_run(
+                f"download-{profile}-lock",
+                [
+                    sys.executable, "-B", "-m", "pip", "download",
+                    "--disable-pip-version-check", "--require-hashes",
+                    "--dest", str(wheelhouse), "--requirement",
+                    str(ROOT / "requirements" / f"{profile}.lock"),
+                ],
+                cwd=temporary,
+                environment=online_environment,
+            ))
+        wheelhouse_rows = [
+            {
+                "name": path.name,
+                "sha256": "sha256:" + sha256_hex(path.read_bytes()),
+            }
+            for path in sorted(wheelhouse.iterdir(), key=lambda item: item.name.casefold())
+            if path.is_file()
+        ]
+        if len(wheelhouse_rows) < 12:
+            raise ValueError("LOCKED_WHEELHOUSE_INCOMPLETE")
+
+        offline_environment = os.environ.copy()
+        offline_environment.pop("PYTHONPATH", None)
+        offline_environment.update({
+            "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+            "PIP_NO_INDEX": "1",
+            "PIP_FIND_LINKS": str(wheelhouse),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONHASHSEED": "0",
+        })
+        lanes: list[dict[str, Any]] = []
+        archive_payloads: list[bytes] = []
+        wheel_payloads: list[bytes] = []
+        sources: list[Path] = []
+        wheels: list[Path] = []
+        for lane in ("A", "B"):
+            archive = temporary / f"source-{lane}.zip"
+            _w6_04_run(
+                f"archive-{lane}",
+                ["git", "archive", "--format=zip", f"--output={archive}", "HEAD"],
+                cwd=ROOT,
+                environment=offline_environment,
+                timeout=120,
+            )
+            source = temporary / f"source-{lane}"
+            source.mkdir()
+            archive_names = _w6_01_extract_archive(archive, source)
+            build_environment = temporary / f"build-env-{lane}"
+            create = _w6_04_run(
+                f"create-build-env-{lane}",
+                [sys.executable, "-B", "-m", "venv", str(build_environment)],
+                cwd=temporary,
+                environment=offline_environment,
+                timeout=180,
+            )
+            build_python = _w6_04_venv_python(build_environment)
+            install = _w6_04_run(
+                f"install-build-lock-{lane}",
+                [
+                    str(build_python), "-B", "-m", "pip", "install", "--no-index",
+                    "--find-links", str(wheelhouse), "--require-hashes",
+                    "--requirement", str(source / "requirements/build.lock"),
+                ],
+                cwd=temporary,
+                environment=offline_environment,
+                timeout=300,
+            )
+            out_dir = temporary / f"dist-{lane}"
+            report_path = temporary / f"build-{lane}.json"
+            build_result = subprocess.run(
+                [
+                    str(build_python), "-B", str(source / "tools/wheel_gate.py"),
+                    "--source", str(source), "--out-dir", str(out_dir),
+                    "--source-date-epoch", str(source_date_epoch), "--no-isolation",
+                    "--output", str(report_path),
+                ],
+                cwd=source,
+                env=offline_environment,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                timeout=600,
+            )
+            if build_result.returncode != 0:
+                raise ValueError(
+                    f"LOCKED_BUILD_{lane}_FAILED:{build_result.stdout}{build_result.stderr}"
+                )
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            if report != json.loads(build_result.stdout):
+                raise ValueError(f"LOCKED_BUILD_{lane}_STDOUT_REPORT_DRIFT")
+            report_problems = _w6_01_gate_report_problems(report)
+            if report_problems:
+                raise ValueError(
+                    f"LOCKED_BUILD_{lane}_REPORT_INVALID:" + "; ".join(report_problems)
+                )
+            lane_wheels = list(out_dir.glob("*.whl"))
+            if len(lane_wheels) != 1:
+                raise ValueError(f"LOCKED_BUILD_{lane}_WHEEL_COUNT_DRIFT")
+            archive_payload = archive.read_bytes()
+            wheel_payload = lane_wheels[0].read_bytes()
+            archive_payloads.append(archive_payload)
+            wheel_payloads.append(wheel_payload)
+            sources.append(source)
+            wheels.append(lane_wheels[0])
+            lanes.append({
+                "lane": lane,
+                "fresh_build_environment": True,
+                "network_disabled": True,
+                "build_lock_sha256": (
+                    "sha256:" + sha256_hex((source / "requirements/build.lock").read_bytes())
+                ),
+                "archive_sha256": "sha256:" + sha256_hex(archive_payload),
+                "archive_entry_count": len(archive_names),
+                "archive_entry_names_sha256": _digest_object(archive_names),
+                "environment_commands": [create, install],
+                "gate_report": report,
+            })
+
+        if archive_payloads[0] != archive_payloads[1]:
+            raise ValueError("LOCKED_CLEAN_SOURCE_ARCHIVES_DIFFER")
+        if wheel_payloads[0] != wheel_payloads[1] or lanes[0]["gate_report"] != lanes[1]["gate_report"]:
+            raise ValueError("LOCKED_FORMAL_WHEEL_REBUILDS_DIFFER")
+
+        installed_report_path = temporary / "installed-report.json"
+        installed_work = temporary / "repository-outside-installed-e2e"
+        installed_result = subprocess.run(
+            [
+                sys.executable, "-B", str(sources[0] / "tools/wheel_gate.py"),
+                "--source", str(sources[0]), "--installed-wheel", str(wheels[0]),
+                "--test-lock", str(sources[0] / "requirements/test.lock"),
+                "--wheelhouse", str(wheelhouse), "--work-dir", str(installed_work),
+                "--output", str(installed_report_path),
+            ],
+            cwd=temporary,
+            env=offline_environment,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=1200,
+        )
+        if installed_result.returncode != 0:
+            raise ValueError(
+                "CLEAN_INSTALLED_E2E_FAILED:"
+                + (installed_result.stdout + installed_result.stderr)[-3000:]
+            )
+        installed_report = json.loads(installed_report_path.read_text(encoding="utf-8"))
+        if installed_report != json.loads(installed_result.stdout):
+            raise ValueError("CLEAN_INSTALLED_E2E_STDOUT_REPORT_DRIFT")
+        wheel_digest = "sha256:" + sha256_hex(wheel_payloads[0])
+        test_lock_digest = "sha256:" + sha256_hex(
+            (sources[0] / "requirements/test.lock").read_bytes()
+        )
+        installed_problems = gate.validate_installed_e2e_report(
+            installed_report,
+            wheel_digest=wheel_digest,
+            lock_digest=test_lock_digest,
+        )
+        if installed_problems:
+            raise ValueError("CLEAN_INSTALLED_E2E_REPORT_INVALID:" + "; ".join(installed_problems))
+        installed_junit = installed_work / "installed-e2e.xml"
+        junit_payload = installed_junit.read_bytes()
+        if (
+            installed_report["formal_e2e"]["sha256"]
+            != "sha256:" + sha256_hex(junit_payload)
+        ):
+            raise ValueError("CLEAN_INSTALLED_E2E_JUNIT_DRIFT")
+
+        archive_path, archive_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-04" / "source-archives",
+            archive_payloads[0], ".zip",
+        )
+        wheel_path, stored_wheel_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-04" / "wheels",
+            wheel_payloads[0], ".whl",
+        )
+        junit_path, junit_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-04" / "installed-junit",
+            junit_payload, ".xml",
+        )
+        report = {
+            "schema_version": "jc/w6-dual-build-installed-e2e/1.0",
+            "task_id": "W6-04",
+            "status": "PASS",
+            "commit": commit,
+            "tree": tree,
+            "source_date_epoch": source_date_epoch,
+            "lock_digests": {
+                profile: "sha256:" + sha256_hex(
+                    (ROOT / "requirements" / f"{profile}.lock").read_bytes()
+                )
+                for profile in ("build", "core", "test")
+            },
+            "dependency_acquisition": acquisitions,
+            "wheelhouse": {
+                "file_count": len(wheelhouse_rows),
+                "manifest_sha256": _digest_object(wheelhouse_rows),
+            },
+            "source_archive": {
+                "sha256": archive_digest,
+                "bytes": len(archive_payloads[0]),
+                "entry_count": lanes[0]["archive_entry_count"],
+                "entry_names_sha256": lanes[0]["archive_entry_names_sha256"],
+                "git_metadata": False,
+                "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/source-archives/"
+                + archive_path.name,
+            },
+            "builds": lanes,
+            "formal_wheel": {
+                "sha256": stored_wheel_digest,
+                "bytes": len(wheel_payloads[0]),
+                "filename": "juris_calculus-4.0.0rc1-py3-none-any.whl",
+                "byte_identical_rebuilds": True,
+                "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/wheels/"
+                + wheel_path.name,
+            },
+            "installed_e2e": installed_report,
+            "installed_junit": {
+                "sha256": junit_digest,
+                "tests": W6_04_INSTALLED_TEST_CASE_COUNT,
+                "case_ids_sha256": W6_04_INSTALLED_TEST_CASE_IDS_DIGEST,
+                "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/installed-junit/"
+                + junit_path.name,
+            },
+        }
+        report_path, report_digest = _write_content_addressed_json(
+            state_root / "evidence" / "W6-04" / "reports", report,
+        )
+    return (
+        archive_path, archive_digest, wheel_path, stored_wheel_digest,
+        junit_path, junit_digest, report_path, report_digest,
+    )
+
+
+def cmd_w6_04_installed_wheel_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W6-04 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w6_04_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W6-04 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        artifacts = _w6_04_build_evidence(Path(raw_state_root).resolve())
+    except (
+        ImportError, OSError, RuntimeError, subprocess.TimeoutExpired, TypeError,
+        UnicodeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError,
+    ) as exc:
+        print(f"W6-04 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    (
+        archive_path, archive_digest, wheel_path, wheel_digest,
+        junit_path, junit_digest, report_path, report_digest,
+    ) = artifacts
+    print(f"JC_ARTIFACT\tw6-04-source-archive\t{archive_path}\t{archive_digest}")
+    print(f"JC_ARTIFACT\tw6-04-formal-wheel\t{wheel_path}\t{wheel_digest}")
+    print(f"JC_ARTIFACT\tw6-04-installed-junit\t{junit_path}\t{junit_digest}")
+    print(f"JC_ARTIFACT\tw6-04-installed-report\t{report_path}\t{report_digest}")
+    print(
+        "W6-04 gate OK: two locked fresh build environments produced one "
+        "byte-identical formal wheel; a repository-outside offline venv passed "
+        "15 formal/verify/replay/CLI/Client/MCP cases with retired imports absent"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -17017,6 +17475,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w6_01_formal_wheel_gate()
     if args.wave == "W6-03":
         return cmd_w6_03_supply_chain_gate()
+    if args.wave == "W6-04":
+        return cmd_w6_04_installed_wheel_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -19451,6 +19911,31 @@ def _w6_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w6_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact installed-wheel mutation suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W6-04 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0, "terminal_summaries": 1, "passed": W6_04_TEST_CASE_COUNT,
+        "failed": 0, "errors": 0, "skipped": 0, "xfailed": 0, "xpassed": 0,
+        "collection_errors": 0, "junit_valid": True,
+        "junit_tests": W6_04_TEST_CASE_COUNT, "junit_skipped": 0,
+        "junit_failures": 0, "junit_errors": 0, "junit_cases": W6_04_TEST_CASE_COUNT,
+        "junit_unique_cases": W6_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W6_04_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W6-04 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W6-04 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -19913,6 +20398,219 @@ def _w6_03_artifact_problems(artifact_digests: Any, state_root: Path) -> list[st
         )
     ):
         problems.append("W6-03 target reachability union evidence drifted")
+    return problems
+
+
+def _w6_04_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W6-04 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W6-04 artifact_digests is not an object"]
+    expected = set(W6_04_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W6-04 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W6_04_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W6-04 lacks committed result digest: {path}")
+    return problems
+
+
+def _w6_04_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W6-04 artifact_digests is not an object"]
+    labels = {
+        "archive": ("w6-04-source-archive", "source-archives", ".zip"),
+        "wheel": ("w6-04-formal-wheel", "wheels", ".whl"),
+        "junit": ("w6-04-installed-junit", "installed-junit", ".xml"),
+        "report": ("w6-04-installed-report", "reports", ".json"),
+    }
+    paths: dict[str, Path] = {}
+    digests: dict[str, str] = {}
+    problems: list[str] = []
+    for key, (label, directory, suffix) in labels.items():
+        digest = artifact_digests.get(f"state-artifact:{label}")
+        if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+            problems.append(f"W6-04 state artifact digest is missing: {label}")
+            continue
+        path = (
+            state_root / "evidence" / "W6-04" / directory
+            / f"{str(digest).split(':', 1)[1]}{suffix}"
+        )
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            problems.append(f"W6-04 state artifact is unreadable: {label}: {exc}")
+            continue
+        if "sha256:" + sha256_hex(payload) != digest:
+            problems.append(f"W6-04 state artifact content drifted: {label}")
+            continue
+        paths[key] = path
+        digests[key] = str(digest)
+    if problems:
+        return problems
+    try:
+        record = json.loads(paths["report"].read_text(encoding="utf-8"))
+        source_row = record["source_archive"]
+        formal_wheel = record["formal_wheel"]
+        builds = record["builds"]
+        installed = record["installed_e2e"]
+        installed_junit = record["installed_junit"]
+    except (KeyError, OSError, TypeError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W6-04 dual-build/installed evidence is malformed: {exc}"]
+    if (
+        record.get("schema_version") != "jc/w6-dual-build-installed-e2e/1.0"
+        or record.get("task_id") != "W6-04"
+        or record.get("status") != "PASS"
+        or not _validate_git_binding(str(record.get("commit")), str(record.get("tree")))
+    ):
+        problems.append("W6-04 evidence identity drifted")
+    if str(ROOT.resolve()).lower() in json.dumps(record, ensure_ascii=False).lower():
+        problems.append("W6-04 evidence leaks a repository path")
+    expected_source = {
+        "sha256": digests["archive"],
+        "bytes": paths["archive"].stat().st_size,
+        "entry_count": source_row.get("entry_count"),
+        "entry_names_sha256": source_row.get("entry_names_sha256"),
+        "git_metadata": False,
+        "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/source-archives/"
+        + paths["archive"].name,
+    }
+    if source_row != expected_source:
+        problems.append("W6-04 source archive binding drifted")
+    expected_wheel = {
+        "sha256": digests["wheel"],
+        "bytes": paths["wheel"].stat().st_size,
+        "filename": "juris_calculus-4.0.0rc1-py3-none-any.whl",
+        "byte_identical_rebuilds": True,
+        "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/wheels/"
+        + paths["wheel"].name,
+    }
+    if formal_wheel != expected_wheel:
+        problems.append("W6-04 formal wheel binding drifted")
+    acquisitions = record.get("dependency_acquisition")
+    if (
+        not isinstance(acquisitions, list)
+        or [row.get("label") for row in acquisitions if isinstance(row, dict)]
+        != ["download-build-lock", "download-core-lock", "download-test-lock"]
+        or any(row.get("return_code") != 0 for row in acquisitions if isinstance(row, dict))
+    ):
+        problems.append("W6-04 dependency acquisition evidence drifted")
+    wheelhouse = record.get("wheelhouse")
+    if (
+        not isinstance(wheelhouse, dict)
+        or not isinstance(wheelhouse.get("file_count"), int)
+        or wheelhouse["file_count"] < 12
+        or DIGEST_V4_PATTERN.fullmatch(str(wheelhouse.get("manifest_sha256"))) is None
+    ):
+        problems.append("W6-04 locked wheelhouse evidence drifted")
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="jc-w6-04-evidence-") as raw:
+            temporary = Path(raw)
+            archived_source = temporary / "source"
+            archived_source.mkdir()
+            archive_names = _w6_01_extract_archive(paths["archive"], archived_source)
+            canonical_wheel = temporary / "juris_calculus-4.0.0rc1-py3-none-any.whl"
+            shutil.copyfile(paths["wheel"], canonical_wheel)
+            archived_gate = _w6_01_load_wheel_gate(
+                archived_source / "tools/wheel_gate.py"
+            )
+            wheel_report = archived_gate.validate_wheel(archived_source, canonical_wheel)
+            lock_digests = {
+                profile: "sha256:" + sha256_hex(
+                    (archived_source / "requirements" / f"{profile}.lock").read_bytes()
+                )
+                for profile in ("build", "core", "test")
+            }
+            installed_problems = archived_gate.validate_installed_e2e_report(
+                installed,
+                wheel_digest=digests["wheel"],
+                lock_digest=lock_digests["test"],
+            )
+    except (
+        ImportError, KeyError, OSError, RuntimeError, TypeError, UnicodeError,
+        ValueError, zipfile.BadZipFile,
+    ) as exc:
+        problems.append(f"W6-04 archived source/wheel evidence is unreadable: {exc}")
+    else:
+        if (
+            len(archive_names) != source_row.get("entry_count")
+            or _digest_object(archive_names) != source_row.get("entry_names_sha256")
+            or record.get("lock_digests") != lock_digests
+            or wheel_report.get("sha256") != digests["wheel"]
+            or installed_problems
+        ):
+            problems.append(
+                "W6-04 archived source, lock, wheel, or installed report validation drifted"
+            )
+
+    if (
+        not isinstance(builds, list)
+        or len(builds) != 2
+        or [row.get("lane") for row in builds if isinstance(row, dict)] != ["A", "B"]
+    ):
+        problems.append("W6-04 locked build lane set drifted")
+    else:
+        for lane in builds:
+            problems.extend(_w6_01_gate_report_problems(lane.get("gate_report")))
+            environment_commands = lane.get("environment_commands")
+            if (
+                lane.get("fresh_build_environment") is not True
+                or lane.get("network_disabled") is not True
+                or lane.get("archive_sha256") != digests["archive"]
+                or lane.get("archive_entry_count") != source_row.get("entry_count")
+                or lane.get("archive_entry_names_sha256")
+                != source_row.get("entry_names_sha256")
+                or lane.get("build_lock_sha256") != record.get("lock_digests", {}).get("build")
+                or lane.get("gate_report", {}).get("sha256") != digests["wheel"]
+                or not isinstance(environment_commands, list)
+                or len(environment_commands) != 2
+                or any(row.get("return_code") != 0 for row in environment_commands)
+            ):
+                problems.append(f"W6-04 locked build lane binding drifted: {lane.get('lane')}")
+        if builds[0].get("gate_report") != builds[1].get("gate_report"):
+            problems.append("W6-04 locked build reports differ")
+
+    try:
+        counts, cases = _junit_evidence(paths["junit"])
+        case_ids = sorted(
+            f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}"
+            for case in cases
+        )
+    except (OSError, ET.ParseError, ValueError) as exc:
+        problems.append(f"W6-04 installed JUnit is unreadable: {exc}")
+    else:
+        expected_junit = {
+            "sha256": digests["junit"],
+            "tests": W6_04_INSTALLED_TEST_CASE_COUNT,
+            "case_ids_sha256": W6_04_INSTALLED_TEST_CASE_IDS_DIGEST,
+            "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-04/installed-junit/"
+            + paths["junit"].name,
+        }
+        if (
+            counts != {
+                "tests": W6_04_INSTALLED_TEST_CASE_COUNT,
+                "skipped": 0,
+                "failures": 0,
+                "errors": 0,
+            }
+            or len(case_ids) != W6_04_INSTALLED_TEST_CASE_COUNT
+            or _digest_object(case_ids) != W6_04_INSTALLED_TEST_CASE_IDS_DIGEST
+            or installed_junit != expected_junit
+            or installed.get("formal_e2e", {}).get("sha256") != digests["junit"]
+        ):
+            problems.append("W6-04 installed JUnit identity drifted")
     return problems
 
 
@@ -20821,6 +21519,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W6-03 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W6-04":
+        problems.extend(_w6_04_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w6_04_contract_problems())
+        problems.extend(_w6_04_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w6_04_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w6-04-exact-green-reports",
+            "w6-04-locked-dual-build-installed-e2e",
+            "w6-04-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W6-04 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -22589,6 +23311,41 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W6-03 locks, retired profiles, governance, runner, and tests are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W6-04":
+        report_problems = _w6_04_test_report_problems(test_reports)
+        contract_problems = _w6_04_contract_problems()
+        artifact_problems = _w6_04_artifact_problems(artifact_digests, state_root)
+        path_problems = _w6_04_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w6-04-exact-green-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W6_04_TEST_CASE_COUNT} wheel injection/evidence mutations passed "
+                "with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w6-04-locked-dual-build-installed-e2e",
+            "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "two fresh offline hash-locked build environments produced identical "
+                "formal wheels; one repository-outside fresh venv passed 15 installed "
+                "formal/verify/replay/CLI/Client/MCP cases and rejected retired imports"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w6-04-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W6-04 wheel gate, governance, runner, and mutation-test paths "
+                "are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

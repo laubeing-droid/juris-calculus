@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 422,
+  "count": 423,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1689,7 +1689,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03"
+      "closure_task": "W6-04"
     },
     {
       "path": "remediation/v4/issue-map.json",
@@ -1717,7 +1717,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03"
+      "closure_task": "W6-04"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -2023,7 +2023,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03"
+      "closure_task": "W6-04"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -2422,6 +2422,13 @@
       "closure_task": "W5-02C"
     },
     {
+      "path": "tests/packaging/test_wheel_exact_set.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-04"
+    },
+    {
       "path": "tests/packaging/test_wheel_gate_v4.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2469,7 +2476,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
+      "closure_task": "W6-04",
       "namespace": "candidate_asset"
     },
     {
@@ -3336,7 +3343,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
+      "closure_task": "W6-04",
       "namespace": "formal_core"
     },
     {
@@ -3383,7 +3390,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
+      "closure_task": "W6-04",
       "namespace": "formal_core"
     },
     {
@@ -3423,7 +3430,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W6-01",
+      "closure_task": "W6-04",
       "namespace": "formal_core"
     }
   ]
