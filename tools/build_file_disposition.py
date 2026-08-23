@@ -29,7 +29,7 @@ OUT = ROOT / "remediation" / "v4" / "file-disposition.json"
 CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
         "__init__", "application", "artifact_store", "audit", "audit_bundle", "backend_router",
-        "canonical_serialization", "cli", "client", "contracts",
+        "canonical_serialization", "certificates", "cli", "client", "contracts",
         "argumentation", "fact_admission", "independent_checker", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
         "source_service", "storage", "trust", "version",
     ],
@@ -189,6 +189,9 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/contract/test_audit_bundle.py": "W4-03",
     "tests/security/test_audit_bundle_attacks.py": "W4-03",
     "tests/storage_chaos/test_audit_bundle_recovery.py": "W4-03",
+    "compiler_core/certificates.py": "W4-04",
+    "tests/contract/test_certificates.py": "W4-04",
+    "tests/security/test_certificate_attacks.py": "W4-04",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
@@ -401,7 +404,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "3ab9bc81cf46e7b228cb1634704c94f5074e46a67b52042041f53fb703e76a49",
+        "plan_sha256": "d9b1abb3e85d8c5713c8c8f13532164fbe00e45e98337fd033fb2c68e2a42af1",
         "count": len(entries),
         "paths": entries,
     }

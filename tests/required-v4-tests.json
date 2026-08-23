@@ -229,6 +229,20 @@
       "selector": "tests/windows_security/test_dacl.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 3
+    },
+    {
+      "id": "W4-CERTIFICATE-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_certificates.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 6
+    },
+    {
+      "id": "W4-CERTIFICATE-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_certificate_attacks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 12
     }
   ],
   "evidence_tracks": [

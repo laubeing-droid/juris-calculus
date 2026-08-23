@@ -409,13 +409,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.27.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.28.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -1480,6 +1480,115 @@ def nested_alias_bypass():
             "completion assertions" in problem
             for problem in RUNNER._auto_receipt_resume_problems(
                 w4_03_task, wrong_assertion, tmp_path,
+            )
+        )
+
+    w4_04_reports = copy.deepcopy(w4_03_reports)
+    w4_04_reports[0].update({
+        "passed": RUNNER.W4_04_TEST_CASE_COUNT,
+        "junit_tests": RUNNER.W4_04_TEST_CASE_COUNT,
+        "junit_cases": RUNNER.W4_04_TEST_CASE_COUNT,
+        "junit_unique_cases": RUNNER.W4_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": RUNNER.W4_04_TEST_CASE_IDS_DIGEST,
+    })
+    assert RUNNER._w4_04_test_report_problems(w4_04_reports) == []
+    w4_04_task = next(
+        item
+        for item in json.loads(RUNNER.DEFAULT_PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W4-04"
+    )
+    assert list(RUNNER.W4_04_ALLOWED_PATHS) == w4_04_task["allowed_paths"]
+    assert set(RUNNER.W4_04_CHANGED_PATHS) == (
+        set(RUNNER.W4_04_ALLOWED_PATHS) - set(RUNNER.W4_04_BYTE_STABLE_DIGESTS)
+    )
+    w4_04_assertion_ids = [
+        "all-commands-passed",
+        "runner-clean-worktree",
+        "runner-committed-delta",
+        "runner-state-artifacts",
+        "w4-04-exact-certificate-reports",
+        "w4-04-bundle-bound-certificate-contract",
+        "w4-04-exact-committed-scope",
+    ]
+    assert RUNNER._expected_auto_completion_assertion_ids(
+        w4_04_task,
+        "w4-04-exact-certificate-reports",
+        "w4-04-bundle-bound-certificate-contract",
+        "w4-04-exact-committed-scope",
+    ) == w4_04_assertion_ids
+    w4_04_commands = [
+        {
+            "argv": RUNNER._expanded_argv(argv, tmp_path),
+            "expected_exit_code": expected,
+            "exit_code": expected,
+            "timed_out": False,
+            "stdout": stream(f"w4-04-{index}-stdout"),
+            "stderr": stream(f"w4-04-{index}-stderr"),
+        }
+        for index, (argv, expected) in enumerate(
+            zip(w4_04_task["argv"], w4_04_task["expected_exit_codes"]), 1
+        )
+    ]
+    w4_04_receipt = {
+        "command_results": w4_04_commands,
+        "test_reports": copy.deepcopy(w4_04_reports),
+        "changed_paths": list(RUNNER.W4_04_CHANGED_PATHS),
+        "artifact_digests": {
+            **{
+                f"result-path:{path}": "sha256:" + "a" * 64
+                for path in RUNNER.W4_04_CHANGED_PATHS
+            },
+            **{
+                f"publication:{path}": digest
+                for path, digest in RUNNER.W4_04_BYTE_STABLE_DIGESTS.items()
+            },
+        },
+        "completion_assertions": [
+            {"id": assertion_id, "ok": True}
+            for assertion_id in w4_04_assertion_ids
+        ],
+        "runner_version": RUNNER.RUNNER_VERSION,
+    }
+    with monkeypatch.context() as resume_patch:
+        resume_patch.setattr(
+            RUNNER,
+            "_structured_test_reports",
+            lambda *_args, **_kwargs: copy.deepcopy(w4_04_reports),
+        )
+        resume_patch.setattr(
+            RUNNER, "_w4_04_certificate_contract_problems", lambda: [],
+        )
+        assert RUNNER._auto_receipt_resume_problems(
+            w4_04_task, w4_04_receipt, tmp_path,
+        ) == []
+
+        missing_path = copy.deepcopy(w4_04_receipt)
+        missing_path["changed_paths"].pop()
+        assert any(
+            "exact 11 committed paths" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w4_04_task, missing_path, tmp_path,
+            )
+        )
+
+        wrong_publication = copy.deepcopy(w4_04_receipt)
+        first_prerequisite = next(iter(RUNNER.W4_04_BYTE_STABLE_DIGESTS))
+        wrong_publication["artifact_digests"][
+            f"publication:{first_prerequisite}"
+        ] = "sha256:" + "f" * 64
+        assert any(
+            "byte-stable prerequisite digest" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w4_04_task, wrong_publication, tmp_path,
+            )
+        )
+
+        wrong_assertion = copy.deepcopy(w4_04_receipt)
+        wrong_assertion["completion_assertions"][-2]["id"] = "wrong-certificate-contract"
+        assert any(
+            "completion assertions" in problem
+            for problem in RUNNER._auto_receipt_resume_problems(
+                w4_04_task, wrong_assertion, tmp_path,
             )
         )
 

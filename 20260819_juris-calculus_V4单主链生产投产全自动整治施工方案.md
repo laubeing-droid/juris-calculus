@@ -693,9 +693,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W4-04　CertificateV4 issuer/verifier
 
 - **Depends / audit**：`W4-03, W1-05 / P0-07..08`。
-- **Paths**：新增 `compiler_core/certificates.py`、certificate tests。
-- **动作**：issuer 只接收 Application 内部 immutable context，从 bundle core 重算 gates；验证 source/fact/rule/translation/backend/checker/proof receipts、pack/trust/revocation、status/completeness/taint；formal/conflict/none typed union；对外 service signature 与内部 deterministic certificate 分层。
-- **Gate**：caller gate map、fake/unknown issuer、wrong subject/run/build、receipt missing/extra/replay、bundle mismatch、revoked key 全失败；无公开 constructor 可制造 issued certificate。
+- **Paths**：精确 14 项：本方案、`compiler_core/audit_bundle.py`、`compiler_core/certificates.py`、`compiler_core/contracts.py`、`compiler_core/independent_checker.py`、`compiler_core/trust.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_certificates.py`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/security/test_certificate_attacks.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；其中 `contracts.py`、`independent_checker.py`、`trust.py` 必须 byte-stable，仅绑定 frozen digest，实际 changed paths 恰为其余 11 项。
+- **动作**：issuer 只接收 AuditBundle 在完成 immutable core 与独立 checker 验证后封装的内部 context；从 bundle core 重算 source/fact/rule/translation/backend/checker/proof receipt DAG、pack/trust/revocation、run/build、status/completeness/taint gates；formal/conflict/none typed union；内部 certificate body 完全确定，对外 Ed25519 service signature 单独分层。`audit_bundle.verify_run` 必须调用同一 certificate verifier，不能只验外层签名或相信 certificate 自报 refs。
+- **Gate**：caller gate map、fake/unknown issuer、wrong subject/run/build、receipt missing/extra/replay、bundle mismatch、revoked key 全失败；无公开 gate-map/digest API 可制造 issued certificate；formal/conflict/none 正向链、两种不同合法 signature nonce 下相同内部 certificate digest、W4-03 bundle 回归与 required-manifest governance 全绿。runner 绑定 `w4-04-exact-certificate-reports`、`w4-04-bundle-bound-certificate-contract`、`w4-04-exact-committed-scope` 三项专属 assertions。
 - **Commit**：`feat(certificate): issue only bundle-bound verified V4 certificates`。
 
 ### W4-05　ApplicationV4 唯一编排

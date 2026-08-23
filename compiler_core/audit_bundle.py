@@ -22,6 +22,13 @@ from compiler_core.canonical_serialization import (
     digest_value,
     parse_json_document,
 )
+from compiler_core.certificates import (
+    CertificateArtifactV4,
+    CertificateContextV4,
+    CertificateV4Error,
+    CertificateVerifierV4,
+    _verified_certificate_context,
+)
 from compiler_core.contracts import (
     ArtifactHandleV4,
     AuditBundleIndexV4,
@@ -400,16 +407,6 @@ class RunCapabilityV4:
 
 
 @dataclass(frozen=True, slots=True)
-class AuditCoreContextV4:
-    run_identity_ref: ContentRefV4
-    request_ref: ContentRefV4
-    result_ref: ContentRefV4
-    bundle_core_digest: DigestV4
-    verified_checker_receipt_refs: tuple[ContentRefV4, ...]
-    artifact_refs: tuple[ContentRefV4, ...]
-
-
-@dataclass(frozen=True, slots=True)
 class VerifiedAuditBundleV4:
     request: CaseRequestV4
     run_identity: RunIdentityV4
@@ -435,7 +432,7 @@ class SealedReplayInputsV4:
         _fail("REPLAY_MATERIAL_MISSING", "requested sealed replay material is absent")
 
 
-CertificateFactoryV4 = Callable[[AuditCoreContextV4], CertificateEnvelopeV4]
+CertificateFactoryV4 = Callable[[CertificateContextV4], CertificateEnvelopeV4]
 
 
 @dataclass(frozen=True, slots=True)
@@ -451,6 +448,7 @@ class _DecodedCoreV4:
     replay_policy_ref: ContentRefV4
     result: SemanticResultV4
     resolver: ArtifactResolverV4
+    artifacts: tuple[AuditArtifactV4, ...]
     artifact_refs: tuple[ContentRefV4, ...]
     checker_receipt_refs: tuple[ContentRefV4, ...]
     refs: MappingProxyType
@@ -754,19 +752,34 @@ class AuditBundleStoreV4:
             ],
         })
         return _DecodedCoreV4(
-            request, run, replay_policy_ref, result, resolver, artifact_refs,
+            request, run, replay_policy_ref, result, resolver,
+            tuple(sorted(all_artifacts, key=lambda item: item.sort_key)), artifact_refs,
             checker_refs, refs, core_digest,
         )
 
     @staticmethod
-    def _certificate_context(core: _DecodedCoreV4) -> AuditCoreContextV4:
-        return AuditCoreContextV4(
-            ContentRefV4("run-identity", core.run_identity.canonical_digest()),
-            ContentRefV4("case-request", core.request.canonical_digest()),
-            ContentRefV4("semantic-result", core.result.canonical_digest()),
-            core.core_digest,
-            core.checker_receipt_refs,
-            core.artifact_refs,
+    def _certificate_context(
+        core: _DecodedCoreV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> CertificateContextV4:
+        return _verified_certificate_context(
+            request=core.request,
+            run_identity=core.run_identity,
+            result=core.result,
+            bundle_core_digest=core.core_digest,
+            artifacts=tuple(
+                CertificateArtifactV4(
+                    item.content_ref,
+                    item.artifact_kind,
+                    item.media_type,
+                    item.scope,
+                    item.content,
+                )
+                for item in core.artifacts
+            ),
+            verified_checker_receipt_refs=core.checker_receipt_refs,
+            now=now,
         )
 
     def _certificate_bytes(
@@ -778,7 +791,16 @@ class AuditBundleStoreV4:
     ) -> bytes:
         if type(certificate) is not CertificateEnvelopeV4:
             _fail("AUDIT_CERTIFICATE", "certificate factory returned the wrong type")
-        context = self._certificate_context(core)
+        context = self._certificate_context(core, now=now)
+        try:
+            CertificateVerifierV4(
+                self._trust_material.verifier(),
+                current_engine_build_digest=self._current_engine_build_digest,
+            ).verify(context, certificate)
+        except CertificateV4Error as exc:
+            raise AuditBundleV4Error(
+                "AUDIT_CERTIFICATE_VERIFY", f"certificate verification failed: {exc.code}"
+            ) from exc
         if certificate.kind is not core.result.certificate_kind:
             _fail("AUDIT_CERTIFICATE_KIND", "certificate kind differs from result state")
         selected = certificate.formal or certificate.conflict
@@ -860,7 +882,7 @@ class AuditBundleStoreV4:
             raise AuditBundleV4Error(
                 "AUDIT_CERTIFICATE_SCHEMA", "certificate.json violates a V4 contract"
             ) from exc
-        context = self._certificate_context(core)
+        context = self._certificate_context(core, now=now)
         if run_ref != context.run_identity_ref or core_digest != context.bundle_core_digest:
             _fail("AUDIT_CERTIFICATE_BINDING", "certificate wrapper differs from bundle core")
         if self._certificate_bytes(core, certificate, now=now) != raw:
@@ -1149,7 +1171,10 @@ class AuditBundleStoreV4:
             _fail("AUDIT_MATERIALS", "write_run requires AuditBundleMaterialsV4")
         core_files = self._core_files(materials)
         core = self._verify_core(core_files, now=now)
-        if self._certificate_context(core).run_identity_ref != capability.run_identity_ref:
+        if (
+            ContentRefV4("run-identity", core.run_identity.canonical_digest())
+            != capability.run_identity_ref
+        ):
             _fail("AUDIT_CAPABILITY_BINDING", "capability and materials bind different runs")
 
         with self._store._lock():
@@ -1171,7 +1196,7 @@ class AuditBundleStoreV4:
             else:
                 if not callable(certificate_factory):
                     _fail("AUDIT_CERTIFICATE_AUTHORITY", "issued result requires a certificate issuer")
-                certificate = certificate_factory(self._certificate_context(core))
+                certificate = certificate_factory(self._certificate_context(core, now=now))
             certificate_raw = self._certificate_bytes(core, certificate, now=now)
             manifest = self._manifest(core, certificate_raw)
             files = {
@@ -1443,7 +1468,6 @@ __all__ = [
     "AuditBundleMaterialsV4",
     "AuditBundleStoreV4",
     "AuditBundleV4Error",
-    "AuditCoreContextV4",
     "AuditEventV4",
     "AuditTrustMaterialV4",
     "ReplayExecutionV4",

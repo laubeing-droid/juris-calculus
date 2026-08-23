@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.26.0"
+RUNNER_VERSION = "0.27.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -84,6 +84,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.24.0": 5,
     "0.25.0": 5,
     "0.26.0": 5,
+    "0.27.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -435,6 +436,40 @@ W4_03_ALLOWED_PATHS = (
 )
 W4_03_CHANGED_PATHS = tuple(
     path for path in W4_03_ALLOWED_PATHS if path not in W4_03_BYTE_STABLE_DIGESTS
+)
+W4_04_TEST_CASE_COUNT = 26
+W4_04_TEST_CASE_IDS_DIGEST = (
+    "sha256:44b639214d7b9434176fcddc51ef8fe0febbdb2bcaf4ec29024dc954101ed76a"
+)
+W4_04_BYTE_STABLE_DIGESTS = MappingProxyType({
+    "compiler_core/contracts.py": (
+        "sha256:95c018434504e26c6bbc4224dde7508f9258067c43714fc7a0c367e639651b0a"
+    ),
+    "compiler_core/independent_checker.py": (
+        "sha256:d6e6d9407eca45c0b4b01aa562ff5e654fadc610ba0975e9195a7a46a1e5a4ee"
+    ),
+    "compiler_core/trust.py": (
+        "sha256:de96eaf0cc5efa5c138c6ae771d81f0a4bfe8a09e03528a4c61c0f27b364f8d5"
+    ),
+})
+W4_04_ALLOWED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/audit_bundle.py",
+    "compiler_core/certificates.py",
+    "compiler_core/contracts.py",
+    "compiler_core/independent_checker.py",
+    "compiler_core/trust.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_certificates.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_certificate_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W4_04_CHANGED_PATHS = tuple(
+    path for path in W4_04_ALLOWED_PATHS if path not in W4_04_BYTE_STABLE_DIGESTS
 )
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
@@ -2838,7 +2873,9 @@ def _backend_provider_probe_problems(
         )
         or identity.get("provider_package_digest") != _digest_object(build_inputs)
     ):
-        problems.append("frozen backend provider identity is not internally closed")
+        problems.append(
+            "backend provider identity drifted: frozen identity is not internally closed"
+        )
 
     methodology = probe.get("methodology")
     if (
@@ -3854,6 +3891,20 @@ def _required_test_manifest_problems(
             "selector": "tests/windows_security/test_dacl.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 3,
+        },
+        {
+            "id": "W4-CERTIFICATE-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_certificates.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 6,
+        },
+        {
+            "id": "W4-CERTIFICATE-ATTACKS",
+            "suite": "security",
+            "selector": "tests/security/test_certificate_attacks.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 12,
         },
     ]
     if required_now != expected_required_now:
@@ -12768,6 +12819,267 @@ def cmd_w4_03_audit_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _w4_04_certificate_contract_problems() -> list[str]:
+    """Rebuild the executable W4-04 certificate contract without writing state."""
+
+    problems: list[str] = []
+    certificate_path = ROOT / "compiler_core" / "certificates.py"
+    audit_path = ROOT / "compiler_core" / "audit_bundle.py"
+    try:
+        certificate_source = certificate_path.read_text(encoding="utf-8")
+        certificate_tree = ast.parse(certificate_source, filename=str(certificate_path))
+        audit_source = audit_path.read_text(encoding="utf-8")
+        ast.parse(audit_source, filename=str(audit_path))
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = (ROOT / W4_04_ALLOWED_PATHS[0]).read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        builder_source = (ROOT / "tools/build_file_disposition.py").read_text(
+            encoding="utf-8"
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, SyntaxError) as exc:
+        return [f"W4-04 contract source is unreadable: {exc}"]
+
+    imported = {
+        alias.name
+        for node in ast.walk(certificate_tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module or ""
+        for node in ast.walk(certificate_tree)
+        if isinstance(node, ast.ImportFrom)
+    }
+    forbidden_imports = {
+        "compiler_core.application", "compiler_core.audit", "socket", "urllib",
+        "http", "requests",
+    }
+    if imported & forbidden_imports:
+        problems.append(
+            "certificate verifier imports evaluator/network authority: "
+            f"{sorted(imported & forbidden_imports)!r}"
+        )
+
+    classes = {
+        node.name: node
+        for node in certificate_tree.body
+        if isinstance(node, ast.ClassDef)
+    }
+    for name in (
+        "CertificateContextV4", "CertificateVerifierV4", "CertificateIssuerV4",
+    ):
+        if name not in classes:
+            problems.append(f"{name} is missing")
+    issuer = classes.get("CertificateIssuerV4")
+    if issuer is not None:
+        methods = {
+            node.name: (
+                tuple(argument.arg for argument in node.args.args),
+                tuple(argument.arg for argument in node.args.kwonlyargs),
+            )
+            for node in issuer.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        if methods.get("__init__") != (("self", "trust"), ("current_engine_build_digest", "signer")):
+            problems.append("CertificateIssuerV4.__init__ signature drifted")
+        if methods.get("__call__") != (("self", "context"), ()):
+            problems.append("CertificateIssuerV4.__call__ signature drifted")
+        if any(name in methods for name in ("issue", "issue_from_gates", "from_digest")):
+            problems.append("CertificateIssuerV4 exposes a caller-controlled issuance API")
+
+    required_certificate_markers = (
+        "_CONTEXT_SEAL = object()",
+        "context._seal is not _CONTEXT_SEAL",
+        "registered() is context",
+        "RulePackVerifierV4(",
+        "case_request_binding_ref(context.request)",
+        "claim_facts != set(result.admitted_fact_refs)",
+        "receipt.proof_build_digest != checker_receipt.checker_build_digest",
+        "_sorted_refs(result.receipt_refs, \"result receipt refs\") != chain.all",
+        "run.engine_build_digest != self._current_engine_build_digest",
+        "result.taint_codes",
+        "not result.runtime_profile.formal_kernel",
+        "CertificateKindV4.FORMAL_VERIFIED",
+        "CertificateKindV4.CONFLICT_VERIFIED",
+        "CertificateKindV4.NONE",
+        "certificate.certificate_digest",
+        "expected_payload_digest=digest_value(expected_wire)",
+        "verified_trust.verify(",
+        '"CertificateIssuerV4",',
+        '"CertificateVerifierV4",',
+    )
+    for marker in required_certificate_markers:
+        if marker not in certificate_source:
+            problems.append(f"certificate contract marker is missing: {marker}")
+    if '"CertificateContextV4",' in certificate_source.split("__all__ =", 1)[-1]:
+        problems.append("sealed CertificateContextV4 is publicly exported")
+
+    for marker in (
+        "_verified_certificate_context(",
+        "CertificateVerifierV4(",
+        "certificate_factory(self._certificate_context(core, now=now))",
+        "self._certificate_bytes(core, certificate, now=now)",
+    ):
+        if marker not in audit_source:
+            problems.append(f"audit certificate integration marker is missing: {marker}")
+    if "AuditCoreContextV4" in audit_source:
+        problems.append("audit bundle retains a caller-constructible certificate context")
+
+    for path, expected in W4_04_BYTE_STABLE_DIGESTS.items():
+        try:
+            observed = "sha256:" + sha256_hex((ROOT / path).read_bytes())
+        except OSError as exc:
+            problems.append(f"W4-04 byte-stable prerequisite is unreadable: {path}: {exc}")
+        else:
+            if observed != expected:
+                problems.append(f"W4-04 byte-stable prerequisite drifted: {path}")
+
+    try:
+        task = next(item for item in plan["tasks"] if item.get("id") == "W4-04")
+    except (KeyError, StopIteration, TypeError):
+        problems.append("W4-04 task is missing")
+        task = {}
+    if task.get("depends_on") != ["W4-03", "W1-05"]:
+        problems.append("W4-04 dependency projection drifted")
+    if task.get("audit_ids") != ["P0-07", "P0-08"]:
+        problems.append("W4-04 audit projection drifted")
+    if task.get("allowed_paths") != list(W4_04_ALLOWED_PATHS):
+        problems.append("W4-04 exact allowlist drifted")
+    argv_text = json.dumps(task.get("argv", []), ensure_ascii=False)
+    for selector in (
+        "tests/contract/test_certificates.py",
+        "tests/security/test_certificate_attacks.py",
+        "tests/security/test_audit_bundle_attacks.py::"
+        "test_caller_gate_and_digest_cannot_issue_certificate",
+        "tests/contract/test_required_test_manifest.py",
+    ):
+        if selector not in argv_text:
+            problems.append(f"W4-04 focused lane omits {selector}")
+
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    required_expectations = {
+        "W4-CERTIFICATE-CONTRACT": (
+            "contract", "tests/contract/test_certificates.py", 6,
+        ),
+        "W4-CERTIFICATE-ATTACKS": (
+            "security", "tests/security/test_certificate_attacks.py", 12,
+        ),
+    }
+    for test_id, (suite, selector, count) in required_expectations.items():
+        item = required_by_id.get(test_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"), item.get("state"),
+            item.get("expected_tests"),
+        ) if isinstance(item, dict) else None
+        if actual != (suite, selector, "REQUIRED_NOW", count):
+            problems.append(f"W4-04 required test lifecycle drifted: {test_id}")
+        elif not _selector_is_declared(ROOT, selector):
+            problems.append(f"W4-04 required selector is not declared: {test_id}")
+
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-07-CALLER-CERTIFICATE": ("P0-07", "W4-03", "ACTIVE_REQUIRED"),
+        "V4-P0-08-ADVISORY-BOOLEAN": ("P0-08", "W4-05", "RED_AT_TASK"),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id, {})
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            problems.append(f"W4-04 audit mutation lifecycle drifted: {test_id}")
+
+    tracked = set(_git_tracked_files())
+    for path in W4_04_ALLOWED_PATHS:
+        if path not in tracked:
+            problems.append(f"W4-04 exact path is not Git tracked: {path}")
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    certificate_disposition = disposition_by_path.get("compiler_core/certificates.py", {})
+    if (
+        certificate_disposition.get("disposition"),
+        certificate_disposition.get("terminal_state"),
+        certificate_disposition.get("namespace"),
+        certificate_disposition.get("closure_task"),
+    ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core", "W4-04"):
+        problems.append("W4-04 certificate module disposition drifted")
+    for path in (
+        "tests/contract/test_certificates.py",
+        "tests/security/test_certificate_attacks.py",
+    ):
+        item = disposition_by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"), item.get("closure_task")
+        ) != ("TEST_ORACLE", "TEST_ORACLE", "W4-04"):
+            problems.append(f"W4-04 required test disposition drifted: {path}")
+        if f'"{path}": "W4-04"' not in builder_source:
+            problems.append(f"W4-04 disposition builder omits {path}")
+    if '"compiler_core/certificates.py": "W4-04"' not in builder_source:
+        problems.append("W4-04 disposition builder omits certificate module")
+
+    for marker in (
+        "精确 14 项", "实际 changed paths 恰为其余 11 项",
+        "w4-04-exact-certificate-reports",
+        "w4-04-bundle-bound-certificate-contract",
+        "w4-04-exact-committed-scope",
+    ):
+        if marker not in formal_plan:
+            problems.append(f"W4-04 formal plan marker is missing: {marker}")
+    if W4_04_TEST_CASE_COUNT != 26 or W4_04_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W4-04 JUnit case identity is not frozen")
+    for marker in (
+        "_w4_04_test_report_problems(test_reports)",
+        "_w4_04_certificate_contract_problems()",
+        "w4-04-exact-certificate-reports",
+        "w4-04-bundle-bound-certificate-contract",
+        "w4-04-exact-committed-scope",
+    ):
+        if marker not in runner_source:
+            problems.append(f"W4-04 runner receipt contract marker is missing: {marker}")
+    return problems
+
+
+def _cmd_w4_04_certificate_gate() -> int:
+    problems = _w4_04_certificate_contract_problems()
+    problems.extend(
+        f"W4-03 prerequisite drifted: {problem}"
+        for problem in _w4_03_audit_contract_problems()
+    )
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W4-04 certificate gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W4-04 certificate gate OK: {W4_04_TEST_CASE_COUNT} focused cases; "
+        "14 fixed files, sealed bundle context, exact receipt DAG, current trust/build, "
+        "deterministic body and separately verified service signature"
+    )
+    return EXIT_OK
+
+
+def cmd_w4_04_certificate_gate() -> int:
+    try:
+        return _cmd_w4_04_certificate_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W4-04 certificate gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -12819,6 +13131,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w4_02_storage_gate()
     if args.wave == "W4-03":
         return cmd_w4_03_audit_gate()
+    if args.wave == "W4-04":
+        return cmd_w4_04_certificate_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -14787,6 +15101,42 @@ def _w4_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w4_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W4-04 certificate/governance JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W4-04 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W4_04_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W4_04_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W4_04_TEST_CASE_COUNT,
+        "junit_unique_cases": W4_04_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W4_04_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W4-04 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W4-04 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -15350,6 +15700,40 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W4-03 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W4-04":
+        problems.extend(_w4_04_test_report_problems(reports))
+        problems.extend(_w4_04_certificate_contract_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W4_04_CHANGED_PATHS)
+            or len(changed_paths) != len(W4_04_CHANGED_PATHS)
+        ):
+            problems.append("W4-04 receipt does not bind its exact 11 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W4_04_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W4-04 receipt lacks committed result digest: {path}")
+        for path, expected in W4_04_BYTE_STABLE_DIGESTS.items():
+            if artifact_digests.get(f"publication:{path}") != expected:
+                problems.append(f"W4-04 byte-stable prerequisite digest drifted: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w4-04-exact-certificate-reports",
+            "w4-04-bundle-bound-certificate-contract",
+            "w4-04-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W4-04 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -15795,6 +16179,11 @@ def _execute_auto_task(
         artifact_digests.update({
             f"publication:{path}": "sha256:" + sha256_hex((ROOT / path).read_bytes())
             for path in W4_03_BYTE_STABLE_DIGESTS
+        })
+    if task["id"] == "W4-04":
+        artifact_digests.update({
+            f"publication:{path}": "sha256:" + sha256_hex((ROOT / path).read_bytes())
+            for path in W4_04_BYTE_STABLE_DIGESTS
         })
     test_reports = _structured_test_reports(command_results)
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
@@ -16607,6 +16996,51 @@ def _execute_auto_task(
         })
         assertions.append({
             "id": "w4-03-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 changed paths plus three byte-stable prerequisites are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W4-04":
+        report_problems = _w4_04_test_report_problems(test_reports)
+        contract_problems = _w4_04_certificate_contract_problems()
+        for path, expected in W4_04_BYTE_STABLE_DIGESTS.items():
+            if artifact_digests.get(f"publication:{path}") != expected:
+                contract_problems.append(f"byte-stable prerequisite digest drifted: {path}")
+        expected_paths = set(W4_04_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W4_04_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w4-04-exact-certificate-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W4_04_TEST_CASE_COUNT} certificate/attack/governance pytest items "
+                "bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-04-bundle-bound-certificate-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "sealed bundle context, exact receipt DAG, current trust/build, typed union, "
+                "deterministic body, and independent service signature verification are live"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-04-exact-committed-scope",
             "kind": "artifact_binding",
             "ok": not path_problems,
             "detail": (

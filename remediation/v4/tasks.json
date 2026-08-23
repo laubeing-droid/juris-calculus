@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "3ab9bc81cf46e7b228cb1634704c94f5074e46a67b52042041f53fb703e76a49",
+    "plan_sha256": "d9b1abb3e85d8c5713c8c8f13532164fbe00e45e98337fd033fb2c68e2a42af1",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -3049,11 +3049,22 @@
         "P0-07",
         "P0-08"
       ],
-      "objective": "新增 certificates.py；issuer 只接 Application 内部 immutable context；从 bundle core 重算 gates",
+      "objective": "新增唯一 CertificateV4 issuer/verifier；只接 audit-sealed immutable context；从 bundle core 重算 receipt DAG、pack/trust/revocation、run/build 和状态 gates",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/audit_bundle.py",
         "compiler_core/certificates.py",
+        "compiler_core/contracts.py",
+        "compiler_core/independent_checker.py",
+        "compiler_core/trust.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
         "tests/contract/test_certificates.py",
-        "tests/security/test_certificate_attacks.py"
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_certificate_attacks.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -3063,9 +3074,30 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-04"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-04",
+          "tests/contract/test_certificates.py",
+          "tests/security/test_certificate_attacks.py",
+          "tests/security/test_audit_bundle_attacks.py::test_caller_gate_and_digest_cannot_issue_certificate",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W4-04.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [
