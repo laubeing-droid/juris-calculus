@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.34.0"
+RUNNER_VERSION = "0.35.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -92,6 +92,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.32.0": 5,
     "0.33.0": 5,
     "0.34.0": 5,
+    "0.35.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17772,6 +17773,9 @@ def _auto_receipt_resume_problems(
         if isinstance(item, dict)
     )
     problems: list[str] = []
+    validate_live_contract = (
+        receipt.get("result_commit") == _git_checked("rev-parse", "HEAD")
+    )
     if recovery_assertion:
         if task.get("id") != "W1-06":
             return ["state-artifact recovery assertion is only valid for W1-06"]
@@ -18354,7 +18358,8 @@ def _auto_receipt_resume_problems(
             problems.append("W4-07 receipt completion assertions are incomplete or false")
     if task.get("id") == "W5-01":
         problems.extend(_w5_01_test_report_problems(reports))
-        problems.extend(_w5_01_entrypoint_red_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w5_01_entrypoint_red_contract_problems())
         changed_paths = receipt.get("changed_paths", [])
         if (
             not isinstance(changed_paths, list)
@@ -18385,7 +18390,8 @@ def _auto_receipt_resume_problems(
             problems.append("W5-01 receipt completion assertions are incomplete or false")
     if task.get("id") == "W5-02C":
         problems.extend(_w5_02c_test_report_problems(reports))
-        problems.extend(_w5_02c_legacy_cn_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w5_02c_legacy_cn_contract_problems())
         problems.extend(_w5_02c_committed_scope_problems(
             receipt.get("changed_paths"), receipt.get("artifact_digests"),
         ))
@@ -18405,7 +18411,8 @@ def _auto_receipt_resume_problems(
             problems.append("W5-02C receipt completion assertions are incomplete or false")
     if task.get("id") == "W5-03":
         problems.extend(_w5_03_test_report_problems(reports))
-        problems.extend(_w5_03_nonproduction_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w5_03_nonproduction_contract_problems())
         problems.extend(_w5_03_committed_scope_problems(
             receipt.get("changed_paths"), receipt.get("artifact_digests"),
         ))
@@ -18425,7 +18432,8 @@ def _auto_receipt_resume_problems(
             problems.append("W5-03 receipt completion assertions are incomplete or false")
     if task.get("id") == "W5-CUTOVER":
         problems.extend(_w5_cutover_test_report_problems(reports))
-        problems.extend(_w5_cutover_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w5_cutover_contract_problems())
         problems.extend(_w5_cutover_committed_scope_problems(
             receipt.get("changed_paths"), receipt.get("artifact_digests"),
         ))
@@ -20158,6 +20166,17 @@ def cmd_run(args: argparse.Namespace) -> int:
             task_start_commit = _task_start_commit(
                 task, completed_receipts, run_state["baseline_commit"]
             )
+            if history:
+                latest = next(
+                    (
+                        candidate for candidate in reversed(history)
+                        if candidate.get("status") == "COMPLETED"
+                        and candidate.get("task_digest") == _task_digest(task)
+                        and candidate.get("input_receipt_digests") == input_receipts
+                        and candidate.get("start_commit") == task_start_commit
+                    ),
+                    latest,
+                )
             if task["mode"] == "AUTO" and latest is not None:
                 rebound = _rebind_legacy_auto_receipt(
                     task, latest, task_start_commit, state_root,
