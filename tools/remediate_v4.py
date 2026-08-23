@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.42.0"
+RUNNER_VERSION = "0.43.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -102,6 +102,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.40.0": 5,
     "0.41.0": 5,
     "0.42.0": 5,
+    "0.43.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17122,17 +17123,27 @@ def _w6_04_build_evidence(
         wheelhouse.mkdir()
         committed_lock_root = temporary / "committed-locks"
         committed_lock_root.mkdir()
+        lock_archive = temporary / "committed-locks.zip"
+        lock_members = tuple(
+            f"requirements/{profile}.lock" for profile in ("build", "core", "test")
+        )
+        completed = subprocess.run(
+            [
+                "git", "archive", "--format=zip", f"--output={lock_archive}",
+                "HEAD", *lock_members,
+            ],
+            cwd=ROOT, capture_output=True, check=False, timeout=60,
+        )
+        if completed.returncode != 0:
+            raise ValueError("COMMITTED_LOCK_ARCHIVE_UNREADABLE")
         committed_locks: dict[str, Path] = {}
-        for profile in ("build", "core", "test"):
-            completed = subprocess.run(
-                ["git", "show", f"HEAD:requirements/{profile}.lock"],
-                cwd=ROOT, capture_output=True, check=False, timeout=60,
-            )
-            if completed.returncode != 0:
-                raise ValueError(f"COMMITTED_{profile.upper()}_LOCK_UNREADABLE")
-            lock_path = committed_lock_root / f"{profile}.lock"
-            lock_path.write_bytes(completed.stdout)
-            committed_locks[profile] = lock_path
+        with zipfile.ZipFile(lock_archive) as archive:
+            if set(archive.namelist()) != set(lock_members):
+                raise ValueError("COMMITTED_LOCK_ARCHIVE_MEMBER_DRIFT")
+            for profile in ("build", "core", "test"):
+                lock_path = committed_lock_root / f"{profile}.lock"
+                lock_path.write_bytes(archive.read(f"requirements/{profile}.lock"))
+                committed_locks[profile] = lock_path
         online_environment = os.environ.copy()
         online_environment.pop("PYTHONPATH", None)
         online_environment.pop("PIP_NO_INDEX", None)
