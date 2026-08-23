@@ -6,8 +6,6 @@ JC is a CLI-first, auditable legal-reasoning kernel. Start here after the root [
 
 - [CLI reference](guides/CLI.md)
 - [中文说明](guides/README_CN.md)
-- [Optional WorkBuddy adapter](guides/WORKBUDDY.md)
-- [v2 migration](guides/MIGRATION_V2_TO_V3.md)
 
 ## Understand JC
 
@@ -17,5 +15,9 @@ JC is a CLI-first, auditable legal-reasoning kernel. Start here after the root [
 - [Rendering and neutral output](contracts/rendering-and-profiles.md)
 - [Runtime claims and evidence limits](contracts/FORMAL_RUNTIME_CONFORMANCE.md)
 - [Governance, training, and advisory analysis](operations/governance-training-analysis.md)
+
+## Historical replay (not current authority)
+
+- [Isolated V3.0.2 replay](operations/V3_HISTORICAL_REPLAY.md) is an artifact locator and recovery procedure only. It does not define the current schema, API, runtime, or migration behavior.
 
 The public repository does not document private case management, client data, proprietary rule packs, lawyer workflow automation, or personal writing profiles.

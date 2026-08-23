@@ -34,8 +34,8 @@ jc render <run-id> --format markdown --audience agent --json
 ## Interfaces
 
 - **CLI:** primary interface for people, local agents, and automation.
-- **Python:** internal application service behind the CLI and adapter.
-- **WorkBuddy MCP:** optional compatibility adapter with four tools and no resources. It is not enabled by the core installation and does not contain another evaluator.
+- **Python:** `JCClient` over the same V4 application service.
+- **stdio MCP:** the four-tool formal adapter over that same V4 application service.
 
 ## Safety rules
 
@@ -47,7 +47,7 @@ jc render <run-id> --format markdown --audience agent --json
 
 ## Documentation
 
-[Documentation index](docs/README.md) · [中文说明](docs/guides/README_CN.md) · [CLI](docs/guides/CLI.md) · [Audit and replay](docs/contracts/AUDIT_BUNDLE.md) · [Rule packs](docs/contracts/RULE_PACKS.md) · [WorkBuddy](docs/guides/WORKBUDDY.md)
+[Documentation index](docs/README.md) · [中文说明](docs/guides/README_CN.md) · [CLI](docs/guides/CLI.md) · [Audit and replay](docs/contracts/AUDIT_BUNDLE.md) · [Rule packs](docs/contracts/RULE_PACKS.md)
 
 ## Local verification
 

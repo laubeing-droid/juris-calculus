@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 415,
+  "count": 416,
   "paths": [
     {
       "path": ".gitattributes",
@@ -114,7 +114,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "closure_task": "W5-07",
       "namespace": "docs"
     },
     {
@@ -1359,7 +1359,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "closure_task": "W5-07",
       "namespace": "docs"
     },
     {
@@ -1476,26 +1476,50 @@
     },
     {
       "path": "docs/guides/MIGRATION_V2_TO_V3.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
+      "closure_task": "W5-07",
+      "frozen_fingerprint": {
+        "git_blob_head": "66070f1b28f5658e0e380dbff480556b624b110a",
+        "sha256": "ae6fe1d6dde9e5fd197e607e1255954628b3c5746a8901a572f06b5f9a62180d",
+        "bytes": 1096,
+        "note": "retired at W5-07; Git history locator and frozen digest only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "docs/guides/README_CN.md",
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "closure_task": "W5-07",
       "namespace": "docs"
     },
     {
       "path": "docs/guides/WORKBUDDY.md",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
+      "audit_role": "docs/baseline/memory",
+      "closure_task": "W5-07",
+      "frozen_fingerprint": {
+        "git_blob_head": "028df6c25bc8a8896f02d2c49a19b0255cac64f5",
+        "sha256": "0d85a042c4702f485c180761bb830c420eb0c44c4631ded34ad440d39d792c67",
+        "bytes": 1236,
+        "note": "retired at W5-07; Git history locator and frozen digest only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
+    },
+    {
+      "path": "docs/operations/V3_HISTORICAL_REPLAY.md",
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-07",
       "namespace": "docs"
     },
     {
@@ -1665,7 +1689,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-06"
+      "closure_task": "W5-07"
     },
     {
       "path": "remediation/v4/issue-map.json",
@@ -1693,7 +1717,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-06"
+      "closure_task": "W5-07"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -1931,7 +1955,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-06"
+      "closure_task": "W5-07"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -3230,7 +3254,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-06",
+      "closure_task": "W5-07",
       "namespace": "formal_core"
     },
     {
@@ -3277,7 +3301,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-06",
+      "closure_task": "W5-07",
       "namespace": "formal_core"
     },
     {

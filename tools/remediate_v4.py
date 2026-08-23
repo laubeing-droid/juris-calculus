@@ -49,6 +49,7 @@ import tempfile
 import tomllib
 import uuid
 import xml.etree.ElementTree as ET
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from types import MappingProxyType
@@ -59,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.37.0"
+RUNNER_VERSION = "0.38.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -96,6 +97,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.35.0": 5,
     "0.36.0": 5,
     "0.37.0": 5,
+    "0.38.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -756,6 +758,118 @@ W5_06_ALLOWED_PATHS = (
     "tools/remediate_v4.py",
 )
 W5_06_REQUIRED_CHANGED_PATHS = W5_06_ALLOWED_PATHS
+W5_07_TEST_PATHS = (
+    "tests/storage_chaos/test_generation_isolation.py",
+)
+W5_07_TEST_CASE_COUNT = 2
+W5_07_TEST_CASE_IDS_DIGEST = (
+    "sha256:9668ef51096ab8bb7fef31cc9bfb65ad8a061c9c029b33a472f27baad072b804"
+)
+W5_07_RETIRED_PATHS = (
+    "docs/guides/MIGRATION_V2_TO_V3.md",
+    "docs/guides/WORKBUDDY.md",
+)
+W5_07_ALLOWED_PATHS = (
+    "README.md",
+    "docs/README.md",
+    "docs/guides/MIGRATION_V2_TO_V3.md",
+    "docs/guides/README_CN.md",
+    "docs/guides/WORKBUDDY.md",
+    "docs/operations/V3_HISTORICAL_REPLAY.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_07_REQUIRED_CHANGED_PATHS = W5_07_ALLOWED_PATHS
+W5_07_TAG_IDENTITY = MappingProxyType({
+    "tag": "v3.0.2",
+    "tag_object": "b2087e18a4bdbb884a04e36f12cab300f1c322dd",
+    "commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16",
+    "tree": "64b2af1036582269341bd0423a9d2eb5f92e560a",
+    "source_date_epoch": 1783877180,
+})
+W5_07_SOURCE_ARCHIVE = MappingProxyType({
+    "path": "juris-calculus-v3.0.2-source.zip",
+    "bytes": 2_744_951,
+    "sha256": "sha256:2b429ff7e5988bab66f8dd55114c34ea59a9e998ab741a5164eb8b48f0a5dff6",
+})
+W5_07_REPLAY_WHEEL = MappingProxyType({
+    "path": "artifacts/juris_calculus-3.0.2-py3-none-any.whl",
+    "bytes": 2_608_509,
+    "sha256": "sha256:2c76be31a121e68135b6c81dd1572d45feb207696869484da839a0db3c93388e",
+})
+W5_07_CONTRACT_INPUTS = (
+    "pyproject.toml",
+    "requirements/core.lock",
+    "requirements/dev.lock",
+    "requirements/documents.lock",
+    "requirements/pipeline.lock",
+    "requirements/render.lock",
+    "mcp_manifest.json",
+    "schemas/jc-v3.schema.json",
+    "docs/contracts/AUDIT_BUNDLE.md",
+    "docs/contracts/FORMAL_RUNTIME_CONFORMANCE.md",
+    "docs/contracts/INPUT_AND_SEMANTIC_BOUNDARY.md",
+    "docs/contracts/RULE_PACKS.md",
+    "docs/contracts/rendering-and-profiles.md",
+)
+W5_07_REPLAY_TEST_INPUTS = (
+    "tests/unit/test_cli_evaluate_subprocess.py",
+    "tests/unit/test_audit_bundle.py",
+    "tests/unit/test_rule_pack_manifest.py",
+)
+W5_07_WHEELHOUSE_FILES = (
+    "build-1.5.0-py3-none-any.whl",
+    "colorama-0.4.6-py2.py3-none-any.whl",
+    "iniconfig-2.3.0-py3-none-any.whl",
+    "packaging-26.3-py3-none-any.whl",
+    "pluggy-1.6.0-py3-none-any.whl",
+    "pygments-2.21.0-py3-none-any.whl",
+    "pyproject_hooks-1.2.0-py3-none-any.whl",
+    "pytest-9.1.1-py3-none-any.whl",
+    "pyyaml-6.0.3-cp312-cp312-win_amd64.whl",
+    "setuptools-83.0.0-py3-none-any.whl",
+    "wheel-0.47.0-py3-none-any.whl",
+)
+W5_07_INVENTORIES = MappingProxyType({
+    "contract_inputs": MappingProxyType({
+        "count": 13, "bytes": 51_601,
+        "sha256": "sha256:04cd31f9b06ddc5f71ad7ceea76fc1b76af28f6e29b7e159a50ad383c3035974",
+    }),
+    "replay_tests": MappingProxyType({
+        "count": 3, "bytes": 25_212,
+        "sha256": "sha256:a5120552d5eff023243ebda30fabadf7743f3cf456835507225eaac9f3392d50",
+    }),
+    "wheelhouse": MappingProxyType({
+        "count": 11, "bytes": 3_050_541,
+        "sha256": "sha256:97a0ae4b6b04c2777bb281491cd9f21d06277bff7584d53e5892fbf33a974fab",
+    }),
+    "resources": MappingProxyType({
+        "count": 35, "bytes": 14_384_357,
+        "sha256": "sha256:06250b3e51f37de08fcfa3832f6f9d814b5db310f5c49cd0afc4efc6449870d1",
+    }),
+})
+W5_07_HISTORICAL_SELECTOR = (
+    "tests/unit/test_cli_evaluate_subprocess.py::"
+    "test_cli_evaluate_writes_bundle_then_replay_passes"
+)
+W5_07_HISTORICAL_CASE_IDS_DIGEST = (
+    "sha256:1290d07c92fa311a25760904e34e4721df56aa488996fe1e446a06de68d14889"
+)
+W5_07_RETIRED_GUIDE_FINGERPRINTS = MappingProxyType({
+    "docs/guides/MIGRATION_V2_TO_V3.md": MappingProxyType({
+        "git_blob_head": "66070f1b28f5658e0e380dbff480556b624b110a",
+        "bytes": 1096,
+        "sha256": "ae6fe1d6dde9e5fd197e607e1255954628b3c5746a8901a572f06b5f9a62180d",
+    }),
+    "docs/guides/WORKBUDDY.md": MappingProxyType({
+        "git_blob_head": "028df6c25bc8a8896f02d2c49a19b0255cac64f5",
+        "bytes": 1236,
+        "sha256": "0d85a042c4702f485c180761bb830c420eb0c44c4631ded34ad440d39d792c67",
+    }),
+})
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -15675,6 +15789,448 @@ def cmd_w5_06_entrypoint_matrix_gate() -> int:
     return EXIT_OK
 
 
+def _w5_07_inventory(paths: Iterable[Path], base: Path) -> dict[str, Any]:
+    rows = [
+        {
+            "path": path.relative_to(base).as_posix(),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_hex(path.read_bytes()),
+        }
+        for path in sorted(paths)
+    ]
+    return {
+        "count": len(rows),
+        "bytes": sum(row["bytes"] for row in rows),
+        "sha256": _digest_object(rows),
+    }
+
+
+def _w5_07_frozen_snapshot(state_root: Path) -> dict[str, Any]:
+    """Validate and summarize the exact external V3 replay bundle."""
+
+    bundle = state_root / "evidence" / "W5-07" / "frozen-v3.0.2-v1"
+
+    def material(relative: str) -> Path:
+        path = bundle / Path(relative)
+        if not path.is_file():
+            raise ValueError(f"V3_REPLAY_MATERIAL_MISSING:{relative}")
+        return path
+
+    source_archive = material(str(W5_07_SOURCE_ARCHIVE["path"]))
+    replay_wheel = material(str(W5_07_REPLAY_WHEEL["path"]))
+    source_root = bundle / "source"
+    replay_root = bundle / "replay-tests"
+    wheelhouse_root = bundle / "wheelhouse"
+    contract_paths = [material(f"source/{relative}") for relative in W5_07_CONTRACT_INPUTS]
+    replay_paths = [material(f"replay-tests/{relative}") for relative in W5_07_REPLAY_TEST_INPUTS]
+    wheelhouse_paths = [material(f"wheelhouse/{name}") for name in W5_07_WHEELHOUSE_FILES]
+
+    for label, path, expected in (
+        ("source_archive", source_archive, W5_07_SOURCE_ARCHIVE),
+        ("replay_wheel", replay_wheel, W5_07_REPLAY_WHEEL),
+    ):
+        observed = {
+            "bytes": path.stat().st_size,
+            "sha256": "sha256:" + sha256_hex(path.read_bytes()),
+        }
+        if observed != {"bytes": expected["bytes"], "sha256": expected["sha256"]}:
+            raise ValueError(f"V3_REPLAY_MATERIAL_DRIFT:{label}")
+
+    inventories = {
+        "contract_inputs": _w5_07_inventory(contract_paths, source_root),
+        "replay_tests": _w5_07_inventory(replay_paths, replay_root),
+        "wheelhouse": _w5_07_inventory(wheelhouse_paths, wheelhouse_root),
+    }
+    observed_replay_files = sorted(
+        path.relative_to(replay_root).as_posix()
+        for path in replay_root.rglob("*") if path.is_file()
+    )
+    if observed_replay_files != sorted(W5_07_REPLAY_TEST_INPUTS):
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:replay_test_file_set")
+    observed_wheels = sorted(path.name for path in wheelhouse_root.glob("*.whl"))
+    if observed_wheels != list(W5_07_WHEELHOUSE_FILES):
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:wheelhouse_file_set")
+
+    try:
+        with zipfile.ZipFile(replay_wheel) as archive:
+            names = archive.namelist()
+            if len(names) != len(set(names)):
+                raise ValueError("duplicate replay-wheel entry")
+            resource_rows = []
+            for name in sorted(names):
+                if (
+                    name.startswith("configs/")
+                    and name.endswith((".yaml", ".json", ".md"))
+                ) or (name.startswith("schemas/") and name.endswith(".json")):
+                    payload = archive.read(name)
+                    resource_rows.append({
+                        "path": name,
+                        "bytes": len(payload),
+                        "sha256": sha256_hex(payload),
+                    })
+            version_source = archive.read("compiler_core/version.py").decode("utf-8")
+            metadata_name = next(
+                name for name in names if name.endswith(".dist-info/METADATA")
+            )
+            metadata = archive.read(metadata_name).decode("utf-8")
+    except (KeyError, OSError, StopIteration, UnicodeError, ValueError, zipfile.BadZipFile) as exc:
+        raise ValueError(f"V3_REPLAY_MATERIAL_DRIFT:replay_wheel:{exc}") from exc
+    inventories["resources"] = {
+        "count": len(resource_rows),
+        "bytes": sum(row["bytes"] for row in resource_rows),
+        "sha256": _digest_object(resource_rows),
+    }
+    for label, observed in inventories.items():
+        if observed != dict(W5_07_INVENTORIES[label]):
+            raise ValueError(f"V3_REPLAY_MATERIAL_DRIFT:{label}_inventory")
+
+    pyproject = (source_root / "pyproject.toml").read_text(encoding="utf-8")
+    core_lock = (source_root / "requirements/core.lock").read_text(encoding="utf-8")
+    dev_lock = (source_root / "requirements/dev.lock").read_text(encoding="utf-8")
+    historical_test = replay_paths[0].read_text(encoding="utf-8")
+    if any(marker not in pyproject for marker in (
+        'requires = ["setuptools==83.0.0", "wheel==0.47.0"]',
+        'requires-python = ">=3.11,<3.13"',
+    )):
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:build_environment")
+    if "PyYAML==6.0.3" not in core_lock or core_lock.count("--hash=sha256:") != 4:
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:core_lock")
+    if any(marker not in dev_lock for marker in (
+        "build==1.5.0", "pytest==9.1.1", "setuptools==83.0.0", "wheel==0.47.0",
+    )):
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:dev_lock")
+    if '__version__ = "3.0.2"' not in version_source or "Version: 3.0.2" not in metadata:
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:installed_version")
+    if any(marker not in historical_test for marker in (
+        'replay_payload["status"] == "PASS"',
+        "shutil.rmtree(state_root / \"packs\" / pack_digest)",
+        "missing.returncode == 6",
+        'json.loads(missing.stderr)["code"] == "REPLAY_MATERIAL_MISSING"',
+    )):
+        raise ValueError("V3_REPLAY_MATERIAL_DRIFT:historical_test_contract")
+
+    return {
+        "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W5-07/frozen-v3.0.2-v1",
+        "artifact_class": "LOCAL_REPLAY_BUILD_NOT_RELEASE_ASSET",
+        "tag_identity": dict(W5_07_TAG_IDENTITY),
+        "source_archive": dict(W5_07_SOURCE_ARCHIVE),
+        "replay_wheel": dict(W5_07_REPLAY_WHEEL),
+        "inventories": inventories,
+        "environment": {
+            "python": "CPython 3.12",
+            "platform": "Windows x86-64",
+            "network": "DISABLED",
+        },
+    }
+
+
+def _w5_07_isolation_contract_problems(state_root: Path) -> list[str]:
+    """Bind historical docs, frozen bytes, and the disjoint current V4 namespace."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_07_file_disposition", ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(generator)
+        generated_disposition = generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W5-07 governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W5-07"), {})
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-07", *W5_07_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-07.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-07"],
+        expected_pytest_argv,
+    ]
+    if task.get("depends_on") != ["W5-06"]:
+        problems.append("W5-07 must depend only on W5-06")
+    if task.get("audit_ids") != ["P3-02"]:
+        problems.append("W5-07 audit projection drifted")
+    if task.get("allowed_paths") != list(W5_07_ALLOWED_PATHS):
+        problems.append("W5-07 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-07 exact gate/pytest argv drifted")
+    if task.get("terminal_states") != ["V3_REPLAY_ISOLATED", "V4_STATE_DISJOINT"]:
+        problems.append("W5-07 terminal states drifted")
+    if disposition != generated_disposition:
+        problems.append("W5-07 file disposition is not reproducible from its generator")
+
+    operations_path = ROOT / "docs/operations/V3_HISTORICAL_REPLAY.md"
+    current_indexes = (
+        ROOT / "README.md", ROOT / "docs/README.md", ROOT / "docs/guides/README_CN.md",
+    )
+    try:
+        operations = operations_path.read_text(encoding="utf-8")
+        indexed = "\n".join(path.read_text(encoding="utf-8") for path in current_indexes)
+        cli_source = (ROOT / "compiler_core/cli.py").read_text(encoding="utf-8")
+        storage_source = (ROOT / "compiler_core/storage.py").read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        problems.append(f"W5-07 current docs/runtime are unreadable: {exc}")
+    else:
+        for retired in W5_07_RETIRED_PATHS:
+            if (ROOT / retired).exists():
+                problems.append(f"W5-07 historical guide remains current: {retired}")
+            if Path(retired).name in indexed:
+                problems.append(f"W5-07 current index still treats retired guide as authority: {retired}")
+        for marker in (
+            "not current schema, API, runtime, migration, or legal-source authority",
+            "LOCAL_REPLAY_BUILD_NOT_RELEASE_ASSET",
+            str(W5_07_TAG_IDENTITY["commit"]),
+            str(W5_07_TAG_IDENTITY["tree"]),
+            str(W5_07_SOURCE_ARCHIVE["sha256"]),
+            str(W5_07_REPLAY_WHEEL["sha256"]),
+            str(W5_07_INVENTORIES["contract_inputs"]["sha256"]),
+            str(W5_07_INVENTORIES["wheelhouse"]["sha256"]),
+            str(W5_07_INVENTORIES["resources"]["sha256"]),
+            "V3_REPLAY_MATERIAL_MISSING",
+            "REPLAY_MATERIAL_MISSING",
+            "--no-index",
+            "do not delete or migrate them",
+        ):
+            if marker not in operations:
+                problems.append(f"W5-07 operations contract marker is missing: {marker}")
+        if "Historical replay (not current authority)" not in indexed:
+            problems.append("W5-07 history link is not explicitly non-authoritative")
+        if 'NAMESPACE_V4 = "jc-v4-state"' not in storage_source:
+            problems.append("W5-07 current storage namespace is not V4-only")
+        if '"migrate"' in cli_source or "compat_v3_v4" in cli_source:
+            problems.append("W5-07 current CLI exposes automatic V3 migration/compatibility")
+
+    runtime_paths = sorted((ROOT / "compiler_core").rglob("*.py")) + [ROOT / "mcp_server.py"]
+    for path in runtime_paths:
+        try:
+            source = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-07 runtime source is unreadable: {path}: {exc}")
+            continue
+        for forbidden in ("jc-v3-state", "compat_v3_v4", "cn-legacy-corpus", "addons.workbuddy_mcp"):
+            if forbidden in source:
+                problems.append(f"W5-07 current runtime contains V3 discovery/fallback marker: {path}")
+
+    disposition_by_path = {
+        row.get("path"): row for row in disposition.get("paths", [])
+        if isinstance(row, dict)
+    }
+    for path in W5_07_REQUIRED_CHANGED_PATHS:
+        if disposition_by_path.get(path, {}).get("closure_task") != "W5-07":
+            problems.append(f"W5-07 disposition closure drifted: {path}")
+    for path, expected in W5_07_RETIRED_GUIDE_FINGERPRINTS.items():
+        row = disposition_by_path.get(path, {})
+        fingerprint = row.get("frozen_fingerprint", {})
+        if (
+            row.get("disposition"), row.get("terminal_state"),
+            row.get("history_locator_only"), row.get("target_module"),
+            row.get("target_artifact"),
+        ) != ("DELETE_CURRENT", "HISTORY_BOUND", True, None, None):
+            problems.append(f"W5-07 retired guide disposition drifted: {path}")
+        for field, value in expected.items():
+            if fingerprint.get(field) != value:
+                problems.append(f"W5-07 retired guide fingerprint drifted: {path}:{field}")
+    operations_row = disposition_by_path.get("docs/operations/V3_HISTORICAL_REPLAY.md", {})
+    if (
+        operations_row.get("disposition"), operations_row.get("terminal_state"),
+        operations_row.get("namespace"), operations_row.get("closure_task"),
+    ) != ("DOC_UPDATE", "DOC_UPDATE", "docs", "W5-07"):
+        problems.append("W5-07 operations document disposition drifted")
+
+    try:
+        _w5_07_frozen_snapshot(state_root)
+    except (OSError, UnicodeError, ValueError) as exc:
+        problems.append(str(exc))
+    return sorted(set(problems))
+
+
+def _w5_07_run_historical_replay(
+    state_root: Path, snapshot: dict[str, Any],
+) -> tuple[Path, str, Path, str]:
+    bundle = state_root / "evidence" / "W5-07" / "frozen-v3.0.2-v1"
+    temporary_parent = state_root / "tmp"
+    temporary_parent.mkdir(parents=True, exist_ok=True)
+    environment = os.environ.copy()
+    for name in ("PYTHONPATH", "PYTHONHOME", "PYTEST_ADDOPTS", "PYTEST_PLUGINS"):
+        environment.pop(name, None)
+    environment.update({
+        "PIP_NO_INDEX": "1",
+        "PIP_CONFIG_FILE": os.devnull,
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+        "NO_PROXY": "*",
+    })
+
+    def checked(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        completed = subprocess.run(
+            command, cwd=str(cwd), capture_output=True, text=True, encoding="utf-8",
+            errors="replace", check=False, timeout=180, env=environment,
+        )
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout).strip()[-2000:]
+            raise ValueError(
+                f"V3_REPLAY_EXECUTION_FAILED:{Path(command[0]).name}:"
+                f"exit={completed.returncode}:{detail}"
+            )
+        return completed
+
+    with tempfile.TemporaryDirectory(prefix="W5-07-v3-", dir=temporary_parent) as raw:
+        temporary = Path(raw)
+        replay_environment = temporary / "venv"
+        checked([sys.executable, "-B", "-m", "venv", str(replay_environment)], bundle)
+        replay_python = (
+            replay_environment / "Scripts/python.exe"
+            if os.name == "nt" else replay_environment / "bin/python"
+        )
+        if not replay_python.is_file():
+            raise ValueError("V3_REPLAY_ENVIRONMENT_MISSING:fresh_python")
+        checked([
+            str(replay_python), "-B", "-m", "pip", "install", "--no-index",
+            "--find-links", str(bundle / "wheelhouse"), "PyYAML==6.0.3", "pytest==9.1.1",
+        ], bundle)
+        checked([
+            str(replay_python), "-B", "-m", "pip", "install", "--no-index", "--no-deps",
+            str(bundle / str(W5_07_REPLAY_WHEEL["path"])),
+        ], bundle)
+
+        probe_code = (
+            "import json,pathlib,sys; import compiler_core; "
+            "from compiler_core.version import __version__; "
+            "print(json.dumps({'version':__version__,'module':str(pathlib.Path(compiler_core.__file__).resolve()),"
+            "'sys_path':sys.path},sort_keys=True))"
+        )
+        replay_cwd = bundle / "replay-tests"
+        probe = checked([str(replay_python), "-B", "-c", probe_code], replay_cwd)
+        try:
+            probe_payload = json.loads(probe.stdout)
+            module_path = Path(probe_payload["module"]).resolve()
+            current_root_absent = all(
+                not (
+                    (candidate := Path(item or replay_cwd).resolve()) == ROOT.resolve()
+                    or candidate.is_relative_to(ROOT.resolve())
+                )
+                for item in probe_payload["sys_path"]
+            )
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError(f"V3_REPLAY_IMPORT_PROBE_INVALID:{exc}") from exc
+        if (
+            probe_payload["version"] != "3.0.2"
+            or not module_path.is_relative_to(replay_environment.resolve())
+            or not current_root_absent
+        ):
+            raise ValueError("V3_REPLAY_CURRENT_TREE_CONTAMINATION")
+
+        junit = temporary / "historical-replay.xml"
+        pytest_result = checked([
+            str(replay_python), "-B", "-m", "pytest", "-q", "--color=no",
+            "-p", "no:cacheprovider", "--basetemp", str(temporary / "pytest"),
+            "--junitxml", str(junit), W5_07_HISTORICAL_SELECTOR,
+        ], replay_cwd)
+        try:
+            counts, cases = _junit_evidence(junit)
+            case_ids = sorted(
+                f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}"
+                for case in cases
+            )
+        except (OSError, ET.ParseError, ValueError) as exc:
+            raise ValueError(f"V3_REPLAY_JUNIT_INVALID:{exc}") from exc
+        if (
+            counts != {"tests": 1, "skipped": 0, "failures": 0, "errors": 0}
+            or len(case_ids) != 1
+            or _digest_object(case_ids) != W5_07_HISTORICAL_CASE_IDS_DIGEST
+            or "1 passed" not in pytest_result.stdout
+        ):
+            raise ValueError("V3_REPLAY_JUNIT_DRIFT")
+
+        junit_path, junit_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W5-07" / "historical-junit",
+            junit.read_bytes(), ".xml",
+        )
+        record = {
+            "schema_version": "jc/v3-historical-replay/1.0",
+            "purpose": "HISTORICAL_REPLAY_ONLY_NOT_CURRENT_AUTHORITY",
+            "frozen_bundle": snapshot,
+            "commands": [
+                ["$HOST_PYTHON", "-B", "-m", "venv", "$FRESH_ENV"],
+                ["$FRESH_PYTHON", "-B", "-m", "pip", "install", "--no-index", "--find-links", "$BUNDLE/wheelhouse", "PyYAML==6.0.3", "pytest==9.1.1"],
+                ["$FRESH_PYTHON", "-B", "-m", "pip", "install", "--no-index", "--no-deps", "$BUNDLE/artifacts/juris_calculus-3.0.2-py3-none-any.whl"],
+                ["$FRESH_PYTHON", "-B", "-c", "$IMPORT_PROBE"],
+                ["$FRESH_PYTHON", "-B", "-m", "pytest", "-q", "--color=no", "-p", "no:cacheprovider", "--basetemp", "$FRESH_ENV/pytest", "--junitxml", "$FRESH_ENV/historical-replay.xml", W5_07_HISTORICAL_SELECTOR],
+            ],
+            "isolation": {
+                "fresh_environment": True,
+                "network_disabled": True,
+                "current_tree_absent": True,
+                "module_relative_to_fresh_environment": module_path.relative_to(
+                    replay_environment.resolve()
+                ).as_posix(),
+                "installed_version": probe_payload["version"],
+            },
+            "historical_behavior": {
+                "evaluate_completed": True,
+                "replay_passed": True,
+                "render_completed": True,
+                "missing_pack_exit": 6,
+                "missing_pack_code": "REPLAY_MATERIAL_MISSING",
+            },
+            "junit": {
+                **counts,
+                "case_ids": case_ids,
+                "case_ids_sha256": W5_07_HISTORICAL_CASE_IDS_DIGEST,
+                "sha256": junit_digest,
+                "locator": (
+                    "$JC_REMEDIATION_STATE_ROOT/evidence/W5-07/historical-junit/"
+                    + junit_path.name
+                ),
+            },
+        }
+        record_path, record_digest = _write_content_addressed_json(
+            state_root / "evidence" / "W5-07" / "replay-receipts", record,
+        )
+    return junit_path, junit_digest, record_path, record_digest
+
+
+def cmd_w5_07_historical_replay_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W5-07 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    state_root = Path(raw_state_root).resolve()
+    problems = _w5_07_isolation_contract_problems(state_root)
+    if problems:
+        for problem in problems:
+            print(f"W5-07 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        snapshot = _w5_07_frozen_snapshot(state_root)
+        junit_path, junit_digest, record_path, record_digest = (
+            _w5_07_run_historical_replay(state_root, snapshot)
+        )
+    except (OSError, subprocess.TimeoutExpired, UnicodeError, ValueError) as exc:
+        print(f"W5-07 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw5-07-historical-junit\t{junit_path}\t{junit_digest}")
+    print(f"JC_ARTIFACT\tw5-07-historical-replay\t{record_path}\t{record_digest}")
+    print(
+        "W5-07 gate OK: frozen local V3.0.2 wheel replayed offline outside the "
+        "current tree; missing pack failed explicitly; V4 state remains disjoint"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -15746,6 +16302,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_05_current_authority_gate()
     if args.wave == "W5-06":
         return cmd_w5_06_entrypoint_matrix_gate()
+    if args.wave == "W5-07":
+        return cmd_w5_07_historical_replay_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -15780,6 +16338,21 @@ def _write_content_addressed_json(
     payload = (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
     digest = "sha256:" + sha256_hex(payload)
     path = directory / f"{digest.split(':', 1)[1]}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("xb") as handle:
+            handle.write(payload)
+    except FileExistsError:
+        if path.read_bytes() != payload:
+            raise ValueError(f"content-addressed evidence collision: {path}")
+    return path.resolve(), digest
+
+
+def _write_content_addressed_bytes(
+    directory: Path, payload: bytes, suffix: str,
+) -> tuple[Path, str]:
+    digest = "sha256:" + sha256_hex(payload)
+    path = directory / f"{digest.split(':', 1)[1]}{suffix}"
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("xb") as handle:
@@ -18070,6 +18643,41 @@ def _w5_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w5_07_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact current-state isolation suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-07 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_07_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_07_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_07_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_07_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_07_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-07 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-07 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -18183,6 +18791,118 @@ def _w5_06_committed_scope_problems(
             str(artifact_digests.get(f"result-path:{path}")),
         ) is None:
             problems.append(f"W5-06 lacks committed result digest: {path}")
+    return problems
+
+
+def _w5_07_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-07 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-07 artifact_digests is not an object"]
+    expected = set(W5_07_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W5-07 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W5_07_REQUIRED_CHANGED_PATHS:
+        prefix = "deleted-path" if path in W5_07_RETIRED_PATHS else "result-path"
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"{prefix}:{path}")),
+        ) is None:
+            problems.append(f"W5-07 lacks committed {prefix} digest: {path}")
+    return problems
+
+
+def _w5_07_replay_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W5-07 artifact_digests is not an object"]
+    problems: list[str] = []
+    replay_digest = artifact_digests.get("state-artifact:w5-07-historical-replay")
+    junit_digest = artifact_digests.get("state-artifact:w5-07-historical-junit")
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", str(replay_digest)) is None:
+        problems.append("W5-07 historical replay receipt digest is missing")
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", str(junit_digest)) is None:
+        problems.append("W5-07 historical replay JUnit digest is missing")
+    if problems:
+        return problems
+
+    replay_path = (
+        state_root / "evidence" / "W5-07" / "replay-receipts"
+        / f"{str(replay_digest).split(':', 1)[1]}.json"
+    )
+    junit_path = (
+        state_root / "evidence" / "W5-07" / "historical-junit"
+        / f"{str(junit_digest).split(':', 1)[1]}.xml"
+    )
+    try:
+        replay_bytes = replay_path.read_bytes()
+        junit_bytes = junit_path.read_bytes()
+        record = json.loads(replay_bytes.decode("utf-8"))
+        snapshot = _w5_07_frozen_snapshot(state_root)
+        counts, cases = _junit_evidence(junit_path)
+        case_ids = sorted(
+            f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}"
+            for case in cases
+        )
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ET.ParseError, TypeError, ValueError,
+    ) as exc:
+        return [f"W5-07 historical replay evidence is unreadable: {exc}"]
+    if "sha256:" + sha256_hex(replay_bytes) != replay_digest:
+        problems.append("W5-07 historical replay receipt content drifted")
+    if "sha256:" + sha256_hex(junit_bytes) != junit_digest:
+        problems.append("W5-07 historical replay JUnit content drifted")
+    if record.get("schema_version") != "jc/v3-historical-replay/1.0":
+        problems.append("W5-07 historical replay receipt schema drifted")
+    if record.get("purpose") != "HISTORICAL_REPLAY_ONLY_NOT_CURRENT_AUTHORITY":
+        problems.append("W5-07 historical replay purpose drifted")
+    if record.get("frozen_bundle") != snapshot:
+        problems.append("W5-07 historical replay frozen binding drifted")
+    if record.get("isolation") != {
+        "fresh_environment": True,
+        "network_disabled": True,
+        "current_tree_absent": True,
+        "module_relative_to_fresh_environment": (
+            "Lib/site-packages/compiler_core/__init__.py"
+        ),
+        "installed_version": "3.0.2",
+    }:
+        problems.append("W5-07 historical replay isolation proof drifted")
+    if record.get("historical_behavior") != {
+        "evaluate_completed": True,
+        "replay_passed": True,
+        "render_completed": True,
+        "missing_pack_exit": 6,
+        "missing_pack_code": "REPLAY_MATERIAL_MISSING",
+    }:
+        problems.append("W5-07 historical behavior proof drifted")
+    expected_junit = {
+        **counts,
+        "case_ids": case_ids,
+        "case_ids_sha256": W5_07_HISTORICAL_CASE_IDS_DIGEST,
+        "sha256": junit_digest,
+        "locator": (
+            "$JC_REMEDIATION_STATE_ROOT/evidence/W5-07/historical-junit/"
+            + junit_path.name
+        ),
+    }
+    if (
+        counts != {"tests": 1, "skipped": 0, "failures": 0, "errors": 0}
+        or len(case_ids) != 1
+        or _digest_object(case_ids) != W5_07_HISTORICAL_CASE_IDS_DIGEST
+        or record.get("junit") != expected_junit
+    ):
+        problems.append("W5-07 historical replay JUnit identity drifted")
+    command_wire = json.dumps(record.get("commands"), ensure_ascii=False)
+    if "--no-index" not in command_wire or str(ROOT.resolve()) in command_wire:
+        problems.append("W5-07 historical replay command isolation drifted")
     return problems
 
 
@@ -19019,6 +19739,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-06 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-07":
+        problems.extend(_w5_07_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w5_07_isolation_contract_problems(state_root))
+        problems.extend(_w5_07_replay_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w5_07_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-07-exact-v4-isolation-reports",
+            "w5-07-isolated-historical-replay",
+            "w5-07-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-07 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -20680,6 +21424,44 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W5-06 runtime, governance, and executable-test paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-07":
+        report_problems = _w5_07_test_report_problems(test_reports)
+        contract_problems = _w5_07_isolation_contract_problems(state_root)
+        artifact_problems = _w5_07_replay_artifact_problems(
+            artifact_digests, state_root,
+        )
+        path_problems = _w5_07_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-07-exact-v4-isolation-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_07_TEST_CASE_COUNT} V3/V4 namespace isolation cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-07-isolated-historical-replay",
+            "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "exact V3.0.2 tag, local replay wheel, locks, resources, fresh offline "
+                "environment, PASS replay, and explicit missing-material failure are bound"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w5-07-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W5-07 current-doc, history-bound, and governance paths are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

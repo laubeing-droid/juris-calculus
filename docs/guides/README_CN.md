@@ -36,6 +36,6 @@ jc render <run-id> --format markdown --audience agent --json
 
 ## 接口
 
-CLI 是默认接口。可选 WorkBuddy MCP 适配器只暴露四项工具、零 resources；它是兼容层，不是第二套推理器。详见 [CLI](CLI.md) 与 [WorkBuddy](WORKBUDDY.md)。
+CLI、`JCClient` 与 stdio MCP 共用唯一 V4 application service；不存在 V3 或 WorkBuddy 兼容执行链。详见 [CLI](CLI.md)。
 
 更多内容见 [文档索引](../README.md)。
