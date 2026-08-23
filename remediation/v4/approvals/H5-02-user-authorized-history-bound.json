@@ -1,0 +1,60 @@
+{
+  "schema_version": "jc/remediation-v4-user-authorized-history-bound/1.0",
+  "task_id": "H5-02",
+  "decision": "USER_AUTHORIZED_HISTORY_BOUND",
+  "evidence_kind": "USER_DIRECTIVE",
+  "scope": "H5-02",
+  "authority_source": {
+    "locator": "codex-attachment:decb5e62-9338-42af-b495-57f563fb4009/pasted-text.txt",
+    "sha256": "sha256:83deaffbbb7b37a04bd7e757b626d4a119ddc5916f55b9bb19c36f47d6f0fcd9",
+    "cryptographic_signature": false
+  },
+  "approved_plan": {
+    "path": "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "commit": "8ffc7f820112a200eb6852946520639da142d3ea",
+    "tree": "eb09f524a95dd15da167a97dec679f80ad44537f",
+    "git_blob": "b7eee0dd177130a8f464b6a7c68f0577cd664998",
+    "sha256": "sha256:138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e"
+  },
+  "input_receipt_digests": {
+    "W5-01": "sha256:18562f70d620c569e473ccc133c7434c007af7cf85fab4541ac6c7bded303925"
+  },
+  "history_bound_paths": [
+    {
+      "path": "configs/zh_CN/rules.yaml",
+      "sha256": "sha256:032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
+      "bytes": 13620766,
+      "record_count": 21144,
+      "rule_id_count": 21144,
+      "unique_rule_id_count": 21144,
+      "git_history_locator": "v3.0.2:configs/zh_CN/rules.yaml",
+      "git_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16",
+      "git_blob": "8f51fdfd1db3e343812e8f35a321418fa854f4f7"
+    },
+    {
+      "path": "configs/packs/cn-legacy-corpus/manifest.yaml",
+      "sha256": "sha256:5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7",
+      "bytes": 885,
+      "git_history_locator": "v3.0.2:configs/packs/cn-legacy-corpus/manifest.yaml",
+      "git_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16",
+      "git_blob": "1b29b412ee97563381f5a9b32e8b8efb9f62e90c"
+    }
+  ],
+  "candidate_advisory_decision": {
+    "no_relevant_semantics_approved": [],
+    "additional_deletions_approved": [],
+    "in_repo_moves_approved": [],
+    "post_release_rfcs": [],
+    "default": "retain current path as nonpackaged candidate/source-tool/experiment until its declared closure task"
+  },
+  "excluded_adjacent_paths": [
+    "configs/zh_CN/source_manifest.yaml",
+    "configs/zh_CN/domain_config.example.yaml",
+    "configs/zh_CN/ontology_map.yaml"
+  ],
+  "constraints": [
+    "W5-02C must disconnect all runtime, test, configuration, documentation, and dynamic consumers before deleting the two history-bound paths.",
+    "The authority source is a USER_DIRECTIVE and must not be represented as an Ed25519 signature or independent legal review.",
+    "This decision does not authorize cn-official promotion, production signing, remote publication, or deletion of adjacent assets."
+  ]
+}
