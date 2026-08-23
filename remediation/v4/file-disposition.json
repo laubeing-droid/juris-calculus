@@ -195,8 +195,12 @@
       "terminal_state": "MIGRATED_GREEN",
       "audit_role": "CLI/Client/MCP",
       "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "630fa1285d77a8dc34d232ee5c396a53c364a440",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
       "target_module": "compiler_core/mcp.py",
-      "target_test": "tests/unit/test_mcp_stdio_protocol.py"
+      "target_test": "tests/mcp_protocol/w5_transport_red.py"
     },
     {
       "path": "compiler_core/__init__.py",
@@ -267,6 +271,10 @@
       "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
       "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "dd70775fbc85ba9234ef0729bba90f083062965a",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
       "target_module": "compiler_core/argumentation.py",
       "target_test": "tests/contract/test_argumentation.py"
     },
@@ -308,6 +316,10 @@
       "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
       "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "975b190026e02cc0be70ac7d5377c24a4117beeb",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
       "target_module": "compiler_core/backend_router.py",
       "target_test": "tests/contract/test_backend_router.py"
     },
@@ -369,9 +381,15 @@
     {
       "path": "compiler_core/certificate_v1.py",
       "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "4184f144346739e396c59b602b04ee9f6913b2d0",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "target_module": "compiler_core/certificates.py",
+      "target_test": "tests/contract/test_certificates.py"
     },
     {
       "path": "compiler_core/certificates.py",
@@ -408,9 +426,16 @@
     {
       "path": "compiler_core/compat_v3_v4.py",
       "disposition": "DELETE_CURRENT",
-      "terminal_state": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "b61f3e88251058b1fdc367ce0119409160211dda",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "compiler_core/completion_status.py",
@@ -460,9 +485,13 @@
     {
       "path": "compiler_core/contracts_v4.py",
       "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W1-02",
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "79e1d82627e51670ecb3aab877bdb783aaff420c",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
       "target_module": "compiler_core/contracts.py",
       "target_test": "tests/contract/test_contracts.py"
     },
@@ -553,9 +582,15 @@
     {
       "path": "compiler_core/fact_admission_v1.py",
       "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "49614956352489322753d693b5ef277705fd8603",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "target_module": "compiler_core/fact_admission.py",
+      "target_test": "tests/contract/test_fact_admission.py"
     },
     {
       "path": "compiler_core/fact_trust_envelope.py",
@@ -653,9 +688,15 @@
     {
       "path": "compiler_core/legal_ir_v3.py",
       "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "7e913bb7f9775bbfea8c194325fc44db65329119",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "target_module": "compiler_core/legal_ir.py",
+      "target_test": "tests/contract/test_legal_ir.py"
     },
     {
       "path": "compiler_core/legal_memory.py",
@@ -721,9 +762,16 @@
     {
       "path": "compiler_core/proleg_translator.py",
       "disposition": "DELETE_CURRENT",
-      "terminal_state": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "403c7046aedc52ccde03dc00a9f6e3225caed404",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "compiler_core/proof_trace.py",
@@ -866,9 +914,15 @@
     {
       "path": "compiler_core/source_service_v2.py",
       "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "frozen_fingerprint": {
+        "git_blob_head": "a4e21ee2e049beac36fc5b8a2f88cd5066d55336",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "target_module": "compiler_core/source_service.py",
+      "target_test": "tests/contract/test_source_service.py"
     },
     {
       "path": "compiler_core/spec_shadow_harness.py",
@@ -1717,12 +1771,12 @@
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
       "audit_role": "Schema/protocol",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
+      "closure_task": "W5-CUTOVER",
       "frozen_fingerprint": {
         "git_blob_head": "8890718afad14634682ee3899e737bcf20a6fbf4",
-        "note": "current HEAD blob locator only; not pre-frozen"
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
       },
+      "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
     },
@@ -1736,35 +1790,59 @@
     },
     {
       "path": "schemas/w1b/admission-result.schema.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "Schema/protocol",
       "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "frozen_fingerprint": {
+        "git_blob_head": "83b45154f575610669d0f48e7da54aa2bb662aae",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "schemas/w1b/case-request.schema.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "Schema/protocol",
       "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "frozen_fingerprint": {
+        "git_blob_head": "e5459aff6c1ec828fb6457623f1e8773e16ee9bc",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "schemas/w1b/proof-bundle-ref.schema.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "Schema/protocol",
       "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "frozen_fingerprint": {
+        "git_blob_head": "ce12dfd36b40b258824c0112875d8dcc8edaaaf8",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "schemas/w1b/rule-admission-request.schema.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "Schema/protocol",
       "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "frozen_fingerprint": {
+        "git_blob_head": "4e9888871854a965170caec474119f67ef60d32a",
+        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "tests/contract/README.md",

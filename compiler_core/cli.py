@@ -1,28 +1,24 @@
-"""JC默认agent CLI；只注册已经实现并可验证的命令。"""
+"""Strict V4 command-line adapter backed by JCClient."""
 
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
-import os
 from pathlib import Path
 import sys
 from typing import Any, Sequence
 
-from compiler_core.resources import configs_root, neutral_profile_path, schemas_root
-from compiler_core.rule_packs import RulePackError, RulePackRegistry
-from compiler_core.audit_bundle import (
-    AuditBundleError,
-    default_state_root,
-    evaluate_registered_case,
-    replay_audit_bundle,
-    state_root_diagnostics,
+from compiler_core.application import ApplicationV4Error
+from compiler_core.audit_bundle import AuditBundleV4Error
+from compiler_core.client import ClientV4Error, JCClient
+from compiler_core.contracts import (
+    ArtifactHandleV4,
+    CaseRequestV4,
+    ContractV4Error,
+    DecisionStatusV4,
+    MCPReadArtifactInputV4,
 )
-from compiler_core.contracts import CaseRequest, ResultStatus
-from compiler_core.jcs import jcs_digest
-from compiler_core.admission import admit_rule
-from compiler_core.rendering import RendererError, render_run
+from compiler_core.rendering import RendererV4Error
 from compiler_core.version import __version__
 
 
@@ -35,434 +31,184 @@ EXIT_OPTIONAL_COMPONENT_MISSING = 6
 
 
 class CLIError(RuntimeError):
-    """携带稳定机器错误字段和进程退出码的CLI边界异常。"""
-
     def __init__(
         self,
         code: str,
         message: str,
         *,
         exit_code: int = EXIT_INPUT_ERROR,
-        details: dict[str, Any] | None = None,
+        stage: str = "cli",
         retryable: bool = False,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.exit_code = exit_code
-        self.details = dict(details or {})
+        self.stage = stage
         self.retryable = retryable
 
     def to_dict(self) -> dict[str, Any]:
-        """返回固定机器错误schema，不暴露traceback或对象repr。"""
-
         return {
             "code": self.code,
             "message": str(self),
-            "details": self.details,
+            "stage": self.stage,
             "retryable": self.retryable,
         }
 
 
-class JCArgumentParser(argparse.ArgumentParser):
-    """在JSON模式下把argparse错误也约束为机器错误schema。"""
-
+class _Parser(argparse.ArgumentParser):
     def error(self, message: str) -> None:
-        json_mode = "--json" in sys.argv[1:]
-        if json_mode:
-            payload = {
-                "code": "CLI_USAGE_ERROR",
-                "message": message,
-                "details": {},
-                "retryable": False,
-            }
-            self._print_message(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n", sys.stderr)
-        else:
-            super().error(message)
-        raise SystemExit(EXIT_INPUT_ERROR)
+        raise CLIError("CLI_USAGE_ERROR", message)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """构造仅含当前真实实现的命令树。"""
-
-    parser = JCArgumentParser(prog="jc", description="Auditable formal legal reasoning kernel")
+    parser = _Parser(prog="jc", description="Juris Calculus V4 formal runtime")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
 
-    doctor = commands.add_parser("doctor", help="check the installed core resources")
-    doctor.add_argument("--audit-out", metavar="PATH", help="explicit state root to diagnose")
-    doctor.add_argument("--json", action="store_true", dest="json_output")
-    doctor.set_defaults(handler=_handle_doctor)
-
-    capabilities = commands.add_parser("capabilities", help="publish the host-neutral capability manifest (W1b)")
+    capabilities = commands.add_parser("capabilities")
     capabilities.add_argument("--json", action="store_true", dest="json_output")
-    capabilities.set_defaults(handler=_handle_capabilities)
 
-    packs = commands.add_parser("packs", help="inspect and verify versioned rule packs")
-    pack_commands = packs.add_subparsers(dest="packs_command", required=True)
-    list_packs = pack_commands.add_parser("list", help="list installed pack manifests")
-    _add_pack_root_options(list_packs)
-    list_packs.add_argument("--json", action="store_true", dest="json_output")
-    list_packs.set_defaults(handler=_handle_packs_list)
-    verify = pack_commands.add_parser("verify", help="verify pack files, digest, inventory, and admission")
-    selection = verify.add_mutually_exclusive_group()
-    selection.add_argument("pack_id", nargs="?", help="pack ID; defaults to all installed packs")
-    selection.add_argument("--all", action="store_true", dest="verify_all")
-    _add_pack_root_options(verify)
-    verify.add_argument("--json", action="store_true", dest="json_output")
-    verify.set_defaults(handler=_handle_packs_verify)
-
-    evaluate = commands.add_parser("evaluate", help="evaluate a CaseRequest and write a complete audit bundle")
-    evaluate.add_argument("--input", required=True, metavar="PATH", help="CaseRequest JSON path or '-' for stdin")
-    evaluate.add_argument("--audit-out", metavar="PATH", help="explicit state root; defaults to the user state directory")
-    _add_pack_root_options(evaluate)
+    evaluate = commands.add_parser("evaluate")
+    evaluate.add_argument("--input", required=True)
     evaluate.add_argument("--json", action="store_true", dest="json_output")
-    evaluate.set_defaults(handler=_handle_evaluate)
 
-    admit = commands.add_parser("admit", help="independent rule admission (W9)")
-    admit.add_argument("--input", required=True, metavar="PATH", help="RuleAdmissionRequest JSON path or '-' for stdin")
-    admit.add_argument("--json", action="store_true", dest="json_output")
-    admit.set_defaults(handler=_handle_admit)
+    verify = commands.add_parser("verify")
+    verify.add_argument("--input", required=True)
+    verify.add_argument("--json", action="store_true", dest="json_output")
 
-    replay = commands.add_parser("replay", help="verify and semantically replay a completed run")
-    replay.add_argument("run_id")
-    replay.add_argument("--audit-out", metavar="PATH", help="state root containing runs/ and packs/")
+    replay = commands.add_parser("replay")
+    replay.add_argument("--input", required=True)
     replay.add_argument("--json", action="store_true", dest="json_output")
-    replay.set_defaults(handler=_handle_replay)
 
-    render = commands.add_parser("render", help="render an existing audited run without re-evaluation")
-    render.add_argument("run_id")
-    render.add_argument("--audit-out", metavar="PATH", help="state root containing the completed run")
+    read = commands.add_parser("read-artifact")
+    read.add_argument("--input", required=True)
+    read.add_argument("--json", action="store_true", dest="json_output")
+
+    render = commands.add_parser("render")
+    render.add_argument("--input", required=True)
     render.add_argument("--format", choices=("markdown", "mermaid", "html"), default="markdown")
     render.add_argument("--audience", choices=("agent", "lawyer"), default="agent")
     render.add_argument("--json", action="store_true", dest="json_output")
-    render.set_defaults(handler=_handle_render)
-
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """解析并执行CLI；预期错误不向stdout泄漏traceback。"""
-
-    _configure_machine_streams()
-    parser = build_parser()
-    args = parser.parse_args(list(argv) if argv is not None else None)
+def _read(path: str) -> bytes:
+    if path == "-":
+        return sys.stdin.buffer.read()
     try:
-        payload = args.handler(args)
-        exit_code = int(payload.pop("_exit_code", EXIT_OK))
-        _write_success(payload, json_output=bool(getattr(args, "json_output", False)))
-        return exit_code
-    except CLIError as exc:
-        _write_error(exc, json_output=bool(getattr(args, "json_output", False)))
-        return exc.exit_code
-    except Exception:
-        error = CLIError(
-            "CLI_INTERNAL_ERROR",
-            "command failed inside the JC runtime",
-            exit_code=EXIT_ENGINE_ERROR,
-        )
-        _write_error(error, json_output=bool(getattr(args, "json_output", False)))
-        return error.exit_code
+        return Path(path).read_bytes()
+    except OSError as exc:
+        raise CLIError("INPUT_UNAVAILABLE", type(exc).__name__) from exc
 
 
-def _handle_capabilities(args: argparse.Namespace) -> dict[str, Any]:
-    """发布宿主无关能力清单（W1b 合同；stdout 单 UTF-8 JSON，stderr 只诊断）。"""
-
-    schemas_dir = schemas_root() / "w1b"
-    schema_digests: dict[str, str] = {}
+def _json_object(path: str) -> dict[str, Any]:
     try:
-        for path in sorted(schemas_dir.glob("*.schema.json")):
-            schema_digests[path.name] = jcs_digest(json.loads(path.read_text(encoding="utf-8")))
-    except (OSError, ValueError) as exc:
-        raise CLIError(
-            "SCHEMA_UNAVAILABLE",
-            "W1b schema directory cannot be read",
-            exit_code=EXIT_OPTIONAL_COMPONENT_MISSING,
-            details={"resource": str(schemas_dir), "error_type": type(exc).__name__},
-        ) from exc
-    return {
-        "command": "capabilities",
-        "status": "ok",
-        "product_id": "jc",
-        "product_version": __version__,
-        "contract_version": "1.0.0",
-        "commands": ["capabilities", "evaluate", "replay", "render", "packs", "doctor"],
-        "features": ["agent_executor_optional", "formal_reasoning", "audit_bundle", "replay", "rule_admission"],
-        "data_root": str(configs_root()),
-        "capabilities": {
-            "read_only": ["capabilities", "packs.list", "packs.verify", "render"],
-            "writable": ["evaluate", "replay"],
-        },
-        "schema_digests": schema_digests,
-    }
+        value = json.loads(_read(path))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise CLIError("INVALID_JSON", type(exc).__name__) from exc
+    if type(value) is not dict:
+        raise CLIError("INVALID_JSON", "input must be one JSON object")
+    return value
 
 
-def _handle_doctor(args: argparse.Namespace) -> dict[str, Any]:
-    """检查独立安装所需的核心 schema、profile 和正式规则包。"""
-
-    resources = {
-        "schema": schemas_root() / "jc-v3.schema.json",
-        "neutral_profile": neutral_profile_path(),
-    }
-    checks = {
-        name: {"present": path.is_file(), "resource": _public_resource_name(path)}
-        for name, path in resources.items()
-    }
-    official = RulePackRegistry(configs_root()).verify("cn-official")
-    checks["cn_official"] = {
-        "present": official.integrity_valid,
-        "reasoning_ready": official.reasoning_ready,
-        "resource": "configs/packs/cn-official/manifest.yaml",
-    }
-    state = state_root_diagnostics(Path(args.audit_out) if args.audit_out else None)
-    checks["audit_state"] = {
-        "present": state["writable"] and not state["in_repository"] and not state["dangerous_permissions"],
-        "resource": state["resource"],
-        **{key: value for key, value in state.items() if key != "resource"},
-    }
-    optional_components = {
-        "workbuddy_adapter": {
-            "installed": importlib.util.find_spec("addons.workbuddy_mcp") is not None,
-            "registered_by_default": False,
-            "required_for_core": False,
-        }
-    }
-    healthy = all(check["present"] for check in checks.values()) and official.reasoning_ready
-    return {
-        "command": "doctor",
-        "status": "ok" if healthy else "blocked",
-        "version": __version__,
-        "python_supported": (3, 11) <= sys.version_info[:2] < (3, 13),
-        "checks": checks,
-        "optional_components": optional_components,
-        "_exit_code": EXIT_OK if healthy else EXIT_ADMISSION_BLOCKED,
-    }
-
-
-def _handle_packs_list(args: argparse.Namespace) -> dict[str, Any]:
-    """列出已安装manifest声明；完整hash验证只由packs verify执行。"""
-
-    registry = _pack_registry(args)
-    packs = list(registry.list_installed())
-    return {
-        "command": "packs.list",
-        "status": "ok",
-        "pack_count": len(packs),
-        "development_override": registry.development_override,
-        "packs": packs,
-    }
-
-
-def _handle_packs_verify(args: argparse.Namespace) -> dict[str, Any]:
-    """验证指定或全部pack；任何完整性或正式准入问题返回退出码3。"""
-
-    registry = _pack_registry(args)
-    try:
-        results = registry.verify_all() if args.verify_all or not args.pack_id else (registry.verify(args.pack_id),)
-    except RulePackError as exc:
-        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "PACK_NOT_INSTALLED" else EXIT_ADMISSION_BLOCKED
-        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
-    passed = all(result.integrity_valid and (result.kind != "official" or result.reasoning_ready) for result in results)
-    return {
-        "command": "packs.verify",
-        "status": "ok" if passed else "blocked",
-        "development_override": registry.development_override,
-        "results": [result.to_dict() for result in results],
-        "_exit_code": EXIT_OK if passed else EXIT_ADMISSION_BLOCKED,
-    }
-
-
-def _handle_evaluate(args: argparse.Namespace) -> dict[str, Any]:
-    """从显式JSON输入运行正式application并强制生成审计包。"""
-
-    request_payload = _read_json_input(args.input)
-    try:
-        request = CaseRequest.from_dict(request_payload)
-    except (TypeError, ValueError) as exc:
-        raise CLIError("INVALID_CASE_REQUEST", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
-    registry = _pack_registry(args)
-    try:
-        bundle = evaluate_registered_case(
-            request,
-            registry,
-            state_root=Path(args.audit_out) if args.audit_out else None,
-        )
-    except RulePackError as exc:
-        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "PACK_NOT_INSTALLED" else EXIT_ADMISSION_BLOCKED
-        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
-    except AuditBundleError as exc:
+def _execute(args: argparse.Namespace, client: JCClient) -> tuple[dict[str, Any], int]:
+    if args.command == "capabilities":
+        return {"command": "capabilities", **client.capabilities().to_dict()}, EXIT_OK
+    if args.command == "evaluate":
+        request = CaseRequestV4.from_json_bytes(_read(args.input))
+        envelope = client.evaluate(request)
+        status = envelope.result.decision_status
         exit_code = (
-            EXIT_INPUT_ERROR
-            if exc.code in {"AUDIT_PRIVACY_VIOLATION", "AUDIT_PATH_IN_REPOSITORY", "INVALID_RUN_ID"}
+            EXIT_ADMISSION_BLOCKED
+            if status is DecisionStatusV4.BLOCKED
             else EXIT_ENGINE_ERROR
+            if status is DecisionStatusV4.ENGINE_ERROR
+            else EXIT_OK
         )
-        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
-    payload = {
-        "command": "evaluate",
-        "status": "engine_error" if bundle.result.semantic.result_status is ResultStatus.ENGINE_ERROR else "ok",
-        **bundle.public_dict(),
-        "_exit_code": EXIT_ENGINE_ERROR if bundle.result.semantic.result_status is ResultStatus.ENGINE_ERROR else EXIT_OK,
-    }
-    return payload
-
-
-def _handle_admit(args: argparse.Namespace) -> dict[str, Any]:
-    """独立准入 RuleAdmissionRequest（W9；不读 LCCC/LegalOS 数据库）。"""
-
-    request_payload = _read_json_input(args.input)
-    if not isinstance(request_payload, dict):
-        raise CLIError("INVALID_ADMISSION_REQUEST", "request must be an object", exit_code=EXIT_INPUT_ERROR)
-    try:
-        outcome = admit_rule(request_payload)
-    except ValueError as exc:
-        raise CLIError("INVALID_ADMISSION_REQUEST", str(exc), exit_code=EXIT_INPUT_ERROR) from exc
-    return {
-        "command": "admit",
-        **outcome.public_dict(),
-        "cli_status": "ok",
-        "_exit_code": EXIT_OK,
-    }
-
-
-def _handle_replay(args: argparse.Namespace) -> dict[str, Any]:
-    """验证并离线重放一个COMPLETE审计包。"""
-
-    try:
-        replayed = replay_audit_bundle(
-            Path(args.audit_out).resolve() if args.audit_out else default_state_root(),
-            args.run_id,
-        )
-    except AuditBundleError as exc:
-        exit_code = EXIT_OPTIONAL_COMPONENT_MISSING if exc.code == "REPLAY_MATERIAL_MISSING" else EXIT_REPLAY_MISMATCH
-        raise CLIError(exc.code, str(exc), exit_code=exit_code) from exc
-    return {"command": "replay", **replayed}
-
-
-def _handle_render(args: argparse.Namespace) -> dict[str, Any]:
-    """只从已验证审计run生成按需展示文件和绑定元数据。"""
-
-    try:
-        output = render_run(
-            args.run_id,
-            state_root=Path(args.audit_out).resolve() if args.audit_out else None,
+        return {"command": "evaluate", **envelope.to_dict()}, exit_code
+    if args.command in {"verify", "replay", "render"}:
+        handle = ArtifactHandleV4.from_dict(_json_object(args.input))
+        if args.command == "verify":
+            verified = client.verify_run(handle)
+            return {
+                "command": "verify",
+                "verification": verified.verification.to_dict(),
+            }, EXIT_OK
+        if args.command == "replay":
+            output = client.verify_for_mcp(handle, offline_replay=True)
+            replay = output.replay
+            exit_code = EXIT_OK if replay is not None and replay.semantic_equal else EXIT_REPLAY_MISMATCH
+            return {"command": "replay", **output.to_dict()}, exit_code
+        rendered = client.render(
+            handle,
             output_format=args.format,
             audience=args.audience,
         )
-    except AuditBundleError as exc:
-        raise CLIError(exc.code, str(exc), exit_code=EXIT_REPLAY_MISMATCH) from exc
-    except RendererError as exc:
-        input_codes = {
-            "INVALID_RENDERER_PROFILE",
-            "PROFILE_HASH_MISMATCH",
-            "PROFILE_UNAVAILABLE",
-            "PROFILE_OVERRIDE_DISABLED",
-            "INVALID_RENDER_FORMAT",
-            "INVALID_AUDIENCE",
-        }
-        raise CLIError(
+        return {
+            "command": "render",
+            **rendered.to_dict(include_content=not args.json_output),
+        }, EXIT_OK
+    request = MCPReadArtifactInputV4.from_dict(_json_object(args.input))
+    output = client.read_artifact(
+        request.artifact_handle,
+        offset=request.offset,
+        length=request.length,
+    )
+    return {"command": "read-artifact", **output.to_dict()}, EXIT_OK
+
+
+def _mapped_error(exc: Exception) -> CLIError:
+    if isinstance(exc, ClientV4Error):
+        exit_code = (
+            EXIT_OPTIONAL_COMPONENT_MISSING
+            if exc.code in {"RUNTIME_NOT_CONFIGURED", "REPLAY_NOT_CONFIGURED"}
+            else EXIT_INPUT_ERROR
+        )
+        return CLIError(
             exc.code,
             str(exc),
-            exit_code=EXIT_INPUT_ERROR if exc.code in input_codes else EXIT_ENGINE_ERROR,
-        ) from exc
-    return {"command": "render", "status": "ok", **output.public_dict()}
-
-
-def _write_success(payload: dict[str, Any], *, json_output: bool) -> None:
-    """成功时stdout只写一种明确格式。"""
-
-    if json_output:
-        print(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
-        return
-    print(f"{payload['command']}: {payload['status']}")
-    if payload["command"] == "doctor":
-        for name, check in sorted(payload["checks"].items()):
-            ready = check.get("reasoning_ready", check["present"])
-            print(f"- {name}: {'PASS' if check['present'] and ready else 'BLOCKED'}")
-    elif payload["command"] == "packs.list":
-        for item in payload["packs"]:
-            print(f"- {item['pack_id']} {item['version']}: {item['declared_status']} (not verified)")
-    elif payload["command"] == "packs.verify":
-        for item in payload["results"]:
-            state = "PASS" if item["integrity_valid"] and (item["kind"] != "official" or item["reasoning_ready"]) else "BLOCKED"
-            print(f"- {item['pack_id']}: {state}")
-    elif payload["command"] == "evaluate":
-        print(f"- run_id: {payload['run_id']}")
-        print(f"- result_status: {payload['canonical_result']['semantic']['result_status']}")
-        print(f"- bundle_digest: {payload['bundle_digest']}")
-    elif payload["command"] == "replay":
-        print(f"- run_id: {payload['run_id']}")
-        print(f"- replay: {payload['status']}")
-    elif payload["command"] == "render":
-        print(f"- format: {payload['format']}")
-        print(f"- artifact_ref: {payload['artifact_ref']}")
-        print(f"- content_sha256: {payload['content_sha256']}")
-
-
-def _write_error(error: CLIError, *, json_output: bool) -> None:
-    """错误只写stderr；JSON和文本都不含traceback。"""
-
-    if json_output:
-        print(json.dumps(error.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")), file=sys.stderr)
+            exit_code=exit_code,
+            stage=exc.stage,
+            retryable=exc.retryable,
+        )
+    code = str(getattr(exc, "code", "CLI_INTERNAL_ERROR"))
+    stage = str(getattr(exc, "stage", "runtime"))
+    if isinstance(exc, ContractV4Error):
+        exit_code = EXIT_INPUT_ERROR
+    elif isinstance(exc, AuditBundleV4Error):
+        exit_code = EXIT_REPLAY_MISMATCH
+    elif isinstance(exc, RendererV4Error):
+        exit_code = EXIT_INPUT_ERROR
+    elif isinstance(exc, ApplicationV4Error):
+        exit_code = EXIT_ENGINE_ERROR
     else:
-        print(f"{error.code}: {error}", file=sys.stderr)
+        code = "CLI_INTERNAL_ERROR"
+        exit_code = EXIT_ENGINE_ERROR
+    return CLIError(code, "V4 command failed", exit_code=exit_code, stage=stage)
 
 
-def _configure_machine_streams() -> None:
-    """在Windows非UTF-8代码页下保持JSON协议可解码。"""
-
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if callable(reconfigure) and getattr(stream, "encoding", "").lower() != "utf-8":
-            reconfigure(encoding="utf-8")
-
-
-def _public_resource_name(path: Path) -> str:
-    """仅返回包内逻辑资源名，禁止doctor泄漏绝对机器路径。"""
-
-    parts = path.parts
-    for marker in ("configs", "schemas"):
-        if marker in parts:
-            return "/".join(parts[parts.index(marker):])
-    return path.name
+def _write(document: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+    else:
+        command = document.pop("command", "jc")
+        print(f"{command}: ok")
+        print(json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2))
 
 
-def _add_pack_root_options(parser: argparse.ArgumentParser) -> None:
-    """为pack命令增加显式development override参数。"""
-
-    parser.add_argument("--development", action="store_true", help="allow an explicit non-bundled config root")
-    parser.add_argument("--config-root", help="development configs root; requires --development")
-
-
-def _pack_registry(args: argparse.Namespace) -> RulePackRegistry:
-    """构造pack registry；环境变量本身永远不能静默换包。"""
-
-    development = bool(getattr(args, "development", False))
-    explicit_root = getattr(args, "config_root", None)
-    if explicit_root and not development:
-        raise CLIError("DEVELOPMENT_FLAG_REQUIRED", "--config-root requires --development")
-    if development:
-        selected = explicit_root or os.environ.get("JURIS_CONFIG_DIR")
-        if not selected:
-            raise CLIError("DEVELOPMENT_ROOT_REQUIRED", "development mode requires --config-root")
-        root = Path(selected)
-        if not root.is_dir():
-            raise CLIError("DEVELOPMENT_ROOT_NOT_FOUND", "development config root does not exist")
-        return RulePackRegistry(root, development_override=True)
-    return RulePackRegistry(configs_root())
-
-
-def _read_json_input(input_path: str) -> dict[str, Any]:
-    """从stdin或显式UTF-8文件读取单一JSON对象。"""
-
+def main(argv: Sequence[str] | None = None, *, client: JCClient | None = None) -> int:
     try:
-        text = sys.stdin.read() if input_path == "-" else Path(input_path).read_text(encoding="utf-8")
-        payload = json.loads(text)
-    except OSError as exc:
-        raise CLIError("INPUT_READ_ERROR", "input JSON cannot be read", details={"error_type": type(exc).__name__}) from exc
-    except json.JSONDecodeError as exc:
-        raise CLIError("INVALID_JSON", "input is not valid JSON", details={"line": exc.lineno, "column": exc.colno}) from exc
-    if not isinstance(payload, dict):
-        raise CLIError("INVALID_JSON", "input JSON must be an object")
-    return payload
+        args = build_parser().parse_args(list(argv) if argv is not None else None)
+        document, exit_code = _execute(args, client or JCClient())
+        _write(document, json_output=bool(getattr(args, "json_output", False)))
+        return exit_code
+    except CLIError as exc:
+        print(json.dumps(exc.to_dict(), ensure_ascii=False, sort_keys=True), file=sys.stderr)
+        return exc.exit_code
+    except Exception as exc:
+        error = _mapped_error(exc)
+        print(json.dumps(error.to_dict(), ensure_ascii=False, sort_keys=True), file=sys.stderr)
+        return error.exit_code
 
 
 if __name__ == "__main__":

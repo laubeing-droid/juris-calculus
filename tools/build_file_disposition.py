@@ -179,6 +179,85 @@ RETIRED_HISTORY_PATHS: dict[str, dict[str, Any]] = {
 }
 
 
+W5_CUTOVER_RETIRED_PATHS: dict[str, dict[str, str]] = {
+    "addons/workbuddy_mcp.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "630fa1285d77a8dc34d232ee5c396a53c364a440",
+    },
+    "compiler_core/argumentation_v2.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "dd70775fbc85ba9234ef0729bba90f083062965a",
+    },
+    "compiler_core/backend_router_v1.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "975b190026e02cc0be70ac7d5377c24a4117beeb",
+    },
+    "compiler_core/certificate_v1.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "4184f144346739e396c59b602b04ee9f6913b2d0",
+    },
+    "compiler_core/compat_v3_v4.py": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "b61f3e88251058b1fdc367ce0119409160211dda",
+    },
+    "compiler_core/contracts_v4.py": {
+        "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "79e1d82627e51670ecb3aab877bdb783aaff420c",
+    },
+    "compiler_core/fact_admission_v1.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "49614956352489322753d693b5ef277705fd8603",
+    },
+    "compiler_core/legal_ir_v3.py": {
+        "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "7e913bb7f9775bbfea8c194325fc44db65329119",
+    },
+    "compiler_core/proleg_translator.py": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "403c7046aedc52ccde03dc00a9f6e3225caed404",
+    },
+    "compiler_core/source_service_v2.py": {
+        "disposition": "MERGE_DELETE",
+        "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "a4e21ee2e049beac36fc5b8a2f88cd5066d55336",
+    },
+    "schemas/jc-v3.schema.json": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "8890718afad14634682ee3899e737bcf20a6fbf4",
+    },
+    "schemas/w1b/admission-result.schema.json": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "83b45154f575610669d0f48e7da54aa2bb662aae",
+    },
+    "schemas/w1b/case-request.schema.json": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "e5459aff6c1ec828fb6457623f1e8773e16ee9bc",
+    },
+    "schemas/w1b/proof-bundle-ref.schema.json": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "ce12dfd36b40b258824c0112875d8dcc8edaaaf8",
+    },
+    "schemas/w1b/rule-admission-request.schema.json": {
+        "disposition": "DELETE_CURRENT",
+        "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "4e9888871854a965170caec474119f67ef60d32a",
+    },
+}
+
+
 # closure_task binding for known terminal branches
 CLOSURE_TASK: dict[str, str] = {
     "HISTORY_BOUND": "W5-02C",
@@ -202,7 +281,21 @@ SPECIAL_CLOSURE_TASKS = {
     "requirements/documents.lock": "W6-03",
     "requirements/pipeline.lock": "W6-03",
     "requirements/render.lock": "W6-03",
-    "compiler_core/contracts_v4.py": "W1-02",
+    "addons/workbuddy_mcp.py": "W5-CUTOVER",
+    "compiler_core/argumentation_v2.py": "W5-CUTOVER",
+    "compiler_core/backend_router_v1.py": "W5-CUTOVER",
+    "compiler_core/certificate_v1.py": "W5-CUTOVER",
+    "compiler_core/compat_v3_v4.py": "W5-CUTOVER",
+    "compiler_core/contracts_v4.py": "W5-CUTOVER",
+    "compiler_core/fact_admission_v1.py": "W5-CUTOVER",
+    "compiler_core/legal_ir_v3.py": "W5-CUTOVER",
+    "compiler_core/proleg_translator.py": "W5-CUTOVER",
+    "compiler_core/source_service_v2.py": "W5-CUTOVER",
+    "schemas/jc-v3.schema.json": "W5-CUTOVER",
+    "schemas/w1b/admission-result.schema.json": "W5-CUTOVER",
+    "schemas/w1b/case-request.schema.json": "W5-CUTOVER",
+    "schemas/w1b/proof-bundle-ref.schema.json": "W5-CUTOVER",
+    "schemas/w1b/rule-admission-request.schema.json": "W5-CUTOVER",
     "tests/fixtures/v4_contract/object-state-matrix.json": "W1-02",
     "tests/contract/jcs_node_oracle.mjs": "W1-01",
     "tests/contract/test_v4_legacy_rejection.py": "W1-06",
@@ -251,7 +344,7 @@ SPECIAL_CLOSURE_TASKS = {
 }
 
 MIGRATION_TARGETS = {
-    "addons/workbuddy_mcp.py": ("compiler_core/mcp.py", "tests/unit/test_mcp_stdio_protocol.py"),
+    "addons/workbuddy_mcp.py": ("compiler_core/mcp.py", "tests/mcp_protocol/w5_transport_red.py"),
     "compiler_core/argumentation_v2.py": (
         "compiler_core/argumentation.py", "tests/contract/test_argumentation.py",
     ),
@@ -262,6 +355,18 @@ MIGRATION_TARGETS = {
         "compiler_core/independent_checker.py", "tests/contract/test_independent_checker.py",
     ),
     "compiler_core/contracts_v4.py": ("compiler_core/contracts.py", "tests/contract/test_contracts.py"),
+    "compiler_core/certificate_v1.py": (
+        "compiler_core/certificates.py", "tests/contract/test_certificates.py",
+    ),
+    "compiler_core/fact_admission_v1.py": (
+        "compiler_core/fact_admission.py", "tests/contract/test_fact_admission.py",
+    ),
+    "compiler_core/legal_ir_v3.py": (
+        "compiler_core/legal_ir.py", "tests/contract/test_legal_ir.py",
+    ),
+    "compiler_core/source_service_v2.py": (
+        "compiler_core/source_service.py", "tests/contract/test_source_service.py",
+    ),
 }
 
 
@@ -305,7 +410,10 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     if rel == "compiler_core/mcp.py":
         audit_role = "CLI/Client/MCP"
     # OTHER_DIRECTORIES overrides generic prefix matching
-    if rel in RETIRED_HISTORY_PATHS:
+    if rel in W5_CUTOVER_RETIRED_PATHS:
+        disp = W5_CUTOVER_RETIRED_PATHS[rel]["disposition"]
+        terminal = W5_CUTOVER_RETIRED_PATHS[rel]["terminal_state"]
+    elif rel in RETIRED_HISTORY_PATHS:
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
     elif rel in OTHER_DIRECTORIES:
@@ -401,6 +509,11 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     }
     if rel in CN_FINGERPRINTS:
         entry["frozen_fingerprint"] = CN_FINGERPRINTS[rel]
+    elif rel in W5_CUTOVER_RETIRED_PATHS:
+        entry["frozen_fingerprint"] = {
+            "git_blob_head": W5_CUTOVER_RETIRED_PATHS[rel]["git_blob_head"],
+            "note": "retired at W5-CUTOVER; current HEAD blob locator only",
+        }
     elif rel in RETIRED_HISTORY_PATHS:
         entry["frozen_fingerprint"] = RETIRED_HISTORY_PATHS[rel]
     if terminal == "HISTORY_BOUND":
@@ -451,7 +564,7 @@ def build_document() -> dict[str, Any]:
 
     audit_entries = _parse_appendix_a()
     tracked = _git_tracked()
-    paths = sorted(tracked | set(RETIRED_HISTORY_PATHS))
+    paths = sorted(tracked | set(RETIRED_HISTORY_PATHS) | set(W5_CUTOVER_RETIRED_PATHS))
     entries: list[dict[str, Any]] = []
     audit_role_map = dict(audit_entries)
     for path in paths:

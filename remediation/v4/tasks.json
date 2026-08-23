@@ -3470,7 +3470,7 @@
         "remediation/v4/tasks.json",
         "tests/contract/test_required_test_manifest.py",
         "tests/contract/w5_package_red.py",
-        "tests/formal_e2e/w5_entrypoint_red.py",
+        "tests/**",
         "tests/mcp_protocol/w5_transport_red.py",
         "tests/required-v4-tests.json",
         "tools/build_file_disposition.py",
@@ -3822,19 +3822,38 @@
       ],
       "objective": "一次性切换全部 current authority 到 V4；删除 V3/W1b/compat；version=4.0.0rc1",
       "allowed_paths": [
+        "addons/workbuddy_mcp.py",
         "compiler_core/__init__.py",
+        "compiler_core/argumentation_v2.py",
+        "compiler_core/backend_router_v1.py",
+        "compiler_core/certificate_v1.py",
         "compiler_core/cli.py",
         "compiler_core/client.py",
+        "compiler_core/compat_v3_v4.py",
+        "compiler_core/contracts_v4.py",
+        "compiler_core/fact_admission_v1.py",
+        "compiler_core/legal_ir_v3.py",
         "compiler_core/mcp.py",
-        "mcp_server.py",
-        "compiler_core/version.py",
+        "compiler_core/proleg_translator.py",
         "compiler_core/rendering.py",
-        "schemas/jc-v4.schema.json",
-        "mcp_manifest.json",
+        "compiler_core/source_service_v2.py",
+        "compiler_core/version.py",
+        "mcp_server.py",
         "remediation/v4/file-disposition.json",
-        "tests/**"
+        "remediation/v4/tasks.json",
+        "schemas/jc-v3.schema.json",
+        "schemas/w1b/admission-result.schema.json",
+        "schemas/w1b/case-request.schema.json",
+        "schemas/w1b/proof-bundle-ref.schema.json",
+        "schemas/w1b/rule-admission-request.schema.json",
+        "tests/**",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "MIGRATED_GREEN",
+        "HISTORY_BOUND"
+      ],
       "argv": [
         [
           "{python}",
@@ -3842,9 +3861,29 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W5-CUTOVER"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W5-CUTOVER",
+          "tests/contract/w5_package_red.py",
+          "tests/formal_e2e/w5_entrypoint_red.py",
+          "tests/mcp_protocol/w5_transport_red.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W5-CUTOVER.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

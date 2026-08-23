@@ -8,11 +8,15 @@ from __future__ import annotations
 
 from dataclasses import MISSING, fields
 from enum import Enum
+import json
 import re
+import sys
 from types import UnionType
 from typing import Union, get_args, get_origin, get_type_hints
 
 import compiler_core.contracts as _contracts
+from compiler_core.application import ApplicationV4Error
+from compiler_core.audit_bundle import AuditBundleV4Error
 from compiler_core.canonical_serialization import (
     DIGEST_PATTERN,
     SAFE_INTEGER_MAX,
@@ -23,12 +27,23 @@ from compiler_core.canonical_serialization import (
     parse_json_document,
 )
 from compiler_core.contracts import (
+    DecisionStatusV4,
+    ErrorV4,
+    MCPCapabilitiesErrorV4,
+    MCPEvaluateErrorV4,
+    MCPEvaluateInputV4,
+    MCPReadArtifactErrorV4,
+    MCPReadArtifactInputV4,
+    MCPVerifyRunErrorV4,
+    MCPVerifyRunInputV4,
     ContractV4Error,
     ToolSpecV4,
     V4Contract,
     V4_OBJECT_REGISTRY,
     V4_TYPE_REGISTRY,
 )
+from compiler_core.client import ClientV4Error, JCClient
+from compiler_core.version import MCP_PROTOCOL_VERSION, SERVER_NAME, __version__
 
 
 JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -365,6 +380,184 @@ def manifest_bytes() -> bytes:
     return canonical_bytes(runtime_tools_list())
 
 
+def _error_value(exc: Exception) -> ErrorV4:
+    code = str(getattr(exc, "code", "MCP_INTERNAL_ERROR"))
+    stage = str(getattr(exc, "stage", "mcp"))
+    retryable = bool(getattr(exc, "retryable", False))
+    if not isinstance(
+        exc,
+        (ClientV4Error, ContractV4Error, ApplicationV4Error, AuditBundleV4Error),
+    ):
+        code, stage, retryable = "MCP_INTERNAL_ERROR", "mcp", False
+    return ErrorV4(
+        code=code,
+        message="V4 tool failed",
+        stage=stage,
+        retryable=retryable,
+        correlation_id=digest_value({"code": code, "stage": stage}).hex[:24],
+        field_path=(),
+    )
+
+
+def _tool_error(tool_name: str, exc: Exception) -> dict[str, object]:
+    error = _error_value(exc)
+    if tool_name == "jc_capabilities":
+        return MCPCapabilitiesErrorV4(error).to_dict()
+    if tool_name == "jc_evaluate":
+        return MCPEvaluateErrorV4(error, None, None, ()).to_dict()
+    if tool_name == "jc_verify_run":
+        return MCPVerifyRunErrorV4(error, None, None, None).to_dict()
+    if tool_name == "jc_read_artifact":
+        return MCPReadArtifactErrorV4(error, None).to_dict()
+    return {"error": error.to_dict()}
+
+
+class MCPServerV4:
+    """Exact four-tool JSON-RPC adapter over one JCClient V4 facade."""
+
+    def __init__(self, client: JCClient | None = None) -> None:
+        if client is not None and type(client) is not JCClient:
+            raise TypeError("client must be JCClient")
+        self.client = client or JCClient()
+
+    def call_tool(
+        self,
+        name: str,
+        arguments: dict[str, object],
+    ) -> tuple[dict[str, object], bool]:
+        if name not in {spec.name for spec in TOOL_SPECS}:
+            return _tool_error(name, ContractV4Error("MCP_TOOL", "unknown V4 tool")), True
+        try:
+            decoded = decode_tool_payload(name, "input", arguments)
+            if name == "jc_capabilities":
+                output = self.client.capabilities()
+                return output.to_dict(), False
+            if name == "jc_evaluate":
+                if type(decoded) is not MCPEvaluateInputV4:
+                    raise ContractV4Error("MCP_TOOL", "evaluate input type drifted")
+                output = self.client.evaluate_for_mcp(decoded)
+                is_error = output.result.decision_status in {
+                    DecisionStatusV4.BLOCKED,
+                    DecisionStatusV4.ENGINE_ERROR,
+                }
+                return output.to_dict(), is_error
+            if name == "jc_verify_run":
+                if type(decoded) is not MCPVerifyRunInputV4:
+                    raise ContractV4Error("MCP_TOOL", "verify input type drifted")
+                output = self.client.verify_for_mcp(
+                    decoded.run_handle,
+                    offline_replay=decoded.offline_replay,
+                )
+                return output.to_dict(), False
+            if type(decoded) is not MCPReadArtifactInputV4:
+                raise ContractV4Error("MCP_TOOL", "read input type drifted")
+            output = self.client.read_artifact(
+                decoded.artifact_handle,
+                offset=decoded.offset,
+                length=decoded.length,
+            )
+            return output.to_dict(), False
+        except Exception as exc:
+            return _tool_error(name, exc), True
+
+
+def _rpc_error(request_id: object, code: int, message: str) -> dict[str, object]:
+    return {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "error": {"code": code, "message": message},
+    }
+
+
+def _write_response(value: dict[str, object]) -> None:
+    sys.stdout.write(
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    )
+    sys.stdout.flush()
+
+
+def run_stdio(server: MCPServerV4 | None = None) -> None:
+    """Run a silent MCP stdio lifecycle; one tool error never kills the server."""
+
+    service = server or MCPServerV4()
+    initialized = False
+    for raw_line in sys.stdin:
+        try:
+            request = json.loads(raw_line)
+        except json.JSONDecodeError:
+            _write_response(_rpc_error(None, -32700, "Parse error"))
+            continue
+        if (
+            type(request) is not dict
+            or request.get("jsonrpc") != "2.0"
+            or type(request.get("method")) is not str
+            or type(request.get("params", {})) is not dict
+        ):
+            request_id = request.get("id") if type(request) is dict else None
+            _write_response(_rpc_error(request_id, -32600, "Invalid Request"))
+            continue
+        if "id" not in request:
+            continue
+        request_id = request["id"]
+        method = request["method"]
+        params = request.get("params", {})
+        if method == "initialize":
+            if initialized:
+                _write_response(_rpc_error(request_id, -32600, "Initialize already completed"))
+                continue
+            initialized = True
+            _write_response({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "protocolVersion": MCP_PROTOCOL_VERSION,
+                    "capabilities": {"tools": {"listChanged": False}},
+                    "serverInfo": {"name": SERVER_NAME, "version": __version__},
+                },
+            })
+            continue
+        if not initialized:
+            _write_response(_rpc_error(request_id, -32002, "Server not initialized"))
+            continue
+        if method == "ping":
+            result: dict[str, object] = {}
+        elif method == "tools/list":
+            result = runtime_tools_list()
+        elif method == "resources/list":
+            result = runtime_resources_list()
+        elif method == "resources/templates/list":
+            result = {"resourceTemplates": []}
+        elif method == "tools/call":
+            name = params.get("name")
+            arguments = params.get("arguments", {})
+            if type(name) is not str or type(arguments) is not dict:
+                _write_response(_rpc_error(request_id, -32602, "Invalid params"))
+                continue
+            structured, is_error = service.call_tool(name, arguments)
+            result = {
+                "content": [{
+                    "type": "text",
+                    "text": json.dumps(
+                        structured,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                }],
+                "structuredContent": structured,
+                "isError": is_error,
+            }
+        else:
+            _write_response(_rpc_error(request_id, -32601, "Method not found"))
+            continue
+        _write_response({"jsonrpc": "2.0", "id": request_id, "result": result})
+
+
+def main() -> int:
+    run_stdio(MCPServerV4())
+    return 0
+
+
 __all__ = [
     "JSON_SCHEMA_DIALECT",
     "JSON_SCHEMA_ID",
@@ -378,4 +571,7 @@ __all__ = [
     "tool_spec_digest",
     "schema_bytes",
     "manifest_bytes",
+    "MCPServerV4",
+    "run_stdio",
+    "main",
 ]

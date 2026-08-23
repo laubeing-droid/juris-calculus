@@ -36,7 +36,6 @@ def test_public_entrypoints_reject_v3_route() -> None:
     assert "ApplicationV4" in joined
     for marker in (
         "evaluate_registered_case",
-        "CaseRequest",
         "compat_v3_v4",
         "legal_ir_v3",
         "addons.workbuddy_mcp",

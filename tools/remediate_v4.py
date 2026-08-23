@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.33.0"
+RUNNER_VERSION = "0.34.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -91,6 +91,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.31.0": 5,
     "0.32.0": 5,
     "0.33.0": 5,
+    "0.34.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -639,6 +640,68 @@ W5_03_REQUIRED_CHANGED_PATHS = (
     "remediation/v4/file-disposition.json",
     "remediation/v4/tasks.json",
     *W5_03_TEST_PATHS,
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_CUTOVER_TEST_PATHS = (
+    "tests/contract/w5_package_red.py",
+    "tests/formal_e2e/w5_entrypoint_red.py",
+    "tests/mcp_protocol/w5_transport_red.py",
+)
+W5_CUTOVER_TEST_CASE_COUNT = 13
+W5_CUTOVER_TEST_CASE_IDS_DIGEST = (
+    "sha256:8ecaa27b476250ac0798c4c6c6e45754d7102a510c0fd6ad828543e14c0b2aed"
+)
+W5_CUTOVER_RETIRED_PATHS = (
+    "addons/workbuddy_mcp.py",
+    "compiler_core/argumentation_v2.py",
+    "compiler_core/backend_router_v1.py",
+    "compiler_core/certificate_v1.py",
+    "compiler_core/compat_v3_v4.py",
+    "compiler_core/contracts_v4.py",
+    "compiler_core/fact_admission_v1.py",
+    "compiler_core/legal_ir_v3.py",
+    "compiler_core/proleg_translator.py",
+    "compiler_core/source_service_v2.py",
+    "schemas/jc-v3.schema.json",
+    "schemas/w1b/admission-result.schema.json",
+    "schemas/w1b/case-request.schema.json",
+    "schemas/w1b/proof-bundle-ref.schema.json",
+    "schemas/w1b/rule-admission-request.schema.json",
+)
+W5_CUTOVER_ALLOWED_PATHS = (
+    "addons/workbuddy_mcp.py",
+    "compiler_core/__init__.py",
+    "compiler_core/argumentation_v2.py",
+    "compiler_core/backend_router_v1.py",
+    "compiler_core/certificate_v1.py",
+    "compiler_core/cli.py",
+    "compiler_core/client.py",
+    "compiler_core/compat_v3_v4.py",
+    "compiler_core/contracts_v4.py",
+    "compiler_core/fact_admission_v1.py",
+    "compiler_core/legal_ir_v3.py",
+    "compiler_core/mcp.py",
+    "compiler_core/proleg_translator.py",
+    "compiler_core/rendering.py",
+    "compiler_core/source_service_v2.py",
+    "compiler_core/version.py",
+    "mcp_server.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "schemas/jc-v3.schema.json",
+    "schemas/w1b/admission-result.schema.json",
+    "schemas/w1b/case-request.schema.json",
+    "schemas/w1b/proof-bundle-ref.schema.json",
+    "schemas/w1b/rule-admission-request.schema.json",
+    "tests/**",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_CUTOVER_REQUIRED_CHANGED_PATHS = (
+    *W5_CUTOVER_ALLOWED_PATHS[:-3],
+    "tests/contract/test_required_test_manifest.py",
+    "tests/formal_e2e/w5_entrypoint_red.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -1309,7 +1372,7 @@ def cmd_file_map(args: argparse.Namespace) -> int:
         "pipeline/fix_single_premise.py",
         "tests/run_benchmark_zh.py",
         "tests/stress_test_facts.py",
-    }
+    } | set(W5_CUTOVER_RETIRED_PATHS)
     expected_paths = tracked | retired_history
     if set(by_path) != expected_paths:
         print(
@@ -1319,6 +1382,18 @@ def cmd_file_map(args: argparse.Namespace) -> int:
         return EXIT_GATE_FAIL
     for path in retired_history - tracked:
         entry = by_path[path]
+        if path in W5_CUTOVER_RETIRED_PATHS:
+            fingerprint = entry.get("frozen_fingerprint", {})
+            if (
+                entry.get("closure_task") != "W5-CUTOVER"
+                or entry.get("terminal_state") not in {"HISTORY_BOUND", "MIGRATED_GREEN"}
+                or re.fullmatch(
+                    r"[0-9a-f]{40}", str(fingerprint.get("git_blob_head")),
+                ) is None
+            ):
+                print(f"W5-CUTOVER retired path lacks closure binding: {path}", file=sys.stderr)
+                return EXIT_GATE_FAIL
+            continue
         if (
             entry.get("disposition") != "DELETE_CURRENT"
             or entry.get("terminal_state") != "HISTORY_BOUND"
@@ -15000,6 +15075,200 @@ def cmd_w5_03_nonproduction_gate() -> int:
     return EXIT_OK
 
 
+def _w5_cutover_contract_problems() -> list[str]:
+    """Require one V4 public surface and history-bound legacy retirement."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_cutover_file_disposition", ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W5-CUTOVER governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W5-CUTOVER"), {}
+    )
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-CUTOVER", *W5_CUTOVER_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-CUTOVER.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-CUTOVER"],
+        expected_pytest_argv,
+    ]
+    expected_audits = [
+        "P0-01", "P0-08", "P0-09", "P0-10", "P0-14",
+        "P1-13", "P1-14", "P1-15", "P1-16", "P1-17", "P1-18",
+        "P2-03", "P2-04", "P2-07", "P3-02",
+    ]
+    if task.get("depends_on") != ["W5-03"]:
+        problems.append("W5-CUTOVER must depend only on W5-03")
+    if task.get("audit_ids") != expected_audits:
+        problems.append("W5-CUTOVER audit projection drifted")
+    if task.get("allowed_paths") != list(W5_CUTOVER_ALLOWED_PATHS):
+        problems.append("W5-CUTOVER exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-CUTOVER exact gate/pytest argv drifted")
+    if task.get("terminal_states") != ["MIGRATED_GREEN", "HISTORY_BOUND"]:
+        problems.append("W5-CUTOVER terminal states drifted")
+
+    if disposition != generated_disposition:
+        problems.append("W5-CUTOVER file disposition is not reproducible from its generator")
+    by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    migrated_targets = {
+        "addons/workbuddy_mcp.py": (
+            "compiler_core/mcp.py", "tests/mcp_protocol/w5_transport_red.py",
+        ),
+        "compiler_core/argumentation_v2.py": (
+            "compiler_core/argumentation.py", "tests/contract/test_argumentation.py",
+        ),
+        "compiler_core/backend_router_v1.py": (
+            "compiler_core/backend_router.py", "tests/contract/test_backend_router.py",
+        ),
+        "compiler_core/certificate_v1.py": (
+            "compiler_core/certificates.py", "tests/contract/test_certificates.py",
+        ),
+        "compiler_core/contracts_v4.py": (
+            "compiler_core/contracts.py", "tests/contract/test_contracts.py",
+        ),
+        "compiler_core/fact_admission_v1.py": (
+            "compiler_core/fact_admission.py", "tests/contract/test_fact_admission.py",
+        ),
+        "compiler_core/legal_ir_v3.py": (
+            "compiler_core/legal_ir.py", "tests/contract/test_legal_ir.py",
+        ),
+        "compiler_core/source_service_v2.py": (
+            "compiler_core/source_service.py", "tests/contract/test_source_service.py",
+        ),
+    }
+    for path in W5_CUTOVER_RETIRED_PATHS:
+        if (ROOT / path).exists():
+            problems.append(f"W5-CUTOVER retired path remains current: {path}")
+        item = by_path.get(path, {})
+        fingerprint = item.get("frozen_fingerprint", {})
+        if (
+            item.get("closure_task") != "W5-CUTOVER"
+            or re.fullmatch(r"[0-9a-f]{40}", str(fingerprint.get("git_blob_head"))) is None
+        ):
+            problems.append(f"W5-CUTOVER retired path lacks a Git history binding: {path}")
+        if path in migrated_targets:
+            actual = (
+                item.get("terminal_state"), item.get("target_module"), item.get("target_test"),
+            )
+            expected = ("MIGRATED_GREEN", *migrated_targets[path])
+            if actual != expected:
+                problems.append(f"W5-CUTOVER migration target drifted: {path}")
+            for target in migrated_targets[path]:
+                if not (ROOT / target).is_file():
+                    problems.append(f"W5-CUTOVER migration target is absent: {target}")
+        elif (
+            item.get("disposition"), item.get("terminal_state"),
+            item.get("history_locator_only"), item.get("target_module"),
+        ) != ("DELETE_CURRENT", "HISTORY_BOUND", True, None):
+            problems.append(f"W5-CUTOVER history-only disposition drifted: {path}")
+
+    for path in W5_CUTOVER_TEST_PATHS:
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-CUTOVER test is unreadable: {path}: {exc}")
+            continue
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-CUTOVER test uses skip/xfail: {path}")
+    if W5_CUTOVER_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W5-CUTOVER JUnit case identity is not frozen")
+
+    public_sources: dict[str, str] = {}
+    for path in (
+        "compiler_core/__init__.py", "compiler_core/cli.py", "compiler_core/client.py",
+        "compiler_core/mcp.py", "compiler_core/rendering.py", "mcp_server.py",
+    ):
+        try:
+            public_sources[path] = (ROOT / path).read_text(encoding="utf-8")
+            ast.parse(public_sources[path], filename=path)
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            problems.append(f"W5-CUTOVER public source is unreadable: {path}: {exc}")
+    joined = "\n".join(public_sources.values())
+    for marker in (
+        "evaluate_registered_case", "addons.workbuddy_mcp", "compat_v3_v4",
+        "legal_ir_v3", "jc_analyze_strategy", "jc_analyze_similar_cases",
+        "jc_lookup_rule",
+    ):
+        if marker in joined:
+            problems.append(f"W5-CUTOVER public legacy marker survived: {marker}")
+    if "ApplicationV4" not in joined or "JCClient" not in joined:
+        problems.append("W5-CUTOVER public entrypoints do not share the V4 facade")
+
+    sys.path.insert(0, str(ROOT))
+    try:
+        import compiler_core
+        from compiler_core.mcp import runtime_resources_list, runtime_tools_list
+        from compiler_core.version import __version__
+
+        expected_exports = {
+            "ApplicationV4Error", "AuditBundleV4Error", "CaseRequestV4",
+            "ContentRefV4", "EvaluationEnvelopeV4", "JCClient", "ReplayResultV4",
+            "ResourceLimitsV4", "RunCapabilityV4", "VerifiedAuditBundleV4", "__version__",
+        }
+        if set(compiler_core.__all__) != expected_exports:
+            problems.append("W5-CUTOVER package root export set drifted")
+        if __version__ != "4.0.0rc1":
+            problems.append("W5-CUTOVER package version is not 4.0.0rc1")
+        names = tuple(item.get("name") for item in runtime_tools_list().get("tools", []))
+        if names != ("jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact"):
+            problems.append("W5-CUTOVER MCP tool registry drifted")
+        if runtime_resources_list() != {"resources": []}:
+            problems.append("W5-CUTOVER MCP resources are not empty")
+        for module in (
+            "compiler_core.compat_v3_v4", "compiler_core.contracts_v4",
+            "compiler_core.legal_ir_v3", "compiler_core.source_service_v2",
+            "compiler_core.fact_admission_v1", "compiler_core.backend_router_v1",
+            "compiler_core.certificate_v1", "compiler_core.argumentation_v2",
+        ):
+            if importlib.util.find_spec(module) is not None:
+                problems.append(f"W5-CUTOVER retired import remains discoverable: {module}")
+    except (ImportError, AttributeError, TypeError, ValueError) as exc:
+        problems.append(f"W5-CUTOVER public import failed: {type(exc).__name__}: {exc}")
+    finally:
+        sys.path.remove(str(ROOT))
+    problems.extend(_generated_publication_problems(
+        V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
+    ))
+    return problems
+
+
+def cmd_w5_cutover_gate() -> int:
+    try:
+        problems = _w5_cutover_contract_problems()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        problems = [f"malformed input: {type(exc).__name__}: {exc}"]
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-CUTOVER gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W5-CUTOVER gate OK: V4 package/CLI/Client/MCP are atomic, 15 legacy "
+        "paths are history-bound, publications are generated, and version is 4.0.0rc1"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -15065,6 +15334,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_02c_legacy_cn_gate()
     if args.wave == "W5-03":
         return cmd_w5_03_nonproduction_gate()
+    if args.wave == "W5-CUTOVER":
+        return cmd_w5_cutover_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -17284,6 +17555,41 @@ def _w5_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w5_cutover_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact atomic-cutover suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-CUTOVER must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_CUTOVER_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_CUTOVER_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_CUTOVER_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_CUTOVER_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_CUTOVER_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-CUTOVER pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-CUTOVER pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -17325,6 +17631,31 @@ def _w5_03_committed_scope_problems(
             str(artifact_digests.get(f"result-path:{path}")),
         ) is None:
             problems.append(f"W5-03 lacks committed result digest: {path}")
+    return problems
+
+
+def _w5_cutover_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-CUTOVER changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-CUTOVER artifact_digests is not an object"]
+    expected = set(W5_CUTOVER_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            "W5-CUTOVER committed scope drifted: "
+            f"{sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W5_CUTOVER_REQUIRED_CHANGED_PATHS:
+        prefix = "deleted-path" if path in W5_CUTOVER_RETIRED_PATHS else "result-path"
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"{prefix}:{path}")),
+        ) is None:
+            problems.append(f"W5-CUTOVER lacks committed {prefix} digest: {path}")
     return problems
 
 
@@ -18092,6 +18423,26 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-03 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-CUTOVER":
+        problems.extend(_w5_cutover_test_report_problems(reports))
+        problems.extend(_w5_cutover_contract_problems())
+        problems.extend(_w5_cutover_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-cutover-exact-green-reports",
+            "w5-cutover-atomic-v4-contract",
+            "w5-cutover-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-CUTOVER receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -19651,6 +20002,41 @@ def _execute_auto_task(
             "detail": (
                 "all required W5-03 boundary, governance, and test paths are committed "
                 "and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-CUTOVER":
+        report_problems = _w5_cutover_test_report_problems(test_reports)
+        contract_problems = _w5_cutover_contract_problems()
+        path_problems = _w5_cutover_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-cutover-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_CUTOVER_TEST_CASE_COUNT} package/entrypoint/MCP cutover cases "
+                "passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-cutover-atomic-v4-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "package, CLI, Client, MCP, generated publications, version, and legacy "
+                "retirement are one V4 current authority"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-cutover-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W5-CUTOVER rewrites and retired paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

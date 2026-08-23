@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-"""仓库内WorkBuddy适配器启动器；正式业务实现位于addons.workbuddy_mcp。"""
+"""Installed V4 MCP launcher backed by the sole JCClient facade."""
 
-from addons.workbuddy_mcp import main
+from compiler_core.client import JCClient
+from compiler_core.mcp import MCPServerV4, run_stdio
+
+
+def main() -> int:
+    run_stdio(MCPServerV4(JCClient()))
+    return 0
 
 
 if __name__ == "__main__":
