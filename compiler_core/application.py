@@ -6,6 +6,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 import errno
+from threading import RLock
 
 from compiler_core.argumentation import (
     ArgumentGraphV4,
@@ -328,6 +329,7 @@ class ApplicationV4:
         self._certificate_issuer = certificate_issuer
         self._receipt_signer = receipt_signer
         self._clock = clock
+        self._execution_lock = RLock()
 
     def _document(
         self,
@@ -1392,6 +1394,26 @@ class ApplicationV4:
     ) -> EvaluationEnvelopeV4:
         """Execute one request through the sole V4 formal spine and seal its final bundle."""
 
+        with self._execution_lock:
+            return self._evaluate(
+                request_ref,
+                run_identity_ref,
+                case_scope=case_scope,
+                limits=limits,
+                seed=seed,
+                cancel_check=cancel_check,
+            )
+
+    def _evaluate(
+        self,
+        request_ref: ContentRefV4,
+        run_identity_ref: ContentRefV4,
+        *,
+        case_scope: str,
+        limits: ResourceLimitsV4 | None = None,
+        seed: int = 0,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> EvaluationEnvelopeV4:
         if (
             type(request_ref) is not ContentRefV4
             or type(run_identity_ref) is not ContentRefV4

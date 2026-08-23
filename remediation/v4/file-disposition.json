@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "ec3b19c7e181a863ee02d9866dc30b4621a882f31c25566974d750d489bc8f88",
-  "count": 403,
+  "plan_sha256": "32eee40cbf41bff08d4d592b7dff14cf316aa690bed1a039df7475f374d9ee94",
+  "count": 407,
   "paths": [
     {
       "path": ".gitattributes",
@@ -242,7 +242,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W4-06",
+      "closure_task": "W4-07",
       "namespace": "formal_core"
     },
     {
@@ -291,7 +291,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "production-code",
-      "closure_task": "W4-06",
+      "closure_task": "W4-07",
       "namespace": "formal_core"
     },
     {
@@ -2150,6 +2150,20 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/formal_e2e/test_positive_vertical_slice.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-07"
+    },
+    {
+      "path": "tests/formal_e2e/test_public_boundary_inputs.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-07"
+    },
+    {
       "path": "tests/formal_e2e/test_single_chain.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2349,6 +2363,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/security/test_vertical_slice_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-07"
+    },
+    {
       "path": "tests/semantic_mutation/critical-v4-mutations.json",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2410,6 +2431,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/test_vertical_slice_recovery.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W4-07"
     },
     {
       "path": "tests/stress_test_facts.py",

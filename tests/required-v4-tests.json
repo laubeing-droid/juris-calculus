@@ -278,6 +278,34 @@
       "selector": "tests/security/test_resource_limits.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 7
+    },
+    {
+      "id": "W4-VERTICAL-POSITIVE",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_positive_vertical_slice.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 3
+    },
+    {
+      "id": "W4-VERTICAL-PUBLIC-INPUTS",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_public_boundary_inputs.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
+    },
+    {
+      "id": "W4-VERTICAL-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_vertical_slice_attacks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
+    },
+    {
+      "id": "W4-VERTICAL-RECOVERY",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_vertical_slice_recovery.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 3
     }
   ],
   "evidence_tracks": [
@@ -343,7 +371,7 @@
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_signed_pack_produces_verified_result",
       "owner_task": "W4-07",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Remove the executable signed rule or downgrade a verified fact.",
       "red_failure": "The positive slice fails until a signed test pack produces a verified result."
     },

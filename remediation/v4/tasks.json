@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "ec3b19c7e181a863ee02d9866dc30b4621a882f31c25566974d750d489bc8f88",
+    "plan_sha256": "32eee40cbf41bff08d4d592b7dff14cf316aa690bed1a039df7475f374d9ee94",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -3365,9 +3365,21 @@
       ],
       "objective": "Synthetic formal vertical slice E2E",
       "allowed_paths": [
-        "tests/formal_e2e/**",
-        "tests/storage_chaos/**",
-        "tests/security/**"
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "compiler_core/application.py",
+        "compiler_core/audit_bundle.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/fixtures/keys/v4-synthetic-trust.json",
+        "tests/fixtures/packs/synthetic/signed-pack.json",
+        "tests/formal_e2e/test_positive_vertical_slice.py",
+        "tests/formal_e2e/test_public_boundary_inputs.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_vertical_slice_attacks.py",
+        "tests/storage_chaos/test_vertical_slice_recovery.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -3377,9 +3389,31 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-07"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-07",
+          "tests/formal_e2e/test_positive_vertical_slice.py",
+          "tests/formal_e2e/test_public_boundary_inputs.py",
+          "tests/security/test_vertical_slice_attacks.py",
+          "tests/storage_chaos/test_vertical_slice_recovery.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W4-07.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

@@ -1447,12 +1447,8 @@ class AuditBundleStoreV4:
         original_wire = original.result.to_dict()
         replay_wire = replayed.result.to_dict()
         exact_equal = original.result.canonical_bytes() == replayed.result.canonical_bytes()
-        semantic_original = dict(original_wire)
-        semantic_replay = dict(replay_wire)
-        for payload in (semantic_original, semantic_replay):
-            payload.pop("run_identity_ref")
-            payload.pop("result_digest")
-            payload.pop("receipt_refs")
+        semantic_original = _replay_semantic_projection(original.result)
+        semantic_replay = _replay_semantic_projection(replayed.result)
         semantic_equal = semantic_original == semantic_replay
         differing_paths = tuple(_differing_paths(original_wire, replay_wire))
         return ReplayResultV4(
@@ -1472,6 +1468,43 @@ class AuditBundleStoreV4:
             semantic_equal=semantic_equal,
             differing_paths=differing_paths,
         )
+
+
+def _replay_semantic_projection(result: SemanticResultV4) -> dict[str, object]:
+    """Keep legal outcomes and stable inputs while erasing run-issued artifact identities."""
+
+    body = result.digest_body()
+    body.pop("run_identity_ref")
+
+    def kinds(references: object) -> list[str]:
+        return [reference["kind"] for reference in references]
+
+    runtime = body["runtime_profile"]
+    if runtime["backend_invocation_ref"] is not None:
+        runtime["backend_invocation_ref"] = runtime["backend_invocation_ref"]["kind"]
+    for field in (
+        "admitted_fact_refs",
+        "rejected_fact_refs",
+        "argument_refs",
+        "attack_refs",
+        "exception_resolution_refs",
+        "permission_resolution_refs",
+        "priority_resolution_refs",
+        "temporal_result_refs",
+        "numeric_result_refs",
+    ):
+        body[field] = kinds(body[field])
+    for claim in body["claims"]:
+        claim["argument_refs"] = kinds(claim["argument_refs"])
+        claim["fact_refs"] = kinds(claim["fact_refs"])
+    for branch in body["branches"]:
+        branch["assumption_refs"] = kinds(branch["assumption_refs"])
+    review = body["review_state"]
+    review["unresolved_item_refs"] = kinds(review["unresolved_item_refs"])
+    review["release_condition_refs"] = kinds(review["release_condition_refs"])
+    if review["review_receipt_ref"] is not None:
+        review["review_receipt_ref"] = review["review_receipt_ref"]["kind"]
+    return body
 
 
 def _differing_paths(left: object, right: object, path: str = "$") -> list[str]:
