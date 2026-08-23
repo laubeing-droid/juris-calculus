@@ -28,7 +28,7 @@ OUT = ROOT / "remediation" / "v4" / "file-disposition.json"
 # 施工方案 §19.1 - 原 90 个 compiler_core/*.py 五组
 CORE_GROUPS: dict[str, list[str]] = {
     "KEEP_REWRITE": [
-        "__init__", "application", "artifact_store", "audit", "audit_bundle",
+        "__init__", "application", "artifact_store", "audit", "audit_bundle", "backend_router",
         "canonical_serialization", "cli", "client", "contracts",
         "argumentation", "fact_admission", "legal_ir", "mcp", "rendering", "resources", "rule_packs",
         "source_service", "trust", "version",
@@ -81,6 +81,7 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "addons/hk": {"disposition": "MOVE_IN_REPO_EXPERIMENT", "terminal_state": "CANDIDATE_ASSET"},
     "addons/us": {"disposition": "MOVE_IN_REPO_EXPERIMENT", "terminal_state": "CANDIDATE_ASSET"},
     "addons/federation": {"disposition": "MOVE_IN_REPO_EXPERIMENT", "terminal_state": "CANDIDATE_ASSET"},
+    "compiler_core/backends/__init__.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "pipeline": {"disposition": "MOVE_IN_REPO_SOURCE_TOOL", "terminal_state": "CANDIDATE_ASSET"},
     "configs/packs/cn-official/build": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "HISTORY_ONLY"},
     "configs/packs/cn-official/release": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "HISTORY_ONLY"},
@@ -188,12 +189,16 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
     "tests/fixtures/golden/v4-resource-limit-probe.json": "W4-06",
+    "tests/fixtures/golden/v4-backend-provider-probe.json": "W3-03",
 }
 
 MIGRATION_TARGETS = {
     "addons/workbuddy_mcp.py": ("compiler_core/mcp.py", "tests/unit/test_mcp_stdio_protocol.py"),
     "compiler_core/argumentation_v2.py": (
         "compiler_core/argumentation.py", "tests/contract/test_argumentation.py",
+    ),
+    "compiler_core/backend_router_v1.py": (
+        "compiler_core/backend_router.py", "tests/contract/test_backend_router.py",
     ),
     "compiler_core/contracts_v4.py": ("compiler_core/contracts.py", "tests/contract/test_contracts.py"),
 }
@@ -224,7 +229,7 @@ def _git_tracked() -> set[str]:
 
 def _classify_core(stem: str) -> tuple[str, str]:
     """Return (disposition, terminal_state) for a compiler_core file stem."""
-    if stem == "argumentation_v2":
+    if stem in {"argumentation_v2", "backend_router_v1"}:
         return "MERGE_DELETE", "MIGRATED_GREEN"
     for grp, stems in CORE_GROUPS.items():
         if stem in stems:
@@ -389,7 +394,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "4afd224e6ab1a3a62501baeb2ebe27bf42b93373774e60b9baf3509d1f68477e",
+        "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
         "count": len(entries),
         "paths": entries,
     }

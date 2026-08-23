@@ -81,7 +81,7 @@
       "suite": "contract",
       "selector": "tests/contract/test_v4_foundation_contract.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 6
+      "expected_tests": 7
     },
     {
       "id": "W0-REQUIRED-MANIFEST-GATE",
@@ -159,6 +159,20 @@
       "selector": "tests/semantic_mutation/test_argumentation_mutation.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 8
+    },
+    {
+      "id": "W3-CERTIFIED-BACKEND-CONTRACT",
+      "suite": "contract",
+      "selector": "tests/contract/test_backend_router.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 21
+    },
+    {
+      "id": "W3-CERTIFIED-BACKEND-ATTACKS",
+      "suite": "security",
+      "selector": "tests/security/test_backend_attacks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 30
     }
   ],
   "evidence_tracks": [
@@ -264,7 +278,7 @@
       "suite": "security",
       "selector": "tests/security/test_backend_attacks.py::test_caller_solver_receipt_is_rejected",
       "owner_task": "W3-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Inject a solver result DTO without executing the provider.",
       "red_failure": "A caller-supplied solver receipt must not prove execution."
     },
@@ -788,20 +802,20 @@
     {
       "id": "REWRITE-BACKEND-CALLER-FEATURES",
       "selector": "tests/unit/test_backend_router_v1.py::TestRouting",
-      "rewrite_task": "W4-07",
+      "rewrite_task": "W3-03",
       "retirement_task": "W5-CUTOVER",
       "state": "REWRITE_AT_TASK",
       "reason": "Routing tests construct caller features and never exercise a provider.",
-      "replacement_selector": "tests/formal_e2e/test_backend_execution.py::test_problem_features_are_derived_and_provider_executes"
+      "replacement_selector": "tests/security/test_backend_attacks.py::test_caller_cannot_supply_backend_features"
     },
     {
       "id": "REWRITE-BACKEND-CALLER-RECEIPTS",
       "selector": "tests/unit/test_backend_router_v1.py::TestSolverReceipt",
-      "rewrite_task": "W4-07",
+      "rewrite_task": "W3-03",
       "retirement_task": "W5-CUTOVER",
       "state": "REWRITE_AT_TASK",
       "reason": "Solver receipt tests only construct DTOs and do not prove provider execution.",
-      "replacement_selector": "tests/formal_e2e/test_backend_execution.py::test_solver_receipt_is_bound_to_executed_provider"
+      "replacement_selector": "tests/contract/test_backend_router.py::test_router_binds_compiler_issued_ivl_and_verified_fact_receipt"
     },
     {
       "id": "REWRITE-CERTIFICATE-CALLER-PASS",

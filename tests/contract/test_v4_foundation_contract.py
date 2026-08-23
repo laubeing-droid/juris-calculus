@@ -17,6 +17,9 @@ PROBE = REPO / "tests" / "fixtures" / "golden" / "v4-resource-limit-probe.json"
 ARTIFACT_PAGE_PROBE = (
     REPO / "tests" / "fixtures" / "golden" / "v4-artifact-page-probe.json"
 )
+BACKEND_PROVIDER_PROBE = (
+    REPO / "tests" / "fixtures" / "golden" / "v4-backend-provider-probe.json"
+)
 
 
 def _runner_module():
@@ -44,7 +47,8 @@ def test_w0_foundation_gate_passes() -> None:
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     assert "13 benchmarked admission limits" in result.stdout
     assert "1 bounded artifact page" in result.stdout
-    assert "5 explicit deferred operational limits" in result.stdout
+    assert "1 bounded certified-provider deadline" in result.stdout
+    assert "4 explicit deferred operational limits" in result.stdout
 
 
 def test_node_oracle_matches_python_positive_bytes_and_discloses_parser_boundary() -> None:
@@ -87,6 +91,12 @@ def test_w0_foundation_gate_rejects_contract_mutations(tmp_path: Path) -> None:
         "hard_max"
     ] += 1
     mutations.append(unsupported_artifact_page)
+
+    unsupported_solver_deadline = json.loads(json.dumps(baseline))
+    unsupported_solver_deadline["resource_limit_policy"]["solver_deadline_policy"][
+        "default"
+    ] += 1
+    mutations.append(unsupported_solver_deadline)
 
     deferred_magic_value = json.loads(json.dumps(baseline))
     deferred_magic_value["resource_limit_policy"]["deferred_limits"][0]["value"] = 65536
@@ -180,3 +190,32 @@ def test_artifact_page_probe_reproduction_rejects_byte_and_timing_mutations() ->
         policy, probe_override=timing_mutation
     )
     assert any("sha256_hex summary drifted" in item for item in problems)
+
+
+def test_backend_provider_probe_rejects_identity_timing_and_policy_mutations() -> None:
+    baseline = json.loads(BACKEND_PROVIDER_PROBE.read_text(encoding="utf-8"))
+    foundation = json.loads(FOUNDATION.read_text(encoding="utf-8"))
+    policy = foundation["resource_limit_policy"]["solver_deadline_policy"]
+    runner = _runner_module()
+    assert runner._backend_provider_probe_problems(policy) == []
+
+    identity_mutation = json.loads(json.dumps(baseline))
+    identity_mutation["provider_identity"]["provider_version"] = "0.0.0"
+    problems = runner._backend_provider_probe_problems(
+        policy, probe_override=identity_mutation
+    )
+    assert any("provider identity drifted" in item for item in problems)
+
+    timing_mutation = json.loads(json.dumps(baseline))
+    timing_mutation["samples"][0]["timing_ns"]["maximum"] = -1
+    problems = runner._backend_provider_probe_problems(
+        policy, probe_override=timing_mutation
+    )
+    assert any("timing values are invalid" in item for item in problems)
+
+    policy_mutation = json.loads(json.dumps(policy))
+    policy_mutation["hard_max"] += 1
+    assert any(
+        "recommendation hard_max drifted" in item
+        for item in runner._backend_provider_probe_problems(policy_mutation)
+    )

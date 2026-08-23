@@ -98,6 +98,8 @@ def _limits_payload(**overrides: object) -> dict[str, object]:
     }
     page_policy = policy["artifact_page_policy"]
     payload[page_policy["id"]] = page_policy["default"]
+    solver_policy = policy["solver_deadline_policy"]
+    payload[solver_policy["id"]] = solver_policy["default"]
     payload.update({item["id"]: None for item in policy["deferred_limits"]})
     payload.update(overrides)
     return payload
@@ -480,6 +482,7 @@ def test_engine_limits_match_frozen_foundation() -> None:
     bounded_limits = [
         *policy["benchmarked_limits"],
         policy["artifact_page_policy"],
+        policy["solver_deadline_policy"],
     ]
     limits = contracts.ResourceLimitsV4.from_dict(_limits_payload())
     assert limits.to_dict() == _limits_payload()
@@ -498,13 +501,16 @@ def test_engine_limits_match_frozen_foundation() -> None:
             contracts.ResourceLimitsV4.from_dict(payload)
         assert _error_code(caught.value) == "DEFERRED_LIMIT"
 
-    page = policy["artifact_page_policy"]
-    accepted = _limits_payload(**{page["id"]: page["hard_max"]})
-    assert contracts.ResourceLimitsV4.from_dict(accepted).to_dict() == accepted
-    rejected = _limits_payload(**{page["id"]: page["hard_max"] + 1})
-    with pytest.raises(contracts.ContractV4Error) as caught:
-        contracts.ResourceLimitsV4.from_dict(rejected)
-    assert _error_code(caught.value) == page["error_code"]
+    for bounded in (
+        policy["artifact_page_policy"],
+        policy["solver_deadline_policy"],
+    ):
+        accepted = _limits_payload(**{bounded["id"]: bounded["hard_max"]})
+        assert contracts.ResourceLimitsV4.from_dict(accepted).to_dict() == accepted
+        rejected = _limits_payload(**{bounded["id"]: bounded["hard_max"] + 1})
+        with pytest.raises(contracts.ContractV4Error) as caught:
+            contracts.ResourceLimitsV4.from_dict(rejected)
+        assert _error_code(caught.value) == bounded["error_code"]
 
 
 @pytest.mark.parametrize(

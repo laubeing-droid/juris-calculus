@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "4afd224e6ab1a3a62501baeb2ebe27bf42b93373774e60b9baf3509d1f68477e",
+    "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2452,12 +2452,29 @@
       "audit_ids": [
         "P0-06"
       ],
-      "objective": "新增 backends/** + backend_router.py；router 从 LegalIVL 派生 features；真实 provider 执行",
+      "objective": "新增 certified providers/backend router；从已验证 LegalIVL 和事实回执派生输入并真实执行",
       "allowed_paths": [
-        "compiler_core/backends/**",
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/backend_router.py",
+        "compiler_core/backends/__init__.py",
+        "compiler_core/contracts.py",
+        "compiler_core/legal_ir.py",
+        "docs/architecture/module-authority.json",
+        "mcp_manifest.json",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "schemas/jc-v4.schema.json",
         "tests/contract/test_backend_router.py",
-        "tests/security/test_backend_attacks.py"
+        "tests/contract/test_contracts.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/test_v4_foundation_contract.py",
+        "tests/contract/v4-contract-vectors.json",
+        "tests/fixtures/golden/v4-backend-provider-probe.json",
+        "tests/fixtures/golden/v4-foundation-contract.json",
+        "tests/required-v4-tests.json",
+        "tests/security/test_backend_attacks.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2467,9 +2484,33 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W3-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W3-03",
+          "tests/contract/test_backend_router.py",
+          "tests/security/test_backend_attacks.py",
+          "tests/contract/test_contracts.py",
+          "tests/contract/test_python_schema_mcp_differential.py",
+          "tests/contract/test_v4_foundation_contract.py",
+          "tests/unit/test_backend_router_v1.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W3-03/backend-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

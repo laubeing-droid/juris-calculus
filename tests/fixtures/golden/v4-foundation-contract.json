@@ -104,8 +104,23 @@
       "closure_task": "W1-04",
       "remaining_closure": "W4-03 owns bundle-bound read_artifact handle/chunk semantics only; W4-06 owns cross-stage privacy/error/resource closure; W5-CUTOVER owns actual jc_read_artifact MCP transport wiring and enforcement. W5-01 and W5-06 are contract/matrix verification tasks; this local policy does not close P1-15."
     },
+    "solver_deadline_policy": {
+      "claim": "LOCAL_WINDOWS_SPAWN_PROVIDER_DEADLINE_ONLY",
+      "profile": "V4_CERTIFIED_PROVIDER_PROCESS_DEADLINE_V1",
+      "probe_file": "tests/fixtures/golden/v4-backend-provider-probe.json",
+      "probe_file_sha256": "sha256:93fb58326290e9a14051e29c0d1aa01cc92b87044c4aeb784cca54e25b33688e",
+      "probe_payload_sha256": "sha256:d7f253ee1af07e801e24c44902a322f40240e11cf3eaf529f9c821edc7a68184",
+      "id": "solver_deadline_ms",
+      "scope": "per-certified-provider process wall clock",
+      "unit": "milliseconds",
+      "default": 2500,
+      "hard_max": 10000,
+      "boundary": "inclusive",
+      "error_code": "SOLVER_DEADLINE",
+      "closure_task": "W3-03",
+      "remaining_closure": "W3-04 owns the independent-checker deadline and semantic acceptance; W6-05 owns the declared cross-platform matrix. This local calibration does not claim either closure."
+    },
     "deferred_limits": [
-      {"id": "solver_deadline_ms", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W3-03", "reason": "Provider-specific solver and checker benchmarks are required."},
       {"id": "worker_queue_items", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Backpressure topology does not exist yet."},
       {"id": "in_flight_runs", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-06", "reason": "Concurrency and cancellation tests must define this budget."},
       {"id": "state_quota_bytes", "status": "DEFERRED_UNBENCHMARKED", "value": null, "closure_task": "W4-02", "reason": "Atomic state provider and storage capability are not implemented."},

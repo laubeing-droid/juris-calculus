@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "4afd224e6ab1a3a62501baeb2ebe27bf42b93373774e60b9baf3509d1f68477e",
-  "count": 374,
+  "plan_sha256": "809fd77a838798ac756bbfab9baf463667e79fa85e341afe09c4f9c8e59c757c",
+  "count": 379,
   "paths": [
     {
       "path": ".gitattributes",
@@ -295,11 +295,29 @@
       "namespace": "formal_core"
     },
     {
+      "path": "compiler_core/backend_router.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
+    },
+    {
       "path": "compiler_core/backend_router_v1.py",
       "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
+      "terminal_state": "MIGRATED_GREEN",
       "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "closure_task": "W5-CUTOVER",
+      "target_module": "compiler_core/backend_router.py",
+      "target_test": "tests/contract/test_backend_router.py"
+    },
+    {
+      "path": "compiler_core/backends/__init__.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "compiler_core/banach_verifier.py",
@@ -1731,6 +1749,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_backend_router.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_contracts.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -1871,6 +1896,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/fixtures/golden/v4-backend-provider-probe.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W3-03"
     },
     {
       "path": "tests/fixtures/golden/v4-foundation-contract.json",
@@ -2159,6 +2191,13 @@
     },
     {
       "path": "tests/security/test_artifact_resolver.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/security/test_backend_attacks.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",

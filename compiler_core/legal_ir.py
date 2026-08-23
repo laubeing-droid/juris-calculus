@@ -982,6 +982,30 @@ class LegalIRCompilerV4:
         self._compiled[key] = result
         return result
 
+    def verify_compilation(
+        self,
+        compilation: LegalIRCompilationV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> LegalIRCompilationV4:
+        """Revalidate one compiler-issued handle against current pack/trust state."""
+
+        if type(compilation) is not LegalIRCompilationV4 or type(now) is not CanonicalTimeV4:
+            _fail("IR_INPUT_TYPE", "verification requires an issued compilation and time")
+        matches = [key for key, value in self._compiled.items() if value is compilation]
+        if len(matches) != 1:
+            _fail("IR_COMPILATION_HANDLE", "compilation was not issued by this compiler")
+        pack_ref, rule_ref, run_identity_ref = matches[0]
+        pack = self._pack_verifier._verified.get(pack_ref)
+        if pack is None or self.compile_rule(
+            pack,
+            rule_ref=rule_ref,
+            run_identity_ref=run_identity_ref,
+            now=now,
+        ) is not compilation:
+            _fail("IR_COMPILATION_HANDLE", "compilation is no longer current")
+        return compilation
+
     def _verify_cached(
         self,
         result: LegalIRCompilationV4,

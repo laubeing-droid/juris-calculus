@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.20.0"
+RUNNER_VERSION = "0.21.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -78,6 +78,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.18.0": 5,
     "0.19.0": 5,
     "0.20.0": 5,
+    "0.21.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -99,6 +100,7 @@ JCS_V4_VECTORS = ROOT / "tests" / "fixtures" / "golden" / "jcs-v4-vectors.json"
 FOUNDATION_V4_CONTRACT = ROOT / "tests" / "fixtures" / "golden" / "v4-foundation-contract.json"
 RESOURCE_LIMIT_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-resource-limit-probe.json"
 ARTIFACT_PAGE_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-artifact-page-probe.json"
+BACKEND_PROVIDER_PROBE = ROOT / "tests" / "fixtures" / "golden" / "v4-backend-provider-probe.json"
 TRUST_POLICY_FIXTURE = ROOT / "tests" / "fixtures" / "golden" / "v4-test-trust-policy.json"
 V4_CONTRACT_VECTORS = ROOT / "tests" / "contract" / "v4-contract-vectors.json"
 REQUIRED_TEST_MANIFEST = ROOT / "tests" / "required-v4-tests.json"
@@ -259,11 +261,50 @@ W3_02_CHANGED_PATHS = (
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
+W3_03_TEST_CASE_COUNT = 479
+W3_03_TEST_CASE_IDS_DIGEST = (
+    "sha256:4b1401e8870e73d0bc4feb59de76fa0666f0f87a521041b6f7cd31b8a0af1192"
+)
+W3_03_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/backend_router.py",
+    "compiler_core/backends/__init__.py",
+    "compiler_core/contracts.py",
+    "compiler_core/legal_ir.py",
+    "docs/architecture/module-authority.json",
+    "mcp_manifest.json",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "schemas/jc-v4.schema.json",
+    "tests/contract/test_backend_router.py",
+    "tests/contract/test_contracts.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/contract/test_v4_foundation_contract.py",
+    "tests/contract/v4-contract-vectors.json",
+    "tests/fixtures/golden/v4-backend-provider-probe.json",
+    "tests/fixtures/golden/v4-foundation-contract.json",
+    "tests/required-v4-tests.json",
+    "tests/security/test_backend_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W3_03_FOUNDATION_FILE_DIGEST = (
+    "sha256:843619e6a126ff54fecc7025b1e4b8bda06db0b20768bba73d70eb04bda8644d"
+)
+W3_03_BACKEND_PROVIDER_PROBE_FILE_DIGEST = (
+    "sha256:93fb58326290e9a14051e29c0d1aa01cc92b87044c4aeb784cca54e25b33688e"
+)
+W3_03_BACKEND_PROVIDER_PROBE_PAYLOAD_DIGEST = (
+    "sha256:d7f253ee1af07e801e24c44902a322f40240e11cf3eaf529f9c821edc7a68184"
+)
 W1_03_SCHEMA_SHA256 = "918961c8d52339d94e4989710e95b97ffe7721711523dffbaff608eaf76c8aa4"
 W1_03_MANIFEST_SHA256 = "5238ec7b357efa9354e7f6a8e5364500185ba5d53c61b4df3f3ed0757008319d"
 W1_03_TOOL_SPEC_DIGEST = (
     "sha256:31fafabfd28ad1a629ca9cfcdd9ff58097476ab8fe111e77f797d5a010bbdee0"
 )
+W3_03_SCHEMA_SHA256 = "66798822c3f62fdc55b5d061357c45bf1605e2e355ab558406b1e9d639c67fa8"
+W3_03_MANIFEST_SHA256 = "d298e5adbed9a579b087f0af14216a7fd6d73d9a23b2ca45e364768cc576e16e"
+W3_03_TOOL_SPEC_DIGEST = W1_03_TOOL_SPEC_DIGEST
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
 W0_05_DECISION = SCHEMA_DIR / "approvals" / "W0-05-dependency-decision.json"
@@ -360,7 +401,7 @@ W0_REQUIRED_REWRITE_IDS = frozenset({
     "REWRITE-SPEC-SHADOW-RUNTIME",
 })
 W0_REQUIRED_REWRITE_PROJECTION_DIGEST = (
-    "sha256:df12272a2c3882baad21625035f642af2b43ce2a4877a0903066b5908dae15da"
+    "sha256:fce9654082cca29bed842dafc0a95ece482ed1a24e0d4db2ec81733bd3bf75bb"
 )
 W0_B02_COMPANION_BINDING = {
     "kind": "B02_RECEIPT",
@@ -2466,11 +2507,281 @@ def _artifact_page_probe_problems(
     return problems
 
 
+def _backend_probe_inputs() -> dict[str, dict[str, Any]]:
+    def ref(kind: str, digit: str) -> dict[str, str]:
+        return {"kind": kind, "digest": "sha256:" + digit * 64}
+
+    def clause(
+        ivl_id: str,
+        *,
+        modality: str,
+        fact_key: str | None = None,
+        temporal: list[dict[str, Any]] | None = None,
+        numeric: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        conclusion = {
+            "schema_version": "jc/rule-conclusion/1.0",
+            "rule_id": ivl_id,
+        }
+        if fact_key is not None:
+            conclusion["fact_key"] = fact_key
+        else:
+            conclusion["value"] = "applies"
+        return {
+            "ivl_id": ivl_id,
+            "ivl_ref": ref("legal-ivl-v4", "1"),
+            "rule_ref": ref("rule-v4", "2"),
+            "translation_receipt_refs": [ref("translation-receipt", "3")],
+            "premise_refs": [],
+            "premises": [],
+            "conclusion_ref": ref("rule-conclusion", "4"),
+            "conclusion": conclusion,
+            "derivation_refs": [ref("legal-ir-proof-obligation", "5")],
+            "modality": modality,
+            "effective_from": "2025-01-01T00:00:00Z",
+            "effective_to": "2027-01-01T00:00:00Z",
+            "relations": [],
+            "temporal_constraints": temporal or [],
+            "numeric_constraints": numeric or [],
+        }
+
+    features = {
+        "conflict_structure": False,
+        "temporal_constraints": False,
+        "numeric_constraints": False,
+    }
+    base = {
+        "schema_version": "jc/backend-problem/1.0",
+        "run_identity_ref": ref("run-identity", "6"),
+        "request_ref": ref("case-request", "7"),
+        "case_scope": "probe-case",
+        "limits_ref": ref("backend-limits-v4", "0"),
+        "decision_time": "2026-01-01T00:00:00Z",
+        "seed": 0,
+        "features": features,
+        "facts": [],
+    }
+    return {
+        "jc-horn-fixpoint": {
+            **base,
+            "provider_id": "jc-horn-fixpoint",
+            "clauses": [clause("horn-probe", modality="CONSTITUTIVE", fact_key="probe")],
+        },
+        "jc-aaf-grounded": {
+            **base,
+            "provider_id": "jc-aaf-grounded",
+            "features": {**features, "conflict_structure": True},
+            "clauses": [clause("aaf-probe", modality="OBLIGATION")],
+        },
+        "jc-exact-temporal-numeric": {
+            **base,
+            "provider_id": "jc-exact-temporal-numeric",
+            "features": {
+                **features,
+                "temporal_constraints": True,
+                "numeric_constraints": True,
+            },
+            "clauses": [clause(
+                "exact-probe",
+                modality="OBLIGATION",
+                temporal=[{
+                    "constraint_ref": ref("rule-temporal-constraint", "8"),
+                    "owner_ivl_id": "exact-probe",
+                    "target_ivl_id": "exact-probe",
+                    "expression": {
+                        "schema_version": "jc/rule-temporal-constraint/1.0",
+                        "rule_id": "exact-probe",
+                        "target_rule_id": "exact-probe",
+                        "operation": "interval",
+                        "start": "2025-01-01T00:00:00Z",
+                        "end": "2027-01-01T00:00:00Z",
+                    },
+                }],
+                numeric=[{
+                    "constraint_ref": ref("rule-numeric-constraint", "9"),
+                    "owner_ivl_id": "exact-probe",
+                    "target_ivl_id": "exact-probe",
+                    "expression": {
+                        "schema_version": "jc/rule-numeric-constraint/1.0",
+                        "rule_id": "exact-probe",
+                        "target_rule_id": "exact-probe",
+                        "operation": "integer_add",
+                        "operands": [1, 2, 3],
+                    },
+                }],
+            )],
+        },
+    }
+
+
+def _backend_provider_probe_problems(
+    policy: Any,
+    *,
+    probe_override: dict[str, Any] | None = None,
+) -> list[str]:
+    problems: list[str] = []
+    policy_fields = {
+        "claim", "profile", "probe_file", "probe_file_sha256",
+        "probe_payload_sha256", "id", "scope", "unit", "default", "hard_max",
+        "boundary", "error_code", "closure_task", "remaining_closure",
+    }
+    if not isinstance(policy, dict) or set(policy) != policy_fields:
+        return ["solver deadline policy fields are not closed"]
+    expected_policy = {
+        "claim": "LOCAL_WINDOWS_SPAWN_PROVIDER_DEADLINE_ONLY",
+        "profile": "V4_CERTIFIED_PROVIDER_PROCESS_DEADLINE_V1",
+        "probe_file": "tests/fixtures/golden/v4-backend-provider-probe.json",
+        "id": "solver_deadline_ms",
+        "scope": "per-certified-provider process wall clock",
+        "unit": "milliseconds",
+        "default": 2500,
+        "hard_max": 10000,
+        "boundary": "inclusive",
+        "error_code": "SOLVER_DEADLINE",
+        "closure_task": "W3-03",
+    }
+    for field, expected in expected_policy.items():
+        if policy.get(field) != expected:
+            problems.append(f"solver deadline policy {field} drifted")
+    if not isinstance(policy.get("remaining_closure"), str) or not policy["remaining_closure"]:
+        problems.append("solver deadline policy lacks remaining closure")
+    if probe_override is None:
+        try:
+            raw_probe = BACKEND_PROVIDER_PROBE.read_bytes()
+            probe = json.loads(raw_probe.decode("utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            return problems + [f"backend provider probe is unreadable: {type(exc).__name__}"]
+        file_digest = "sha256:" + sha256_hex(raw_probe)
+        if (
+            file_digest != W3_03_BACKEND_PROVIDER_PROBE_FILE_DIGEST
+            or policy.get("probe_file_sha256") != file_digest
+        ):
+            problems.append("backend provider probe file digest mismatch")
+    else:
+        probe = probe_override
+    probe_fields = {
+        "schema_version", "generated_at_utc", "scope", "platform", "methodology",
+        "provider_identity", "samples", "recommendation", "payload_sha256",
+        "payload_sha256_scope",
+    }
+    if not isinstance(probe, dict) or set(probe) != probe_fields:
+        return problems + ["backend provider probe fields are not closed"]
+    if probe.get("schema_version") != "jc/v4-backend-provider-probe/1.0":
+        problems.append("backend provider probe schema_version drifted")
+    if UTC_INSTANT_V4_PATTERN.fullmatch(str(probe.get("generated_at_utc", ""))) is None:
+        problems.append("backend provider probe timestamp is not canonical UTC")
+    unsigned = {
+        key: value for key, value in probe.items()
+        if key not in {"payload_sha256", "payload_sha256_scope"}
+    }
+    payload_digest = _digest_object(unsigned)
+    if (
+        probe.get("payload_sha256") != payload_digest
+        or policy.get("probe_payload_sha256") != payload_digest
+        or payload_digest != W3_03_BACKEND_PROVIDER_PROBE_PAYLOAD_DIGEST
+    ):
+        problems.append("backend provider probe payload digest mismatch")
+    if probe.get("payload_sha256_scope") != (
+        "canonical UTF-8 JSON with payload_sha256 and payload_sha256_scope omitted"
+    ):
+        problems.append("backend provider probe payload digest scope drifted")
+
+    identity = probe.get("provider_identity")
+    expected_inputs = {
+        "argumentation": ROOT / "compiler_core" / "argumentation.py",
+        "backends": ROOT / "compiler_core" / "backends" / "__init__.py",
+        "canonical_serialization": ROOT / "compiler_core" / "canonical_serialization.py",
+        "contracts": ROOT / "compiler_core" / "contracts.py",
+    }
+    try:
+        build_inputs = {
+            name: "sha256:" + sha256_hex(path.read_bytes())
+            for name, path in sorted(expected_inputs.items())
+        }
+    except OSError as exc:
+        return problems + [f"backend provider source is unreadable: {type(exc).__name__}"]
+    if (
+        not isinstance(identity, dict)
+        or set(identity) != {
+            "provider_version", "provider_binary_digest", "provider_package_digest",
+            "provider_build_inputs",
+        }
+        or identity.get("provider_version") != "1.0.0"
+        or re.fullmatch(r"sha256:[0-9a-f]{64}", str(identity.get("provider_binary_digest"))) is None
+        or identity.get("provider_build_inputs") != build_inputs
+        or identity.get("provider_package_digest") != _digest_object(build_inputs)
+    ):
+        problems.append("backend provider identity drifted")
+
+    methodology = probe.get("methodology")
+    if (
+        not isinstance(methodology, dict)
+        or methodology.get("warmups_per_provider") != 3
+        or methodology.get("measured_repetitions_per_provider") != 25
+        or methodology.get("timing_clock") != "time.perf_counter_ns"
+        or methodology.get("configured_deadline_ms") != policy.get("default")
+        or methodology.get("cancellation_poll_interval_ms") != 10
+    ):
+        problems.append("backend provider methodology drifted")
+
+    sample_inputs = _backend_probe_inputs()
+    expected_ids = list(sample_inputs)
+    samples = probe.get("samples")
+    actual_ids = [item.get("provider_id") for item in samples] if isinstance(samples, list) else []
+    if actual_ids != expected_ids:
+        problems.append("backend provider sample order or identity drifted")
+    else:
+        for sample in samples:
+            provider_id = sample["provider_id"]
+            timing = sample.get("timing_ns")
+            values = (
+                [timing.get(name) for name in (
+                    "minimum", "p50", "p95_nearest_rank", "maximum",
+                )]
+                if isinstance(timing, dict) and set(timing) == {
+                    "minimum", "p50", "p95_nearest_rank", "maximum",
+                }
+                else []
+            )
+            if (
+                set(sample) != {
+                    "provider_id", "input_digest", "status", "measurements", "timing_ns",
+                }
+                or sample.get("input_digest") != _digest_object(sample_inputs[provider_id])
+                or sample.get("status") != "COMPLETED"
+                or sample.get("measurements") != 25
+            ):
+                problems.append(f"backend provider sample {provider_id} binding drifted")
+            if (
+                len(values) != 4
+                or any(type(value) is not int or value <= 0 for value in values)
+                or values != sorted(values)
+                or values[-1] >= policy.get("default", 0) * 1_000_000
+            ):
+                problems.append(f"backend provider sample {provider_id} timing values are invalid")
+
+    recommendation = probe.get("recommendation")
+    if not isinstance(recommendation, dict):
+        problems.append("backend provider recommendation is missing")
+    else:
+        for field in ("id", "scope", "unit", "default", "hard_max", "boundary", "error_code"):
+            if recommendation.get(field) != policy.get(field):
+                problems.append(f"backend provider recommendation {field} drifted")
+        if (
+            recommendation.get("timeout_status") != "TIMEOUT"
+            or recommendation.get("timeout_exit_status") != 124
+            or not isinstance(recommendation.get("basis"), list)
+            or len(recommendation.get("basis", [])) != 4
+        ):
+            problems.append("backend provider recommendation evidence is incomplete")
+    return problems
+
+
 def _resource_limit_policy_problems(policy: Any) -> list[str]:
     problems: list[str] = []
     required_fields = {
         "claim", "profile", "probe_file", "probe_file_sha256", "probe_payload_sha256",
-        "benchmarked_limits", "artifact_page_policy", "deferred_limits",
+        "benchmarked_limits", "artifact_page_policy", "solver_deadline_policy", "deferred_limits",
         "enforcement_order",
     }
     if not isinstance(policy, dict) or set(policy) != required_fields:
@@ -2678,9 +2989,9 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         problems.append("resource limit enforcement order drifted from the probe")
 
     problems.extend(_artifact_page_probe_problems(policy.get("artifact_page_policy")))
+    problems.extend(_backend_provider_probe_problems(policy.get("solver_deadline_policy")))
 
     deferred_expected = {
-        "solver_deadline_ms": "W3-03",
         "worker_queue_items": "W4-06",
         "in_flight_runs": "W4-06",
         "state_quota_bytes": "W4-02",
@@ -2723,6 +3034,7 @@ def cmd_foundation_contract(args: argparse.Namespace) -> int:
         f"{len(jcs_vectors['negative'])} JCS negative, "
         f"{len(limits['benchmarked_limits'])} benchmarked admission limits, "
         "1 bounded artifact page, "
+        "1 bounded certified-provider deadline, "
         f"{len(limits['deferred_limits'])} explicit deferred operational limits"
     )
     return EXIT_OK
@@ -3259,7 +3571,7 @@ def _required_test_manifest_problems(
             "suite": "contract",
             "selector": "tests/contract/test_v4_foundation_contract.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 6,
+            "expected_tests": 7,
         },
         {
             "id": "W0-REQUIRED-MANIFEST-GATE",
@@ -3340,6 +3652,20 @@ def _required_test_manifest_problems(
             "selector": "tests/semantic_mutation/test_argumentation_mutation.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 8,
+        },
+        {
+            "id": "W3-CERTIFIED-BACKEND-CONTRACT",
+            "suite": "contract",
+            "selector": "tests/contract/test_backend_router.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 21,
+        },
+        {
+            "id": "W3-CERTIFIED-BACKEND-ATTACKS",
+            "suite": "security",
+            "selector": "tests/security/test_backend_attacks.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 30,
         },
     ]
     if required_now != expected_required_now:
@@ -4656,7 +4982,7 @@ def cmd_w1_02_contract_gate() -> int:
         fail("P1-14 ToolSpec selector is not declared")
     frozen_hashes = {
         OBJECT_STATE_MATRIX: "96ca196e25eaec0a1a29439643791f0db5fd2b6fcc4e4f6696dc31d59256b822",
-        FOUNDATION_V4_CONTRACT: "08b97adf4bd3e516bf59ceabfb3b2f95f8d2e7e806c07341ea49e15fb9d0e658",
+        FOUNDATION_V4_CONTRACT: "d1336bb790c028256fc2b71e453da41b6ccb76e5bb49b238ecff09aaa723c74c",
         RESOURCE_LIMIT_PROBE: "cfcca89034412b2eec9f8de60ae1e74661adfdceb1a4f72d4e59e1365eee0b35",
     }
     for path, expected_hash in frozen_hashes.items():
@@ -6158,7 +6484,10 @@ def cmd_w1_02_contract_gate() -> int:
         artifact_page = foundation.get("resource_limit_policy", {}).get(
             "artifact_page_policy", {}
         )
-        bounded = [*benchmarked, artifact_page]
+        solver_deadline = foundation.get("resource_limit_policy", {}).get(
+            "solver_deadline_policy", {}
+        )
+        bounded = [*benchmarked, artifact_page, solver_deadline]
         deferred = foundation.get("resource_limit_policy", {}).get("deferred_limits", [])
         expected_engine_limits = {
             item["id"]: (item["default"], item["hard_max"])
@@ -6606,12 +6935,12 @@ def _cmd_w1_03_publication_gate() -> int:
         V4_SCHEMA_PUBLICATION,
         MCP_MANIFEST_PUBLICATION,
     ))
-    if sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W1_03_SCHEMA_SHA256:
-        fail("W1-03 frozen schema publication digest drifted")
-    if sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W1_03_MANIFEST_SHA256:
-        fail("W1-03 frozen manifest publication digest drifted")
-    if mcp_authority.tool_spec_digest() != W1_03_TOOL_SPEC_DIGEST:
-        fail("W1-03 frozen ToolSpec semantic digest drifted")
+    if sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256:
+        fail("current schema publication digest drifted")
+    if sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256:
+        fail("current manifest publication digest drifted")
+    if mcp_authority.tool_spec_digest() != W3_03_TOOL_SPEC_DIGEST:
+        fail("current ToolSpec semantic digest drifted")
 
     assignment_locations: list[str] = []
     for relative in _git_tracked_files():
@@ -6887,7 +7216,7 @@ def _cmd_w1_03_publication_gate() -> int:
     print(
         "W1-03 staged publication gate OK: 217 frozen structural corpus cases; "
         "73 defs/68 closed objects/5 scalars/19 limits; 4 ToolSpecs; 0 resources; "
-        f"schema_sha256={W1_03_SCHEMA_SHA256}; manifest_sha256={W1_03_MANIFEST_SHA256}; "
+        f"schema_sha256={W3_03_SCHEMA_SHA256}; manifest_sha256={W3_03_MANIFEST_SHA256}; "
         "strict raw-JSON and typed codecs remain semantic authority; P1-02/P1-14/P2-04 "
         "remain registered through W1-06/W5/W6 closure tasks"
     )
@@ -10502,6 +10831,302 @@ def cmd_w3_02_argumentation_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _cmd_w3_03_backend_gate() -> int:
+    """Verify certified provider invocation without granting formal admission."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W3-03"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W3-03",
+            "tests/contract/test_backend_router.py",
+            "tests/security/test_backend_attacks.py",
+            "tests/contract/test_contracts.py",
+            "tests/contract/test_python_schema_mcp_differential.py",
+            "tests/contract/test_v4_foundation_contract.py",
+            "tests/unit/test_backend_router_v1.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W3-03/backend-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        foundation = json.loads(FOUNDATION_V4_CONTRACT.read_text(encoding="utf-8"))
+        probe = json.loads(BACKEND_PROVIDER_PROBE.read_text(encoding="utf-8"))
+        module_policy = json.loads(
+            (ROOT / "docs/architecture/module-authority.json").read_text(encoding="utf-8")
+        )
+        formal_plan = ROOT / W3_03_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        router_source = (ROOT / "compiler_core/backend_router.py").read_text(
+            encoding="utf-8"
+        )
+        provider_source = (ROOT / "compiler_core/backends/__init__.py").read_text(
+            encoding="utf-8"
+        )
+        contract_tests = (ROOT / "tests/contract/test_backend_router.py").read_text(
+            encoding="utf-8-sig"
+        )
+        security_tests = (ROOT / "tests/security/test_backend_attacks.py").read_text(
+            encoding="utf-8-sig"
+        )
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w3_03_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W3-03 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        inserted_root = str(ROOT) not in sys.path
+        if inserted_root:
+            sys.path.insert(0, str(ROOT))
+        try:
+            from compiler_core.backends import provider_runtime_identity
+            from compiler_core.contracts import (
+                DEFAULT_RESOURCE_LIMITS_V4,
+                HARD_MAX_RESOURCE_LIMITS_V4,
+                RESOURCE_LIMIT_ERROR_CODES_V4,
+            )
+        finally:
+            if inserted_root:
+                sys.path.remove(str(ROOT))
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(
+            f"W3-03 control input unreadable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-03"), None)
+    if not isinstance(task, dict):
+        fail("W3-03 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != ["W3-01", "W3-02"]:
+            fail("W3-03 mode or dependency drifted")
+        if task.get("audit_ids") != ["P0-06"]:
+            fail("W3-03 audit binding drifted")
+        if task.get("objective") != (
+            "新增 certified providers/backend router；从已验证 LegalIVL 和事实回执派生输入并真实执行"
+        ):
+            fail("W3-03 objective drifted")
+        if task.get("allowed_paths") != list(W3_03_CHANGED_PATHS):
+            fail("W3-03 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W3-03 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W3-03 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition or disposition.get("count") != 379:
+        fail("W3-03 file disposition is not the reproducible 379-path ledger")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 21 个 exact paths",
+        "可 kill 的 `spawn` 子进程",
+        "不产生 `formal`/`DecisionStatus`",
+        "w3-03-exact-backend-reports",
+        "W4-01",
+    )):
+        fail("W3-03 formal plan lacks its exact scope or lifecycle boundary")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W3-CERTIFIED-BACKEND-CONTRACT": (
+            "contract", "tests/contract/test_backend_router.py", 21,
+        ),
+        "W3-CERTIFIED-BACKEND-ATTACKS": (
+            "security", "tests/security/test_backend_attacks.py", 30,
+        ),
+    }
+    for required_id, expected in expected_required.items():
+        item = required_by_id.get(required_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"), item.get("expected_tests"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or item.get("state") != "REQUIRED_NOW":
+            fail(f"W3-03 required-now binding drifted: {required_id}")
+    if W3_03_TEST_CASE_COUNT <= 0 or W3_03_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W3-03 JUnit case identity is not frozen")
+
+    p0_mutation = next((
+        item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+        and item.get("test_id") == "V4-P0-06-CALLER-SOLVER-RECEIPT"
+    ), {})
+    if (
+        p0_mutation.get("audit_id"), p0_mutation.get("owner_task"),
+        p0_mutation.get("state"), p0_mutation.get("suite"),
+        p0_mutation.get("selector"),
+    ) != (
+        "P0-06", "W3-03", "ACTIVE_REQUIRED", "security",
+        "tests/security/test_backend_attacks.py::test_caller_solver_receipt_is_rejected",
+    ) or not _selector_is_declared(ROOT, p0_mutation.get("selector", "")):
+        fail("W3-03 P0-06 mutation is not exactly ACTIVE_REQUIRED")
+    p0_06 = next((
+        item for item in issue_map.get("issues", [])
+        if isinstance(item, dict) and item.get("id") == "P0-06"
+    ), {})
+    if (p0_06.get("status"), p0_06.get("closure_tasks")) != (
+        "registered", ["W3-03", "W3-04"],
+    ):
+        fail("W3-03 P0-06 lifecycle drifted")
+
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    expected_dispositions = {
+        "compiler_core/backend_router.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/backends/__init__.py": ("KEEP_REWRITE", "KEEP_REWRITE"),
+        "compiler_core/backend_router_v1.py": ("MERGE_DELETE", "MIGRATED_GREEN"),
+        "tests/contract/test_backend_router.py": ("TEST_ORACLE", "TEST_ORACLE"),
+        "tests/security/test_backend_attacks.py": ("TEST_ORACLE", "TEST_ORACLE"),
+    }
+    for path, expected in expected_dispositions.items():
+        item = disposition_by_path.get(path, {})
+        if (item.get("disposition"), item.get("terminal_state")) != expected:
+            fail(f"W3-03 file disposition drifted: {path}")
+    legacy_router = disposition_by_path.get("compiler_core/backend_router_v1.py", {})
+    if (
+        legacy_router.get("target_module") != "compiler_core/backend_router.py"
+        or legacy_router.get("target_test") != "tests/contract/test_backend_router.py"
+    ):
+        fail("W3-03 legacy router migration target drifted")
+    tracked = set(_git_tracked_files())
+    for path in W3_03_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W3-03 exact path is not Git tracked: {path}")
+
+    authority_by_path = {
+        item.get("path"): item
+        for item in module_policy.get("path_rules", [])
+        if isinstance(item, dict)
+    }
+    for path in ("compiler_core/backend_router.py", "compiler_core/backends/__init__.py"):
+        item = authority_by_path.get(path, {})
+        if item.get("class") != "FORMAL_CORE" or "formal" not in item.get("rationale", ""):
+            fail(f"W3-03 module authority drifted: {path}")
+
+    controls = _forbidden_test_controls(contract_tests + "\n" + security_tests)
+    if controls:
+        fail(f"W3-03 tests use forbidden controls: {controls}")
+    if any(token in router_source + provider_source for token in (
+        "backend_router_v1", "tests.", "legal-math-modeling", "DecisionStatusV4",
+        "compiler_core.application", "formal=True",
+    )):
+        fail("W3-03 production backend imports legacy, tests, or formal decision authority")
+    if any(marker not in router_source for marker in (
+        "multiprocessing.get_context(\"spawn\")",
+        "self._ir_compiler.verify_compilation(compilation, now=now)",
+        "self._fact_service.verify_receipt(",
+        "decision_time=request.decision_time",
+        "for provider_id in self._providers(features)",
+        "process.kill()",
+        "def replay(",
+    )):
+        fail("W3-03 router lacks verified inputs, multi-provider execution, termination, or replay")
+    if any(marker not in provider_source for marker in (
+        "CERTIFIED_PROVIDERS",
+        "execute_horn",
+        "execute_aaf",
+        "execute_exact",
+        "evaluate_argument_graph(graph)",
+        "validate_rational_v4(value)",
+        "provider_runtime_identity",
+    )):
+        fail("W3-03 certified provider registry or semantics are incomplete")
+
+    solver_policy = foundation.get("resource_limit_policy", {}).get(
+        "solver_deadline_policy"
+    )
+    problems.extend(_backend_provider_probe_problems(solver_policy))
+    if sha256_hex(FOUNDATION_V4_CONTRACT.read_bytes()) != W3_03_FOUNDATION_FILE_DIGEST.removeprefix(
+        "sha256:"
+    ):
+        fail("W3-03 frozen foundation publication drifted")
+    if (
+        DEFAULT_RESOURCE_LIMITS_V4.get("solver_deadline_ms") != 2500
+        or HARD_MAX_RESOURCE_LIMITS_V4.get("solver_deadline_ms") != 10000
+        or RESOURCE_LIMIT_ERROR_CODES_V4.get("solver_deadline_ms") != "SOLVER_DEADLINE"
+    ):
+        fail("W3-03 runtime solver deadline differs from the measured policy")
+    binary_digest, package_digest, build_inputs = provider_runtime_identity()
+    identity = probe.get("provider_identity", {})
+    if (
+        str(binary_digest) != identity.get("provider_binary_digest")
+        or str(package_digest) != identity.get("provider_package_digest")
+        or build_inputs != identity.get("provider_build_inputs")
+    ):
+        fail("W3-03 live provider runtime identity differs from the measured probe")
+    problems.extend(_generated_publication_problems(
+        V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
+    ))
+    if (
+        sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256
+        or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256
+    ):
+        fail("W3-03 current Schema or MCP publication digest drifted")
+
+    if any(marker not in runner_source for marker in (
+        "W3-03 receipt does not bind its exact 21 committed paths",
+        "w3-03-exact-backend-reports",
+        "w3-03-exact-provider-publications",
+        "w3-03-exact-committed-scope",
+        "_w3_03_test_report_problems(reports)",
+    )):
+        fail("W3-03 runner resume does not rebuild its executable receipt contract")
+    if cmd_w3_02_argumentation_gate() != EXIT_OK:
+        fail("W3-03 prerequisite machine gate failed: W3-02")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W3-03 backend gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W3-03 backend gate OK: {W3_03_TEST_CASE_COUNT} contract/security/legacy/"
+        "governance cases; 3 certified providers; no formal admission"
+    )
+    return EXIT_OK
+
+
+def cmd_w3_03_backend_gate() -> int:
+    try:
+        return _cmd_w3_03_backend_gate()
+    except Exception as exc:
+        print(
+            f"W3-03 backend gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -10541,6 +11166,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w3_01_lossless_ir_gate()
     if args.wave == "W3-02":
         return cmd_w3_02_argumentation_gate()
+    if args.wave == "W3-03":
+        return cmd_w3_03_backend_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -12293,6 +12920,42 @@ def _w3_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w3_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact W3-03 backend JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W3-03 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W3_03_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W3_03_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W3_03_TEST_CASE_COUNT,
+        "junit_unique_cases": W3_03_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W3_03_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W3-03 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W3-03 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
     """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
 
@@ -12574,6 +13237,49 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W3-02 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W3-03":
+        problems.extend(_w3_03_test_report_problems(reports))
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W3_03_CHANGED_PATHS)
+            or len(changed_paths) != len(W3_03_CHANGED_PATHS)
+        ):
+            problems.append("W3-03 receipt does not bind its exact 21 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W3_03_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W3-03 receipt lacks committed result digest: {path}")
+        expected_publications = {
+            "result-path:schemas/jc-v4.schema.json": "sha256:" + W3_03_SCHEMA_SHA256,
+            "result-path:mcp_manifest.json": "sha256:" + W3_03_MANIFEST_SHA256,
+            "result-path:tests/fixtures/golden/v4-foundation-contract.json": (
+                W3_03_FOUNDATION_FILE_DIGEST
+            ),
+            "result-path:tests/fixtures/golden/v4-backend-provider-probe.json": (
+                W3_03_BACKEND_PROVIDER_PROBE_FILE_DIGEST
+            ),
+        }
+        for key, expected in expected_publications.items():
+            if artifact_digests.get(key) != expected:
+                problems.append(f"W3-03 publication digest drifted: {key}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w3-03-exact-backend-reports",
+            "w3-03-exact-provider-publications",
+            "w3-03-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W3-03 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -13478,6 +14184,65 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 10 exact W3-02 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W3-03":
+        report_problems = _w3_03_test_report_problems(test_reports)
+        publication_problems = [
+            *_backend_provider_probe_problems(
+                json.loads(FOUNDATION_V4_CONTRACT.read_text(encoding="utf-8"))
+                .get("resource_limit_policy", {})
+                .get("solver_deadline_policy")
+            ),
+            *_generated_publication_problems(
+                V4_SCHEMA_PUBLICATION, MCP_MANIFEST_PUBLICATION,
+            ),
+        ]
+        if sha256_hex(FOUNDATION_V4_CONTRACT.read_bytes()) != W3_03_FOUNDATION_FILE_DIGEST.removeprefix(
+            "sha256:"
+        ):
+            publication_problems.append("frozen foundation publication drifted")
+        if (
+            sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes()) != W3_03_SCHEMA_SHA256
+            or sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes()) != W3_03_MANIFEST_SHA256
+        ):
+            publication_problems.append("current Schema or MCP publication digest drifted")
+        expected_paths = set(W3_03_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W3_03_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w3-03-exact-backend-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W3_03_TEST_CASE_COUNT} contract/security/legacy/governance pytest "
+                "items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-03-exact-provider-publications",
+            "kind": "artifact_binding",
+            "ok": not publication_problems,
+            "detail": (
+                "certified provider probe and foundation/Schema/MCP publications are digest-bound"
+                if not publication_problems else "; ".join(publication_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-03-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 21 exact W3-03 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

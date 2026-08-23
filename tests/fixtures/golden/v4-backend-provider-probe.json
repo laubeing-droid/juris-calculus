@@ -1,0 +1,99 @@
+{
+  "schema_version": "jc/v4-backend-provider-probe/1.0",
+  "generated_at_utc": "2026-08-23T03:24:34.983872Z",
+  "scope": {
+    "claim": "local Windows spawn-process provider deadline calibration only",
+    "not_claimed": [
+      "cross-platform equivalence",
+      "production throughput",
+      "independent-checker deadline sufficiency",
+      "workload-size scalability"
+    ],
+    "measurement_mutated_repository": false
+  },
+  "platform": {
+    "python": "3.12.5",
+    "python_implementation": "CPython",
+    "os": "Windows-11-10.0.26200-SP0",
+    "process_start_method": "spawn"
+  },
+  "methodology": {
+    "logic_description": "BackendRouterV4._invoke_provider; a fresh terminable spawn child per call; canonical fixed input; process startup, provider execution, bounded canonical pipe transfer, child runtime identity comparison, post-decode deadline check, and forced cleanup included",
+    "warmups_per_provider": 3,
+    "measured_repetitions_per_provider": 25,
+    "timing_clock": "time.perf_counter_ns",
+    "configured_deadline_ms": 2500,
+    "cancellation_poll_interval_ms": 10,
+    "p50": "middle order statistic for 25 samples",
+    "p95": "nearest-rank"
+  },
+  "provider_identity": {
+    "provider_version": "1.0.0",
+    "provider_binary_digest": "sha256:5aba6ec903f2e0e946459f98dc45c8129d3f22187f5adac00713d733191d3a3f",
+    "provider_package_digest": "sha256:24c54c3049d70aad6243e74504322220ab19b3628f0e57f46d0b2e425e7f55cf",
+    "provider_build_inputs": {
+      "argumentation": "sha256:ea7a3e492fb8953c6902ceafaafb5e4116cf5ba67feb7b7849a122e1765ad26f",
+      "backends": "sha256:9f074cf1ee8702b3d0e60e0f5a69d3ff8a6849eef28dfc79fc0d7287c0d1bff6",
+      "canonical_serialization": "sha256:a235877b7526676345ee5d21e61d567a8caa2c2de42fc8d9108fe27a9cc7b221",
+      "contracts": "sha256:705a633a98ec96d5055ba4fe88c443cf200febd51bccf5a440eb2201dd13310c"
+    }
+  },
+  "samples": [
+    {
+      "provider_id": "jc-horn-fixpoint",
+      "input_digest": "sha256:0c5ba3a0f0dc0f1419b93fb0a1eb4f7627aff9e4be40ebf3239a41e15d077a48",
+      "status": "COMPLETED",
+      "measurements": 25,
+      "timing_ns": {
+        "minimum": 943408200,
+        "p50": 959286000,
+        "p95_nearest_rank": 969592400,
+        "maximum": 973078500
+      }
+    },
+    {
+      "provider_id": "jc-aaf-grounded",
+      "input_digest": "sha256:b9d7350a2534b5ffb9fffdcf5075b4152e87d1b8a52c633468c41718c531f0ba",
+      "status": "COMPLETED",
+      "measurements": 25,
+      "timing_ns": {
+        "minimum": 953477400,
+        "p50": 965817200,
+        "p95_nearest_rank": 979694600,
+        "maximum": 993611800
+      }
+    },
+    {
+      "provider_id": "jc-exact-temporal-numeric",
+      "input_digest": "sha256:e79c3ff50b685132a1c6eeca7ebb875f04956b739b0cc1b08f0ae9a695a766e9",
+      "status": "COMPLETED",
+      "measurements": 25,
+      "timing_ns": {
+        "minimum": 949703500,
+        "p50": 964428500,
+        "p95_nearest_rank": 978071100,
+        "maximum": 982025700
+      }
+    }
+  ],
+  "recommendation": {
+    "id": "solver_deadline_ms",
+    "scope": "per-certified-provider process wall clock",
+    "unit": "milliseconds",
+    "default": 2500,
+    "hard_max": 10000,
+    "boundary": "inclusive",
+    "error_code": "SOLVER_DEADLINE",
+    "timeout_status": "TIMEOUT",
+    "timeout_exit_status": 124,
+    "hard_max_kind": "bounded operator override; not a throughput claim",
+    "basis": [
+      "all 75 measured invocations completed",
+      "largest observed wall time was 993611800 ns",
+      "default is more than twice the largest local observation",
+      "actual timeout and cancellation tests require child termination and no live descendant"
+    ]
+  },
+  "payload_sha256": "sha256:d7f253ee1af07e801e24c44902a322f40240e11cf3eaf529f9c821edc7a68184",
+  "payload_sha256_scope": "canonical UTF-8 JSON with payload_sha256 and payload_sha256_scope omitted"
+}
