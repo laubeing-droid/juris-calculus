@@ -110,11 +110,11 @@ OTHER_DIRECTORIES: dict[str, dict[str, str]] = {
     "tools/remediate_v4.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/remediate_v4_verify.py": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "tools/remediation": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/build.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "requirements/core.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "requirements/dev.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "requirements/documents.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "requirements/pipeline.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
-    "requirements/render.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/release.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/source-tool.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
+    "requirements/test.lock": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     ".github/workflows/ci.yml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     ".github/workflows/auto-release.yml": {"disposition": "KEEP_REWRITE", "terminal_state": "KEEP_REWRITE"},
     "remediation/v4": {"disposition": "RETAIN_NONPACKAGED", "terminal_state": "BUILD_ONLY"},
@@ -187,6 +187,34 @@ RETIRED_HISTORY_PATHS: dict[str, dict[str, Any]] = {
     "tests/stress_test_facts.py": {
         "git_blob_head": "34cf9823073e25938f0b4e92ecf9a38839b3c2155",
         "note": "retired current-tree stress script; Git history locator only",
+    },
+}
+
+W6_03_RETIRED_LOCKS: dict[str, dict[str, Any]] = {
+    "requirements/dev.lock": {
+        "disposition": "MERGE_DELETE", "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "0313594d7d21b1dc0d44db1bd9bb6504f8143fa4",
+        "sha256": "ffacd6f2d832926b2af12fbd911b5857f9e86003db23a191030c68bc9fe1f4d3",
+        "bytes": 104,
+        "targets": ["requirements/build.lock", "requirements/test.lock", "requirements/release.lock"],
+    },
+    "requirements/documents.lock": {
+        "disposition": "MERGE_DELETE", "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "0f5608400f4984011a6bbd4bf93654d3cb4ed37b",
+        "sha256": "96ebfc87f26d987f8608ece069f034d60f0d786dbf6c8947c0d8db47d48a326e",
+        "bytes": 40, "targets": ["requirements/source-tool.lock"],
+    },
+    "requirements/pipeline.lock": {
+        "disposition": "MERGE_DELETE", "terminal_state": "MIGRATED_GREEN",
+        "git_blob_head": "4b5fe4d67d6aa95e64f4be521ec189e7bac77ff3",
+        "sha256": "f806f7e2f1a0eac9d9346baf64284535dce1c6dbdec3f3c47519752e26beda54",
+        "bytes": 18, "targets": ["requirements/source-tool.lock"],
+    },
+    "requirements/render.lock": {
+        "disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "f7c9608a79bd0f7f35f2649e73e1bff9658af05b",
+        "sha256": "77aeb2dd7399fefb991f8ac568cfa12b8c69fd2237fa63a8c318186295f46c75",
+        "bytes": 15, "targets": [],
     },
 }
 
@@ -298,23 +326,29 @@ SPECIAL_CLOSURE_TASKS = {
     "docs/guides/README_CN.md": "W5-07",
     "docs/guides/WORKBUDDY.md": "W5-07",
     "docs/operations/V3_HISTORICAL_REPLAY.md": "W5-07",
-    "pyproject.toml": "W6-01",
-    "remediation/v4/file-disposition.json": "W6-01",
-    "remediation/v4/tasks.json": "W6-01",
-    "tests/contract/test_required_test_manifest.py": "W6-01",
+    "pyproject.toml": "W6-03",
+    "remediation/v4/file-disposition.json": "W6-03",
+    "remediation/v4/tasks.json": "W6-03",
+    "tests/contract/test_required_test_manifest.py": "W6-03",
     "tests/formal_e2e/test_three_entrypoint_error_matrix.py": "W5-06",
     "tests/packaging/test_current_authority_docs.py": "W5-05",
     "tests/packaging/test_wheel_gate_v4.py": "W6-01",
-    "tests/required-v4-tests.json": "W6-01",
-    "tools/build_file_disposition.py": "W6-01",
-    "tools/remediate_v4.py": "W6-01",
+    "tests/packaging/test_hash_locks.py": "W6-03",
+    "tests/required-v4-tests.json": "W6-03",
+    "tools/build_file_disposition.py": "W6-03",
+    "tools/remediate_v4.py": "W6-03",
     "configs/perf_patterns.yaml": "W5-02C",
     "tools/wheel_gate.py": "W6-01",
+    "requirements/build.lock": "W6-03",
     "requirements/core.lock": "W6-03",
     "requirements/dev.lock": "W6-03",
     "requirements/documents.lock": "W6-03",
     "requirements/pipeline.lock": "W6-03",
+    "requirements/release.lock": "W6-03",
     "requirements/render.lock": "W6-03",
+    "requirements/source-tool.lock": "W6-03",
+    "requirements/test.lock": "W6-03",
+    "tools/supply_chain_gate.py": "W6-03",
     "addons/workbuddy_mcp.py": "W5-CUTOVER",
     "compiler_core/argumentation_v2.py": "W5-CUTOVER",
     "compiler_core/backend_router_v1.py": "W5-CUTOVER",
@@ -447,6 +481,9 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     if rel in W5_CUTOVER_RETIRED_PATHS:
         disp = W5_CUTOVER_RETIRED_PATHS[rel]["disposition"]
         terminal = W5_CUTOVER_RETIRED_PATHS[rel]["terminal_state"]
+    elif rel in W6_03_RETIRED_LOCKS:
+        disp = W6_03_RETIRED_LOCKS[rel]["disposition"]
+        terminal = W6_03_RETIRED_LOCKS[rel]["terminal_state"]
     elif rel in RETIRED_HISTORY_PATHS:
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
@@ -548,6 +585,11 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
             "git_blob_head": W5_CUTOVER_RETIRED_PATHS[rel]["git_blob_head"],
             "note": "retired at W5-CUTOVER; current HEAD blob locator only",
         }
+    elif rel in W6_03_RETIRED_LOCKS:
+        retired = W6_03_RETIRED_LOCKS[rel]
+        entry["frozen_fingerprint"] = {
+            key: retired[key] for key in ("git_blob_head", "sha256", "bytes")
+        }
     elif rel in RETIRED_HISTORY_PATHS:
         entry["frozen_fingerprint"] = RETIRED_HISTORY_PATHS[rel]
     if terminal == "HISTORY_BOUND":
@@ -569,10 +611,16 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
             except Exception:
                 pass
     if terminal == "MIGRATED_GREEN":
-        target = MIGRATION_TARGETS.get(rel)
-        if target is None:
-            raise ValueError(f"MIGRATED_GREEN path lacks a real migration target: {rel}")
-        entry["target_module"], entry["target_test"] = target
+        if rel in W6_03_RETIRED_LOCKS:
+            targets = W6_03_RETIRED_LOCKS[rel]["targets"]
+            entry["target_module"] = targets[0]
+            entry["target_artifacts"] = targets
+            entry["target_test"] = "tests/packaging/test_hash_locks.py"
+        else:
+            target = MIGRATION_TARGETS.get(rel)
+            if target is None:
+                raise ValueError(f"MIGRATED_GREEN path lacks a real migration target: {rel}")
+            entry["target_module"], entry["target_test"] = target
     if rel == "compiler_core/contracts_v4.py":
         entry["target_module"], entry["target_test"] = MIGRATION_TARGETS[rel]
     if disp == "MOVE_IN_REPO_SOURCE_TOOL":
@@ -598,7 +646,10 @@ def build_document() -> dict[str, Any]:
 
     audit_entries = _parse_appendix_a()
     tracked = _git_tracked()
-    paths = sorted(tracked | set(RETIRED_HISTORY_PATHS) | set(W5_CUTOVER_RETIRED_PATHS))
+    paths = sorted(
+        tracked | set(RETIRED_HISTORY_PATHS) | set(W5_CUTOVER_RETIRED_PATHS)
+        | set(W6_03_RETIRED_LOCKS)
+    )
     entries: list[dict[str, Any]] = []
     audit_role_map = dict(audit_entries)
     for path in paths:

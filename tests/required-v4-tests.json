@@ -320,6 +320,13 @@
       "selector": "tests/packaging/test_wheel_gate_v4.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 9
+    },
+    {
+      "id": "W6-HASH-LOCKS",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_hash_locks.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 9
     }
   ],
   "evidence_tracks": [
@@ -715,7 +722,7 @@
       "suite": "packaging",
       "selector": "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked",
       "owner_task": "W6-03",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Remove a transitive dependency hash from any supported profile.",
       "red_failure": "Clean offline require-hashes installation must fail on the mutation."
     },

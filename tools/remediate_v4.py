@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.39.0"
+RUNNER_VERSION = "0.40.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -99,6 +99,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.37.0": 5,
     "0.38.0": 5,
     "0.39.0": 5,
+    "0.40.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -898,6 +899,38 @@ W6_01_WHEEL_ENTRY_COUNT = 35
 W6_01_WHEEL_ENTRY_NAMES_DIGEST = (
     "sha256:3e60779061f884e96239e4a5b37aa90bd1cf2065f45761e49e4ea14d10fc11f5"
 )
+W6_03_TEST_PATHS = ("tests/packaging/test_hash_locks.py",)
+W6_03_TEST_CASE_COUNT = 9
+W6_03_TEST_CASE_IDS_DIGEST = (
+    "sha256:61545710ea09098d78638fb98ab910683e9c01f1a45af1025316b3105dc561fd"
+)
+W6_03_ALLOWED_PATHS = (
+    "pyproject.toml",
+    "requirements/build.lock",
+    "requirements/core.lock",
+    "requirements/dev.lock",
+    "requirements/documents.lock",
+    "requirements/pipeline.lock",
+    "requirements/release.lock",
+    "requirements/render.lock",
+    "requirements/source-tool.lock",
+    "requirements/test.lock",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    *W6_03_TEST_PATHS,
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+    "tools/supply_chain_gate.py",
+)
+W6_03_REQUIRED_CHANGED_PATHS = W6_03_ALLOWED_PATHS
+W6_03_PROFILES = ("production", "build", "test", "source-tool", "release")
+W6_03_TARGETS = ("win311", "win312", "linux311", "linux312")
+W6_03_RETIRED_PATHS = frozenset({
+    "requirements/dev.lock", "requirements/documents.lock",
+    "requirements/pipeline.lock", "requirements/render.lock",
+})
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -1565,7 +1598,7 @@ def cmd_file_map(args: argparse.Namespace) -> int:
         "pipeline/fix_single_premise.py",
         "tests/run_benchmark_zh.py",
         "tests/stress_test_facts.py",
-    } | set(W5_CUTOVER_RETIRED_PATHS) | set(W5_07_RETIRED_PATHS)
+    } | set(W5_CUTOVER_RETIRED_PATHS) | set(W5_07_RETIRED_PATHS) | set(W6_03_RETIRED_PATHS)
     expected_paths = tracked | retired_history
     if set(by_path) != expected_paths:
         print(
@@ -1585,6 +1618,32 @@ def cmd_file_map(args: argparse.Namespace) -> int:
                 ) is None
             ):
                 print(f"W5-CUTOVER retired path lacks closure binding: {path}", file=sys.stderr)
+                return EXIT_GATE_FAIL
+            continue
+        if path in W6_03_RETIRED_PATHS:
+            fingerprint = entry.get("frozen_fingerprint", {})
+            if (
+                entry.get("closure_task") != "W6-03"
+                or re.fullmatch(r"[0-9a-f]{40}", str(fingerprint.get("git_blob_head"))) is None
+                or re.fullmatch(r"[0-9a-f]{64}", str(fingerprint.get("sha256"))) is None
+            ):
+                print(f"W6-03 retired lock lacks history binding: {path}", file=sys.stderr)
+                return EXIT_GATE_FAIL
+            if path == "requirements/render.lock":
+                valid = (
+                    entry.get("disposition") == "DELETE_CURRENT"
+                    and entry.get("terminal_state") == "HISTORY_BOUND"
+                    and entry.get("history_locator_only") is True
+                )
+            else:
+                valid = (
+                    entry.get("disposition") == "MERGE_DELETE"
+                    and entry.get("terminal_state") == "MIGRATED_GREEN"
+                    and bool(entry.get("target_artifacts"))
+                    and entry.get("target_test") == "tests/packaging/test_hash_locks.py"
+                )
+            if not valid:
+                print(f"W6-03 retired lock disposition drifted: {path}", file=sys.stderr)
                 return EXIT_GATE_FAIL
             continue
         if (
@@ -4539,6 +4598,13 @@ def _required_test_manifest_problems(
             "id": "W6-FORMAL-WHEEL-GATE",
             "suite": "packaging",
             "selector": "tests/packaging/test_wheel_gate_v4.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 9,
+        },
+        {
+            "id": "W6-HASH-LOCKS",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_hash_locks.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 9,
         },
@@ -16614,6 +16680,266 @@ def cmd_w6_01_formal_wheel_gate() -> int:
     return EXIT_OK
 
 
+def _w6_03_contract_problems() -> list[str]:
+    """Bind the exact profile split, governance scope, and active mutation test."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        gate = _w6_01_load_wheel_gate(ROOT / "tools/supply_chain_gate.py")
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        generated_disposition = generator.build_document()
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W6-03 governance input is unreadable: {type(exc).__name__}: {exc}"]
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W6-03"), {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W6-03"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W6-03", *W6_03_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W6-03.xml",
+        ],
+    ]
+    if task.get("depends_on") != ["H6-02"] or task.get("audit_ids") != ["P1-20"]:
+        problems.append("W6-03 dependency/audit projection drifted")
+    if task.get("allowed_paths") != list(W6_03_ALLOWED_PATHS):
+        problems.append("W6-03 exact allowlist drifted")
+    if task.get("terminal_states") != ["ALL_PROFILES_HASH_LOCKED", "SUPPLY_CHAIN_GREEN"]:
+        problems.append("W6-03 terminal states drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W6-03 exact gate/pytest argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W6-03 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W6-03 file disposition is not reproducible from its generator")
+    static = gate.verify_lock_profiles(ROOT / "requirements", ROOT / "pyproject.toml")
+    if static.get("status") != "PASS":
+        problems.extend(f"W6-03 static profile gate: {item}" for item in static.get("problems", []))
+    legacy = {
+        "requirements/dev.lock": (
+            "MIGRATED_GREEN",
+            ["requirements/build.lock", "requirements/test.lock", "requirements/release.lock"],
+        ),
+        "requirements/documents.lock": ("MIGRATED_GREEN", ["requirements/source-tool.lock"]),
+        "requirements/pipeline.lock": ("MIGRATED_GREEN", ["requirements/source-tool.lock"]),
+        "requirements/render.lock": ("HISTORY_BOUND", []),
+    }
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    for path, (terminal, targets) in legacy.items():
+        row = by_path.get(path, {})
+        fingerprint = row.get("frozen_fingerprint", {})
+        if (ROOT / path).exists():
+            problems.append(f"W6-03 retired lock remains current: {path}")
+        if (
+            row.get("closure_task") != "W6-03"
+            or row.get("terminal_state") != terminal
+            or re.fullmatch(r"[0-9a-f]{40}", str(fingerprint.get("git_blob_head"))) is None
+            or re.fullmatch(r"[0-9a-f]{64}", str(fingerprint.get("sha256"))) is None
+        ):
+            problems.append(f"W6-03 retired lock history binding drifted: {path}")
+        if terminal == "MIGRATED_GREEN" and row.get("target_artifacts") != targets:
+            problems.append(f"W6-03 retired lock migration target drifted: {path}")
+        if terminal == "HISTORY_BOUND" and row.get("history_locator_only") is not True:
+            problems.append(f"W6-03 render lock is not history-only")
+    for path in W6_03_REQUIRED_CHANGED_PATHS:
+        if by_path.get(path, {}).get("closure_task") != "W6-03":
+            problems.append(f"W6-03 disposition closure drifted: {path}")
+    required_row = next(
+        (item for item in required.get("required_now", []) if item.get("id") == "W6-HASH-LOCKS"), {}
+    )
+    if required_row != {
+        "id": "W6-HASH-LOCKS", "suite": "packaging",
+        "selector": W6_03_TEST_PATHS[0], "state": "REQUIRED_NOW", "expected_tests": 9,
+    }:
+        problems.append("W6-03 required-now test binding drifted")
+    mutation = next(
+        (item for item in required.get("audit_mutations", []) if item.get("test_id") == "V4-P1-20-HASH-LOCKS"), {}
+    )
+    if (
+        mutation.get("audit_id"), mutation.get("owner_task"), mutation.get("state"),
+        mutation.get("selector"),
+    ) != (
+        "P1-20", "W6-03", "ACTIVE_REQUIRED",
+        "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked",
+    ):
+        problems.append("W6-03 active P1-20 mutation binding drifted")
+    rewrite = next(
+        (item for item in required.get("rewrite_at_task", []) if item.get("id") == "REWRITE-PARTIAL-CORE-LOCK"), {}
+    )
+    if (
+        rewrite.get("rewrite_task"), rewrite.get("retirement_task"),
+        rewrite.get("replacement_selector"),
+    ) != (
+        "W6-03", "W6-05",
+        "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked",
+    ):
+        problems.append("W6-03 partial-lock rewrite binding drifted")
+    return problems
+
+
+def _w6_03_target_args(target: str) -> list[str]:
+    version = target[-3:]
+    platforms = (
+        ["win_amd64"] if target.startswith("win") else
+        ["manylinux_2_28_x86_64", "manylinux_2_17_x86_64", "manylinux2014_x86_64"]
+    )
+    return [
+        *(item for platform in platforms for item in ("--platform", platform)),
+        "--python-version", version, "--implementation", "cp", "--abi", f"cp{version}",
+    ]
+
+
+def _w6_03_checked(command: list[str], *, timeout: float = 600) -> dict[str, Any]:
+    completed = subprocess.run(
+        command, cwd=str(ROOT), capture_output=True, text=True, check=False, timeout=timeout,
+    )
+    if completed.returncode != 0:
+        detail = " ".join((completed.stderr or completed.stdout).split())[-1200:]
+        raise RuntimeError(f"command failed ({completed.returncode}): {detail}")
+    return {
+        "return_code": completed.returncode,
+        "stdout_sha256": "sha256:" + sha256_hex(completed.stdout.encode("utf-8")),
+        "stderr_sha256": "sha256:" + sha256_hex(completed.stderr.encode("utf-8")),
+    }
+
+
+def _w6_03_build_evidence(state_root: Path) -> tuple[Path, str]:
+    gate = _w6_01_load_wheel_gate(ROOT / "tools/supply_chain_gate.py")
+    report_root = state_root / "evidence" / "W6-03" / "reports"
+    current_commit = _git_checked("rev-parse", "HEAD")
+    current_tree = _git_checked("rev-parse", "HEAD^{tree}")
+    for cached in sorted(report_root.glob("*.json")):
+        try:
+            payload = cached.read_bytes()
+            record = json.loads(payload)
+            digest = "sha256:" + sha256_hex(payload)
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        if (
+            record.get("commit") == current_commit
+            and record.get("tree") == current_tree
+            and not _w6_03_artifact_problems(
+                {"state-artifact:w6-03-supply-chain-report": digest}, state_root,
+            )
+        ):
+            return cached, digest
+    static = gate.verify_lock_profiles(ROOT / "requirements", ROOT / "pyproject.toml")
+    if static.get("status") != "PASS":
+        raise ValueError("STATIC_PROFILE_GATE_FAILED: " + "; ".join(static.get("problems", [])))
+    audits = {
+        profile: gate.run_supply_chain_gate(f"requirements/{gate.PROFILE_FILES[profile]}")
+        for profile in W6_03_PROFILES
+    }
+    if any(row.get("status") != "PASS" for row in audits.values()):
+        raise ValueError("VULNERABILITY_AUDIT_FAILED: " + json.dumps(audits, sort_keys=True))
+    lanes: list[dict[str, Any]] = []
+    temporary_parent = state_root / "tmp"
+    temporary_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="w603-", dir=temporary_parent) as raw:
+        temporary = Path(raw)
+        for target in W6_03_TARGETS:
+            target_args = _w6_03_target_args(target)
+            for profile in W6_03_PROFILES:
+                lock = ROOT / "requirements" / gate.PROFILE_FILES[profile]
+                wheelhouse = temporary / "w" / target / profile
+                installed = temporary / "i" / target / profile
+                wheelhouse.mkdir(parents=True)
+                download = _w6_03_checked([
+                    sys.executable, "-m", "pip", "download", "--require-hashes",
+                    "--only-binary=:all:", "--dest", str(wheelhouse), *target_args,
+                    "--requirement", str(lock),
+                ])
+                install = _w6_03_checked([
+                    sys.executable, "-m", "pip", "install", "--no-index",
+                    "--find-links", str(wheelhouse), "--require-hashes",
+                    "--only-binary=:all:", "--no-compile", "--target", str(installed),
+                    *target_args, "--requirement", str(lock),
+                ])
+                sbom = gate.inspect_wheelhouse(lock, wheelhouse, target)
+                if sbom.get("status") != "PASS":
+                    raise ValueError(
+                        f"SBOM_RECONCILIATION_FAILED:{target}:{profile}:"
+                        + "; ".join(sbom.get("problems", []))
+                    )
+                lanes.append({
+                    "target": target, "profile": profile, "status": "PASS",
+                    "download": download, "offline_install": install,
+                    "installed_file_count": sum(1 for path in installed.rglob("*") if path.is_file()),
+                    "sbom": sbom,
+                })
+    reachability: dict[str, dict[str, Any]] = {}
+    for profile in W6_03_PROFILES:
+        profile_sboms = [lane["sbom"] for lane in lanes if lane["profile"] == profile]
+        expected_packages = set(gate.parse_lock(
+            ROOT / "requirements" / gate.PROFILE_FILES[profile]
+        )["packages"])
+        reachability_problems = gate.profile_reachability_problems(
+            profile_sboms, expected_packages,
+        )
+        if reachability_problems:
+            raise ValueError(
+                f"TARGET_REACHABILITY_FAILED:{profile}:" + "; ".join(reachability_problems)
+            )
+        reached = sorted({
+            name for sbom in profile_sboms for name in sbom["reachable_packages"]
+        })
+        reachability[profile] = {
+            "status": "PASS", "package_count": len(reached),
+            "packages_sha256": _digest_object(reached),
+        }
+    report = {
+        "schema_version": "jc/w6-supply-chain-evidence/1.0",
+        "task_id": "W6-03", "status": "PASS",
+        "commit": current_commit,
+        "tree": current_tree,
+        "static": static, "audits": audits, "lanes": lanes,
+        "target_reachability": reachability,
+        "profile_count": len(W6_03_PROFILES), "target_count": len(W6_03_TARGETS),
+        "lane_count": len(lanes),
+        "distribution_exclusions": {
+            "jinja2": True, "pydantic": True, "python-docx": True,
+            "pdfplumber": True, "hypothesis": True,
+        },
+    }
+    return _write_content_addressed_json(
+        report_root, report,
+    )
+
+
+def cmd_w6_03_supply_chain_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W6-03 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w6_03_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W6-03 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w6_03_build_evidence(Path(raw_state_root).resolve())
+    except (
+        ImportError, OSError, RuntimeError, subprocess.TimeoutExpired, TypeError,
+        UnicodeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError,
+    ) as exc:
+        print(f"W6-03 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw6-03-supply-chain-report\t{report_path}\t{report_digest}")
+    print(
+        "W6-03 gate OK: 5 complete hash/license profiles passed 20 clean "
+        "Windows/Linux offline install and wheel-METADATA/SBOM lanes; audits=0"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -16689,6 +17015,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_07_historical_replay_gate()
     if args.wave == "W6-01":
         return cmd_w6_01_formal_wheel_gate()
+    if args.wave == "W6-03":
+        return cmd_w6_03_supply_chain_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -19098,6 +19426,31 @@ def _w6_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w6_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact hash-lock mutation suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W6-03 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0, "terminal_summaries": 1, "passed": W6_03_TEST_CASE_COUNT,
+        "failed": 0, "errors": 0, "skipped": 0, "xfailed": 0, "xpassed": 0,
+        "collection_errors": 0, "junit_valid": True,
+        "junit_tests": W6_03_TEST_CASE_COUNT, "junit_skipped": 0,
+        "junit_failures": 0, "junit_errors": 0, "junit_cases": W6_03_TEST_CASE_COUNT,
+        "junit_unique_cases": W6_03_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W6_03_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W6-03 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W6-03 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -19463,6 +19816,103 @@ def _w6_01_artifact_problems(
         ValueError, zipfile.BadZipFile,
     ) as exc:
         problems.append(f"W6-01 archived source/wheel evidence is unreadable: {exc}")
+    return problems
+
+
+def _w6_03_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W6-03 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W6-03 artifact_digests is not an object"]
+    expected = set(W6_03_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W6-03 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W6_03_REQUIRED_CHANGED_PATHS:
+        prefix = "deleted-path" if path in W6_03_RETIRED_PATHS else "result-path"
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(artifact_digests.get(f"{prefix}:{path}")),
+        ) is None:
+            problems.append(f"W6-03 lacks committed {prefix} digest: {path}")
+    return problems
+
+
+def _w6_03_artifact_problems(artifact_digests: Any, state_root: Path) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W6-03 artifact_digests is not an object"]
+    digest = artifact_digests.get("state-artifact:w6-03-supply-chain-report")
+    if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+        return ["W6-03 state artifact digest is missing"]
+    path = (
+        state_root / "evidence" / "W6-03" / "reports"
+        / f"{str(digest).split(':', 1)[1]}.json"
+    )
+    try:
+        payload = path.read_bytes()
+        record = json.loads(payload)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W6-03 supply-chain evidence is unreadable: {exc}"]
+    problems: list[str] = []
+    if "sha256:" + sha256_hex(payload) != digest:
+        problems.append("W6-03 supply-chain evidence content drifted")
+    if (
+        record.get("schema_version") != "jc/w6-supply-chain-evidence/1.0"
+        or record.get("task_id") != "W6-03"
+        or record.get("status") != "PASS"
+        or not _validate_git_binding(str(record.get("commit")), str(record.get("tree")))
+        or record.get("profile_count") != 5
+        or record.get("target_count") != 4
+        or record.get("lane_count") != 20
+    ):
+        problems.append("W6-03 supply-chain evidence identity/counts drifted")
+    if record.get("static", {}).get("status") != "PASS":
+        problems.append("W6-03 static profile evidence is not PASS")
+    audits = record.get("audits", {})
+    if (
+        set(audits) != set(W6_03_PROFILES)
+        or any(
+            row.get("status") != "PASS" or row.get("vulnerability_count") != 0
+            for row in audits.values() if isinstance(row, dict)
+        )
+    ):
+        problems.append("W6-03 vulnerability evidence drifted")
+    lanes = record.get("lanes", [])
+    expected_lanes = {(target, profile) for target in W6_03_TARGETS for profile in W6_03_PROFILES}
+    observed_lanes = {
+        (row.get("target"), row.get("profile"))
+        for row in lanes if isinstance(row, dict)
+    }
+    if (
+        not isinstance(lanes, list) or observed_lanes != expected_lanes
+        or any(
+            row.get("status") != "PASS"
+            or row.get("download", {}).get("return_code") != 0
+            or row.get("offline_install", {}).get("return_code") != 0
+            or row.get("sbom", {}).get("status") != "PASS"
+            for row in lanes if isinstance(row, dict)
+        )
+    ):
+        problems.append("W6-03 clean offline/SBOM lane evidence drifted")
+    if record.get("distribution_exclusions") != {
+        "jinja2": True, "pydantic": True, "python-docx": True,
+        "pdfplumber": True, "hypothesis": True,
+    }:
+        problems.append("W6-03 stable distribution exclusion evidence drifted")
+    reachability = record.get("target_reachability", {})
+    if (
+        set(reachability) != set(W6_03_PROFILES)
+        or any(
+            row.get("status") != "PASS"
+            or not isinstance(row.get("package_count"), int)
+            or DIGEST_V4_PATTERN.fullmatch(str(row.get("packages_sha256"))) is None
+            for row in reachability.values() if isinstance(row, dict)
+        )
+    ):
+        problems.append("W6-03 target reachability union evidence drifted")
     return problems
 
 
@@ -20347,6 +20797,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W6-01 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W6-03":
+        problems.extend(_w6_03_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w6_03_contract_problems())
+        problems.extend(_w6_03_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w6_03_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w6-03-exact-green-reports",
+            "w6-03-supply-chain-evidence",
+            "w6-03-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W6-03 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -22084,6 +22558,37 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W6-01 packaging, governance, runner, and executable-test paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W6-03":
+        report_problems = _w6_03_test_report_problems(test_reports)
+        contract_problems = _w6_03_contract_problems()
+        artifact_problems = _w6_03_artifact_problems(artifact_digests, state_root)
+        path_problems = _w6_03_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w6-03-exact-green-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W6_03_TEST_CASE_COUNT} pin/hash/license/profile mutations passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w6-03-supply-chain-evidence", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "five exact profiles passed 20 clean offline target lanes, wheel metadata/SBOM "
+                "reconciliation, license policy, and zero-vulnerability audit"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w6-03-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W6-03 locks, retired profiles, governance, runner, and tests are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

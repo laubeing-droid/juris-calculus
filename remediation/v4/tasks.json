@@ -4327,11 +4327,29 @@
       ],
       "objective": "完整 hash locks 和供应链；transitive graph 全 pin+hash",
       "allowed_paths": [
-        "requirements/*.lock",
-        "tools/supply_chain_gate.py",
-        "tests/packaging/test_hash_locks.py"
+        "pyproject.toml",
+        "requirements/build.lock",
+        "requirements/core.lock",
+        "requirements/dev.lock",
+        "requirements/documents.lock",
+        "requirements/pipeline.lock",
+        "requirements/release.lock",
+        "requirements/render.lock",
+        "requirements/source-tool.lock",
+        "requirements/test.lock",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/packaging/test_hash_locks.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+        "tools/supply_chain_gate.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "ALL_PROFILES_HASH_LOCKED",
+        "SUPPLY_CHAIN_GREEN"
+      ],
       "argv": [
         [
           "{python}",
@@ -4339,11 +4357,30 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W6-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W6-03",
+          "tests/packaging/test_hash_locks.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W6-03.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",

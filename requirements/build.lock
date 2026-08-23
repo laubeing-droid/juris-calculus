@@ -1,0 +1,40 @@
+# juris-calculus fully hashed lock v1
+# profile: build
+# supported: CPython 3.11/3.12; win_amd64; manylinux_2_28_x86_64
+# source: exact wheels downloaded from https://pypi.org/simple
+
+# package: build
+# role: direct
+# license: MIT
+build==1.5.0 \
+    --hash=sha256:13f3eecb844759ab66efec90ca17639bbf14dc06cb2fdf37a9010322d9c50a6f
+
+# package: colorama
+# role: transitive
+# license: BSD-3-Clause
+colorama==0.4.6 \
+    --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
+
+# package: packaging
+# role: transitive
+# license: Apache-2.0 OR BSD-2-Clause
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+
+# package: pyproject-hooks
+# role: transitive
+# license: MIT
+pyproject-hooks==1.2.0 \
+    --hash=sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913
+
+# package: setuptools
+# role: direct
+# license: MIT
+setuptools==83.0.0 \
+    --hash=sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3
+
+# package: wheel
+# role: direct
+# license: MIT
+wheel==0.47.0 \
+    --hash=sha256:212281cab4dff978f6cedd499cd893e1f620791ca6ff7107cf270781e587eced
