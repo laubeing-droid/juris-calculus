@@ -4,7 +4,7 @@
 
 - JC is a public, CLI-first, auditable legal-reasoning kernel.
 - Formal path: structured request -> deterministic admission -> application service -> canonical result, audit bundle, graph, and replay.
-- Optional WorkBuddy MCP is a four-tool, zero-resource stdio compatibility adapter. It delegates to the same services as the CLI.
+- The four-tool, zero-resource stdio MCP adapter delegates to the same V4 parser and application service as CLI and Python; it is not a compatibility evaluator.
 - The public kernel provides neutral, stable, auditable output only. Private client data, legal workflows, strategy decisions, personal style, OCR/model pipelines, and proprietary rule packs remain outside.
 
 ## Protected semantics
@@ -15,10 +15,10 @@
 
 ## Rule packs
 
-- `cn-official` is intentionally blocked until first-party source snapshots exist.
-- Legacy CN/HK/US material is candidate corpus for inspection, governance, and training export; it is not a silent formal fallback.
+- `cn-official` remains absent until an approved first-party source inventory and independent reviews exist.
+- The retired CN legacy corpus is history-bound and absent from the current tree/runtime/wheel; it is never a formal fallback or an input to `cn-official`.
 - Runtime inventory and manifests are the only count authority. Do not hard-code inventory numbers in public prose.
-- Promotion is external and human-controlled; no automated promotion path exists.
+- CI builds one exact release candidate. The reusable promotion workflow can only advance that artifact after external governance, protected-environment approval, an authorized production key, and exact tag verification; workflow code alone is not promotion authority.
 
 ## Audit and output
 

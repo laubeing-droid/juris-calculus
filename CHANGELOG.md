@@ -1,30 +1,25 @@
 # Changelog
 
-## 3.0.2 — Unreleased
+## 4.0.0rc1 — Local release candidate
 
-### Public boundary
+### Runtime boundary
 
-- CLI is the primary interface.
-- Optional WorkBuddy MCP exposes four tools and zero resources.
-- Legacy 33-tool/12-resource MCP compatibility dispatch was removed.
+- Public CLI, Python, MCP, schema, application, certificate, verify, and replay surfaces are V4-only.
+- V3/W1b adapters, caller-trusted shortcuts, duplicate authorities, and legacy rule fallback were removed from the current tree and wheel.
+- `configs/zh_CN/rules.yaml` and the `cn-legacy-corpus` manifest were retired with history-bound evidence; no content was promoted into `cn-official`.
 
-### Auditing
+### Evidence and packaging
 
-- Evaluation writes an atomic audit bundle with events, result, graph, manifest, checksums, and replay support.
-- Rendering is read-only, opt-in, and bound to the canonical result.
+- Required tests are governed by `tests/required-v4-tests.json` with zero required skip/xfail bypass.
+- Hash-locked build, runtime, test, and release profiles drive a byte-identical A/B wheel build and repository-outside installed-wheel tests.
+- `tools/build_provenance.py` binds the exact wheel, RECORD, runtime SBOM, source commit/tree, schema, tool contract, authority registry, trust material, and locks.
+- `.github/workflows/ci.yml` builds once; `.github/workflows/auto-release.yml` only promotes that exact artifact after tag, production signature, environment, and governance checks.
 
-### Rule governance
+### Not yet promoted
 
-- Pack manifests bind resources, inventory, source metadata, and content digest.
-- Candidate-only rules remain available for governance and training export but cannot enter formal reasoning.
-- `cn-official` remains blocked until first-party source snapshots are supplied.
+- This tree remains 4.0.0rc1. GitHub governance, a production Ed25519 release-attestor key, remote release authorization, first-party `cn-official` sources, independent reviews, and production deployment are external gates.
+- Test-only provenance is explicitly `TEST_ONLY_NOT_PROMOTABLE`.
 
-### Engineering
+## Historical lines
 
-- Supported Python is 3.11 and 3.12.
-- Core dependency auditing uses the hash-pinned lock profile and fails closed.
-- Public documentation now describes the CLI-first, auditable boundary without static test or rule-count claims.
-
-## Earlier lines
-
-Versions 1.x–2.1.x were experimental interfaces. They are not runtime-compatible with v3. See [v2 migration](docs/guides/MIGRATION_V2_TO_V3.md).
+V3.0.2 and older interfaces are retained only in frozen historical artifacts. See `docs/operations/V3_HISTORICAL_REPLAY.md`; it is not current runtime authority.

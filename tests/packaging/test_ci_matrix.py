@@ -32,7 +32,7 @@ def _document(text: str | None = None) -> dict[str, Any]:
 
 
 def _steps(job: dict[str, Any]) -> list[dict[str, Any]]:
-    return job["steps"]
+    return job.get("steps", [])
 
 
 def _runs(job: dict[str, Any]) -> str:

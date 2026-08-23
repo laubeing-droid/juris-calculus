@@ -330,23 +330,32 @@ CLOSURE_TASK: dict[str, str] = {
 }
 
 SPECIAL_CLOSURE_TASKS = {
-    ".github/workflows/ci.yml": "W6-06",
-    "README.md": "W5-07",
+    ".github/CODEOWNERS": "W6-08",
+    ".github/workflows/auto-release.yml": "W6-08",
+    ".github/workflows/ci.yml": "W6-08",
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md": "W6-08",
+    "AGENTS.md": "W6-08",
+    "CHANGELOG.md": "W6-08",
+    "HANDOFF.md": "W6-08",
+    "README.md": "W6-08",
+    "SECURITY.md": "W6-08",
     "compiler_core/cli.py": "W5-06",
     "compiler_core/audit.py": "W5-05",
     "compiler_core/rule_packs.py": "W5-05",
     "docs/architecture/contract-authority-v4.md": "W5-05",
     "docs/architecture/module-authority.json": "W5-05",
     "docs/architecture/runtime-path-inventory.md": "W5-05",
-    "docs/README.md": "W5-07",
+    "docs/README.md": "W6-08",
     "docs/guides/MIGRATION_V2_TO_V3.md": "W5-07",
     "docs/guides/README_CN.md": "W5-07",
     "docs/guides/WORKBUDDY.md": "W5-07",
     "docs/operations/V3_HISTORICAL_REPLAY.md": "W5-07",
+    "docs/operations/RELEASE_V4.md": "W6-08",
+    "memory.md": "W6-08",
     "pyproject.toml": "W6-03",
-    "remediation/v4/file-disposition.json": "W6-06",
-    "remediation/v4/tasks.json": "W6-06",
-    "tests/contract/test_required_test_manifest.py": "W6-06",
+    "remediation/v4/file-disposition.json": "W6-08",
+    "remediation/v4/tasks.json": "W6-08",
+    "tests/contract/test_required_test_manifest.py": "W6-08",
     "tests/differential/test_pinned_companion_spec.py": "W6-05",
     "tests/differential/test_self_contained_v4.py": "W6-05",
     "tests/fixtures/companion_spec/NOTICE.md": "W6-05",
@@ -356,16 +365,18 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/formal_e2e/test_three_entrypoint_error_matrix.py": "W5-06",
     "tests/packaging/test_current_authority_docs.py": "W5-05",
     "tests/packaging/test_wheel_gate_v4.py": "W6-01",
-    "tests/packaging/test_ci_matrix.py": "W6-06",
+    "tests/packaging/test_ci_matrix.py": "W6-08",
+    "tests/packaging/test_current_docs.py": "W6-08",
     "tests/packaging/test_provenance.py": "W6-06",
+    "tests/packaging/test_release_promotion.py": "W6-08",
     "tests/packaging/test_hash_locks.py": "W6-05",
     "tests/packaging/test_wheel_exact_set.py": "W6-05",
-    "tests/required-v4-tests.json": "W6-06",
+    "tests/required-v4-tests.json": "W6-08",
     "tests/unit/test_release_engineering.py": "W6-05",
     "tests/unit/test_spec_shadow_harness.py": "W6-05",
-    "tools/build_file_disposition.py": "W6-06",
+    "tools/build_file_disposition.py": "W6-08",
     "tools/build_provenance.py": "W6-06",
-    "tools/remediate_v4.py": "W6-06",
+    "tools/remediate_v4.py": "W6-08",
     "configs/perf_patterns.yaml": "W5-02C",
     "tools/wheel_gate.py": "W6-05",
     "requirements/build.lock": "W6-03",
@@ -561,7 +572,11 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     elif rel.startswith("tests/"):
         disp = "RETAIN_NONPACKAGED"
         terminal = "CANDIDATE_ASSET"
-    elif rel.startswith("docs/") or rel == "README.md" or rel == "HANDOFF.md" or rel == "AGENTS.md" or rel == "CHANGELOG.md" or rel == "memory.md" or rel == "CLAUDE.md":
+    elif rel.startswith("docs/") or rel in {
+        "README.md", "HANDOFF.md", "AGENTS.md", "CHANGELOG.md", "SECURITY.md",
+        "memory.md", "CLAUDE.md",
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    }:
         disp = "DOC_UPDATE"
         terminal = "DOC_UPDATE"
     elif rel.startswith("schemas/"):

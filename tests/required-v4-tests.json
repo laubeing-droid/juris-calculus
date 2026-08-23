@@ -369,6 +369,20 @@
       "selector": "tests/packaging/test_provenance.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 10
+    },
+    {
+      "id": "W6-RELEASE-PROMOTION",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_release_promotion.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
+    },
+    {
+      "id": "W6-CURRENT-DOCS",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_current_docs.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 3
     }
   ],
   "evidence_tracks": [
@@ -853,8 +867,8 @@
       "test_id": "V4-P3-02-HISTORICAL-DOCS",
       "suite": "packaging",
       "selector": "tests/packaging/test_current_docs.py::test_historical_guides_are_not_current_authority",
-      "owner_task": "W5-CUTOVER",
-      "state": "RED_AT_TASK",
+      "owner_task": "W6-08",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Restore a V2, V3, W1b, or WorkBuddy migration guide as current documentation.",
       "red_failure": "Historical guidance must not re-enter current authority."
     }

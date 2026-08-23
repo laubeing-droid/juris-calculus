@@ -1,47 +1,38 @@
-# `juris-calculus` 交接
+# `juris-calculus` V4 remediation handoff
 
-核验时间：2026-07-29（Asia/Shanghai）
+Status date: 2026-08-24 (Asia/Shanghai)
 
-## Git 状态
+## Current state
 
-公开、CLI-first、可审计法律推理内核。生成 handoff 前：`main...origin/main [ahead 1]`，工作树干净，HEAD `4ddd718`；该本地提交只补 `memory.md` 的法律编译器研究基线，尚未推送。
+The current source and package version is 4.0.0rc1. The local V4 kernel, deterministic build, installed-wheel gates, SBOM, checksums, and test-only signed provenance are implemented. Remote production promotion is not completed.
 
-## 当前产品边界
+The exact Git commit, tree, command streams, test reports, and artifact digests are authoritative only in the append-only remediation receipts. Prose does not replace those receipts.
 
-版本口径为 3.0.2 Unreleased。正式链：结构化请求 → deterministic admission → application service → canonical result/audit bundle/graph/replay。可选 WorkBuddy MCP 只提供 4 tools、0 resources，共用同一服务，不是第二套 evaluator。
+## External boundary
 
-保护边界：
+The public GitHub repository currently has no ruleset and `main` branch protection is not enabled. Production promotion still requires:
 
-```text
-LLM proposes -> verification gates decide -> formal kernel reasons
-```
+1. protected branch/tag and required-check governance;
+2. approval of the protected `release` environment;
+3. an authorized production Ed25519 release-attestor key;
+4. an exact tag resolving to the tested wheel source commit;
+5. separate source/legal/engineering approvals before any `cn-official` promotion;
+6. separately authorized production deployment.
 
-只有 `verified_fact` 可进入形式推理；`UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 不产生证书。`cn-official` 在缺少第一方法源快照时继续 blocked。语义改动先进入上游 `legal-math-modeling` 仓库。
+The workflows in `.github/workflows/ci.yml` and `.github/workflows/auto-release.yml` encode the build-once/promotion boundary, but committing workflow code does not satisfy any external gate.
 
-## 权威文件
+## Resume and verify
 
-- `AGENTS.md`
-- `memory.md`
-- `README.md`
-- `CHANGELOG.md`
-- `docs/contracts/`
-- `mcp_manifest.json`
+The governed remediation runner is `tools/remediate_v4.py`; the current task plan is `remediation/v4/tasks.json`. Use the absolute state-root command recorded in `remediation/v4/STATUS.md`.
 
-## 恢复验证
-
-支持 Python 3.11/3.12。不要仅跑进程内 smoke 后宣告 MCP 正常；stdio subprocess test 才是传输权威。
+Focused current checks:
 
 ```powershell
-python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
-python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
-python -m pytest tests\ -q
-python mcp_server.py --test
-python tools\supply_chain_gate.py --requirements requirements\core.lock
+python -B tools/remediate_v4.py verify-wave W0-04
+python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging
+python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/formal_e2e tests/mcp_protocol tests/security
+python -B mcp_server.py --test
 git diff --check
 ```
 
-未获当前回合授权时不要 push、tag、release 或改变可见性。
-
-## 2026-08-07 路径复核
-
-仓库迁入 `D:\Codex\1.法律工作区\juris-calculus` 后，入口边界与 stdio MCP 权威测试通过。Windows 默认 `%TEMP%` 会使 render 测试的摘要目录超过传统路径长度；使用短 `--basetemp` 后全套为 355 通过、28 项因缺少重依赖跳过。该环境问题未通过修改正式内核或全局长路径策略规避。
+Historical V3 replay is isolated under `docs/operations/V3_HISTORICAL_REPLAY.md`; it is not a current API, schema, runtime, or migration route.

@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.51.0"
+RUNNER_VERSION = "0.52.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -111,6 +111,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.49.0": 5,
     "0.50.0": 5,
     "0.51.0": 5,
+    "0.52.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1030,6 +1031,42 @@ W6_06_ALLOWED_PATHS = (
 W6_06_REQUIRED_CHANGED_PATHS = W6_06_ALLOWED_PATHS
 W6_06_REQUIRED_TEST_TOTAL = 467
 W6_06_FUTURE_RED_COUNT = 5
+W6_08_TEST_PATHS = (
+    "tests/packaging/test_release_promotion.py",
+    "tests/packaging/test_current_docs.py",
+    "tests/packaging/test_ci_matrix.py",
+    "tests/contract/test_required_test_manifest.py",
+)
+W6_08_TEST_CASE_COUNT = 26
+W6_08_TEST_CASE_IDS_DIGEST = (
+    "sha256:3336f5368e23a9ca6630124f06a307078ec35da5644260139ae57b12a4aa06a6"
+)
+W6_08_ALLOWED_PATHS = (
+    ".github/CODEOWNERS",
+    ".github/workflows/auto-release.yml",
+    ".github/workflows/ci.yml",
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "HANDOFF.md",
+    "README.md",
+    "SECURITY.md",
+    "docs/README.md",
+    "docs/operations/RELEASE_V4.md",
+    "memory.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/packaging/test_ci_matrix.py",
+    "tests/packaging/test_current_docs.py",
+    "tests/packaging/test_release_promotion.py",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W6_08_REQUIRED_CHANGED_PATHS = W6_08_ALLOWED_PATHS
+W6_08_REQUIRED_TEST_TOTAL = 478
+W6_08_FUTURE_RED_COUNT = 4
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4763,6 +4800,20 @@ def _required_test_manifest_problems(
             "selector": "tests/packaging/test_provenance.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 10,
+        },
+        {
+            "id": "W6-RELEASE-PROMOTION",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_release_promotion.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 8,
+        },
+        {
+            "id": "W6-CURRENT-DOCS",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_current_docs.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 3,
         },
     ]
     if required_now != expected_required_now:
@@ -18366,6 +18417,212 @@ def cmd_w6_06_release_evidence_gate() -> int:
     return EXIT_OK
 
 
+def _w6_08_contract_problems() -> list[str]:
+    """Keep local RC engineering independent from external promotion gates."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        promotion = _w6_01_load_wheel_gate(
+            ROOT / "tests/packaging/test_release_promotion.py"
+        )
+        generated_disposition = generator.build_document()
+        promotion_problems = promotion._promotion_problems()
+        _topological_tasks(plan)
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W6-08 governance input is unreadable: {type(exc).__name__}: {exc}"]
+    by_id = {
+        item.get("id"): item for item in plan.get("tasks", [])
+        if isinstance(item, dict)
+    }
+    task = by_id.get("W6-08", {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W6-08"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W6-08", *W6_08_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W6-08.xml",
+        ],
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-04"],
+    ]
+    if task.get("depends_on") != ["W6-06"]:
+        problems.append("W6-08 must depend on W6-06, not remote governance")
+    if task.get("audit_ids") != ["P0-15", "P2-04", "P2-07", "P3-02"]:
+        problems.append("W6-08 audit projection drifted")
+    if task.get("allowed_paths") != list(W6_08_ALLOWED_PATHS):
+        problems.append("W6-08 exact allowlist drifted")
+    if task.get("terminal_states") != [
+        "BUILD_ONCE_PROMOTION_WORKFLOW_GREEN",
+        "CURRENT_V4_DOCS_GREEN",
+        "EXTERNAL_GATES_DEFERRED_AFTER_LOCAL_IMPLEMENTATION",
+    ]:
+        problems.append("W6-08 terminal states drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+        problems.append("W6-08 exact gate/pytest/governance argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W6-08 timeout budget drifted")
+    implementation_chain = (
+        ("W7-I01", ["W6-08"]),
+        ("W8-I00", ["W7-I01"]),
+        ("W9-I00", ["W8-I00"]),
+    )
+    for task_id, dependencies in implementation_chain:
+        candidate = by_id.get(task_id, {})
+        if candidate.get("mode") != "AUTO" or candidate.get("depends_on") != dependencies:
+            problems.append(f"{task_id} independent implementation dependency drifted")
+        objective = str(candidate.get("objective", ""))
+        if not any(marker in objective for marker in ("不得宣称", "只产出")):
+            problems.append(f"{task_id} lacks an explicit non-production boundary")
+    if by_id.get("H7-00", {}).get("depends_on") != ["W9-I00"]:
+        problems.append("H7-00 must wait until all independent implementation is complete")
+    if by_id.get("H6-07", {}).get("depends_on") != ["W9-06"]:
+        problems.append("H6-07 must gate remote promotion after engineering and validation")
+    if by_id.get("H7-05", {}).get("depends_on") != ["W7-04", "H6-07"]:
+        problems.append("H7-05 remote promotion must consume governance and RC evidence")
+    if by_id.get("Z00", {}).get("depends_on") != ["W9-06", "H7-05"]:
+        problems.append("Z00 must not close before remote promotion evidence")
+    if disposition != generated_disposition:
+        problems.append("W6-08 file disposition is not reproducible from its generator")
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W6_08_REQUIRED_CHANGED_PATHS:
+        if by_path.get(path, {}).get("closure_task") != "W6-08":
+            problems.append(f"W6-08 disposition closure drifted: {path}")
+    if promotion_problems:
+        problems.extend(f"W6-08 promotion workflow: {item}" for item in promotion_problems)
+    required_rows = {
+        item.get("id"): item for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    if required_rows.get("W6-RELEASE-PROMOTION") != {
+        "id": "W6-RELEASE-PROMOTION", "suite": "packaging",
+        "selector": "tests/packaging/test_release_promotion.py",
+        "state": "REQUIRED_NOW", "expected_tests": 8,
+    }:
+        problems.append("W6-08 release-promotion required tests drifted")
+    if required_rows.get("W6-CURRENT-DOCS") != {
+        "id": "W6-CURRENT-DOCS", "suite": "packaging",
+        "selector": "tests/packaging/test_current_docs.py",
+        "state": "REQUIRED_NOW", "expected_tests": 3,
+    }:
+        problems.append("W6-08 current-doc required tests drifted")
+    historical_docs = next(
+        (
+            item for item in required.get("audit_mutations", [])
+            if isinstance(item, dict) and item.get("audit_id") == "P3-02"
+        ),
+        {},
+    )
+    if (
+        historical_docs.get("owner_task"), historical_docs.get("state"),
+        historical_docs.get("selector"),
+    ) != (
+        "W6-08", "ACTIVE_REQUIRED",
+        "tests/packaging/test_current_docs.py::"
+        "test_historical_guides_are_not_current_authority",
+    ):
+        problems.append("W6-08 P3-02 current-doc mutation binding drifted")
+    required_total = sum(
+        item.get("expected_tests", 0) for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    )
+    future_red = sum(
+        item.get("state") == "RED_AT_TASK"
+        for registry in ("evidence_tracks", "audit_mutations")
+        for item in required.get(registry, []) if isinstance(item, dict)
+    )
+    if (required_total, future_red) != (W6_08_REQUIRED_TEST_TOTAL, W6_08_FUTURE_RED_COUNT):
+        problems.append("W6-08 required/RED totals drifted")
+    scheme = (
+        ROOT / "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md"
+    ).read_text(encoding="utf-8")
+    for marker in ("W7-I01", "W8-I00", "W9-I00", "TEST_ONLY_NOT_PROMOTABLE"):
+        if marker not in scheme:
+            problems.append(f"W6-08 formal plan lacks plan-drift marker: {marker}")
+    return problems
+
+
+def _w6_08_build_evidence(state_root: Path) -> tuple[Path, str]:
+    upstream = next(
+        (
+            item for item in reversed(_receipt_history("W6-06", state_root))
+            if item.get("status") == "COMPLETED"
+        ),
+        {},
+    )
+    if DIGEST_V4_PATTERN.fullmatch(str(upstream.get("receipt_digest"))) is None:
+        raise ValueError("W6_06_COMPLETED_RECEIPT_MISSING")
+    report = {
+        "schema_version": "jc/w6-release-candidate-promotion/1.0",
+        "task_id": "W6-08",
+        "status": "PASS",
+        "source": {
+            "commit": _git_checked("rev-parse", "HEAD"),
+            "tree": _git_checked("rev-parse", "HEAD^{tree}"),
+        },
+        "upstream": {
+            "w6_06_receipt": upstream["receipt_digest"],
+            "artifacts": {
+                key: value for key, value in upstream.get("artifact_digests", {}).items()
+                if key.startswith("state-artifact:w6-06-")
+            },
+        },
+        "workflows": {
+            path: "sha256:" + sha256_hex((ROOT / path).read_bytes())
+            for path in (
+                ".github/workflows/ci.yml",
+                ".github/workflows/auto-release.yml",
+            )
+        },
+        "implementation_chain": ["W7-I01", "W8-I00", "W9-I00"],
+        "local_release_candidate": "PASS",
+        "production_release_claimed": False,
+        "external_promotion_status": "NOT_AUTHORIZED",
+        "external_requirements": [
+            "branch-and-tag-governance",
+            "protected-release-environment",
+            "authorized-production-ed25519-release-attestor",
+            "remote-release-authorization",
+        ],
+    }
+    return _write_content_addressed_json(
+        state_root / "evidence" / "W6-08" / "reports", report,
+    )
+
+
+def cmd_w6_08_promotion_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W6-08 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w6_08_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W6-08 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w6_08_build_evidence(Path(raw_state_root).resolve())
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"W6-08 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw6-08-release-candidate-report\t{report_path}\t{report_digest}")
+    print(
+        "W6-08 gate OK: CI builds one byte-identical tested V4 wheel; the reusable "
+        "workflow promotes only that artifact with a production key and exact tag; "
+        "W7-W9 implementation remains independent of external promotion"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -18449,6 +18706,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w6_05_ci_matrix_gate()
     if args.wave == "W6-06":
         return cmd_w6_06_release_evidence_gate()
+    if args.wave == "W6-08":
+        return cmd_w6_08_promotion_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -21066,6 +21325,54 @@ def _w6_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w6_08_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact promotion/docs tests plus current W0-04 governance evidence."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    governance_reports = [
+        report for report in test_reports if report.get("kind") == "pytest-governance"
+    ]
+    if len(pytest_reports) != 1:
+        problems.append("W6-08 must bind exactly one focused pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0, "terminal_summaries": 1,
+            "passed": W6_08_TEST_CASE_COUNT, "failed": 0, "errors": 0,
+            "skipped": 0, "xfailed": 0, "xpassed": 0, "collection_errors": 0,
+            "junit_valid": True, "junit_tests": W6_08_TEST_CASE_COUNT,
+            "junit_skipped": 0, "junit_failures": 0, "junit_errors": 0,
+            "junit_cases": W6_08_TEST_CASE_COUNT,
+            "junit_unique_cases": W6_08_TEST_CASE_COUNT,
+            "junit_case_ids_digest": W6_08_TEST_CASE_IDS_DIGEST,
+        }
+        problems.extend(
+            f"W6-08 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W6-08 pytest junit_sha256 is missing or invalid")
+    if len(governance_reports) != 1:
+        problems.append("W6-08 must bind exactly one W0-04 governance report")
+    else:
+        report = governance_reports[0]
+        expected = {
+            "exit_code": 0, "suites": 11, "audit_groups": 44, "rewrites": 25,
+            "required_passed": W6_08_REQUIRED_TEST_TOTAL,
+            "future_red": W6_08_FUTURE_RED_COUNT,
+            "bypass_or_collection_errors": 0,
+            "evidence_label": "w0-04-required-tests",
+        }
+        problems.extend(
+            f"W6-08 governance {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if DIGEST_V4_PATTERN.fullmatch(str(report.get("evidence_sha256"))) is None:
+            problems.append("W6-08 governance evidence digest is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -22108,6 +22415,91 @@ def _w6_06_artifact_problems(
     return problems
 
 
+def _w6_08_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W6-08 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W6-08 artifact_digests is not an object"]
+    expected = set(W6_08_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W6-08 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W6_08_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W6-08 lacks committed result digest: {path}")
+    return problems
+
+
+def _w6_08_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W6-08 artifact_digests is not an object"]
+    digest = artifact_digests.get("state-artifact:w6-08-release-candidate-report")
+    if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+        return ["W6-08 release-candidate report digest is missing"]
+    path = (
+        state_root / "evidence" / "W6-08" / "reports"
+        / f"{str(digest).split(':', 1)[1]}.json"
+    )
+    try:
+        raw = path.read_bytes()
+        report = json.loads(raw)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W6-08 release-candidate report is unreadable: {exc}"]
+    problems: list[str] = []
+    if "sha256:" + sha256_hex(raw) != digest:
+        problems.append("W6-08 release-candidate report content drifted")
+    upstream = next(
+        (
+            item for item in reversed(_receipt_history("W6-06", state_root))
+            if item.get("status") == "COMPLETED"
+        ),
+        {},
+    )
+    expected_artifacts = {
+        key: value for key, value in upstream.get("artifact_digests", {}).items()
+        if key.startswith("state-artifact:w6-06-")
+    }
+    expected_workflows = {
+        workflow: "sha256:" + sha256_hex((ROOT / workflow).read_bytes())
+        for workflow in (
+            ".github/workflows/ci.yml",
+            ".github/workflows/auto-release.yml",
+        )
+    }
+    source = report.get("source", {})
+    if (
+        report.get("schema_version") != "jc/w6-release-candidate-promotion/1.0"
+        or report.get("task_id") != "W6-08"
+        or report.get("status") != "PASS"
+        or not _validate_git_binding(str(source.get("commit")), str(source.get("tree")))
+        or report.get("upstream") != {
+            "w6_06_receipt": upstream.get("receipt_digest"),
+            "artifacts": expected_artifacts,
+        }
+        or report.get("workflows") != expected_workflows
+        or report.get("implementation_chain") != ["W7-I01", "W8-I00", "W9-I00"]
+        or report.get("local_release_candidate") != "PASS"
+        or report.get("production_release_claimed") is not False
+        or report.get("external_promotion_status") != "NOT_AUTHORIZED"
+    ):
+        problems.append("W6-08 release-candidate evidence binding drifted")
+    if not expected_artifacts:
+        problems.append("W6-08 inherited W6-06 artifacts are empty")
+    if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+        problems.append("W6-08 evidence report leaks a repository path")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -23085,6 +23477,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W6-06 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W6-08":
+        problems.extend(_w6_08_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w6_08_contract_problems())
+        problems.extend(_w6_08_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w6_08_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w6-08-exact-green-reports",
+            "w6-08-build-once-promotion-evidence",
+            "w6-08-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W6-08 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -24953,6 +25369,39 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 10 W6-06 workflow, governance, provenance, runner, and test paths "
+                "are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W6-08":
+        report_problems = _w6_08_test_report_problems(test_reports)
+        contract_problems = _w6_08_contract_problems()
+        artifact_problems = _w6_08_artifact_problems(artifact_digests, state_root)
+        path_problems = _w6_08_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w6-08-exact-green-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W6_08_TEST_CASE_COUNT} promotion/docs/governance cases and "
+                f"{W6_08_REQUIRED_TEST_TOTAL} required cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w6-08-build-once-promotion-evidence", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "one exact tested wheel is promoted without rebuild; test-only and production "
+                "signing remain distinct; W7-W9 implementation precedes external gates"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w6-08-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 21 W6-08 workflow, docs, plan, governance, runner, and test paths "
                 "are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),

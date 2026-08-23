@@ -1,12 +1,12 @@
 # juris-calculus
 
-JC is a public, auditable legal-reasoning kernel. It receives an explicit structured case request, applies only admitted rules, writes a replayable audit bundle, and returns a canonical machine result.
+JC 4.0.0rc1 is a public, auditable V4 legal-reasoning kernel. It accepts an explicit structured request, admits only verified facts and signed rules, runs one deterministic application service, and emits canonical results with replayable evidence.
 
 ```text
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-JC is not a case-management system, a source-document ingestion pipeline, a legal opinion generator, or a lawyer workflow product. Private facts, proprietary rule packs, litigation strategy decisions, and personal writing style stay outside this repository.
+The repository is a local release candidate, not a production release. `cn-official` is absent until an approved first-party source inventory, independent legal and engineering review, and production signing are all real. The retired legacy corpus is not present in the current runtime or wheel and is never a fallback.
 
 ## Start
 
@@ -19,48 +19,41 @@ jc packs list --json
 jc packs verify --all --json
 ```
 
-`cn-official` remains blocked until an official first-party source snapshot is supplied. Legacy corpora are available for inspection, governance, and training export; they are never a silent fallback for formal reasoning.
-
-## Core workflow
+## Formal workflow
 
 ```powershell
 jc evaluate --input case-request.json --json
+jc verify <run-id> --json
 jc replay <run-id> --json
-jc render <run-id> --format markdown --audience agent --json
 ```
 
-`evaluate` always writes a completed audit bundle: sanitized input, relevant semantic events, canonical result, deterministic graph, manifest, hashes, and completion marker. `replay` verifies bytes and semantic output. `render` only reads a completed bundle; it never re-evaluates facts or rules.
+CLI, Python, and the four-tool stdio MCP adapter all use the same V4 parser and application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
 
-## Interfaces
+## Safety boundary
 
-- **CLI:** primary interface for people, local agents, and automation.
-- **Python:** `JCClient` over the same V4 application service.
-- **stdio MCP:** the four-tool formal adapter over that same V4 application service.
-
-## Safety rules
-
-- Only `verified_fact` may enter formal reasoning.
-- `UNKNOWN`, `DISPUTED`, and `USER_ASSUMED` remain review-only, branch, or hypothetical states; none produces a formal certificate.
-- A rule needs explicit source admission before it is reasoning-eligible.
-- Rendering and advisory analysis cannot modify the canonical result.
-- Horn, attack, exception, permission, priority, checker, `DecisionStatus`, and fail-closed semantics are protected.
+- Only admitted `verified_fact` values enter formal reasoning.
+- Review, missing-fact, hypothetical, conflict, unknown, and engine-error outcomes stay distinct.
+- Candidate or development packs cannot become formal by changing a flag.
+- Audit, verify, and replay bind the exact runtime, pack, trust policy, schema, tool contract, locks, and stored bytes.
+- No public entrypoint retains a V3, W1b, caller-trusted, or legacy fallback route.
 
 ## Documentation
 
-[Documentation index](docs/README.md) · [中文说明](docs/guides/README_CN.md) · [CLI](docs/guides/CLI.md) · [Audit and replay](docs/contracts/AUDIT_BUNDLE.md) · [Rule packs](docs/contracts/RULE_PACKS.md)
+[Documentation index](docs/README.md) · [CLI](docs/guides/CLI.md) · [Audit and replay](docs/contracts/AUDIT_BUNDLE.md) · [Rule packs](docs/contracts/RULE_PACKS.md) · [V4 release procedure](docs/operations/RELEASE_V4.md)
 
 ## Local verification
 
 ```powershell
-python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
-python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
-python -m pytest tests\ -q
-python mcp_server.py --test
-python tools\supply_chain_gate.py --requirements requirements\core.lock
+python -B tools/remediate_v4.py verify-wave W0-04
+python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/contract tests/formal_e2e tests/mcp_protocol tests/security
+python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging
+python -B tools/wheel_gate.py --help
+python -B tools/build_provenance.py --help
+python -B mcp_server.py --test
 git diff --check
 ```
 
-The subprocess stdio test is the MCP transport authority. `mcp_server.py --test` is only an in-process smoke. Test counts and remote CI status are evidence only when recorded by the corresponding run.
+Tests, a clean wheel, and test-only provenance prove a release candidate only. Remote promotion additionally requires the governance and production-signing conditions in `.github/workflows/ci.yml` and `.github/workflows/auto-release.yml`.
 
 ## License
 

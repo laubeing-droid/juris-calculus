@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 431,
+  "count": 436,
   "paths": [
     {
       "path": ".gitattributes",
@@ -14,11 +14,19 @@
       "namespace": "candidate_asset"
     },
     {
+      "path": ".github/CODEOWNERS",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08",
+      "namespace": "formal_core"
+    },
+    {
       "path": ".github/workflows/auto-release.yml",
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W6-08",
       "namespace": "formal_core"
     },
     {
@@ -26,7 +34,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W6-06",
+      "closure_task": "W6-08",
       "namespace": "formal_core"
     },
     {
@@ -55,11 +63,11 @@
     },
     {
       "path": "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "closure_task": "W6-08",
+      "namespace": "docs"
     },
     {
       "path": "20260819_juris-calculus_V4单主链生产投产全量代码审计.md",
@@ -114,7 +122,15 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-07",
+      "closure_task": "W6-08",
+      "namespace": "docs"
+    },
+    {
+      "path": "SECURITY.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08",
       "namespace": "docs"
     },
     {
@@ -1359,7 +1375,7 @@
       "disposition": "DOC_UPDATE",
       "terminal_state": "DOC_UPDATE",
       "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-07",
+      "closure_task": "W6-08",
       "namespace": "docs"
     },
     {
@@ -1513,6 +1529,14 @@
       "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
+    },
+    {
+      "path": "docs/operations/RELEASE_V4.md",
+      "disposition": "DOC_UPDATE",
+      "terminal_state": "DOC_UPDATE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08",
+      "namespace": "docs"
     },
     {
       "path": "docs/operations/V3_HISTORICAL_REPLAY.md",
@@ -1689,7 +1713,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06"
+      "closure_task": "W6-08"
     },
     {
       "path": "remediation/v4/issue-map.json",
@@ -1717,7 +1741,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06"
+      "closure_task": "W6-08"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -2023,7 +2047,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06"
+      "closure_task": "W6-08"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -2447,7 +2471,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06"
+      "closure_task": "W6-08"
     },
     {
       "path": "tests/packaging/test_current_authority_docs.py",
@@ -2455,6 +2479,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W5-05"
+    },
+    {
+      "path": "tests/packaging/test_current_docs.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08"
     },
     {
       "path": "tests/packaging/test_hash_locks.py",
@@ -2476,6 +2507,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W6-06"
+    },
+    {
+      "path": "tests/packaging/test_release_promotion.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-08"
     },
     {
       "path": "tests/packaging/test_wheel_exact_set.py",
@@ -2532,7 +2570,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06",
+      "closure_task": "W6-08",
       "namespace": "candidate_asset"
     },
     {
@@ -3407,7 +3445,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06",
+      "closure_task": "W6-08",
       "namespace": "formal_core"
     },
     {
@@ -3454,7 +3492,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-06",
+      "closure_task": "W6-08",
       "namespace": "formal_core"
     },
     {

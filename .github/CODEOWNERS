@@ -1,0 +1,3 @@
+# Local policy becomes enforceable only after the repository owner enables
+# branch/tag rules and required review in GitHub.
+* @laubeing-droid

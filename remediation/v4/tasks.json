@@ -4719,7 +4719,7 @@
       "wave": "W6",
       "mode": "MIXED",
       "depends_on": [
-        "W6-06"
+        "W9-06"
       ],
       "audit_ids": [
         "P0-15",
@@ -4758,7 +4758,7 @@
       "wave": "W6",
       "mode": "AUTO",
       "depends_on": [
-        "H6-07"
+        "W6-06"
       ],
       "audit_ids": [
         "P0-15",
@@ -4766,20 +4766,35 @@
         "P2-07",
         "P3-02"
       ],
-      "objective": "Artifact promotion workflow 和 current docs",
+      "objective": "本地 build-once release candidate、受控 artifact promotion workflow 和 current V4 docs；外部门禁不得阻止后续实现",
       "allowed_paths": [
+        ".github/CODEOWNERS",
         ".github/workflows/auto-release.yml",
-        "README.md",
+        ".github/workflows/ci.yml",
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "AGENTS.md",
         "CHANGELOG.md",
         "HANDOFF.md",
-        "AGENTS.md",
-        "memory.md",
-        "docs/**",
+        "README.md",
         "SECURITY.md",
-        "CODEOWNERS",
-        "NOTICE"
+        "docs/README.md",
+        "docs/operations/RELEASE_V4.md",
+        "memory.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/packaging/test_ci_matrix.py",
+        "tests/packaging/test_current_docs.py",
+        "tests/packaging/test_release_promotion.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "BUILD_ONCE_PROMOTION_WORKFLOW_GREEN",
+        "CURRENT_V4_DOCS_GREEN",
+        "EXTERNAL_GATES_DEFERRED_AFTER_LOCAL_IMPLEMENTATION"
+      ],
       "argv": [
         [
           "{python}",
@@ -4787,6 +4802,258 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W6-08"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W6-08",
+          "tests/packaging/test_release_promotion.py",
+          "tests/packaging/test_current_docs.py",
+          "tests/packaging/test_ci_matrix.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W6-08.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
+        ]
+      ],
+      "expected_exit_codes": [
+        0,
+        0,
+        0
+      ],
+      "timeout_seconds": 1800,
+      "completion_assertions": [
+        {
+          "id": "all-commands-passed",
+          "kind": "all_commands_passed"
+        }
+      ],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": [
+        "schema_version",
+        "task_digest",
+        "run_id",
+        "task_id",
+        "attempt",
+        "status",
+        "input_receipt_digests",
+        "start_commit",
+        "start_tree",
+        "result_commit",
+        "result_tree",
+        "command_results",
+        "changed_paths",
+        "allowlist",
+        "test_reports",
+        "artifact_digests",
+        "completion_assertions",
+        "previous_receipt_digest",
+        "runner_version",
+        "receipt_digest"
+      ]
+    },
+    {
+      "id": "W7-I01",
+      "wave": "W7",
+      "mode": "AUTO",
+      "depends_on": [
+        "W6-08"
+      ],
+      "audit_ids": [
+        "P0-13",
+        "P1-10",
+        "P1-11",
+        "P1-12",
+        "P1-15",
+        "P1-17"
+      ],
+      "objective": "在无目标生产 provider 的条件下完成 storage capability probe、容量预算、灾难/撤销/回退与 Kernel RC verifier 实现；只产出 test/local RC 证据",
+      "allowed_paths": [
+        "compiler_core/storage.py",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/performance/**",
+        "tests/security/**",
+        "tests/storage_chaos/**",
+        "tests/windows_security/**",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/perf_baseline.py",
+        "tools/remediate_v4.py"
+      ],
+      "terminal_states": [
+        "STORAGE_RC_IMPLEMENTATION_GREEN",
+        "TARGET_PROVIDER_NOT_CLAIMED"
+      ],
+      "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W7-I01"
+        ]
+      ],
+      "expected_exit_codes": [
+        0
+      ],
+      "completion_assertions": [
+        {
+          "id": "all-commands-passed",
+          "kind": "all_commands_passed"
+        }
+      ],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": [
+        "schema_version",
+        "task_digest",
+        "run_id",
+        "task_id",
+        "attempt",
+        "status",
+        "input_receipt_digests",
+        "start_commit",
+        "start_tree",
+        "result_commit",
+        "result_tree",
+        "command_results",
+        "changed_paths",
+        "allowlist",
+        "test_reports",
+        "artifact_digests",
+        "completion_assertions",
+        "previous_receipt_digest",
+        "runner_version",
+        "receipt_digest"
+      ]
+    },
+    {
+      "id": "W8-I00",
+      "wave": "W8",
+      "mode": "AUTO",
+      "depends_on": [
+        "W7-I01"
+      ],
+      "audit_ids": [
+        "P0-02",
+        "P0-04",
+        "P0-05",
+        "P1-07",
+        "P1-20"
+      ],
+      "objective": "用独立 test-only 第一方法源 fixture 完成 source intake、candidate、deterministic pack build、全状态与法律质量 verifier；不得宣称 cn-official",
+      "allowed_paths": [
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_cn_official_candidate.py",
+        "tests/contract/test_cn_official_pack.py",
+        "tests/contract/test_cn_official_source_intake.py",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/fixtures/cn_official/**",
+        "tests/formal_e2e/**",
+        "tests/required-v4-tests.json",
+        "tests/semantic_mutation/**",
+        "tools/build_cn_official_pack.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
+      ],
+      "terminal_states": [
+        "CN_PACK_PIPELINE_TEST_ONLY_GREEN",
+        "FORMAL_SOURCE_NOT_CLAIMED"
+      ],
+      "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W8-I00"
+        ]
+      ],
+      "expected_exit_codes": [
+        0
+      ],
+      "completion_assertions": [
+        {
+          "id": "all-commands-passed",
+          "kind": "all_commands_passed"
+        }
+      ],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": [
+        "schema_version",
+        "task_digest",
+        "run_id",
+        "task_id",
+        "attempt",
+        "status",
+        "input_receipt_digests",
+        "start_commit",
+        "start_tree",
+        "result_commit",
+        "result_tree",
+        "command_results",
+        "changed_paths",
+        "allowlist",
+        "test_reports",
+        "artifact_digests",
+        "completion_assertions",
+        "previous_receipt_digest",
+        "runner_version",
+        "receipt_digest"
+      ]
+    },
+    {
+      "id": "W9-I00",
+      "wave": "W9",
+      "mode": "AUTO",
+      "depends_on": [
+        "W8-I00"
+      ],
+      "audit_ids": [
+        "P0-09",
+        "P0-10",
+        "P1-15",
+        "P2-05"
+      ],
+      "objective": "完成 out-of-tree DSH profile、MCP fail-closed 配置、skill、delivery guard 和 bypass 测试实现；不得宣称生产部署",
+      "allowed_paths": [
+        ".agents/skills/**",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/dsh_formal/**",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
+      ],
+      "terminal_states": [
+        "DSH_ADAPTER_IMPLEMENTATION_GREEN",
+        "DEPLOYMENT_NOT_CLAIMED"
+      ],
+      "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W9-I00"
         ]
       ],
       "expected_exit_codes": [
@@ -4827,7 +5094,7 @@
       "wave": "W7",
       "mode": "MIXED",
       "depends_on": [
-        "W6-08"
+        "W9-I00"
       ],
       "audit_ids": [
         "P0-13",
@@ -5149,7 +5416,8 @@
       "wave": "W7",
       "mode": "HUMAN_GATE",
       "depends_on": [
-        "W7-04"
+        "W7-04",
+        "H6-07"
       ],
       "audit_ids": [
         "P0-15"
@@ -5930,7 +6198,8 @@
       "wave": "Z",
       "mode": "AUTO",
       "depends_on": [
-        "W9-06"
+        "W9-06",
+        "H7-05"
       ],
       "audit_ids": [
         "P0-01",

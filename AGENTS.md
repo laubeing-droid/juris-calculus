@@ -24,10 +24,10 @@ Do not weaken `DecisionStatus`, `verified_fact` admission, Horn, attack, excepti
 Use the narrowest relevant checks first, then broader checks for user-visible work:
 
 ```powershell
-python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q
-python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
-python -m pytest tests\ -q
-python mcp_server.py --test
+python -B tools\remediate_v4.py verify-wave W0-04
+python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\formal_e2e tests\mcp_protocol
+python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\
+python -B mcp_server.py --test
 git diff --check
 ```
 
@@ -38,8 +38,8 @@ Run supply-chain, privacy, stale-narrative, and disclosure checks when relevant.
 After making changes to production code, always run the appropriate validation checks:
 
 1. **For core module changes** (compiler_core/*, pipeline/*, addons/*, tools/*):
-   - Run the focused boundary test: `python -m pytest tests\unit\test_v3_entrypoint_boundary.py -q`
-   - Run the MCP protocol test: `python -m pytest tests\unit\test_mcp_stdio_protocol.py -q`
+   - Run the required manifest gate: `python -B tools\remediate_v4.py verify-wave W0-04`
+   - Run the V4 formal and MCP protocol tests: `python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\formal_e2e tests\mcp_protocol`
 
 2. **For configuration changes** (configs/*, schemas/*, pyproject.toml):
    - Run the full test suite: `python -m pytest tests\ -q`

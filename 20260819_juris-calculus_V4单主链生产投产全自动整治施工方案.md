@@ -883,22 +883,32 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 
 ### H6-07　GitHub governance 和发布签发者
 
-- **Mode / depends**：`EXTERNAL_GATE + HUMAN_GATE / W6-06`。
+- **Mode / depends**：`EXTERNAL_GATE + HUMAN_GATE / W9-06`。2026-08-24 plan-drift correction 将本门禁移到全部本地工程和生产验证之后；它只约束远端 promotion/release，不再约束 W6-08 或 W7～W9 的独立 implementation。
 - **请求**：现场读取 branch/tag protection、required checks、admin bypass、CODEOWNERS、tag/release signing、artifact retention；指定 release signer 和双人审批。仅 API 无权限时返回 exit 21，不猜测已保护。
 
 ### W6-08　Artifact promotion workflow 和 current docs
 
-- **Depends / audit**：`H6-07 / P0-15, P2-04, P2-07, P3-02`。
-- **Paths**：`.github/workflows/auto-release.yml`、README、CHANGELOG、HANDOFF、AGENTS、memory、current docs、唯一 registry、SECURITY/CODEOWNERS/NOTICE（按治理响应）。
-- **动作**：CI build once；tag job只晋级同一 digest，不重建；强制 tag=package=METADATA=CLI=MCP=RunIdentity；release 附 wheel/checksums/SBOM/provenance/attestation/schema/tool digests。Docs 只陈述已完成 V4 current state，历史随 tag。
+- **Depends / audit**：`W6-06 / P0-15, P2-04, P2-07, P3-02`。
+- **Paths**：exact 21 paths：`.github/CODEOWNERS`、`.github/workflows/{ci,auto-release}.yml`、本方案、AGENTS/CHANGELOG/HANDOFF/README/SECURITY/memory、`docs/{README.md,operations/RELEASE_V4.md}`、task/disposition/required-test governance、promotion/current-doc/CI tests、file-disposition generator 和唯一 runner。
+- **动作**：CI build once；可复用 promotion job 只下载和晋级同一 wheel digest，不重建；强制 tag=package=METADATA=CLI=MCP=RunIdentity；production promotion 必须使用受保护 environment 提供的 production Ed25519 key，且 verification 禁止 `--allow-test-key`。本地 fixture 只能产生 `TEST_ONLY_NOT_PROMOTABLE`。Docs 只陈述已完成 V4 current state，历史随 tag。
 - **Gate**：wrong tag/commit/METADATA/digest/no asset/no signature/stale path/V3 current claim 均失败；docs 中命令实际执行；release workflow dry-run 不写远端。
 - **Commit**：`build(release): promote one attested V4 artifact and align current docs`。
 
+### 13.1 外部门禁后移与三段式 DAG 纠正（2026-08-24）
+
+外部事实拆为 implementation、target verification、promotion。生产 provider、正式法源、独立 reviewer、生产 key、GitHub governance 和部署身份缺失时，runner 先依次完成 `W7-I01 -> W8-I00 -> W9-I00`；这些任务只能使用 local/test realm 和 test-only fixture，不得写 production PASS。随后才到达第一个真实外部输入门禁。`H6-07` 与 `H7-05` 只在远端 promotion 汇合，不能反向阻止任何实现任务。
+
 ## 14. W7：V4 Kernel RC 生产演练
+
+### W7-I01　storage/performance/operations implementation
+
+- **Depends**：`W6-08`。
+- **动作**：完成 capability probe、容量/性能基线工具、隔离故障/撤销/回退 harness 和 Kernel RC verifier；以 local/test provider 走通全部正负工程路径。
+- **边界**：只能证明 `STORAGE_RC_IMPLEMENTATION_GREEN` 和 `TARGET_PROVIDER_NOT_CLAIMED`；目标 provider、identity、SLO 和生产报告仍由 H7-00/W7-01..04 真实验证。
 
 ### H7-00　目标 state provider、平台和 SLO 输入
 
-- **Mode / depends**：`EXTERNAL_GATE + HUMAN_GATE / W6-08`。
+- **Mode / depends**：`EXTERNAL_GATE + HUMAN_GATE / W9-I00`。到达它时 W7～W9 的独立实现已完成。
 - **请求**：Windows/NTFS 与 Linux/ext4 隔离环境、service identity、DACL/permissions、at-rest encryption、quota、retention/legal hold、backup/restore、capacity；性能测试先产基线，再由负责人批准 latency/throughput/RSS/artifact budgets。
 - **缺失行为**：可继续开发，不得把 RC 晋级为 production-ready。
 
@@ -933,10 +943,16 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 
 ### H7-05　RC 远端晋级
 
-- **Mode**：`HUMAN_GATE / W7-04`。
+- **Mode**：`HUMAN_GATE / W7-04 + H6-07`。
 - **响应**：授权 exact commit/tree/wheel/evidence digests 的 push/tag/release。Runner 只在签发范围内操作，并下载已发布资产重新验签验 hash。未授权时本地 RC 已完成，但不声称公开发布。
 
 ## 15. W8：真实 `cn-official` 和 4.0.0
+
+### W8-I00　test-only pack engineering implementation
+
+- **Depends**：`W7-I01`。
+- **动作**：用与 legacy corpus 无依赖的、小型第一方法源 test fixture 实现 source intake、candidate、review subject、deterministic build 和全状态/semantic mutation verifier。
+- **边界**：只证明 `CN_PACK_PIPELINE_TEST_ONLY_GREEN` 和 `FORMAL_SOURCE_NOT_CLAIMED`；fixture、测试签名和候选不得命名或发布为 `cn-official`。
 
 ### H8-00　领域、法源、角色和密钥开工门禁
 
@@ -988,6 +1004,12 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 - **动作**：发布独立 pack artifact。随后在唯一 `4.0.0` version commit 上重新构建 engine stable wheel；因为 METADATA/version 已改变，RC wheel 不能改名、重标或原样“晋级”为 stable。对该 `4.0.0` wheel digest 重新运行 W6-04～W7-04 全套门禁，再 tag，并只发布这份已测试 digest；下载重验。完成后 `legal_production_ready=true`。任一门禁缺失保持 RC 和 false，不靠免责声明晋级。
 
 ## 16. W9：DSH formal profile，不改 general DSH
+
+### W9-I00　DSH formal adapter implementation
+
+- **Depends**：`W8-I00`。
+- **动作**：在 test/local realm 完成 out-of-tree profile、四工具 MCP fail-closed client、project skill、delivery guard 和 bypass/隔离测试实现。
+- **边界**：只证明 `DSH_ADAPTER_IMPLEMENTATION_GREEN` 和 `DEPLOYMENT_NOT_CLAIMED`；production DSH pin、service identity、认证 transport 和部署拓扑仍由 H9-00/W9-01..06 真实验证。
 
 ### H9-00　DSH pin 和部署拓扑
 
@@ -1243,6 +1265,8 @@ source version
 ## 21. Z00-Z03 最终收口
 
 ### Z00　全问题和全文件复算
+
+**Depends**：`W9-06 + H7-05`；远端 RC promotion 未获签发时不得进入最终完成收口。
 
 `issue-map --check` 必须 44/44 closed；CodeGraph 对 final tree重新 full index，pending/mismatch/error/unresolved为0，normalized graph与AST/dynamic-import supplement对账；`file-map --check --all-tracked` 对最终tree missing/extra/duplicate为0；authority graph无禁边；required skip/critical mutation survivor为0。W5-02C `HISTORY_BOUND` receipt必须复验，CN legacy corpus物理/tracked path、pack ID和current consumers均为0。输出 19.4 的仓库、迁移/替代、真实删除及依赖三本账，禁止把移动或 artifact 重建写成系统净减。
 

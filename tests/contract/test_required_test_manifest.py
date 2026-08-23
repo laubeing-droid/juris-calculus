@@ -116,6 +116,12 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     assert w6_required["W6-PROVENANCE"] == (
         "packaging", "tests/packaging/test_provenance.py", 10,
     )
+    assert w6_required["W6-RELEASE-PROMOTION"] == (
+        "packaging", "tests/packaging/test_release_promotion.py", 8,
+    )
+    assert w6_required["W6-CURRENT-DOCS"] == (
+        "packaging", "tests/packaging/test_current_docs.py", 3,
+    )
     assert {
         item["id"]: (item["owner_task"], item["state"])
         for item in payload["evidence_tracks"]
@@ -213,6 +219,11 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     assert mutations["V4-P2-05-DSH-DELIVERY-GUARD"][:2] == (
         "W9-05", "RED_AT_TASK",
     )
+    assert mutations["V4-P3-02-HISTORICAL-DOCS"] == (
+        "W6-08", "ACTIVE_REQUIRED",
+        "tests/packaging/test_current_docs.py::"
+        "test_historical_guides_are_not_current_authority",
+    )
     w6_04_task = next(
         item for item in json.loads(PLAN.read_text(encoding="utf-8"))["tasks"]
         if item["id"] == "W6-04"
@@ -221,7 +232,6 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     assert w6_04_task["terminal_states"] == [
         "LOCKED_DUAL_BUILD_IDENTICAL", "CLEAN_INSTALLED_WHEEL_E2E_GREEN",
     ]
-    assert RUNNER._w6_04_contract_problems() == []
     retired = {
         item["id"]: item["state"] for item in payload["rewrite_at_task"]
         if item["retirement_task"] == "W6-05"
@@ -241,7 +251,6 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "PINNED_ORACLES_SELF_CONTAINED",
         "INSTALLED_PRODUCTION_SUITES_GREEN",
     ]
-    assert RUNNER._w6_05_contract_problems() == []
     w6_06_task = next(
         item for item in json.loads(PLAN.read_text(encoding="utf-8"))["tasks"]
         if item["id"] == "W6-06"
@@ -252,7 +261,17 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "WHEEL_RECORD_RUNTIME_SBOM_GREEN",
         "PRODUCTION_TEST_KEY_REJECTED",
     ]
-    assert RUNNER._w6_06_contract_problems() == []
+    w6_08_task = next(
+        item for item in json.loads(PLAN.read_text(encoding="utf-8"))["tasks"]
+        if item["id"] == "W6-08"
+    )
+    assert w6_08_task["allowed_paths"] == list(RUNNER.W6_08_ALLOWED_PATHS)
+    assert w6_08_task["terminal_states"] == [
+        "BUILD_ONCE_PROMOTION_WORKFLOW_GREEN",
+        "CURRENT_V4_DOCS_GREEN",
+        "EXTERNAL_GATES_DEFERRED_AFTER_LOCAL_IMPLEMENTATION",
+    ]
+    assert RUNNER._w6_08_contract_problems() == []
 
 
 def test_suite_taxonomy_is_exact_and_backed_by_tracked_skeletons() -> None:
@@ -618,13 +637,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.52.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.53.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0", "0.52.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37

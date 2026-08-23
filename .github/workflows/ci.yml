@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -180,8 +181,24 @@ jobs:
       - name: Current documentation paths
         run: python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging/test_current_authority_docs.py
 
-      - name: Upload verification evidence
+      - name: Upload exact release candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-evidence
-          path: reports/
+          name: release-candidate-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            work/dist-a/*.whl
+            work/dist-b/*.whl
+            reports/
+
+  promote:
+    name: Promote exact attested tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    permissions:
+      contents: write
+    uses: ./.github/workflows/auto-release.yml
+    with:
+      artifact-name: release-candidate-${{ github.sha }}
+    secrets: inherit

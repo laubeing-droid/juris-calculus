@@ -15,6 +15,7 @@ JC is a CLI-first, auditable legal-reasoning kernel. Start here after the root [
 - [Rendering and neutral output](contracts/rendering-and-profiles.md)
 - [Runtime claims and evidence limits](contracts/FORMAL_RUNTIME_CONFORMANCE.md)
 - [Governance, training, and advisory analysis](operations/governance-training-analysis.md)
+- [V4 build-once release and promotion](operations/RELEASE_V4.md)
 
 ## Historical replay (not current authority)
 
