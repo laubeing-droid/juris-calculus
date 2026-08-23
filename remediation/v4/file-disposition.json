@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 410,
+  "count": 411,
   "paths": [
     {
       "path": ".gitattributes",
@@ -1597,6 +1597,13 @@
     },
     {
       "path": "remediation/v4/approval.schema.json",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "BUILD_ONLY",
+      "audit_role": "new_after_audit",
+      "closure_task": "Z02"
+    },
+    {
+      "path": "remediation/v4/approvals/H5-02-user-authorized-history-bound.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
