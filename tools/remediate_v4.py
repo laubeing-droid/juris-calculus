@@ -51,7 +51,7 @@ import uuid
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Iterable
 
@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.38.0"
+RUNNER_VERSION = "0.39.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -98,6 +98,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.36.0": 5,
     "0.37.0": 5,
     "0.38.0": 5,
+    "0.39.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -870,6 +871,33 @@ W5_07_RETIRED_GUIDE_FINGERPRINTS = MappingProxyType({
         "sha256": "0d85a042c4702f485c180761bb830c420eb0c44c4631ded34ad440d39d792c67",
     }),
 })
+W6_01_TEST_PATHS = (
+    "tests/packaging/test_wheel_gate_v4.py",
+)
+W6_01_TEST_CASE_COUNT = 9
+W6_01_TEST_CASE_IDS_DIGEST = (
+    "sha256:265354561cd24452eb23a613a378a6686fc19350f59fc7ab3fb4fd294483841a"
+)
+W6_01_ALLOWED_PATHS = (
+    "pyproject.toml",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    *W6_01_TEST_PATHS,
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+    "tools/wheel_gate.py",
+)
+W6_01_REQUIRED_CHANGED_PATHS = W6_01_ALLOWED_PATHS
+W6_01_PAYLOAD_COUNT = 29
+W6_01_PAYLOAD_NAMES_DIGEST = (
+    "sha256:df1e45e4e83f12e939a1a189983229db7afaf0cce0f1488560af8127348317c1"
+)
+W6_01_WHEEL_ENTRY_COUNT = 35
+W6_01_WHEEL_ENTRY_NAMES_DIGEST = (
+    "sha256:3e60779061f884e96239e4a5b37aa90bd1cf2065f45761e49e4ea14d10fc11f5"
+)
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -967,7 +995,7 @@ W0_REQUIRED_REWRITE_IDS = frozenset({
     "REWRITE-SPEC-SHADOW-RUNTIME",
 })
 W0_REQUIRED_REWRITE_PROJECTION_DIGEST = (
-    "sha256:56a9927212a20c4b50cf933992157d8c75432c05db888a0bbb62c8efe308ac75"
+    "sha256:a357085e78ca0000be084ebd537a7366e53a760f3ecc78e2c9aee7db98c9e9a2"
 )
 W0_B02_COMPANION_BINDING = {
     "kind": "B02_RECEIPT",
@@ -1537,7 +1565,7 @@ def cmd_file_map(args: argparse.Namespace) -> int:
         "pipeline/fix_single_premise.py",
         "tests/run_benchmark_zh.py",
         "tests/stress_test_facts.py",
-    } | set(W5_CUTOVER_RETIRED_PATHS)
+    } | set(W5_CUTOVER_RETIRED_PATHS) | set(W5_07_RETIRED_PATHS)
     expected_paths = tracked | retired_history
     if set(by_path) != expected_paths:
         print(
@@ -4506,6 +4534,13 @@ def _required_test_manifest_problems(
             "selector": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 13,
+        },
+        {
+            "id": "W6-FORMAL-WHEEL-GATE",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_wheel_gate_v4.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 9,
         },
     ]
     if required_now != expected_required_now:
@@ -16231,6 +16266,354 @@ def cmd_w5_07_historical_replay_gate() -> int:
     return EXIT_OK
 
 
+def _w6_01_load_wheel_gate(path: Path) -> Any:
+    spec = importlib.util.spec_from_file_location(
+        f"jc_w6_01_wheel_gate_{uuid.uuid4().hex}", path,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("wheel gate has no loader")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _w6_01_gate_report_problems(report: Any) -> list[str]:
+    if not isinstance(report, dict):
+        return ["formal wheel gate report is not an object"]
+    expected = {
+        "schema_version": "jc/formal-wheel-gate/1.0",
+        "status": "PASS",
+        "source_has_git": False,
+        "authority": "docs/architecture/module-authority.json",
+        "payload_count": W6_01_PAYLOAD_COUNT,
+        "wheel": "juris_calculus-4.0.0rc1-py3-none-any.whl",
+        "entry_count": W6_01_WHEEL_ENTRY_COUNT,
+        "entry_names_sha256": W6_01_WHEEL_ENTRY_NAMES_DIGEST,
+        "payload_names_sha256": W6_01_PAYLOAD_NAMES_DIGEST,
+    }
+    problems = [
+        f"formal wheel report {key} drifted: {report.get(key)!r} != {value!r}"
+        for key, value in expected.items() if report.get(key) != value
+    ]
+    expected_keys = set(expected) | {"source_date_epoch", "size_bytes", "sha256"}
+    if set(report) != expected_keys:
+        problems.append("formal wheel report field set drifted")
+    if (
+        not isinstance(report.get("source_date_epoch"), int)
+        or report["source_date_epoch"] < 315_532_800
+    ):
+        problems.append("formal wheel report lacks an explicit source epoch")
+    if not isinstance(report.get("size_bytes"), int) or report["size_bytes"] <= 0:
+        problems.append("formal wheel report size is invalid")
+    if DIGEST_V4_PATTERN.fullmatch(str(report.get("sha256"))) is None:
+        problems.append("formal wheel report digest is invalid")
+    return problems
+
+
+def _w6_01_contract_problems() -> list[str]:
+    """Bind the positive-set policy, exact governance scope, and active tests."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        gate_source = (ROOT / "tools/wheel_gate.py").read_text(encoding="utf-8")
+        gate = _w6_01_load_wheel_gate(ROOT / "tools/wheel_gate.py")
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        generated_disposition = generator.build_document()
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError, tomllib.TOMLDecodeError,
+    ) as exc:
+        return [f"W6-01 governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W6-01"), {})
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W6-01", *W6_01_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W6-01.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W6-01"],
+        expected_pytest_argv,
+    ]
+    if task.get("depends_on") != ["W5-07"]:
+        problems.append("W6-01 must depend only on W5-07")
+    if task.get("audit_ids") != ["P0-14", "P1-19", "P2-06"]:
+        problems.append("W6-01 audit projection drifted")
+    if task.get("allowed_paths") != list(W6_01_ALLOWED_PATHS):
+        problems.append("W6-01 exact allowlist drifted")
+    if task.get("terminal_states") != ["FORMAL_WHEEL_EXACT", "GITLESS_ARCHIVE_GREEN"]:
+        problems.append("W6-01 terminal states drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W6-01 exact gate/pytest argv drifted")
+    if disposition != generated_disposition:
+        problems.append("W6-01 file disposition is not reproducible from its generator")
+
+    setuptools = pyproject.get("tool", {}).get("setuptools", {})
+    if setuptools.get("packages") != [
+        "compiler_core", "compiler_core.backends", "configs", "schemas",
+    ]:
+        problems.append("W6-01 setuptools package roots drifted")
+    if setuptools.get("py-modules") != ["mcp_server"]:
+        problems.append("W6-01 setuptools public module set drifted")
+    if setuptools.get("include-package-data") is not False:
+        problems.append("W6-01 setuptools package-data default is not closed")
+    if setuptools.get("package-data") != {
+        "configs": ["render_profiles/neutral.yaml"], "schemas": ["*.json"],
+    }:
+        problems.append("W6-01 explicit resource package-data drifted")
+
+    if "FORBIDDEN" in gate_source or '["git"' in gate_source or "check_output(" in gate_source:
+        problems.append("W6-01 wheel gate retains a blacklist or Git-derived policy")
+    for marker in (
+        "PRODUCTION_CLASSES", "EXPLICIT_RESOURCE_PATHS", "expected_payload_paths",
+        "wheel file set drifted", "wheel ZIP and RECORD names differ",
+        "source must be an extracted clean archive without .git",
+    ):
+        if marker not in gate_source:
+            problems.append(f"W6-01 positive-set gate marker is missing: {marker}")
+    try:
+        payload = sorted(gate.expected_payload_paths(ROOT))
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        problems.append(f"W6-01 positive set is unreadable: {exc}")
+    else:
+        if len(payload) != W6_01_PAYLOAD_COUNT:
+            problems.append("W6-01 positive-set count drifted")
+        if _digest_object(payload) != W6_01_PAYLOAD_NAMES_DIGEST:
+            problems.append("W6-01 positive-set digest drifted")
+        if any(path.startswith(("addons/", "pipeline/", "tests/", "tools/")) for path in payload):
+            problems.append("W6-01 positive set contains a non-production namespace")
+
+    required_row = next(
+        (item for item in required.get("required_now", [])
+         if item.get("id") == "W6-FORMAL-WHEEL-GATE"), {}
+    )
+    if required_row != {
+        "id": "W6-FORMAL-WHEEL-GATE", "suite": "packaging",
+        "selector": W6_01_TEST_PATHS[0], "state": "REQUIRED_NOW",
+        "expected_tests": W6_01_TEST_CASE_COUNT,
+    }:
+        problems.append("W6-01 required-now test binding drifted")
+    mutation_by_id = {
+        item.get("test_id"): item for item in required.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P1-19-WHEEL-POSITIVE-SET": (
+            "P1-19", "W6-01", "ACTIVE_REQUIRED",
+            "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted",
+        ),
+        "V4-P2-06-NO-GIT-ARCHIVE": (
+            "P2-06", "W6-01", "ACTIVE_REQUIRED",
+            "tests/packaging/test_wheel_gate_v4.py::"
+            "test_gate_requires_a_gitless_source_and_has_no_static_blacklist",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        row = mutation_by_id.get(test_id, {})
+        observed = (
+            row.get("audit_id"), row.get("owner_task"), row.get("state"),
+            row.get("selector"),
+        )
+        if observed != expected or not _selector_is_declared(ROOT, str(row.get("selector", ""))):
+            problems.append(f"W6-01 active audit mutation drifted: {test_id}")
+    rewrite = next(
+        (item for item in required.get("rewrite_at_task", [])
+         if item.get("id") == "REWRITE-WHEEL-BLACKLIST"), {}
+    )
+    if (
+        rewrite.get("rewrite_task"), rewrite.get("retirement_task"),
+        rewrite.get("replacement_selector"),
+    ) != (
+        "W6-01", "W6-05",
+        "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted",
+    ):
+        problems.append("W6-01 blacklist rewrite binding drifted")
+
+    disposition_by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W6_01_REQUIRED_CHANGED_PATHS:
+        if disposition_by_path.get(path, {}).get("closure_task") != "W6-01":
+            problems.append(f"W6-01 disposition closure drifted: {path}")
+    return problems
+
+
+def _w6_01_extract_archive(archive_path: Path, destination: Path) -> list[str]:
+    """Extract only normalized regular Git-archive members into one fresh tree."""
+
+    names: list[str] = []
+    with zipfile.ZipFile(archive_path) as archive:
+        for item in archive.infolist():
+            raw_name = item.filename
+            path = PurePosixPath(raw_name.rstrip("/"))
+            if (
+                not raw_name or "\\" in raw_name or raw_name.startswith("/")
+                or ":" in raw_name or any(part in {"", ".", ".."} for part in path.parts)
+                or ".git" in path.parts
+                or path.as_posix() + ("/" if item.is_dir() else "") != raw_name
+            ):
+                raise ValueError(f"unsafe clean-archive member: {raw_name!r}")
+            if ((item.external_attr >> 16) & 0o170000) == 0o120000:
+                raise ValueError(f"symlink clean-archive member: {raw_name!r}")
+            names.append(raw_name)
+            target = destination.joinpath(*path.parts)
+            if item.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(archive.read(item))
+    if len(names) != len(set(names)) or len({name.casefold() for name in names}) != len(names):
+        raise ValueError("clean archive has duplicate or case-colliding members")
+    return sorted(names)
+
+
+def _w6_01_build_evidence(state_root: Path) -> tuple[Path, str, Path, str, Path, str]:
+    temporary_parent = state_root / "tmp"
+    temporary_parent.mkdir(parents=True, exist_ok=True)
+    commit = _git_checked("rev-parse", "HEAD")
+    tree = _git_checked("rev-parse", "HEAD^{tree}")
+    source_date_epoch = int(_git_checked("show", "-s", "--format=%ct", "HEAD"))
+    lanes: list[dict[str, Any]] = []
+    archive_payloads: list[bytes] = []
+    wheel_payloads: list[bytes] = []
+
+    with tempfile.TemporaryDirectory(prefix="W6-01-", dir=temporary_parent) as raw:
+        temporary = Path(raw)
+        for lane in ("A", "B"):
+            archive_path = temporary / f"source-{lane}.zip"
+            completed = subprocess.run(
+                ["git", "archive", "--format=zip", f"--output={archive_path}", "HEAD"],
+                cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
+                errors="replace", check=False, timeout=120,
+            )
+            if completed.returncode != 0:
+                raise ValueError(f"GIT_ARCHIVE_{lane}_FAILED:{completed.stderr.strip()}")
+            source = temporary / f"source-{lane}"
+            source.mkdir()
+            archive_names = _w6_01_extract_archive(archive_path, source)
+            out_dir = temporary / f"dist-{lane}"
+            report_path = temporary / f"wheel-{lane}.json"
+            environment = os.environ.copy()
+            environment.pop("PYTHONPATH", None)
+            environment.pop("PIP_NO_INDEX", None)
+            environment.update({
+                "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            })
+            gate_result = subprocess.run(
+                [
+                    sys.executable, "-B", str(source / "tools/wheel_gate.py"),
+                    "--source", str(source), "--out-dir", str(out_dir),
+                    "--source-date-epoch", str(source_date_epoch),
+                    "--output", str(report_path),
+                ],
+                cwd=str(source), env=environment, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", check=False, timeout=420,
+            )
+            if gate_result.returncode != 0:
+                raise ValueError(
+                    f"FORMAL_WHEEL_{lane}_FAILED:{gate_result.stdout}{gate_result.stderr}"
+                )
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            stdout_report = json.loads(gate_result.stdout)
+            report_problems = _w6_01_gate_report_problems(report)
+            if report != stdout_report or report_problems:
+                raise ValueError(
+                    f"FORMAL_WHEEL_{lane}_REPORT_INVALID:"
+                    + "; ".join([*report_problems, "stdout drift" if report != stdout_report else ""])
+                )
+            wheels = list(out_dir.glob("*.whl"))
+            if len(wheels) != 1:
+                raise ValueError(f"FORMAL_WHEEL_{lane}_COUNT_DRIFT")
+            archive_bytes = archive_path.read_bytes()
+            wheel_bytes = wheels[0].read_bytes()
+            archive_payloads.append(archive_bytes)
+            wheel_payloads.append(wheel_bytes)
+            lanes.append({
+                "lane": lane,
+                "archive_sha256": "sha256:" + sha256_hex(archive_bytes),
+                "archive_entry_count": len(archive_names),
+                "archive_entry_names_sha256": _digest_object(archive_names),
+                "gate_report": report,
+            })
+
+    if archive_payloads[0] != archive_payloads[1]:
+        raise ValueError("CLEAN_SOURCE_ARCHIVES_DIFFER")
+    if wheel_payloads[0] != wheel_payloads[1] or lanes[0]["gate_report"] != lanes[1]["gate_report"]:
+        raise ValueError("FORMAL_WHEEL_REBUILDS_DIFFER")
+    archive_path, archive_digest = _write_content_addressed_bytes(
+        state_root / "evidence" / "W6-01" / "source-archives", archive_payloads[0], ".zip",
+    )
+    wheel_path, wheel_digest = _write_content_addressed_bytes(
+        state_root / "evidence" / "W6-01" / "wheels", wheel_payloads[0], ".whl",
+    )
+    report = {
+        "schema_version": "jc/w6-formal-wheel-evidence/1.0",
+        "task_id": "W6-01",
+        "commit": commit,
+        "tree": tree,
+        "source_date_epoch": source_date_epoch,
+        "authority": "docs/architecture/module-authority.json",
+        "source_archive": {
+            "sha256": archive_digest,
+            "bytes": len(archive_payloads[0]),
+            "entry_count": lanes[0]["archive_entry_count"],
+            "entry_names_sha256": lanes[0]["archive_entry_names_sha256"],
+            "git_metadata": False,
+            "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-01/source-archives/"
+            + archive_path.name,
+        },
+        "builds": lanes,
+        "formal_wheel": {
+            "sha256": wheel_digest,
+            "bytes": len(wheel_payloads[0]),
+            "filename": "juris_calculus-4.0.0rc1-py3-none-any.whl",
+            "byte_identical_rebuilds": True,
+            "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-01/wheels/"
+            + wheel_path.name,
+        },
+    }
+    report_path, report_digest = _write_content_addressed_json(
+        state_root / "evidence" / "W6-01" / "reports", report,
+    )
+    return archive_path, archive_digest, wheel_path, wheel_digest, report_path, report_digest
+
+
+def cmd_w6_01_formal_wheel_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W6-01 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w6_01_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W6-01 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        artifacts = _w6_01_build_evidence(Path(raw_state_root).resolve())
+    except (
+        ImportError, OSError, RuntimeError, subprocess.TimeoutExpired, TypeError,
+        UnicodeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError,
+    ) as exc:
+        print(f"W6-01 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    archive_path, archive_digest, wheel_path, wheel_digest, report_path, report_digest = artifacts
+    print(f"JC_ARTIFACT\tw6-01-source-archive\t{archive_path}\t{archive_digest}")
+    print(f"JC_ARTIFACT\tw6-01-formal-wheel\t{wheel_path}\t{wheel_digest}")
+    print(f"JC_ARTIFACT\tw6-01-wheel-report\t{report_path}\t{report_digest}")
+    print(
+        "W6-01 gate OK: two gitless archives produced one byte-identical 35-entry "
+        "formal-only V4 wheel from the manual production authority"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -16304,6 +16687,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_06_entrypoint_matrix_gate()
     if args.wave == "W5-07":
         return cmd_w5_07_historical_replay_gate()
+    if args.wave == "W6-01":
+        return cmd_w6_01_formal_wheel_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -18678,6 +19063,41 @@ def _w5_07_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w6_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact formal-wheel mutation suite with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W6-01 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W6_01_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W6_01_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W6_01_TEST_CASE_COUNT,
+        "junit_unique_cases": W6_01_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W6_01_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W6-01 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W6-01 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -18903,6 +19323,146 @@ def _w5_07_replay_artifact_problems(
     command_wire = json.dumps(record.get("commands"), ensure_ascii=False)
     if "--no-index" not in command_wire or str(ROOT.resolve()) in command_wire:
         problems.append("W5-07 historical replay command isolation drifted")
+    return problems
+
+
+def _w6_01_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W6-01 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W6-01 artifact_digests is not an object"]
+    expected = set(W6_01_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W6-01 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W6_01_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W6-01 lacks committed result digest: {path}")
+    return problems
+
+
+def _w6_01_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W6-01 artifact_digests is not an object"]
+    labels = {
+        "archive": ("w6-01-source-archive", "source-archives", ".zip"),
+        "wheel": ("w6-01-formal-wheel", "wheels", ".whl"),
+        "report": ("w6-01-wheel-report", "reports", ".json"),
+    }
+    paths: dict[str, Path] = {}
+    digests: dict[str, str] = {}
+    problems: list[str] = []
+    for key, (label, directory, suffix) in labels.items():
+        digest = artifact_digests.get(f"state-artifact:{label}")
+        if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+            problems.append(f"W6-01 state artifact digest is missing: {label}")
+            continue
+        path = (
+            state_root / "evidence" / "W6-01" / directory
+            / f"{str(digest).split(':', 1)[1]}{suffix}"
+        )
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            problems.append(f"W6-01 state artifact is unreadable: {label}: {exc}")
+            continue
+        if "sha256:" + sha256_hex(payload) != digest:
+            problems.append(f"W6-01 state artifact content drifted: {label}")
+            continue
+        paths[key] = path
+        digests[key] = str(digest)
+    if problems:
+        return problems
+    try:
+        record = json.loads(paths["report"].read_text(encoding="utf-8"))
+        source = record["source_archive"]
+        formal_wheel = record["formal_wheel"]
+        builds = record["builds"]
+    except (KeyError, OSError, TypeError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W6-01 formal-wheel evidence is malformed: {exc}"]
+    if (
+        record.get("schema_version") != "jc/w6-formal-wheel-evidence/1.0"
+        or record.get("task_id") != "W6-01"
+        or record.get("authority") != "docs/architecture/module-authority.json"
+        or not _validate_git_binding(str(record.get("commit")), str(record.get("tree")))
+    ):
+        problems.append("W6-01 formal-wheel evidence identity drifted")
+    expected_source = {
+        "sha256": digests["archive"],
+        "bytes": paths["archive"].stat().st_size,
+        "entry_count": source.get("entry_count"),
+        "entry_names_sha256": source.get("entry_names_sha256"),
+        "git_metadata": False,
+        "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-01/source-archives/"
+        + paths["archive"].name,
+    }
+    if source != expected_source:
+        problems.append("W6-01 source-archive binding drifted")
+    expected_wheel = {
+        "sha256": digests["wheel"],
+        "bytes": paths["wheel"].stat().st_size,
+        "filename": "juris_calculus-4.0.0rc1-py3-none-any.whl",
+        "byte_identical_rebuilds": True,
+        "locator": "$JC_REMEDIATION_STATE_ROOT/evidence/W6-01/wheels/"
+        + paths["wheel"].name,
+    }
+    if formal_wheel != expected_wheel:
+        problems.append("W6-01 formal-wheel artifact binding drifted")
+    if (
+        not isinstance(builds, list) or len(builds) != 2
+        or [item.get("lane") for item in builds if isinstance(item, dict)] != ["A", "B"]
+    ):
+        problems.append("W6-01 clean-archive lane set drifted")
+    else:
+        for lane in builds:
+            problems.extend(_w6_01_gate_report_problems(lane.get("gate_report")))
+            if (
+                lane.get("archive_sha256") != digests["archive"]
+                or lane.get("archive_entry_count") != source.get("entry_count")
+                or lane.get("archive_entry_names_sha256")
+                != source.get("entry_names_sha256")
+                or lane.get("gate_report", {}).get("source_date_epoch")
+                != record.get("source_date_epoch")
+                or lane.get("gate_report", {}).get("sha256") != digests["wheel"]
+                or lane.get("gate_report", {}).get("size_bytes")
+                != paths["wheel"].stat().st_size
+            ):
+                problems.append(f"W6-01 clean-archive lane binding drifted: {lane.get('lane')}")
+        if builds[0].get("gate_report") != builds[1].get("gate_report"):
+            problems.append("W6-01 clean-archive wheel reports differ")
+    try:
+        with tempfile.TemporaryDirectory(prefix="jc-w6-01-evidence-") as raw:
+            temporary = Path(raw)
+            archived_source = temporary / "source"
+            archived_source.mkdir()
+            archive_names = _w6_01_extract_archive(paths["archive"], archived_source)
+            canonical_wheel = temporary / "juris_calculus-4.0.0rc1-py3-none-any.whl"
+            shutil.copyfile(paths["wheel"], canonical_wheel)
+            gate = _w6_01_load_wheel_gate(archived_source / "tools/wheel_gate.py")
+            observed = gate.validate_wheel(archived_source, canonical_wheel)
+        if (
+            len(archive_names) != source.get("entry_count")
+            or _digest_object(archive_names) != source.get("entry_names_sha256")
+            or any(builds) and observed != {
+                key: builds[0]["gate_report"][key] for key in observed
+            }
+        ):
+            problems.append("W6-01 archived source/wheel semantic validation drifted")
+    except (
+        ImportError, KeyError, OSError, RuntimeError, TypeError, UnicodeError,
+        ValueError, zipfile.BadZipFile,
+    ) as exc:
+        problems.append(f"W6-01 archived source/wheel evidence is unreadable: {exc}")
     return problems
 
 
@@ -19763,6 +20323,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-07 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W6-01":
+        problems.extend(_w6_01_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w6_01_contract_problems())
+        problems.extend(_w6_01_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w6_01_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w6-01-exact-green-reports",
+            "w6-01-formal-wheel-evidence",
+            "w6-01-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W6-01 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -21462,6 +22046,44 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W5-07 current-doc, history-bound, and governance paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W6-01":
+        report_problems = _w6_01_test_report_problems(test_reports)
+        contract_problems = _w6_01_contract_problems()
+        artifact_problems = _w6_01_artifact_problems(
+            artifact_digests, state_root,
+        )
+        path_problems = _w6_01_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w6-01-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W6_01_TEST_CASE_COUNT} exact-set/archive/injection cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w6-01-formal-wheel-evidence",
+            "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "two gitless commit archives produced one byte-identical formal-only V4 wheel; "
+                "ZIP, RECORD, metadata, clean install, and authority positive set are bound"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w6-01-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W6-01 packaging, governance, runner, and executable-test paths are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

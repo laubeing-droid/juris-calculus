@@ -37,11 +37,11 @@ jc = "compiler_core.cli:main"
 [tool.setuptools.dynamic]
 version = { attr = "compiler_core.version.__version__" }
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["compiler_core*", "addons*", "pipeline*", "configs*", "schemas*"]
-exclude = ["tests*"]
+[tool.setuptools]
+packages = ["compiler_core", "compiler_core.backends", "configs", "schemas"]
+py-modules = ["mcp_server"]
+include-package-data = false
 
 [tool.setuptools.package-data]
-configs = ["**/*.yaml", "**/*.json", "**/*.md"]
+configs = ["render_profiles/neutral.yaml"]
 schemas = ["*.json"]

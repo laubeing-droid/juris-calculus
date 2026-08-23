@@ -313,6 +313,13 @@
       "selector": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 13
+    },
+    {
+      "id": "W6-FORMAL-WHEEL-GATE",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_wheel_gate_v4.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 9
     }
   ],
   "evidence_tracks": [
@@ -696,9 +703,9 @@
       "audit_id": "P1-19",
       "test_id": "V4-P1-19-WHEEL-POSITIVE-SET",
       "suite": "packaging",
-      "selector": "tests/packaging/test_formal_only.py::test_wheel_record_equals_authority_positive_set",
+      "selector": "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted",
       "owner_task": "W6-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Replace the positive set with a short forbidden-module blacklist.",
       "red_failure": "The packaging gate must fail unless RECORD equals the complete positive set."
     },
@@ -766,9 +773,9 @@
       "audit_id": "P2-06",
       "test_id": "V4-P2-06-NO-GIT-ARCHIVE",
       "suite": "packaging",
-      "selector": "tests/packaging/test_source_archive.py::test_wheel_gate_runs_without_git_metadata",
+      "selector": "tests/packaging/test_wheel_gate_v4.py::test_gate_requires_a_gitless_source_and_has_no_static_blacklist",
       "owner_task": "W6-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Run the wheel gate from a source archive without .git metadata.",
       "red_failure": "The source-archive build must remain verifiable without a checkout."
     },
@@ -1018,7 +1025,7 @@
       "retirement_task": "W6-05",
       "state": "REWRITE_AT_TASK",
       "reason": "A short blacklist cannot prove the wheel contains only the formal positive set.",
-      "replacement_selector": "tests/packaging/test_formal_only.py::test_wheel_record_equals_authority_positive_set"
+      "replacement_selector": "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted"
     },
     {
       "id": "REWRITE-SPEC-SHADOW-RUNTIME",
