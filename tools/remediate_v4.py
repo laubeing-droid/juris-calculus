@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.22.0"
+RUNNER_VERSION = "0.23.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -80,6 +80,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.20.0": 5,
     "0.21.0": 5,
     "0.22.0": 5,
+    "0.23.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -323,6 +324,25 @@ W3_04_CHANGED_PATHS = (
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
+W3_05_CRITICAL_CASE_COUNT = 11
+W3_05_TEST_CASE_COUNT = 25
+W3_05_TEST_CASE_IDS_DIGEST = (
+    "sha256:efa67bf8b494f7d65bd06a0d6b3554dd6f69b96ed6d041371743846d3aed2011"
+)
+W3_05_CHANGED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/semantic_mutation/critical-v4-mutations.json",
+    "tests/semantic_mutation/test_argumentation_mutation.py",
+    "tests/semantic_mutation/test_domain_provider_mutation.py",
+    "tests/semantic_mutation/test_ir_mutation.py",
+    "tests/unit/test_semantic_mutation_manifest.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
 W0_05_DECISION = SCHEMA_DIR / "approvals" / "W0-05-dependency-decision.json"
@@ -10366,7 +10386,7 @@ def _cmd_w3_01_lossless_ir_gate() -> int:
         "仅以下 12 个 exact paths",
         "P1-05 mutation",
         "REWRITE-SHARED-IR-ORACLE",
-        "replacement selector 保持未声明",
+        "replacement selector 由 `W3-05`",
         "w3-01-exact-lossless-ir-reports",
         "W3-05",
     )):
@@ -10443,10 +10463,10 @@ def _cmd_w3_01_lossless_ir_gate() -> int:
         "W3-05", "W5-CUTOVER", "REWRITE_AT_TASK",
         "tests/semantic_mutation/test_ir_mutation.py::"
         "test_independent_oracle_kills_ir_semantic_mutations",
-    ) or _selector_is_declared(
+    ) or not _selector_is_declared(
         ROOT, shared_oracle_rewrite.get("replacement_selector", "")
     ):
-        fail("W3-01 shared-oracle replacement is not preserved undeclared to W3-05")
+        fail("W3-01 shared-oracle replacement is not declared by W3-05")
 
     issue_by_id = {
         item.get("id"): item
@@ -10540,8 +10560,8 @@ def _cmd_w3_01_lossless_ir_gate() -> int:
         "_project_spec_to_ivl(", "compiler_core.legal_ir",
     )):
         fail("W3-01 independent projection is absent or calls production lowering")
-    if "test_independent_oracle_kills_ir_semantic_mutations" in mutation_tests:
-        fail("W3-01 prematurely declares the W3-05 shared-oracle replacement")
+    if "test_independent_oracle_kills_ir_semantic_mutations" not in mutation_tests:
+        fail("W3-01 lacks the W3-05 independent shared-oracle replacement")
     if any(marker not in runner_source for marker in (
         "W3-01 receipt does not bind its exact 12 committed paths",
         "w3-01-exact-lossless-ir-reports",
@@ -10973,8 +10993,8 @@ def _cmd_w3_03_backend_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-03 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 382:
-        fail("W3-03 file disposition is not the current reproducible 382-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 385:
+        fail("W3-03 file disposition is not the current reproducible 385-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 21 个 exact paths",
         "可 kill 的 `spawn` 子进程",
@@ -11487,8 +11507,8 @@ def _cmd_w3_04_checker_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-04 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 382:
-        fail("W3-04 file disposition is not the reproducible 382-path ledger")
+    if disposition != generated_disposition or disposition.get("count") != 385:
+        fail("W3-04 file disposition is not the reproducible 385-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 11 个 exact paths",
         "immutable snapshot",
@@ -11576,6 +11596,281 @@ def cmd_w3_04_checker_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _w3_05_ledger_problems() -> list[str]:
+    """Validate the static critical ledger without claiming test outcomes."""
+
+    try:
+        ledger = json.loads(SEMANTIC_MUTATION_LEDGER.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+        return [f"W3-05 ledger inputs are unreadable: {type(exc).__name__}: {exc}"]
+
+    expected_mutations = [
+        {
+            "id": "IR-LOSS", "audit_id": "P1-05", "repair_task": "W3-01",
+            "selector": (
+                "tests/semantic_mutation/test_ir_mutation.py::"
+                "test_independent_oracle_kills_ir_semantic_mutations"
+            ),
+            "expected_cases": 6, "oracle": "independent-structural-projection",
+        },
+        {
+            "id": "PRIORITY-IGNORED", "audit_id": "P1-06", "repair_task": "W3-02",
+            "selector": (
+                "tests/semantic_mutation/test_argumentation_mutation.py::"
+                "test_priority_ignored_and_reversed_mutants_are_killed"
+            ),
+            "expected_cases": 1, "oracle": "independent-grounded-labels",
+        },
+        {
+            "id": "UNDEC-ACCEPTED", "audit_id": "P1-06", "repair_task": "W3-02",
+            "selector": (
+                "tests/semantic_mutation/test_argumentation_mutation.py::"
+                "test_undecided_accepted_mutant_is_killed"
+            ),
+            "expected_cases": 1, "oracle": "independent-grounded-labels",
+        },
+        {
+            "id": "WITNESS-OVERWRITE", "audit_id": "P1-06", "repair_task": "W3-02",
+            "selector": (
+                "tests/semantic_mutation/test_argumentation_mutation.py::"
+                "test_duplicate_claim_dictionary_overwrite_mutant_is_killed"
+            ),
+            "expected_cases": 1, "oracle": "complete-claim-projection",
+        },
+        {
+            "id": "NAMESPACE-DOMAIN-LOSS", "audit_id": "P1-07",
+            "repair_task": "W2-03",
+            "selector": (
+                "tests/semantic_mutation/test_domain_provider_mutation.py::"
+                "test_independent_oracle_kills_namespace_domain_loss"
+            ),
+            "expected_cases": 1, "oracle": "independent-signed-config-projection",
+        },
+        {
+            "id": "PROVIDER-FAKE-RECEIPT", "audit_id": "P0-06",
+            "repair_task": "W3-03",
+            "selector": (
+                "tests/semantic_mutation/test_domain_provider_mutation.py::"
+                "test_independent_checker_kills_provider_fake_receipt"
+            ),
+            "expected_cases": 1,
+            "oracle": "provider-invocation-probe-plus-independent-checker",
+        },
+    ]
+    expected_deferred = {
+        "audit_id": "P1-07", "owner_task": "W4-05",
+        "selector": (
+            "tests/formal_e2e/test_positive_vertical_slice.py::"
+            "test_namespace_domain_patch_changes_evaluation"
+        ),
+        "state": "RED_AT_TASK",
+    }
+    expected = {
+        "schema_version": "jc/v4-semantic-mutation-ledger/1.0",
+        "policy": {
+            "owner_task": "W3-05", "survivors_allowed": 0,
+            "aggregate_percentage_gate": False,
+        },
+        "mutations": expected_mutations,
+        "deferred_runtime_closure": expected_deferred,
+    }
+    problems: list[str] = []
+    if ledger != expected:
+        problems.append("critical mutation ledger is not the exact closed six-item contract")
+    if sum(item["expected_cases"] for item in expected_mutations) != W3_05_CRITICAL_CASE_COUNT:
+        problems.append("critical mutation case count drifted")
+    for item in expected_mutations:
+        if not _selector_is_declared(ROOT, item["selector"]):
+            problems.append(f"critical mutation selector is not declared: {item['id']}")
+            continue
+        relative = _selector_file(item["selector"])
+        if relative is None:
+            problems.append(f"critical mutation selector is malformed: {item['id']}")
+            continue
+        controls = _forbidden_test_controls(
+            (ROOT / relative).read_text(encoding="utf-8-sig")
+        )
+        if controls:
+            problems.append(f"critical mutation selector uses bypass controls: {item['id']}")
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-05"), {})
+    if task.get("audit_ids") != ["P0-06", "P1-05", "P1-06", "P1-07"]:
+        problems.append("W3-05 critical audit binding drifted")
+    rewrite = next((
+        item for item in manifest.get("rewrite_at_task", [])
+        if isinstance(item, dict) and item.get("id") == "REWRITE-SHARED-IR-ORACLE"
+    ), {})
+    if (
+        rewrite.get("rewrite_task"), rewrite.get("state"),
+        rewrite.get("replacement_selector"),
+    ) != (
+        "W3-05", "REWRITE_AT_TASK", expected_mutations[0]["selector"],
+    ) or not _selector_is_declared(ROOT, rewrite.get("replacement_selector", "")):
+        problems.append("W3-05 independent IR replacement is not active")
+    p1_07 = next((
+        item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict) and item.get("audit_id") == "P1-07"
+    ), {})
+    if {
+        key: p1_07.get(key) for key in ("owner_task", "selector", "state")
+    } != {
+        "owner_task": expected_deferred["owner_task"],
+        "selector": expected_deferred["selector"],
+        "state": expected_deferred["state"],
+    }:
+        problems.append("P1-07 runtime closure no longer remains RED at W4-05")
+
+    sources = {
+        path: (ROOT / path).read_text(encoding="utf-8-sig")
+        for path in (
+            "tests/semantic_mutation/test_ir_mutation.py",
+            "tests/semantic_mutation/test_argumentation_mutation.py",
+            "tests/semantic_mutation/test_domain_provider_mutation.py",
+            "tests/unit/test_semantic_mutation_manifest.py",
+        )
+    }
+    if any(marker not in sources["tests/semantic_mutation/test_ir_mutation.py"] for marker in (
+        "expected = {", "mutated_rule.authority_ref", "observed[projection_name] == (expected, expected)",
+    )):
+        problems.append("IR mutation does not compare exact source semantics to both lowering hops")
+    if any(marker not in sources["tests/semantic_mutation/test_argumentation_mutation.py"] for marker in (
+        "_independent_grounded", "assert _labels(correct) == expected",
+        "assert _labels(result) == expected", "len(result.claim_projection[0].argument_refs) == 2",
+    )):
+        problems.append("argumentation mutations lack independent labels or complete witness projection")
+    if any(marker not in sources["tests/semantic_mutation/test_domain_provider_mutation.py"] for marker in (
+        "def _independent_domain_projection", "verified.domain_bindings == expected",
+        "invoke_provider = router._invoke_provider", "assert invoked ==", ".check(", "receipt=",
+    )):
+        problems.append("domain/provider mutations lack independent projection, invocation, or checker proof")
+    return problems
+
+
+def _cmd_w3_05_semantic_mutation_gate() -> int:
+    """Verify the reachable six-item mutation contract without running pytest itself."""
+
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W3-05"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W3-05",
+            "tests/semantic_mutation/test_ir_mutation.py::test_independent_oracle_kills_ir_semantic_mutations",
+            "tests/semantic_mutation/test_ir_mutation.py::test_structural_projection_helper_is_independent",
+            "tests/semantic_mutation/test_argumentation_mutation.py::test_priority_ignored_and_reversed_mutants_are_killed",
+            "tests/semantic_mutation/test_argumentation_mutation.py::test_undecided_accepted_mutant_is_killed",
+            "tests/semantic_mutation/test_argumentation_mutation.py::test_duplicate_claim_dictionary_overwrite_mutant_is_killed",
+            "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_oracle_kills_namespace_domain_loss",
+            "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_checker_kills_provider_fake_receipt",
+            "tests/unit/test_semantic_mutation_manifest.py",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/W3-05/critical-mutation-tests.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W3_05_CHANGED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w3_05_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("W3-05 disposition generator spec has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        print(f"W3-05 control input unreadable: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W3-05"), None)
+    if not isinstance(task, dict):
+        fail("W3-05 task is missing")
+    else:
+        if task.get("mode") != "AUTO" or task.get("depends_on") != [
+            "W3-01", "W3-02", "W3-03", "W3-04",
+        ]:
+            fail("W3-05 mode or dependencies drifted")
+        if task.get("audit_ids") != ["P0-06", "P1-05", "P1-06", "P1-07"]:
+            fail("W3-05 audit binding drifted")
+        if task.get("objective") != (
+            "冻结六项 critical semantic mutation ledger；逐项执行独立 oracle，禁止 survivor 或"
+            "总体百分比掩盖；P1-07 runtime closure 保持 RED 到 W4-05"
+        ):
+            fail("W3-05 objective drifted")
+        if task.get("allowed_paths") != list(W3_05_CHANGED_PATHS):
+            fail("W3-05 allowlist is not the exact executable scope")
+        if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+            fail("W3-05 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    generated_disposition = disposition_generator.build_document()
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W3-05 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition or disposition.get("count") != 385:
+        fail("W3-05 file disposition is not the reproducible 385-path ledger")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 11 个 exact paths", "P0-06, P1-05..07", "只声明要求、不预写 KILLED",
+        "runtime/Application closure", "survivors_allowed=0", "attempt 1→2 receipt chain",
+        "w3-05-exact-critical-mutation-reports", "w3-05-zero-critical-survivors",
+        "w3-05-exact-committed-scope",
+    )):
+        fail("W3-05 formal plan lacks exact scope, six kills, or deferred runtime closure")
+    problems.extend(_w3_05_ledger_problems())
+    tracked = set(_git_tracked_files())
+    for path in W3_05_CHANGED_PATHS:
+        if path not in tracked:
+            fail(f"W3-05 exact path is not Git tracked: {path}")
+    if W3_05_TEST_CASE_COUNT <= 0 or W3_05_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W3-05 JUnit case identity is not frozen")
+    if any(marker not in runner_source for marker in (
+        "_w3_05_test_report_problems(reports)", "_w3_05_ledger_problems()",
+        "w3-05-exact-critical-mutation-reports", "w3-05-zero-critical-survivors",
+        "w3-05-exact-committed-scope",
+    )):
+        fail("W3-05 runner resume does not rebuild its executable receipt contract")
+    if cmd_w3_04_checker_gate() != EXIT_OK:
+        fail("W3-05 prerequisite machine gate failed: W3-04")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W3-05 semantic mutation gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W3-05 semantic mutation gate OK: {W3_05_CRITICAL_CASE_COUNT} critical cases; "
+        "six independent mutation categories; P1-07 runtime closure remains RED at W4-05"
+    )
+    return EXIT_OK
+
+
+def cmd_w3_05_semantic_mutation_gate() -> int:
+    try:
+        return _cmd_w3_05_semantic_mutation_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W3-05 semantic mutation gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -11619,6 +11914,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w3_03_backend_gate()
     if args.wave == "W3-04":
         return cmd_w3_04_checker_gate()
+    if args.wave == "W3-05":
+        return cmd_w3_05_semantic_mutation_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -13443,6 +13740,42 @@ def _w3_04_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w3_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W3-05 critical-mutation JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W3-05 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W3_05_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W3_05_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W3_05_TEST_CASE_COUNT,
+        "junit_unique_cases": W3_05_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W3_05_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W3-05 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W3-05 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
     """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
 
@@ -13798,6 +14131,37 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W3-04 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W3-05":
+        problems.extend(_w3_05_test_report_problems(reports))
+        problems.extend(_w3_05_ledger_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W3_05_CHANGED_PATHS)
+            or len(changed_paths) != len(W3_05_CHANGED_PATHS)
+        ):
+            problems.append("W3-05 receipt does not bind its exact 11 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W3_05_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W3-05 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w3-05-exact-critical-mutation-reports",
+            "w3-05-zero-critical-survivors",
+            "w3-05-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W3-05 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -14802,6 +15166,49 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 11 exact W3-04 result paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W3-05":
+        report_problems = _w3_05_test_report_problems(test_reports)
+        ledger_problems = _w3_05_ledger_problems()
+        expected_paths = set(W3_05_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W3_05_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w3-05-exact-critical-mutation-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W3_05_TEST_CASE_COUNT} critical/independence/governance pytest items "
+                "bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w3-05-zero-critical-survivors",
+            "kind": "artifact_binding",
+            "ok": not report_problems and not ledger_problems,
+            "detail": (
+                f"all six categories and {W3_05_CRITICAL_CASE_COUNT} critical cases killed; "
+                "zero survivors; no aggregate score"
+                if not report_problems and not ledger_problems
+                else "; ".join([*ledger_problems, *report_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w3-05-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 exact W3-05 result paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

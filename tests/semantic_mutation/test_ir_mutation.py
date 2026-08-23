@@ -120,7 +120,7 @@ def _independent_structural_projection(
     CRITICAL_MUTATIONS,
     ids=tuple(item[1] for item in CRITICAL_MUTATIONS),
 )
-def test_critical_ir_semantic_mutation_changes_each_lowered_projection(
+def test_independent_oracle_kills_ir_semantic_mutations(
     ir_context,
     field_name: str,
     projection_name: str,
@@ -146,11 +146,18 @@ def test_critical_ir_semantic_mutation_changes_each_lowered_projection(
     observed = _independent_structural_projection(
         harness.resolver, mutated_spec, mutated_ivl,
     )
+    expected = {
+        "authority": mutated_rule.authority_ref,
+        "source_locator": mutated_rule.source_locator.to_dict(),
+        "defined_terms": mutated_rule.defined_term_refs,
+        "interpretation": mutated_rule.interpretation_choice_refs,
+        "modality": mutated_rule.modality,
+        "temporal": mutated_rule.temporal_constraint_refs,
+    }[projection_name]
 
     assert baseline[projection_name][0] == baseline[projection_name][1]
-    assert observed[projection_name][0] == observed[projection_name][1]
-    assert observed[projection_name][0] != baseline[projection_name][0]
-    assert observed[projection_name][1] != baseline[projection_name][1]
+    assert observed[projection_name] == (expected, expected)
+    assert expected != baseline[projection_name][0]
 
 
 def test_structural_projection_helper_is_independent() -> None:

@@ -625,7 +625,7 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W3-01　RuleV4→LegalSpecV4→LegalIVLV4 信息守恒
 
 - **Depends / audit**：`W2-06 / P1-05`。
-- **Paths**：仅以下 12 个 exact paths：本方案、`compiler_core/legal_ir.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_legal_ir.py`、`tests/contract/test_required_test_manifest.py`、`tests/property/test_ir_properties.py`、`tests/required-v4-tests.json`、`tests/semantic_mutation/test_ir_mutation.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。`compiler_core/legal_spec_ivl.py` 与 `tests/unit/test_legal_spec_ivl.py` 本 task 只作为旧实现/回归输入，不修改、不删除；其 `REWRITE-SHARED-IR-ORACLE` replacement selector 保持未声明并继续归 `W3-05`。
+- **Paths**：仅以下 12 个 exact paths：本方案、`compiler_core/legal_ir.py`、`docs/architecture/module-authority.json`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_legal_ir.py`、`tests/contract/test_required_test_manifest.py`、`tests/property/test_ir_properties.py`、`tests/required-v4-tests.json`、`tests/semantic_mutation/test_ir_mutation.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`。`compiler_core/legal_spec_ivl.py` 与 `tests/unit/test_legal_spec_ivl.py` 本 task 只作为旧实现/回归输入，不修改、不删除；其 `REWRITE-SHARED-IR-ORACLE` replacement selector 由 `W3-05` 在同一测试文件内声明，旧 oracle 到 W5-CUTOVER 再退出。
 - **动作**：新增唯一 `legal_ir.py` lowering authority；每个 `RuleV4` 语义字段必须 `preserve|lower|explicitly_unsupported`，formal 路径不允许 silent loss/default。两跳 translation receipt 从 before/after canonical bytes 与 artifact refs 自动生成，interpretation choice 必须绑定 approval refs；P1-05 mutation 从 `RED_AT_TASK` 转为 `ACTIVE_REQUIRED`。runner 仅执行 `verify-wave W3-01`，随后以外部 JUnit 绑定 contract、property、semantic mutation、旧 IVL unit 与 required-manifest governance 五个 exact pytest 文件。
 - **Gate**：逐字段 mutation 覆盖 authority/source locator/terms/interpretation/modality/temporal；删除或变更任一字段必须改变 receipt 或 fail closed。reference oracle 的独立 projection 不调用 production lowering，测试零 skip/xfail；module authority 将 `legal_ir.py` 精确列为 `FORMAL_CORE`，file disposition 可重现。runner 绑定 exact JUnit case identity、12 个 committed path digests、attempt 1→2 receipt chain 与 `w3-01-exact-lossless-ir-reports`、`w3-01-exact-committed-scope` 两个专属 assertions；本 task 只关闭 P1-05 的字段守恒部分，独立 oracle replacement 与 critical survivor 全杀继续留给 `W3-05`。
 - **Commit**：`feat(ir): enforce loss-accounted V4 lowering`。
@@ -656,9 +656,10 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W3-05　Semantic mutation gate
 
-- **Depends / audit**：`W3-01..04 / P1-05..07`。
-- **Paths**：`tests/semantic_mutation/**` 和 mutation manifest；生产 survivor 回责任 task 修复。
-- **Gate**：审计列出的 IR loss、priority ignored、UNDEC accepted、witness overwrite、namespace/domain loss、provider fake receipt 每项独立 mutation 必杀；不得用总体百分比掩盖 critical survivor。
+- **Depends / audit**：`W3-01..04 / P0-06, P1-05..07`。P1-07 在本 task 只覆盖 signed-pack `domain_bindings` 下层投影；runtime/Application closure 仍唯一属于 `W4-05`，其 required selector 保持 `RED_AT_TASK`。
+- **Paths**：仅以下 11 个 exact paths：本方案、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/semantic_mutation/critical-v4-mutations.json`、`tests/semantic_mutation/test_argumentation_mutation.py`、`tests/semantic_mutation/test_domain_provider_mutation.py`、`tests/semantic_mutation/test_ir_mutation.py`、`tests/unit/test_semantic_mutation_manifest.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；不修改生产算法，survivor 回 `repair_task` 修复。
+- **动作**：冻结只声明要求、不预写 KILLED 结果的六项 critical ledger；IR lowering 与 priority/UNDEC 使用测试侧独立 oracle，witness 要求完整多值 projection，namespace/domain 从 signed config canonical bytes 独立投影，provider gate 以真实 invocation probe 加 independent checker 拒绝 caller fake receipt。修正原任务无 pytest、漏绑 P0-06、glob allowlist 与 P1-07 closure 混淆四项 plan drift。
+- **Gate**：IR loss 六个参数 mutation 加其余五项恰好 11 个 critical cases 全过，独立性/ledger 与 required-manifest 合同测试零 skip/xfail；`survivors_allowed=0` 且禁止总体百分比覆盖任一 survivor。runner 递归复验 W3-01..04，绑定 exact JUnit case identity、11 个 committed result-path digests、attempt 1→2 receipt chain，以及 `w3-05-exact-critical-mutation-reports`、`w3-05-zero-critical-survivors`、`w3-05-exact-committed-scope` 三个专属 assertions。
 - **Commit**：`test(semantics): enforce critical V4 mutation ledger`。
 
 ## 11. W4：RunIdentity、Storage、AuditBundle、Certificate、ApplicationV4

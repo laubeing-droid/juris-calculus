@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "e67cfaa0906ddde0f448fd6e0b214f41d1e466001b62bd2c8d8571edf88d7cb0",
+    "plan_sha256": "f8e83505e495e52c2466c925ab5f0c58b91f3a414d09c5353c076f2e6aa3a639",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2646,15 +2646,24 @@
         "W3-04"
       ],
       "audit_ids": [
+        "P0-06",
         "P1-05",
         "P1-06",
         "P1-07"
       ],
-      "objective": "Semantic mutation gate",
+      "objective": "冻结六项 critical semantic mutation ledger；逐项执行独立 oracle，禁止 survivor 或总体百分比掩盖；P1-07 runtime closure 保持 RED 到 W4-05",
       "allowed_paths": [
-        "tests/semantic_mutation/**",
-        "tools/remediate_v4.py",
-        "tests/unit/test_semantic_mutation_manifest.py"
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/semantic_mutation/critical-v4-mutations.json",
+        "tests/semantic_mutation/test_argumentation_mutation.py",
+        "tests/semantic_mutation/test_domain_provider_mutation.py",
+        "tests/semantic_mutation/test_ir_mutation.py",
+        "tests/unit/test_semantic_mutation_manifest.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2664,9 +2673,35 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W3-05"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W3-05",
+          "tests/semantic_mutation/test_ir_mutation.py::test_independent_oracle_kills_ir_semantic_mutations",
+          "tests/semantic_mutation/test_ir_mutation.py::test_structural_projection_helper_is_independent",
+          "tests/semantic_mutation/test_argumentation_mutation.py::test_priority_ignored_and_reversed_mutants_are_killed",
+          "tests/semantic_mutation/test_argumentation_mutation.py::test_undecided_accepted_mutant_is_killed",
+          "tests/semantic_mutation/test_argumentation_mutation.py::test_duplicate_claim_dictionary_overwrite_mutant_is_killed",
+          "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_oracle_kills_namespace_domain_loss",
+          "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_checker_kills_provider_fake_receipt",
+          "tests/unit/test_semantic_mutation_manifest.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/W3-05/critical-mutation-tests.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

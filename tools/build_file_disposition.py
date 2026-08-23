@@ -397,7 +397,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "e67cfaa0906ddde0f448fd6e0b214f41d1e466001b62bd2c8d8571edf88d7cb0",
+        "plan_sha256": "f8e83505e495e52c2466c925ab5f0c58b91f3a414d09c5353c076f2e6aa3a639",
         "count": len(entries),
         "paths": entries,
     }

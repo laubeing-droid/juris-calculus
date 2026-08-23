@@ -105,7 +105,11 @@ def test_priority_ignored_and_reversed_mutants_are_killed() -> None:
             (winner, loser), priority_edges=(_priority("reversed", loser, winner),)
         )
     )
+    expected = _independent_grounded(
+        (winner, loser), ((argument_ref_v4(winner), argument_ref_v4(loser)),)
+    )
 
+    assert _labels(correct) == expected
     assert len({_labels(correct)[argument_ref_v4(winner)], _labels(reversed_result)[argument_ref_v4(winner)]}) == 2
     assert correct.canonical_digest() not in {
         ignored.canonical_digest(),
@@ -120,8 +124,16 @@ def test_undecided_accepted_mutant_is_killed() -> None:
             (a, b), attacks=(_attack("a-b", a, b), _attack("b-a", b, a))
         )
     )
+    expected = _independent_grounded(
+        (a, b),
+        (
+            (argument_ref_v4(a), argument_ref_v4(b)),
+            (argument_ref_v4(b), argument_ref_v4(a)),
+        ),
+    )
 
-    assert set(_labels(result).values()) == {"UNDEC"}
+    assert _labels(result) == expected
+    assert set(expected.values()) == {"UNDEC"}
     assert result.state == "disputed"
 
 

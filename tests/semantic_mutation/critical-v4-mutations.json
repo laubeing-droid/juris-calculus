@@ -1,0 +1,64 @@
+{
+  "schema_version": "jc/v4-semantic-mutation-ledger/1.0",
+  "policy": {
+    "owner_task": "W3-05",
+    "survivors_allowed": 0,
+    "aggregate_percentage_gate": false
+  },
+  "mutations": [
+    {
+      "id": "IR-LOSS",
+      "audit_id": "P1-05",
+      "repair_task": "W3-01",
+      "selector": "tests/semantic_mutation/test_ir_mutation.py::test_independent_oracle_kills_ir_semantic_mutations",
+      "expected_cases": 6,
+      "oracle": "independent-structural-projection"
+    },
+    {
+      "id": "PRIORITY-IGNORED",
+      "audit_id": "P1-06",
+      "repair_task": "W3-02",
+      "selector": "tests/semantic_mutation/test_argumentation_mutation.py::test_priority_ignored_and_reversed_mutants_are_killed",
+      "expected_cases": 1,
+      "oracle": "independent-grounded-labels"
+    },
+    {
+      "id": "UNDEC-ACCEPTED",
+      "audit_id": "P1-06",
+      "repair_task": "W3-02",
+      "selector": "tests/semantic_mutation/test_argumentation_mutation.py::test_undecided_accepted_mutant_is_killed",
+      "expected_cases": 1,
+      "oracle": "independent-grounded-labels"
+    },
+    {
+      "id": "WITNESS-OVERWRITE",
+      "audit_id": "P1-06",
+      "repair_task": "W3-02",
+      "selector": "tests/semantic_mutation/test_argumentation_mutation.py::test_duplicate_claim_dictionary_overwrite_mutant_is_killed",
+      "expected_cases": 1,
+      "oracle": "complete-claim-projection"
+    },
+    {
+      "id": "NAMESPACE-DOMAIN-LOSS",
+      "audit_id": "P1-07",
+      "repair_task": "W2-03",
+      "selector": "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_oracle_kills_namespace_domain_loss",
+      "expected_cases": 1,
+      "oracle": "independent-signed-config-projection"
+    },
+    {
+      "id": "PROVIDER-FAKE-RECEIPT",
+      "audit_id": "P0-06",
+      "repair_task": "W3-03",
+      "selector": "tests/semantic_mutation/test_domain_provider_mutation.py::test_independent_checker_kills_provider_fake_receipt",
+      "expected_cases": 1,
+      "oracle": "provider-invocation-probe-plus-independent-checker"
+    }
+  ],
+  "deferred_runtime_closure": {
+    "audit_id": "P1-07",
+    "owner_task": "W4-05",
+    "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_namespace_domain_patch_changes_evaluation",
+    "state": "RED_AT_TASK"
+  }
+}
