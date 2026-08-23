@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.46.0"
+RUNNER_VERSION = "0.47.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -106,6 +106,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.44.0": 5,
     "0.45.0": 5,
     "0.46.0": 5,
+    "0.47.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -16465,7 +16466,15 @@ def _w6_01_load_wheel_gate(path: Path) -> Any:
     if spec is None or spec.loader is None:
         raise ImportError("wheel gate has no loader")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    root_path = str(ROOT)
+    added_root = root_path not in sys.path
+    if added_root:
+        sys.path.insert(0, root_path)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if added_root:
+            sys.path.remove(root_path)
     return module
 
 
