@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "32eee40cbf41bff08d4d592b7dff14cf316aa690bed1a039df7475f374d9ee94",
+    "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -3465,10 +3465,16 @@
       ],
       "objective": "入口合同和旧行为负例准备",
       "allowed_paths": [
-        "tests/contract/**",
-        "tests/formal_e2e/**",
-        "tests/mcp_protocol/**",
-        "tests/fixtures/**"
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/contract/w5_package_red.py",
+        "tests/formal_e2e/w5_entrypoint_red.py",
+        "tests/mcp_protocol/w5_transport_red.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -3478,10 +3484,30 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W5-01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W5-01",
+          "tests/contract/w5_package_red.py",
+          "tests/formal_e2e/w5_entrypoint_red.py",
+          "tests/mcp_protocol/w5_transport_red.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W5-01.xml"
         ]
       ],
       "expected_exit_codes": [
-        0
+        0,
+        1
       ],
       "completion_assertions": [
         {

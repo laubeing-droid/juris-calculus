@@ -359,9 +359,9 @@
       "audit_id": "P0-01",
       "test_id": "V4-P0-01-ENTRYPOINT-V3",
       "suite": "formal_e2e",
-      "selector": "tests/formal_e2e/test_single_chain.py::test_public_entrypoints_reject_v3_route",
+      "selector": "tests/formal_e2e/w5_entrypoint_red.py::test_public_entrypoints_reject_v3_route",
       "owner_task": "W5-CUTOVER",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Route any public entrypoint to V3 or a second application.",
       "red_failure": "The test fails while any public entrypoint is not the sole ApplicationV4 chain."
     },
@@ -439,9 +439,9 @@
       "audit_id": "P0-09",
       "test_id": "V4-P0-09-MCP-ERROR-SEMANTICS",
       "suite": "mcp_protocol",
-      "selector": "tests/mcp_protocol/test_transport_semantics.py::test_blocked_and_engine_error_are_protocol_errors",
+      "selector": "tests/mcp_protocol/w5_transport_red.py::test_blocked_and_engine_error_are_protocol_errors",
       "owner_task": "W5-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Encode blocked or engine_error as a successful tool result.",
       "red_failure": "Blocked and engine errors must use protocol error semantics."
     },
@@ -729,9 +729,9 @@
       "audit_id": "P2-03",
       "test_id": "V4-P2-03-DERIVED-TRUST",
       "suite": "formal_e2e",
-      "selector": "tests/formal_e2e/test_public_boundary_inputs.py::test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
+      "selector": "tests/formal_e2e/w5_entrypoint_red.py::test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
       "owner_task": "W5-01",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Replace boundary inputs with pre-trusted facts, PASS gates, or receipts.",
       "red_failure": "The public vertical slice must derive every trusted object."
     },
@@ -975,7 +975,7 @@
       "retirement_task": "W5-CUTOVER",
       "state": "REWRITE_AT_TASK",
       "reason": "The focused tests protect the addon WorkBuddy adapter instead of the V4 formal MCP boundary.",
-      "replacement_selector": "tests/mcp_protocol/test_transport_semantics.py::test_v4_tools_validate_success_and_error_outputs"
+      "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_tools_list_is_exact_v4_with_output_schemas"
     },
     {
       "id": "REWRITE-OLD-MCP-STDIO",
@@ -984,7 +984,7 @@
       "retirement_task": "W5-CUTOVER",
       "state": "REWRITE_AT_TASK",
       "reason": "The helper discards isError and the module exercises the old addon transport.",
-      "replacement_selector": "tests/mcp_protocol/test_transport_semantics.py::test_stdio_preserves_v4_iserror_and_status"
+      "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_blocked_and_engine_error_are_protocol_errors"
     },
     {
       "id": "REWRITE-V3-ENTRYPOINT-PARITY",
@@ -993,7 +993,7 @@
       "retirement_task": "W5-CUTOVER",
       "state": "REWRITE_AT_TASK",
       "reason": "The parity test follows V3 development entrypoints instead of an installed V4 formal chain.",
-      "replacement_selector": "tests/formal_e2e/test_single_chain.py::test_three_installed_entrypoints_are_byte_identical"
+      "replacement_selector": "tests/formal_e2e/w5_entrypoint_red.py::test_cli_client_and_mcp_share_one_application_v4_sink"
     },
     {
       "id": "REWRITE-PARTIAL-CORE-LOCK",

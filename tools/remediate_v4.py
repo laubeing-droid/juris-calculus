@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.30.0"
+RUNNER_VERSION = "0.31.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -88,6 +88,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.28.0": 5,
     "0.29.0": 5,
     "0.30.0": 5,
+    "0.31.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -540,6 +541,25 @@ W4_07_ALLOWED_PATHS = (
 W4_07_CHANGED_PATHS = tuple(
     path for path in W4_07_ALLOWED_PATHS if path not in W4_07_BYTE_STABLE_DIGESTS
 )
+W5_01_RED_TEST_CASE_COUNT = 13
+W5_01_RED_TEST_CASE_IDS_DIGEST = (
+    "sha256:8ecaa27b476250ac0798c4c6c6e45754d7102a510c0fd6ad828543e14c0b2aed"
+)
+W5_01_RED_TEST_PATHS = (
+    "tests/contract/w5_package_red.py",
+    "tests/formal_e2e/w5_entrypoint_red.py",
+    "tests/mcp_protocol/w5_transport_red.py",
+)
+W5_01_ALLOWED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    *W5_01_RED_TEST_PATHS,
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -637,7 +657,7 @@ W0_REQUIRED_REWRITE_IDS = frozenset({
     "REWRITE-SPEC-SHADOW-RUNTIME",
 })
 W0_REQUIRED_REWRITE_PROJECTION_DIGEST = (
-    "sha256:fce9654082cca29bed842dafc0a95ece482ed1a24e0d4db2ec81733bd3bf75bb"
+    "sha256:56a9927212a20c4b50cf933992157d8c75432c05db888a0bbb62c8efe308ac75"
 )
 W0_B02_COMPANION_BINDING = {
     "kind": "B02_RECEIPT",
@@ -10493,11 +10513,11 @@ def _cmd_w2_06_trust_chain_gate() -> int:
         p2_mutation.get("audit_id"), p2_mutation.get("owner_task"),
         p2_mutation.get("state"), p2_mutation.get("selector"),
     ) != (
-        "P2-03", "W5-01", "RED_AT_TASK",
-        "tests/formal_e2e/test_public_boundary_inputs.py::"
+        "P2-03", "W5-01", "ACTIVE_REQUIRED",
+        "tests/formal_e2e/w5_entrypoint_red.py::"
         "test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
-    ) or _selector_is_declared(ROOT, p2_mutation.get("selector", "")):
-        fail("W2-06 full public derived-trust obligation is not preserved RED to W5-01")
+    ) or not _selector_is_declared(ROOT, p2_mutation.get("selector", "")):
+        fail("W2-06 public derived-trust obligation is not activated at W5-01")
 
     disposition_by_path = {
         item.get("path"): item
@@ -13420,8 +13440,8 @@ def _w4_05_application_contract_problems() -> list[str]:
     }
     mutation_expectations = {
         "V4-P0-01-ENTRYPOINT-V3": (
-            "P0-01", "W5-CUTOVER", "RED_AT_TASK",
-            "tests/formal_e2e/test_single_chain.py::test_public_entrypoints_reject_v3_route",
+            "P0-01", "W5-CUTOVER", "ACTIVE_REQUIRED",
+            "tests/formal_e2e/w5_entrypoint_red.py::test_public_entrypoints_reject_v3_route",
         ),
         "V4-P0-08-ADVISORY-BOOLEAN": (
             "P0-08", "W4-05", "ACTIVE_REQUIRED",
@@ -14153,6 +14173,240 @@ def cmd_w4_07_vertical_gate() -> int:
         return EXIT_GATE_FAIL
 
 
+def _w5_01_entrypoint_red_contract_problems() -> list[str]:
+    """Check the exact non-default red suites for the atomic public cutover."""
+
+    problems: list[str] = []
+    builder_path = ROOT / "tools/build_file_disposition.py"
+    expected_functions = {
+        "tests/contract/w5_package_red.py": (
+            "test_package_root_exports_only_the_v4_facade",
+            "test_package_cli_and_runtime_share_the_v4_version",
+            "test_parallel_v3_w1b_and_compat_runtime_imports_are_absent",
+            "test_cli_client_and_mcp_sources_are_v4_only",
+            "test_cli_exit_codes_are_bound_to_strict_v4_admission",
+        ),
+        "tests/formal_e2e/w5_entrypoint_red.py": (
+            "test_public_entrypoints_reject_v3_route",
+            "test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
+            "test_cli_client_and_mcp_share_one_application_v4_sink",
+        ),
+        "tests/mcp_protocol/w5_transport_red.py": (
+            "test_tools_list_is_exact_v4_with_output_schemas",
+            "test_verify_and_read_capabilities_are_public_and_pathless",
+            "test_blocked_and_engine_error_are_protocol_errors",
+            "test_formal_mcp_rejects_os_paths_before_read",
+            "test_resources_are_empty_and_v3_tools_are_unavailable",
+        ),
+    }
+    try:
+        test_sources = {
+            path: (ROOT / path).read_text(encoding="utf-8-sig")
+            for path in W5_01_RED_TEST_PATHS
+        }
+        test_trees = {
+            path: ast.parse(source, filename=path) for path, source in test_sources.items()
+        }
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = (ROOT / W5_01_ALLOWED_PATHS[0]).read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        builder_source = builder_path.read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_01_file_disposition", builder_path,
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError, ValueError,
+    ) as exc:
+        return [f"W5-01 contract source is unreadable: {exc}"]
+
+    observed_count = 0
+    for path, expected in expected_functions.items():
+        if Path(path).name.startswith("test_"):
+            problems.append(f"W5-01 red suite would poison default discovery: {path}")
+        source = test_sources[path]
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-01 red suite uses skip or xfail: {path}")
+        if "pytest.fail(" in source or "raise AssertionError" in source:
+            problems.append(f"W5-01 red suite hard-codes failure: {path}")
+        observed = tuple(
+            node.name for node in test_trees[path].body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("test_")
+        )
+        observed_count += len(observed)
+        if observed != expected:
+            problems.append(f"W5-01 exact red testcase inventory drifted: {path}")
+    if observed_count != W5_01_RED_TEST_CASE_COUNT:
+        problems.append("W5-01 red testcase count drifted")
+    for path, markers in {
+        W5_01_RED_TEST_PATHS[0]: (
+            "importlib.util.find_spec", "compiler_core.cli", "ApplicationV4",
+            "EXIT_ADMISSION_BLOCKED",
+        ),
+        W5_01_RED_TEST_PATHS[1]: (
+            "ast.parse", "ApplicationV4", "evaluate_registered_case",
+            "test_public_entrypoints_reject_v3_route",
+        ),
+        W5_01_RED_TEST_PATHS[2]: (
+            "subprocess.run", "mcp_server.py", "jc_verify_run", "jc_read_artifact",
+            "DecisionStatusV4.BLOCKED", "isError",
+        ),
+    }.items():
+        for marker in markers:
+            if marker not in test_sources[path]:
+                problems.append(f"W5-01 executable observation marker is missing: {path}: {marker}")
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W5-01"), {}
+    )
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W5-01", *W5_01_RED_TEST_PATHS, "--junitxml",
+            "{state_root}/evidence/pytest/W5-01.xml",
+        ],
+    ]
+    if task.get("depends_on") != ["W4-07"]:
+        problems.append("W5-01 dependency projection drifted")
+    if task.get("audit_ids") != [
+        "P0-01", "P0-09", "P0-10", "P1-14", "P1-15", "P1-17", "P1-18", "P2-03",
+    ]:
+        problems.append("W5-01 audit projection drifted")
+    if task.get("allowed_paths") != list(W5_01_ALLOWED_PATHS):
+        problems.append("W5-01 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 1]:
+        problems.append("W5-01 exact red argv or expected exit codes drifted")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", []) if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P0-01-ENTRYPOINT-V3": (
+            "P0-01", "W5-CUTOVER", "ACTIVE_REQUIRED",
+            "tests/formal_e2e/w5_entrypoint_red.py::test_public_entrypoints_reject_v3_route",
+        ),
+        "V4-P0-09-MCP-ERROR-SEMANTICS": (
+            "P0-09", "W5-01", "ACTIVE_REQUIRED",
+            "tests/mcp_protocol/w5_transport_red.py::"
+            "test_blocked_and_engine_error_are_protocol_errors",
+        ),
+        "V4-P2-03-DERIVED-TRUST": (
+            "P2-03", "W5-01", "ACTIVE_REQUIRED",
+            "tests/formal_e2e/w5_entrypoint_red.py::"
+            "test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id, {})
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected or not _selector_is_declared(ROOT, expected[3]):
+            problems.append(f"W5-01 audit mutation lifecycle drifted: {test_id}")
+    resource_budget = mutation_by_id.get("V4-P1-15-RESOURCE-BUDGET", {})
+    if (
+        resource_budget.get("owner_task"), resource_budget.get("state"),
+    ) != ("W5-CUTOVER", "RED_AT_TASK") or _selector_is_declared(
+        ROOT, resource_budget.get("selector", ""),
+    ):
+        problems.append("W5-01 prematurely closes the full P1-15 production budget")
+
+    actual_plan_sha256 = sha256_hex((ROOT / W5_01_ALLOWED_PATHS[0]).read_bytes())
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        problems.append("W5-01 plan, task DAG, and disposition are not byte-bound")
+    if disposition != generated_disposition:
+        problems.append("W5-01 file disposition is not reproducible from its generator")
+    tracked = set(_git_tracked_files())
+    for path in W5_01_ALLOWED_PATHS:
+        if path not in tracked:
+            problems.append(f"W5-01 exact path is not Git tracked: {path}")
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    for path in W5_01_RED_TEST_PATHS:
+        item = disposition_by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"), item.get("closure_task"),
+        ) != ("TEST_ORACLE", "TEST_ORACLE", "W5-01"):
+            problems.append(f"W5-01 red test disposition drifted: {path}")
+        if f'"{path}": "W5-01"' not in builder_source:
+            problems.append(f"W5-01 disposition builder omits {path}")
+
+    for marker in (
+        "精确 10 项", "实际 changed paths 恰为全部 10 项",
+        "13 个 red cases", "0 passed / 13 failed / 0 error",
+        "P1-15 完整 production budget 仍保持 `RED_AT_TASK`",
+        "w5-01-exact-red-reports", "w5-01-atomic-cutover-contract",
+        "w5-01-exact-committed-scope",
+    ):
+        if marker not in formal_plan:
+            problems.append(f"W5-01 formal plan marker is missing: {marker}")
+    if (
+        W5_01_RED_TEST_CASE_COUNT != 13
+        or W5_01_RED_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64
+    ):
+        problems.append("W5-01 red JUnit case identity is not frozen")
+    for marker in (
+        "_w5_01_test_report_problems(test_reports)",
+        "_w5_01_entrypoint_red_contract_problems()",
+        "w5-01-exact-red-reports", "w5-01-atomic-cutover-contract",
+        "w5-01-exact-committed-scope",
+    ):
+        if marker not in runner_source:
+            problems.append(f"W5-01 runner receipt contract marker is missing: {marker}")
+    return problems
+
+
+def _cmd_w5_01_entrypoint_red_gate() -> int:
+    problems = _w5_01_entrypoint_red_contract_problems()
+    problems.extend(
+        f"W4-07 prerequisite drifted: {problem}"
+        for problem in _w4_07_vertical_contract_problems()
+    )
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-01 entrypoint red gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W5-01 entrypoint red gate OK: {W5_01_RED_TEST_CASE_COUNT} explicit red cases; "
+        "10 fixed paths, no production edits, no default collection poisoning, "
+        "and atomic V4 cutover obligations activated"
+    )
+    return EXIT_OK
+
+
+def cmd_w5_01_entrypoint_red_gate() -> int:
+    try:
+        return _cmd_w5_01_entrypoint_red_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W5-01 entrypoint red gate rejected malformed input: "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -14212,6 +14466,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w4_06_runtime_gate()
     if args.wave == "W4-07":
         return cmd_w4_07_vertical_gate()
+    if args.wave == "W5-01":
+        return cmd_w5_01_entrypoint_red_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -16324,6 +16580,43 @@ def _w4_07_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w5_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W5-01 assertion-red JUnit evidence with no bypass or errors."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-01 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 1,
+        "terminal_summaries": 1,
+        "failed": W5_01_RED_TEST_CASE_COUNT,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_01_RED_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": W5_01_RED_TEST_CASE_COUNT,
+        "junit_errors": 0,
+        "junit_cases": W5_01_RED_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_01_RED_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_01_RED_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-01 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if report.get("passed", 0) != 0:
+        problems.append("W5-01 red pytest unexpectedly passed a case")
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-01 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -17017,6 +17310,37 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W4-07 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-01":
+        problems.extend(_w5_01_test_report_problems(reports))
+        problems.extend(_w5_01_entrypoint_red_contract_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W5_01_ALLOWED_PATHS)
+            or len(changed_paths) != len(W5_01_ALLOWED_PATHS)
+        ):
+            problems.append("W5-01 receipt does not bind its exact 10 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W5_01_ALLOWED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W5-01 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-01-exact-red-reports",
+            "w5-01-atomic-cutover-contract",
+            "w5-01-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-01 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -18462,6 +18786,48 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 13 changed paths plus two byte-stable fixtures are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-01":
+        report_problems = _w5_01_test_report_problems(test_reports)
+        contract_problems = _w5_01_entrypoint_red_contract_problems()
+        expected_paths = set(W5_01_ALLOWED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W5_01_ALLOWED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w5-01-exact-red-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_01_RED_TEST_CASE_COUNT} entrypoint contract cases are exact assertion "
+                "failures with zero bypass or collection error"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-01-atomic-cutover-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "package, CLI, Client, MCP, V3 rejection, capabilities, schemas, and error "
+                "semantics are locked as non-default executable cutover obligations"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-01-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 10 W5-01 paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

@@ -203,6 +203,9 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/formal_e2e/test_public_boundary_inputs.py": "W4-07",
     "tests/security/test_vertical_slice_attacks.py": "W4-07",
     "tests/storage_chaos/test_vertical_slice_recovery.py": "W4-07",
+    "tests/contract/w5_package_red.py": "W5-01",
+    "tests/formal_e2e/w5_entrypoint_red.py": "W5-01",
+    "tests/mcp_protocol/w5_transport_red.py": "W5-01",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
@@ -415,7 +418,7 @@ def build_document() -> dict[str, Any]:
         "schema_version": "jc/remediation-v4-file-disposition/1.0",
         "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
         "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-        "plan_sha256": "32eee40cbf41bff08d4d592b7dff14cf316aa690bed1a039df7475f374d9ee94",
+        "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
         "count": len(entries),
         "paths": entries,
     }

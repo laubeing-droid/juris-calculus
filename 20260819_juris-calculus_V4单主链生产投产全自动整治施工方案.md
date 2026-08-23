@@ -730,8 +730,10 @@ W5 是唯一允许“大而原子”的 cutover wave。W5-CUTOVER 之前的 bran
 ### W5-01　入口合同和旧行为负例准备
 
 - **Depends / audit**：`W4-07 / P0-01, P0-09..10, P1-14..18, P2-03`。
-- **Paths**：仅 `tests/contract|formal_e2e|mcp_protocol/**` 和 fixtures。
-- **动作**：先写三入口 V4 parity、V3 payload/import rejection、MCP 全状态/isError/outputSchema/path rejection、verify/read capability、CLI exit-code、package-root export tests。当前主链下应按预期失败。
+- **Paths**：精确 10 项：本方案、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/contract/w5_package_red.py`、`tests/formal_e2e/w5_entrypoint_red.py`、`tests/mcp_protocol/w5_transport_red.py`、`tests/required-v4-tests.json`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；实际 changed paths 恰为全部 10 项，不修改任何 production runtime、Schema、manifest、fixture 或 W5-CUTOVER 源文件。
+- **动作**：先写三入口 V4 parity、V3 payload/import rejection、MCP 全状态/isError/outputSchema/path rejection、verify/read capability、CLI exit-code、package-root export tests。三个文件故意不使用默认 `test_*.py` 文件名，只由本 task 显式执行，避免原子 cutover 前污染现有 required suite；P0-01、P0-09、P2-03 selector 转为已声明 `ACTIVE_REQUIRED`，但本 task 的机器合同要求它们与其余入口合同在当前主链下恰好以断言失败，W5-CUTOVER 后同一测试字节必须转绿。
+- **Gate**：13 个 red cases 必须恰为 `0 passed / 13 failed / 0 error / 0 skip / 0 xfail / 0 xpass / 0 collection error`，JUnit case identity 冻结；每项失败必须来自真实当前 package/CLI/Client/MCP/import/runtime 观测，不得硬编码 `pytest.fail`、skip 或 xfail。默认 pytest collection 不发现三个 red 文件；P1-15 完整 production budget 仍保持 `RED_AT_TASK` 到 W5-CUTOVER。runner 绑定 `w5-01-exact-red-reports`、`w5-01-atomic-cutover-contract`、`w5-01-exact-committed-scope` 三项专属 assertions。
+- **PASS**：这里只证明原子切换合同已被可执行红测锁定，不证明任一公共入口已经 V4；branch 继续不可发布。
 - **Commit**：`test(entrypoints): define atomic V4 cutover contract`。
 
 ### H5-02　Candidate/advisory 资产归位、零语义审批和投产后 RFC

@@ -79,8 +79,16 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         item["test_id"]: (item["owner_task"], item["state"], item["selector"])
         for item in payload["audit_mutations"]
     }
-    assert mutations["V4-P0-01-ENTRYPOINT-V3"][:2] == (
-        "W5-CUTOVER", "RED_AT_TASK",
+    assert mutations["V4-P0-01-ENTRYPOINT-V3"] == (
+        "W5-CUTOVER",
+        "ACTIVE_REQUIRED",
+        "tests/formal_e2e/w5_entrypoint_red.py::test_public_entrypoints_reject_v3_route",
+    )
+    assert mutations["V4-P0-09-MCP-ERROR-SEMANTICS"] == (
+        "W5-01",
+        "ACTIVE_REQUIRED",
+        "tests/mcp_protocol/w5_transport_red.py::"
+        "test_blocked_and_engine_error_are_protocol_errors",
     )
     assert mutations["V4-P0-02-POSITIVE-PRODUCTION"] == (
         "W4-07",
@@ -112,6 +120,12 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "ACTIVE_REQUIRED",
         "tests/security/test_privacy_firewall.py::"
         "test_enospc_and_eacces_keep_retryable_storage_class",
+    )
+    assert mutations["V4-P2-03-DERIVED-TRUST"] == (
+        "W5-01",
+        "ACTIVE_REQUIRED",
+        "tests/formal_e2e/w5_entrypoint_red.py::"
+        "test_vertical_slice_derives_trust_instead_of_accepting_caller_pass",
     )
 
 
@@ -478,13 +492,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.31.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.32.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
