@@ -169,7 +169,10 @@ jobs:
         shell: bash
         run: |
           wheel="$(find work/dist-a -name '*.whl' -print -quit)"
-          python -B tools/build_provenance.py --wheel "$wheel" --output reports/build-provenance.json
+          rebuild="$(find work/dist-b -name '*.whl' -print -quit)"
+          version="$(python -c 'from compiler_core.version import __version__; print(__version__)')"
+          python -B tools/build_provenance.py create --wheel "$wheel" --rebuild-wheel "$rebuild" --source-commit "$GITHUB_SHA" --tag "v$version" --key tests/fixtures/keys/v4-test-ed25519.json --sbom-output reports/release-sbom.json --output reports/build-provenance.json --checksums-output reports/SHA256SUMS --release-candidate
+          python -B tools/build_provenance.py verify --wheel "$wheel" --sbom reports/release-sbom.json --provenance reports/build-provenance.json --checksums reports/SHA256SUMS --key tests/fixtures/keys/v4-test-ed25519.json --allow-test-key
 
       - name: Performance gate
         run: python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/security/test_resource_limits.py

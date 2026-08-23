@@ -4628,10 +4628,22 @@
       ],
       "objective": "SBOM/provenance/checksums/attestation；wrong commit/build evidence fail closed",
       "allowed_paths": [
+        ".github/workflows/ci.yml",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/packaging/test_ci_matrix.py",
+        "tests/packaging/test_provenance.py",
+        "tests/required-v4-tests.json",
+        "tools/build_file_disposition.py",
         "tools/build_provenance.py",
-        "tests/packaging/test_provenance.py"
+        "tools/remediate_v4.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "SIGNED_TEST_RELEASE_PROVENANCE_GREEN",
+        "WHEEL_RECORD_RUNTIME_SBOM_GREEN",
+        "PRODUCTION_TEST_KEY_REJECTED"
+      ],
       "argv": [
         [
           "{python}",
@@ -4639,11 +4651,39 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W6-06"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W6-06",
+          "tests/packaging/test_provenance.py",
+          "tests/packaging/test_ci_matrix.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W6-06.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",

@@ -58,6 +58,13 @@ def _ci_problems(text: str) -> list[str]:
         problems.append("required")
     if "--installed-wheel" not in package_runs or "cmp work/dist-a/*.whl" not in package_runs:
         problems.append("package")
+    provenance_markers = (
+        "build_provenance.py create", "build_provenance.py verify", "--rebuild-wheel",
+        "--source-commit", "--sbom-output", "--checksums-output",
+        "--release-candidate", "--allow-test-key",
+    )
+    if any(marker not in package_runs for marker in provenance_markers):
+        problems.append("release-provenance")
     return problems
 
 
@@ -124,6 +131,10 @@ def test_ci_release_lane_covers_ab_build_installed_sbom_provenance_perf_docs() -
     assert runs.count("git archive --format=tar HEAD") == 2
     assert "cmp work/dist-a/*.whl work/dist-b/*.whl" in runs
     assert "--installed-wheel" in runs and "--format cyclonedx-json" in runs
+    assert "build_provenance.py create" in runs and "build_provenance.py verify" in runs
+    assert "--rebuild-wheel" in runs and "--release-candidate" in runs
+    assert "--sbom-output" in runs and "--checksums-output" in runs
+    assert "--allow-test-key" in runs
     assert "test_resource_limits.py" in runs
 
 

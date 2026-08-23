@@ -362,6 +362,13 @@
       "selector": "tests/packaging/test_ci_matrix.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 8
+    },
+    {
+      "id": "W6-PROVENANCE",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_provenance.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 10
     }
   ],
   "evidence_tracks": [
@@ -557,7 +564,7 @@
       "suite": "packaging",
       "selector": "tests/packaging/test_provenance.py::test_release_identity_binds_commit_tag_version_and_artifacts",
       "owner_task": "W6-06",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Change commit, tag, version, or artifact after provenance generation.",
       "red_failure": "Every release identity mismatch must fail promotion."
     },

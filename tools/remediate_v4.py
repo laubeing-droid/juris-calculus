@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.50.0"
+RUNNER_VERSION = "0.51.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -110,6 +110,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.48.0": 5,
     "0.49.0": 5,
     "0.50.0": 5,
+    "0.51.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1006,6 +1007,29 @@ W6_05_RETIRED_PATHS = frozenset({
 })
 W6_05_REQUIRED_TEST_TOTAL = 457
 W6_05_FUTURE_RED_COUNT = 6
+W6_06_TEST_PATHS = (
+    "tests/packaging/test_provenance.py",
+    "tests/packaging/test_ci_matrix.py",
+)
+W6_06_TEST_CASE_COUNT = 18
+W6_06_TEST_CASE_IDS_DIGEST = (
+    "sha256:79095bb72a3ad00c87fc8edbd074dc29402a22aa7a63c025e04deb79371a3c31"
+)
+W6_06_ALLOWED_PATHS = (
+    ".github/workflows/ci.yml",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/packaging/test_ci_matrix.py",
+    "tests/packaging/test_provenance.py",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/build_provenance.py",
+    "tools/remediate_v4.py",
+)
+W6_06_REQUIRED_CHANGED_PATHS = W6_06_ALLOWED_PATHS
+W6_06_REQUIRED_TEST_TOTAL = 467
+W6_06_FUTURE_RED_COUNT = 5
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4732,6 +4756,13 @@ def _required_test_manifest_problems(
             "selector": "tests/packaging/test_ci_matrix.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 8,
+        },
+        {
+            "id": "W6-PROVENANCE",
+            "suite": "packaging",
+            "selector": "tests/packaging/test_provenance.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 10,
         },
     ]
     if required_now != expected_required_now:
@@ -16643,7 +16674,12 @@ def _w6_01_contract_problems() -> list[str]:
         if isinstance(item, dict)
     }
     for path in W6_01_REQUIRED_CHANGED_PATHS:
-        if disposition_by_path.get(path, {}).get("closure_task") != "W6-01":
+        expected_closure = (
+            "W6-06" if path in W6_06_ALLOWED_PATHS else
+            "W6-05" if path in W6_05_ALLOWED_PATHS else
+            "W6-03" if path in W6_03_ALLOWED_PATHS else "W6-01"
+        )
+        if disposition_by_path.get(path, {}).get("closure_task") != expected_closure:
             problems.append(f"W6-01 disposition closure drifted: {path}")
     return problems
 
@@ -16888,7 +16924,11 @@ def _w6_03_contract_problems() -> list[str]:
         if terminal == "HISTORY_BOUND" and row.get("history_locator_only") is not True:
             problems.append(f"W6-03 render lock is not history-only")
     for path in W6_03_REQUIRED_CHANGED_PATHS:
-        if by_path.get(path, {}).get("closure_task") != "W6-03":
+        expected_closure = (
+            "W6-06" if path in W6_06_ALLOWED_PATHS else
+            "W6-05" if path in W6_05_ALLOWED_PATHS else "W6-03"
+        )
+        if by_path.get(path, {}).get("closure_task") != expected_closure:
             problems.append(f"W6-03 disposition closure drifted: {path}")
     required_row = next(
         (item for item in required.get("required_now", []) if item.get("id") == "W6-HASH-LOCKS"), {}
@@ -17188,7 +17228,10 @@ def _w6_04_contract_problems() -> list[str]:
         if isinstance(item, dict)
     }
     for path in W6_04_REQUIRED_CHANGED_PATHS:
-        expected_closure = "W6-05" if path in W6_05_ALLOWED_PATHS else "W6-04"
+        expected_closure = (
+            "W6-06" if path in W6_06_ALLOWED_PATHS else
+            "W6-05" if path in W6_05_ALLOWED_PATHS else "W6-04"
+        )
         if by_path.get(path, {}).get("closure_task") != expected_closure:
             problems.append(f"W6-04 disposition closure drifted: {path}")
     return problems
@@ -17619,6 +17662,9 @@ def _w6_05_contract_problems() -> list[str]:
         "W6-CI-REQUIRED-MATRIX": (
             "packaging", "tests/packaging/test_ci_matrix.py", 8,
         ),
+        "W6-PROVENANCE": (
+            "packaging", "tests/packaging/test_provenance.py", 10,
+        ),
     }
     for row_id, expected in expected_required.items():
         row = required_by_id.get(row_id, {})
@@ -17634,7 +17680,7 @@ def _w6_05_contract_problems() -> list[str]:
         for registry in ("evidence_tracks", "audit_mutations")
         for item in required.get(registry, []) if isinstance(item, dict)
     )
-    if (required_total, future_red) != (W6_05_REQUIRED_TEST_TOTAL, W6_05_FUTURE_RED_COUNT):
+    if (required_total, future_red) != (W6_06_REQUIRED_TEST_TOTAL, W6_06_FUTURE_RED_COUNT):
         problems.append("W6-05 required/RED totals drifted")
     evidence_states = {
         item.get("id"): (item.get("owner_task"), item.get("state"))
@@ -17654,6 +17700,7 @@ def _w6_05_contract_problems() -> list[str]:
         or audit_states.get("P2-02") != ("W6-05", "ACTIVE_REQUIRED")
         or audit_states.get("P2-03") != ("W5-01", "ACTIVE_REQUIRED")
         or audit_states.get("P2-05") != ("W9-05", "RED_AT_TASK")
+        or audit_states.get("P0-15") != ("W6-06", "ACTIVE_REQUIRED")
     ):
         problems.append("W6-05 P2 lifecycle projection drifted")
     retired_rewrites = {
@@ -17672,7 +17719,8 @@ def _w6_05_contract_problems() -> list[str]:
     }
     for path in W6_05_REQUIRED_CHANGED_PATHS:
         row = by_path.get(path, {})
-        if row.get("closure_task") != "W6-05":
+        expected_closure = "W6-06" if path in W6_06_ALLOWED_PATHS else "W6-05"
+        if row.get("closure_task") != expected_closure:
             problems.append(f"W6-05 disposition closure drifted: {path}")
         if path in W6_05_RETIRED_PATHS and (
             row.get("disposition"), row.get("terminal_state"),
@@ -17965,6 +18013,359 @@ def cmd_w6_05_ci_matrix_gate() -> int:
     return EXIT_OK
 
 
+def _w6_06_contract_problems() -> list[str]:
+    """Bind signed release evidence, exact tests, current governance, and scope."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        provenance = _w6_01_load_wheel_gate(ROOT / "tools/build_provenance.py")
+        ci = _w6_01_load_wheel_gate(ROOT / "tests/packaging/test_ci_matrix.py")
+        generated_disposition = generator.build_document()
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W6-06 governance input is unreadable: {type(exc).__name__}: {exc}"]
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W6-06"), {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W6-06"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W6-06", *W6_06_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W6-06.xml",
+        ],
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-04"],
+    ]
+    if (
+        task.get("depends_on") != ["W6-04"]
+        or task.get("audit_ids") != ["P0-15", "P1-08", "P1-20"]
+    ):
+        problems.append("W6-06 dependency/audit projection drifted")
+    if task.get("allowed_paths") != list(W6_06_ALLOWED_PATHS):
+        problems.append("W6-06 exact allowlist drifted")
+    if task.get("terminal_states") != [
+        "SIGNED_TEST_RELEASE_PROVENANCE_GREEN",
+        "WHEEL_RECORD_RUNTIME_SBOM_GREEN",
+        "PRODUCTION_TEST_KEY_REJECTED",
+    ]:
+        problems.append("W6-06 terminal states drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+        problems.append("W6-06 exact gate/pytest/governance argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W6-06 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W6-06 file disposition is not reproducible from its generator")
+    ci_text = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    if ci._ci_problems(ci_text) != []:
+        problems.append("W6-06 executable CI provenance contract drifted")
+    for marker in (
+        "release-build-provenance", "release_attestor", "SIGNING_DOMAIN",
+        "W6_04_LOCKED_DUAL_BUILD", "TEST_ONLY_NOT_PROMOTABLE",
+        "wheel RECORD", "runtime_dependencies", "source_build_locks",
+    ):
+        if marker not in (ROOT / "tools/build_provenance.py").read_text(encoding="utf-8"):
+            problems.append(f"W6-06 provenance marker is missing: {marker}")
+    if provenance.SPEC_COMMIT != W0_B02_COMPANION_BINDING["commit"]:
+        problems.append("W6-06 companion specification commit drifted")
+    required_row = next(
+        (item for item in required.get("required_now", []) if item.get("id") == "W6-PROVENANCE"),
+        {},
+    )
+    if required_row != {
+        "id": "W6-PROVENANCE", "suite": "packaging",
+        "selector": "tests/packaging/test_provenance.py", "state": "REQUIRED_NOW",
+        "expected_tests": 10,
+    }:
+        problems.append("W6-06 required-now test binding drifted")
+    audit_states = {
+        item.get("audit_id"): (
+            item.get("owner_task"), item.get("state"), item.get("selector"),
+        )
+        for item in required.get("audit_mutations", []) if isinstance(item, dict)
+    }
+    expected_audits = {
+        "P0-15": (
+            "W6-06", "ACTIVE_REQUIRED",
+            "tests/packaging/test_provenance.py::"
+            "test_release_identity_binds_commit_tag_version_and_artifacts",
+        ),
+        "P1-08": (
+            "W2-03", "ACTIVE_REQUIRED",
+            "tests/security/test_pack_attacks.py::"
+            "test_empty_official_pack_and_format_only_attestation_fail",
+        ),
+        "P1-20": (
+            "W6-03", "ACTIVE_REQUIRED",
+            "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked",
+        ),
+    }
+    for audit_id, expected in expected_audits.items():
+        if audit_states.get(audit_id) != expected:
+            problems.append(f"W6-06 active audit mutation drifted: {audit_id}")
+    required_total = sum(
+        item.get("expected_tests", 0) for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    )
+    future_red = sum(
+        item.get("state") == "RED_AT_TASK"
+        for registry in ("evidence_tracks", "audit_mutations")
+        for item in required.get(registry, []) if isinstance(item, dict)
+    )
+    if (required_total, future_red) != (W6_06_REQUIRED_TEST_TOTAL, W6_06_FUTURE_RED_COUNT):
+        problems.append("W6-06 required/RED totals drifted")
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W6_06_REQUIRED_CHANGED_PATHS:
+        if by_path.get(path, {}).get("closure_task") != "W6-06":
+            problems.append(f"W6-06 disposition closure drifted: {path}")
+    return problems
+
+
+def _w6_06_build_evidence(
+    state_root: Path,
+) -> tuple[Path, str, Path, str, Path, str, Path, str]:
+    history = _receipt_history("W6-04", state_root)
+    upstream = history[-1] if history else {}
+    if upstream.get("status") != "COMPLETED":
+        raise ValueError("W6_04_COMPLETED_RECEIPT_MISSING")
+    wheel_digest = upstream.get("artifact_digests", {}).get(
+        "state-artifact:w6-04-formal-wheel"
+    )
+    build_report_digest = upstream.get("artifact_digests", {}).get(
+        "state-artifact:w6-04-installed-report"
+    )
+    if (
+        DIGEST_V4_PATTERN.fullmatch(str(wheel_digest)) is None
+        or DIGEST_V4_PATTERN.fullmatch(str(build_report_digest)) is None
+        or DIGEST_V4_PATTERN.fullmatch(str(upstream.get("receipt_digest"))) is None
+    ):
+        raise ValueError("W6_04_RELEASE_INPUT_DIGEST_MISSING")
+    wheel_path = (
+        state_root / "evidence" / "W6-04" / "wheels"
+        / f"{str(wheel_digest).split(':', 1)[1]}.whl"
+    )
+    build_report_path = (
+        state_root / "evidence" / "W6-04" / "reports"
+        / f"{str(build_report_digest).split(':', 1)[1]}.json"
+    )
+    if (
+        "sha256:" + sha256_hex(wheel_path.read_bytes()) != wheel_digest
+        or "sha256:" + sha256_hex(build_report_path.read_bytes()) != build_report_digest
+    ):
+        raise ValueError("W6_04_RELEASE_INPUT_BYTES_DRIFTED")
+    provenance_tool = _w6_01_load_wheel_gate(ROOT / "tools/build_provenance.py")
+    temporary_parent = state_root / "tmp"
+    temporary_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="W6-06-", dir=temporary_parent) as raw:
+        temporary = Path(raw)
+        sbom = temporary / "release-sbom.json"
+        signed = temporary / "build-provenance.json"
+        checksums = temporary / "SHA256SUMS"
+        provenance_tool.create_release_evidence(
+            root=ROOT,
+            wheel=wheel_path,
+            source_commit=str(upstream["result_commit"]),
+            tag="v4.0.0rc1",
+            key_path=W0_05_TEST_KEY,
+            sbom_output=sbom,
+            provenance_output=signed,
+            checksums_output=checksums,
+            build_report=build_report_path,
+            build_receipt_digest=str(upstream["receipt_digest"]),
+            release_candidate=True,
+        )
+        verified = provenance_tool.verify_release_evidence(
+            root=ROOT, wheel=wheel_path, sbom_path=sbom,
+            provenance_path=signed, checksums_path=checksums,
+            key_path=W0_05_TEST_KEY, allow_test_key=True,
+        )
+        rejected: list[str] = []
+
+        def expect_rejected(label: str, callback: Any) -> None:
+            try:
+                callback()
+            except provenance_tool.EvidenceError:
+                rejected.append(label)
+            else:
+                raise ValueError(f"W6_06_NEGATIVE_PROBE_ACCEPTED:{label}")
+
+        verify_args = {
+            "root": ROOT, "wheel": wheel_path, "sbom_path": sbom,
+            "provenance_path": signed, "checksums_path": checksums,
+            "key_path": W0_05_TEST_KEY, "allow_test_key": True,
+        }
+        expect_rejected(
+            "production-rejects-test-key",
+            lambda: provenance_tool.verify_release_evidence(
+                **{**verify_args, "allow_test_key": False}
+            ),
+        )
+        signed_bytes = signed.read_bytes()
+
+        def provenance_mutation(label: str, mutate: Any) -> None:
+            document = json.loads(signed_bytes)
+            mutate(document)
+            signed.write_bytes(provenance_tool._canonical_bytes(document) + b"\n")
+            try:
+                expect_rejected(
+                    label, lambda: provenance_tool.verify_release_evidence(**verify_args)
+                )
+            finally:
+                signed.write_bytes(signed_bytes)
+
+        provenance_mutation("unsigned", lambda value: value.pop("signature"))
+        provenance_mutation(
+            "signature", lambda value: value["signature"].__setitem__(
+                "signature_base64", base64.b64encode(b"\0" * 64).decode("ascii")
+            ),
+        )
+        provenance_mutation(
+            "scope", lambda value: value["signature"].__setitem__("scope", "pack-release")
+        )
+        provenance_mutation(
+            "tag", lambda value: value["statement"]["release_identity"].__setitem__(
+                "tag", "v4.0.0"
+            ),
+        )
+        provenance_mutation(
+            "source-commit", lambda value: value["statement"]["source"].__setitem__(
+                "commit", "0" * 40
+            ),
+        )
+        for label, path in (
+            ("lock", "requirements/core.lock"),
+            ("schema", "schemas/jc-v4.schema.json"),
+            ("tool-spec", "mcp_manifest.json"),
+            ("authority", "docs/architecture/module-authority.json"),
+        ):
+            provenance_mutation(
+                label,
+                lambda value, material=path: value["statement"]["release_materials"].__setitem__(
+                    material, "sha256:" + "0" * 64
+                ),
+            )
+        sbom_bytes = sbom.read_bytes()
+        sbom_document = json.loads(sbom_bytes)
+        sbom_document["wheel_files"].pop()
+        sbom.write_bytes(provenance_tool._canonical_bytes(sbom_document) + b"\n")
+        try:
+            expect_rejected(
+                "sbom", lambda: provenance_tool.verify_release_evidence(**verify_args)
+            )
+        finally:
+            sbom.write_bytes(sbom_bytes)
+        checksum_bytes = checksums.read_bytes()
+        checksums.write_bytes(checksum_bytes + b"0" * 64 + b"  extra\n")
+        try:
+            expect_rejected(
+                "checksums", lambda: provenance_tool.verify_release_evidence(**verify_args)
+            )
+        finally:
+            checksums.write_bytes(checksum_bytes)
+        tampered_wheel = temporary / "tampered.whl"
+        tampered_wheel.write_bytes(wheel_path.read_bytes() + b"tampered")
+        expect_rejected(
+            "wheel",
+            lambda: provenance_tool.verify_release_evidence(
+                **{**verify_args, "wheel": tampered_wheel}
+            ),
+        )
+        sbom_path, sbom_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-06" / "sbom", sbom.read_bytes(), ".json",
+        )
+        signed_path, signed_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-06" / "provenance", signed.read_bytes(), ".json",
+        )
+        checksum_path, checksum_digest = _write_content_addressed_bytes(
+            state_root / "evidence" / "W6-06" / "checksums", checksums.read_bytes(), ".txt",
+        )
+        provenance_tool.verify_release_evidence(
+            root=ROOT, wheel=wheel_path, sbom_path=sbom_path,
+            provenance_path=signed_path, checksums_path=checksum_path,
+            key_path=W0_05_TEST_KEY, allow_test_key=True,
+        )
+        statement = verified["statement"]
+        report = {
+            "schema_version": "jc/w6-release-provenance-evidence/1.0",
+            "task_id": "W6-06", "status": "PASS",
+            "attestor": statement["attestor"],
+            "source": statement["source"],
+            "release_identity": statement["release_identity"],
+            "subject": statement["subject"],
+            "signature": {
+                key: verified["signature"][key]
+                for key in (
+                    "algorithm", "key_id", "role", "scope", "artifact_kind",
+                    "test_only", "production_allowed",
+                )
+            },
+            "promotion_status": statement["promotion_status"],
+            "production_release_claimed": statement["production_release_claimed"],
+            "upstream": {
+                "w6_04_receipt": upstream["receipt_digest"],
+                "w6_04_formal_wheel": wheel_digest,
+                "w6_04_build_report": build_report_digest,
+            },
+            "artifacts": {
+                "sbom": sbom_digest,
+                "provenance": signed_digest,
+                "checksums": checksum_digest,
+            },
+            "coverage": {
+                "wheel_record_files": len(json.loads(sbom_bytes)["wheel_files"]),
+                "runtime_dependencies": len(json.loads(sbom_bytes)["runtime_dependencies"]),
+            },
+            "negative_probes": rejected,
+        }
+        report_path, report_digest = _write_content_addressed_json(
+            state_root / "evidence" / "W6-06" / "reports", report,
+        )
+    return (
+        sbom_path, sbom_digest, signed_path, signed_digest,
+        checksum_path, checksum_digest, report_path, report_digest,
+    )
+
+
+def cmd_w6_06_release_evidence_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W6-06 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w6_06_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W6-06 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        artifacts = _w6_06_build_evidence(Path(raw_state_root).resolve())
+    except (
+        ImportError, KeyError, OSError, RuntimeError, subprocess.TimeoutExpired,
+        TypeError, UnicodeError, ValueError, zipfile.BadZipFile,
+        json.JSONDecodeError,
+    ) as exc:
+        print(f"W6-06 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    labels = (
+        "w6-06-release-sbom", "w6-06-signed-provenance",
+        "w6-06-checksums", "w6-06-evidence-report",
+    )
+    for label, (path, digest) in zip(labels, zip(artifacts[::2], artifacts[1::2]), strict=True):
+        print(f"JC_ARTIFACT\t{label}\t{path}\t{digest}")
+    print(
+        "W6-06 gate OK: exact W6-04 wheel is bound to signed test-only release provenance, "
+        "complete wheel-RECORD/runtime SBOM and checksums; production promotion rejects the "
+        "test key and 12 identity/evidence mutations"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -18046,6 +18447,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w6_04_installed_wheel_gate()
     if args.wave == "W6-05":
         return cmd_w6_05_ci_matrix_gate()
+    if args.wave == "W6-06":
+        return cmd_w6_06_release_evidence_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -20615,6 +21018,54 @@ def _w6_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w6_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact provenance/CI tests plus current W0-04 governance evidence."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    governance_reports = [
+        report for report in test_reports if report.get("kind") == "pytest-governance"
+    ]
+    if len(pytest_reports) != 1:
+        problems.append("W6-06 must bind exactly one focused pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0, "terminal_summaries": 1,
+            "passed": W6_06_TEST_CASE_COUNT, "failed": 0, "errors": 0,
+            "skipped": 0, "xfailed": 0, "xpassed": 0, "collection_errors": 0,
+            "junit_valid": True, "junit_tests": W6_06_TEST_CASE_COUNT,
+            "junit_skipped": 0, "junit_failures": 0, "junit_errors": 0,
+            "junit_cases": W6_06_TEST_CASE_COUNT,
+            "junit_unique_cases": W6_06_TEST_CASE_COUNT,
+            "junit_case_ids_digest": W6_06_TEST_CASE_IDS_DIGEST,
+        }
+        problems.extend(
+            f"W6-06 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W6-06 pytest junit_sha256 is missing or invalid")
+    if len(governance_reports) != 1:
+        problems.append("W6-06 must bind exactly one W0-04 governance report")
+    else:
+        report = governance_reports[0]
+        expected = {
+            "exit_code": 0, "suites": 11, "audit_groups": 44, "rewrites": 25,
+            "required_passed": W6_06_REQUIRED_TEST_TOTAL,
+            "future_red": W6_06_FUTURE_RED_COUNT,
+            "bypass_or_collection_errors": 0,
+            "evidence_label": "w0-04-required-tests",
+        }
+        problems.extend(
+            f"W6-06 governance {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if DIGEST_V4_PATTERN.fullmatch(str(report.get("evidence_sha256"))) is None:
+            problems.append("W6-06 governance evidence digest is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -21510,6 +21961,150 @@ def _w6_05_artifact_problems(
         or installed.get("formal_e2e", {}).get("sha256") != digests["junit"]
     ):
         problems.append("W6-05 installed JUnit identity drifted")
+    return problems
+
+
+def _w6_06_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W6-06 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W6-06 artifact_digests is not an object"]
+    expected = set(W6_06_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W6-06 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W6_06_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W6-06 lacks committed result digest: {path}")
+    return problems
+
+
+def _w6_06_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W6-06 artifact_digests is not an object"]
+    labels = {
+        "sbom": ("w6-06-release-sbom", "sbom", ".json"),
+        "provenance": ("w6-06-signed-provenance", "provenance", ".json"),
+        "checksums": ("w6-06-checksums", "checksums", ".txt"),
+        "report": ("w6-06-evidence-report", "reports", ".json"),
+    }
+    paths: dict[str, Path] = {}
+    digests: dict[str, str] = {}
+    problems: list[str] = []
+    for key, (label, directory, suffix) in labels.items():
+        digest = artifact_digests.get(f"state-artifact:{label}")
+        if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+            problems.append(f"W6-06 state artifact digest is missing: {label}")
+            continue
+        path = (
+            state_root / "evidence" / "W6-06" / directory
+            / f"{str(digest).split(':', 1)[1]}{suffix}"
+        )
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            problems.append(f"W6-06 state artifact is unreadable: {label}: {exc}")
+            continue
+        if "sha256:" + sha256_hex(payload) != digest:
+            problems.append(f"W6-06 state artifact content drifted: {label}")
+            continue
+        paths[key] = path
+        digests[key] = str(digest)
+    if problems:
+        return problems
+    history = _receipt_history("W6-04", state_root)
+    upstream = history[-1] if history else {}
+    wheel_digest = upstream.get("artifact_digests", {}).get(
+        "state-artifact:w6-04-formal-wheel"
+    )
+    build_report_digest = upstream.get("artifact_digests", {}).get(
+        "state-artifact:w6-04-installed-report"
+    )
+    wheel_path = (
+        state_root / "evidence" / "W6-04" / "wheels"
+        / f"{str(wheel_digest).split(':', 1)[-1]}.whl"
+    )
+    try:
+        report_bytes = paths["report"].read_bytes()
+        report = json.loads(report_bytes)
+        provenance = json.loads(paths["provenance"].read_text(encoding="utf-8"))
+        provenance_tool = _w6_01_load_wheel_gate(ROOT / "tools/build_provenance.py")
+        verified = provenance_tool.verify_release_evidence(
+            root=ROOT, wheel=wheel_path, sbom_path=paths["sbom"],
+            provenance_path=paths["provenance"], checksums_path=paths["checksums"],
+            key_path=W0_05_TEST_KEY, allow_test_key=True,
+            expected_attestor_commit=str(report["attestor"]["commit"]),
+        )
+    except (
+        ImportError, KeyError, OSError, RuntimeError, TypeError, UnicodeError,
+        ValueError, zipfile.BadZipFile, json.JSONDecodeError,
+    ) as exc:
+        return [f"W6-06 release evidence is malformed: {exc}"]
+    attestor = report.get("attestor", {})
+    source = report.get("source", {})
+    expected_negative = [
+        "production-rejects-test-key", "unsigned", "signature", "scope", "tag",
+        "source-commit", "lock", "schema", "tool-spec", "authority", "sbom",
+        "checksums", "wheel",
+    ]
+    if (
+        report.get("schema_version") != "jc/w6-release-provenance-evidence/1.0"
+        or report.get("task_id") != "W6-06"
+        or report.get("status") != "PASS"
+        or not _validate_git_binding(str(attestor.get("commit")), str(attestor.get("tree")))
+        or source != {
+            "commit": upstream.get("result_commit"), "tree": upstream.get("result_tree"),
+        }
+        or report.get("promotion_status") != "TEST_ONLY_NOT_PROMOTABLE"
+        or report.get("production_release_claimed") is not False
+        or report.get("negative_probes") != expected_negative
+        or report.get("coverage") != {"wheel_record_files": 35, "runtime_dependencies": 4}
+    ):
+        problems.append("W6-06 evidence identity, coverage, or negative probes drifted")
+    if str(ROOT.resolve()) in report_bytes.decode("utf-8", errors="replace"):
+        problems.append("W6-06 evidence report leaks a repository path")
+    expected_upstream = {
+        "w6_04_receipt": upstream.get("receipt_digest"),
+        "w6_04_formal_wheel": wheel_digest,
+        "w6_04_build_report": build_report_digest,
+    }
+    if upstream.get("status") != "COMPLETED" or report.get("upstream") != expected_upstream:
+        problems.append("W6-06 inherited W6-04 evidence drifted")
+    if report.get("artifacts") != {
+        "sbom": digests["sbom"],
+        "provenance": digests["provenance"],
+        "checksums": digests["checksums"],
+    }:
+        problems.append("W6-06 archived artifact binding drifted")
+    statement = verified.get("statement", {})
+    signature = verified.get("signature", {})
+    if (
+        provenance != verified
+        or statement.get("subject", {}).get("sha256") != wheel_digest
+        or statement.get("source") != source
+        or statement.get("attestor") != attestor
+        or statement.get("build_evidence", {}).get("report", {}).get("sha256")
+        != build_report_digest
+        or statement.get("build_evidence", {}).get("receipt_digest")
+        != upstream.get("receipt_digest")
+        or len(statement.get("release_materials", {})) != 12
+        or len(statement.get("source_build_locks", {})) != 3
+        or signature.get("scope") != "release-build-provenance"
+        or signature.get("role") != "release_attestor"
+        or signature.get("test_only") is not True
+        or signature.get("production_allowed") is not False
+    ):
+        problems.append("W6-06 signed provenance subject/material/build binding drifted")
     return problems
 
 
@@ -22466,6 +23061,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W6-05 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W6-06":
+        problems.extend(_w6_06_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w6_06_contract_problems())
+        problems.extend(_w6_06_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w6_06_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w6-06-exact-green-reports",
+            "w6-06-signed-release-evidence",
+            "w6-06-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W6-06 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -24302,6 +24921,39 @@ def _execute_auto_task(
             "detail": (
                 "all 21 W6-05 workflow, lock, oracle, governance, runner, and retired-test "
                 "paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W6-06":
+        report_problems = _w6_06_test_report_problems(test_reports)
+        contract_problems = _w6_06_contract_problems()
+        artifact_problems = _w6_06_artifact_problems(artifact_digests, state_root)
+        path_problems = _w6_06_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w6-06-exact-green-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W6_06_TEST_CASE_COUNT} provenance/CI cases and "
+                f"{W6_06_REQUIRED_TEST_TOTAL} required governance cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w6-06-signed-release-evidence", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "exact W6-04 wheel, dual-build report, signed test-only provenance, "
+                "wheel/runtime SBOM, checksums, and 13 fail-closed probes are bound"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w6-06-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 10 W6-06 workflow, governance, provenance, runner, and test paths "
+                "are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })
