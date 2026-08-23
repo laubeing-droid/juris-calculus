@@ -306,6 +306,13 @@
       "selector": "tests/storage_chaos/test_vertical_slice_recovery.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 3
+    },
+    {
+      "id": "W5-ENTRYPOINT-ERROR-MATRIX",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 13
     }
   ],
   "evidence_tracks": [

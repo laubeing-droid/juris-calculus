@@ -59,7 +59,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.36.0"
+RUNNER_VERSION = "0.37.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -95,6 +95,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.34.0": 5,
     "0.35.0": 5,
     "0.36.0": 5,
+    "0.37.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -737,6 +738,24 @@ W5_05_ALLOWED_PATHS = (
     "tools/remediate_v4.py",
 )
 W5_05_REQUIRED_CHANGED_PATHS = W5_05_ALLOWED_PATHS
+W5_06_TEST_PATHS = (
+    "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
+)
+W5_06_TEST_CASE_COUNT = 13
+W5_06_TEST_CASE_IDS_DIGEST = (
+    "sha256:e976ca3f5e694d49c32e40918dd8b5a720d4c4a3e6159a414469f7f69dafa485"
+)
+W5_06_ALLOWED_PATHS = (
+    "compiler_core/cli.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    *W5_06_TEST_PATHS,
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_06_REQUIRED_CHANGED_PATHS = W5_06_ALLOWED_PATHS
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4366,6 +4385,13 @@ def _required_test_manifest_problems(
             "selector": "tests/storage_chaos/test_vertical_slice_recovery.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 3,
+        },
+        {
+            "id": "W5-ENTRYPOINT-ERROR-MATRIX",
+            "suite": "formal_e2e",
+            "selector": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 13,
         },
     ]
     if required_now != expected_required_now:
@@ -15507,6 +15533,148 @@ def cmd_w5_05_current_authority_gate() -> int:
     return EXIT_OK
 
 
+def _w5_06_entrypoint_matrix_problems() -> list[str]:
+    """Bind the executable public-entrypoint matrix and stable error mapping."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_06_file_disposition", ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(generator)
+        generated_disposition = generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W5-06 governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next((item for item in plan.get("tasks", []) if item.get("id") == "W5-06"), {})
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-06", *W5_06_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-06.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-06"],
+        expected_pytest_argv,
+    ]
+    if task.get("depends_on") != ["W5-05"]:
+        problems.append("W5-06 must depend only on W5-05")
+    if task.get("audit_ids") != [
+        "P0-01", "P0-09", "P0-10", "P1-14", "P1-15", "P1-17", "P1-18",
+    ]:
+        problems.append("W5-06 audit projection drifted")
+    if task.get("allowed_paths") != list(W5_06_ALLOWED_PATHS):
+        problems.append("W5-06 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-06 exact gate/pytest argv drifted")
+    if task.get("terminal_states") != [
+        "ENTRYPOINT_MATRIX_GREEN", "ERROR_MAPPING_GREEN",
+    ]:
+        problems.append("W5-06 terminal states drifted")
+    if disposition != generated_disposition:
+        problems.append("W5-06 file disposition is not reproducible from its generator")
+
+    for path in W5_06_TEST_PATHS:
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-06 test is unreadable: {path}: {exc}")
+            continue
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-06 test uses skip/xfail: {path}")
+        for marker in (
+            "client.evaluate(", "cli.main(", "run_stdio(", "client.verify_run(",
+            "MCPServerV4(", "ExecutionStatusV4.RESOURCE_EXHAUSTED",
+            "ExecutionStatusV4.CANCELLED", "STORAGE_CAPACITY",
+        ):
+            if marker not in source:
+                problems.append(f"W5-06 executable matrix marker is missing: {marker}")
+    if W5_06_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W5-06 JUnit case identity is not frozen")
+
+    required_row = next(
+        (row for row in required.get("required_now", []) if row.get("id") == "W5-ENTRYPOINT-ERROR-MATRIX"),
+        {},
+    )
+    if required_row != {
+        "id": "W5-ENTRYPOINT-ERROR-MATRIX",
+        "suite": "formal_e2e",
+        "selector": W5_06_TEST_PATHS[0],
+        "state": "REQUIRED_NOW",
+        "expected_tests": W5_06_TEST_CASE_COUNT,
+    }:
+        problems.append("W5-06 required-now matrix binding drifted")
+    mutation = next(
+        (
+            row for row in required.get("audit_mutations", [])
+            if row.get("test_id") == "V4-P0-09-MCP-ERROR-SEMANTICS"
+        ),
+        {},
+    )
+    if (
+        mutation.get("audit_id"), mutation.get("owner_task"),
+        mutation.get("state"), mutation.get("selector"),
+    ) != (
+        "P0-09", "W5-01", "ACTIVE_REQUIRED",
+        "tests/mcp_protocol/w5_transport_red.py::"
+        "test_blocked_and_engine_error_are_protocol_errors",
+    ):
+        problems.append("W5-06 retained MCP taxonomy mutation binding drifted")
+    resource = next(
+        (
+            row for row in required.get("audit_mutations", [])
+            if row.get("test_id") == "V4-P1-15-RESOURCE-BUDGET"
+        ),
+        {},
+    )
+    if (
+        resource.get("audit_id"), resource.get("owner_task"), resource.get("state"),
+    ) != ("P1-15", "W5-CUTOVER", "RED_AT_TASK"):
+        problems.append("W5-06 must not claim full production resource-budget closure")
+
+    try:
+        cli_source = (ROOT / "compiler_core/cli.py").read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError) as exc:
+        problems.append(f"W5-06 CLI source is unreadable: {exc}")
+    else:
+        if 'retryable=bool(getattr(exc, "retryable", False))' not in cli_source:
+            problems.append("W5-06 CLI drops the typed retryable error class")
+
+    disposition_by_path = {
+        row.get("path"): row for row in disposition.get("paths", [])
+        if isinstance(row, dict)
+    }
+    for path in W5_06_REQUIRED_CHANGED_PATHS:
+        if disposition_by_path.get(path, {}).get("closure_task") != "W5-06":
+            problems.append(f"W5-06 disposition closure drifted: {path}")
+    return problems
+
+
+def cmd_w5_06_entrypoint_matrix_gate() -> int:
+    try:
+        problems = _w5_06_entrypoint_matrix_problems()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        problems = [f"malformed input: {type(exc).__name__}: {exc}"]
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-06 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W5-06 gate OK: 13 executable CLI/Client/stdio-MCP matrix cases bind "
+        "semantic states, typed failures, bounded handles, and independent verify"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -15576,6 +15744,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_cutover_gate()
     if args.wave == "W5-05":
         return cmd_w5_05_current_authority_gate()
+    if args.wave == "W5-06":
+        return cmd_w5_06_entrypoint_matrix_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -17865,6 +18035,41 @@ def _w5_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w5_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact public-entrypoint matrix with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-06 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_06_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_06_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_06_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_06_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_06_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-06 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-06 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -17955,6 +18160,29 @@ def _w5_05_committed_scope_problems(
             str(artifact_digests.get(f"{prefix}:{path}")),
         ) is None:
             problems.append(f"W5-05 lacks committed {prefix} digest: {path}")
+    return problems
+
+
+def _w5_06_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-06 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-06 artifact_digests is not an object"]
+    expected = set(W5_06_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W5-06 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W5_06_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W5-06 lacks committed result digest: {path}")
     return problems
 
 
@@ -18770,6 +18998,27 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-05 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-06":
+        problems.extend(_w5_06_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w5_06_entrypoint_matrix_problems())
+        problems.extend(_w5_06_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-06-exact-green-reports",
+            "w5-06-entrypoint-error-contract",
+            "w5-06-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-06 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -20397,6 +20646,40 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all W5-05 authority, regression, governance, and test paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-06":
+        report_problems = _w5_06_test_report_problems(test_reports)
+        contract_problems = _w5_06_entrypoint_matrix_problems()
+        path_problems = _w5_06_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-06-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_06_TEST_CASE_COUNT} entrypoint/error matrix cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-06-entrypoint-error-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "CLI, Client, and stdio MCP preserve canonical states, typed failures, "
+                "bounded handles, and independent verification"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-06-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all W5-06 runtime, governance, and executable-test paths are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

@@ -184,7 +184,13 @@ def _mapped_error(exc: Exception) -> CLIError:
     else:
         code = "CLI_INTERNAL_ERROR"
         exit_code = EXIT_ENGINE_ERROR
-    return CLIError(code, "V4 command failed", exit_code=exit_code, stage=stage)
+    return CLIError(
+        code,
+        "V4 command failed",
+        exit_code=exit_code,
+        stage=stage,
+        retryable=bool(getattr(exc, "retryable", False)),
+    )
 
 
 def _write(document: dict[str, Any], *, json_output: bool) -> None:
