@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.49.0"
+RUNNER_VERSION = "0.50.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -109,6 +109,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.47.0": 5,
     "0.48.0": 5,
     "0.49.0": 5,
+    "0.50.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17704,6 +17705,10 @@ def _w6_05_build_evidence(
     temporary_parent.mkdir(parents=True, exist_ok=True)
     commit = _git_checked("rev-parse", "HEAD")
     tree = _git_checked("rev-parse", "HEAD^{tree}")
+    release_lock_blob = _git_path_bytes(commit, "requirements/release.lock")
+    test_lock_blob = _git_path_bytes(commit, "requirements/test.lock")
+    if release_lock_blob is None or test_lock_blob is None:
+        raise ValueError("CURRENT_COMMIT_LOCK_BLOBS_MISSING")
     gate = _w6_01_load_wheel_gate(ROOT / "tools/wheel_gate.py")
     supply = _w6_01_load_wheel_gate(ROOT / "tools/supply_chain_gate.py")
     with tempfile.TemporaryDirectory(prefix="W6-05-", dir=temporary_parent) as raw:
@@ -17711,7 +17716,7 @@ def _w6_05_build_evidence(
         archive = temporary / "source.zip"
         archive_result = subprocess.run(
             [
-                "git", "-c", "core.autocrlf=false", "archive", "--format=zip",
+                "git", "-c", "core.autocrlf=true", "archive", "--format=zip",
                 f"--output={archive}", "HEAD",
             ],
             cwd=ROOT, capture_output=True, check=False, timeout=120,
@@ -17721,6 +17726,13 @@ def _w6_05_build_evidence(
         source = temporary / "source"
         source.mkdir()
         _w6_01_extract_archive(archive, source)
+        release_lock_execution = (source / "requirements/release.lock").read_bytes()
+        test_lock_execution = (source / "requirements/test.lock").read_bytes()
+        if (
+            release_lock_execution != release_lock_blob.replace(b"\n", b"\r\n")
+            or test_lock_execution != test_lock_blob.replace(b"\n", b"\r\n")
+        ):
+            raise ValueError("CURRENT_COMMIT_LOCK_EXPORT_DRIFTED")
 
         online_environment = os.environ.copy()
         online_environment.pop("PYTHONPATH", None)
@@ -17857,7 +17869,7 @@ def _w6_05_build_evidence(
         ci = _w6_01_load_wheel_gate(source / "tests/packaging/test_ci_matrix.py")
         release_lock = supply.parse_lock(source / "requirements/release.lock")
         report = {
-            "schema_version": "jc/w6-ci-matrix-evidence/1.0",
+            "schema_version": "jc/w6-ci-matrix-evidence/1.1",
             "task_id": "W6-05",
             "status": "PASS",
             "commit": commit,
@@ -17877,13 +17889,16 @@ def _w6_05_build_evidence(
                 "focused_cases": W6_05_TEST_CASE_COUNT,
             },
             "release_lock": {
-                "sha256": "sha256:" + sha256_hex(
-                    (source / "requirements/release.lock").read_bytes()
-                ),
+                "sha256": "sha256:" + sha256_hex(release_lock_blob),
+                "execution_sha256": "sha256:" + sha256_hex(release_lock_execution),
                 "profile_digest": supply.PROFILE_DIGESTS["release"],
                 "package_count": len(release_lock["packages"]),
                 "ruff_version": release_lock["packages"]["ruff"]["version"],
                 "mypy_version": release_lock["packages"]["mypy"]["version"],
+            },
+            "test_lock": {
+                "sha256": "sha256:" + sha256_hex(test_lock_blob),
+                "execution_sha256": "sha256:" + sha256_hex(test_lock_execution),
             },
             "release_static": static,
             "release_audit": audit,
@@ -21367,7 +21382,7 @@ def _w6_05_artifact_problems(
         {"os": "windows-latest", "python": "3.12"},
     ]
     if (
-        report.get("schema_version") != "jc/w6-ci-matrix-evidence/1.0"
+        report.get("schema_version") != "jc/w6-ci-matrix-evidence/1.1"
         or report.get("task_id") != "W6-05"
         or report.get("status") != "PASS"
         or not _validate_git_binding(commit, tree)
@@ -21383,6 +21398,13 @@ def _w6_05_artifact_problems(
     if report.get("workflow_sha256") != "sha256:" + sha256_hex(workflow_bytes):
         problems.append("W6-05 workflow binding drifted")
     release_lock = report.get("release_lock", {})
+    test_lock = report.get("test_lock", {})
+    release_lock_execution_digest = "sha256:" + sha256_hex(
+        release_lock_bytes.replace(b"\n", b"\r\n")
+    )
+    test_lock_execution_digest = "sha256:" + sha256_hex(
+        test_lock_bytes.replace(b"\n", b"\r\n")
+    )
     try:
         release_lock_text = release_lock_bytes.decode("utf-8")
     except UnicodeError as exc:
@@ -21390,14 +21412,22 @@ def _w6_05_artifact_problems(
         release_lock_text = ""
     if (
         release_lock.get("sha256") != "sha256:" + sha256_hex(release_lock_bytes)
+        or release_lock.get("execution_sha256") != release_lock_execution_digest
         or release_lock.get("profile_digest") != supply.PROFILE_DIGESTS["release"]
         or release_lock.get("package_count") != 38
         or release_lock.get("ruff_version") != "0.12.7"
         or release_lock.get("mypy_version") != "1.17.1"
-        or not release_lock_text.startswith("# profile: release\n")
+        or not release_lock_text.startswith(
+            "# juris-calculus fully hashed lock v1\n# profile: release\n"
+        )
         or len(re.findall(r"(?m)^# package: ", release_lock_text)) != 38
     ):
         problems.append("W6-05 release lock/tool evidence drifted")
+    if test_lock != {
+        "sha256": "sha256:" + sha256_hex(test_lock_bytes),
+        "execution_sha256": test_lock_execution_digest,
+    }:
+        problems.append("W6-05 test lock execution binding drifted")
     if report.get("required_test_contract") != {
         "required_passed": W6_05_REQUIRED_TEST_TOTAL,
         "future_red": W6_05_FUTURE_RED_COUNT,
@@ -21450,9 +21480,8 @@ def _w6_05_artifact_problems(
         }
     ):
         problems.append("W6-05 inherited W6-03/W6-04 evidence drifted")
-    test_lock_digest = "sha256:" + sha256_hex(test_lock_bytes)
     installed_problems = gate.validate_installed_e2e_report(
-        installed, wheel_digest=str(wheel_digest), lock_digest=test_lock_digest,
+        installed, wheel_digest=str(wheel_digest), lock_digest=test_lock_execution_digest,
     )
     if installed_problems or report.get("installed_e2e") != installed:
         problems.append("W6-05 installed production report drifted")
