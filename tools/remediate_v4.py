@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.41.0"
+RUNNER_VERSION = "0.42.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -101,6 +101,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.39.0": 5,
     "0.40.0": 5,
     "0.41.0": 5,
+    "0.42.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17119,6 +17120,19 @@ def _w6_04_build_evidence(
         temporary = Path(raw)
         wheelhouse = temporary / "wheelhouse"
         wheelhouse.mkdir()
+        committed_lock_root = temporary / "committed-locks"
+        committed_lock_root.mkdir()
+        committed_locks: dict[str, Path] = {}
+        for profile in ("build", "core", "test"):
+            completed = subprocess.run(
+                ["git", "show", f"HEAD:requirements/{profile}.lock"],
+                cwd=ROOT, capture_output=True, check=False, timeout=60,
+            )
+            if completed.returncode != 0:
+                raise ValueError(f"COMMITTED_{profile.upper()}_LOCK_UNREADABLE")
+            lock_path = committed_lock_root / f"{profile}.lock"
+            lock_path.write_bytes(completed.stdout)
+            committed_locks[profile] = lock_path
         online_environment = os.environ.copy()
         online_environment.pop("PYTHONPATH", None)
         online_environment.pop("PIP_NO_INDEX", None)
@@ -17132,7 +17146,7 @@ def _w6_04_build_evidence(
                     sys.executable, "-B", "-m", "pip", "download",
                     "--disable-pip-version-check", "--require-hashes",
                     "--dest", str(wheelhouse), "--requirement",
-                    str(ROOT / "requirements" / f"{profile}.lock"),
+                    str(committed_locks[profile]),
                 ],
                 cwd=temporary,
                 environment=online_environment,
@@ -17318,9 +17332,7 @@ def _w6_04_build_evidence(
             "tree": tree,
             "source_date_epoch": source_date_epoch,
             "lock_digests": {
-                profile: "sha256:" + sha256_hex(
-                    (ROOT / "requirements" / f"{profile}.lock").read_bytes()
-                )
+                profile: "sha256:" + sha256_hex(committed_locks[profile].read_bytes())
                 for profile in ("build", "core", "test")
             },
             "dependency_acquisition": acquisitions,
