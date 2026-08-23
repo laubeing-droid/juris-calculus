@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.48.0"
+RUNNER_VERSION = "0.49.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -108,6 +108,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.46.0": 5,
     "0.47.0": 5,
     "0.48.0": 5,
+    "0.49.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -17709,7 +17710,10 @@ def _w6_05_build_evidence(
         temporary = Path(raw)
         archive = temporary / "source.zip"
         archive_result = subprocess.run(
-            ["git", "archive", "--format=zip", f"--output={archive}", "HEAD"],
+            [
+                "git", "-c", "core.autocrlf=false", "archive", "--format=zip",
+                f"--output={archive}", "HEAD",
+            ],
             cwd=ROOT, capture_output=True, check=False, timeout=120,
         )
         if archive_result.returncode != 0:
