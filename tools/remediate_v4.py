@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.45.0"
+RUNNER_VERSION = "0.46.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -105,6 +105,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.43.0": 5,
     "0.44.0": 5,
     "0.45.0": 5,
+    "0.46.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -18623,6 +18624,63 @@ def _state_artifact_recovery_matches(
     )
 
 
+def _failed_retry_supersedes_mutable_pytest_artifacts(
+    receipt: dict[str, Any],
+    recorded: dict[str, str],
+    observed: dict[str, str],
+    later_receipts: list[dict[str, Any]],
+) -> bool:
+    """Account for failed JUnit files overwritten by a later receipted retry."""
+
+    differing = {
+        key for key in set(recorded) | set(observed)
+        if recorded.get(key) != observed.get(key)
+    }
+    if (
+        receipt.get("status") != "FAILED"
+        or set(recorded) != set(observed)
+        or not differing
+        or any(
+            re.fullmatch(r"state-artifact:pytest-junit-[0-9]{3}", key) is None
+            for key in differing
+        )
+    ):
+        return False
+    try:
+        for artifact_key in differing:
+            command_index = int(artifact_key.rsplit("-", 1)[1])
+            original_path = _pytest_junit_path(
+                receipt["command_results"][command_index - 1]["argv"]
+            )
+            if original_path is None:
+                return False
+            matched = False
+            for retry in later_receipts:
+                if (
+                    retry.get("task_id") != receipt.get("task_id")
+                    or retry.get("run_id") != receipt.get("run_id")
+                    or retry.get("status") not in {"FAILED", "COMPLETED"}
+                    or not isinstance(retry.get("attempt"), int)
+                    or retry["attempt"] <= receipt.get("attempt", 0)
+                    or retry.get("runner_version") not in KNOWN_RUNNER_VERSIONS
+                    or retry.get("receipt_digest") != _receipt_digest(retry)
+                    or retry.get("artifact_digests", {}).get(artifact_key)
+                    != observed[artifact_key]
+                ):
+                    continue
+                retry_path = _pytest_junit_path(
+                    retry["command_results"][command_index - 1]["argv"]
+                )
+                if retry_path is not None and retry_path.resolve() == original_path.resolve():
+                    matched = True
+                    break
+            if not matched:
+                return False
+    except (IndexError, KeyError, TypeError, ValueError):
+        return False
+    return True
+
+
 def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
     task_dir = state_root / "tasks" / task_id
     if not task_dir.exists():
@@ -18697,21 +18755,26 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             key: value for key, value in receipt["artifact_digests"].items()
             if key.startswith("state-artifact:")
         }
+        later_receipts = [
+            raw_receipts[number]
+            for number in sorted(raw_receipts)
+            if number > attempt_number
+        ]
         state_recovered = _state_artifact_recovery_matches(
             receipt,
             recorded_state_artifacts,
             expected_state_artifacts,
-            next(
-                (
-                    raw_receipts[number]
-                    for number in sorted(raw_receipts)
-                    if number > attempt_number
-                ),
-                None,
-            ),
+            later_receipts[0] if later_receipts else None,
             state_root,
         )
-        if recorded_state_artifacts != expected_state_artifacts and not state_recovered:
+        state_superseded = _failed_retry_supersedes_mutable_pytest_artifacts(
+            receipt,
+            recorded_state_artifacts,
+            expected_state_artifacts,
+            later_receipts,
+        )
+        state_accounted = state_recovered or state_superseded
+        if recorded_state_artifacts != expected_state_artifacts and not state_accounted:
             raise ValueError(f"state artifact binding mismatch: {receipt_path}")
         must_rebuild_test_reports = (
             receipt["runner_version"] == RUNNER_VERSION
@@ -18725,7 +18788,7 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             and receipt["test_reports"] != _structured_test_reports(
                 receipt["command_results"], runner_version=receipt["runner_version"]
             )
-            and not state_recovered
+            and not state_accounted
         ):
             raise ValueError(f"structured test report binding mismatch: {receipt_path}")
         previous = receipt["receipt_digest"]

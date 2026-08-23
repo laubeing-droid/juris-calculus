@@ -598,13 +598,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.46.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.47.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37
@@ -1949,6 +1949,40 @@ def nested_alias_bypass():
         forged_record["artifact_digests"]["recovery-record"] = "sha256:../../escape"
         assert not RUNNER._state_artifact_recovery_matches(
             lost_receipt, recorded_state, observed_state, forged_record, tmp_path,
+        )
+
+        failed_retry = copy.deepcopy(lost_receipt)
+        failed_retry.update({"task_id": "W6-04", "status": "FAILED"})
+        failed_retry["receipt_digest"] = RUNNER._receipt_digest(failed_retry)
+        completed_retry = copy.deepcopy(failed_retry)
+        completed_retry.update({
+            "attempt": 4,
+            "status": "COMPLETED",
+            "artifact_digests": observed_state,
+            "previous_receipt_digest": failed_retry["receipt_digest"],
+        })
+        completed_retry["receipt_digest"] = RUNNER._receipt_digest(completed_retry)
+        assert RUNNER._failed_retry_supersedes_mutable_pytest_artifacts(
+            failed_retry, recorded_state, observed_state, [completed_retry],
+        )
+        completed_source = copy.deepcopy(failed_retry)
+        completed_source["status"] = "COMPLETED"
+        completed_source["receipt_digest"] = RUNNER._receipt_digest(completed_source)
+        assert not RUNNER._failed_retry_supersedes_mutable_pytest_artifacts(
+            completed_source, recorded_state, observed_state, [completed_retry],
+        )
+        wrong_path_retry = copy.deepcopy(completed_retry)
+        wrong_path_retry["command_results"][1]["argv"][-1] = str(
+            tmp_path / "evidence" / "different.xml"
+        )
+        wrong_path_retry["receipt_digest"] = RUNNER._receipt_digest(wrong_path_retry)
+        assert not RUNNER._failed_retry_supersedes_mutable_pytest_artifacts(
+            failed_retry, recorded_state, observed_state, [wrong_path_retry],
+        )
+        non_pytest_recorded = {**recorded_state, "state-artifact:archive": "sha256:" + "2" * 64}
+        non_pytest_observed = {**observed_state, "state-artifact:archive": "sha256:" + "3" * 64}
+        assert not RUNNER._failed_retry_supersedes_mutable_pytest_artifacts(
+            failed_retry, non_pytest_recorded, non_pytest_observed, [completed_retry],
         )
 
         task_dir = tmp_path / "tasks" / "W1-06"
