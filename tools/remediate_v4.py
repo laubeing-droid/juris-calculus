@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.47.0"
+RUNNER_VERSION = "0.48.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -107,6 +107,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.45.0": 5,
     "0.46.0": 5,
     "0.47.0": 5,
+    "0.48.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -971,7 +972,7 @@ W6_05_TEST_CASE_IDS_DIGEST = (
 )
 W6_05_INSTALLED_TEST_CASE_COUNT = 27
 W6_05_INSTALLED_TEST_CASE_IDS_DIGEST = (
-    "sha256:12c563b67fe1c06ff1f7be0114b3105394d03e747115c40592f480f91bf56708"
+    "sha256:479fbf2b45f2decada1e3f69a0c97068f4190e9d90c0058bce4e93192c662714"
 )
 W6_05_ALLOWED_PATHS = (
     ".github/workflows/ci.yml",
