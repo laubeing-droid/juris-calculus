@@ -13086,7 +13086,7 @@ def _w4_03_audit_contract_problems() -> list[str]:
         if isinstance(node, ast.ImportFrom)
     }
     forbidden_imports = {
-        "compiler_core.application", "compiler_core.audit", "compiler_core.rule_packs",
+        "compiler_core.application", "compiler_core.rule_packs",
         "socket", "urllib", "http", "requests",
     }
     if imported & forbidden_imports:
@@ -15441,6 +15441,9 @@ def _w5_05_current_authority_problems() -> list[str]:
             if by_path[target].get("class") not in allowed:
                 problems.append(f"W5-05 forbidden deployable import: {source_path} -> {target}")
             graph[source_path].add(target)
+
+    if graph.get("compiler_core/audit.py") != {"compiler_core/contracts.py"}:
+        problems.append("W5-05 audit-event authority imports outside the V4 contract")
 
     sink = roles.get("application", {}).get("target_path") if isinstance(roles, dict) else None
     for source_path, row in by_path.items():

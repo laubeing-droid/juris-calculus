@@ -74,6 +74,10 @@ def test_current_claims_have_one_authority() -> None:
 
     assert AuditEventV4 is BundledAuditEventV4
     assert AuditEventV4.__module__ == "compiler_core.audit"
+    audit_imports = _module_imports(REPO / "compiler_core" / "audit.py")
+    assert {module for module in audit_imports if module.startswith("compiler_core.")} == {
+        "compiler_core.contracts"
+    }
 
 
 def test_declared_current_modules_exist_and_import() -> None:
