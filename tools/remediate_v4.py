@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.28.0"
+RUNNER_VERSION = "0.29.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -86,6 +86,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.26.0": 5,
     "0.27.0": 5,
     "0.28.0": 5,
+    "0.29.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -486,6 +487,23 @@ W4_05_ALLOWED_PATHS = (
     "tests/formal_e2e/test_single_chain.py",
     "tests/required-v4-tests.json",
     "tests/security/test_application_attacks.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W4_06_TEST_CASE_COUNT = 31
+W4_06_TEST_CASE_IDS_DIGEST = (
+    "sha256:265f461274d019b494692aeb3477c973eef1a6bbca938d973069c922f95d568b"
+)
+W4_06_ALLOWED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/application.py",
+    "compiler_core/audit_bundle.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/security/test_privacy_firewall.py",
+    "tests/security/test_resource_limits.py",
     "tools/build_file_disposition.py",
     "tools/remediate_v4.py",
 )
@@ -3944,6 +3962,20 @@ def _required_test_manifest_problems(
             "selector": "tests/security/test_application_attacks.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 1,
+        },
+        {
+            "id": "W4-RUNTIME-PRIVACY-FIREWALL",
+            "suite": "security",
+            "selector": "tests/security/test_privacy_firewall.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 7,
+        },
+        {
+            "id": "W4-RUNTIME-RESOURCE-LIMITS",
+            "suite": "security",
+            "selector": "tests/security/test_resource_limits.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 7,
         },
     ]
     if required_now != expected_required_now:
@@ -7644,7 +7676,7 @@ def _cmd_w1_04_artifact_resolver_gate() -> int:
             "test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
         ),
         "V4-P1-17-PATH-PRIVACY": (
-            "P1-17", "W4-06", "RED_AT_TASK",
+            "P1-17", "W4-06", "ACTIVE_REQUIRED",
             "tests/security/test_privacy_firewall.py::"
             "test_capabilities_and_errors_never_leak_absolute_paths",
         ),
@@ -13380,7 +13412,7 @@ def _w4_05_application_contract_problems() -> list[str]:
         application_disposition.get("terminal_state"),
         application_disposition.get("namespace"),
         application_disposition.get("closure_task"),
-    ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core", "W4-05"):
+    ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core", "W4-06"):
         problems.append("W4-05 application module disposition drifted")
     for path in (
         "tests/contract/test_application.py",
@@ -13398,7 +13430,8 @@ def _w4_05_application_contract_problems() -> list[str]:
         "tests/formal_e2e/test_single_chain.py",
         "tests/security/test_application_attacks.py",
     ):
-        if f'"{path}": "W4-05"' not in builder_source:
+        expected_task = "W4-06" if path == "compiler_core/application.py" else "W4-05"
+        if f'"{path}": "{expected_task}"' not in builder_source:
             problems.append(f"W4-05 disposition builder omits {path}")
 
     for marker in (
@@ -13446,6 +13479,304 @@ def cmd_w4_05_application_gate() -> int:
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         print(
             f"W4-05 application gate rejected malformed input: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
+def _w4_06_runtime_contract_problems() -> list[str]:
+    """Check the bounded error/privacy/resource closure without executing storage writes."""
+
+    problems: list[str] = []
+    application_path = ROOT / "compiler_core/application.py"
+    audit_path = ROOT / "compiler_core/audit_bundle.py"
+    builder_path = ROOT / "tools/build_file_disposition.py"
+    try:
+        application_source = application_path.read_text(encoding="utf-8")
+        application_tree = ast.parse(application_source, filename=str(application_path))
+        audit_source = audit_path.read_text(encoding="utf-8")
+        audit_tree = ast.parse(audit_source, filename=str(audit_path))
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = (ROOT / W4_06_ALLOWED_PATHS[0]).read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        builder_source = builder_path.read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w4_06_file_disposition", builder_path,
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError, ValueError,
+    ) as exc:
+        return [f"W4-06 contract source is unreadable: {exc}"]
+
+    try:
+        error_class = next(
+            node for node in application_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "ApplicationV4Error"
+        )
+        error_init = next(
+            node for node in error_class.body
+            if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+        )
+    except StopIteration:
+        problems.append("ApplicationV4Error stable metadata contract is missing")
+    else:
+        assigned_attributes = {
+            target.attr
+            for node in ast.walk(error_init)
+            if isinstance(node, ast.Assign)
+            for target in node.targets
+            if isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+        }
+        if not {"code", "detail", "stage", "retryable", "correlation_id"}.issubset(
+            assigned_attributes
+        ):
+            problems.append("ApplicationV4Error metadata fields drifted")
+
+    required_application_markers = (
+        '"ADMISSION_DEADLINE"',
+        '"STORAGE_CAPACITY"',
+        '"STORAGE_PERMISSION"',
+        '"STORAGE_IO"',
+        '"BACKEND_RESOURCE_EXHAUSTED"',
+        '"BACKEND_TIMEOUT"',
+        "CaseRequestV4.from_json_bytes(request_raw, limits=limits)",
+        "limits=admitted_limits",
+        "cancel_check=cancel_check",
+        '"formal audit storage failed"',
+        "failure.retryable",
+        "_correlation_id(run_identity_ref, failure.stage, failure.code)",
+    )
+    for marker in required_application_markers:
+        if marker not in application_source:
+            problems.append(f"ApplicationV4 runtime boundary marker is missing: {marker}")
+    if application_source.count("failure = failure or self._stop_failure(") != 4:
+        problems.append("ApplicationV4 pre-backend cancellation coverage drifted")
+
+    forbidden_error_markers = (
+        "str(exc)", "exc.args", "traceback.", "format_exc(", "Traceback (most recent call last)",
+    )
+    for marker in forbidden_error_markers:
+        if marker in application_source or marker in audit_source:
+            problems.append(f"runtime privacy boundary exposes exception internals: {marker}")
+
+    required_audit_markers = (
+        "def _storage_code(",
+        "def _storage_boundary(",
+        '"STORAGE_CAPACITY"',
+        '"STORAGE_PERMISSION"',
+        '"STORAGE_IO"',
+        '"private audit storage operation failed"',
+    )
+    for marker in required_audit_markers:
+        if marker not in audit_source:
+            problems.append(f"AuditBundle storage privacy marker is missing: {marker}")
+    try:
+        audit_class = next(
+            node for node in audit_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "AuditBundleStoreV4"
+        )
+    except StopIteration:
+        problems.append("AuditBundleStoreV4 is missing")
+    else:
+        decorated = {
+            node.name
+            for node in audit_class.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and any(
+                isinstance(decorator, ast.Name) and decorator.id == "_storage_boundary"
+                for decorator in node.decorator_list
+            )
+        }
+        expected_decorated = {
+            "capability_for", "recover", "verify_run", "write_run",
+            "issue_artifact_handle", "read_artifact", "replay_run",
+        }
+        if decorated != expected_decorated:
+            problems.append("AuditBundle public storage privacy coverage drifted")
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W4-06"), {}
+    )
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W4-06"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W4-06", "tests/contract/test_application.py",
+            "tests/formal_e2e/test_single_chain.py",
+            "tests/security/test_application_attacks.py",
+            "tests/security/test_privacy_firewall.py",
+            "tests/security/test_resource_limits.py",
+            "tests/contract/test_required_test_manifest.py", "--junitxml",
+            "{state_root}/evidence/pytest/W4-06.xml",
+        ],
+    ]
+    if task.get("depends_on") != ["W4-05"]:
+        problems.append("W4-06 dependency projection drifted")
+    if task.get("audit_ids") != ["P1-15", "P1-17", "P1-18"]:
+        problems.append("W4-06 audit projection drifted")
+    if task.get("allowed_paths") != list(W4_06_ALLOWED_PATHS):
+        problems.append("W4-06 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W4-06 focused argv or expected exit codes drifted")
+
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    required_by_id = {
+        item.get("id"): item
+        for item in manifest.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_groups = {
+        "W4-RUNTIME-PRIVACY-FIREWALL": (
+            "security", "tests/security/test_privacy_firewall.py", 7,
+        ),
+        "W4-RUNTIME-RESOURCE-LIMITS": (
+            "security", "tests/security/test_resource_limits.py", 7,
+        ),
+    }
+    for test_id, (suite, selector, count) in expected_groups.items():
+        item = required_by_id.get(test_id, {})
+        actual = (
+            item.get("suite"), item.get("selector"), item.get("state"),
+            item.get("expected_tests"),
+        ) if isinstance(item, dict) else None
+        if actual != (suite, selector, "REQUIRED_NOW", count):
+            problems.append(f"W4-06 required test lifecycle drifted: {test_id}")
+        elif not _selector_is_declared(ROOT, selector):
+            problems.append(f"W4-06 required selector is not declared: {test_id}")
+
+    mutation_by_id = {
+        item.get("test_id"): item
+        for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_mutations = {
+        "V4-P1-15-RESOURCE-BUDGET": (
+            "P1-15", "W5-CUTOVER", "RED_AT_TASK",
+            "tests/security/test_resource_limits.py::"
+            "test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+        ),
+        "V4-P1-17-PATH-PRIVACY": (
+            "P1-17", "W4-06", "ACTIVE_REQUIRED",
+            "tests/security/test_privacy_firewall.py::"
+            "test_capabilities_and_errors_never_leak_absolute_paths",
+        ),
+        "V4-P1-18-STORAGE-ERROR-CLASS": (
+            "P1-18", "W4-06", "ACTIVE_REQUIRED",
+            "tests/security/test_privacy_firewall.py::"
+            "test_enospc_and_eacces_keep_retryable_storage_class",
+        ),
+    }
+    for test_id, expected in expected_mutations.items():
+        item = mutation_by_id.get(test_id, {})
+        actual = (
+            item.get("audit_id"), item.get("owner_task"), item.get("state"),
+            item.get("selector"),
+        ) if isinstance(item, dict) else None
+        if actual != expected:
+            problems.append(f"W4-06 audit mutation lifecycle drifted: {test_id}")
+        elif expected[2] == "ACTIVE_REQUIRED" and not _selector_is_declared(ROOT, expected[3]):
+            problems.append(f"W4-06 active selector is not declared: {test_id}")
+
+    actual_plan_sha256 = sha256_hex((ROOT / W4_06_ALLOWED_PATHS[0]).read_bytes())
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        problems.append("W4-06 plan, task DAG, and disposition are not byte-bound")
+    if disposition != generated_disposition:
+        problems.append("W4-06 file disposition is not reproducible from its generator")
+
+    tracked = set(_git_tracked_files())
+    for path in W4_06_ALLOWED_PATHS:
+        if path not in tracked:
+            problems.append(f"W4-06 exact path is not Git tracked: {path}")
+    disposition_by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in ("compiler_core/application.py", "compiler_core/audit_bundle.py"):
+        item = disposition_by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"),
+            item.get("namespace"), item.get("closure_task"),
+        ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core", "W4-06"):
+            problems.append(f"W4-06 formal runtime disposition drifted: {path}")
+    for path in (
+        "tests/security/test_privacy_firewall.py",
+        "tests/security/test_resource_limits.py",
+    ):
+        item = disposition_by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"), item.get("closure_task"),
+        ) != ("TEST_ORACLE", "TEST_ORACLE", "W4-06"):
+            problems.append(f"W4-06 required test disposition drifted: {path}")
+    for path in (
+        "compiler_core/application.py", "compiler_core/audit_bundle.py",
+        "tests/security/test_privacy_firewall.py", "tests/security/test_resource_limits.py",
+    ):
+        if f'"{path}": "W4-06"' not in builder_source:
+            problems.append(f"W4-06 disposition builder omits {path}")
+
+    for marker in (
+        "精确 11 项", "实际 changed paths 恰为全部 11 项",
+        "31 个 application/formal/attack/privacy/resource/governance focused cases",
+        "P1-15 在本 task 只落实", "mutation 保持 RED",
+        "w4-06-exact-runtime-reports", "w4-06-private-fail-closed-contract",
+        "w4-06-exact-committed-scope",
+    ):
+        if marker not in formal_plan:
+            problems.append(f"W4-06 formal plan marker is missing: {marker}")
+    if W4_06_TEST_CASE_COUNT != 31 or W4_06_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W4-06 JUnit case identity is not frozen")
+    for marker in (
+        "_w4_06_test_report_problems(test_reports)",
+        "_w4_06_runtime_contract_problems()",
+        "w4-06-exact-runtime-reports", "w4-06-private-fail-closed-contract",
+        "w4-06-exact-committed-scope",
+    ):
+        if marker not in runner_source:
+            problems.append(f"W4-06 runner receipt contract marker is missing: {marker}")
+    return problems
+
+
+def _cmd_w4_06_runtime_gate() -> int:
+    problems = _w4_06_runtime_contract_problems()
+    problems.extend(
+        f"W4-05 prerequisite drifted: {problem}"
+        for problem in _w4_05_application_contract_problems()
+    )
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W4-06 runtime gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W4-06 runtime gate OK: {W4_06_TEST_CASE_COUNT} focused cases; "
+        "11 fixed paths, stable private errors, bounded execution, and no false P1-15 closure"
+    )
+    return EXIT_OK
+
+
+def cmd_w4_06_runtime_gate() -> int:
+    try:
+        return _cmd_w4_06_runtime_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W4-06 runtime gate rejected malformed input: {type(exc).__name__}: {exc}",
             file=sys.stderr,
         )
         return EXIT_GATE_FAIL
@@ -13506,6 +13837,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w4_04_certificate_gate()
     if args.wave == "W4-05":
         return cmd_w4_05_application_gate()
+    if args.wave == "W4-06":
+        return cmd_w4_06_runtime_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -15546,6 +15879,42 @@ def _w4_05_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w4_06_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W4-06 runtime/privacy/resource JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W4-06 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W4_06_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W4_06_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W4_06_TEST_CASE_COUNT,
+        "junit_unique_cases": W4_06_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W4_06_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W4-06 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W4-06 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -16174,6 +16543,37 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W4-05 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W4-06":
+        problems.extend(_w4_06_test_report_problems(reports))
+        problems.extend(_w4_06_runtime_contract_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W4_06_ALLOWED_PATHS)
+            or len(changed_paths) != len(W4_06_ALLOWED_PATHS)
+        ):
+            problems.append("W4-06 receipt does not bind its exact 11 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W4_06_ALLOWED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W4-06 receipt lacks committed result digest: {path}")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w4-06-exact-runtime-reports",
+            "w4-06-private-fail-closed-contract",
+            "w4-06-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W4-06 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -17527,6 +17927,48 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 11 W4-05 paths are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W4-06":
+        report_problems = _w4_06_test_report_problems(test_reports)
+        contract_problems = _w4_06_runtime_contract_problems()
+        expected_paths = set(W4_06_ALLOWED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W4_06_ALLOWED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w4-06-exact-runtime-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W4_06_TEST_CASE_COUNT} application/formal/attack/privacy/resource/"
+                "governance pytest items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-06-private-fail-closed-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "stable private error classes, recursive canary redaction, storage privacy, "
+                "and bounded request/solver/audit execution are live"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-06-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 11 W4-06 paths are committed and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

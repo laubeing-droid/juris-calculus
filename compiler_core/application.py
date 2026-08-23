@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
+import errno
 
 from compiler_core.argumentation import (
     ArgumentGraphV4,
@@ -16,6 +17,7 @@ from compiler_core.argumentation import (
 from compiler_core.artifact_store import ArtifactResolverV4
 from compiler_core.audit_bundle import (
     AuditArtifactV4,
+    AuditBundleV4Error,
     AuditBundleMaterialsV4,
     AuditBundleStoreV4,
     AuditEventV4,
@@ -105,6 +107,7 @@ from compiler_core.source_service import (
     SourceServiceV4,
     source_snapshot_ref,
 )
+from compiler_core.storage import StorageV4Error
 from compiler_core.trust import TrustVerifierV4
 
 
@@ -123,9 +126,23 @@ ReceiptSignerV4 = Callable[
 class ApplicationV4Error(RuntimeError):
     """Stable error for a request that cannot reach the typed-result boundary."""
 
-    def __init__(self, code: str, detail: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        detail: str,
+        *,
+        stage: str = "application",
+        retryable: bool = False,
+        correlation_id: str | None = None,
+    ) -> None:
         self.code = code
         self.detail = detail
+        self.stage = stage
+        self.retryable = retryable
+        self.correlation_id = correlation_id or digest_value({
+            "stage": stage,
+            "code": code,
+        }).hex[:24]
         super().__init__(f"{code}: {detail}")
 
 
@@ -133,6 +150,7 @@ class ApplicationV4Error(RuntimeError):
 class _Failure:
     stage: str
     code: str
+    retryable: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,11 +176,56 @@ class _ArgumentOutcome:
 
 
 _EXPECTED_FAILURES = (
+    AuditBundleV4Error,
     ContractV4Error,
     BackendV4Error,
     IndependentCheckerV4Error,
     ArgumentationV4Error,
+    StorageV4Error,
+    OSError,
 )
+
+_RETRYABLE_CODES = frozenset({
+    "ADMISSION_DEADLINE",
+    "AUDIT_IO",
+    "AUDIT_QUOTA",
+    "BACKEND_RESOURCE_EXHAUSTED",
+    "BACKEND_TIMEOUT",
+    "STORAGE_CAPACITY",
+    "STORAGE_IO",
+    "STORAGE_PERMISSION",
+})
+
+
+def _exception_code(exc: Exception) -> str:
+    code = getattr(exc, "code", None)
+    if type(code) is str and code:
+        return code
+    if isinstance(exc, OSError):
+        if exc.errno in {errno.ENOSPC, getattr(errno, "EDQUOT", -1)}:
+            return "STORAGE_CAPACITY"
+        if exc.errno in {errno.EACCES, errno.EPERM, errno.EROFS}:
+            return "STORAGE_PERMISSION"
+        return "STORAGE_IO"
+    return "APPLICATION_STAGE_ERROR"
+
+
+def _is_retryable(code: str) -> bool:
+    return code in _RETRYABLE_CODES
+
+
+def _correlation_id(
+    run_identity_ref: ContentRefV4 | None,
+    stage: str,
+    code: str,
+) -> str:
+    return digest_value({
+        "run_identity_ref": (
+            None if run_identity_ref is None else run_identity_ref.to_dict()
+        ),
+        "stage": stage,
+        "code": code,
+    }).hex[:24]
 
 
 def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
@@ -318,21 +381,52 @@ class ApplicationV4:
 
     @staticmethod
     def _failure(stage: str, exc: Exception) -> _Failure:
-        code = getattr(exc, "code", None)
-        return _Failure(stage, code if type(code) is str and code else "APPLICATION_STAGE_ERROR")
+        code = _exception_code(exc)
+        return _Failure(stage, code, _is_retryable(code))
+
+    @staticmethod
+    def _stop_failure(
+        stage: str,
+        *,
+        cancel_check: Callable[[], bool] | None,
+    ) -> _Failure | None:
+        if cancel_check is not None:
+            try:
+                cancelled = cancel_check()
+            except Exception:
+                return _Failure(stage, "APPLICATION_CANCEL_CHECK", False)
+            if type(cancelled) is not bool:
+                return _Failure(stage, "APPLICATION_CANCEL_CHECK", False)
+            if cancelled:
+                return _Failure(stage, "APPLICATION_CANCELLED", False)
+        return None
 
     def _resolve_input(
         self,
         request_ref: ContentRefV4,
         run_identity_ref: ContentRefV4,
+        limits: ResourceLimitsV4,
     ) -> tuple[CaseRequestV4, RunIdentityV4]:
         try:
-            request = self._contract(
+            request_raw = self._resolver.resolve_content(
                 request_ref,
-                kind=CASE_REQUEST_KIND,
-                scope=CASE_REQUEST_SCOPE,
-                contract=CaseRequestV4,
+                expected_artifact_kind=CASE_REQUEST_KIND,
+                expected_media_type=JSON_MEDIA_TYPE,
+                expected_scope=CASE_REQUEST_SCOPE,
+                max_bytes=min(
+                    self._resolver.max_artifact_bytes,
+                    limits.max_request_bytes,
+                ),
             )
+            request = CaseRequestV4.from_json_bytes(request_raw, limits=limits)
+            if (
+                request_raw != request.canonical_bytes()
+                or request.canonical_digest() != request_ref.digest
+            ):
+                raise ContractV4Error(
+                    "APPLICATION_ARTIFACT_BINDING",
+                    "case request bytes differ from their reference",
+                )
             run = self._contract(
                 run_identity_ref,
                 kind=RUN_IDENTITY_KIND,
@@ -342,7 +436,13 @@ class ApplicationV4:
             )
         except _EXPECTED_FAILURES as exc:
             failure = self._failure("resolver", exc)
-            raise ApplicationV4Error(failure.code, "request or run identity did not resolve") from exc
+            raise ApplicationV4Error(
+                failure.code,
+                "request or run identity did not resolve",
+                stage=failure.stage,
+                retryable=failure.retryable,
+                correlation_id=_correlation_id(None, failure.stage, failure.code),
+            ) from None
         if type(request) is not CaseRequestV4 or type(run) is not RunIdentityV4:
             raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "resolved input has a wrong type")
         expected_policy_ref = ContentRefV4("trust-policy", self._trust.policy.canonical_digest())
@@ -367,9 +467,9 @@ class ApplicationV4:
     def _trust_failure(self, run: RunIdentityV4, now: CanonicalTimeV4) -> _Failure | None:
         policy = self._trust.policy
         if run.trust_policy_ref != ContentRefV4("trust-policy", policy.canonical_digest()):
-            return _Failure("trust", "TRUST_POLICY_MISMATCH")
+            return _Failure("trust", "TRUST_POLICY_MISMATCH", False)
         if now < policy.valid_from or (policy.valid_to is not None and not now < policy.valid_to):
-            return _Failure("trust", "TRUST_POLICY_INACTIVE")
+            return _Failure("trust", "TRUST_POLICY_INACTIVE", False)
         return None
 
     def _source_and_evidence(
@@ -752,12 +852,29 @@ class ApplicationV4:
         extra_receipts: tuple[ContentRefV4, ...] = (),
     ) -> SemanticResultV4:
         if failure is not None:
+            if execution is None:
+                if failure.code in {"APPLICATION_CANCELLED", "BACKEND_CANCELLED"}:
+                    execution = ExecutionStatusV4.CANCELLED
+                elif failure.code in {
+                    "ADMISSION_DEADLINE",
+                    "BACKEND_RESOURCE_EXHAUSTED",
+                    "BACKEND_TIMEOUT",
+                }:
+                    execution = ExecutionStatusV4.RESOURCE_EXHAUSTED
+                else:
+                    execution = ExecutionStatusV4.ADMISSION_BLOCKED
+            if execution in {
+                ExecutionStatusV4.CANCELLED,
+                ExecutionStatusV4.ENGINE_ERROR,
+                ExecutionStatusV4.INTERRUPTED,
+                ExecutionStatusV4.RESOURCE_EXHAUSTED,
+            } and interruption is None:
+                interruption = InterruptionStateV4(failure.code, failure.stage)
             decision = (
                 DecisionStatusV4.ENGINE_ERROR
                 if execution is ExecutionStatusV4.ENGINE_ERROR
                 else DecisionStatusV4.BLOCKED
             )
-            execution = execution or ExecutionStatusV4.ADMISSION_BLOCKED
             reasons = reasons or (f"{failure.stage}:{failure.code}",)
         elif decision is None or execution is None:
             raise ApplicationV4Error("APPLICATION_RESULT", "nonformal state is incomplete")
@@ -1217,34 +1334,39 @@ class ApplicationV4:
                 roots,
             ),
         )
-        capability = self._audit_store.capability_for(run_identity_ref)
-        completed = self._audit_store.write_run(
-            capability,
-            materials,
-            now=now,
-            certificate_factory=(
-                None
-                if result.certificate_kind is CertificateKindV4.NONE
-                else self._certificate_issuer
-            ),
-        )
-        completed = self._audit_store.verify_run(capability, now=now)
+        try:
+            capability = self._audit_store.capability_for(run_identity_ref)
+            completed = self._audit_store.write_run(
+                capability,
+                materials,
+                now=now,
+                certificate_factory=(
+                    None
+                    if result.certificate_kind is CertificateKindV4.NONE
+                    else self._certificate_issuer
+                ),
+            )
+            completed = self._audit_store.verify_run(capability, now=now)
+        except (AuditBundleV4Error, ContractV4Error, StorageV4Error, OSError) as exc:
+            code = _exception_code(exc)
+            raise ApplicationV4Error(
+                code,
+                "formal audit storage failed",
+                stage="audit",
+                retryable=_is_retryable(code),
+                correlation_id=_correlation_id(run_identity_ref, "audit", code),
+            ) from None
         if failure is None:
             transport = TransportOutcomeV4("success", None)
         else:
-            correlation = digest_value({
-                "run_identity_ref": run_identity_ref.to_dict(),
-                "stage": failure.stage,
-                "code": failure.code,
-            }).hex[:24]
             transport = TransportOutcomeV4(
                 "error",
                 ErrorV4(
                     failure.code,
                     f"formal evaluation stopped at {failure.stage}",
                     failure.stage,
-                    False,
-                    correlation,
+                    failure.retryable,
+                    _correlation_id(run_identity_ref, failure.stage, failure.code),
                     (),
                 ),
             )
@@ -1278,17 +1400,36 @@ class ApplicationV4:
             or type(seed) is not int
             or (cancel_check is not None and not callable(cancel_check))
         ):
-            raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "evaluation context is invalid")
+            raise ApplicationV4Error(
+                "APPLICATION_INPUT_TYPE",
+                "evaluation context is invalid",
+                stage="resolver",
+            )
         admitted_limits = ResourceLimitsV4() if limits is None else limits
         if type(admitted_limits) is not ResourceLimitsV4:
-            raise ApplicationV4Error("APPLICATION_INPUT_TYPE", "limits must be ResourceLimitsV4")
+            raise ApplicationV4Error(
+                "APPLICATION_INPUT_TYPE",
+                "limits must be ResourceLimitsV4",
+                stage="resolver",
+            )
         now = self._clock()
         if type(now) is not CanonicalTimeV4:
-            raise ApplicationV4Error("APPLICATION_CLOCK", "clock returned a non-canonical time")
-        request, run = self._resolve_input(request_ref, run_identity_ref)
+            raise ApplicationV4Error(
+                "APPLICATION_CLOCK",
+                "clock returned a non-canonical time",
+                stage="trust",
+            )
+        request, run = self._resolve_input(
+            request_ref,
+            run_identity_ref,
+            admitted_limits,
+        )
         events: list[tuple[str, ContentRefV4]] = [("resolver", request_ref)]
 
         failure = self._trust_failure(run, now)
+        failure = failure or self._stop_failure(
+            "trust", cancel_check=cancel_check
+        )
         events.append(("trust", run_identity_ref))
         source_bundle, applicable_source, source_failure = self._source_and_evidence(
             request,
@@ -1296,6 +1437,9 @@ class ApplicationV4:
             now=now,
         )
         failure = failure or source_failure
+        failure = failure or self._stop_failure(
+            "source", cancel_check=cancel_check
+        )
         if applicable_source is not None:
             events.append(("source", applicable_source))
         events.append(("evidence", request.evidence_manifest_ref))
@@ -1309,6 +1453,9 @@ class ApplicationV4:
             enabled=failure is None,
         )
         failure = failure or fact_failure
+        failure = failure or self._stop_failure(
+            "fact", cancel_check=cancel_check
+        )
         events.append(
             (
                 "fact",
@@ -1323,9 +1470,12 @@ class ApplicationV4:
             pack = self._pack_verifier.verify(request.rule_pack_ref, now=now)
         except _EXPECTED_FAILURES as exc:
             failure = failure or self._failure("pack", exc)
+        failure = failure or self._stop_failure(
+            "pack", cancel_check=cancel_check
+        )
         events.append(("pack", request.rule_pack_ref))
         if failure is not None or pack is None or source_bundle is None:
-            failure = failure or _Failure("pack", "PACK_NOT_VERIFIED")
+            failure = failure or _Failure("pack", "PACK_NOT_VERIFIED", False)
             result = self._nonformal_result(
                 request,
                 run,
@@ -1470,6 +1620,14 @@ class ApplicationV4:
         except _EXPECTED_FAILURES as exc:
             stage = "ir" if not events or events[-1][0] != "ir" else "backend"
             failure = self._failure(stage, exc)
+            execution_status = None
+            if stage == "backend":
+                if failure.code == "BACKEND_CANCELLED":
+                    execution_status = ExecutionStatusV4.CANCELLED
+                elif failure.code in {"BACKEND_RESOURCE_EXHAUSTED", "BACKEND_TIMEOUT"}:
+                    execution_status = ExecutionStatusV4.RESOURCE_EXHAUSTED
+                else:
+                    execution_status = ExecutionStatusV4.ENGINE_ERROR
             result = self._nonformal_result(
                 request,
                 run,
@@ -1478,20 +1636,13 @@ class ApplicationV4:
                 facts,
                 selected,
                 failure=failure,
-                execution=(
-                    ExecutionStatusV4.ENGINE_ERROR if stage == "backend" else None
-                ),
-                interruption=(
-                    InterruptionStateV4(failure.code, stage)
-                    if stage == "backend"
-                    else None
-                ),
+                execution=execution_status,
             )
             return self._finish(
                 request, run, run_identity_ref, result, events, now=now, failure=failure
             )
         if not executions:
-            failure = _Failure("backend", "BACKEND_NO_EXECUTION")
+            failure = _Failure("backend", "BACKEND_NO_EXECUTION", False)
             result = self._nonformal_result(
                 request, run, run_identity_ref, pack, facts, selected, failure=failure
             )
@@ -1504,15 +1655,25 @@ class ApplicationV4:
             status = failed.receipt.status
             if status in {"TIMEOUT", "RESOURCE_EXHAUSTED"}:
                 execution_status = ExecutionStatusV4.RESOURCE_EXHAUSTED
+            elif status == "CANCELLED":
+                execution_status = ExecutionStatusV4.CANCELLED
             elif status == "UNSUPPORTED_SEMANTICS":
                 execution_status = ExecutionStatusV4.UNSUPPORTED
             else:
                 execution_status = ExecutionStatusV4.ENGINE_ERROR
-            failure = _Failure("backend", f"BACKEND_{status}")
+            failure = _Failure(
+                "backend",
+                f"BACKEND_{status}",
+                _is_retryable(f"BACKEND_{status}"),
+            )
             interruption = (
                 InterruptionStateV4(failure.code, "backend")
                 if execution_status
-                in {ExecutionStatusV4.RESOURCE_EXHAUSTED, ExecutionStatusV4.ENGINE_ERROR}
+                in {
+                    ExecutionStatusV4.CANCELLED,
+                    ExecutionStatusV4.RESOURCE_EXHAUSTED,
+                    ExecutionStatusV4.ENGINE_ERROR,
+                }
                 else None
             )
             result = self._nonformal_result(
@@ -1565,6 +1726,12 @@ class ApplicationV4:
         except _EXPECTED_FAILURES as exc:
             stage = "checker" if not events or events[-1][0] != "checker" else "argument"
             failure = self._failure(stage, exc)
+            if failure.code in {"APPLICATION_CANCELLED", "BACKEND_CANCELLED"}:
+                execution_status = ExecutionStatusV4.CANCELLED
+            elif failure.code in {"ADMISSION_DEADLINE", "BACKEND_TIMEOUT"}:
+                execution_status = ExecutionStatusV4.RESOURCE_EXHAUSTED
+            else:
+                execution_status = ExecutionStatusV4.ENGINE_ERROR
             result = self._nonformal_result(
                 request,
                 run,
@@ -1573,8 +1740,7 @@ class ApplicationV4:
                 facts,
                 selected,
                 failure=failure,
-                execution=ExecutionStatusV4.ENGINE_ERROR,
-                interruption=InterruptionStateV4(failure.code, stage),
+                execution=execution_status,
                 backend_execution=primary,
                 extra_receipts=(primary.receipt_ref,),
             )
@@ -1615,6 +1781,12 @@ class ApplicationV4:
             )
         except _EXPECTED_FAILURES as exc:
             failure = self._failure("result", exc)
+            if failure.code in {"APPLICATION_CANCELLED", "BACKEND_CANCELLED"}:
+                execution_status = ExecutionStatusV4.CANCELLED
+            elif failure.code in {"ADMISSION_DEADLINE", "BACKEND_TIMEOUT"}:
+                execution_status = ExecutionStatusV4.RESOURCE_EXHAUSTED
+            else:
+                execution_status = ExecutionStatusV4.ENGINE_ERROR
             result = self._nonformal_result(
                 request,
                 run,
@@ -1623,8 +1795,7 @@ class ApplicationV4:
                 facts,
                 selected,
                 failure=failure,
-                execution=ExecutionStatusV4.ENGINE_ERROR,
-                interruption=InterruptionStateV4(failure.code, "result"),
+                execution=execution_status,
                 backend_execution=primary,
                 extra_receipts=(primary.receipt_ref, checked.receipt_ref),
             )

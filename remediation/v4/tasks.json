@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "5b6c1ea87e37c8f3747a4abdc70946d0849443a2fdbd4e9fcf25a521f60e77fc",
+    "plan_sha256": "ec3b19c7e181a863ee02d9866dc30b4621a882f31c25566974d750d489bc8f88",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -3241,9 +3241,17 @@
       ],
       "objective": "隐私/error/资源闭环；稳定 error code/stage/retryable/correlation id；stdout/bundle 不回显 traceback/绝对路径",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/application.py",
         "compiler_core/audit_bundle.py",
-        "tests/security/test_privacy_firewall.py"
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/security/test_privacy_firewall.py",
+        "tests/security/test_resource_limits.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -3253,9 +3261,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-06"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-06",
+          "tests/contract/test_application.py",
+          "tests/formal_e2e/test_single_chain.py",
+          "tests/security/test_application_attacks.py",
+          "tests/security/test_privacy_firewall.py",
+          "tests/security/test_resource_limits.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W4-06.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

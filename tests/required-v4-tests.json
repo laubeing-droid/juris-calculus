@@ -264,6 +264,20 @@
       "selector": "tests/security/test_application_attacks.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 1
+    },
+    {
+      "id": "W4-RUNTIME-PRIVACY-FIREWALL",
+      "suite": "security",
+      "selector": "tests/security/test_privacy_firewall.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
+    },
+    {
+      "id": "W4-RUNTIME-RESOURCE-LIMITS",
+      "suite": "security",
+      "selector": "tests/security/test_resource_limits.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 7
     }
   ],
   "evidence_tracks": [
@@ -629,7 +643,7 @@
       "suite": "security",
       "selector": "tests/security/test_privacy_firewall.py::test_capabilities_and_errors_never_leak_absolute_paths",
       "owner_task": "W4-06",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Expose an installation, state, UNC, or device path in capabilities or errors.",
       "red_failure": "Absolute machine paths must never leave the boundary."
     },
@@ -639,7 +653,7 @@
       "suite": "security",
       "selector": "tests/security/test_privacy_firewall.py::test_enospc_and_eacces_keep_retryable_storage_class",
       "owner_task": "W4-06",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Map ENOSPC or EACCES to invalid tool input.",
       "red_failure": "Retryable storage errors must retain their protocol class."
     },

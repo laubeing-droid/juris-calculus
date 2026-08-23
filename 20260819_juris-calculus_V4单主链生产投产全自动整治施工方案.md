@@ -709,9 +709,9 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 ### W4-06　隐私、error 和资源闭环
 
 - **Depends / audit**：`W4-05 / P1-15, P1-17..18`。
-- **Paths**：application/audit privacy firewall、typed errors、security tests。
-- **动作**：稳定 error code/stage/retryable/correlation id；EACCES/ENOSPC/I/O/parse/security/engine 分类；递归 path/secret/PII canary；deadline/cancel/size/quota 到各阶段；stdout/bundle 不回显 traceback/绝对路径。
-- **Gate**：各基础设施异常矩阵、cancel、oversize、deep JSON、quota、PII/path canary；失败无 COMPLETE/证书。
+- **Paths**：精确 11 项：本方案、`compiler_core/application.py`、`compiler_core/audit_bundle.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/security/test_privacy_firewall.py`、`tests/security/test_resource_limits.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；实际 changed paths 恰为全部 11 项，不修改 frozen contracts、schema、public CLI/MCP 或 W5 queue/backpressure/retention 实现。
+- **动作**：`ApplicationV4Error` 只向边界暴露稳定 `code/stage/retryable/correlation_id`；EACCES/EPERM/EROFS、ENOSPC/EDQUOT、generic I/O、parse/security/engine 分级并递归清除 path/secret/PII；AuditBundle 七个公开 storage 操作统一经 privacy boundary 转译，原异常文本不进入 capability、bundle 或 transport；request byte/depth/admission deadline、solver deadline/cancel、pre-backend cancel、audit quota/bundle size 在各自既有边界 fail closed。P1-15 在本 task 只落实 Application 可拥有的 byte/depth/deadline/cancel/quota 子边界；public queue/backpressure/retention 与完整 production budget selector 仍归 `W5-CUTOVER`，mutation 保持 RED，不提前伪报关闭。
+- **Gate**：31 个 application/formal/attack/privacy/resource/governance focused cases 全绿且 JUnit case identity 冻结；EACCES/ENOSPC/EIO、security/engine、cancel、oversize、deep JSON、admission/solver deadline、quota/bundle-size、PII/path/secret canary 全矩阵；失败无 COMPLETE/证书且 exception/capability/verified bundle bytes 无 traceback、绝对路径或 canary。runner 绑定 `w4-06-exact-runtime-reports`、`w4-06-private-fail-closed-contract`、`w4-06-exact-committed-scope` 三项专属 assertions。
 - **Commit**：`fix(runtime): enforce bounded private fail-closed execution`。
 
 ### W4-07　Synthetic formal vertical slice

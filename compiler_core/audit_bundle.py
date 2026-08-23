@@ -6,6 +6,8 @@ from base64 import b64decode, b64encode
 from binascii import Error as Base64Error
 from collections.abc import Callable
 from dataclasses import dataclass
+import errno
+from functools import wraps
 import hashlib
 import hmac
 import os
@@ -54,6 +56,7 @@ from compiler_core.independent_checker import (
     IndependentCheckerV4Error,
 )
 from compiler_core.storage import (
+    StorageV4Error,
     V4TransactionStore,
     _file_id,
     _flush_directory,
@@ -144,6 +147,31 @@ class AuditBundleV4Error(RuntimeError):
 
 def _fail(code: str, detail: str) -> None:
     raise AuditBundleV4Error(code, detail)
+
+
+def _storage_code(exc: StorageV4Error | OSError) -> str:
+    code = getattr(exc, "code", None)
+    if type(code) is str and code.startswith("STORAGE_"):
+        return code
+    if isinstance(exc, OSError):
+        if exc.errno in {errno.ENOSPC, getattr(errno, "EDQUOT", -1)}:
+            return "STORAGE_CAPACITY"
+        if exc.errno in {errno.EACCES, errno.EPERM, errno.EROFS}:
+            return "STORAGE_PERMISSION"
+    return "STORAGE_IO"
+
+
+def _storage_boundary(method: Callable[..., object]) -> Callable[..., object]:
+    @wraps(method)
+    def guarded(*args: object, **kwargs: object) -> object:
+        try:
+            return method(*args, **kwargs)
+        except (StorageV4Error, OSError) as exc:
+            raise AuditBundleV4Error(
+                _storage_code(exc), "private audit storage operation failed"
+            ) from None
+
+    return guarded
 
 
 def _identifier(value: object, field: str) -> str:
@@ -531,6 +559,7 @@ class AuditBundleStoreV4:
         })
         return hmac.new(self._capability_key, body, hashlib.sha256).hexdigest()
 
+    @_storage_boundary
     def capability_for(self, run_identity_ref: ContentRefV4) -> RunCapabilityV4:
         if type(run_identity_ref) is not ContentRefV4 or run_identity_ref.kind != "run-identity":
             _fail("AUDIT_CAPABILITY", "capability requires a run-identity reference")
@@ -1082,6 +1111,7 @@ class AuditBundleStoreV4:
             _flush_directory(quarantine)
         return recovered
 
+    @_storage_boundary
     def recover(self) -> int:
         with self._store._lock():
             self._verify_audit_layout_locked()
@@ -1128,6 +1158,7 @@ class AuditBundleStoreV4:
             _fail("AUDIT_CAPABILITY_BINDING", "bundle belongs to another run capability")
         return verified
 
+    @_storage_boundary
     def verify_run(
         self,
         capability: RunCapabilityV4,
@@ -1158,6 +1189,7 @@ class AuditBundleStoreV4:
                         _fail("AUDIT_LAYOUT", "audit state contains an unsupported node")
         return total
 
+    @_storage_boundary
     def write_run(
         self,
         capability: RunCapabilityV4,
@@ -1245,6 +1277,7 @@ class AuditBundleStoreV4:
             _flush_directory(self._store.root / "audit-bundles")
             return self._read_locked(capability, now=now)
 
+    @_storage_boundary
     def issue_artifact_handle(
         self,
         capability: RunCapabilityV4,
@@ -1303,6 +1336,7 @@ class AuditBundleStoreV4:
             _fail("AUDIT_HANDLE_SIGNATURE", "handle signature context differs")
         return handle
 
+    @_storage_boundary
     def read_artifact(
         self,
         handle: ArtifactHandleV4,
@@ -1372,6 +1406,7 @@ class AuditBundleStoreV4:
             eof=eof,
         )
 
+    @_storage_boundary
     def replay_run(
         self,
         capability: RunCapabilityV4,
