@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.52.0"
+RUNNER_VERSION = "0.52.1"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -112,6 +112,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.50.0": 5,
     "0.51.0": 5,
     "0.52.0": 5,
+    "0.52.1": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -23102,7 +23103,8 @@ def _auto_receipt_resume_problems(
             problems.append("W4-04 receipt completion assertions are incomplete or false")
     if task.get("id") == "W4-05":
         problems.extend(_w4_05_test_report_problems(reports))
-        problems.extend(_w4_05_application_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w4_05_application_contract_problems())
         changed_paths = receipt.get("changed_paths", [])
         if (
             not isinstance(changed_paths, list)
@@ -23133,7 +23135,8 @@ def _auto_receipt_resume_problems(
             problems.append("W4-05 receipt completion assertions are incomplete or false")
     if task.get("id") == "W4-06":
         problems.extend(_w4_06_test_report_problems(reports))
-        problems.extend(_w4_06_runtime_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w4_06_runtime_contract_problems())
         changed_paths = receipt.get("changed_paths", [])
         if (
             not isinstance(changed_paths, list)
@@ -23164,7 +23167,8 @@ def _auto_receipt_resume_problems(
             problems.append("W4-06 receipt completion assertions are incomplete or false")
     if task.get("id") == "W4-07":
         problems.extend(_w4_07_test_report_problems(reports))
-        problems.extend(_w4_07_vertical_contract_problems())
+        if validate_live_contract:
+            problems.extend(_w4_07_vertical_contract_problems())
         changed_paths = receipt.get("changed_paths", [])
         if (
             not isinstance(changed_paths, list)
