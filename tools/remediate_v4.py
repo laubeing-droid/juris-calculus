@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.53.0"
+RUNNER_VERSION = "0.53.1"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -114,6 +114,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.52.0": 5,
     "0.52.1": 5,
     "0.53.0": 5,
+    "0.53.1": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -13576,7 +13577,9 @@ def cmd_w4_02_storage_gate() -> int:
         return EXIT_GATE_FAIL
 
 
-def _w4_03_audit_contract_problems() -> list[str]:
+def _w4_03_audit_contract_problems(
+    *, validate_byte_stable: bool = True,
+) -> list[str]:
     """Rebuild the executable W4-03 audit-bundle contract without writing state."""
 
     problems: list[str] = []
@@ -13662,14 +13665,17 @@ def _w4_03_audit_contract_problems() -> list[str]:
             if signatures.get(name) != expected:
                 problems.append(f"AuditBundleStoreV4.{name} signature drifted")
 
-    for path, expected in W4_03_BYTE_STABLE_DIGESTS.items():
-        try:
-            observed = "sha256:" + sha256_hex((ROOT / path).read_bytes())
-        except OSError as exc:
-            problems.append(f"W4-03 byte-stable prerequisite is unreadable: {path}: {exc}")
-        else:
-            if observed != expected:
-                problems.append(f"W4-03 byte-stable prerequisite drifted: {path}")
+    if validate_byte_stable:
+        for path, expected in W4_03_BYTE_STABLE_DIGESTS.items():
+            try:
+                observed = "sha256:" + sha256_hex((ROOT / path).read_bytes())
+            except OSError as exc:
+                problems.append(
+                    f"W4-03 byte-stable prerequisite is unreadable: {path}: {exc}"
+                )
+            else:
+                if observed != expected:
+                    problems.append(f"W4-03 byte-stable prerequisite drifted: {path}")
 
     try:
         task = next(item for item in plan["tasks"] if item.get("id") == "W4-03")
@@ -23629,7 +23635,9 @@ def _auto_receipt_resume_problems(
             problems.append("W4-02 receipt completion assertions are incomplete or false")
     if task.get("id") == "W4-03":
         problems.extend(_w4_03_test_report_problems(reports))
-        problems.extend(_w4_03_audit_contract_problems())
+        problems.extend(_w4_03_audit_contract_problems(
+            validate_byte_stable=validate_live_contract,
+        ))
         changed_paths = receipt.get("changed_paths", [])
         if (
             not isinstance(changed_paths, list)
