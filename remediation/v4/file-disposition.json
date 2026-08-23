@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 423,
+  "count": 430,
   "paths": [
     {
       "path": ".gitattributes",
@@ -26,7 +26,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W5-CUTOVER",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     },
     {
@@ -1689,7 +1689,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04"
+      "closure_task": "W6-05"
     },
     {
       "path": "remediation/v4/issue-map.json",
@@ -1717,7 +1717,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04"
+      "closure_task": "W6-05"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -1800,7 +1800,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     },
     {
@@ -2023,7 +2023,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04"
+      "closure_task": "W6-05"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -2089,6 +2089,20 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/differential/test_pinned_companion_spec.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
+      "path": "tests/differential/test_self_contained_v4.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
       "path": "tests/dsh_formal/README.md",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2110,6 +2124,27 @@
       "audit_role": "fixture/generated",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/fixtures/companion_spec/NOTICE.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
+      "path": "tests/fixtures/companion_spec/manifest.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
+      "path": "tests/fixtures/companion_spec/oracle.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
     },
     {
       "path": "tests/fixtures/golden/jcs-v4-vectors.json",
@@ -2324,6 +2359,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/formal_e2e/test_installed_production.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
       "path": "tests/formal_e2e/test_positive_vertical_slice.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2401,6 +2443,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/packaging/test_ci_matrix.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W6-05"
+    },
+    {
       "path": "tests/packaging/test_current_authority_docs.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2412,7 +2461,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-03"
+      "closure_task": "W6-05"
     },
     {
       "path": "tests/packaging/test_legacy_cn_corpus_absent.py",
@@ -2426,7 +2475,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04"
+      "closure_task": "W6-05"
     },
     {
       "path": "tests/packaging/test_wheel_gate_v4.py",
@@ -2476,7 +2525,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04",
+      "closure_task": "W6-05",
       "namespace": "candidate_asset"
     },
     {
@@ -3082,12 +3131,13 @@
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
       "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "history_locator_only": true,
+      "closure_task": "W6-05",
       "frozen_fingerprint": {
         "git_blob_head": "da706db39c6857e828661775ce5483c30ef10776",
-        "note": "current HEAD blob locator only; not pre-frozen"
+        "sha256": "d1ec7f83c35aa1755ac150e040ce080f05565c4db524c95d6cc455fea790ce9b",
+        "bytes": 3676
       },
+      "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
     },
@@ -3210,11 +3260,18 @@
     },
     {
       "path": "tests/unit/test_spec_shadow_harness.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
+      "disposition": "DELETE_CURRENT",
+      "terminal_state": "HISTORY_BOUND",
       "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "closure_task": "W6-05",
+      "frozen_fingerprint": {
+        "git_blob_head": "c27dcca942edfaba68ab691c20bcafdc85dcf345",
+        "sha256": "b3e4e355cb3b1e905600470d6d792d2984fd469097e231c20525743794dfd93e",
+        "bytes": 1824
+      },
+      "history_locator_only": true,
+      "target_module": null,
+      "target_artifact": null
     },
     {
       "path": "tests/unit/test_supply_chain_gate.py",
@@ -3343,7 +3400,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     },
     {
@@ -3390,7 +3447,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W6-04",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     },
     {
@@ -3422,7 +3479,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     },
     {
@@ -3430,7 +3487,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "CI/build/release",
-      "closure_task": "W6-04",
+      "closure_task": "W6-05",
       "namespace": "formal_core"
     }
   ]

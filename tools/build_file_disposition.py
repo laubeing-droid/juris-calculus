@@ -219,6 +219,22 @@ W6_03_RETIRED_LOCKS: dict[str, dict[str, Any]] = {
 }
 
 
+W6_05_RETIRED_PATHS: dict[str, dict[str, Any]] = {
+    "tests/unit/test_release_engineering.py": {
+        "disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "da706db39c6857e828661775ce5483c30ef10776",
+        "sha256": "d1ec7f83c35aa1755ac150e040ce080f05565c4db524c95d6cc455fea790ce9b",
+        "bytes": 3676,
+    },
+    "tests/unit/test_spec_shadow_harness.py": {
+        "disposition": "DELETE_CURRENT", "terminal_state": "HISTORY_BOUND",
+        "git_blob_head": "c27dcca942edfaba68ab691c20bcafdc85dcf345",
+        "sha256": "b3e4e355cb3b1e905600470d6d792d2984fd469097e231c20525743794dfd93e",
+        "bytes": 1824,
+    },
+}
+
+
 W5_CUTOVER_RETIRED_PATHS: dict[str, dict[str, str]] = {
     "addons/workbuddy_mcp.py": {
         "disposition": "MERGE_DELETE",
@@ -314,6 +330,7 @@ CLOSURE_TASK: dict[str, str] = {
 }
 
 SPECIAL_CLOSURE_TASKS = {
+    ".github/workflows/ci.yml": "W6-05",
     "README.md": "W5-07",
     "compiler_core/cli.py": "W5-06",
     "compiler_core/audit.py": "W5-05",
@@ -327,29 +344,38 @@ SPECIAL_CLOSURE_TASKS = {
     "docs/guides/WORKBUDDY.md": "W5-07",
     "docs/operations/V3_HISTORICAL_REPLAY.md": "W5-07",
     "pyproject.toml": "W6-03",
-    "remediation/v4/file-disposition.json": "W6-04",
-    "remediation/v4/tasks.json": "W6-04",
-    "tests/contract/test_required_test_manifest.py": "W6-04",
+    "remediation/v4/file-disposition.json": "W6-05",
+    "remediation/v4/tasks.json": "W6-05",
+    "tests/contract/test_required_test_manifest.py": "W6-05",
+    "tests/differential/test_pinned_companion_spec.py": "W6-05",
+    "tests/differential/test_self_contained_v4.py": "W6-05",
+    "tests/fixtures/companion_spec/NOTICE.md": "W6-05",
+    "tests/fixtures/companion_spec/manifest.json": "W6-05",
+    "tests/fixtures/companion_spec/oracle.json": "W6-05",
+    "tests/formal_e2e/test_installed_production.py": "W6-05",
     "tests/formal_e2e/test_three_entrypoint_error_matrix.py": "W5-06",
     "tests/packaging/test_current_authority_docs.py": "W5-05",
     "tests/packaging/test_wheel_gate_v4.py": "W6-01",
-    "tests/packaging/test_hash_locks.py": "W6-03",
-    "tests/packaging/test_wheel_exact_set.py": "W6-04",
-    "tests/required-v4-tests.json": "W6-04",
-    "tools/build_file_disposition.py": "W6-04",
-    "tools/remediate_v4.py": "W6-04",
+    "tests/packaging/test_ci_matrix.py": "W6-05",
+    "tests/packaging/test_hash_locks.py": "W6-05",
+    "tests/packaging/test_wheel_exact_set.py": "W6-05",
+    "tests/required-v4-tests.json": "W6-05",
+    "tests/unit/test_release_engineering.py": "W6-05",
+    "tests/unit/test_spec_shadow_harness.py": "W6-05",
+    "tools/build_file_disposition.py": "W6-05",
+    "tools/remediate_v4.py": "W6-05",
     "configs/perf_patterns.yaml": "W5-02C",
-    "tools/wheel_gate.py": "W6-04",
+    "tools/wheel_gate.py": "W6-05",
     "requirements/build.lock": "W6-03",
     "requirements/core.lock": "W6-03",
     "requirements/dev.lock": "W6-03",
     "requirements/documents.lock": "W6-03",
     "requirements/pipeline.lock": "W6-03",
-    "requirements/release.lock": "W6-03",
+    "requirements/release.lock": "W6-05",
     "requirements/render.lock": "W6-03",
     "requirements/source-tool.lock": "W6-03",
     "requirements/test.lock": "W6-03",
-    "tools/supply_chain_gate.py": "W6-03",
+    "tools/supply_chain_gate.py": "W6-05",
     "addons/workbuddy_mcp.py": "W5-CUTOVER",
     "compiler_core/argumentation_v2.py": "W5-CUTOVER",
     "compiler_core/backend_router_v1.py": "W5-CUTOVER",
@@ -479,7 +505,10 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     if rel == "compiler_core/mcp.py":
         audit_role = "CLI/Client/MCP"
     # OTHER_DIRECTORIES overrides generic prefix matching
-    if rel in W5_CUTOVER_RETIRED_PATHS:
+    if rel in W6_05_RETIRED_PATHS:
+        disp = W6_05_RETIRED_PATHS[rel]["disposition"]
+        terminal = W6_05_RETIRED_PATHS[rel]["terminal_state"]
+    elif rel in W5_CUTOVER_RETIRED_PATHS:
         disp = W5_CUTOVER_RETIRED_PATHS[rel]["disposition"]
         terminal = W5_CUTOVER_RETIRED_PATHS[rel]["terminal_state"]
     elif rel in W6_03_RETIRED_LOCKS:
@@ -515,7 +544,8 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         "tests/differential/", "tests/formal_e2e/", "tests/security/",
         "tests/storage_chaos/", "tests/windows_security/",
         "tests/mcp_protocol/", "tests/packaging/", "tests/dsh_formal/",
-        "tests/fixtures/golden/", "tests/fixtures/keys/", "tests/fixtures/packs/",
+        "tests/fixtures/companion_spec/", "tests/fixtures/golden/",
+        "tests/fixtures/keys/", "tests/fixtures/packs/",
     )):
         disp = "TEST_ORACLE"
         terminal = "TEST_ORACLE"
@@ -579,7 +609,12 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         "audit_role": audit_role,
         "closure_task": SPECIAL_CLOSURE_TASKS.get(rel, CLOSURE_TASK.get(terminal, "W5-CUTOVER")),
     }
-    if rel in CN_FINGERPRINTS:
+    if rel in W6_05_RETIRED_PATHS:
+        retired = W6_05_RETIRED_PATHS[rel]
+        entry["frozen_fingerprint"] = {
+            key: retired[key] for key in ("git_blob_head", "sha256", "bytes")
+        }
+    elif rel in CN_FINGERPRINTS:
         entry["frozen_fingerprint"] = CN_FINGERPRINTS[rel]
     elif rel in W5_CUTOVER_RETIRED_PATHS:
         entry["frozen_fingerprint"] = {
@@ -649,7 +684,7 @@ def build_document() -> dict[str, Any]:
     tracked = _git_tracked()
     paths = sorted(
         tracked | set(RETIRED_HISTORY_PATHS) | set(W5_CUTOVER_RETIRED_PATHS)
-        | set(W6_03_RETIRED_LOCKS)
+        | set(W6_03_RETIRED_LOCKS) | set(W6_05_RETIRED_PATHS)
     )
     entries: list[dict[str, Any]] = []
     audit_role_map = dict(audit_entries)

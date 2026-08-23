@@ -334,6 +334,34 @@
       "selector": "tests/packaging/test_wheel_exact_set.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 8
+    },
+    {
+      "id": "W6-SELF-CONTAINED-V4-FIXTURES",
+      "suite": "differential",
+      "selector": "tests/differential/test_self_contained_v4.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 1
+    },
+    {
+      "id": "W6-PINNED-COMPANION-SPEC",
+      "suite": "differential",
+      "selector": "tests/differential/test_pinned_companion_spec.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 2
+    },
+    {
+      "id": "W6-INSTALLED-PRODUCTION-SUITES",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_installed_production.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 1
+    },
+    {
+      "id": "W6-CI-REQUIRED-MATRIX",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_ci_matrix.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
     }
   ],
   "evidence_tracks": [
@@ -342,7 +370,7 @@
       "suite": "differential",
       "selector": "tests/differential/test_self_contained_v4.py::test_repository_fixture_oracle_detects_mutations",
       "owner_task": "W6-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "source_kind": "SELF_CONTAINED_REPOSITORY_FIXTURE",
       "source_binding": {
         "kind": "REPOSITORY_FIXTURE",
@@ -357,7 +385,7 @@
       "suite": "differential",
       "selector": "tests/differential/test_pinned_companion_spec.py::test_pinned_companion_oracle_detects_mutations",
       "owner_task": "W6-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "source_kind": "PINNED_COMPANION_SPEC",
       "source_binding": {
         "kind": "B02_RECEIPT",
@@ -739,7 +767,7 @@
       "suite": "differential",
       "selector": "tests/differential/test_pinned_companion_spec.py::test_companion_oracle_is_available_without_personal_checkout",
       "owner_task": "W6-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Depend on an unpinned personal companion checkout.",
       "red_failure": "The differential suite must fail if the B02-bound input is unavailable."
     },
@@ -749,7 +777,7 @@
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_installed_production.py::test_installed_required_suites_have_zero_skip_or_xfail",
       "owner_task": "W6-05",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Remove a required suite or mark a required test skipped or xfailed.",
       "red_failure": "Installed production collection must contain every required suite with zero bypasses."
     },
@@ -1028,7 +1056,7 @@
       "selector": "tests/unit/test_release_engineering.py::test_core_lock_has_target_wheel_hashes_and_matches_runtime_dependency",
       "rewrite_task": "W6-03",
       "retirement_task": "W6-05",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The test hard-codes a partial runtime lock instead of all transitive profiles.",
       "replacement_selector": "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked"
     },
@@ -1037,7 +1065,7 @@
       "selector": "tests/unit/test_release_engineering.py::test_clean_wheel_gate_rejects_known_deleted_runtime_modules",
       "rewrite_task": "W6-01",
       "retirement_task": "W6-05",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "A short blacklist cannot prove the wheel contains only the formal positive set.",
       "replacement_selector": "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted"
     },
@@ -1046,7 +1074,7 @@
       "selector": "tests/unit/test_spec_shadow_harness.py",
       "rewrite_task": "W6-05",
       "retirement_task": "W6-05",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The differential oracle must leave runtime and bind the B02 pinned input.",
       "replacement_selector": "tests/differential/test_pinned_companion_spec.py::test_pinned_companion_oracle_detects_mutations"
     }

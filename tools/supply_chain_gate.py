@@ -23,13 +23,13 @@ PROFILE_FILES = {
     "source-tool": "source-tool.lock",
     "release": "release.lock",
 }
-PROFILE_COUNTS = {"production": 4, "build": 6, "test": 12, "source-tool": 16, "release": 34}
+PROFILE_COUNTS = {"production": 4, "build": 6, "test": 12, "source-tool": 16, "release": 38}
 PROFILE_DIRECT = {
     "production": {"pyyaml", "cryptography"},
     "build": {"build", "setuptools", "wheel"},
     "test": {"pyyaml", "cryptography", "hypothesis", "pytest"},
     "source-tool": {"pyyaml", "cryptography", "pydantic", "python-docx", "pdfplumber"},
-    "release": {"build", "setuptools", "wheel", "pip-audit"},
+    "release": {"build", "setuptools", "wheel", "pip-audit", "ruff", "mypy"},
 }
 # Bound to the independently resolved CPython 3.11/3.12 Windows/Linux wheel inventory.
 PROFILE_DIGESTS = {
@@ -37,7 +37,7 @@ PROFILE_DIGESTS = {
     "build": "sha256:58a1991e555e12cbb69b178f70c6e8b4dddefb58ec4430777330f7c08d2c54ba",
     "test": "sha256:c3adb79533ae39db92efee2efb2800d0e52b8337df9622ef2b5d7c605e45fc9a",
     "source-tool": "sha256:bade5d3e8b6f5df6c24b56ee54d9fb290d0e55e4838cfc76b674bf93a5a5df48",
-    "release": "sha256:709fb07bce7f01b505f3be2b1119f3a1140cd2b979285353ef3cadc24ecf2f26",
+    "release": "sha256:d4123c89c77e1b73e17206177ab69345f47e5620cc737bab5fcd69c64a568304",
 }
 ALLOWED_LICENSES = {
     "Apache-2.0", "Apache-2.0 OR BSD-2-Clause", "Apache-2.0 OR BSD-3-Clause",
@@ -48,6 +48,7 @@ LICENSE_ALIASES = {
     "License :: OSI Approved :: Apache Software License": "Apache-2.0",
     "License :: OSI Approved :: BSD License": "BSD-3-Clause",
     "License :: OSI Approved :: MIT License": "MIT",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
     "Apache 2.0": "Apache-2.0",
     "PSFL": "PSF-2.0",
     "BSD-3-Clause, Apache-2.0, dependency licenses": "BSD-3-Clause OR Apache-2.0",

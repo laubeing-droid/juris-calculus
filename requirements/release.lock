@@ -93,6 +93,21 @@ msgpack==1.2.1 \
     --hash=sha256:5c24aa15d5963051e1a5c62b12c50cd705992502b5ec1f3bece6046f33c9fc24 \
     --hash=sha256:a28d076ca7c82b9c8728ad90b7147489449557038bed50e4241eb832395169b4
 
+# package: mypy
+# role: direct
+# license: MIT
+mypy==1.17.1 \
+    --hash=sha256:03b6d0ed2b188e35ee6d5c36b5580cffd6da23319991c49ab5556c023ccf1341 \
+    --hash=sha256:665afab0963a4b39dff7c1fa563cc8b11ecff7910206db4b2e64dd1ba25aed19 \
+    --hash=sha256:e92bdc656b7757c438660f775f872a669b8ff374edc4d18277d86b63edba6b8b \
+    --hash=sha256:ff2933428516ab63f961644bc49bc4cbe42bbffb2cd3b71cc7277c07d16b1a8b
+
+# package: mypy-extensions
+# role: transitive
+# license: MIT
+mypy-extensions==1.1.0 \
+    --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505
+
 # package: packageurl-python
 # role: transitive
 # license: MIT
@@ -104,6 +119,12 @@ packageurl-python==0.17.6 \
 # license: Apache-2.0 OR BSD-2-Clause
 packaging==26.3 \
     --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+
+# package: pathspec
+# role: transitive
+# license: MPL-2.0
+pathspec==1.1.1 \
+    --hash=sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189
 
 # package: pip
 # role: transitive
@@ -170,6 +191,13 @@ requests==2.34.2 \
 # license: MIT
 rich==15.0.0 \
     --hash=sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb
+
+# package: ruff
+# role: direct
+# license: MIT
+ruff==0.12.7 \
+    --hash=sha256:06bfb01e1623bf7f59ea749a841da56f8f653d641bfd046edee32ede7ff6c606 \
+    --hash=sha256:9c18f3d707ee9edf89da76131956aba1270c6348bfee8f6c647de841eac7194f
 
 # package: setuptools
 # role: direct

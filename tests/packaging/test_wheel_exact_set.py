@@ -55,7 +55,7 @@ def _report() -> dict[str, object]:
         ],
         "mcp_capabilities_error": "RUNTIME_NOT_CONFIGURED",
         "formal_e2e": {
-            "tests": 15,
+            "tests": WHEEL_GATE.INSTALLED_TEST_CASE_COUNT,
             "skipped": 0,
             "failures": 0,
             "errors": 0,
@@ -81,7 +81,7 @@ def test_nonformal_module_injection_fails_exact_record_gate(tmp_path: Path) -> N
 
 
 def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
-    assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 15
+    assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 27
     assert set(WHEEL_GATE.INSTALLED_TEST_SELECTORS) == {
         "tests/formal_e2e/test_positive_vertical_slice.py",
         "tests/formal_e2e/test_three_entrypoint_error_matrix.py::"
@@ -90,6 +90,10 @@ def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
         "test_contract_error_code_is_identical_across_entrypoints",
         "tests/formal_e2e/test_three_entrypoint_error_matrix.py::"
         "test_storage_error_is_typed_retryable_redacted_and_uncommitted",
+        "tests/security/test_vertical_slice_attacks.py",
+        "tests/storage_chaos/test_vertical_slice_recovery.py",
+        "tests/formal_e2e/test_installed_production.py::"
+        "test_installed_required_suites_have_zero_skip_or_xfail",
     }
     assert not any(
         path.startswith(("compiler_core/", "configs/", "schemas/"))

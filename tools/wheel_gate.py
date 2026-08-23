@@ -60,10 +60,14 @@ INSTALLED_HARNESS_PATHS = (
     "tests/integration/test_trust_chain.py",
     "tests/formal_e2e/test_positive_vertical_slice.py",
     "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
+    "tests/formal_e2e/test_installed_production.py",
+    "tests/security/test_vertical_slice_attacks.py",
+    "tests/storage_chaos/test_vertical_slice_recovery.py",
     "tests/fixtures/keys/v4-synthetic-trust.json",
     "tests/fixtures/keys/v4-test-ed25519.json",
     "tests/fixtures/packs/synthetic/signed-pack.json",
     "tools/build_synthetic_pack.py",
+    "tools/wheel_gate.py",
 )
 INSTALLED_TEST_SELECTORS = (
     "tests/formal_e2e/test_positive_vertical_slice.py",
@@ -79,10 +83,16 @@ INSTALLED_TEST_SELECTORS = (
         "tests/formal_e2e/test_three_entrypoint_error_matrix.py::"
         "test_storage_error_is_typed_retryable_redacted_and_uncommitted"
     ),
+    "tests/security/test_vertical_slice_attacks.py",
+    "tests/storage_chaos/test_vertical_slice_recovery.py",
+    (
+        "tests/formal_e2e/test_installed_production.py::"
+        "test_installed_required_suites_have_zero_skip_or_xfail"
+    ),
 )
-INSTALLED_TEST_CASE_COUNT = 15
+INSTALLED_TEST_CASE_COUNT = 27
 INSTALLED_TEST_CASE_IDS_SHA256 = (
-    "sha256:e5adc321d783ad344086bde2a6352bb4ee2f6f57fc54745172cbebed5d1897d4"
+    "sha256:12c563b67fe1c06ff1f7be0114b3105394d03e747115c40592f480f91bf56708"
 )
 
 

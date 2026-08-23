@@ -1,0 +1,18 @@
+{
+  "schema_version": "jc/pinned-companion-fixture/1.0",
+  "source": {
+    "repository": "https://github.com/laubeing-droid/legal-math-modeling.git",
+    "commit": "a3a015941f75091c87d57aa956e712f1546dd7d4",
+    "tree": "2d0b1bb9c4f4cd82a9a4452b96ab1d05c0d1ed99",
+    "receipt_digest": "sha256:fbc068ebad1ec4c02f72acff30dfade3e928c5967b1c0baa89b51971d3982045",
+    "intake_digest": "sha256:0540bb89c4799c4b5372ebd0768ba0efbb2d2e4ae5b36eb9b94143978f68ef6f",
+    "required_files": {
+      "theory/spec/reference_semantics.py": "a37304e753da21016e83f3ae8cfb53286eedff78d058e8ebb1470ebac8cd64ba",
+      "theory/spec/certificate_schema.py": "1b71a5cd8239dac29c2eacb3397817a47bea8b4acef0fcff9addc10aa5bb4d95"
+    }
+  },
+  "license": "CC BY 4.0",
+  "notice": "tests/fixtures/companion_spec/NOTICE.md",
+  "oracle": "tests/fixtures/companion_spec/oracle.json",
+  "oracle_sha256": "sha256:bb80941511cb3f9e5b92333f29d0c0673cf6e4b47d4cb38d8bb18ad87f017a51"
+}

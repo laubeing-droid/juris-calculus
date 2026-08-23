@@ -4515,10 +4515,32 @@
       "objective": "CI required matrix：generated/authority/purity/secrets/ruff/type/unit/contract/property/mutation/integration/formal_e2e/security/Ubuntu×2/Windows×2/storage/chaos/platform subsets/locks/audit/license/A-B build/installed wheel/SBOM/provenance/performance/docs/current paths",
       "allowed_paths": [
         ".github/workflows/ci.yml",
-        "tests/**",
-        "tools/remediate_v4.py"
+        "requirements/release.lock",
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/differential/test_pinned_companion_spec.py",
+        "tests/differential/test_self_contained_v4.py",
+        "tests/fixtures/companion_spec/NOTICE.md",
+        "tests/fixtures/companion_spec/manifest.json",
+        "tests/fixtures/companion_spec/oracle.json",
+        "tests/formal_e2e/test_installed_production.py",
+        "tests/packaging/test_ci_matrix.py",
+        "tests/packaging/test_hash_locks.py",
+        "tests/packaging/test_wheel_exact_set.py",
+        "tests/required-v4-tests.json",
+        "tests/unit/test_release_engineering.py",
+        "tests/unit/test_spec_shadow_harness.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py",
+        "tools/supply_chain_gate.py",
+        "tools/wheel_gate.py"
       ],
-      "terminal_states": [],
+      "terminal_states": [
+        "CI_REQUIRED_MATRIX_CONTRACT_GREEN",
+        "PINNED_ORACLES_SELF_CONTAINED",
+        "INSTALLED_PRODUCTION_SUITES_GREEN"
+      ],
       "argv": [
         [
           "{python}",
@@ -4526,9 +4548,39 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W6-05"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W6-05",
+          "tests/differential/test_self_contained_v4.py",
+          "tests/differential/test_pinned_companion_spec.py",
+          "tests/formal_e2e/test_installed_production.py",
+          "tests/packaging/test_ci_matrix.py",
+          "tests/packaging/test_hash_locks.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W6-05.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
       "completion_assertions": [
@@ -4537,6 +4589,7 @@
           "kind": "all_commands_passed"
         }
       ],
+      "timeout_seconds": 1800,
       "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
       "required_receipt_fields": [
         "schema_version",
