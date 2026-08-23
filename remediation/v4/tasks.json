@@ -4886,6 +4886,7 @@
       "allowed_paths": [
         "compiler_core/storage.py",
         "remediation/v4/file-disposition.json",
+        "remediation/v4/issue-map.json",
         "remediation/v4/tasks.json",
         "tests/contract/test_required_test_manifest.py",
         "tests/performance/**",
@@ -4908,11 +4909,48 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W7-I01"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W7-I01",
+          "tests/storage_chaos/test_storage_capability.py",
+          "tests/performance/test_local_rc_baseline.py",
+          "tests/security/test_resource_limits.py",
+          "tests/security/test_privacy_firewall.py",
+          "tests/storage_chaos/test_power_loss.py",
+          "tests/storage_chaos/test_generation_isolation.py",
+          "tests/windows_security/test_dacl.py",
+          "tests/windows_security/test_reparse_escape.py",
+          "tests/formal_e2e/test_positive_vertical_slice.py",
+          "tests/security/test_trust_policy.py::test_revoked_and_unregistered_keys_are_distinct_failures",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W7-I01.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",

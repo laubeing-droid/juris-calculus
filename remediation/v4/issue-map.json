@@ -363,7 +363,8 @@
         "W0-02",
         "W1-04",
         "W4-06",
-        "W5-CUTOVER"
+        "W5-CUTOVER",
+        "W7-02"
       ],
       "proof": "byte/depth/deadline/cancel/queue/quota/retention 门禁",
       "status": "registered"

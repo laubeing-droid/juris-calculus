@@ -339,6 +339,7 @@ SPECIAL_CLOSURE_TASKS = {
     "HANDOFF.md": "W6-08",
     "README.md": "W6-08",
     "SECURITY.md": "W6-08",
+    "compiler_core/storage.py": "W7-I01",
     "compiler_core/cli.py": "W5-06",
     "compiler_core/audit.py": "W5-05",
     "compiler_core/rule_packs.py": "W5-05",
@@ -353,9 +354,10 @@ SPECIAL_CLOSURE_TASKS = {
     "docs/operations/RELEASE_V4.md": "W6-08",
     "memory.md": "W6-08",
     "pyproject.toml": "W6-03",
-    "remediation/v4/file-disposition.json": "W6-08",
-    "remediation/v4/tasks.json": "W6-08",
-    "tests/contract/test_required_test_manifest.py": "W6-08",
+    "remediation/v4/file-disposition.json": "W7-I01",
+    "remediation/v4/issue-map.json": "W7-I01",
+    "remediation/v4/tasks.json": "W7-I01",
+    "tests/contract/test_required_test_manifest.py": "W7-I01",
     "tests/differential/test_pinned_companion_spec.py": "W6-05",
     "tests/differential/test_self_contained_v4.py": "W6-05",
     "tests/fixtures/companion_spec/NOTICE.md": "W6-05",
@@ -371,12 +373,16 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/packaging/test_release_promotion.py": "W6-08",
     "tests/packaging/test_hash_locks.py": "W6-05",
     "tests/packaging/test_wheel_exact_set.py": "W6-05",
-    "tests/required-v4-tests.json": "W6-08",
+    "tests/performance/README.md": "W7-I01",
+    "tests/performance/test_local_rc_baseline.py": "W7-I01",
+    "tests/required-v4-tests.json": "W7-I01",
+    "tests/storage_chaos/test_storage_capability.py": "W7-I01",
     "tests/unit/test_release_engineering.py": "W6-05",
     "tests/unit/test_spec_shadow_harness.py": "W6-05",
-    "tools/build_file_disposition.py": "W6-08",
+    "tools/build_file_disposition.py": "W7-I01",
     "tools/build_provenance.py": "W6-06",
-    "tools/remediate_v4.py": "W6-08",
+    "tools/perf_baseline.py": "W7-I01",
+    "tools/remediate_v4.py": "W7-I01",
     "configs/perf_patterns.yaml": "W5-02C",
     "tools/wheel_gate.py": "W6-05",
     "requirements/build.lock": "W6-03",
@@ -551,10 +557,13 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
     elif rel.startswith("tests/run_benchmark_zh.py") or rel.startswith("tests/stress_test_facts.py"):
         disp = "DELETE_CURRENT"
         terminal = "HISTORY_BOUND"
+    elif rel == "tests/required-v4-tests.json":
+        disp = "TEST_ORACLE"
+        terminal = "TEST_ORACLE"
     elif rel.startswith((
         "tests/contract/", "tests/property/", "tests/semantic_mutation/",
         "tests/integration/",
-        "tests/differential/", "tests/formal_e2e/", "tests/security/",
+        "tests/differential/", "tests/formal_e2e/", "tests/performance/", "tests/security/",
         "tests/storage_chaos/", "tests/windows_security/",
         "tests/mcp_protocol/", "tests/packaging/", "tests/dsh_formal/",
         "tests/fixtures/companion_spec/", "tests/fixtures/golden/",

@@ -122,6 +122,18 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     assert w6_required["W6-CURRENT-DOCS"] == (
         "packaging", "tests/packaging/test_current_docs.py", 3,
     )
+    w7_required = {
+        item["id"]: (item["suite"], item["selector"], item["expected_tests"])
+        for item in payload["required_now"] if item["id"].startswith("W7-")
+    }
+    assert w7_required == {
+        "W7-LOCAL-STORAGE-PROBE": (
+            "storage_chaos", "tests/storage_chaos/test_storage_capability.py", 4,
+        ),
+        "W7-LOCAL-PERFORMANCE-BASELINE": (
+            "performance", "tests/performance/test_local_rc_baseline.py", 5,
+        ),
+    }
     assert {
         item["id"]: (item["owner_task"], item["state"])
         for item in payload["evidence_tracks"]
@@ -172,7 +184,7 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "test_signed_domain_config_has_no_global_fallback",
     )
     assert mutations["V4-P1-15-RESOURCE-BUDGET"][:2] == (
-        "W5-CUTOVER",
+        "W7-02",
         "RED_AT_TASK",
     )
     assert mutations["V4-P1-17-PATH-PRIVACY"] == (
@@ -271,7 +283,7 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "CURRENT_V4_DOCS_GREEN",
         "EXTERNAL_GATES_DEFERRED_AFTER_LOCAL_IMPLEMENTATION",
     ]
-    assert RUNNER._w6_08_contract_problems() == []
+    assert RUNNER._w7_i01_contract_problems() == []
 
 
 def test_suite_taxonomy_is_exact_and_backed_by_tracked_skeletons() -> None:
@@ -637,13 +649,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.53.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.54.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0", "0.52.0", "0.52.1",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0", "0.52.0", "0.52.1", "0.53.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37

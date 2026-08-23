@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure the audited application path against committed numeric budgets."""
+"""Assess measured V4 performance metrics against explicit numeric budgets."""
 
 from __future__ import annotations
 
@@ -7,8 +7,6 @@ import argparse
 import json
 from pathlib import Path
 import sys
-import time
-import tracemalloc
 from typing import Any
 
 import yaml
@@ -16,10 +14,6 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
-from compiler_core.audit_bundle import evaluate_registered_case
-from compiler_core.contracts import CaseRequest
-from compiler_core.rule_packs import RulePackRegistry
 
 _BASELINE_METRICS = (
     "cold_start_sec",
@@ -32,56 +26,36 @@ _BASELINE_METRICS = (
 _REGRESSION_RATIO = 1.5
 
 
-def collect_baseline(
-    config_root: Path,
-    input_path: Path,
-    state_root: Path,
-    budgets_path: Path = ROOT / "configs" / "perf_patterns.yaml",
+def assess_metrics(
+    metrics: object,
+    budgets: object,
     baseline_report_path: Path | None = None,
 ) -> dict[str, Any]:
-    """运行固定CaseRequest的冷/热/分支审计，并按预算fail closed。"""
+    """Fail closed on incomplete local metrics or budgets; never promote them."""
 
-    request = CaseRequest.from_dict(json.loads(Path(input_path).read_text(encoding="utf-8")))
-    registry = RulePackRegistry(Path(config_root), development_override=True)
-    corpus_document = yaml.safe_load(registry.load_corpus_pack(request.rule_pack_id).rule_paths[0].read_text(encoding="utf-8")) or {}
-    rules = corpus_document.get("rules", []) if isinstance(corpus_document, dict) else []
-    if not isinstance(rules, list):
-        raise ValueError("rules must be an array")
-
-    tracemalloc.start()
-    started = time.perf_counter()
-    cold = evaluate_registered_case(request, registry, state_root=Path(state_root) / "cold")
-    cold_seconds = time.perf_counter() - started
-    started = time.perf_counter()
-    warm = evaluate_registered_case(request, registry, state_root=Path(state_root) / "warm")
-    warm_seconds = time.perf_counter() - started
-
-    branch_payload = request.to_dict()
-    branch_payload["facts"][0].update({
-        "status": "disputed",
-        "human_reviewed": False,
-        "alternatives": [{"value": True}, {"value": False}],
-    })
-    started = time.perf_counter()
-    branch = evaluate_registered_case(CaseRequest.from_dict(branch_payload), registry, state_root=Path(state_root) / "branch")
-    branch_seconds = time.perf_counter() - started
-    _, peak_bytes = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    metrics = {
-        "cold_start_sec": round(cold_seconds, 6),
-        "warm_run_sec": round(warm_seconds, 6),
-        "branch_run_sec": round(branch_seconds, 6),
-        "peak_memory_bytes": peak_bytes,
-        "audit_event_count": len(cold.events),
-        "audit_bundle_bytes": sum(path.stat().st_size for path in cold.run_directory.iterdir()),
-        "corpus_rule_count": len(rules),
+    scope = {
+        "scope": "test-local",
+        "production_allowed": False,
+        "target_provider_claimed": False,
     }
-    budgets_document = yaml.safe_load(Path(budgets_path).read_text(encoding="utf-8")) or {}
-    budgets = budgets_document.get("budgets", {})
+    if not isinstance(metrics, dict):
+        return {
+            **scope,
+            "status": "BLOCKED",
+            "reason": "invalid_metrics",
+            "metrics": {},
+            "budgets": budgets if isinstance(budgets, dict) else {},
+            "violations": [],
+            "baseline_comparison": {
+                "status": "NOT_REQUESTED",
+                "checked_metrics": list(_BASELINE_METRICS),
+                "regressions": [],
+            },
+        }
     baseline_comparison = _baseline_comparison(metrics, baseline_report_path)
     if baseline_comparison["status"] == "BLOCKED":
         return {
+            **scope,
             "status": "BLOCKED",
             "reason": "invalid_baseline_report",
             "metrics": metrics,
@@ -89,45 +63,94 @@ def collect_baseline(
             "violations": [],
             "baseline_comparison": baseline_comparison,
         }
-    if not isinstance(budgets, dict) or not budgets:
+    if (
+        not isinstance(budgets, dict)
+        or set(budgets) != set(_BASELINE_METRICS)
+        or any(
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or value <= 0
+            for value in budgets.values()
+        )
+    ):
         return {
+            **scope,
             "status": "BLOCKED",
             "reason": "missing_numeric_budgets",
             "metrics": metrics,
+            "budgets": budgets if isinstance(budgets, dict) else {},
+            "violations": [],
+            "baseline_comparison": baseline_comparison,
+        }
+    if any(
+        name not in metrics
+        or not isinstance(metrics[name], (int, float))
+        or isinstance(metrics[name], bool)
+        or metrics[name] < 0
+        for name in _BASELINE_METRICS
+    ):
+        return {
+            **scope,
+            "status": "BLOCKED",
+            "reason": "invalid_metrics",
+            "metrics": metrics,
+            "budgets": budgets,
             "violations": [],
             "baseline_comparison": baseline_comparison,
         }
     violations = [
-        {"metric": name, "actual": metrics[name], "maximum": maximum}
-        for name, maximum in sorted(budgets.items())
-        if name not in metrics or metrics[name] > maximum
+        {"metric": name, "actual": metrics[name], "maximum": budgets[name]}
+        for name in _BASELINE_METRICS
+        if metrics[name] > budgets[name]
     ]
     has_regressions = baseline_comparison["status"] == "FAIL"
     if violations and has_regressions:
-        status = "FAIL"
-        reason = "budget_exceeded_and_baseline_regressed"
+        status, reason = "FAIL", "budget_exceeded_and_baseline_regressed"
     elif violations:
-        status = "FAIL"
-        reason = "budget_exceeded"
+        status, reason = "FAIL", "budget_exceeded"
     elif has_regressions:
-        status = "FAIL"
-        reason = "baseline_regressed"
+        status, reason = "FAIL", "baseline_regressed"
     else:
-        status = "PASS"
-        reason = "within_budget"
+        status, reason = "PASS", "within_budget"
     return {
+        **scope,
         "status": status,
         "reason": reason,
         "metrics": metrics,
         "budgets": budgets,
         "violations": violations,
         "baseline_comparison": baseline_comparison,
-        "digests": {
-            "cold_result": cold.result.semantic.result_digest,
-            "warm_result": warm.result.semantic.result_digest,
-            "branch_result": branch.result.semantic.result_digest,
-        },
     }
+
+
+def assess_report(
+    metrics_path: Path,
+    budgets_path: Path = ROOT / "configs" / "perf_patterns.yaml",
+    baseline_report_path: Path | None = None,
+) -> dict[str, Any]:
+    """Read one measurement report and fail closed on malformed boundary input."""
+
+    try:
+        metrics_document = json.loads(Path(metrics_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        metrics_document = {}
+    try:
+        budgets_document = yaml.safe_load(
+            Path(budgets_path).read_text(encoding="utf-8")
+        ) or {}
+    except (OSError, UnicodeError, yaml.YAMLError):
+        budgets_document = {}
+    metrics = (
+        metrics_document.get("metrics")
+        if isinstance(metrics_document, dict) and set(metrics_document) == {"metrics"}
+        else None
+    )
+    budgets = (
+        budgets_document.get("budgets")
+        if isinstance(budgets_document, dict) and set(budgets_document) == {"budgets"}
+        else None
+    )
+    return assess_metrics(metrics, budgets, baseline_report_path)
 
 
 def _baseline_comparison(metrics: dict[str, Any], baseline_report_path: Path | None) -> dict[str, Any]:
@@ -177,14 +200,12 @@ def main(argv: list[str] | None = None) -> int:
     """Write one deterministic-shape JSON report and map PASS/FAIL/BLOCKED to 0/1/2."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config-root", type=Path, required=True)
-    parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--state-root", type=Path, required=True)
+    parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--budgets", type=Path, default=ROOT / "configs" / "perf_patterns.yaml")
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
-    report = collect_baseline(args.config_root, args.input, args.state_root, args.budgets, args.baseline)
+    report = assess_report(args.metrics, args.budgets, args.baseline)
     encoded = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

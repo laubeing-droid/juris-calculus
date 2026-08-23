@@ -45,6 +45,11 @@
       "proof_obligation": "Installed public entrypoints through certificate, verify, and replay."
     },
     {
+      "id": "performance",
+      "path": "tests/performance",
+      "proof_obligation": "Complete numeric budgets, regression thresholds, and target-SLO non-promotion boundaries."
+    },
+    {
       "id": "security",
       "path": "tests/security",
       "proof_obligation": "Trust, tamper, privacy, resource, and fail-closed attacks."
@@ -383,6 +388,20 @@
       "selector": "tests/packaging/test_current_docs.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 3
+    },
+    {
+      "id": "W7-LOCAL-STORAGE-PROBE",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_storage_capability.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 4
+    },
+    {
+      "id": "W7-LOCAL-PERFORMANCE-BASELINE",
+      "suite": "performance",
+      "selector": "tests/performance/test_local_rc_baseline.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 5
     }
   ],
   "evidence_tracks": [
@@ -725,9 +744,9 @@
     {
       "audit_id": "P1-15",
       "test_id": "V4-P1-15-RESOURCE-BUDGET",
-      "suite": "security",
-      "selector": "tests/security/test_resource_limits.py::test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
-      "owner_task": "W5-CUTOVER",
+      "suite": "performance",
+      "selector": "tests/performance/test_production_budgets.py::test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+      "owner_task": "W7-02",
       "state": "RED_AT_TASK",
       "mutation": "Disable one byte, depth, deadline, cancellation, backpressure, or quota limit.",
       "red_failure": "Every removed production budget must be detected."

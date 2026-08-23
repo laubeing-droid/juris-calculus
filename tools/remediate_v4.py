@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.52.1"
+RUNNER_VERSION = "0.53.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -113,6 +113,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.51.0": 5,
     "0.52.0": 5,
     "0.52.1": 5,
+    "0.53.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1068,6 +1069,57 @@ W6_08_ALLOWED_PATHS = (
 W6_08_REQUIRED_CHANGED_PATHS = W6_08_ALLOWED_PATHS
 W6_08_REQUIRED_TEST_TOTAL = 478
 W6_08_FUTURE_RED_COUNT = 4
+W7_I01_TEST_PATHS = (
+    "tests/storage_chaos/test_storage_capability.py",
+    "tests/performance/test_local_rc_baseline.py",
+    "tests/security/test_resource_limits.py",
+    "tests/security/test_privacy_firewall.py",
+    "tests/storage_chaos/test_power_loss.py",
+    "tests/storage_chaos/test_generation_isolation.py",
+    "tests/windows_security/test_dacl.py",
+    "tests/windows_security/test_reparse_escape.py",
+    "tests/formal_e2e/test_positive_vertical_slice.py",
+    (
+        "tests/security/test_trust_policy.py::"
+        "test_revoked_and_unregistered_keys_are_distinct_failures"
+    ),
+    "tests/contract/test_required_test_manifest.py",
+)
+W7_I01_TEST_CASE_COUNT = 50
+W7_I01_TEST_CASE_IDS_DIGEST = (
+    "sha256:bbd188666f0ee82a7ffbf5b35d14b16302e6a80107e4bd26e509bab4d0ff6c6d"
+)
+W7_I01_ALLOWED_PATHS = (
+    "compiler_core/storage.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/issue-map.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/performance/**",
+    "tests/security/**",
+    "tests/storage_chaos/**",
+    "tests/windows_security/**",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/perf_baseline.py",
+    "tools/remediate_v4.py",
+)
+W7_I01_REQUIRED_CHANGED_PATHS = (
+    "compiler_core/storage.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/issue-map.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/performance/README.md",
+    "tests/performance/test_local_rc_baseline.py",
+    "tests/required-v4-tests.json",
+    "tests/storage_chaos/test_storage_capability.py",
+    "tools/build_file_disposition.py",
+    "tools/perf_baseline.py",
+    "tools/remediate_v4.py",
+)
+W7_I01_REQUIRED_TEST_TOTAL = 487
+W7_I01_FUTURE_RED_COUNT = 4
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -1134,7 +1186,7 @@ UTC_INSTANT_V4_PATTERN = re.compile(
 
 W0_REQUIRED_TEST_SUITES = (
     "contract", "property", "integration", "differential", "formal_e2e",
-    "security", "storage_chaos", "windows_security", "mcp_protocol",
+    "performance", "security", "storage_chaos", "windows_security", "mcp_protocol",
     "packaging", "dsh_formal",
 )
 W0_REQUIRED_REWRITE_IDS = frozenset({
@@ -4446,7 +4498,7 @@ def _required_test_manifest_problems(
         problems.append("suite taxonomy is not a list")
     suite_ids = [item.get("id") for item in suites if isinstance(item, dict)]
     if tuple(suite_ids) != W0_REQUIRED_TEST_SUITES:
-        problems.append("suite taxonomy is not the exact W0-04 eleven-suite contract")
+        problems.append("suite taxonomy is not the exact W0-04 twelve-suite contract")
     suite_by_id: dict[str, dict[str, Any]] = {}
     for item in suites:
         if not _closed_manifest_fields(item, suite_fields, "suite", problems):
@@ -4815,6 +4867,20 @@ def _required_test_manifest_problems(
             "selector": "tests/packaging/test_current_docs.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 3,
+        },
+        {
+            "id": "W7-LOCAL-STORAGE-PROBE",
+            "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_storage_capability.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 4,
+        },
+        {
+            "id": "W7-LOCAL-PERFORMANCE-BASELINE",
+            "suite": "performance",
+            "selector": "tests/performance/test_local_rc_baseline.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 5,
         },
     ]
     if required_now != expected_required_now:
@@ -8544,7 +8610,7 @@ def _cmd_w1_04_artifact_resolver_gate() -> int:
     expected_issue_closures = {
         "P0-04": ["W1-04", "W1-05", "W1-06", "W2-01", "W2-02"],
         "P0-10": ["W1-04", "W5-CUTOVER", "W9-05"],
-        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER"],
+        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER", "W7-02"],
         "P1-17": ["W1-04", "W4-06", "W5-CUTOVER", "W7-01"],
     }
     for audit_id, closure_tasks in expected_issue_closures.items():
@@ -9519,7 +9585,7 @@ def _cmd_w1_06_attack_gate() -> int:
         "P1-03": ["W0-02", "W2-01"],
         "P1-04": ["W2-01"],
         "P1-14": ["W1-03", "W5-CUTOVER", "W5-06"],
-        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER"],
+        "P1-15": ["W0-02", "W1-04", "W4-06", "W5-CUTOVER", "W7-02"],
         "P2-03": ["W1-06", "W2-06", "W4-07", "W5-01"],
     }
     for audit_id, closures in expected_closures.items():
@@ -18624,6 +18690,396 @@ def cmd_w6_08_promotion_gate() -> int:
     return EXIT_OK
 
 
+W7_TARGET_CHECKS = {
+    "W7-01": (
+        "owner-and-access-policy", "no-follow-and-reparse", "file-and-directory-durability",
+        "encryption-at-rest", "quota", "retention", "backup-and-restore", "path-privacy",
+    ),
+    "W7-02": (
+        "p50", "p95", "p99", "throughput", "rss", "artifact-growth",
+        "queue-backpressure", "cancellation",
+    ),
+    "W7-03": (
+        "engine-revocation", "pack-revocation", "trust-key-revocation",
+        "service-key-revocation", "kill-and-restart", "corrupt-artifact",
+        "backup-and-restore", "v4-only-rollback",
+    ),
+    "W7-04": (
+        "p0-p1-zero", "p2-p3-accounted", "full-required-gate", "ab-wheel",
+        "installed-e2e", "storage", "performance", "operations",
+    ),
+}
+W7_TARGET_NUMERIC_CHECKS = {
+    ("W7-02", "p50"): ("<=", "milliseconds"),
+    ("W7-02", "p95"): ("<=", "milliseconds"),
+    ("W7-02", "p99"): ("<=", "milliseconds"),
+    ("W7-02", "throughput"): (">=", "operations_per_second"),
+    ("W7-02", "rss"): ("<=", "bytes"),
+    ("W7-02", "artifact-growth"): ("<=", "bytes_per_run"),
+}
+
+
+def _w7_i01_contract_problems() -> list[str]:
+    """Validate the local/test implementation without accepting target-provider facts."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        generated_disposition = generator.build_document()
+        _topological_tasks(plan)
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W7-I01 governance input is unreadable: {type(exc).__name__}: {exc}"]
+    by_id = {
+        item.get("id"): item for item in plan.get("tasks", [])
+        if isinstance(item, dict)
+    }
+    task = by_id.get("W7-I01", {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W7-I01"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W7-I01", *W7_I01_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W7-I01.xml",
+        ],
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-04"],
+    ]
+    if task.get("depends_on") != ["W6-08"]:
+        problems.append("W7-I01 must depend only on the completed local W6-08 task")
+    if task.get("audit_ids") != ["P0-13", "P1-10", "P1-11", "P1-12", "P1-15", "P1-17"]:
+        problems.append("W7-I01 audit projection drifted")
+    if task.get("allowed_paths") != list(W7_I01_ALLOWED_PATHS):
+        problems.append("W7-I01 allowlist drifted")
+    if task.get("terminal_states") != [
+        "STORAGE_RC_IMPLEMENTATION_GREEN", "TARGET_PROVIDER_NOT_CLAIMED",
+    ]:
+        problems.append("W7-I01 terminal-state boundary drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+        problems.append("W7-I01 exact gate/pytest/governance argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W7-I01 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W7-I01 file disposition is not reproducible from its generator")
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W7_I01_REQUIRED_CHANGED_PATHS:
+        item = by_path.get(path, {})
+        if item.get("closure_task") != "W7-I01":
+            problems.append(f"W7-I01 disposition closure drifted: {path}")
+        if path.startswith("tests/") and item.get("terminal_state") != "TEST_ORACLE":
+            problems.append(f"W7-I01 test path is not a TEST_ORACLE: {path}")
+    required_by_id = {
+        item.get("id"): item for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W7-LOCAL-STORAGE-PROBE": {
+            "id": "W7-LOCAL-STORAGE-PROBE", "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_storage_capability.py",
+            "state": "REQUIRED_NOW", "expected_tests": 4,
+        },
+        "W7-LOCAL-PERFORMANCE-BASELINE": {
+            "id": "W7-LOCAL-PERFORMANCE-BASELINE", "suite": "performance",
+            "selector": "tests/performance/test_local_rc_baseline.py",
+            "state": "REQUIRED_NOW", "expected_tests": 5,
+        },
+    }
+    for test_id, expected in expected_required.items():
+        if required_by_id.get(test_id) != expected:
+            problems.append(f"W7-I01 required test drifted: {test_id}")
+    resource_budget = next(
+        (
+            item for item in required.get("audit_mutations", [])
+            if isinstance(item, dict) and item.get("audit_id") == "P1-15"
+        ),
+        {},
+    )
+    if (
+        resource_budget.get("suite"), resource_budget.get("owner_task"),
+        resource_budget.get("state"), resource_budget.get("selector"),
+    ) != (
+        "performance", "W7-02", "RED_AT_TASK",
+        "tests/performance/test_production_budgets.py::"
+        "test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
+    ):
+        problems.append("W7-I01 must leave target production budgets RED until W7-02")
+    required_total = sum(
+        item.get("expected_tests", 0) for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    )
+    future_red = sum(
+        item.get("state") == "RED_AT_TASK"
+        for registry in ("evidence_tracks", "audit_mutations")
+        for item in required.get(registry, []) if isinstance(item, dict)
+    )
+    if (required_total, future_red) != (
+        W7_I01_REQUIRED_TEST_TOTAL, W7_I01_FUTURE_RED_COUNT,
+    ):
+        problems.append("W7-I01 required/RED totals drifted")
+    try:
+        storage_source = (ROOT / "compiler_core/storage.py").read_text(encoding="utf-8")
+        performance_source = (ROOT / "tools/perf_baseline.py").read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        return [*problems, f"W7-I01 implementation source is unreadable: {exc}"]
+    for marker in (
+        "LocalStorageProbeV4", "probe_local_storage", '"production_allowed": False',
+        '"target_provider_claimed": False',
+    ):
+        if marker not in storage_source:
+            problems.append(f"W7-I01 local storage probe lacks marker: {marker}")
+    for marker in (
+        "def assess_metrics(", '"missing_numeric_budgets"', '"invalid_metrics"',
+        '"target_provider_claimed": False',
+    ):
+        if marker not in performance_source:
+            problems.append(f"W7-I01 performance gate lacks marker: {marker}")
+    for marker in (
+        "W7_TARGET_CHECKS", "_w7_target_check_evidence_problems",
+        '"source_artifact_digest"', "_w7_target_report_problems", "cmd_w7_target_gate",
+        'if args.wave == "W7-I01"', 'if args.wave in W7_TARGET_CHECKS',
+    ):
+        if marker not in runner_source:
+            problems.append(f"W7-I01 target verifier implementation lacks marker: {marker}")
+    return problems
+
+
+def _w7_i01_build_evidence(state_root: Path) -> tuple[Path, str]:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from compiler_core.storage import probe_local_storage
+
+    probe_parent = state_root / "tmp" / "W7-I01-probe"
+    probe_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="local-", dir=probe_parent) as temporary:
+        probe = probe_local_storage(Path(temporary) / "state", quota_bytes=1_000_000)
+    report = {
+        "schema_version": "jc/w7-local-kernel-rc-implementation/1.0",
+        "task_id": "W7-I01",
+        "status": "PASS",
+        "source": {
+            "commit": _git_checked("rev-parse", "HEAD"),
+            "tree": _git_checked("rev-parse", "HEAD^{tree}"),
+        },
+        "scope": "test-local",
+        "production_allowed": False,
+        "target_provider_claimed": False,
+        "storage_probe": probe.to_dict(),
+        "operations_harness": [
+            "tests/storage_chaos/test_power_loss.py",
+            "tests/storage_chaos/test_generation_isolation.py",
+            "tests/security/test_trust_policy.py::"
+            "test_revoked_and_unregistered_keys_are_distinct_failures",
+        ],
+        "target_verifiers": {
+            task_id: list(checks) for task_id, checks in W7_TARGET_CHECKS.items()
+        },
+        "external_requirements": [
+            "target-provider-and-platform", "service-identity", "approved-slo-budgets",
+            "encryption-retention-backup-policy", "isolated-equivalent-drill-root",
+        ],
+    }
+    return _write_content_addressed_json(
+        state_root / "evidence" / "W7-I01" / "reports", report,
+    )
+
+
+def _w7_target_check_evidence_problems(
+    task_id: str,
+    check_id: str,
+    evidence: object,
+    state_root: Path,
+) -> list[str]:
+    """Bind each target PASS to raw bytes and enforce its approved comparison."""
+
+    if not isinstance(evidence, dict) or set(evidence) != {
+        "source_artifact_digest", "provider_capability_digest", "actual", "required",
+        "operator", "unit",
+    }:
+        return [f"{task_id} target check evidence fields drifted: {check_id}"]
+    problems: list[str] = []
+    source_digest = evidence["source_artifact_digest"]
+    capability_digest = evidence["provider_capability_digest"]
+    for label, digest in (
+        ("source artifact", source_digest),
+        ("provider capability", capability_digest),
+    ):
+        if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+            problems.append(f"{task_id} target check {label} digest is invalid: {check_id}")
+    if DIGEST_V4_PATTERN.fullmatch(str(source_digest)) is not None:
+        raw_path = (
+            state_root / "evidence" / "W7" / "target" / "raw"
+            / f"{str(source_digest).split(':', 1)[1]}.json"
+        )
+        try:
+            raw = raw_path.read_bytes()
+            raw_document = json.loads(raw)
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            problems.append(
+                f"{task_id} target raw evidence is unreadable: {check_id}: {exc}"
+            )
+        else:
+            if not isinstance(raw_document, (dict, list)):
+                problems.append(f"{task_id} target raw evidence is not structured: {check_id}")
+            if "sha256:" + sha256_hex(raw) != source_digest:
+                problems.append(f"{task_id} target raw evidence digest drifted: {check_id}")
+            if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+                problems.append(f"{task_id} target raw evidence leaks a repository path: {check_id}")
+
+    expected = W7_TARGET_NUMERIC_CHECKS.get((task_id, check_id))
+    if expected is None:
+        expected = ("==", "boolean")
+        if evidence["actual"] is not True or evidence["required"] is not True:
+            problems.append(f"{task_id} target boolean check is not satisfied: {check_id}")
+    else:
+        actual, required = evidence["actual"], evidence["required"]
+        if (
+            not isinstance(actual, (int, float))
+            or isinstance(actual, bool)
+            or actual < 0
+            or not isinstance(required, (int, float))
+            or isinstance(required, bool)
+            or required <= 0
+        ):
+            problems.append(f"{task_id} target numeric evidence is invalid: {check_id}")
+        elif (
+            (expected[0] == "<=" and actual > required)
+            or (expected[0] == ">=" and actual < required)
+        ):
+            problems.append(f"{task_id} target budget comparison failed: {check_id}")
+    if (evidence["operator"], evidence["unit"]) != expected:
+        problems.append(f"{task_id} target comparison contract drifted: {check_id}")
+    return problems
+
+
+def _w7_target_report_problems(task_id: str, state_root: Path) -> list[str]:
+    """Validate externally produced target evidence; this runner never fabricates it."""
+
+    expected_checks = W7_TARGET_CHECKS[task_id]
+    report_path = state_root / "evidence" / "W7" / "target" / f"{task_id}.json"
+    try:
+        raw = report_path.read_bytes()
+        report = json.loads(raw)
+    except FileNotFoundError:
+        return [f"{task_id} target evidence is missing"]
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"{task_id} target evidence is unreadable: {exc}"]
+    approvals = [
+        item for item in _receipt_history("H7-00", state_root)
+        if item.get("status") == "COMPLETED"
+    ]
+    approval_digest = approvals[-1].get("receipt_digest") if approvals else None
+    problems: list[str] = []
+    if set(report) != {
+        "schema_version", "task_id", "status", "approval_receipt_digest",
+        "target_provider_claimed", "production_allowed", "checks",
+    }:
+        problems.append(f"{task_id} target evidence fields are not closed")
+    if (
+        report.get("schema_version") != "jc/w7-target-evidence/1.0"
+        or report.get("task_id") != task_id
+        or report.get("status") != "PASS"
+        or report.get("approval_receipt_digest") != approval_digest
+        or report.get("target_provider_claimed") is not True
+        or report.get("production_allowed") is not True
+    ):
+        problems.append(f"{task_id} target evidence identity or approval binding drifted")
+    checks = report.get("checks")
+    if not isinstance(checks, dict) or tuple(checks) != expected_checks:
+        problems.append(f"{task_id} target check set drifted")
+        checks = {}
+    for check_id in expected_checks:
+        digest = checks.get(check_id)
+        if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+            problems.append(f"{task_id} target check lacks an artifact digest: {check_id}")
+            continue
+        artifact_path = (
+            state_root / "evidence" / "W7" / "target" / "checks"
+            / f"{str(digest).split(':', 1)[1]}.json"
+        )
+        try:
+            artifact_raw = artifact_path.read_bytes()
+            artifact = json.loads(artifact_raw)
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            problems.append(f"{task_id} target check artifact is unreadable: {check_id}: {exc}")
+            continue
+        if "sha256:" + sha256_hex(artifact_raw) != digest:
+            problems.append(f"{task_id} target check artifact digest drifted: {check_id}")
+        if not isinstance(artifact, dict) or set(artifact) != {
+            "schema_version", "task_id", "check_id", "status",
+            "approval_receipt_digest", "evidence",
+        } or any((
+            artifact.get("schema_version") != "jc/w7-target-check/1.0",
+            artifact.get("task_id") != task_id,
+            artifact.get("check_id") != check_id,
+            artifact.get("status") != "PASS",
+            artifact.get("approval_receipt_digest") != approval_digest,
+        )):
+            problems.append(f"{task_id} target check artifact content drifted: {check_id}")
+            artifact = {} if not isinstance(artifact, dict) else artifact
+        problems.extend(_w7_target_check_evidence_problems(
+            task_id, check_id, artifact.get("evidence"), state_root,
+        ))
+        if str(ROOT.resolve()) in artifact_raw.decode("utf-8", errors="replace"):
+            problems.append(f"{task_id} target check leaks a repository path: {check_id}")
+    if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+        problems.append(f"{task_id} target evidence leaks a repository path")
+    return problems
+
+
+def cmd_w7_i01_local_rc_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W7-I01 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w7_i01_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W7-I01 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w7_i01_build_evidence(Path(raw_state_root).resolve())
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"W7-I01 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw7-i01-local-kernel-rc-report\t{report_path}\t{report_digest}")
+    print(
+        "W7-I01 gate OK: local storage probe, performance budget verifier and "
+        "operations/target evidence validators are implemented; target provider is not claimed"
+    )
+    return EXIT_OK
+
+
+def cmd_w7_target_gate(task_id: str) -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} target gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    state_root = Path(raw_state_root).resolve()
+    problems = _w7_target_report_problems(task_id, state_root)
+    if problems:
+        for problem in problems:
+            print(f"{task_id} target gate failed: {problem}", file=sys.stderr)
+        return (
+            EXIT_WAITING_EXTERNAL
+            if problems == [f"{task_id} target evidence is missing"]
+            else EXIT_GATE_FAIL
+        )
+    report_path = state_root / "evidence" / "W7" / "target" / f"{task_id}.json"
+    digest = "sha256:" + sha256_hex(report_path.read_bytes())
+    print(f"JC_ARTIFACT\t{task_id.lower()}-target-report\t{report_path}\t{digest}")
+    print(f"{task_id} target gate OK: all external target checks are content-bound")
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -18709,6 +19165,10 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w6_06_release_evidence_gate()
     if args.wave == "W6-08":
         return cmd_w6_08_promotion_gate()
+    if args.wave == "W7-I01":
+        return cmd_w7_i01_local_rc_gate()
+    if args.wave in W7_TARGET_CHECKS:
+        return cmd_w7_target_gate(args.wave)
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -21374,6 +21834,54 @@ def _w6_08_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w7_i01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact local RC tests plus the expanded W0-04 governance report."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    governance_reports = [
+        report for report in test_reports if report.get("kind") == "pytest-governance"
+    ]
+    if len(pytest_reports) != 1:
+        problems.append("W7-I01 must bind exactly one focused pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0, "terminal_summaries": 1,
+            "passed": W7_I01_TEST_CASE_COUNT, "failed": 0, "errors": 0,
+            "skipped": 0, "xfailed": 0, "xpassed": 0, "collection_errors": 0,
+            "junit_valid": True, "junit_tests": W7_I01_TEST_CASE_COUNT,
+            "junit_skipped": 0, "junit_failures": 0, "junit_errors": 0,
+            "junit_cases": W7_I01_TEST_CASE_COUNT,
+            "junit_unique_cases": W7_I01_TEST_CASE_COUNT,
+            "junit_case_ids_digest": W7_I01_TEST_CASE_IDS_DIGEST,
+        }
+        problems.extend(
+            f"W7-I01 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W7-I01 pytest junit_sha256 is missing or invalid")
+    if len(governance_reports) != 1:
+        problems.append("W7-I01 must bind exactly one W0-04 governance report")
+    else:
+        report = governance_reports[0]
+        expected = {
+            "exit_code": 0, "suites": 12, "audit_groups": 44, "rewrites": 25,
+            "required_passed": W7_I01_REQUIRED_TEST_TOTAL,
+            "future_red": W7_I01_FUTURE_RED_COUNT,
+            "bypass_or_collection_errors": 0,
+            "evidence_label": "w0-04-required-tests",
+        }
+        problems.extend(
+            f"W7-I01 governance {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if DIGEST_V4_PATTERN.fullmatch(str(report.get("evidence_sha256"))) is None:
+            problems.append("W7-I01 governance evidence digest is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -22501,6 +23009,92 @@ def _w6_08_artifact_problems(
     return problems
 
 
+def _w7_i01_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W7-I01 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W7-I01 artifact_digests is not an object"]
+    expected = set(W7_I01_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W7-I01 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W7_I01_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W7-I01 lacks committed result digest: {path}")
+    return problems
+
+
+def _w7_i01_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W7-I01 artifact_digests is not an object"]
+    digest = artifact_digests.get("state-artifact:w7-i01-local-kernel-rc-report")
+    if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+        return ["W7-I01 local Kernel RC report digest is missing"]
+    path = (
+        state_root / "evidence" / "W7-I01" / "reports"
+        / f"{str(digest).split(':', 1)[1]}.json"
+    )
+    try:
+        raw = path.read_bytes()
+        report = json.loads(raw)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W7-I01 local Kernel RC report is unreadable: {exc}"]
+    problems: list[str] = []
+    if "sha256:" + sha256_hex(raw) != digest:
+        problems.append("W7-I01 local Kernel RC report content drifted")
+    source = report.get("source", {})
+    probe = report.get("storage_probe", {})
+    probe_body = dict(probe) if isinstance(probe, dict) else {}
+    probe_digest = probe_body.pop("probe_digest", None)
+    if (
+        set(report) != {
+            "schema_version", "task_id", "status", "source", "scope",
+            "production_allowed", "target_provider_claimed", "storage_probe",
+            "operations_harness", "target_verifiers", "external_requirements",
+        }
+        or report.get("schema_version") != "jc/w7-local-kernel-rc-implementation/1.0"
+        or report.get("task_id") != "W7-I01"
+        or report.get("status") != "PASS"
+        or not _validate_git_binding(str(source.get("commit")), str(source.get("tree")))
+        or report.get("scope") != "test-local"
+        or report.get("production_allowed") is not False
+        or report.get("target_provider_claimed") is not False
+        or report.get("target_verifiers") != {
+            task_id: list(checks) for task_id, checks in W7_TARGET_CHECKS.items()
+        }
+    ):
+        problems.append("W7-I01 local Kernel RC identity or non-production boundary drifted")
+    if (
+        not isinstance(probe, dict)
+        or probe.get("schema_version") != "jc/local-storage-probe/1.0"
+        or probe.get("scope") != "test-local"
+        or probe.get("production_allowed") is not False
+        or probe.get("target_provider_claimed") is not False
+        or probe_digest != _digest_object(probe_body)
+    ):
+        problems.append("W7-I01 local storage probe binding drifted")
+    if report.get("operations_harness") != [
+        "tests/storage_chaos/test_power_loss.py",
+        "tests/storage_chaos/test_generation_isolation.py",
+        "tests/security/test_trust_policy.py::"
+        "test_revoked_and_unregistered_keys_are_distinct_failures",
+    ]:
+        problems.append("W7-I01 disaster/revocation/rollback harness drifted")
+    if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+        problems.append("W7-I01 evidence report leaks a repository path")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -23505,6 +24099,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W6-08 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W7-I01":
+        problems.extend(_w7_i01_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w7_i01_contract_problems())
+        problems.extend(_w7_i01_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w7_i01_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w7-i01-exact-green-reports",
+            "w7-i01-local-rc-evidence",
+            "w7-i01-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W7-I01 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -25406,6 +26024,39 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 21 W6-08 workflow, docs, plan, governance, runner, and test paths "
+                "are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W7-I01":
+        report_problems = _w7_i01_test_report_problems(test_reports)
+        contract_problems = _w7_i01_contract_problems()
+        artifact_problems = _w7_i01_artifact_problems(artifact_digests, state_root)
+        path_problems = _w7_i01_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w7-i01-exact-green-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W7_I01_TEST_CASE_COUNT} local storage/performance/operations cases and "
+                f"{W7_I01_REQUIRED_TEST_TOTAL} required governance cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w7-i01-local-rc-evidence", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "local storage probe, numeric budget and W7 target validators are bound; "
+                "production provider and SLO remain explicitly unclaimed"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w7-i01-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 12 W7-I01 storage, performance, governance, runner and test paths "
                 "are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),

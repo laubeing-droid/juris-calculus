@@ -9,6 +9,7 @@ import errno
 from functools import lru_cache
 import os
 from pathlib import Path
+import shutil
 import stat
 import subprocess
 import time
@@ -351,6 +352,37 @@ class StoredObjectV4:
     size_bytes: int
 
 
+@dataclass(frozen=True, slots=True)
+class LocalStorageProbeV4:
+    """Test/local storage evidence; never a production StorageCapabilityV4."""
+
+    platform: str
+    quota_bytes: int
+    available_bytes: int
+    object_digest: DigestV4
+    object_bytes: int
+    recovered_entries: int
+    checks: tuple[str, ...]
+    probe_digest: DigestV4
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema_version": "jc/local-storage-probe/1.0",
+            "scope": "test-local",
+            "production_allowed": False,
+            "target_provider_claimed": False,
+            "platform": self.platform,
+            "namespace": NAMESPACE_V4,
+            "quota_bytes": self.quota_bytes,
+            "available_bytes": self.available_bytes,
+            "object_digest": str(self.object_digest),
+            "object_bytes": self.object_bytes,
+            "recovered_entries": self.recovered_entries,
+            "checks": list(self.checks),
+            "probe_digest": str(self.probe_digest),
+        }
+
+
 class V4TransactionStore:
     """One-writer, crash-recoverable V4 object store under a fixed namespace."""
 
@@ -642,9 +674,64 @@ class V4TransactionStore:
             return self._read_path(target, expected_digest=digest)
 
 
+def probe_local_storage(state_root: Path, *, quota_bytes: int) -> LocalStorageProbeV4:
+    """Exercise one fresh local store without claiming a target production provider."""
+
+    payload = b"juris-calculus-v4-local-storage-probe"
+    if type(quota_bytes) is not int or quota_bytes < len(payload):
+        _fail("STORAGE_QUOTA", "local probe quota is smaller than its fixed payload")
+    root = _safe_root(state_root)
+    existing = root.parent
+    while not existing.exists():
+        existing = existing.parent
+    available = shutil.disk_usage(existing).free
+    if available < quota_bytes:
+        _fail("STORAGE_CAPACITY", "local probe quota exceeds available capacity")
+
+    store = V4TransactionStore.create(root, quota_bytes=quota_bytes)
+    stored = store.put_bytes("local-probe", payload)
+    if store.get_bytes(stored.digest) != payload:
+        _fail("STORAGE_COLLISION", "local probe round-trip differs")
+    reopened = V4TransactionStore.open(root, quota_bytes=quota_bytes)
+    if reopened.get_bytes(stored.digest) != payload:
+        _fail("STORAGE_COLLISION", "local probe reopen differs")
+    recovered = reopened.recover()
+    body = {
+        "schema_version": "jc/local-storage-probe/1.0",
+        "scope": "test-local",
+        "production_allowed": False,
+        "target_provider_claimed": False,
+        "platform": "windows" if os.name == "nt" else "posix",
+        "namespace": NAMESPACE_V4,
+        "quota_bytes": quota_bytes,
+        "available_bytes": available,
+        "object_digest": str(stored.digest),
+        "object_bytes": stored.size_bytes,
+        "recovered_entries": recovered,
+        "checks": [
+            "content-addressed-roundtrip",
+            "private-layout",
+            "reopen-roundtrip",
+            "stale-recovery-scan",
+        ],
+    }
+    return LocalStorageProbeV4(
+        platform=body["platform"],
+        quota_bytes=quota_bytes,
+        available_bytes=available,
+        object_digest=stored.digest,
+        object_bytes=stored.size_bytes,
+        recovered_entries=recovered,
+        checks=tuple(body["checks"]),
+        probe_digest=DigestV4.from_bytes(canonical_bytes(body)),
+    )
+
+
 __all__ = [
+    "LocalStorageProbeV4",
     "NAMESPACE_V4",
     "StoredObjectV4",
     "StorageV4Error",
     "V4TransactionStore",
+    "probe_local_storage",
 ]
