@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.32.0"
+RUNNER_VERSION = "0.33.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -90,6 +90,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.30.0": 5,
     "0.31.0": 5,
     "0.32.0": 5,
+    "0.33.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -604,6 +605,42 @@ W5_02C_REQUIRED_CHANGED_PATHS = (
     "tools/build_rule_pack_manifests.py",
     "tools/remediate_v4.py",
     "tools/run_trirail_matrix.py",
+)
+W5_03_TEST_PATHS = (
+    "tests/unit/test_w5_03_nonproduction_boundaries.py",
+    "tests/unit/test_advisory_governance.py",
+    "tests/unit/test_phase6_cli.py",
+    "tests/unit/test_mcp_manifest_dispatch.py",
+    "tests/unit/test_mcp_stdio_protocol.py",
+    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
+)
+W5_03_TEST_CASE_COUNT = 21
+W5_03_TEST_CASE_IDS_DIGEST = (
+    "sha256:19050269abe9117b8b2d4e47bce7dc5eb233a0a65ca161bcc33db41831da28ff"
+)
+W5_03_ALLOWED_PATHS = (
+    "addons/workbuddy_mcp.py",
+    "compiler_core/analysis.py",
+    "compiler_core/cli.py",
+    "compiler_core/rule_lookup.py",
+    "compiler_core/training.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/**",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W5_03_REQUIRED_CHANGED_PATHS = (
+    "addons/workbuddy_mcp.py",
+    "compiler_core/analysis.py",
+    "compiler_core/cli.py",
+    "compiler_core/rule_lookup.py",
+    "compiler_core/training.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    *W5_03_TEST_PATHS,
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
 )
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
@@ -14745,6 +14782,224 @@ def cmd_w5_02c_legacy_cn_gate() -> int:
     return EXIT_OK
 
 
+def _w5_03_nonproduction_contract_problems() -> list[str]:
+    """Require preserved candidate assets and zero public source-tool edge."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        authority = json.loads((
+            ROOT / "docs/architecture/module-authority.json"
+        ).read_text(encoding="utf-8"))
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w5_03_file_disposition", ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise ImportError("file disposition generator has no loader")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, ImportError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W5-03 governance input is unreadable: {type(exc).__name__}: {exc}"]
+
+    task = next(
+        (item for item in plan.get("tasks", []) if item.get("id") == "W5-03"), {}
+    )
+    expected_pytest_argv = [
+        "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+        "--color=no", "-p", "no:cacheprovider", "--basetemp",
+        "{state_root}/tmp/W5-03", *W5_03_TEST_PATHS,
+        "--junitxml", "{state_root}/evidence/pytest/W5-03.xml",
+    ]
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W5-03"],
+        expected_pytest_argv,
+    ]
+    if task.get("depends_on") != ["W5-02C"]:
+        problems.append("W5-03 must depend only on W5-02C")
+    if task.get("audit_ids") != ["P0-14", "P1-09", "P2-04", "P3-01", "P3-02"]:
+        problems.append("W5-03 audit projection drifted")
+    if task.get("allowed_paths") != list(W5_03_ALLOWED_PATHS):
+        problems.append("W5-03 exact allowlist drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        problems.append("W5-03 exact gate/pytest argv drifted")
+    if task.get("terminal_states") != []:
+        problems.append("W5-03 must not claim a deletion terminal state")
+    for path in W5_03_REQUIRED_CHANGED_PATHS:
+        if not _matches_allowed(path, task.get("allowed_paths", [])):
+            problems.append(f"W5-03 required path is outside its allowlist: {path}")
+
+    if disposition != generated_disposition:
+        problems.append("W5-03 file disposition is not reproducible from its generator")
+    by_path = {
+        item.get("path"): item
+        for item in disposition.get("paths", []) if isinstance(item, dict)
+    }
+    for path in (
+        "compiler_core/analysis.py",
+        "compiler_core/rule_lookup.py",
+        "compiler_core/training.py",
+    ):
+        item = by_path.get(path, {})
+        if (
+            item.get("disposition"), item.get("terminal_state"),
+            item.get("closure_task"), item.get("namespace"),
+        ) != ("MOVE_IN_REPO_SOURCE_TOOL", "CANDIDATE_ASSET", "W5-03", "source_tool"):
+            problems.append(f"W5-03 source-tool disposition drifted: {path}")
+    pipeline_item = by_path.get("pipeline/pipeline.py", {})
+    if (
+        pipeline_item.get("disposition"), pipeline_item.get("terminal_state"),
+        pipeline_item.get("namespace"),
+    ) != ("MOVE_IN_REPO_SOURCE_TOOL", "CANDIDATE_ASSET", "source_tool"):
+        problems.append("W5-03 pipeline source-tool disposition drifted")
+
+    module_classes = {
+        item.get("path"): item.get("class")
+        for item in authority.get("path_rules", []) if isinstance(item, dict)
+    }
+    for path in (
+        "compiler_core/analysis.py",
+        "compiler_core/rule_lookup.py",
+        "compiler_core/training.py",
+    ):
+        if module_classes.get(path) != "SOURCE_TOOL":
+            problems.append(f"W5-03 authority does not classify source tool: {path}")
+
+    forbidden_modules = {
+        "compiler_core.analysis",
+        "compiler_core.rule_governance",
+        "compiler_core.rule_lookup",
+        "compiler_core.training",
+        "pipeline",
+    }
+    public_paths = (
+        "compiler_core/__init__.py",
+        "compiler_core/application.py",
+        "compiler_core/cli.py",
+        "compiler_core/client.py",
+        "compiler_core/contracts.py",
+        "compiler_core/mcp.py",
+        "compiler_core/rendering.py",
+        "mcp_server.py",
+        "addons/workbuddy_mcp.py",
+    )
+    for path in public_paths:
+        source_path = ROOT / path
+        try:
+            source = source_path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=path)
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            problems.append(f"W5-03 boundary source is unreadable: {path}: {exc}")
+            continue
+        imports: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imports.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imports.add(node.module)
+                if node.module == "compiler_core":
+                    imports.update(
+                        f"compiler_core.{alias.name}" for alias in node.names
+                    )
+        for imported in imports:
+            if any(
+                imported == forbidden or imported.startswith(forbidden + ".")
+                for forbidden in forbidden_modules
+            ):
+                problems.append(f"W5-03 public source-tool import survived: {path}: {imported}")
+
+    public_markers = (
+        "jc_analyze_strategy", "jc_analyze_similar_cases", "jc_lookup_rule",
+        'add_parser("analyze"', 'add_parser("training"', 'add_parser("rules"',
+    )
+    for path in (
+        "compiler_core/__init__.py", "compiler_core/cli.py", "compiler_core/client.py",
+        "compiler_core/contracts.py", "compiler_core/mcp.py", "addons/workbuddy_mcp.py",
+    ):
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-03 public surface is unreadable: {path}: {exc}")
+            continue
+        for marker in public_markers:
+            if marker in source:
+                problems.append(f"W5-03 public advisory marker survived: {path}: {marker}")
+    try:
+        workbuddy_source = (ROOT / "addons/workbuddy_mcp.py").read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        problems.append(f"W5-03 WorkBuddy tombstone is unreadable: {exc}")
+    else:
+        for marker in ("TOOL_NAMES: tuple[str, ...] = ()", '"tools": {}', '"resources": {}'):
+            if marker not in workbuddy_source:
+                problems.append(f"W5-03 WorkBuddy zero-tool marker is missing: {marker}")
+
+    preserved_paths = (
+        "configs/zh_CN/source_manifest.yaml",
+        "configs/zh_CN/ontology_map.yaml",
+        "configs/zh_CN/domain_config.example.yaml",
+        "configs/packs/hk-legacy-corpus/manifest.yaml",
+        "configs/packs/us-federal-legacy-corpus/manifest.yaml",
+        "configs/packs/us-l0-adapter-legacy-corpus/manifest.yaml",
+        "pipeline/pipeline.py",
+    )
+    for path in preserved_paths:
+        if not (ROOT / path).is_file():
+            problems.append(f"W5-03 candidate/source asset was moved or deleted: {path}")
+
+    tracked = set(_git_tracked_files())
+    if sorted(path for path in tracked if path.endswith("pyproject.toml")) != ["pyproject.toml"]:
+        problems.append("W5-03 introduced a second pyproject.toml")
+    if sorted(path for path in tracked if path.startswith(".github/workflows/")) != [
+        ".github/workflows/auto-release.yml", ".github/workflows/ci.yml",
+    ]:
+        problems.append("W5-03 release workflow inventory drifted")
+    deployment_names = {
+        "Dockerfile", "Chart.yaml", "Procfile", "fly.toml", "compose.yml",
+        "compose.yaml", "docker-compose.yml", "docker-compose.yaml",
+        "deployment.yml", "deployment.yaml",
+    }
+    if any(
+        path.rsplit("/", 1)[-1] in deployment_names
+        and path.startswith(("addons/", "compiler_core/", "configs/", "pipeline/"))
+        for path in tracked
+    ):
+        problems.append("W5-03 introduced nonproduction deployment metadata")
+    for path in W5_03_TEST_PATHS:
+        if path not in tracked:
+            problems.append(f"W5-03 required test is not Git tracked: {path}")
+            continue
+        try:
+            source = (ROOT / path).read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeError) as exc:
+            problems.append(f"W5-03 required test is unreadable: {path}: {exc}")
+            continue
+        if _forbidden_test_controls(source):
+            problems.append(f"W5-03 required test uses skip/xfail: {path}")
+    if W5_03_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        problems.append("W5-03 JUnit case identity is not frozen")
+    return problems
+
+
+def cmd_w5_03_nonproduction_gate() -> int:
+    try:
+        problems = _w5_03_nonproduction_contract_problems()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        problems = [f"malformed input: {type(exc).__name__}: {exc}"]
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W5-03 nonproduction boundary gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        "W5-03 nonproduction boundary gate OK: candidate assets preserved, three "
+        "offline source tools classified, and public analysis/training/lookup edges removed"
+    )
+    return EXIT_OK
+
+
 def cmd_verify_wave(args: argparse.Namespace) -> int:
     if args.wave == "W0-01":
         return cmd_object_state_matrix(argparse.Namespace(path=str(OBJECT_STATE_MATRIX)))
@@ -14808,6 +15063,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w5_01_entrypoint_red_gate()
     if args.wave == "W5-02C":
         return cmd_w5_02c_legacy_cn_gate()
+    if args.wave == "W5-03":
+        return cmd_w5_03_nonproduction_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -16992,6 +17249,41 @@ def _w5_02c_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str
     return problems
 
 
+def _w5_03_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact green source-tool isolation evidence with zero bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W5-03 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W5_03_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W5_03_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W5_03_TEST_CASE_COUNT,
+        "junit_unique_cases": W5_03_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W5_03_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W5-03 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+        for field, value in expected.items() if report.get(field) != value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W5-03 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -17010,6 +17302,29 @@ def _w5_02c_committed_scope_problems(
             r"sha256:[0-9a-f]{64}", str(artifact_digests.get(f"{prefix}:{path}")),
         ) is None:
             problems.append(f"W5-02C lacks committed {prefix} digest: {path}")
+    return problems
+
+
+def _w5_03_committed_scope_problems(
+    changed_paths: Any,
+    artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W5-03 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W5-03 artifact_digests is not an object"]
+    expected = set(W5_03_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W5-03 committed scope drifted: {sorted(changed_paths)!r} != {sorted(expected)!r}"
+        )
+    for path in W5_03_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W5-03 lacks committed result digest: {path}")
     return problems
 
 
@@ -17757,6 +18072,26 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W5-02C receipt completion assertions are incomplete or false")
+    if task.get("id") == "W5-03":
+        problems.extend(_w5_03_test_report_problems(reports))
+        problems.extend(_w5_03_nonproduction_contract_problems())
+        problems.extend(_w5_03_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w5-03-exact-green-reports",
+            "w5-03-source-tool-boundary-contract",
+            "w5-03-required-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W5-03 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -19280,6 +19615,42 @@ def _execute_auto_task(
             "detail": (
                 "all required W5-02C removals, rewrites, governance files, and negative "
                 "tests are committed and digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W5-03":
+        report_problems = _w5_03_test_report_problems(test_reports)
+        contract_problems = _w5_03_nonproduction_contract_problems()
+        path_problems = _w5_03_committed_scope_problems(
+            changed_paths, artifact_digests,
+        )
+        assertions.append({
+            "id": "w5-03-exact-green-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W5_03_TEST_CASE_COUNT} source-tool/public-boundary cases passed "
+                "with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-03-source-tool-boundary-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "candidate assets remain in-repository, offline source tools have no public "
+                "inbound edge, and no second distribution or deployment authority exists"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w5-03-required-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all required W5-03 boundary, governance, and test paths are committed "
+                "and digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

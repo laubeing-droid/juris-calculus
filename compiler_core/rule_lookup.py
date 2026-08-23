@@ -1,4 +1,4 @@
-"""只读、有限量的规则包检索；检索结果不改变规则准入状态。"""
+"""Offline SOURCE_TOOL lookup; absent from package, CLI, Client, and MCP APIs."""
 
 from __future__ import annotations
 
@@ -8,6 +8,9 @@ import yaml
 
 from compiler_core.rule_packs import RulePackRegistry
 from compiler_core.types import normalize_rule_admission
+
+
+__all__ = ("lookup_rules",)
 
 
 def lookup_rules(

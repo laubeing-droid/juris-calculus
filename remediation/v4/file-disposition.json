@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 414,
+  "count": 415,
   "paths": [
     {
       "path": ".gitattributes",
@@ -123,7 +123,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "production-code",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/cn/__init__.py",
@@ -131,7 +131,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/cn/adapter.py",
@@ -139,7 +139,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/cn/modal_mapping.yaml",
@@ -147,7 +147,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/federation/__init__.py",
@@ -155,7 +155,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/hk/__init__.py",
@@ -163,7 +163,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/hk/adapter.py",
@@ -171,7 +171,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/us/__init__.py",
@@ -179,7 +179,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/us/adapter.py",
@@ -187,7 +187,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "experiment"
     },
     {
       "path": "addons/workbuddy_mcp.py",
@@ -231,11 +231,11 @@
     },
     {
       "path": "compiler_core/analysis.py",
-      "disposition": "CANDIDATE_ASSET",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "production-code",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "compiler_core/application.py",
@@ -804,11 +804,11 @@
     },
     {
       "path": "compiler_core/rule_lookup.py",
-      "disposition": "CANDIDATE_ASSET",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "production-code",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "compiler_core/rule_packs.py",
@@ -910,11 +910,11 @@
     },
     {
       "path": "compiler_core/training.py",
-      "disposition": "CANDIDATE_ASSET",
+      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "production-code",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "compiler_core/transformer.py",
@@ -1498,7 +1498,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/adversarial_pipeline.py",
@@ -1506,7 +1506,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/experimental/__init__.py",
@@ -1514,7 +1514,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/experimental/llm_client.py",
@@ -1522,7 +1522,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/extract_concepts.py",
@@ -1530,7 +1530,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/fix_single_premise.py",
@@ -1552,7 +1552,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/llm_client.py",
@@ -1560,7 +1560,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/pipeline.py",
@@ -1568,7 +1568,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/prc_us_alignment.py",
@@ -1576,7 +1576,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pipeline/schemas.py",
@@ -1584,7 +1584,7 @@
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "namespace": "source_tool"
     },
     {
       "path": "pyproject.toml",
@@ -2223,7 +2223,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-02C"
+      "closure_task": "W5-03"
     },
     {
       "path": "tests/mcp_protocol/w5_transport_red.py",
@@ -3102,6 +3102,14 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "tests/unit/test_w5_03_nonproduction_boundaries.py",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },

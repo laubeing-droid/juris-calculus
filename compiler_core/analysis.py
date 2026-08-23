@@ -1,4 +1,4 @@
-"""只读审计run的ADVISORY策略与结构化类案分析。"""
+"""Offline SOURCE_TOOL analysis over an already verified V4 audit bundle."""
 
 from __future__ import annotations
 
@@ -9,12 +9,17 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable, Mapping
 
-from compiler_core.audit_bundle import default_state_root, verify_audit_bundle
+from compiler_core.audit_bundle import VerifiedAuditBundleV4
 from compiler_core.canonical_serialization import semantic_digest
 
 
 ANALYSIS_SCHEMA_VERSION = "1.0"
 CASE_INDEX_SCHEMA_VERSION = "1.0"
+
+__all__ = (
+    "AnalysisError", "analyze_strategy", "analyze_similar_cases",
+    "load_case_index", "analysis_schema_document",
+)
 
 
 class AnalysisError(RuntimeError):
@@ -25,40 +30,64 @@ class AnalysisError(RuntimeError):
         self.code = code
 
 
-def analyze_strategy(run_id: str, *, state_root: Path | None = None) -> dict[str, Any]:
-    """从完整审计run生成不改变结论的机器ADVISORY。"""
+def analyze_strategy(
+    verified: VerifiedAuditBundleV4,
+    *,
+    output_root: Path,
+) -> dict[str, Any]:
+    """Derive an advisory from independently verified immutable V4 material."""
 
-    root = Path(state_root or default_state_root()).resolve()
-    verified = verify_audit_bundle(root, run_id)
-    result = verified.semantic_result
+    result, run_id, result_digest = _verified_result(verified)
+    root = Path(output_root).resolve()
     before = result.to_dict()
+    claim_ids = [claim.claim_id for claim in result.claims]
+    rule_ids = _reference_ids(result.applicable_rule_refs)
+    source_ids = sorted({
+        value
+        for claim in result.claims
+        for value in _reference_ids(claim.source_refs)
+    })
     paths: list[dict[str, Any]] = []
-    for item in result.missing_fact_review:
+    for item in result.missing_facts:
         paths.append({
             "path_type": "EVIDENCE_COMPLETION",
-            "basis_ids": [item.fact_id, *item.impacted_rule_ids, *item.impacted_claim_ids],
+            "basis_ids": [
+                item.fact_id,
+                *_reference_ids(item.impacted_rule_refs),
+                *_reference_ids(item.impacted_claim_refs),
+            ],
             "assumptions": [],
-            "required_review": item.source_requirement,
+            "required_review": ", ".join(item.required_source_kinds),
         })
-    attack_edges = [edge for edge in verified.graph_payload.get("edges", ()) if edge.get("type") in {"attack", "exception", "priority"}]
-    if attack_edges:
+    if result.attack_refs or result.exception_resolution_refs or result.priority_resolution_refs:
         paths.append({
             "path_type": "CONFLICT_REVIEW",
-            "basis_ids": sorted({str(edge.get("source", "")) for edge in attack_edges} | {str(edge.get("target", "")) for edge in attack_edges}),
+            "basis_ids": _reference_ids((
+                *result.attack_refs,
+                *result.exception_resolution_refs,
+                *result.priority_resolution_refs,
+            )),
             "assumptions": [],
             "required_review": "review explicit attack, exception, and priority edges",
         })
-    if result.branches or result.taint:
+    if result.branches or result.taint_codes:
         paths.append({
             "path_type": "ASSUMPTION_STRESS_TEST",
             "basis_ids": [branch.branch_id for branch in result.branches],
-            "assumptions": list(result.taint),
+            "assumptions": sorted({
+                *_reference_ids(tuple(
+                    reference
+                    for branch in result.branches
+                    for reference in branch.assumption_refs
+                )),
+                *result.taint_codes,
+            }),
             "required_review": "compare branch consequences without promoting assumptions",
         })
     if result.claims:
         paths.append({
             "path_type": "PRESERVE_FORMAL_BASIS",
-            "basis_ids": [*result.claims, *result.used_rule_ids, *result.source_ids],
+            "basis_ids": [*claim_ids, *rule_ids, *source_ids],
             "assumptions": [],
             "required_review": "verify source currency and certificate before external use",
         })
@@ -73,17 +102,17 @@ def analyze_strategy(run_id: str, *, state_root: Path | None = None) -> dict[str
         "schema_version": ANALYSIS_SCHEMA_VERSION,
         "analysis_kind": "LITIGATION_STRATEGY",
         "analysis_status": "ADVISORY",
-        "run_id": result.run_id,
-        "result_digest": result.result_digest,
-        "result_status": result.result_status.value,
+        "run_id": run_id,
+        "result_digest": result_digest,
+        "result_status": result.decision_status.value,
         "review_required": True,
         "formal_certificate_generated": False,
         "basis": {
-            "claim_ids": list(result.claims),
-            "rule_ids": list(result.used_rule_ids),
-            "source_ids": list(result.source_ids),
-            "risk_labels": list(result.risk_labels),
-            "missing_fact_ids": list(result.missing_fact_ids),
+            "claim_ids": claim_ids,
+            "rule_ids": rule_ids,
+            "source_ids": source_ids,
+            "risk_labels": list(result.risk_codes),
+            "missing_fact_ids": [item.fact_id for item in result.missing_facts],
         },
         "paths": paths,
         "limitations": [
@@ -94,29 +123,37 @@ def analyze_strategy(run_id: str, *, state_root: Path | None = None) -> dict[str
     }
     if before != result.to_dict():
         raise AnalysisError("CANONICAL_RESULT_DRIFT", "strategy analysis changed the semantic result")
-    return _write_analysis(root, result.run_id, result.result_digest, "strategy", report)
+    return _write_analysis(root, run_id, result_digest, "strategy", report)
 
 
 def analyze_similar_cases(
-    run_id: str,
+    verified: VerifiedAuditBundleV4,
     index_path: Path,
     *,
-    state_root: Path | None = None,
+    output_root: Path,
     limit: int = 10,
 ) -> dict[str, Any]:
     """用结构化集合特征做确定性类案排序，不使用向量库或远程embedding。"""
 
     if limit < 1 or limit > 100:
         raise AnalysisError("INVALID_LIMIT", "limit must be between 1 and 100")
-    root = Path(state_root or default_state_root()).resolve()
-    verified = verify_audit_bundle(root, run_id)
+    result, run_id, result_digest = _verified_result(verified)
+    root = Path(output_root).resolve()
     index = load_case_index(index_path)
-    result = verified.semantic_result
     current = {
-        "fact_ids": set(result.used_fact_ids),
-        "rule_ids": set(result.used_rule_ids),
-        "claim_ids": set(result.claims),
-        "edge_types": {str(edge.get("type", "")) for edge in verified.graph_payload.get("edges", ())},
+        "fact_ids": set(_reference_ids(result.admitted_fact_refs)),
+        "rule_ids": set(_reference_ids(result.applicable_rule_refs)),
+        "claim_ids": {claim.claim_id for claim in result.claims},
+        "edge_types": {
+            name
+            for name, references in (
+                ("attack", result.attack_refs),
+                ("exception", result.exception_resolution_refs),
+                ("permission", result.permission_resolution_refs),
+                ("priority", result.priority_resolution_refs),
+            )
+            if references
+        },
     }
     matches = []
     for case in index["cases"]:
@@ -150,8 +187,8 @@ def analyze_similar_cases(
         "analysis_kind": "SIMILAR_CASES",
         "analysis_status": "ADVISORY",
         "quality_status": "FIXTURE_ONLY" if fixture else "OPERATOR_DECLARED_INDEX",
-        "run_id": result.run_id,
-        "result_digest": result.result_digest,
+        "run_id": run_id,
+        "result_digest": result_digest,
         "review_required": True,
         "formal_certificate_generated": False,
         "index": {
@@ -169,7 +206,23 @@ def analyze_similar_cases(
             "fixture indexes cannot establish real-world case quality",
         ],
     }
-    return _write_analysis(root, result.run_id, result.result_digest, "similar-cases", report)
+    return _write_analysis(root, run_id, result_digest, "similar-cases", report)
+
+
+def _verified_result(verified: VerifiedAuditBundleV4):
+    if type(verified) is not VerifiedAuditBundleV4:
+        raise AnalysisError("VERIFIED_BUNDLE_REQUIRED", "analysis requires VerifiedAuditBundleV4")
+    if verified.verification.status != "VERIFIED":
+        raise AnalysisError("VERIFIED_BUNDLE_REQUIRED", "audit bundle is not independently verified")
+    return (
+        verified.result,
+        verified.run_identity.run_digest.hex,
+        verified.result.result_digest.hex,
+    )
+
+
+def _reference_ids(references: Iterable[Any]) -> list[str]:
+    return sorted(f"{reference.kind}:{reference.digest.hex}" for reference in references)
 
 
 def load_case_index(path: Path) -> dict[str, Any]:
@@ -187,7 +240,9 @@ def load_case_index(path: Path) -> dict[str, Any]:
         raise AnalysisError("INVALID_CASE_INDEX", "index fields mismatch")
     if payload["schema_version"] != CASE_INDEX_SCHEMA_VERSION or not isinstance(payload["cases"], list):
         raise AnalysisError("INVALID_CASE_INDEX", "unsupported schema or cases")
-    calculated = semantic_digest({key: value for key, value in payload.items() if key != "index_digest"})
+    calculated = semantic_digest({
+        key: value for key, value in payload.items() if key != "index_digest"
+    }).removeprefix("sha256:")
     if payload["index_digest"] != calculated:
         raise AnalysisError("CASE_INDEX_DIGEST_MISMATCH", "index content digest mismatch")
     case_required = {

@@ -51,10 +51,13 @@ CORE_GROUPS: dict[str, list[str]] = {
         "stratified_evaluator", "taint", "transformer", "trust_labels",
         "type_checker", "types", "validity_state_machine",
     ],
+    "MOVE_IN_REPO_SOURCE_TOOL": [
+        "analysis", "rule_lookup", "training",
+    ],
     # NONPRODUCTION_SOURCE - 38 paths. 施工方案 §19.1 calls these
     # legacy/candidate/advisory; treat as CANDIDATE_ASSET/EXPERIMENT
     "CANDIDATE_ASSET": [
-        "adapter_base", "adjudication_draft", "analysis",
+        "adapter_base", "adjudication_draft",
         "arbitration_reasoning", "banach_verifier", "breakthrough_candidates",
         "breakthrough_verification", "burden_of_proof", "classifier",
         "compliance_monitoring", "conflict_of_laws", "criminal_complexity",
@@ -64,8 +67,8 @@ CORE_GROUPS: dict[str, list[str]] = {
         "ip_valuation", "kg_recall", "legal_memory", "legal_reasoning",
         "plugin_registry", "prc_collision_engine", "proof_trace_visualizer",
         "proof_tree", "result_diff", "result_exporter", "review_packet",
-        "rule_lookup", "rule_platform_cn", "smt_sidecar",
-        "spec_shadow_harness", "step_verifier", "training",
+        "rule_platform_cn", "smt_sidecar",
+        "spec_shadow_harness", "step_verifier",
         "universal_grounded_smt",
     ],
     "DELETE_CURRENT": [
@@ -234,7 +237,12 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/unit/test_zh_rules.py": "W5-02C",
     "tests/unit/test_remediation_legacy_cn_corpus.py": "W5-02C",
     "tests/packaging/test_legacy_cn_corpus_absent.py": "W5-02C",
-    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py": "W5-02C",
+    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py": "W5-03",
+    "tests/unit/test_advisory_governance.py": "W5-03",
+    "tests/unit/test_mcp_manifest_dispatch.py": "W5-03",
+    "tests/unit/test_mcp_stdio_protocol.py": "W5-03",
+    "tests/unit/test_phase6_cli.py": "W5-03",
+    "tests/unit/test_w5_03_nonproduction_boundaries.py": "W5-03",
     "tests/fixtures/golden/jcs-vectors.json": "W1-01",
     "tests/fixtures/golden/jcs-v4-vectors.json": "W1-01",
     "tests/fixtures/golden/v4-foundation-contract.json": "W4-06",
@@ -286,6 +294,8 @@ def _classify_core(stem: str) -> tuple[str, str]:
         return "MERGE_DELETE", "MIGRATED_GREEN"
     for grp, stems in CORE_GROUPS.items():
         if stem in stems:
+            if grp == "MOVE_IN_REPO_SOURCE_TOOL":
+                return grp, "CANDIDATE_ASSET"
             return grp, grp
     return "CANDIDATE_ASSET", "CANDIDATE_ASSET"
 
@@ -418,11 +428,11 @@ def build_entry(path: str, audit_role: str) -> dict[str, Any]:
         entry["target_module"], entry["target_test"] = target
     if rel == "compiler_core/contracts_v4.py":
         entry["target_module"], entry["target_test"] = MIGRATION_TARGETS[rel]
-    if terminal == "MOVE_IN_REPO_SOURCE_TOOL":
+    if disp == "MOVE_IN_REPO_SOURCE_TOOL":
         entry["namespace"] = "source_tool"
-    if terminal == "MOVE_IN_REPO_EXPERIMENT":
+    elif disp == "MOVE_IN_REPO_EXPERIMENT":
         entry["namespace"] = "experiment"
-    if terminal == "CANDIDATE_ASSET":
+    elif terminal == "CANDIDATE_ASSET":
         entry["namespace"] = "candidate_asset"
     if terminal == "RETAIN_NONPACKAGED":
         entry["namespace"] = "non_production"

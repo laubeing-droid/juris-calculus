@@ -3719,11 +3719,16 @@
       ],
       "objective": "candidate corpora 同仓保留或一次性仓内归位；分析/训练/治理 reports 切断公共入边",
       "allowed_paths": [
-        "remediation/v4/file-disposition.json",
-        "tests/**",
+        "addons/workbuddy_mcp.py",
         "compiler_core/analysis.py",
+        "compiler_core/cli.py",
+        "compiler_core/rule_lookup.py",
         "compiler_core/training.py",
-        "compiler_core/rule_lookup.py"
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/**",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -3733,9 +3738,32 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W5-03"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W5-03",
+          "tests/unit/test_w5_03_nonproduction_boundaries.py",
+          "tests/unit/test_advisory_governance.py",
+          "tests/unit/test_phase6_cli.py",
+          "tests/unit/test_mcp_manifest_dispatch.py",
+          "tests/unit/test_mcp_stdio_protocol.py",
+          "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W5-03.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

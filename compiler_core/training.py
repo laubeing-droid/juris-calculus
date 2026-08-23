@@ -1,4 +1,4 @@
-"""候选规则训练导出；数据流单向离开语料pack且不能执行promotion。"""
+"""Offline SOURCE_TOOL export; never imported by a public V4 runtime adapter."""
 
 from __future__ import annotations
 
@@ -12,6 +12,9 @@ import yaml
 
 from compiler_core.rule_packs import RulePackRegistry
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
+
+
+__all__ = ("export_rules_as_jsonl", "export_corpus_pack", "generate_model_card")
 
 
 def export_rules_as_jsonl(
