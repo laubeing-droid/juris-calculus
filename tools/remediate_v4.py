@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.24.0"
+RUNNER_VERSION = "0.25.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -82,6 +82,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.22.0": 5,
     "0.23.0": 5,
     "0.24.0": 5,
+    "0.25.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -373,6 +374,32 @@ W4_01_ALLOWED_PATHS = (
 )
 W4_01_CHANGED_PATHS = tuple(
     path for path in W4_01_ALLOWED_PATHS if path != "mcp_manifest.json"
+)
+W4_02_TEST_CASE_COUNT = 36
+W4_02_TEST_CASE_IDS_DIGEST = (
+    "sha256:bab41372fbe575c521db83f782c19592a8969a5e1b333c977b2b2045ff297f12"
+)
+W4_02_ARTIFACT_STORE_SHA256 = (
+    "sha256:6479b9a6a25b6f2d1eaa66cf70600f806f55c20e3ac04a9186d41689f0d9a198"
+)
+W4_02_ALLOWED_PATHS = (
+    "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+    "compiler_core/artifact_store.py",
+    "compiler_core/storage.py",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/required-v4-tests.json",
+    "tests/storage_chaos/test_generation_isolation.py",
+    "tests/storage_chaos/test_multiprocess_recovery.py",
+    "tests/storage_chaos/test_power_loss.py",
+    "tests/windows_security/test_dacl.py",
+    "tests/windows_security/test_reparse_escape.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W4_02_CHANGED_PATHS = tuple(
+    path for path in W4_02_ALLOWED_PATHS if path != "compiler_core/artifact_store.py"
 )
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
@@ -3757,6 +3784,41 @@ def _required_test_manifest_problems(
             "selector": "tests/contract/test_run_identity.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 47,
+        },
+        {
+            "id": "W4-STORAGE-MULTIPROCESS",
+            "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_multiprocess_recovery.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 9,
+        },
+        {
+            "id": "W4-STORAGE-POWER-LOSS",
+            "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_power_loss.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 8,
+        },
+        {
+            "id": "W4-STORAGE-GENERATION",
+            "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_generation_isolation.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 2,
+        },
+        {
+            "id": "W4-STORAGE-REPARSE",
+            "suite": "windows_security",
+            "selector": "tests/windows_security/test_reparse_escape.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 3,
+        },
+        {
+            "id": "W4-STORAGE-DACL",
+            "suite": "windows_security",
+            "selector": "tests/windows_security/test_dacl.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 3,
         },
     ]
     if required_now != expected_required_now:
@@ -9436,11 +9498,6 @@ def _cmd_w2_04_snapshot_gate() -> int:
             "tests/security/test_pack_attacks.py::"
             "test_empty_official_pack_and_format_only_attestation_fail",
         ),
-        "V4-P1-10-MULTIPROCESS-RECOVERY": (
-            "P1-10", "W4-02", "RED_AT_TASK",
-            "tests/storage_chaos/test_multiprocess_recovery.py::"
-            "test_cross_process_lock_and_stale_staging_recovery",
-        ),
     }
     for test_id, expected in expected_mutations.items():
         item = mutation_by_id.get(test_id)
@@ -9457,6 +9514,21 @@ def _cmd_w2_04_snapshot_gate() -> int:
     ):
         if not _selector_is_declared(ROOT, expected_mutations[test_id][3]):
             fail(f"W2-04 active required selector is not declared: {test_id}")
+    recovery = mutation_by_id.get("V4-P1-10-MULTIPROCESS-RECOVERY", {})
+    recovery_selector = (
+        "tests/storage_chaos/test_multiprocess_recovery.py::"
+        "test_cross_process_lock_and_stale_staging_recovery"
+    )
+    if (
+        not isinstance(recovery, dict)
+        or recovery.get("audit_id") != "P1-10"
+        or recovery.get("owner_task") != "W4-02"
+        or recovery.get("selector") != recovery_selector
+        or recovery.get("state") not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}
+        or _selector_is_declared(ROOT, recovery_selector)
+        != (recovery.get("state") == "ACTIVE_REQUIRED")
+    ):
+        fail("W2-04 P1-10 successor lifecycle drifted")
 
     issue_by_id = {
         item.get("id"): item for item in issue_map.get("issues", []) if isinstance(item, dict)
@@ -11026,8 +11098,8 @@ def _cmd_w3_03_backend_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-03 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 386:
-        fail("W3-03 file disposition is not the current reproducible 386-path ledger")
+    if disposition != generated_disposition or disposition.get("count", 0) < 386:
+        fail("W3-03 file disposition is not the current reproducible tracked-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 21 个 exact paths",
         "可 kill 的 `spawn` 子进程",
@@ -11533,8 +11605,8 @@ def _cmd_w3_04_checker_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-04 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 386:
-        fail("W3-04 file disposition is not the reproducible 386-path ledger")
+    if disposition != generated_disposition or disposition.get("count", 0) < 386:
+        fail("W3-04 file disposition is not the current reproducible tracked-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 11 个 exact paths",
         "immutable snapshot",
@@ -11849,8 +11921,8 @@ def _cmd_w3_05_semantic_mutation_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W3-05 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 386:
-        fail("W3-05 file disposition is not the reproducible 386-path ledger")
+    if disposition != generated_disposition or disposition.get("count", 0) < 386:
+        fail("W3-05 file disposition is not the current reproducible tracked-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 11 个 exact paths", "P0-06, P1-05..07", "只声明要求、不预写 KILLED",
         "runtime/Application closure", "survivors_allowed=0", "attempt 1→2 receipt chain",
@@ -11991,8 +12063,8 @@ def _cmd_w4_01_run_identity_gate() -> int:
         generated_disposition.get("plan_sha256"),
     } != {actual_plan_sha256}:
         fail("W4-01 task, disposition, and generator are not bound to formal plan bytes")
-    if disposition != generated_disposition or disposition.get("count") != 386:
-        fail("W4-01 file disposition is not the current reproducible 386-path ledger")
+    if disposition != generated_disposition or disposition.get("count", 0) < 386:
+        fail("W4-01 file disposition is not the current reproducible tracked-path ledger")
     if any(marker not in formal_plan_text for marker in (
         "仅以下 19 个 exact allowlist paths",
         "`RunIdentityV4.build` 是本 task 唯一 production constructor",
@@ -12028,11 +12100,6 @@ def _cmd_w4_01_run_identity_gate() -> int:
             "tests/contract/test_audit_bundle.py::"
             "test_existing_bundle_cannot_mix_old_digest_with_new_result",
         ),
-        "V4-P1-13-STATE-GENERATION": (
-            "P1-13", "W4-02", "RED_AT_TASK", "storage_chaos",
-            "tests/storage_chaos/test_generation_isolation.py::"
-            "test_v3_and_v4_state_generations_are_disjoint",
-        ),
     }
     for test_id, expected in deferred.items():
         item = mutation_by_id.get(test_id, {})
@@ -12042,6 +12109,22 @@ def _cmd_w4_01_run_identity_gate() -> int:
         ) if isinstance(item, dict) else None
         if actual != expected or _selector_is_declared(ROOT, str(item.get("selector", ""))):
             fail(f"W4-01 deferred mutation boundary drifted: {test_id}")
+    generation = mutation_by_id.get("V4-P1-13-STATE-GENERATION", {})
+    generation_selector = (
+        "tests/storage_chaos/test_generation_isolation.py::"
+        "test_v3_and_v4_state_generations_are_disjoint"
+    )
+    if (
+        not isinstance(generation, dict)
+        or generation.get("audit_id") != "P1-13"
+        or generation.get("owner_task") != "W4-02"
+        or generation.get("suite") != "storage_chaos"
+        or generation.get("selector") != generation_selector
+        or generation.get("state") not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}
+        or _selector_is_declared(ROOT, generation_selector)
+        != (generation.get("state") == "ACTIVE_REQUIRED")
+    ):
+        fail("W4-01 P1-13 successor lifecycle drifted")
 
     run_fields = [
         "request_ref", "source_bundle_ref", "evidence_manifest_ref",
@@ -12162,7 +12245,7 @@ def _cmd_w4_01_run_identity_gate() -> int:
     print(
         f"W4-01 run identity gate OK: {W4_01_TEST_CASE_COUNT} focused cases; "
         "19 identity axes; independent backend profile verification; "
-        "P0-12/P1-13 remain RED at W4-03/W4-02"
+        "P0-12 remains owned by W4-03; P1-13 is owned or activated by W4-02"
     )
     return EXIT_OK
 
@@ -12174,6 +12257,248 @@ def cmd_w4_01_run_identity_gate() -> int:
         print(
             f"W4-01 run identity gate rejected malformed input: "
             f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+
+def _cmd_w4_02_storage_gate() -> int:
+    problems: list[str] = []
+
+    def fail(detail: str) -> None:
+        problems.append(detail)
+
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W4-02"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W4-02",
+            "tests/storage_chaos/test_generation_isolation.py",
+            "tests/storage_chaos/test_multiprocess_recovery.py",
+            "tests/storage_chaos/test_power_loss.py",
+            "tests/windows_security/test_dacl.py",
+            "tests/windows_security/test_reparse_escape.py",
+            "tests/security/test_pack_toctou.py::test_verified_bytes_are_the_executed_bytes",
+            "tests/contract/test_required_test_manifest.py",
+            "--junitxml", "{state_root}/evidence/pytest/W4-02.xml",
+        ],
+    ]
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        manifest = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        issue_map = json.loads(ISSUE_MAP.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        formal_plan = ROOT / W4_02_ALLOWED_PATHS[0]
+        formal_plan_text = formal_plan.read_text(encoding="utf-8")
+        runner_source = Path(__file__).read_text(encoding="utf-8")
+        generator_spec = importlib.util.spec_from_file_location(
+            "jc_w4_02_file_disposition_generator",
+            ROOT / "tools/build_file_disposition.py",
+        )
+        if generator_spec is None or generator_spec.loader is None:
+            raise RuntimeError("file-disposition generator cannot be loaded")
+        disposition_generator = importlib.util.module_from_spec(generator_spec)
+        generator_spec.loader.exec_module(disposition_generator)
+        generated_disposition = disposition_generator.build_document()
+        task = next(item for item in plan["tasks"] if item["id"] == "W4-02")
+    except (
+        OSError, UnicodeError, json.JSONDecodeError, RuntimeError, StopIteration, TypeError,
+    ) as exc:
+        print(
+            f"W4-02 storage gate rejected unreadable governance: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return EXIT_GATE_FAIL
+
+    if task.get("depends_on") != ["W4-01", "W2-04"]:
+        fail("W4-02 dependency drifted")
+    if task.get("audit_ids") != [
+        "P0-11", "P0-12", "P0-13", "P1-10", "P1-11", "P1-12", "P1-13",
+    ]:
+        fail("W4-02 audit scope drifted")
+    if task.get("objective") != (
+        "固定 jc-v4-state namespace 的 durable/cross-process content-addressed storage；"
+        "complete-or-absent recovery；no-follow/reparse/file-id/DACL fail closed"
+    ):
+        fail("W4-02 objective drifted")
+    if task.get("allowed_paths") != list(W4_02_ALLOWED_PATHS):
+        fail("W4-02 allowlist is not the exact 14-path executable scope")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0]:
+        fail("W4-02 argv or expected exit codes drifted")
+
+    actual_plan_sha256 = sha256_hex(formal_plan.read_bytes())
+    if {
+        plan.get("baseline", {}).get("plan_sha256"),
+        disposition.get("plan_sha256"),
+        generated_disposition.get("plan_sha256"),
+    } != {actual_plan_sha256}:
+        fail("W4-02 task, disposition, and generator are not bound to formal plan bytes")
+    if disposition != generated_disposition:
+        fail("W4-02 file disposition is not reproducible from its generator")
+    if any(marker not in formal_plan_text for marker in (
+        "仅以下 14 个 exact allowlist paths",
+        "`ArtifactResolverV4` 继续没有 filesystem/path authority",
+        "真实 2/10/100 process colliding writers",
+        "五个逐写点 `os._exit`",
+        "`STORAGE_CAPABILITY_BLOCKED`",
+        "P0-12 的 old COMPLETE bundle/new result collision 仍唯一留给 W4-03",
+        "w4-02-exact-storage-reports",
+        "w4-02-durable-isolated-storage-contract",
+        "w4-02-exact-committed-scope",
+    )):
+        fail("W4-02 formal plan lacks exact scope, failure model, or deferred boundary")
+
+    problems.extend(_w4_02_storage_contract_problems())
+    problems.extend(_required_test_manifest_problems(
+        manifest, root=ROOT, issue_map=issue_map, plan=plan,
+    ))
+    expected_required = [
+        {
+            "id": "W4-STORAGE-MULTIPROCESS", "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_multiprocess_recovery.py",
+            "state": "REQUIRED_NOW", "expected_tests": 9,
+        },
+        {
+            "id": "W4-STORAGE-POWER-LOSS", "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_power_loss.py",
+            "state": "REQUIRED_NOW", "expected_tests": 8,
+        },
+        {
+            "id": "W4-STORAGE-GENERATION", "suite": "storage_chaos",
+            "selector": "tests/storage_chaos/test_generation_isolation.py",
+            "state": "REQUIRED_NOW", "expected_tests": 2,
+        },
+        {
+            "id": "W4-STORAGE-REPARSE", "suite": "windows_security",
+            "selector": "tests/windows_security/test_reparse_escape.py",
+            "state": "REQUIRED_NOW", "expected_tests": 3,
+        },
+        {
+            "id": "W4-STORAGE-DACL", "suite": "windows_security",
+            "selector": "tests/windows_security/test_dacl.py",
+            "state": "REQUIRED_NOW", "expected_tests": 3,
+        },
+    ]
+    storage_required = [
+        item for item in manifest.get("required_now", [])
+        if isinstance(item, dict) and str(item.get("id", "")).startswith("W4-STORAGE-")
+    ]
+    if storage_required != expected_required:
+        fail("W4-02 required storage lanes are not exact")
+
+    mutation_by_id = {
+        item.get("test_id"): item for item in manifest.get("audit_mutations", [])
+        if isinstance(item, dict)
+    }
+    expected_active = {
+        "V4-P0-13-REPARSE-ESCAPE": (
+            "P0-13", "windows_security",
+            "tests/windows_security/test_reparse_escape.py::"
+            "test_state_reparse_cannot_escape_root",
+        ),
+        "V4-P1-10-MULTIPROCESS-RECOVERY": (
+            "P1-10", "storage_chaos",
+            "tests/storage_chaos/test_multiprocess_recovery.py::"
+            "test_cross_process_lock_and_stale_staging_recovery",
+        ),
+        "V4-P1-11-DIRECTORY-FSYNC": (
+            "P1-11", "storage_chaos",
+            "tests/storage_chaos/test_power_loss.py::"
+            "test_directory_fsync_preserves_replayable_commit",
+        ),
+        "V4-P1-12-DACL-FAIL-CLOSED": (
+            "P1-12", "windows_security",
+            "tests/windows_security/test_dacl.py::test_unverified_dacl_fails_closed",
+        ),
+        "V4-P1-13-STATE-GENERATION": (
+            "P1-13", "storage_chaos",
+            "tests/storage_chaos/test_generation_isolation.py::"
+            "test_v3_and_v4_state_generations_are_disjoint",
+        ),
+    }
+    for test_id, (audit_id, suite, selector) in expected_active.items():
+        item = mutation_by_id.get(test_id, {})
+        actual = (
+            item.get("audit_id"), item.get("suite"), item.get("selector"),
+            item.get("owner_task"), item.get("state"),
+        ) if isinstance(item, dict) else None
+        if actual != (audit_id, suite, selector, "W4-02", "ACTIVE_REQUIRED"):
+            fail(f"W4-02 active mutation lifecycle drifted: {test_id}")
+        elif not _selector_is_declared(ROOT, selector):
+            fail(f"W4-02 active selector is not declared: {test_id}")
+    bundle = mutation_by_id.get("V4-P0-12-BUNDLE-RESULT-MIX", {})
+    bundle_selector = (
+        "tests/contract/test_audit_bundle.py::"
+        "test_existing_bundle_cannot_mix_old_digest_with_new_result"
+    )
+    if (
+        not isinstance(bundle, dict)
+        or bundle.get("audit_id") != "P0-12"
+        or bundle.get("owner_task") != "W4-03"
+        or bundle.get("selector") != bundle_selector
+        or bundle.get("state") not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}
+        or _selector_is_declared(ROOT, bundle_selector)
+        != (bundle.get("state") == "ACTIVE_REQUIRED")
+    ):
+        fail("W4-02 P0-12 successor lifecycle drifted")
+
+    tracked = set(_git_tracked_files())
+    for path in W4_02_ALLOWED_PATHS:
+        if path not in tracked:
+            fail(f"W4-02 exact path is not Git tracked: {path}")
+    disposition_by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    storage_disposition = disposition_by_path.get("compiler_core/storage.py", {})
+    if (
+        storage_disposition.get("disposition"),
+        storage_disposition.get("terminal_state"),
+        storage_disposition.get("namespace"),
+    ) != ("KEEP_REWRITE", "KEEP_REWRITE", "formal_core"):
+        fail("W4-02 storage module is not classified as formal core")
+    for path in W4_02_CHANGED_PATHS:
+        if path.startswith(("tests/storage_chaos/", "tests/windows_security/")):
+            item = disposition_by_path.get(path, {})
+            if (item.get("disposition"), item.get("terminal_state")) != (
+                "TEST_ORACLE", "TEST_ORACLE",
+            ):
+                fail(f"W4-02 required test is not a test oracle: {path}")
+
+    if W4_02_TEST_CASE_COUNT != 36 or W4_02_TEST_CASE_IDS_DIGEST == "sha256:" + "0" * 64:
+        fail("W4-02 JUnit case identity is not frozen")
+    if any(marker not in runner_source for marker in (
+        "_w4_02_test_report_problems(reports)",
+        "_w4_02_storage_contract_problems()",
+        "w4-02-exact-storage-reports",
+        "w4-02-durable-isolated-storage-contract",
+        "w4-02-exact-committed-scope",
+    )):
+        fail("W4-02 runner does not rebuild its executable receipt contract")
+    if cmd_w4_01_run_identity_gate() != EXIT_OK:
+        fail("W4-02 prerequisite machine gate failed: W4-01")
+    if cmd_w2_04_snapshot_gate() != EXIT_OK:
+        fail("W4-02 prerequisite machine gate failed: W2-04")
+
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W4-02 storage gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(
+        f"W4-02 storage gate OK: {W4_02_TEST_CASE_COUNT} focused cases; "
+        "2/10/100 process, five kill points, durable isolated namespace, "
+        "reparse/DACL fail closed; P0-12 remains owned or activated by W4-03"
+    )
+    return EXIT_OK
+
+
+def cmd_w4_02_storage_gate() -> int:
+    try:
+        return _cmd_w4_02_storage_gate()
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(
+            f"W4-02 storage gate rejected malformed input: {type(exc).__name__}: {exc}",
             file=sys.stderr,
         )
         return EXIT_GATE_FAIL
@@ -12226,6 +12551,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w3_05_semantic_mutation_gate()
     if args.wave == "W4-01":
         return cmd_w4_01_run_identity_gate()
+    if args.wave == "W4-02":
+        return cmd_w4_02_storage_gate()
     print(
         f"task {args.wave} has no implemented machine verifier; refusing false PASS",
         file=sys.stderr,
@@ -14122,6 +14449,111 @@ def _w4_01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]
     return problems
 
 
+def _w4_02_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact W4-02 storage-chaos/security JUnit evidence with no bypass."""
+
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    if len(pytest_reports) != 1:
+        return ["W4-02 must bind exactly one pytest report"]
+    report = pytest_reports[0]
+    expected = {
+        "exit_code": 0,
+        "terminal_summaries": 1,
+        "passed": W4_02_TEST_CASE_COUNT,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "collection_errors": 0,
+        "junit_valid": True,
+        "junit_tests": W4_02_TEST_CASE_COUNT,
+        "junit_skipped": 0,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "junit_cases": W4_02_TEST_CASE_COUNT,
+        "junit_unique_cases": W4_02_TEST_CASE_COUNT,
+        "junit_case_ids_digest": W4_02_TEST_CASE_IDS_DIGEST,
+    }
+    problems = [
+        f"W4-02 pytest {field} drifted: {report.get(field)!r} != {expected_value!r}"
+        for field, expected_value in expected.items()
+        if report.get(field) != expected_value
+    ]
+    if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+        problems.append("W4-02 pytest junit_sha256 is missing or invalid")
+    return problems
+
+
+def _w4_02_storage_contract_problems() -> list[str]:
+    """Check the narrow durable-store API and platform primitives without writing state."""
+
+    problems: list[str] = []
+    storage_path = ROOT / "compiler_core" / "storage.py"
+    artifact_path = ROOT / "compiler_core" / "artifact_store.py"
+    try:
+        source = storage_path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(storage_path))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        return [f"W4-02 storage source is unreadable: {exc}"]
+    if "compiler_core.artifact_store" in source or "compiler_core.audit_bundle" in source:
+        problems.append("storage imports an in-process resolver or future audit writer")
+    required_markers = (
+        'NAMESPACE_V4 = "jc-v4-state"',
+        "CreateFileW",
+        "0x00200000",
+        "MoveFileExW",
+        "0x8",
+        "os.link(source, target, follow_symlinks=False)",
+        "os.fsync(descriptor)",
+        "msvcrt.locking",
+        "fcntl.flock",
+        "_containment_ids",
+        "STORAGE_CAPABILITY_BLOCKED",
+        '"S-1-1-0" in allowed',
+        '_checkpoint("lease-durable")',
+        '_checkpoint("stage-written")',
+        '_checkpoint("stage-durable")',
+        '_checkpoint("object-published")',
+        '_checkpoint("directory-durable")',
+    )
+    for marker in required_markers:
+        if marker not in source:
+            problems.append(f"storage durability/security marker is missing: {marker}")
+    if "os.replace(" in source:
+        problems.append("storage final publication permits replace-overwrite")
+    try:
+        store_class = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "V4TransactionStore"
+        )
+    except StopIteration:
+        problems.append("V4TransactionStore is missing")
+    else:
+        signatures = {
+            node.name: tuple(argument.arg for argument in node.args.args)
+            for node in store_class.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        expected_signatures = {
+            "create": ("cls", "state_root"),
+            "open": ("cls", "state_root"),
+            "put_bytes": ("self", "kind", "content"),
+            "get_bytes": ("self", "digest"),
+            "recover": ("self",),
+        }
+        for name, expected in expected_signatures.items():
+            if signatures.get(name) != expected:
+                problems.append(f"V4TransactionStore.{name} signature drifted")
+    try:
+        artifact_digest = "sha256:" + sha256_hex(artifact_path.read_bytes())
+    except OSError as exc:
+        problems.append(f"artifact resolver boundary is unreadable: {exc}")
+    else:
+        if artifact_digest != W4_02_ARTIFACT_STORE_SHA256:
+            problems.append("ArtifactResolverV4 byte-stable boundary drifted")
+    return problems
+
+
 def _w3_02_live_binding_problems(state_root: Path) -> list[str]:
     """Require the pinned B02 checkout and preserved evidence on postflight/resume."""
 
@@ -14546,6 +14978,42 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W4-01 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W4-02":
+        problems.extend(_w4_02_test_report_problems(reports))
+        problems.extend(_w4_02_storage_contract_problems())
+        changed_paths = receipt.get("changed_paths", [])
+        if (
+            not isinstance(changed_paths, list)
+            or set(changed_paths) != set(W4_02_CHANGED_PATHS)
+            or len(changed_paths) != len(W4_02_CHANGED_PATHS)
+        ):
+            problems.append("W4-02 receipt does not bind its exact 13 committed paths")
+        artifact_digests = receipt.get("artifact_digests", {})
+        for path in W4_02_CHANGED_PATHS:
+            if re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(artifact_digests.get(f"result-path:{path}")),
+            ) is None:
+                problems.append(f"W4-02 receipt lacks committed result digest: {path}")
+        if (
+            artifact_digests.get("publication:compiler_core/artifact_store.py")
+            != W4_02_ARTIFACT_STORE_SHA256
+        ):
+            problems.append("W4-02 byte-stable artifact resolver digest drifted")
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w4-02-exact-storage-reports",
+            "w4-02-durable-isolated-storage-contract",
+            "w4-02-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W4-02 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -14983,6 +15451,10 @@ def _execute_auto_task(
             ),
             "publication:tool-spec": W4_01_TOOL_SPEC_DIGEST,
         })
+    if task["id"] == "W4-02":
+        artifact_digests["publication:compiler_core/artifact_store.py"] = (
+            "sha256:" + sha256_hex((ROOT / "compiler_core/artifact_store.py").read_bytes())
+        )
     test_reports = _structured_test_reports(command_results)
     dirty_paths = sorted(set(before) | set(after) | set(_changed_status_paths(before, after)))
     scoped_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -15658,7 +16130,7 @@ def _execute_auto_task(
                 or mutation_by_id.get("V4-P1-13-STATE-GENERATION", {}).get("owner_task")
                 != "W4-02"
                 or mutation_by_id.get("V4-P1-13-STATE-GENERATION", {}).get("state")
-                != "RED_AT_TASK"
+                not in {"RED_AT_TASK", "ACTIVE_REQUIRED"}
             ):
                 identity_problems.append("P0-12/P1-13 deferred lifecycle drifted")
         except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
@@ -15706,6 +16178,53 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 18 changed paths plus the byte-stable MCP publication are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W4-02":
+        report_problems = _w4_02_test_report_problems(test_reports)
+        contract_problems = _w4_02_storage_contract_problems()
+        if (
+            artifact_digests.get("publication:compiler_core/artifact_store.py")
+            != W4_02_ARTIFACT_STORE_SHA256
+        ):
+            contract_problems.append("byte-stable ArtifactResolverV4 digest drifted")
+        expected_paths = set(W4_02_CHANGED_PATHS)
+        path_problems = []
+        if set(changed_paths) != expected_paths or len(changed_paths) != len(expected_paths):
+            path_problems.append(
+                f"changed paths={sorted(changed_paths)!r} expected={sorted(expected_paths)!r}"
+            )
+        for path in W4_02_CHANGED_PATHS:
+            key = f"result-path:{path}"
+            if re.fullmatch(r"sha256:[0-9a-f]{64}", str(artifact_digests.get(key))) is None:
+                path_problems.append(f"missing committed result digest: {path}")
+        assertions.append({
+            "id": "w4-02-exact-storage-reports",
+            "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W4_02_TEST_CASE_COUNT} storage-chaos/security/snapshot/governance pytest "
+                "items bound with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-02-durable-isolated-storage-contract",
+            "kind": "artifact_binding",
+            "ok": not contract_problems,
+            "detail": (
+                "durability, recovery, containment, generation isolation, and owner/DACL "
+                "contract are live"
+                if not contract_problems else "; ".join(contract_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w4-02-exact-committed-scope",
+            "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 13 changed paths plus byte-stable ArtifactResolverV4 are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

@@ -3,7 +3,7 @@
   "baseline": {
     "commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
     "tree": "TBD_BY_RUNNER",
-    "plan_sha256": "82726738b0f172cb547b9032c3cf040999e23da7cc0a27760d33d156ba317370",
+    "plan_sha256": "0908f01937ffe1d308645e65d185d36ac164e9ad84e784fad3146e72cdb42d2e",
     "audit_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3"
   },
   "tasks": [
@@ -2854,12 +2854,22 @@
         "P1-12",
         "P1-13"
       ],
-      "objective": "V4 storage abstraction；跨进程 lock；POSIX file+dir fsync；Windows FlushFileBuffers/write-through/replace；no-follow/reparse",
+      "objective": "固定 jc-v4-state namespace 的 durable/cross-process content-addressed storage；complete-or-absent recovery；no-follow/reparse/file-id/DACL fail closed",
       "allowed_paths": [
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
         "compiler_core/artifact_store.py",
         "compiler_core/storage.py",
-        "tests/storage_chaos/**",
-        "tests/windows_security/**"
+        "remediation/v4/file-disposition.json",
+        "remediation/v4/tasks.json",
+        "tests/contract/test_required_test_manifest.py",
+        "tests/required-v4-tests.json",
+        "tests/storage_chaos/test_generation_isolation.py",
+        "tests/storage_chaos/test_multiprocess_recovery.py",
+        "tests/storage_chaos/test_power_loss.py",
+        "tests/windows_security/test_dacl.py",
+        "tests/windows_security/test_reparse_escape.py",
+        "tools/build_file_disposition.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -2869,9 +2879,33 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W4-02"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W4-02",
+          "tests/storage_chaos/test_generation_isolation.py",
+          "tests/storage_chaos/test_multiprocess_recovery.py",
+          "tests/storage_chaos/test_power_loss.py",
+          "tests/windows_security/test_dacl.py",
+          "tests/windows_security/test_reparse_escape.py",
+          "tests/security/test_pack_toctou.py::test_verified_bytes_are_the_executed_bytes",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W4-02.xml"
         ]
       ],
       "expected_exit_codes": [
+        0,
         0
       ],
       "completion_assertions": [

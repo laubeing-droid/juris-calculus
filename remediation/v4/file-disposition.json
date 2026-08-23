@@ -2,8 +2,8 @@
   "schema_version": "jc/remediation-v4-file-disposition/1.0",
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "82726738b0f172cb547b9032c3cf040999e23da7cc0a27760d33d156ba317370",
-  "count": 386,
+  "plan_sha256": "0908f01937ffe1d308645e65d185d36ac164e9ad84e784fad3146e72cdb42d2e",
+  "count": 392,
   "paths": [
     {
       "path": ".gitattributes",
@@ -877,6 +877,14 @@
       "audit_role": "production-code",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/storage.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "compiler_core/stratified_evaluator.py",
@@ -2305,6 +2313,27 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/storage_chaos/test_generation_isolation.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/test_multiprocess_recovery.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/test_power_loss.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/stress_test_facts.py",
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
@@ -2981,6 +3010,20 @@
     },
     {
       "path": "tests/windows_security/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/windows_security/test_dacl.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/windows_security/test_reparse_escape.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",

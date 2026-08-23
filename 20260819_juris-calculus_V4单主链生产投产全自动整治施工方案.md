@@ -674,10 +674,10 @@ py -3.12 -B -m pytest tests/contract/test_python_schema_mcp_differential.py -q -
 
 ### W4-02　V4 storage abstraction
 
-- **Depends / audit**：`W4-01, W2-04 / P0-12..13, P1-10..13`。
-- **Paths**：`artifact_store.py`、storage modules/tests；V4 默认 namespace 与 V3 物理隔离。
-- **动作**：跨进程 lock、唯一 staging、lease/owner、content-addressed final、collision 检查、orphan quarantine/recovery、quota；POSIX file+dir fsync，Windows FlushFileBuffers/write-through/replace；逐级 no-follow/reparse/file-id/containment；owner/DACL/permissions fail closed。
-- **Gate**：2/10/100 process、逐写点 kill、残留恢复、disk-full、read-only、symlink/junction swap、Everyone ACE、owner change；重启后 only-complete-or-absent；不支持能力的 FS 返回 BLOCKED。
+- **Depends / audit**：`W4-01, W2-04 / P0-11..13, P1-10..13`。
+- **Paths**：仅以下 14 个 exact allowlist paths：本方案、`compiler_core/artifact_store.py`、`compiler_core/storage.py`、`remediation/v4/file-disposition.json`、`remediation/v4/tasks.json`、`tests/contract/test_required_test_manifest.py`、`tests/required-v4-tests.json`、`tests/storage_chaos/test_generation_isolation.py`、`tests/storage_chaos/test_multiprocess_recovery.py`、`tests/storage_chaos/test_power_loss.py`、`tests/windows_security/test_dacl.py`、`tests/windows_security/test_reparse_escape.py`、`tools/build_file_disposition.py`、`tools/remediate_v4.py`；`artifact_store.py` 仅作 byte-stable W2-04 回归边界，`ArtifactResolverV4` 继续没有 filesystem/path authority，不修改 W4-03 audit bundle。
+- **动作**：新增唯一 `V4TransactionStore`，在固定 `jc-v4-state` namespace 内使用跨进程单 writer lock、唯一 staging、PID lease、SHA-256 content-addressed final、collision 检查、orphan quarantine/recovery 和 byte quota；POSIX 使用 exclusive hard-link publish、file fsync、target/staging/parent directory fsync，Windows 使用 no-follow `CreateFileW`、`FlushFileBuffers` 对应的 `os.fsync`、`MoveFileExW(MOVEFILE_WRITE_THROUGH)` 且禁止覆盖；每次操作复核 state-root containment、root/locks/staging/objects/quarantine file id，拒绝 symlink/junction/reparse 与目录身份替换；POSIX owner/mode、Windows owner/DACL 只允许当前 service SID 与 SYSTEM，验证能力不可用时 fail closed 为 `STORAGE_CAPABILITY_BLOCKED`。
+- **Gate**：真实 2/10/100 process colliding writers、五个逐写点 `os._exit`、残留恢复、quota/collision、disk-full、read-only、root/subtree symlink/junction swap、plain directory identity swap、Everyone ACE、owner change/验证不可用；重启后 only-complete-or-absent，V3 sibling bytes 不读不写，全部 required selector 转 `ACTIVE_REQUIRED` 且零 skip/xfail。P0-12 的 old COMPLETE bundle/new result collision 仍唯一留给 W4-03 并保持 RED；P0-11 的 W2-04 immutable snapshot selector作为 byte-stable 回归。runner 绑定 `w4-02-exact-storage-reports`、`w4-02-durable-isolated-storage-contract`、`w4-02-exact-committed-scope` 三项专属 assertions；14-path allowlist 中 byte-stable 的 `artifact_store.py` 以冻结 digest 绑定，其余 13 个实际变更 path 各有 committed result digest。
 - **Commit**：`feat(storage): add durable isolated V4 transaction store`。
 
 ### W4-03　AuditBundleV4 writer、verify、replay

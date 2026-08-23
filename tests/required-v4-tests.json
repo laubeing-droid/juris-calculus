@@ -194,6 +194,41 @@
       "selector": "tests/contract/test_run_identity.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 47
+    },
+    {
+      "id": "W4-STORAGE-MULTIPROCESS",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_multiprocess_recovery.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 9
+    },
+    {
+      "id": "W4-STORAGE-POWER-LOSS",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_power_loss.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
+    },
+    {
+      "id": "W4-STORAGE-GENERATION",
+      "suite": "storage_chaos",
+      "selector": "tests/storage_chaos/test_generation_isolation.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 2
+    },
+    {
+      "id": "W4-STORAGE-REPARSE",
+      "suite": "windows_security",
+      "selector": "tests/windows_security/test_reparse_escape.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 3
+    },
+    {
+      "id": "W4-STORAGE-DACL",
+      "suite": "windows_security",
+      "selector": "tests/windows_security/test_dacl.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 3
     }
   ],
   "evidence_tracks": [
@@ -369,7 +404,7 @@
       "suite": "windows_security",
       "selector": "tests/windows_security/test_reparse_escape.py::test_state_reparse_cannot_escape_root",
       "owner_task": "W4-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Insert a junction or reparse point below the state root.",
       "red_failure": "Any state-root escape must fail before read or write."
     },
@@ -489,7 +524,7 @@
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_multiprocess_recovery.py::test_cross_process_lock_and_stale_staging_recovery",
       "owner_task": "W4-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Run colliding writers or leave stale staging after a kill point.",
       "red_failure": "Exactly one writer commits and stale staging remains recoverable."
     },
@@ -499,7 +534,7 @@
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_power_loss.py::test_directory_fsync_preserves_replayable_commit",
       "owner_task": "W4-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Omit directory or copied-pack fsync before COMPLETE.",
       "red_failure": "The power-loss model must expose a non-replayable commit."
     },
@@ -509,7 +544,7 @@
       "suite": "windows_security",
       "selector": "tests/windows_security/test_dacl.py::test_unverified_dacl_fails_closed",
       "owner_task": "W4-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Return state-present when owner or DACL verification is unavailable.",
       "red_failure": "Unverified Windows permissions must block production state."
     },
@@ -519,7 +554,7 @@
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_generation_isolation.py::test_v3_and_v4_state_generations_are_disjoint",
       "owner_task": "W4-02",
-      "state": "RED_AT_TASK",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Read V3 cache or state from a V4 run generation.",
       "red_failure": "Cross-generation state reuse must fail."
     },
