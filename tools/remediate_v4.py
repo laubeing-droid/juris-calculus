@@ -12971,10 +12971,10 @@ def _w3_05_ledger_problems() -> list[str]:
     expected_deferred = {
         "audit_id": "P1-07", "owner_task": "W4-05",
         "selector": (
-            "tests/formal_e2e/test_positive_vertical_slice.py::"
-            "test_namespace_domain_patch_changes_evaluation"
+            "tests/contract/test_application.py::"
+            "test_signed_domain_config_has_no_global_fallback"
         ),
-        "state": "RED_AT_TASK",
+        "state": "ACTIVE_REQUIRED",
     }
     expected = {
         "schema_version": "jc/v4-semantic-mutation-ledger/1.0",

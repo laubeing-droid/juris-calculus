@@ -35,6 +35,12 @@ def _load_runner_module():
     return module
 
 
+def test_w3_05_resume_validator_accepts_the_active_w4_05_closure() -> None:
+    module = _load_runner_module()
+
+    assert module._w3_05_ledger_problems() == []
+
+
 def _run_runner(*args: str, cwd: Path | None = None, env: dict | None = None) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-B", str(RUNNER), *args]
     return subprocess.run(
