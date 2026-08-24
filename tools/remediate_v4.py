@@ -28092,7 +28092,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                     ),
                     latest,
                 )
-            if task["mode"] == "AUTO" and latest is not None:
+            if (
+                task["mode"] == "AUTO"
+                and latest is not None
+                and latest.get("status") == "COMPLETED"
+            ):
                 rebound = _rebind_legacy_auto_receipt(
                     task, latest, task_start_commit, state_root,
                     run_state["run_id"], input_receipts, history,
