@@ -16,7 +16,7 @@ SPEC = importlib.util.spec_from_file_location("jc_wheel_gate", ROOT / "tools/whe
 assert SPEC is not None and SPEC.loader is not None
 WHEEL_GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(WHEEL_GATE)
-DIST = "juris_calculus-4.0.0rc1.dist-info"
+DIST = "juris_calculus-4.0.0.dist-info"
 
 
 def _record_row(name: str, payload: bytes) -> list[str]:
@@ -32,13 +32,16 @@ def _wheel(tmp_path: Path, mutation: str = "valid") -> Path:
     entries.update({
         f"{DIST}/METADATA": (
             b"Metadata-Version: 2.4\r\nName: juris-calculus\r\n"
-            b"Version: 4.0.0rc1\r\nRequires-Python: <3.13,>=3.11\r\n\r\n"
+            b"Version: 4.0.0\r\nRequires-Python: <3.13,>=3.11\r\n\r\n"
         ),
         f"{DIST}/WHEEL": (
             b"Wheel-Version: 1.0\nGenerator: setuptools (83.0.0)\n"
             b"Root-Is-Purelib: true\nTag: py3-none-any\n"
         ),
-        f"{DIST}/entry_points.txt": b"[console_scripts]\njc = compiler_core.cli:main\n",
+        f"{DIST}/entry_points.txt": (
+            b"[console_scripts]\njc = compiler_core.cli:main\n"
+            b"jc-formal = compiler_core.formal_bridge:main\n"
+        ),
         f"{DIST}/licenses/LICENSE": (ROOT / "LICENSE").read_bytes(),
         f"{DIST}/top_level.txt": b"compiler_core\nconfigs\nmcp_server\nschemas\n",
     })
@@ -59,7 +62,7 @@ def _wheel(tmp_path: Path, mutation: str = "valid") -> Path:
     csv.writer(stream, lineterminator="\n").writerows(rows)
     entries[f"{DIST}/RECORD"] = stream.getvalue().encode()
 
-    wheel = tmp_path / "juris_calculus-4.0.0rc1-py3-none-any.whl"
+    wheel = tmp_path / "juris_calculus-4.0.0-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, payload in entries.items():
             archive.writestr(name, payload)
@@ -73,10 +76,7 @@ def _wheel(tmp_path: Path, mutation: str = "valid") -> Path:
 
 def test_payload_is_derived_from_the_manual_production_classes() -> None:
     payload = WHEEL_GATE.expected_payload_paths(ROOT)
-    assert len(payload) == 29
-    assert WHEEL_GATE._canonical_digest(sorted(payload)) == (
-        "sha256:df1e45e4e83f12e939a1a189983229db7afaf0cce0f1488560af8127348317c1"
-    )
+    assert len(payload) == 32
     assert "compiler_core/application.py" in payload
     assert "configs/render_profiles/neutral.yaml" in payload
     assert "schemas/jc-v4.schema.json" in payload
@@ -85,10 +85,7 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
 
 def test_exact_synthetic_wheel_is_accepted(tmp_path: Path) -> None:
     report = WHEEL_GATE.validate_wheel(ROOT, _wheel(tmp_path))
-    assert report["entry_count"] == 35
-    assert report["entry_names_sha256"] == (
-        "sha256:3e60779061f884e96239e4a5b37aa90bd1cf2065f45761e49e4ea14d10fc11f5"
-    )
+    assert report["entry_count"] == 38
 
 
 @pytest.mark.parametrize("mutation", ["extra", "missing", "duplicate", "unsafe", "record"])

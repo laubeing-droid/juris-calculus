@@ -1,6 +1,6 @@
 """juris-calculus包、CLI和运行时共享的唯一版本源。"""
 
-__version__ = "4.0.0rc1"
+__version__ = "4.0.0"
 
 # MCP 适配器从包版本模块读取身份和协议版本，避免 manifest、CLI 与审计包各自漂移。
 SERVER_NAME = "juris-calculus"

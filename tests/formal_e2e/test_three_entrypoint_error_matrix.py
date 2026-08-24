@@ -428,7 +428,7 @@ def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(
 
     runtime_capabilities = MCPCapabilitiesOutputV4(
         "jc/4.0",
-        "4.0.0rc1",
+        "4.0.0",
         "deployed-tree",
         DigestV4.from_bytes(b"engine"),
         DigestV4.from_bytes(b"wheel"),

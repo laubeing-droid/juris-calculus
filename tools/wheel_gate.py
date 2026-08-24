@@ -184,7 +184,7 @@ def _dist_info_prefix(names: list[str]) -> str:
     if len(prefixes) != 1:
         raise RuntimeError("wheel must contain exactly one dist-info directory")
     prefix = prefixes.pop()
-    if prefix != "juris_calculus-4.0.0rc1.dist-info":
+    if prefix != "juris_calculus-4.0.0.dist-info":
         raise RuntimeError(f"wheel dist-info identity drifted: {prefix}")
     return prefix
 
@@ -217,7 +217,7 @@ def _validate_metadata(archive: zipfile.ZipFile, prefix: str, source: Path) -> N
     document = BytesParser().parsebytes(archive.read(f"{prefix}/METADATA"))
     if (
         document.get("Name") != "juris-calculus"
-        or document.get("Version") != "4.0.0rc1"
+        or document.get("Version") != "4.0.0"
         or document.get("Requires-Python") != "<3.13,>=3.11"
     ):
         raise RuntimeError("wheel METADATA identity drifted")
@@ -227,7 +227,10 @@ def _validate_metadata(archive: zipfile.ZipFile, prefix: str, source: Path) -> N
     parser = configparser.ConfigParser()
     parser.optionxform = str
     parser.read_string(archive.read(f"{prefix}/entry_points.txt").decode("utf-8"))
-    if dict(parser.items("console_scripts")) != {"jc": "compiler_core.cli:main"}:
+    if dict(parser.items("console_scripts")) != {
+        "jc": "compiler_core.cli:main",
+        "jc-formal": "compiler_core.formal_bridge:main",
+    }:
         raise RuntimeError("wheel console entrypoint drifted")
     top_level = set(archive.read(f"{prefix}/top_level.txt").decode("utf-8").splitlines())
     if top_level != {"compiler_core", "configs", "mcp_server", "schemas"}:
@@ -304,7 +307,7 @@ def _smoke_install(source: Path, wheel: Path) -> None:
             f"t=pathlib.Path({str(target)!r}).resolve();sys.path.insert(0,str(t));"
             "import compiler_core,mcp_server;"
             "from compiler_core.version import __version__;"
-            "assert __version__=='4.0.0rc1';"
+            "assert __version__=='4.0.0';"
             "assert pathlib.Path(compiler_core.__file__).resolve().is_relative_to(t);"
             "assert pathlib.Path(mcp_server.__file__).resolve().is_relative_to(t);"
             "assert importlib.util.find_spec('compiler_core.analysis') is None;"
@@ -432,14 +435,14 @@ def validate_installed_e2e_report(
         "status": "PASS",
         "wheel_sha256": wheel_digest,
         "test_lock_sha256": lock_digest,
-        "installed_version": "4.0.0rc1",
+        "installed_version": "4.0.0",
         "source_tree_absent": True,
         "imports_from_fresh_environment": True,
         "network_disabled_during_install_and_execution": True,
         "rejected_imports": list(REJECTED_IMPORTS),
-        "cli_version": "jc 4.0.0rc1",
+        "cli_version": "jc 4.0.0",
         "cli_capabilities_error": "RUNTIME_NOT_CONFIGURED",
-        "mcp_server_version": "4.0.0rc1",
+        "mcp_server_version": "4.0.0",
         "mcp_tools": [
             "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
         ],
@@ -509,7 +512,7 @@ def run_installed_e2e(
     if work_dir.exists() and any(work_dir.iterdir()):
         raise RuntimeError("installed E2E work directory is not empty")
     work_dir.mkdir(parents=True, exist_ok=True)
-    installable_wheel = work_dir / "juris_calculus-4.0.0rc1-py3-none-any.whl"
+    installable_wheel = work_dir / "juris_calculus-4.0.0-py3-none-any.whl"
     shutil.copyfile(wheel, installable_wheel)
     validate_wheel(source, installable_wheel)
 
@@ -595,7 +598,7 @@ def run_installed_e2e(
     commands.append(summary)
     origin = json.loads(completed.stdout)
     if origin != {
-        "version": "4.0.0rc1",
+        "version": "4.0.0",
         "origins_in_environment": True,
         "rejected_imports": list(REJECTED_IMPORTS),
         "schema_sha256": hashlib.sha256((source / "schemas/jc-v4.schema.json").read_bytes()).hexdigest(),
@@ -608,7 +611,7 @@ def run_installed_e2e(
     )
     commands.append(summary)
     cli_version = completed.stdout.strip()
-    if cli_version != "jc 4.0.0rc1":
+    if cli_version != "jc 4.0.0":
         raise RuntimeError("installed CLI version drifted")
     completed, summary = _run_process(
         "cli-capabilities",
@@ -637,7 +640,7 @@ def run_installed_e2e(
     mcp_error = mcp[2]["result"]["structuredContent"]["error"]["code"]
     if (
         len(mcp) != 3
-        or mcp[0]["result"]["serverInfo"] != {"name": "juris-calculus", "version": "4.0.0rc1"}
+        or mcp[0]["result"]["serverInfo"] != {"name": "juris-calculus", "version": "4.0.0"}
         or mcp_tools != ["jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact"]
         or mcp[2]["result"]["isError"] is not True
         or mcp_error != "RUNTIME_NOT_CONFIGURED"

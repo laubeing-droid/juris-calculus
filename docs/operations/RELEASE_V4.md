@@ -1,6 +1,6 @@
 # V4 build-once release and promotion
 
-The current package version authority is `compiler_core/version.py`; the release tag must be exactly `v4.0.0rc1` while that authority remains unchanged. The public contracts are `schemas/jc-v4.schema.json` and `mcp_manifest.json`.
+The current package version authority is `compiler_core/version.py`; the local-production release version is exactly `4.0.0`. The public contracts are `schemas/jc-v4.schema.json` and `mcp_manifest.json`.
 
 ## Local release candidate
 

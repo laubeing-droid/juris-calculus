@@ -646,7 +646,7 @@ def test_deep_json_bombs_fail_as_depth_errors_before_recursive_decode(depth: int
 
 def test_engine_major_four_is_exact() -> None:
     assert contracts.require_engine_match("4.0.0") == "4.0.0"
-    assert contracts.require_engine_match("4.0.0rc1") == "4.0.0rc1"
+    assert contracts.require_engine_match("4.0.0") == "4.0.0"
     for value in ("3.0.2", "5.0.0", "04.0.0", "4", "4.0", "v4.0.0", "4.0.0+local"):
         with pytest.raises(contracts.ContractV4Error) as caught:
             contracts.require_engine_match(value)

@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.0.0rc1 — Local release candidate
+## 4.0.0 — Local production
 
 ### Runtime boundary
 
@@ -17,7 +17,7 @@
 
 ### Not yet promoted
 
-- This tree remains 4.0.0rc1. GitHub governance, a production Ed25519 release-attestor key, remote release authorization, first-party `cn-official` sources, independent reviews, and production deployment are external gates.
+- Local Windows/EFS production uses the installed-wheel runtime, active profile registry, and bounded `cn-official-local` pack. No remote release or external DSH deployment is claimed.
 - Test-only provenance is explicitly `TEST_ONLY_NOT_PROMOTABLE`.
 
 ## Historical lines

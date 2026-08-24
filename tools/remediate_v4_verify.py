@@ -98,6 +98,10 @@ def _canonical(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def _digest(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def _task_report(task_id: str, checks: list[dict[str, object]], state_root: Path) -> int:
     passed = all(check.get("status") == "PASS" for check in checks)
     body = {
@@ -258,6 +262,51 @@ def _verify_w10_06(state_root: Path) -> int:
     return _task_report("W10-06", checks, state_root)
 
 
+def _verify_w10_07(state_root: Path) -> int:
+    from compiler_core.canonical_serialization import canonical_bytes
+    from compiler_core.formal_bridge import load_active_profile
+    from tools.wheel_gate import validate_wheel
+
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    pointer_path = production / "deployment/prepared.json"
+    pointer = json.loads(pointer_path.read_bytes()) if pointer_path.is_file() else {}
+    manifest_path = Path(pointer.get("manifest_path", "."))
+    manifest = json.loads(manifest_path.read_bytes()) if manifest_path.is_file() else {}
+    wheel = Path(manifest.get("wheel_path", "."))
+    profile_path = Path(manifest.get("profile_path", "."))
+    config_path = Path(manifest.get("runtime_config_path", "."))
+    checks = [
+        {"name": "prepared-pointer-canonical", "status": "PASS" if pointer and pointer_path.read_bytes() == canonical_bytes(pointer) else "FAIL"},
+        {"name": "release-manifest-canonical", "status": "PASS" if manifest and manifest_path.read_bytes() == canonical_bytes(manifest) else "FAIL"},
+        {"name": "inactive-prepared-release", "status": "PASS" if manifest.get("status") == "PREPARED" and manifest.get("activated") is False else "FAIL"},
+        {"name": "reproducible-wheel", "status": "PASS" if manifest.get("reproducible_build") is True and wheel.is_file() and _digest(wheel) == manifest.get("wheel_digest") else "FAIL"},
+        {"name": "installed-origin", "status": "PASS" if manifest.get("installed_origin_verified") is True and Path(manifest.get("venv_python", ".")).is_file() else "FAIL"},
+        {"name": "runtime-config", "status": "PASS" if config_path.is_file() and _digest(config_path) == manifest.get("runtime_config_digest") else "FAIL"},
+        {"name": "production-profile", "status": "PASS" if profile_path.is_file() and _digest(profile_path) == manifest.get("profile_digest") else "FAIL"},
+        {"name": "efs-aes-256", "status": "PASS" if manifest.get("efs", {}).get("algorithm") == "EFS-AES-256" else "FAIL"},
+        {"name": "not-activated", "status": "PASS" if not (production / "deployment/profile-registry.json").exists() else "FAIL"},
+    ]
+    try:
+        validate_wheel(ROOT, wheel)
+        checks.append({"name": "wheel-exact-set", "status": "PASS"})
+        registry = {
+            "schema_version": "jc/formal-profile-registry/1.0",
+            "active_profile": manifest["release_id"],
+            "profiles": {manifest["release_id"]: json.loads(profile_path.read_bytes())},
+        }
+        temporary = state_root / "tmp/W10-07/profile-registry.json"
+        temporary.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_bytes(canonical_bytes(registry))
+        load_active_profile(temporary)
+        checks.append({"name": "profile-loads", "status": "PASS"})
+    except (OSError, TypeError, ValueError):
+        checks.extend((
+            {"name": "wheel-exact-set", "status": "FAIL"},
+            {"name": "profile-loads", "status": "FAIL"},
+        ))
+    return _task_report("W10-07", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -333,6 +382,8 @@ def main() -> int:
             return _verify_w10_05(Path(args.state_root).resolve())
         if args.task == "W10-06":
             return _verify_w10_06(Path(args.state_root).resolve())
+        if args.task == "W10-07":
+            return _verify_w10_07(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

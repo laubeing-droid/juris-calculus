@@ -16,7 +16,7 @@ New-Item -ItemType Directory source
 tar -xf source.tar -C source
 $epoch = git show -s --format=%ct HEAD
 python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
-python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
+python -m pip install .\dist\juris_calculus-4.0.0-py3-none-any.whl
 $env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
 jc capabilities --json
 jc evaluate --input case-request.json --json

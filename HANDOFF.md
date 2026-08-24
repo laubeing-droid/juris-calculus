@@ -4,7 +4,7 @@ Status date: 2026-08-24 (Asia/Shanghai)
 
 ## Current state
 
-The current source and package version is 4.0.0rc1. The local V4 kernel, deterministic build, installed-wheel gates, SBOM, checksums, and test-only signed provenance are implemented. Remote production promotion is not completed.
+The current source and package version is 4.0.0. The local V4 kernel, deterministic build, installed-wheel gates, SBOM, checksums, and local-production lifecycle are implemented. Remote release is not completed or claimed.
 
 The exact Git commit, tree, command streams, test reports, and artifact digests are authoritative only in the append-only remediation receipts. Prose does not replace those receipts.
 

@@ -1,6 +1,6 @@
 # juris-calculus
 
-JC 4.0.0rc1 is a public, auditable V4 legal-reasoning kernel. It accepts an explicit structured request, admits only verified facts and signed rules, runs one deterministic application service, and emits canonical results with replayable evidence.
+JC 4.0.0 is a public, auditable V4 legal-reasoning kernel. It accepts an explicit structured request, admits only verified facts and signed rules, runs one deterministic application service, and emits canonical results with replayable evidence.
 
 ```text
 LLM proposes -> verification gates decide -> formal kernel reasons
@@ -18,7 +18,7 @@ New-Item -ItemType Directory source
 tar -xf source.tar -C source
 $epoch = git show -s --format=%ct HEAD
 python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
-python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
+python -m pip install .\dist\juris_calculus-4.0.0-py3-none-any.whl
 $env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
 $env:JC_RUNTIME_FACTORY = "compiler_core.production_runtime"
 $env:JC_PRODUCTION_CONFIG = "C:\path\to\production-runtime.json"

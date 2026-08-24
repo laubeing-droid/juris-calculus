@@ -7,10 +7,15 @@ import argparse
 from base64 import b64decode, b64encode
 from binascii import Error as Base64Error
 import getpass
+import hashlib
+import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -21,7 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from compiler_core.canonical_serialization import canonical_bytes, parse_json_document
+from compiler_core.canonical_serialization import DigestV4, canonical_bytes, digest_value, parse_json_document
+from compiler_core.contracts import ContentRefV4
 
 
 ROOT_FIELDS = {
@@ -33,6 +39,12 @@ TRUST_FIELDS = {
     "independent_human_review", "verification_time", "runtime_identity",
     "trust_policy", "trust_keys",
 }
+PROFILE_PIN_FIELDS = (
+    "schema_version", "engine_version", "engine_source_tree", "engine_build_digest",
+    "wheel_digest", "package_digest", "lock_digest", "schema_digest",
+    "tool_spec_digest", "active_pack_ref", "trust_policy_ref",
+    "storage_capability_ref", "kernel_ready", "legal_production_ready",
+)
 
 
 def _derive(master: bytes, name: str) -> bytes:
@@ -99,6 +111,341 @@ def initialize_service_key(root_path: Path, output_path: Path, trust_path: Path)
     _harden_key_acl(output_path)
 
 
+def _sha256(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None,
+         timeout: int = 900, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        command, cwd=cwd, env=env, input=input_text, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=False, timeout=timeout,
+    )
+    if completed.returncode != 0:
+        detail = " ".join((completed.stderr or completed.stdout).split())[-1600:]
+        raise ValueError(f"command failed ({completed.returncode}): {detail}")
+    return completed
+
+
+def _git(*args: str) -> str:
+    return _run(["git", *args], cwd=ROOT, timeout=120).stdout.strip()
+
+
+def _venv_python(root: Path) -> Path:
+    return root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def _clean_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env.pop("PYTHONHOME", None)
+    env.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": "0"})
+    return env
+
+
+def _efs_evidence(path: Path) -> dict[str, object]:
+    if os.name != "nt":
+        return {"encrypted": False, "algorithm": "platform-not-windows"}
+    completed = _run(["cipher", "/c", str(path)], cwd=path.parent, timeout=120)
+    output = completed.stdout
+    if "AES" not in output or "256" not in output:
+        raise ValueError("production state is not EFS AES-256")
+    return {
+        "encrypted": True, "algorithm": "EFS-AES-256",
+        "cipher_output_digest": str(DigestV4.from_bytes(output.encode("utf-8"))),
+    }
+
+
+def _pointer_bytes(state_root: Path) -> dict[str, bytes | None]:
+    deployment = state_root / "deployment"
+    return {
+        name: (deployment / name).read_bytes() if (deployment / name).is_file() else None
+        for name in ("current.json", "previous.json", "profile-registry.json")
+    }
+
+
+def _installed_probe(python: Path, cwd: Path, environment: dict[str, str]) -> dict[str, object]:
+    code = (
+        "import json,pathlib,sys;import compiler_core,mcp_server;"
+        "from compiler_core.version import __version__;"
+        "root=pathlib.Path(sys.prefix).resolve();"
+        "origins=[pathlib.Path(compiler_core.__file__).resolve(),"
+        "pathlib.Path(mcp_server.__file__).resolve()];"
+        "assert all(p.is_relative_to(root) for p in origins);"
+        "print(json.dumps({'version':__version__,'prefix':str(root),"
+        "'origins_in_venv':True},sort_keys=True))"
+    )
+    return json.loads(_run(
+        [str(python), "-I", "-B", "-c", code], cwd=cwd,
+        env=environment, timeout=120,
+    ).stdout)
+
+
+def _reuse_prepared(state_root: Path, source_commit: str) -> dict[str, object] | None:
+    pointer_path = state_root / "deployment/prepared.json"
+    if not pointer_path.is_file():
+        return None
+    try:
+        pointer = parse_json_document(pointer_path.read_bytes())
+        manifest_path = Path(pointer["manifest_path"])
+        manifest = parse_json_document(manifest_path.read_bytes())
+        wheel = Path(manifest["wheel_path"])
+        python = Path(manifest["venv_python"])
+        if (
+            pointer_path.read_bytes() != canonical_bytes(pointer)
+            or manifest_path.read_bytes() != canonical_bytes(manifest)
+            or pointer["manifest_digest"] != _sha256(manifest_path)
+            or manifest["source_commit"] != source_commit
+            or manifest["wheel_digest"] != _sha256(wheel)
+            or manifest["status"] != "PREPARED"
+            or manifest["reproducible_build"] is not True
+        ):
+            return None
+        probe = _installed_probe(python, manifest_path.parent / "runtime", _clean_environment())
+        if probe["version"] != "4.0.0":
+            return None
+        return manifest
+    except (KeyError, OSError, TypeError, ValueError):
+        return None
+
+
+def prepare_release(state_root: Path) -> dict[str, object]:
+    """Build twice, install once, and publish an inactive immutable release pointer."""
+
+    state_root = state_root.resolve()
+    state_root.mkdir(parents=True, exist_ok=True)
+    efs = _efs_evidence(state_root)
+    if _git("status", "--porcelain"):
+        raise ValueError("prepare requires a clean committed worktree")
+    source_commit = _git("rev-parse", "HEAD")
+    reused = _reuse_prepared(state_root, source_commit)
+    if reused is not None:
+        return reused
+    before = _pointer_bytes(state_root)
+    source_tree = _git("rev-parse", "HEAD^{tree}")
+    source_epoch = int(_git("show", "-s", "--format=%ct", "HEAD"))
+    deployment = state_root / "deployment"
+    deployment.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="jc-v4-prepare-") as raw:
+        temporary = Path(raw)
+        archive = temporary / "source.tar"
+        _run(["git", "archive", "--format=tar", "HEAD", "-o", str(archive)], cwd=ROOT)
+        source = temporary / "source"
+        source.mkdir()
+        with tarfile.open(archive) as stream:
+            stream.extractall(source, filter="data")
+        build_env = temporary / "build-venv"
+        _run([sys.executable, "-B", "-m", "venv", str(build_env)], cwd=temporary)
+        build_python = _venv_python(build_env)
+        env = _clean_environment()
+        _run([
+            str(build_python), "-B", "-m", "pip", "install",
+            "--disable-pip-version-check", "--require-hashes", "-r",
+            str(source / "requirements/build.lock"),
+        ], cwd=temporary, env=env)
+        reports: list[dict[str, object]] = []
+        wheels: list[Path] = []
+        for serial in (1, 2):
+            out = temporary / f"dist-{serial}"
+            report_path = temporary / f"build-{serial}.json"
+            completed = _run([
+                str(build_python), "-B", str(source / "tools/wheel_gate.py"),
+                "--source", str(source), "--out-dir", str(out),
+                "--source-date-epoch", str(source_epoch), "--no-isolation",
+                "--output", str(report_path),
+            ], cwd=temporary, env=env, timeout=1200)
+            report = json.loads(completed.stdout)
+            if report.get("status") != "PASS":
+                raise ValueError("wheel gate did not pass")
+            reports.append(report)
+            wheels.append(next(out.glob("*.whl")))
+        if wheels[0].read_bytes() != wheels[1].read_bytes():
+            raise ValueError("independent wheel builds are not byte-identical")
+        wheel_digest = _sha256(wheels[0])
+        release_id = f"4.0.0-{source_commit[:12]}-{wheel_digest[7:19]}"
+        release = deployment / "releases" / release_id
+        if release.exists():
+            raise ValueError("existing release identity is inconsistent with prepared pointer")
+        artifacts = release / "artifacts"
+        config_dir = release / "config"
+        runtime_dir = release / "runtime"
+        for path in (artifacts, config_dir, runtime_dir):
+            path.mkdir(parents=True, exist_ok=False)
+        wheel = artifacts / wheels[0].name
+        shutil.copyfile(wheels[0], wheel)
+        lock = ROOT / "requirements/core.lock"
+        lock_digest = _sha256(lock)
+        wheelhouse = deployment / "wheelhouse" / lock_digest.removeprefix("sha256:")
+        wheelhouse.mkdir(parents=True, exist_ok=True)
+        if not any(wheelhouse.iterdir()):
+            _run([
+                sys.executable, "-B", "-m", "pip", "download",
+                "--disable-pip-version-check", "--require-hashes", "--dest",
+                str(wheelhouse), "-r", str(lock),
+            ], cwd=deployment, env=env)
+        venv = release / "venv"
+        _run([sys.executable, "-B", "-m", "venv", str(venv)], cwd=release)
+        python = _venv_python(venv)
+        _run([
+            str(python), "-B", "-m", "pip", "install", "--no-index",
+            "--find-links", str(wheelhouse), "--require-hashes", "-r", str(lock),
+        ], cwd=runtime_dir, env=env)
+        _run([
+            str(python), "-B", "-m", "pip", "install", "--no-index", "--no-deps",
+            str(wheel),
+        ], cwd=runtime_dir, env=env)
+        _run([str(python), "-B", "-m", "pip", "check"], cwd=runtime_dir, env=env)
+        probe = _installed_probe(python, runtime_dir, env)
+        if probe != {
+            "version": "4.0.0", "prefix": str(venv.resolve()), "origins_in_venv": True,
+        }:
+            raise ValueError("installed wheel origin or version drifted")
+        packages = json.loads(_run(
+            [str(python), "-I", "-B", "-m", "pip", "list", "--format=json"],
+            cwd=runtime_dir, env=env,
+        ).stdout)
+        package_digest = str(digest_value(sorted(
+            [row["name"].lower(), row["version"]] for row in packages
+        )))
+        identity_code = (
+            "import json;from compiler_core.backend_router import backend_profile_digest_v4;"
+            "from compiler_core.mcp import tool_spec_digest;"
+            "from compiler_core.production_runtime import _algorithm_profile_digest;"
+            "print(json.dumps({'tool_spec_digest':str(tool_spec_digest()),"
+            "'algorithm_profile_digest':str(_algorithm_profile_digest()),"
+            "'backend_profile_digest':str(backend_profile_digest_v4(solver_deadline_ms=2500))},"
+            "sort_keys=True))"
+        )
+        installed_identity = json.loads(_run(
+            [str(python), "-I", "-B", "-c", identity_code], cwd=runtime_dir, env=env,
+        ).stdout)
+        storage = {
+            "schema_version": "jc/local-storage-capability/1.0",
+            "scope": "local-windows-efs-pipl-articles-13-18",
+            "encrypted": True,
+            "quota_bytes": 268435456,
+        }
+        storage_path = config_dir / "storage-capability.json"
+        storage_path.write_bytes(canonical_bytes(storage))
+        storage_ref = ContentRefV4(
+            "storage-capability", DigestV4.from_bytes(storage_path.read_bytes())
+        )
+        runtime_config = {
+            "schema_version": "jc/production-runtime/1.0",
+            "pack_path": str((state_root / "packs/cn-official-local-4.0.0.json").resolve()),
+            "trust_path": str((state_root / "trust/cn-official-local.json").resolve()),
+            "service_key_path": str((state_root / "identity/service-runtime.json").resolve()),
+            "state_root": str((state_root / "runtime-state").resolve()),
+            "quota_bytes": 268435456,
+            "engine_source_commit": source_commit,
+            "wheel_digest": wheel_digest,
+            "package_digest": package_digest,
+            "lock_digest": lock_digest,
+            "tool_spec_digest": installed_identity["tool_spec_digest"],
+            "algorithm_profile_digest": installed_identity["algorithm_profile_digest"],
+            "backend_profile_digest": installed_identity["backend_profile_digest"],
+            "storage_capability_ref": storage_ref.to_dict(),
+        }
+        runtime_config_path = config_dir / "runtime-config.json"
+        runtime_config_path.write_bytes(canonical_bytes(runtime_config))
+        runtime_env = {
+            **env,
+            "JC_RUNTIME_FACTORY": "compiler_core.production_runtime",
+            "JC_PRODUCTION_CONFIG": str(runtime_config_path.resolve()),
+        }
+        capability_code = (
+            "import json;from compiler_core.client import runtime_client;"
+            "from compiler_core.canonical_serialization import canonical_bytes;"
+            "from compiler_core.mcp import runtime_tools_list;"
+            "print(canonical_bytes({'capabilities':runtime_client().capabilities().to_dict(),"
+            "'tools':runtime_tools_list()}).decode())"
+        )
+        publication = json.loads(_run(
+            [str(python), "-I", "-B", "-c", capability_code], cwd=runtime_dir,
+            env=runtime_env, timeout=180,
+        ).stdout)
+        pins = {field: publication["capabilities"][field] for field in PROFILE_PIN_FIELDS}
+        profile = {
+            "schema_version": "jc/formal-profile/1.0", "profile_id": release_id,
+            "production": True, "loaded_by_default": False,
+            "python": str(python.resolve()), "module": "mcp_server",
+            "cwd": str(runtime_dir.resolve()),
+            "environment": {
+                "JC_RUNTIME_FACTORY": "compiler_core.production_runtime",
+                "JC_PRODUCTION_CONFIG": str(runtime_config_path.resolve()),
+            },
+            "allowed_tools": [
+                "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
+            ],
+            "tools_list_digest": str(DigestV4.from_bytes(canonical_bytes(publication["tools"]))),
+            "capability_pins": pins, "page_bytes": 65536,
+            "startup_timeout_seconds": 30, "tool_timeout_seconds": 120,
+        }
+        profile_path = config_dir / "formal-profile.json"
+        profile_path.write_bytes(canonical_bytes(profile))
+        sbom = {
+            "schema_version": "jc/local-production-sbom/1.0",
+            "release_id": release_id,
+            "packages": sorted(packages, key=lambda row: row["name"].casefold()),
+        }
+        sbom_path = artifacts / "sbom.json"
+        sbom_path.write_bytes(canonical_bytes(sbom))
+        provenance = {
+            "schema_version": "jc/local-production-provenance/1.0",
+            "release_id": release_id, "source_commit": source_commit,
+            "source_tree": source_tree, "source_date_epoch": source_epoch,
+            "wheel_digest": wheel_digest, "reproducible_build": True,
+            "build_report_digests": [
+                str(DigestV4.from_bytes(canonical_bytes(report))) for report in reports
+            ],
+            "scope": "local-windows-efs-pipl-articles-13-18",
+            "remote_release_claimed": False,
+        }
+        provenance_path = artifacts / "provenance.json"
+        provenance_path.write_bytes(canonical_bytes(provenance))
+        efs_path = artifacts / "efs.json"
+        efs_path.write_bytes(canonical_bytes(efs))
+        checksum_targets = (wheel, sbom_path, provenance_path, efs_path,
+                            runtime_config_path, profile_path, storage_path)
+        checksums = {
+            "schema_version": "jc/local-production-checksums/1.0",
+            "files": {path.name: _sha256(path) for path in checksum_targets},
+        }
+        checksums_path = artifacts / "checksums.json"
+        checksums_path.write_bytes(canonical_bytes(checksums))
+        manifest = {
+            "schema_version": "jc/local-production-release/1.0",
+            "release_id": release_id, "status": "PREPARED",
+            "scope": "local-windows-efs-pipl-articles-13-18",
+            "source_commit": source_commit, "source_tree": source_tree,
+            "wheel_path": str(wheel.resolve()), "wheel_digest": wheel_digest,
+            "lock_digest": lock_digest, "package_digest": package_digest,
+            "runtime_config_path": str(runtime_config_path.resolve()),
+            "runtime_config_digest": _sha256(runtime_config_path),
+            "profile_path": str(profile_path.resolve()),
+            "profile_digest": _sha256(profile_path),
+            "checksums_path": str(checksums_path.resolve()),
+            "checksums_digest": _sha256(checksums_path),
+            "venv_python": str(python.resolve()),
+            "reproducible_build": True, "installed_origin_verified": True,
+            "efs": efs, "activated": False,
+        }
+        manifest_path = release / "release.json"
+        manifest_path.write_bytes(canonical_bytes(manifest))
+        pointer = {
+            "schema_version": "jc/local-production-prepared/1.0",
+            "release_id": release_id, "manifest_path": str(manifest_path.resolve()),
+            "manifest_digest": _sha256(manifest_path),
+        }
+        pointer_path = deployment / "prepared.json"
+        pointer_path.write_bytes(canonical_bytes(pointer))
+    after = _pointer_bytes(state_root)
+    for name in ("current.json", "previous.json", "profile-registry.json"):
+        if before[name] != after[name]:
+            raise ValueError(f"prepare changed inactive pointer {name}")
+    return manifest
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -106,10 +453,18 @@ def main(argv: list[str] | None = None) -> int:
     init_key.add_argument("--root", type=Path, required=True)
     init_key.add_argument("--output", type=Path, required=True)
     init_key.add_argument("--trust", type=Path, required=True)
+    prepare = commands.add_parser("prepare")
+    prepare.add_argument("--state-root", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "init-service-key":
             initialize_service_key(args.root, args.output, args.trust)
+        elif args.command == "prepare":
+            result = prepare_release(args.state_root)
+            print(json.dumps({
+                "release_id": result["release_id"], "status": result["status"],
+                "wheel_digest": result["wheel_digest"],
+            }, sort_keys=True))
     except (OSError, TypeError, ValueError) as exc:
         print(f"local production failed: {exc}", file=sys.stderr)
         return 1

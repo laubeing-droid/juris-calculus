@@ -124,7 +124,10 @@ def test_deployable_import_graph_has_one_application_sink() -> None:
     scripts = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))[
         "project"
     ]["scripts"]
-    assert scripts == {"jc": "compiler_core.cli:main"}
+    assert scripts == {
+        "jc": "compiler_core.cli:main",
+        "jc-formal": "compiler_core.formal_bridge:main",
+    }
 
 
 def test_current_architecture_docs_are_v4_only() -> None:
