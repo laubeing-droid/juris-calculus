@@ -23646,14 +23646,15 @@ def _w6_08_artifact_problems(
         key: value for key, value in upstream.get("artifact_digests", {}).items()
         if key.startswith("state-artifact:w6-06-")
     }
+    source = report.get("source", {})
     expected_workflows = {
-        workflow: "sha256:" + sha256_hex((ROOT / workflow).read_bytes())
+        workflow: "sha256:" + sha256_hex(content)
         for workflow in (
             ".github/workflows/ci.yml",
             ".github/workflows/auto-release.yml",
         )
+        if (content := _git_path_bytes(str(source.get("commit")), workflow)) is not None
     }
-    source = report.get("source", {})
     if (
         report.get("schema_version") != "jc/w6-release-candidate-promotion/1.0"
         or report.get("task_id") != "W6-08"
