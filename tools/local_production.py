@@ -456,9 +456,9 @@ from compiler_core.canonical_serialization import DigestV4, canonical_bytes
 from compiler_core.client import runtime_client
 from compiler_core.contracts import CaseInputBundleV4, DecisionStatusV4, MCPEvaluateInputV4
 
-bundle = CaseInputBundleV4.from_json_bytes(pathlib.Path(sys.argv[1]).read_bytes())
-client = runtime_client()
 try:
+    bundle = CaseInputBundleV4.from_json_bytes(pathlib.Path(sys.argv[1]).read_bytes())
+    client = runtime_client()
     evaluated = client.evaluate_for_mcp(MCPEvaluateInputV4(bundle))
     row = {
         "decision_status": evaluated.result.decision_status.value,
