@@ -444,6 +444,7 @@ def _verify_w10_10(state_root: Path) -> int:
 
 
 def _verify_z10_00(state_root: Path) -> int:
+    import shutil
     plan = json.loads((ROOT / "remediation/v4/tasks.json").read_bytes())
     tasks = {row["id"]: row for row in plan["tasks"]}
     expected = list(W10_TASK_IDS)
@@ -451,12 +452,13 @@ def _verify_z10_00(state_root: Path) -> int:
         [sys.executable, "-B", "tools/remediate_v4.py", "generated", "--check"],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
+    codegraph = shutil.which("codegraph") or shutil.which("codegraph.cmd")
     indexed = subprocess.run(
-        ["codegraph", "index", "--force", "--quiet", str(ROOT)],
+        [str(codegraph), "index", "--force", "--quiet", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
     status = subprocess.run(
-        ["codegraph", "status", "--json", str(ROOT)],
+        [str(codegraph), "status", "--json", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
     integrity = "missing"
