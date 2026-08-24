@@ -197,7 +197,7 @@ def _acceptance_cases() -> tuple[AcceptanceCase, ...]:
     ))
 
     evaluate_tuple_string = deepcopy(VECTORS["objects"]["MCPEvaluateInputV4"])
-    evaluate_tuple_string["request"]["fact_attestation_refs"] = "not-an-array"
+    evaluate_tuple_string["case_bundle"]["request"]["fact_attestation_refs"] = "not-an-array"
     cases.append(AcceptanceCase(
         "critical-tuple-string", "MCPEvaluateInputV4", evaluate_tuple_string, False
     ))
@@ -256,7 +256,7 @@ def test_toolspec_manifest_and_runtime_codec_are_one_authority() -> None:
 def test_complete_schema_is_closed_and_resource_limits_are_published() -> None:
     Draft202012Validator.check_schema(SCHEMA)
     assert set(SCHEMA["$defs"]) == set(contracts.V4_TYPE_REGISTRY)
-    assert len(SCHEMA["$defs"]) == 73
+    assert len(SCHEMA["$defs"]) == 75
     assert "contracts_v4" not in json.dumps(SCHEMA, sort_keys=True)
 
     for type_name, contract_type in contracts.V4_OBJECT_REGISTRY.items():

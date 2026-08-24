@@ -484,7 +484,7 @@ def test_transient_live_key_swap_cannot_change_trust_snapshot(
     assert pack_ref not in harness.verifier._verified
 
 
-def test_snapshot_hides_late_registration_until_exit() -> None:
+def test_snapshot_scopes_late_registration_to_current_verification() -> None:
     resolver = ArtifactResolverV4(max_artifact_bytes=128)
     original = b"original"
     original_ref = ContentRefV4("probe", DigestV4.from_bytes(original))
@@ -508,22 +508,22 @@ def test_snapshot_hides_late_registration_until_exit() -> None:
             scope="test-only",
             content=late,
         )
-        with pytest.raises(ContractV4Error, match="ARTIFACT_NOT_FOUND"):
-            resolver.resolve_content(
-                late_ref,
-                expected_artifact_kind="probe",
-                expected_media_type="application/octet-stream",
-                expected_scope="test-only",
-                max_bytes=128,
-            )
+        assert resolver.resolve_content(
+            late_ref,
+            expected_artifact_kind="probe",
+            expected_media_type="application/octet-stream",
+            expected_scope="test-only",
+            max_bytes=128,
+        ) == late
 
-    assert resolver.resolve_content(
-        late_ref,
-        expected_artifact_kind="probe",
-        expected_media_type="application/octet-stream",
-        expected_scope="test-only",
-        max_bytes=128,
-    ) == late
+    with pytest.raises(ContractV4Error, match="ARTIFACT_NOT_FOUND"):
+        resolver.resolve_content(
+            late_ref,
+            expected_artifact_kind="probe",
+            expected_media_type="application/octet-stream",
+            expected_scope="test-only",
+            max_bytes=128,
+        )
 
 
 def test_external_file_replacement_cannot_rebind_registered_pack_bytes(tmp_path) -> None:

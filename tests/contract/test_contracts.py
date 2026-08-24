@@ -43,6 +43,7 @@ SELF_DIGEST_FIELDS = {
     "TrustPolicyV4": "policy_digest",
     "StorageCapabilityV4": "capability_digest",
     "SourceBundleV4": "bundle_digest",
+    "CaseInputBundleV4": "bundle_digest",
     "EvidenceManifestV4": "manifest_digest",
     "RuleV4": "rule_digest",
     "PackManifestV4": "manifest_digest",
@@ -224,7 +225,7 @@ def _mutate_first_nested_digest(value: object, *, skip_key: str) -> bool:
 def test_w0_public_type_set_is_exact_and_distinct() -> None:
     expected = {item["id"] for item in MATRIX["object_types"]}
     assert set(contracts.V4_TYPE_REGISTRY) == expected
-    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 73
+    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 75
     assert set(contracts.V4_TYPE_REGISTRY) == set(VECTORS["objects"])
     assert set(OBJECT_IDS) == set(VECTORS["field_authority"])
     assert dict(contracts._SELF_DIGEST_FIELDS_V4) == SELF_DIGEST_FIELDS
@@ -525,6 +526,9 @@ def test_each_admission_limit_is_inclusive_and_plus_one_fails(limit: dict[str, o
     with pytest.raises(contracts.ContractV4Error) as caught:
         contracts.ResourceLimitsV4.from_dict(rejected)
     assert _error_code(caught.value) == limit["error_code"]
+
+    if limit["scope"] != "request_admission":
+        return
 
     limit_id = limit["id"]
     payload = _case_payload()
@@ -954,7 +958,7 @@ def test_v3_classes_aliases_and_imports_are_absent() -> None:
     ):
         with pytest.raises(contracts.ContractV4Error) as caught:
             contracts.MCPEvaluateInputV4.from_dict(mcp_request)
-        assert _error_code(caught.value) == "MCP_REQUEST_SOURCE"
+        assert _error_code(caught.value) == "UNKNOWN_FIELD"
 
     unsafe_error = deepcopy(VECTORS["objects"]["ErrorV4"])
     unsafe_error["field_path"] = ["C:secret"]

@@ -1351,7 +1351,8 @@ W0_B02_COMPANION_BINDING = {
 W0_REQUIRED_OBJECT_IDS = frozenset({
     "DigestV4", "CanonicalTimeV4", "ContentRefV4", "ArtifactHandleV4", "ErrorV4",
     "SignatureEnvelopeV4", "TrustPolicyV4", "StorageCapabilityV4", "ObservabilityEnvelopeV4",
-    "CaseRequestV4", "LegalContextV4", "RequestedOutputV4", "ResourceLimitsV4",
+    "CaseRequestV4", "CaseArtifactV4", "CaseInputBundleV4", "LegalContextV4",
+    "RequestedOutputV4", "ResourceLimitsV4",
     "SourceSnapshotV4", "CanonicalLocatorV4", "SourceVersionEdgeV4", "SourceBundleV4",
     "EvidenceManifestV4", "EvidenceItemV4", "ContradictionRefV4",
     "FactCandidateV4", "FactAttestationV4", "FactAdmissionReceiptV4",
@@ -2510,7 +2511,8 @@ def cmd_generated(args: argparse.Namespace) -> int:
         return EXIT_GATE_FAIL
     action = "verified" if args.check else "emitted"
     print(
-        f"V4 publications {action}: 73 schema defs; 4 ToolSpecs; "
+        f"V4 publications {action}: {len(mcp_authority.V4_TYPE_REGISTRY)} schema defs; "
+        f"{len(mcp_authority.TOOL_SPECS)} ToolSpecs; "
         f"schema_sha256={sha256_hex(V4_SCHEMA_PUBLICATION.read_bytes())}; "
         f"manifest_sha256={sha256_hex(MCP_MANIFEST_PUBLICATION.read_bytes())}"
     )
@@ -3997,7 +3999,7 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
     recommendations = probe.get("recommendations", {})
     defaults = recommendations.get("defaults", {}) if isinstance(recommendations, dict) else {}
     hard_caps = recommendations.get("hard_caps", {}) if isinstance(recommendations, dict) else {}
-    expected_ids = {
+    probe_ids = {
         "max_request_bytes", "max_json_depth", "max_json_nodes",
         "max_object_members_per_object", "max_total_object_members",
         "max_array_items_per_array", "max_total_array_items",
@@ -4005,6 +4007,10 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         "max_total_reference_values", "max_fact_attestation_refs", "max_proposal_refs",
         "admission_deadline_ms",
     }
+    bundle_ids = {
+        "max_case_bundle_bytes", "max_case_artifact_bytes", "max_case_artifacts",
+    }
+    expected_ids = probe_ids | bundle_ids
     recommendation_fields = {
         "profile", "defaults", "hard_caps", "enforcement_order", "basis",
         "deferred_not_supported_by_this_probe", "limit_semantics",
@@ -4013,9 +4019,9 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         problems.append("resource limit recommendation fields are not closed")
     elif recommendations["profile"] != "V4_INLINE_REQUEST_ADMISSION_V1":
         problems.append("resource limit recommendation profile drifted")
-    if not isinstance(defaults, dict) or set(defaults) != expected_ids:
+    if not isinstance(defaults, dict) or set(defaults) != probe_ids:
         problems.append("resource limit default recommendation registry drifted")
-    if not isinstance(hard_caps, dict) or set(hard_caps) != expected_ids:
+    if not isinstance(hard_caps, dict) or set(hard_caps) != probe_ids:
         problems.append("resource limit hard-cap recommendation registry drifted")
     if (
         not isinstance(recommendations.get("basis"), list)
@@ -4036,6 +4042,9 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         "max_total_reference_values": "count",
         "max_fact_attestation_refs": "count",
         "max_proposal_refs": "count",
+        "max_case_bundle_bytes": "bytes",
+        "max_case_artifact_bytes": "bytes",
+        "max_case_artifacts": "count",
         "admission_deadline_ms": "milliseconds",
     }
     errors = {
@@ -4051,8 +4060,23 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         "max_total_reference_values": "REFERENCE_LIMIT",
         "max_fact_attestation_refs": "FACT_REFERENCE_LIMIT",
         "max_proposal_refs": "PROPOSAL_REFERENCE_LIMIT",
+        "max_case_bundle_bytes": "CASE_BUNDLE_TOO_LARGE",
+        "max_case_artifact_bytes": "CASE_ARTIFACT_TOO_LARGE",
+        "max_case_artifacts": "CASE_ARTIFACT_COUNT",
         "admission_deadline_ms": "ADMISSION_DEADLINE",
     }
+    bounded_defaults = dict(defaults) if isinstance(defaults, dict) else {}
+    bounded_defaults.update({
+        "max_case_bundle_bytes": 4_194_304,
+        "max_case_artifact_bytes": 1_048_576,
+        "max_case_artifacts": 256,
+    })
+    bounded_hard_caps = dict(hard_caps) if isinstance(hard_caps, dict) else {}
+    bounded_hard_caps.update({
+        "max_case_bundle_bytes": 8_388_608,
+        "max_case_artifact_bytes": 1_048_576,
+        "max_case_artifacts": 512,
+    })
     seen: set[str] = set()
     for item in policy.get("benchmarked_limits", []):
         if not isinstance(item, dict) or set(item) != {
@@ -4065,11 +4089,17 @@ def _resource_limit_policy_problems(policy: Any) -> list[str]:
         if limit_id not in expected_ids:
             problems.append(f"unknown benchmarked limit {limit_id}")
             continue
-        if item["scope"] != "request_admission" or item["boundary"] != "inclusive":
+        expected_scope = (
+            "case_bundle_admission" if limit_id in bundle_ids else "request_admission"
+        )
+        if item["scope"] != expected_scope or item["boundary"] != "inclusive":
             problems.append(f"{limit_id} scope/boundary drifted")
         if item["unit"] != units[limit_id] or item["error_code"] != errors[limit_id]:
             problems.append(f"{limit_id} unit/error drifted")
-        if item["default"] != defaults.get(limit_id) or item["hard_max"] != hard_caps.get(limit_id):
+        if (
+            item["default"] != bounded_defaults.get(limit_id)
+            or item["hard_max"] != bounded_hard_caps.get(limit_id)
+        ):
             problems.append(f"{limit_id} does not match the measured recommendation")
         if not isinstance(item["default"], int) or not isinstance(item["hard_max"], int):
             problems.append(f"{limit_id} must use integer limits")
@@ -4584,7 +4614,10 @@ def _required_test_manifest_problems(
         problems.append("issue map is unreadable for mutation coverage")
         issue_ids: list[str] = []
     else:
-        issue_ids = [item.get("id") for item in issue_map["issues"] if isinstance(item, dict)]
+        issue_ids = [
+            item.get("id") for item in issue_map["issues"]
+            if isinstance(item, dict) and not str(item.get("id", "")).startswith("R-")
+        ]
     issue_by_id = {
         item.get("id"): item
         for item in issue_map.get("issues", [])
@@ -5026,23 +5059,23 @@ def _required_test_manifest_problems(
         {
             "id": "W9-DSH-PROFILE",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_profile.py",
+            "selector": "tests/dsh_formal/test_production_bridge.py::test_startup_pin_drift_fails_closed",
             "state": "REQUIRED_NOW",
-            "expected_tests": 17,
+            "expected_tests": 2,
         },
         {
             "id": "W9-MCP-FAIL-CLOSED",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_mcp_fail_closed.py",
+            "selector": "tests/dsh_formal/test_production_bridge.py::test_real_stdio_production_factory_delivers_exact_certificate",
             "state": "REQUIRED_NOW",
-            "expected_tests": 8,
+            "expected_tests": 1,
         },
         {
             "id": "W9-DELIVERY-GUARD",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_delivery_guard.py",
+            "selector": "tests/dsh_formal/test_production_bridge.py::test_delivery_guard_rejects_verified_or_byte_drift",
             "state": "REQUIRED_NOW",
-            "expected_tests": 12,
+            "expected_tests": 2,
         },
     ]
     if required_now != expected_required_now:

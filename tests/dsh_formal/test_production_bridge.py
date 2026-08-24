@@ -110,14 +110,15 @@ def test_delivery_guard_rejects_verified_or_byte_drift(
             bridge.deliver(production_bundle(15))
 
 
-def test_non_formal_result_and_reconnect_are_fail_closed(tmp_path: Path) -> None:
+def test_reconnect_revalidates_and_delivers_article_13(tmp_path: Path) -> None:
     profile = load_active_profile(_registry(tmp_path))
     with FormalBridgeV4(profile) as bridge:
         first = bridge.session
         second = bridge.connect()
         assert first is not None and first.generation == 0 and second.generation == 1
-        with pytest.raises(FormalBridgeError):
-            bridge.deliver(production_bundle(13))
+        delivery = bridge.deliver(production_bundle(13))
+        assert delivery.marker == "JC_FORMAL_VERIFIED"
+        assert delivery.generation == 1
 
 
 def test_cli_uses_registry_without_changing_general_jc(

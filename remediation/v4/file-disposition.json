@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 417,
+  "count": 427,
   "paths": [
     {
       "path": ".agents/skills/jc-formal/SKILL.md",
@@ -79,6 +79,22 @@
     },
     {
       "path": "20260819_juris-calculus_V4单主链生产投产全量代码审计.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260824_juris-calculus_V4生产运行闭环Goal模式启动提示词.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "20260824_juris-calculus_V4生产运行闭环彻底整治施工方案.md",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
@@ -624,6 +640,14 @@
       "closure_task": "W5-CUTOVER"
     },
     {
+      "path": "compiler_core/formal_bridge.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
       "path": "compiler_core/g8_evaluator_patch.py",
       "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
       "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
@@ -780,6 +804,22 @@
       "disposition": "CANDIDATE_ASSET",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "legacy/candidate/advisory",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/production_pack.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-03",
+      "namespace": "candidate_asset"
+    },
+    {
+      "path": "compiler_core/production_runtime.py",
+      "disposition": "CANDIDATE_ASSET",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },
@@ -1995,6 +2035,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/contract/test_case_input_bundle.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/contract/test_certificates.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2163,46 +2210,11 @@
       "closure_task": "W9-I00"
     },
     {
-      "path": "tests/dsh_formal/conftest.py",
+      "path": "tests/dsh_formal/test_production_bridge.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/jc-formal-profile.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/jc_formal_adapter.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/test_delivery_guard.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/test_mcp_fail_closed.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/test_profile.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/fixtures/ci_promotion_candidate.json",
@@ -2489,6 +2501,13 @@
       "closure_task": "W6-05"
     },
     {
+      "path": "tests/formal_e2e/test_local_production_chain.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/formal_e2e/test_positive_vertical_slice.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2531,6 +2550,20 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/integration/test_production_pack_loader.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/integration/test_production_runtime.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/integration/test_trust_chain.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2539,6 +2572,13 @@
     },
     {
       "path": "tests/mcp_protocol/README.md",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/mcp_protocol/test_production_stdio.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
@@ -2585,6 +2625,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W6-05"
+    },
+    {
+      "path": "tests/packaging/test_installed_production_runtime.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/packaging/test_legacy_cn_corpus_absent.py",
@@ -2736,6 +2783,13 @@
       "closure_task": "W5-01"
     },
     {
+      "path": "tests/security/test_case_bundle_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
       "path": "tests/security/test_certificate_attacks.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2769,6 +2823,13 @@
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
       "closure_task": "W4-06"
+    },
+    {
+      "path": "tests/security/test_production_pack_attacks.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
     },
     {
       "path": "tests/security/test_resource_limits.py",
@@ -2870,6 +2931,13 @@
     },
     {
       "path": "tests/storage_chaos/test_power_loss.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-01"
+    },
+    {
+      "path": "tests/storage_chaos/test_production_runtime_recovery.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
@@ -3313,6 +3381,14 @@
       "audit_role": "legacy/candidate/advisory",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
+    },
+    {
+      "path": "tools/local_production.py",
+      "disposition": "KEEP_REWRITE",
+      "terminal_state": "KEEP_REWRITE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W5-CUTOVER",
+      "namespace": "formal_core"
     },
     {
       "path": "tools/perf_baseline.py",

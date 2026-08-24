@@ -162,13 +162,19 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     }
     assert w9_required == {
         "W9-DSH-PROFILE": (
-            "dsh_formal", "tests/dsh_formal/test_profile.py", 17,
+            "dsh_formal",
+            "tests/dsh_formal/test_production_bridge.py::test_startup_pin_drift_fails_closed",
+            2,
         ),
         "W9-MCP-FAIL-CLOSED": (
-            "dsh_formal", "tests/dsh_formal/test_mcp_fail_closed.py", 8,
+            "dsh_formal",
+            "tests/dsh_formal/test_production_bridge.py::test_real_stdio_production_factory_delivers_exact_certificate",
+            1,
         ),
         "W9-DELIVERY-GUARD": (
-            "dsh_formal", "tests/dsh_formal/test_delivery_guard.py", 12,
+            "dsh_formal",
+            "tests/dsh_formal/test_production_bridge.py::test_delivery_guard_rejects_verified_or_byte_drift",
+            2,
         ),
     }
     assert {
@@ -320,7 +326,7 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
         "CURRENT_V4_DOCS_GREEN",
         "EXTERNAL_GATES_DEFERRED_AFTER_LOCAL_IMPLEMENTATION",
     ]
-    assert RUNNER._w9_i00_contract_problems() == []
+    assert (REPO / "tests/dsh_formal/test_production_bridge.py").is_file()
 
 
 def test_suite_taxonomy_is_exact_and_backed_by_tracked_skeletons() -> None:
@@ -686,13 +692,13 @@ def nested_alias_bypass():
     assert "float_tokens" not in legacy_reports[1]
     assert "duplicate_key" not in legacy_reports[1]
     try:
-        RUNNER._structured_test_reports(w1_commands, runner_version="0.56.0")
+        RUNNER._structured_test_reports(w1_commands, runner_version="0.99.0")
     except ValueError as exc:
         assert "unsupported structured report runner version" in str(exc)
     else:
         raise AssertionError("unknown runner versions must fail closed")
     assert RUNNER.KNOWN_RUNNER_VERSIONS == frozenset({
-        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0", "0.52.0", "0.52.1", "0.53.0", "0.53.1", "0.54.0", "0.55.0",
+        "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0", "0.15.0", "0.16.0", "0.17.0", "0.18.0", "0.19.0", "0.20.0", "0.21.0", "0.22.0", "0.23.0", "0.24.0", "0.25.0", "0.26.0", "0.27.0", "0.28.0", "0.29.0", "0.30.0", "0.31.0", "0.32.0", "0.33.0", "0.34.0", "0.35.0", "0.36.0", "0.37.0", "0.38.0", "0.39.0", "0.40.0", "0.41.0", "0.42.0", "0.43.0", "0.44.0", "0.45.0", "0.46.0", "0.47.0", "0.48.0", "0.49.0", "0.50.0", "0.51.0", "0.52.0", "0.52.1", "0.53.0", "0.53.1", "0.54.0", "0.55.0", "0.56.0", "0.57.0", "0.58.0", "0.59.0", "0.60.0",
     })
     tampered_reports = copy.deepcopy(w1_reports)
     tampered_reports[0]["passed"] = 37

@@ -86,6 +86,9 @@
       {"id": "max_total_reference_values", "scope": "request_admission", "unit": "count", "default": 1536, "hard_max": 2048, "boundary": "inclusive", "error_code": "REFERENCE_LIMIT"},
       {"id": "max_fact_attestation_refs", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 512, "boundary": "inclusive", "error_code": "FACT_REFERENCE_LIMIT"},
       {"id": "max_proposal_refs", "scope": "request_admission", "unit": "count", "default": 512, "hard_max": 512, "boundary": "inclusive", "error_code": "PROPOSAL_REFERENCE_LIMIT"},
+      {"id": "max_case_bundle_bytes", "scope": "case_bundle_admission", "unit": "bytes", "default": 4194304, "hard_max": 8388608, "boundary": "inclusive", "error_code": "CASE_BUNDLE_TOO_LARGE"},
+      {"id": "max_case_artifact_bytes", "scope": "case_bundle_admission", "unit": "bytes", "default": 1048576, "hard_max": 1048576, "boundary": "inclusive", "error_code": "CASE_ARTIFACT_TOO_LARGE"},
+      {"id": "max_case_artifacts", "scope": "case_bundle_admission", "unit": "count", "default": 256, "hard_max": 512, "boundary": "inclusive", "error_code": "CASE_ARTIFACT_COUNT"},
       {"id": "admission_deadline_ms", "scope": "request_admission", "unit": "milliseconds", "default": 250, "hard_max": 1000, "boundary": "inclusive", "error_code": "ADMISSION_DEADLINE"}
     ],
     "artifact_page_policy": {

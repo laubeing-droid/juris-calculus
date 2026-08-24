@@ -11,6 +11,8 @@
     {"id": "StorageCapabilityV4", "layer": "storage", "schema_kind": "object", "formal": true, "additional_properties": false},
     {"id": "ObservabilityEnvelopeV4", "layer": "observability", "schema_kind": "object", "formal": true, "additional_properties": false},
     {"id": "CaseRequestV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},
+    {"id": "CaseArtifactV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},
+    {"id": "CaseInputBundleV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},
     {"id": "LegalContextV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},
     {"id": "RequestedOutputV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},
     {"id": "ResourceLimitsV4", "layer": "request", "schema_kind": "object", "formal": true, "additional_properties": false},

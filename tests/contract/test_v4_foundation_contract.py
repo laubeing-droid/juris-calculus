@@ -45,7 +45,7 @@ def _runner(*args: str) -> subprocess.CompletedProcess[str]:
 def test_w0_foundation_gate_passes() -> None:
     result = _runner("verify-wave", "W0-02")
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
-    assert "13 benchmarked admission limits" in result.stdout
+    assert "16 benchmarked admission limits" in result.stdout
     assert "1 bounded artifact page" in result.stdout
     assert "1 bounded certified-provider deadline" in result.stdout
     assert "4 explicit deferred operational limits" in result.stdout

@@ -241,6 +241,65 @@
         }
       ]
     },
+    "CaseArtifactV4": {
+      "artifact_id": "case-artifact-value",
+      "content_ref": {
+        "kind": "case-artifact",
+        "digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "artifact_kind": "case-artifact",
+      "media_type": "application/json",
+      "scope": "case-input",
+      "content_base64": "e30="
+    },
+    "CaseInputBundleV4": {
+      "schema_version": "jc/case-input-bundle/1.0",
+      "bundle_id": "bundle-value",
+      "request": {
+        "request_id": "request_id-value",
+        "schema_version": "jc/4.0",
+        "legal_context": {
+          "jurisdiction": "jurisdiction-value",
+          "governing_law": "governing_law-value"
+        },
+        "decision_time": {
+          "wire": "2026-08-22T08:00:00Z"
+        },
+        "source_bundle_ref": {
+          "kind": "caserequest-source-bundle-ref",
+          "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
+        },
+        "evidence_manifest_ref": {
+          "kind": "caserequest-evidence-manifest-ref",
+          "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
+        },
+        "fact_attestation_refs": [
+          {
+            "kind": "caserequest-fact-attestation-refs",
+            "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
+          }
+        ],
+        "rule_pack_ref": {
+          "kind": "caserequest-rule-pack-ref",
+          "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
+        },
+        "requested_outputs": [
+          {
+            "kind": "semantic_result",
+            "format": "format-value",
+            "locale": "locale-value"
+          }
+        ],
+        "proposal_refs": [
+          {
+            "kind": "caserequest-proposal-refs",
+            "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
+          }
+        ]
+      },
+      "artifacts": [],
+      "bundle_digest": "sha256:8c1ec11b53124a6e42ced59270aff6542346664479ae152cbae8ef0b80662de6"
+    },
     "LegalContextV4": {
       "jurisdiction": "jurisdiction-value",
       "governing_law": "governing_law-value"
@@ -263,6 +322,9 @@
       "max_total_reference_values": 1536,
       "max_fact_attestation_refs": 512,
       "max_proposal_refs": 512,
+      "max_case_bundle_bytes": 4194304,
+      "max_case_artifact_bytes": 1048576,
+      "max_case_artifacts": 256,
       "admission_deadline_ms": 250,
       "artifact_page_bytes": 65536,
       "solver_deadline_ms": 2500,
@@ -2253,6 +2315,9 @@
         "max_total_reference_values": 1536,
         "max_fact_attestation_refs": 512,
         "max_proposal_refs": 512,
+        "max_case_bundle_bytes": 4194304,
+        "max_case_artifact_bytes": 1048576,
+        "max_case_artifacts": 256,
         "admission_deadline_ms": 250,
         "artifact_page_bytes": 65536,
         "solver_deadline_ms": 2500,
@@ -2287,49 +2352,54 @@
       }
     },
     "MCPEvaluateInputV4": {
-      "request": {
-        "request_id": "request_id-value",
-        "schema_version": "jc/4.0",
-        "legal_context": {
-          "jurisdiction": "jurisdiction-value",
-          "governing_law": "governing_law-value"
+      "case_bundle": {
+        "schema_version": "jc/case-input-bundle/1.0",
+        "bundle_id": "bundle-value",
+        "request": {
+          "request_id": "request_id-value",
+          "schema_version": "jc/4.0",
+          "legal_context": {
+            "jurisdiction": "jurisdiction-value",
+            "governing_law": "governing_law-value"
+          },
+          "decision_time": {
+            "wire": "2026-08-22T08:00:00Z"
+          },
+          "source_bundle_ref": {
+            "kind": "caserequest-source-bundle-ref",
+            "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
+          },
+          "evidence_manifest_ref": {
+            "kind": "caserequest-evidence-manifest-ref",
+            "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
+          },
+          "fact_attestation_refs": [
+            {
+              "kind": "caserequest-fact-attestation-refs",
+              "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
+            }
+          ],
+          "rule_pack_ref": {
+            "kind": "caserequest-rule-pack-ref",
+            "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
+          },
+          "requested_outputs": [
+            {
+              "kind": "semantic_result",
+              "format": "format-value",
+              "locale": "locale-value"
+            }
+          ],
+          "proposal_refs": [
+            {
+              "kind": "caserequest-proposal-refs",
+              "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
+            }
+          ]
         },
-        "decision_time": {
-          "wire": "2026-08-22T08:00:00Z"
-        },
-        "source_bundle_ref": {
-          "kind": "caserequest-source-bundle-ref",
-          "digest": "sha256:454533af4bf6843001192aced7133e0297ae20d610db6ced2b99dd1130d9ea9f"
-        },
-        "evidence_manifest_ref": {
-          "kind": "caserequest-evidence-manifest-ref",
-          "digest": "sha256:24f81bac0d1700d143dcf99c9c5da80773251e0be46252c9cbb5770fd54d5860"
-        },
-        "fact_attestation_refs": [
-          {
-            "kind": "caserequest-fact-attestation-refs",
-            "digest": "sha256:f8c7655aed696cf22b690581534ccbdba20b2b1aa796cf58d5b2a4e947671e23"
-          }
-        ],
-        "rule_pack_ref": {
-          "kind": "caserequest-rule-pack-ref",
-          "digest": "sha256:3190884be942f18c714a46f9f43842f1e3a0ef5ad50bc4a6900cf4adbed2c98e"
-        },
-        "requested_outputs": [
-          {
-            "kind": "semantic_result",
-            "format": "format-value",
-            "locale": "locale-value"
-          }
-        ],
-        "proposal_refs": [
-          {
-            "kind": "caserequest-proposal-refs",
-            "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
-          }
-        ]
-      },
-      "request_handle": null
+        "artifacts": [],
+        "bundle_digest": "sha256:8c1ec11b53124a6e42ced59270aff6542346664479ae152cbae8ef0b80662de6"
+      }
     },
     "MCPEvaluateOutputV4": {
       "result": {
@@ -2991,6 +3061,21 @@
       "requested_outputs",
       "proposal_refs"
     ],
+    "CaseArtifactV4": [
+      "artifact_id",
+      "content_ref",
+      "artifact_kind",
+      "media_type",
+      "scope",
+      "content_base64"
+    ],
+    "CaseInputBundleV4": [
+      "schema_version",
+      "bundle_id",
+      "request",
+      "artifacts",
+      "bundle_digest"
+    ],
     "LegalContextV4": [
       "jurisdiction",
       "governing_law"
@@ -3013,6 +3098,9 @@
       "max_total_reference_values",
       "max_fact_attestation_refs",
       "max_proposal_refs",
+      "max_case_bundle_bytes",
+      "max_case_artifact_bytes",
+      "max_case_artifacts",
       "admission_deadline_ms",
       "artifact_page_bytes",
       "solver_deadline_ms",
@@ -3569,8 +3657,7 @@
       "error"
     ],
     "MCPEvaluateInputV4": [
-      "request",
-      "request_handle"
+      "case_bundle"
     ],
     "MCPEvaluateOutputV4": [
       "result",

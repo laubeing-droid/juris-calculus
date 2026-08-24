@@ -18,7 +18,7 @@ def _fixture_problems(document: dict[str, Any]) -> list[str]:
     problems: list[str] = []
     objects = document.get("object_types", [])
     object_ids = [row.get("id") for row in objects if isinstance(row, dict)]
-    if len(objects) != 73 or len(object_ids) != len(set(object_ids)):
+    if len(objects) != 75 or len(object_ids) != len(set(object_ids)):
         problems.append("object inventory")
     if any(row.get("formal") is not True for row in objects):
         problems.append("formal ownership")

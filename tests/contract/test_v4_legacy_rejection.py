@@ -33,7 +33,7 @@ def test_engine_3_payload_fails() -> None:
 
 def test_v3_payload_has_no_upgrade_path() -> None:
     payload = deepcopy(VECTORS["objects"]["MCPEvaluateInputV4"])
-    payload["request"]["schema_version"] = "jc/3.0"
+    payload["case_bundle"]["request"]["schema_version"] = "jc/3.0"
 
     with pytest.raises(contracts.ContractV4Error) as rejected:
         mcp.decode_tool_payload("jc_evaluate", "input", payload)
