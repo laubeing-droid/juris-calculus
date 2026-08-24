@@ -211,7 +211,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 16768,
+      "line": 16764,
       "kind": "dynamic_path_load",
       "target_pattern": "tools/wheel_gate.py",
       "target_class": "BUILD_ONLY",
@@ -219,7 +219,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 15949,
+      "line": 15982,
       "kind": "availability_probe",
       "target_pattern": "optional-test-module",
       "target_class": "BUILD_ONLY",
@@ -227,7 +227,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 16138,
+      "line": 16134,
       "kind": "dynamic_import",
       "target_pattern": "optional-test-module",
       "target_class": "BUILD_ONLY",

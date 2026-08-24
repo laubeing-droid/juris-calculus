@@ -1335,7 +1335,6 @@ class RulePackRegistry:
             else ""
         )
         # Pack由manifest内容摘要绑定；同一registry内可安全复用只读加载结果，不复用案件状态或recorder。
-        self._reasoning_cache: dict[str, LoadedRulePack] = {}
 
     def manifests(self) -> dict[str, Path]:
         """返回pack ID到manifest路径的稳定映射。"""
@@ -1388,86 +1387,6 @@ class RulePackRegistry:
         """按pack ID排序验证全部已安装manifest。"""
 
         return tuple(self.verify(pack_id) for pack_id in sorted(self.manifests()))
-
-    def load_reasoning_pack(self, pack_id: str) -> LoadedRulePack:
-        """加载已验证且非空的official pack；candidate pack不得进入application。"""
-
-        if pack_id in self._reasoning_cache:
-            return self._reasoning_cache[pack_id]
-
-        verification = self.verify(pack_id)
-        development_loadable = bool(
-            verification.development_override
-            and verification.integrity_valid
-            and verification.kind == "official"
-            and verification.declared_status == "active"
-            and verification.governing_law
-            and verification.verified_rule_ids
-        )
-        if not verification.reasoning_ready and not development_loadable:
-            raise RulePackError("PACK_NOT_REASONING_READY", pack_id)
-        manifest_path = self.manifests()[pack_id]
-        document = _load_yaml_mapping(manifest_path)
-        from compiler_core.contracts import RulePackDescriptor
-        from compiler_core.evaluator import load_rules_from_yaml
-        from compiler_core.source_manifest import SourceManifest
-
-        rules: list[Any] = []
-        resources: list[Path] = [manifest_path]
-        for entry in document["rule_files"]:
-            path = self.config_root / entry["path"]
-            rules.extend(load_rules_from_yaml(str(path)))
-            resources.append(path)
-        source_manifest = SourceManifest()
-        for entry in document["source_files"]:
-            path = self.config_root / entry["path"]
-            source_manifest.load(str(path))
-            resources.append(path)
-        config_file_paths: list[Path] = []
-        config_file_names: list[str] = []
-        for entry in document["config_files"]:
-            path = _validated_resource_path(self.config_root, entry, [])
-            if path is None:
-                raise RulePackError("PACK_PATH_VERIFICATION_ERROR", entry["path"])
-            resources.append(path)
-            config_file_paths.append(path)
-            config_file_names.append(path.relative_to(self.config_root).as_posix())
-        rule_ids = tuple(rule.id for rule in rules)
-        id_set = set(rule_ids)
-        verified_ids = tuple(id for id in verification.verified_rule_ids if id in id_set)
-        candidate_ids = tuple(id for id in verification.candidate_rule_ids if id in id_set)
-        rejected_ids = tuple(id for id in verification.rejected_rule_ids if id in id_set)
-        descriptor = RulePackDescriptor(
-            pack_id=verification.pack_id,
-            version=verification.version,
-            content_digest=verification.content_digest,
-            verified_rule_ids=verified_ids,
-            candidate_rule_ids=tuple(sorted(candidate_ids)),
-            rejected_rule_ids=tuple(sorted(rejected_ids)),
-            jurisdiction=verification.jurisdiction,
-            governing_law=verification.governing_law,
-            kind=verification.kind,
-            review_only=verification.review_only,
-            distribution_channel=verification.distribution_channel,
-            development_override=verification.development_override,
-            build_attestation=verification.build_attestation,
-            effective_from=verification.effective_from,
-            effective_to=verification.effective_to,
-            config_files=tuple(config_file_names),
-        )
-        loaded = LoadedRulePack(
-            descriptor=descriptor,
-            rules=tuple(rules),
-            source_manifest=source_manifest,
-            verification=verification,
-            manifest_path=manifest_path,
-            config_root=self.config_root,
-            resource_paths=tuple(resources),
-            config_files=tuple(config_file_paths),
-            _issuer=_REGISTRY_HANDLE_ISSUER,
-        )
-        self._reasoning_cache[pack_id] = loaded
-        return loaded
 
     def load_corpus_pack(self, pack_id: str) -> LoadedCorpusPack:
         """加载完整性有效的语料pack，且不把candidate晋升为reasoning-ready。"""

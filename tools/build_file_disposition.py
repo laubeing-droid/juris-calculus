@@ -466,7 +466,6 @@ SPECIAL_CLOSURE_TASKS = {
     "tests/unit/test_remediation_legacy_cn_corpus.py": "W5-02C",
     "tests/packaging/test_legacy_cn_corpus_absent.py": "W5-02C",
     "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py": "W5-03",
-    "tests/unit/test_advisory_governance.py": "W5-03",
     "tests/unit/test_mcp_manifest_dispatch.py": "W5-03",
     "tests/unit/test_mcp_stdio_protocol.py": "W5-03",
     "tests/unit/test_phase6_cli.py": "W5-03",

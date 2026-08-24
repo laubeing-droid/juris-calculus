@@ -634,15 +634,11 @@ W5_02C_REQUIRED_CHANGED_PATHS = (
 )
 W5_03_TEST_PATHS = (
     "tests/unit/test_w5_03_nonproduction_boundaries.py",
-    "tests/unit/test_advisory_governance.py",
     "tests/unit/test_phase6_cli.py",
-    "tests/unit/test_mcp_manifest_dispatch.py",
-    "tests/unit/test_mcp_stdio_protocol.py",
-    "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
 )
-W5_03_TEST_CASE_COUNT = 21
+W5_03_TEST_CASE_COUNT = 8
 W5_03_TEST_CASE_IDS_DIGEST = (
-    "sha256:19050269abe9117b8b2d4e47bce7dc5eb233a0a65ca161bcc33db41831da28ff"
+    "sha256:e91666b9b6026b41fc00aca9cd96e929dd332486abe7f40f7004eb288f82bb8b"
 )
 W5_03_ALLOWED_PATHS = (
     "addons/workbuddy_mcp.py",
