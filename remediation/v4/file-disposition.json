@@ -3,8 +3,16 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 448,
+  "count": 455,
   "paths": [
+    {
+      "path": ".agents/skills/jc-formal/SKILL.md",
+      "disposition": "RETAIN_NONPACKAGED",
+      "terminal_state": "CANDIDATE_ASSET",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00",
+      "namespace": "candidate_asset"
+    },
     {
       "path": ".gitattributes",
       "disposition": "RETAIN_NONPACKAGED",
@@ -1713,14 +1721,14 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "closure_task": "W9-I00"
     },
     {
       "path": "remediation/v4/issue-map.json",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W7-I01"
+      "closure_task": "W9-I00"
     },
     {
       "path": "remediation/v4/receipt.schema.json",
@@ -1741,7 +1749,7 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "BUILD_ONLY",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "closure_task": "W9-I00"
     },
     {
       "path": "remediation/v4/user-directive.schema.json",
@@ -2068,7 +2076,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "closure_task": "W9-I00"
     },
     {
       "path": "tests/contract/test_rule_packs.py",
@@ -2152,7 +2160,49 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/conftest.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/jc-formal-profile.json",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/jc_formal_adapter.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/test_delivery_guard.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/test_mcp_fail_closed.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
+    },
+    {
+      "path": "tests/dsh_formal/test_profile.py",
+      "disposition": "TEST_ORACLE",
+      "terminal_state": "TEST_ORACLE",
+      "audit_role": "new_after_audit",
+      "closure_task": "W9-I00"
     },
     {
       "path": "tests/fixtures/ci_promotion_candidate.json",
@@ -2633,7 +2683,7 @@
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "closure_task": "W9-I00"
     },
     {
       "path": "tests/required_red_sentinels.py",
@@ -3528,7 +3578,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00",
+      "closure_task": "W9-I00",
       "namespace": "formal_core"
     },
     {
@@ -3575,7 +3625,7 @@
       "disposition": "KEEP_REWRITE",
       "terminal_state": "KEEP_REWRITE",
       "audit_role": "new_after_audit",
-      "closure_task": "W8-I00",
+      "closure_task": "W9-I00",
       "namespace": "formal_core"
     },
     {

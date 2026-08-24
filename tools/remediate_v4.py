@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.54.0"
+RUNNER_VERSION = "0.55.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -116,6 +116,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.53.0": 5,
     "0.53.1": 5,
     "0.54.0": 5,
+    "0.55.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1170,6 +1171,49 @@ W8_I00_REQUIRED_TEST_TOTAL = 509
 W8_I00_FUTURE_RED_COUNT = 4
 W8_I00_SOURCE = ROOT / "tests" / "fixtures" / "cn_official" / "first-method-source.json"
 W8_I00_CANDIDATE = ROOT / "tests" / "fixtures" / "cn_official" / "candidate-pack.json"
+W9_I00_TEST_PATHS = (
+    "tests/dsh_formal/test_profile.py",
+    "tests/dsh_formal/test_mcp_fail_closed.py",
+    "tests/dsh_formal/test_delivery_guard.py",
+    "tests/contract/test_required_test_manifest.py",
+)
+W9_I00_TEST_CASE_COUNT = 44
+W9_I00_TEST_CASE_IDS_DIGEST = (
+    "sha256:920e0018c7a92e6818b074fdeb62c84ff452be3e16039066d16a20914310abc0"
+)
+W9_I00_ALLOWED_PATHS = (
+    ".agents/skills/**",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/issue-map.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/dsh_formal/**",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W9_I00_REQUIRED_CHANGED_PATHS = (
+    ".agents/skills/jc-formal/SKILL.md",
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/issue-map.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/dsh_formal/README.md",
+    "tests/dsh_formal/conftest.py",
+    "tests/dsh_formal/jc-formal-profile.json",
+    "tests/dsh_formal/jc_formal_adapter.py",
+    "tests/dsh_formal/test_delivery_guard.py",
+    "tests/dsh_formal/test_mcp_fail_closed.py",
+    "tests/dsh_formal/test_profile.py",
+    "tests/required-v4-tests.json",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W9_I00_REQUIRED_TEST_TOTAL = 546
+W9_I00_FUTURE_RED_COUNT = 3
+W9_I00_PROFILE = ROOT / "tests" / "dsh_formal" / "jc-formal-profile.json"
+W9_I00_ADAPTER = ROOT / "tests" / "dsh_formal" / "jc_formal_adapter.py"
+W9_I00_SKILL = ROOT / ".agents" / "skills" / "jc-formal" / "SKILL.md"
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4966,6 +5010,27 @@ def _required_test_manifest_problems(
             "selector": "tests/formal_e2e/test_cn_first_method_candidate.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 2,
+        },
+        {
+            "id": "W9-DSH-PROFILE",
+            "suite": "dsh_formal",
+            "selector": "tests/dsh_formal/test_profile.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 17,
+        },
+        {
+            "id": "W9-MCP-FAIL-CLOSED",
+            "suite": "dsh_formal",
+            "selector": "tests/dsh_formal/test_mcp_fail_closed.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 8,
+        },
+        {
+            "id": "W9-DELIVERY-GUARD",
+            "suite": "dsh_formal",
+            "selector": "tests/dsh_formal/test_delivery_guard.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 12,
         },
     ]
     if required_now != expected_required_now:
@@ -19351,6 +19416,218 @@ def cmd_w8_i00_candidate_gate() -> int:
     return EXIT_OK
 
 
+def _w9_i00_contract_problems() -> list[str]:
+    """Validate the out-of-tree-shaped test adapter without claiming deployment."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        skill = W9_I00_SKILL.read_text(encoding="utf-8")
+        adapter_source = W9_I00_ADAPTER.read_text(encoding="utf-8")
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        generated_disposition = generator.build_document()
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from compiler_core import mcp as mcp_module
+        from tests.dsh_formal import jc_formal_adapter as adapter
+
+        profile = adapter.load_profile(W9_I00_PROFILE)
+        runtime_tools = mcp_module.runtime_tools_list()
+        runtime_tool_spec_digest = str(mcp_module.tool_spec_digest())
+        _topological_tasks(plan)
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        RuntimeError, TypeError, ValueError,
+    ) as exc:
+        return [f"W9-I00 input is unreadable: {type(exc).__name__}: {exc}"]
+
+    by_id = {
+        item.get("id"): item for item in plan.get("tasks", [])
+        if isinstance(item, dict)
+    }
+    task = by_id.get("W9-I00", {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W9-I00"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W9-I00", *W9_I00_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W9-I00.xml",
+        ],
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-04"],
+    ]
+    if task.get("depends_on") != ["W8-I00"]:
+        problems.append("W9-I00 must depend only on W8-I00")
+    if task.get("audit_ids") != ["P0-09", "P0-10", "P1-15", "P2-05"]:
+        problems.append("W9-I00 audit projection drifted")
+    if task.get("allowed_paths") != list(W9_I00_ALLOWED_PATHS):
+        problems.append("W9-I00 allowlist drifted")
+    if task.get("terminal_states") != [
+        "DSH_ADAPTER_IMPLEMENTATION_GREEN", "DEPLOYMENT_NOT_CLAIMED",
+    ]:
+        problems.append("W9-I00 terminal-state boundary drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+        problems.append("W9-I00 exact gate/pytest/governance argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W9-I00 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W9-I00 file disposition is not reproducible from its generator")
+
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    for path in W9_I00_REQUIRED_CHANGED_PATHS:
+        item = by_path.get(path, {})
+        if item.get("closure_task") != "W9-I00":
+            problems.append(f"W9-I00 disposition closure drifted: {path}")
+        if path.startswith("tests/dsh_formal/") and item.get("terminal_state") != "TEST_ORACLE":
+            problems.append(f"W9-I00 DSH test path is not a TEST_ORACLE: {path}")
+    skill_entry = by_path.get(".agents/skills/jc-formal/SKILL.md", {})
+    if (
+        skill_entry.get("terminal_state") != "CANDIDATE_ASSET"
+        or skill_entry.get("disposition") != "RETAIN_NONPACKAGED"
+    ):
+        problems.append("W9-I00 project skill crossed the non-production boundary")
+
+    required_by_id = {
+        item.get("id"): item for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W9-DSH-PROFILE": ("tests/dsh_formal/test_profile.py", 17),
+        "W9-MCP-FAIL-CLOSED": ("tests/dsh_formal/test_mcp_fail_closed.py", 8),
+        "W9-DELIVERY-GUARD": ("tests/dsh_formal/test_delivery_guard.py", 12),
+    }
+    for test_id, (selector, count) in expected_required.items():
+        expected = {
+            "id": test_id, "suite": "dsh_formal", "selector": selector,
+            "state": "REQUIRED_NOW", "expected_tests": count,
+        }
+        if required_by_id.get(test_id) != expected:
+            problems.append(f"W9-I00 required test drifted: {test_id}")
+    p2_05 = next(
+        (
+            item for item in required.get("audit_mutations", [])
+            if isinstance(item, dict) and item.get("audit_id") == "P2-05"
+        ),
+        {},
+    )
+    if (
+        p2_05.get("owner_task"), p2_05.get("state"), p2_05.get("selector"),
+    ) != (
+        "W9-I00", "ACTIVE_REQUIRED",
+        "tests/dsh_formal/test_delivery_guard.py::"
+        "test_dsh_formal_bypass_and_tool_hiding_are_blocked",
+    ):
+        problems.append("W9-I00 P2-05 delivery-guard activation drifted")
+    required_total = sum(
+        item.get("expected_tests", 0) for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    )
+    future_red = sum(
+        item.get("state") == "RED_AT_TASK"
+        for registry in ("evidence_tracks", "audit_mutations")
+        for item in required.get(registry, []) if isinstance(item, dict)
+    )
+    if (required_total, future_red) != (
+        W9_I00_REQUIRED_TEST_TOTAL, W9_I00_FUTURE_RED_COUNT,
+    ):
+        problems.append("W9-I00 required/RED totals drifted")
+
+    if (
+        profile.get("tools_list_digest") != _digest_object(runtime_tools)
+        or profile.get("capability_pins", {}).get("tool_spec_digest")
+        != runtime_tool_spec_digest
+        or profile.get("scope") != "test-local"
+        or profile.get("production_allowed") is not False
+        or profile.get("loaded_by_default") is not False
+        or profile.get("general_profile_unchanged") is not True
+        or profile.get("deployment_boundary") != {
+            "production_deployment_claimed": False,
+            "dsh_pin_approved": False,
+            "independent_service_identity_verified": False,
+            "authenticated_transport_verified": False,
+            "dsh_state_write_allowed": False,
+            "approval_gate": "H9-00",
+        }
+    ):
+        problems.append("W9-I00 profile pin or non-deployment boundary drifted")
+    for marker in (
+        "def activate(", "def guard_delivery(", "MCP_TOOL_LIST_DRIFT",
+        "FORMAL_ARTIFACT_BYTES", "SESSION_OR_TOOL_BINDING",
+        "def assert_production_deployment_allowed(", "H9_00_APPROVAL_REQUIRED",
+    ):
+        if marker not in adapter_source:
+            problems.append(f"W9-I00 adapter lacks fail-closed marker: {marker}")
+    for marker in (
+        "name: jc-formal", "jc_capabilities", "jc_evaluate", "jc_verify_run",
+        "jc_read_artifact", "not the security boundary", "H9-00",
+    ):
+        if marker not in skill:
+            problems.append(f"W9-I00 project skill lacks boundary marker: {marker}")
+    return problems
+
+
+def _w9_i00_build_evidence(state_root: Path) -> tuple[Path, str]:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from tests.dsh_formal import jc_formal_adapter as adapter
+
+    profile = adapter.load_profile(W9_I00_PROFILE)
+    report = {
+        "schema_version": "jc/w9-test-local-dsh-adapter/1.0",
+        "task_id": "W9-I00",
+        "status": "PASS",
+        "source": {
+            "commit": _git_checked("rev-parse", "HEAD"),
+            "tree": _git_checked("rev-parse", "HEAD^{tree}"),
+        },
+        "scope": "test-local",
+        "production_allowed": False,
+        "deployment_claimed": False,
+        "profile_sha256": "sha256:" + sha256_hex(W9_I00_PROFILE.read_bytes()),
+        "adapter_sha256": "sha256:" + sha256_hex(W9_I00_ADAPTER.read_bytes()),
+        "skill_sha256": "sha256:" + sha256_hex(W9_I00_SKILL.read_bytes()),
+        "tools_list_digest": profile["tools_list_digest"],
+        "tool_spec_digest": profile["capability_pins"]["tool_spec_digest"],
+        "allowed_tools": profile["allowed_tools"],
+        "required_test_total": W9_I00_REQUIRED_TEST_TOTAL,
+        "future_red": W9_I00_FUTURE_RED_COUNT,
+        "terminal_states": [
+            "DSH_ADAPTER_IMPLEMENTATION_GREEN", "DEPLOYMENT_NOT_CLAIMED",
+        ],
+    }
+    return _write_content_addressed_json(
+        state_root / "evidence" / "W9-I00" / "reports", report,
+    )
+
+
+def cmd_w9_i00_adapter_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W9-I00 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w9_i00_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W9-I00 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w9_i00_build_evidence(Path(raw_state_root).resolve())
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"W9-I00 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw9-i00-dsh-adapter-report\t{report_path}\t{report_digest}")
+    print(
+        "W9-I00 gate OK: test/local DSH profile, exact four-tool client and delivery "
+        "guard are implemented; production deployment is not claimed"
+    )
+    return EXIT_OK
+
+
 def cmd_w7_target_gate(task_id: str) -> int:
     raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
     if not raw_state_root:
@@ -19462,6 +19739,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w7_i01_local_rc_gate()
     if args.wave == "W8-I00":
         return cmd_w8_i00_candidate_gate()
+    if args.wave == "W9-I00":
+        return cmd_w9_i00_adapter_gate()
     if args.wave in W7_TARGET_CHECKS:
         return cmd_w7_target_gate(args.wave)
     print(
@@ -22225,6 +22504,54 @@ def _w8_i00_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str
     return problems
 
 
+def _w9_i00_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require exact DSH adapter tests and the final expanded W0-04 report."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    governance_reports = [
+        report for report in test_reports if report.get("kind") == "pytest-governance"
+    ]
+    if len(pytest_reports) != 1:
+        problems.append("W9-I00 must bind exactly one focused pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0, "terminal_summaries": 1,
+            "passed": W9_I00_TEST_CASE_COUNT, "failed": 0, "errors": 0,
+            "skipped": 0, "xfailed": 0, "xpassed": 0, "collection_errors": 0,
+            "junit_valid": True, "junit_tests": W9_I00_TEST_CASE_COUNT,
+            "junit_skipped": 0, "junit_failures": 0, "junit_errors": 0,
+            "junit_cases": W9_I00_TEST_CASE_COUNT,
+            "junit_unique_cases": W9_I00_TEST_CASE_COUNT,
+            "junit_case_ids_digest": W9_I00_TEST_CASE_IDS_DIGEST,
+        }
+        problems.extend(
+            f"W9-I00 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W9-I00 pytest junit_sha256 is missing or invalid")
+    if len(governance_reports) != 1:
+        problems.append("W9-I00 must bind exactly one W0-04 governance report")
+    else:
+        report = governance_reports[0]
+        expected = {
+            "exit_code": 0, "suites": 12, "audit_groups": 44, "rewrites": 25,
+            "required_passed": W9_I00_REQUIRED_TEST_TOTAL,
+            "future_red": W9_I00_FUTURE_RED_COUNT,
+            "bypass_or_collection_errors": 0,
+            "evidence_label": "w0-04-required-tests",
+        }
+        problems.extend(
+            f"W9-I00 governance {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if DIGEST_V4_PATTERN.fullmatch(str(report.get("evidence_sha256"))) is None:
+            problems.append("W9-I00 governance evidence digest is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -23521,6 +23848,90 @@ def _w8_i00_artifact_problems(
     return problems
 
 
+def _w9_i00_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W9-I00 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W9-I00 artifact_digests is not an object"]
+    expected = set(W9_I00_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W9-I00 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W9_I00_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W9-I00 lacks committed result digest: {path}")
+    return problems
+
+
+def _w9_i00_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W9-I00 artifact_digests is not an object"]
+    digest = artifact_digests.get("state-artifact:w9-i00-dsh-adapter-report")
+    if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+        return ["W9-I00 DSH adapter report digest is missing"]
+    path = (
+        state_root / "evidence" / "W9-I00" / "reports"
+        / f"{str(digest).split(':', 1)[1]}.json"
+    )
+    try:
+        raw = path.read_bytes()
+        report = json.loads(raw)
+        profile = json.loads(W9_I00_PROFILE.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W9-I00 DSH adapter report is unreadable: {exc}"]
+    problems: list[str] = []
+    if "sha256:" + sha256_hex(raw) != digest:
+        problems.append("W9-I00 DSH adapter report content drifted")
+    source = report.get("source", {})
+    expected = {
+        "profile_sha256": "sha256:" + sha256_hex(W9_I00_PROFILE.read_bytes()),
+        "adapter_sha256": "sha256:" + sha256_hex(W9_I00_ADAPTER.read_bytes()),
+        "skill_sha256": "sha256:" + sha256_hex(W9_I00_SKILL.read_bytes()),
+        "tools_list_digest": profile.get("tools_list_digest"),
+        "tool_spec_digest": profile.get("capability_pins", {}).get("tool_spec_digest"),
+        "allowed_tools": [
+            "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
+        ],
+        "required_test_total": W9_I00_REQUIRED_TEST_TOTAL,
+        "future_red": W9_I00_FUTURE_RED_COUNT,
+        "terminal_states": [
+            "DSH_ADAPTER_IMPLEMENTATION_GREEN", "DEPLOYMENT_NOT_CLAIMED",
+        ],
+    }
+    if (
+        set(report) != {
+            "schema_version", "task_id", "status", "source", "scope",
+            "production_allowed", "deployment_claimed", "profile_sha256",
+            "adapter_sha256", "skill_sha256", "tools_list_digest",
+            "tool_spec_digest", "allowed_tools", "required_test_total",
+            "future_red", "terminal_states",
+        }
+        or report.get("schema_version") != "jc/w9-test-local-dsh-adapter/1.0"
+        or report.get("task_id") != "W9-I00"
+        or report.get("status") != "PASS"
+        or not isinstance(source, dict)
+        or not _validate_git_binding(str(source.get("commit")), str(source.get("tree")))
+        or report.get("scope") != "test-local"
+        or report.get("production_allowed") is not False
+        or report.get("deployment_claimed") is not False
+        or any(report.get(field) != value for field, value in expected.items())
+    ):
+        problems.append("W9-I00 adapter evidence binding or non-deployment boundary drifted")
+    if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+        problems.append("W9-I00 evidence report leaks a repository path")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -24575,6 +24986,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W8-I00 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W9-I00":
+        problems.extend(_w9_i00_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w9_i00_contract_problems())
+        problems.extend(_w9_i00_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w9_i00_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w9-i00-exact-adapter-reports",
+            "w9-i00-test-local-dsh-contract",
+            "w9-i00-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W9-I00 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -26542,6 +26977,39 @@ def _execute_auto_task(
             "ok": not path_problems,
             "detail": (
                 "all 15 W8-I00 builder, fixture, governance, runner and test paths are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W9-I00":
+        report_problems = _w9_i00_test_report_problems(test_reports)
+        contract_problems = _w9_i00_contract_problems()
+        artifact_problems = _w9_i00_artifact_problems(artifact_digests, state_root)
+        path_problems = _w9_i00_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w9-i00-exact-adapter-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W9_I00_TEST_CASE_COUNT} test-local adapter cases and "
+                f"{W9_I00_REQUIRED_TEST_TOTAL} required governance cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w9-i00-test-local-dsh-contract", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "closed DSH profile, capability pins, exact-byte delivery chain and fail-closed "
+                "guards are bound; production deployment remains explicitly unclaimed"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w9-i00-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 15 W9-I00 adapter, profile, skill, governance, runner and test paths "
+                "are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

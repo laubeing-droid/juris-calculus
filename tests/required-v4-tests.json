@@ -437,6 +437,27 @@
       "selector": "tests/formal_e2e/test_cn_first_method_candidate.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 2
+    },
+    {
+      "id": "W9-DSH-PROFILE",
+      "suite": "dsh_formal",
+      "selector": "tests/dsh_formal/test_profile.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 17
+    },
+    {
+      "id": "W9-MCP-FAIL-CLOSED",
+      "suite": "dsh_formal",
+      "selector": "tests/dsh_formal/test_mcp_fail_closed.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 8
+    },
+    {
+      "id": "W9-DELIVERY-GUARD",
+      "suite": "dsh_formal",
+      "selector": "tests/dsh_formal/test_delivery_guard.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 12
     }
   ],
   "evidence_tracks": [
@@ -881,8 +902,8 @@
       "test_id": "V4-P2-05-DSH-DELIVERY-GUARD",
       "suite": "dsh_formal",
       "selector": "tests/dsh_formal/test_delivery_guard.py::test_dsh_formal_bypass_and_tool_hiding_are_blocked",
-      "owner_task": "W9-05",
-      "state": "RED_AT_TASK",
+      "owner_task": "W9-I00",
+      "state": "ACTIVE_REQUIRED",
       "mutation": "Bypass JC verification or hide a required formal tool from DSH.",
       "red_failure": "DSH formal delivery must fail without the pinned verified path."
     },

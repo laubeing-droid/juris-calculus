@@ -5106,6 +5106,7 @@
       "allowed_paths": [
         ".agents/skills/**",
         "remediation/v4/file-disposition.json",
+        "remediation/v4/issue-map.json",
         "remediation/v4/tasks.json",
         "tests/contract/test_required_test_manifest.py",
         "tests/dsh_formal/**",
@@ -5124,11 +5125,41 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W9-I00"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W9-I00",
+          "tests/dsh_formal/test_profile.py",
+          "tests/dsh_formal/test_mcp_fail_closed.py",
+          "tests/dsh_formal/test_delivery_guard.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W9-I00.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",
