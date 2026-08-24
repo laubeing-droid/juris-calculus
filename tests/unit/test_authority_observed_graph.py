@@ -393,6 +393,7 @@ def test_repository_policy_has_exact_python_and_codegraph_coverage() -> None:
         "application": "compiler_core/application.py",
         "certificate_issuer": "compiler_core/certificates.py",
         "contract": "compiler_core/contracts.py",
+        "independent_checker": "compiler_core/independent_checker.py",
     }
     assert report["status"] == "OPEN_VIOLATIONS"
     assert any(item["kind"] == "authority_target_missing" for item in report["backlog"])

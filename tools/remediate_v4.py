@@ -1684,15 +1684,16 @@ def cmd_asset_map(args: argparse.Namespace) -> int:
         print("asset-map requires --codegraph and --state-root", file=sys.stderr)
         return EXIT_USAGE
     tracked = _git_tracked_files()
+    indexed = set(_codegraph_indexed_files(codegraph_db))
     dispositions = {
         item["path"]: item
         for item in json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))["paths"]
     }
     assets: list[dict[str, Any]] = []
     for path in tracked:
-        suffix = Path(path).suffix.lower()
-        if suffix in {".py", ".yaml", ".yml"} and path != "configs/zh_CN/rules.yaml":
+        if path in indexed:
             continue
+        suffix = Path(path).suffix.lower()
         source = ROOT / path
         disposition = dispositions.get(path)
         if disposition is None:
