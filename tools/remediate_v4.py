@@ -60,7 +60,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.53.1"
+RUNNER_VERSION = "0.54.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -115,6 +115,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.52.1": 5,
     "0.53.0": 5,
     "0.53.1": 5,
+    "0.54.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1121,6 +1122,54 @@ W7_I01_REQUIRED_CHANGED_PATHS = (
 )
 W7_I01_REQUIRED_TEST_TOTAL = 487
 W7_I01_FUTURE_RED_COUNT = 4
+W8_I00_TEST_PATHS = (
+    "tests/contract/test_cn_official_source_intake.py",
+    "tests/contract/test_cn_official_candidate.py",
+    "tests/contract/test_cn_official_pack.py",
+    "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
+    "tests/formal_e2e/test_cn_first_method_candidate.py",
+    "tests/contract/test_required_test_manifest.py",
+)
+W8_I00_TEST_CASE_COUNT = 29
+W8_I00_TEST_CASE_IDS_DIGEST = (
+    "sha256:5514cf6e06d84247df181db572458377b2e11bcc136099a215d08e2fe8555b12"
+)
+W8_I00_ALLOWED_PATHS = (
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_cn_official_candidate.py",
+    "tests/contract/test_cn_official_pack.py",
+    "tests/contract/test_cn_official_source_intake.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/fixtures/cn_official/**",
+    "tests/formal_e2e/**",
+    "tests/required-v4-tests.json",
+    "tests/semantic_mutation/**",
+    "tools/build_cn_official_pack.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W8_I00_REQUIRED_CHANGED_PATHS = (
+    "remediation/v4/file-disposition.json",
+    "remediation/v4/tasks.json",
+    "tests/contract/test_cn_official_candidate.py",
+    "tests/contract/test_cn_official_pack.py",
+    "tests/contract/test_cn_official_source_intake.py",
+    "tests/contract/test_required_test_manifest.py",
+    "tests/fixtures/cn_official/NOTICE.md",
+    "tests/fixtures/cn_official/candidate-pack.json",
+    "tests/fixtures/cn_official/first-method-source.json",
+    "tests/formal_e2e/test_cn_first_method_candidate.py",
+    "tests/required-v4-tests.json",
+    "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
+    "tools/build_cn_official_pack.py",
+    "tools/build_file_disposition.py",
+    "tools/remediate_v4.py",
+)
+W8_I00_REQUIRED_TEST_TOTAL = 509
+W8_I00_FUTURE_RED_COUNT = 4
+W8_I00_SOURCE = ROOT / "tests" / "fixtures" / "cn_official" / "first-method-source.json"
+W8_I00_CANDIDATE = ROOT / "tests" / "fixtures" / "cn_official" / "candidate-pack.json"
 SEMANTIC_MUTATION_LEDGER = ROOT / "tests" / "semantic_mutation" / "critical-v4-mutations.json"
 W0_05_CORE_LOCK = ROOT / "requirements" / "core.lock"
 W0_05_PYPROJECT = ROOT / "pyproject.toml"
@@ -4882,6 +4931,41 @@ def _required_test_manifest_problems(
             "selector": "tests/performance/test_local_rc_baseline.py",
             "state": "REQUIRED_NOW",
             "expected_tests": 5,
+        },
+        {
+            "id": "W8-FIRST-METHOD-SOURCE",
+            "suite": "contract",
+            "selector": "tests/contract/test_cn_official_source_intake.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 5,
+        },
+        {
+            "id": "W8-CANDIDATE-RULES",
+            "suite": "contract",
+            "selector": "tests/contract/test_cn_official_candidate.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 4,
+        },
+        {
+            "id": "W8-CANDIDATE-PACK",
+            "suite": "contract",
+            "selector": "tests/contract/test_cn_official_pack.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 5,
+        },
+        {
+            "id": "W8-CANDIDATE-SEMANTIC-MUTATIONS",
+            "suite": "differential",
+            "selector": "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 6,
+        },
+        {
+            "id": "W8-CANDIDATE-FORMAL-BOUNDARY",
+            "suite": "formal_e2e",
+            "selector": "tests/formal_e2e/test_cn_first_method_candidate.py",
+            "state": "REQUIRED_NOW",
+            "expected_tests": 2,
         },
     ]
     if required_now != expected_required_now:
@@ -19064,6 +19148,209 @@ def cmd_w7_i01_local_rc_gate() -> int:
     return EXIT_OK
 
 
+def _w8_i00_contract_problems() -> list[str]:
+    """Validate the fictional first-method pipeline and its non-promotion boundary."""
+
+    problems: list[str] = []
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        disposition = json.loads(FILE_DISPOSITION.read_text(encoding="utf-8"))
+        required = json.loads(REQUIRED_TEST_MANIFEST.read_text(encoding="utf-8"))
+        source = json.loads(W8_I00_SOURCE.read_text(encoding="utf-8"))
+        candidate_raw = W8_I00_CANDIDATE.read_bytes()
+        candidate = json.loads(candidate_raw)
+        generator = _w6_01_load_wheel_gate(ROOT / "tools/build_file_disposition.py")
+        builder = _w6_01_load_wheel_gate(ROOT / "tools/build_cn_official_pack.py")
+        generated_disposition = generator.build_document()
+        expected_candidate = builder.build_fixture_bytes(W8_I00_SOURCE)
+        builder_problems = builder.validate_document(candidate)
+        _topological_tasks(plan)
+    except (
+        ImportError, OSError, UnicodeError, json.JSONDecodeError, SyntaxError,
+        TypeError, ValueError,
+    ) as exc:
+        return [f"W8-I00 input is unreadable: {type(exc).__name__}: {exc}"]
+
+    by_id = {
+        item.get("id"): item for item in plan.get("tasks", [])
+        if isinstance(item, dict)
+    }
+    task = by_id.get("W8-I00", {})
+    expected_argv = [
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W8-I00"],
+        [
+            "{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q",
+            "--color=no", "-p", "no:cacheprovider", "--basetemp",
+            "{state_root}/tmp/W8-I00", *W8_I00_TEST_PATHS,
+            "--junitxml", "{state_root}/evidence/pytest/W8-I00.xml",
+        ],
+        ["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "W0-04"],
+    ]
+    if task.get("depends_on") != ["W7-I01"]:
+        problems.append("W8-I00 must depend only on W7-I01")
+    if task.get("audit_ids") != ["P0-02", "P0-04", "P0-05", "P1-07", "P1-20"]:
+        problems.append("W8-I00 audit projection drifted")
+    if task.get("allowed_paths") != list(W8_I00_ALLOWED_PATHS):
+        problems.append("W8-I00 allowlist drifted")
+    if task.get("terminal_states") != [
+        "CN_PACK_PIPELINE_TEST_ONLY_GREEN", "FORMAL_SOURCE_NOT_CLAIMED",
+    ]:
+        problems.append("W8-I00 terminal-state boundary drifted")
+    if task.get("argv") != expected_argv or task.get("expected_exit_codes") != [0, 0, 0]:
+        problems.append("W8-I00 exact gate/pytest/governance argv drifted")
+    if task.get("timeout_seconds") != 1800:
+        problems.append("W8-I00 timeout budget drifted")
+    if disposition != generated_disposition:
+        problems.append("W8-I00 file disposition is not reproducible from its generator")
+
+    by_path = {
+        item.get("path"): item for item in disposition.get("paths", [])
+        if isinstance(item, dict)
+    }
+    test_oracles = {
+        path for path in W8_I00_REQUIRED_CHANGED_PATHS
+        if path.startswith("tests/") or path == "tools/build_cn_official_pack.py"
+    }
+    for path in W8_I00_REQUIRED_CHANGED_PATHS:
+        item = by_path.get(path, {})
+        if item.get("closure_task") != "W8-I00":
+            problems.append(f"W8-I00 disposition closure drifted: {path}")
+        if path in test_oracles and item.get("terminal_state") != "TEST_ORACLE":
+            problems.append(f"W8-I00 test-only path is not a TEST_ORACLE: {path}")
+
+    required_by_id = {
+        item.get("id"): item for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    }
+    expected_required = {
+        "W8-FIRST-METHOD-SOURCE": (
+            "contract", "tests/contract/test_cn_official_source_intake.py", 5,
+        ),
+        "W8-CANDIDATE-RULES": (
+            "contract", "tests/contract/test_cn_official_candidate.py", 4,
+        ),
+        "W8-CANDIDATE-PACK": (
+            "contract", "tests/contract/test_cn_official_pack.py", 5,
+        ),
+        "W8-CANDIDATE-SEMANTIC-MUTATIONS": (
+            "differential",
+            "tests/semantic_mutation/test_cn_official_candidate_mutation.py", 6,
+        ),
+        "W8-CANDIDATE-FORMAL-BOUNDARY": (
+            "formal_e2e", "tests/formal_e2e/test_cn_first_method_candidate.py", 2,
+        ),
+    }
+    for test_id, (suite, selector, count) in expected_required.items():
+        expected = {
+            "id": test_id, "suite": suite, "selector": selector,
+            "state": "REQUIRED_NOW", "expected_tests": count,
+        }
+        if required_by_id.get(test_id) != expected:
+            problems.append(f"W8-I00 required test drifted: {test_id}")
+    required_total = sum(
+        item.get("expected_tests", 0) for item in required.get("required_now", [])
+        if isinstance(item, dict)
+    )
+    future_red = sum(
+        item.get("state") == "RED_AT_TASK"
+        for registry in ("evidence_tracks", "audit_mutations")
+        for item in required.get(registry, []) if isinstance(item, dict)
+    )
+    if (required_total, future_red) != (
+        W8_I00_REQUIRED_TEST_TOTAL, W8_I00_FUTURE_RED_COUNT,
+    ):
+        problems.append("W8-I00 required/RED totals drifted")
+
+    if candidate_raw != expected_candidate:
+        problems.append("W8-I00 committed candidate bytes are not reproducible")
+    problems.extend(f"W8-I00 candidate invalid: {item}" for item in builder_problems)
+    candidate_pack = candidate.get("candidate_pack", {})
+    review = candidate.get("review_subject", {})
+    if (
+        source.get("scope") != "test-only"
+        or source.get("formal_source_claimed") is not False
+        or source.get("authority_tier") != "synthetic_test_only"
+        or source.get("license_status") != "test-fixture"
+        or candidate.get("scope") != "test-only"
+        or candidate.get("production_allowed") is not False
+        or candidate.get("formal_source_claimed") is not False
+        or candidate_pack.get("state") != "CANDIDATE"
+        or candidate_pack.get("promotion_receipt_refs") != []
+        or candidate_pack.get("signature_ref") is not None
+        or review.get("status") != "AWAITING_EXTERNAL_REVIEW"
+        or len(candidate.get("candidate_rules", [])) != 5
+    ):
+        problems.append("W8-I00 fixture crossed its test-only/formal-source boundary")
+    for token in (
+        b"configs/zh_CN/rules.yaml", b"cn-legacy-corpus",
+        b"032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
+        b"8f51fdfd1db3e343812e8f35a321418fa854f4f7", b"21144",
+    ):
+        if token in candidate_raw:
+            problems.append(f"W8-I00 candidate retains retired identity: {token!r}")
+    if b"cn-official" in candidate_raw.lower():
+        problems.append("W8-I00 test candidate claims the cn-official namespace")
+    return problems
+
+
+def _w8_i00_build_evidence(state_root: Path) -> tuple[Path, str]:
+    builder = _w6_01_load_wheel_gate(ROOT / "tools/build_cn_official_pack.py")
+    source_raw = W8_I00_SOURCE.read_bytes()
+    candidate_raw = W8_I00_CANDIDATE.read_bytes()
+    if candidate_raw != builder.build_fixture_bytes(W8_I00_SOURCE):
+        raise ValueError("committed W8 candidate fixture is not reproducible")
+    candidate = json.loads(candidate_raw)
+    builder.assert_valid_document(candidate)
+    report = {
+        "schema_version": "jc/w8-test-candidate-implementation/1.0",
+        "task_id": "W8-I00",
+        "status": "PASS",
+        "source": {
+            "commit": _git_checked("rev-parse", "HEAD"),
+            "tree": _git_checked("rev-parse", "HEAD^{tree}"),
+        },
+        "scope": "test-only",
+        "production_allowed": False,
+        "formal_source_claimed": False,
+        "source_sha256": "sha256:" + sha256_hex(source_raw),
+        "candidate_sha256": "sha256:" + sha256_hex(candidate_raw),
+        "source_snapshot_ref": candidate["source"]["snapshot_ref"],
+        "pack_digest": candidate["candidate_pack"]["pack_digest"],
+        "coverage_digest": candidate["coverage"]["coverage_digest"],
+        "review_subject_digest": candidate["review_subject"]["subject_digest"],
+        "rule_count": len(candidate["candidate_rules"]),
+        "terminal_states": [
+            "CN_PACK_PIPELINE_TEST_ONLY_GREEN", "FORMAL_SOURCE_NOT_CLAIMED",
+        ],
+    }
+    return _write_content_addressed_json(
+        state_root / "evidence" / "W8-I00" / "reports", report,
+    )
+
+
+def cmd_w8_i00_candidate_gate() -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print("W8-I00 gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    problems = _w8_i00_contract_problems()
+    if problems:
+        for problem in sorted(set(problems)):
+            print(f"W8-I00 gate failed: {problem}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w8_i00_build_evidence(Path(raw_state_root).resolve())
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"W8-I00 gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw8-i00-test-candidate-report\t{report_path}\t{report_digest}")
+    print(
+        "W8-I00 gate OK: fictional first-method source reached a deterministic, "
+        "closed test candidate; formal source and production promotion are not claimed"
+    )
+    return EXIT_OK
+
+
 def cmd_w7_target_gate(task_id: str) -> int:
     raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
     if not raw_state_root:
@@ -19173,6 +19460,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w6_08_promotion_gate()
     if args.wave == "W7-I01":
         return cmd_w7_i01_local_rc_gate()
+    if args.wave == "W8-I00":
+        return cmd_w8_i00_candidate_gate()
     if args.wave in W7_TARGET_CHECKS:
         return cmd_w7_target_gate(args.wave)
     print(
@@ -21888,6 +22177,54 @@ def _w7_i01_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str
     return problems
 
 
+def _w8_i00_test_report_problems(test_reports: list[dict[str, Any]]) -> list[str]:
+    """Require the exact candidate-pipeline tests and expanded W0-04 report."""
+
+    problems: list[str] = []
+    pytest_reports = [report for report in test_reports if report.get("kind") == "pytest"]
+    governance_reports = [
+        report for report in test_reports if report.get("kind") == "pytest-governance"
+    ]
+    if len(pytest_reports) != 1:
+        problems.append("W8-I00 must bind exactly one focused pytest report")
+    else:
+        report = pytest_reports[0]
+        expected = {
+            "exit_code": 0, "terminal_summaries": 1,
+            "passed": W8_I00_TEST_CASE_COUNT, "failed": 0, "errors": 0,
+            "skipped": 0, "xfailed": 0, "xpassed": 0, "collection_errors": 0,
+            "junit_valid": True, "junit_tests": W8_I00_TEST_CASE_COUNT,
+            "junit_skipped": 0, "junit_failures": 0, "junit_errors": 0,
+            "junit_cases": W8_I00_TEST_CASE_COUNT,
+            "junit_unique_cases": W8_I00_TEST_CASE_COUNT,
+            "junit_case_ids_digest": W8_I00_TEST_CASE_IDS_DIGEST,
+        }
+        problems.extend(
+            f"W8-I00 pytest {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if re.fullmatch(r"[0-9a-f]{64}", str(report.get("junit_sha256"))) is None:
+            problems.append("W8-I00 pytest junit_sha256 is missing or invalid")
+    if len(governance_reports) != 1:
+        problems.append("W8-I00 must bind exactly one W0-04 governance report")
+    else:
+        report = governance_reports[0]
+        expected = {
+            "exit_code": 0, "suites": 12, "audit_groups": 44, "rewrites": 25,
+            "required_passed": W8_I00_REQUIRED_TEST_TOTAL,
+            "future_red": W8_I00_FUTURE_RED_COUNT,
+            "bypass_or_collection_errors": 0,
+            "evidence_label": "w0-04-required-tests",
+        }
+        problems.extend(
+            f"W8-I00 governance {field} drifted: {report.get(field)!r} != {value!r}"
+            for field, value in expected.items() if report.get(field) != value
+        )
+        if DIGEST_V4_PATTERN.fullmatch(str(report.get("evidence_sha256"))) is None:
+            problems.append("W8-I00 governance evidence digest is missing or invalid")
+    return problems
+
+
 def _w5_02c_committed_scope_problems(
     changed_paths: Any,
     artifact_digests: Any,
@@ -23101,6 +23438,89 @@ def _w7_i01_artifact_problems(
     return problems
 
 
+def _w8_i00_committed_scope_problems(
+    changed_paths: Any, artifact_digests: Any,
+) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(changed_paths, list):
+        return ["W8-I00 changed_paths is not a list"]
+    if not isinstance(artifact_digests, dict):
+        return ["W8-I00 artifact_digests is not an object"]
+    expected = set(W8_I00_REQUIRED_CHANGED_PATHS)
+    if set(changed_paths) != expected or len(changed_paths) != len(expected):
+        problems.append(
+            f"W8-I00 committed scope drifted: {sorted(changed_paths)!r} "
+            f"!= {sorted(expected)!r}"
+        )
+    for path in W8_I00_REQUIRED_CHANGED_PATHS:
+        if re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(artifact_digests.get(f"result-path:{path}")),
+        ) is None:
+            problems.append(f"W8-I00 lacks committed result digest: {path}")
+    return problems
+
+
+def _w8_i00_artifact_problems(
+    artifact_digests: Any, state_root: Path,
+) -> list[str]:
+    if not isinstance(artifact_digests, dict):
+        return ["W8-I00 artifact_digests is not an object"]
+    digest = artifact_digests.get("state-artifact:w8-i00-test-candidate-report")
+    if DIGEST_V4_PATTERN.fullmatch(str(digest)) is None:
+        return ["W8-I00 test-candidate report digest is missing"]
+    path = (
+        state_root / "evidence" / "W8-I00" / "reports"
+        / f"{str(digest).split(':', 1)[1]}.json"
+    )
+    try:
+        raw = path.read_bytes()
+        report = json.loads(raw)
+        candidate_raw = W8_I00_CANDIDATE.read_bytes()
+        source_raw = W8_I00_SOURCE.read_bytes()
+        candidate = json.loads(candidate_raw)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return [f"W8-I00 test-candidate report is unreadable: {exc}"]
+    problems: list[str] = []
+    if "sha256:" + sha256_hex(raw) != digest:
+        problems.append("W8-I00 test-candidate report content drifted")
+    source = report.get("source", {})
+    expected = {
+        "source_sha256": "sha256:" + sha256_hex(source_raw),
+        "candidate_sha256": "sha256:" + sha256_hex(candidate_raw),
+        "source_snapshot_ref": candidate.get("source", {}).get("snapshot_ref"),
+        "pack_digest": candidate.get("candidate_pack", {}).get("pack_digest"),
+        "coverage_digest": candidate.get("coverage", {}).get("coverage_digest"),
+        "review_subject_digest": candidate.get("review_subject", {}).get("subject_digest"),
+        "rule_count": 5,
+        "terminal_states": [
+            "CN_PACK_PIPELINE_TEST_ONLY_GREEN", "FORMAL_SOURCE_NOT_CLAIMED",
+        ],
+    }
+    if (
+        set(report) != {
+            "schema_version", "task_id", "status", "source", "scope",
+            "production_allowed", "formal_source_claimed", "source_sha256",
+            "candidate_sha256", "source_snapshot_ref", "pack_digest",
+            "coverage_digest", "review_subject_digest", "rule_count",
+            "terminal_states",
+        }
+        or report.get("schema_version") != "jc/w8-test-candidate-implementation/1.0"
+        or report.get("task_id") != "W8-I00"
+        or report.get("status") != "PASS"
+        or not isinstance(source, dict)
+        or not _validate_git_binding(str(source.get("commit")), str(source.get("tree")))
+        or report.get("scope") != "test-only"
+        or report.get("production_allowed") is not False
+        or report.get("formal_source_claimed") is not False
+        or any(report.get(field) != value for field, value in expected.items())
+    ):
+        problems.append("W8-I00 candidate evidence binding or non-promotion boundary drifted")
+    if str(ROOT.resolve()) in raw.decode("utf-8", errors="replace"):
+        problems.append("W8-I00 evidence report leaks a repository path")
+    return problems
+
+
 def _w4_02_storage_contract_problems() -> list[str]:
     """Check the narrow durable-store API and platform primitives without writing state."""
 
@@ -24131,6 +24551,30 @@ def _auto_receipt_resume_problems(
             or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
         ):
             problems.append("W7-I01 receipt completion assertions are incomplete or false")
+    if task.get("id") == "W8-I00":
+        problems.extend(_w8_i00_test_report_problems(reports))
+        if validate_live_contract:
+            problems.extend(_w8_i00_contract_problems())
+        problems.extend(_w8_i00_artifact_problems(
+            receipt.get("artifact_digests"), state_root,
+        ))
+        problems.extend(_w8_i00_committed_scope_problems(
+            receipt.get("changed_paths"), receipt.get("artifact_digests"),
+        ))
+        expected_assertion_ids = _expected_auto_completion_assertion_ids(
+            task,
+            "w8-i00-exact-candidate-reports",
+            "w8-i00-first-method-test-contract",
+            "w8-i00-exact-committed-scope",
+        )
+        assertions = receipt.get("completion_assertions", [])
+        if (
+            not isinstance(assertions, list)
+            or [item.get("id") for item in assertions if isinstance(item, dict)]
+            != expected_assertion_ids
+            or any(item.get("ok") is not True for item in assertions if isinstance(item, dict))
+        ):
+            problems.append("W8-I00 receipt completion assertions are incomplete or false")
     return problems
 
 
@@ -26066,6 +26510,38 @@ def _execute_auto_task(
             "detail": (
                 "all 12 W7-I01 storage, performance, governance, runner and test paths "
                 "are digest-bound"
+                if not path_problems else "; ".join(path_problems)
+            ),
+        })
+    if task["id"] == "W8-I00":
+        report_problems = _w8_i00_test_report_problems(test_reports)
+        contract_problems = _w8_i00_contract_problems()
+        artifact_problems = _w8_i00_artifact_problems(artifact_digests, state_root)
+        path_problems = _w8_i00_committed_scope_problems(changed_paths, artifact_digests)
+        assertions.append({
+            "id": "w8-i00-exact-candidate-reports", "kind": "artifact_binding",
+            "ok": not report_problems,
+            "detail": (
+                f"{W8_I00_TEST_CASE_COUNT} candidate-pipeline cases and "
+                f"{W8_I00_REQUIRED_TEST_TOTAL} required governance cases passed with zero bypass"
+                if not report_problems else "; ".join(report_problems)
+            ),
+        })
+        assertions.append({
+            "id": "w8-i00-first-method-test-contract", "kind": "artifact_binding",
+            "ok": not contract_problems and not artifact_problems,
+            "detail": (
+                "fictional first-method bytes deterministically produce five closed RuleV4 "
+                "candidates with complete test coverage; formal source and promotion stay unclaimed"
+                if not contract_problems and not artifact_problems
+                else "; ".join([*contract_problems, *artifact_problems])
+            ),
+        })
+        assertions.append({
+            "id": "w8-i00-exact-committed-scope", "kind": "artifact_binding",
+            "ok": not path_problems,
+            "detail": (
+                "all 15 W8-I00 builder, fixture, governance, runner and test paths are digest-bound"
                 if not path_problems else "; ".join(path_problems)
             ),
         })

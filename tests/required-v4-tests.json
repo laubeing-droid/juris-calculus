@@ -402,6 +402,41 @@
       "selector": "tests/performance/test_local_rc_baseline.py",
       "state": "REQUIRED_NOW",
       "expected_tests": 5
+    },
+    {
+      "id": "W8-FIRST-METHOD-SOURCE",
+      "suite": "contract",
+      "selector": "tests/contract/test_cn_official_source_intake.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 5
+    },
+    {
+      "id": "W8-CANDIDATE-RULES",
+      "suite": "contract",
+      "selector": "tests/contract/test_cn_official_candidate.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 4
+    },
+    {
+      "id": "W8-CANDIDATE-PACK",
+      "suite": "contract",
+      "selector": "tests/contract/test_cn_official_pack.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 5
+    },
+    {
+      "id": "W8-CANDIDATE-SEMANTIC-MUTATIONS",
+      "suite": "differential",
+      "selector": "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 6
+    },
+    {
+      "id": "W8-CANDIDATE-FORMAL-BOUNDARY",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_cn_first_method_candidate.py",
+      "state": "REQUIRED_NOW",
+      "expected_tests": 2
     }
   ],
   "evidence_tracks": [

@@ -5022,11 +5022,43 @@
           "tools/remediate_v4.py",
           "verify-wave",
           "W8-I00"
+        ],
+        [
+          "{python}",
+          "-B",
+          "-m",
+          "pytest",
+          "-c",
+          "tests/pytest.ini",
+          "-q",
+          "--color=no",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp",
+          "{state_root}/tmp/W8-I00",
+          "tests/contract/test_cn_official_source_intake.py",
+          "tests/contract/test_cn_official_candidate.py",
+          "tests/contract/test_cn_official_pack.py",
+          "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
+          "tests/formal_e2e/test_cn_first_method_candidate.py",
+          "tests/contract/test_required_test_manifest.py",
+          "--junitxml",
+          "{state_root}/evidence/pytest/W8-I00.xml"
+        ],
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
+          "W0-04"
         ]
       ],
       "expected_exit_codes": [
+        0,
+        0,
         0
       ],
+      "timeout_seconds": 1800,
       "completion_assertions": [
         {
           "id": "all-commands-passed",

@@ -1,0 +1,117 @@
+{
+  "schema_version": "jc/first-method-test-source/1.0",
+  "scope": "test-only",
+  "formal_source_claimed": false,
+  "source_id": "test-cn-first-method-001",
+  "jurisdiction": "TEST-CN",
+  "authority_tier": "synthetic_test_only",
+  "issuer": "fictional-test-authority",
+  "title": "虚构第一方法源测试规范",
+  "canonical_locator": {
+    "kind": "uri",
+    "value": "test.invalid/first-method/specification",
+    "page": null,
+    "span_start": null,
+    "span_end": null
+  },
+  "publication_time": "2026-01-01T00:00:00Z",
+  "effective_from": "2026-01-02T00:00:00Z",
+  "effective_to": null,
+  "retrieved_at": "2026-08-24T00:00:00Z",
+  "license_status": "test-fixture",
+  "distribution_status": "test-only",
+  "raw_text": "第一条　提交测试申请的，应当进入测试审查。\n第二条　不得输出测试秘密；紧急测试情形除外。\n第三条　经测试许可，可以优先采用简化测试程序。\n第四条　本测试定义在指定期间内有效。\n第五条　测试金额不得超过一百单位。\n附项　测试说明不进入本轮规则。",
+  "normative_units": [
+    {
+      "unit_id": "TEST-CN-A1",
+      "text": "提交测试申请的，应当进入测试审查。",
+      "state": "in_scope",
+      "omission_reason": null,
+      "modality": "OBLIGATION",
+      "premise": "fact::test-application-filed",
+      "conclusion": "claim::test-review-required",
+      "exception": null,
+      "priority_over": null,
+      "permission": null,
+      "temporal": null,
+      "numeric": null
+    },
+    {
+      "unit_id": "TEST-CN-A2",
+      "text": "不得输出测试秘密；紧急测试情形除外。",
+      "state": "in_scope",
+      "omission_reason": null,
+      "modality": "PROHIBITION",
+      "premise": "fact::test-secret-present",
+      "conclusion": "claim::test-secret-output-forbidden",
+      "exception": "fact::test-emergency",
+      "priority_over": null,
+      "permission": null,
+      "temporal": null,
+      "numeric": null
+    },
+    {
+      "unit_id": "TEST-CN-A3",
+      "text": "经测试许可，可以优先采用简化测试程序。",
+      "state": "in_scope",
+      "omission_reason": null,
+      "modality": "PERMISSION",
+      "premise": "fact::test-permission-issued",
+      "conclusion": "claim::test-simplified-procedure",
+      "exception": null,
+      "priority_over": "TEST-CN-A2",
+      "permission": "claim::test-simplified-procedure",
+      "temporal": null,
+      "numeric": null
+    },
+    {
+      "unit_id": "TEST-CN-A4",
+      "text": "本测试定义在指定期间内有效。",
+      "state": "in_scope",
+      "omission_reason": null,
+      "modality": "CONSTITUTIVE",
+      "premise": "fact::test-date-in-period",
+      "conclusion": "claim::test-definition-effective",
+      "exception": null,
+      "priority_over": null,
+      "permission": null,
+      "temporal": {
+        "start": "2026-01-02T00:00:00Z",
+        "end": "2027-01-01T00:00:00Z"
+      },
+      "numeric": null
+    },
+    {
+      "unit_id": "TEST-CN-A5",
+      "text": "测试金额不得超过一百单位。",
+      "state": "in_scope",
+      "omission_reason": null,
+      "modality": "OBLIGATION",
+      "premise": "fact::test-amount-submitted",
+      "conclusion": "claim::test-amount-within-limit",
+      "exception": null,
+      "priority_over": null,
+      "permission": null,
+      "temporal": null,
+      "numeric": {
+        "operator": "<=",
+        "value": "100.00",
+        "unit": "TEST-UNIT"
+      }
+    },
+    {
+      "unit_id": "TEST-CN-X1",
+      "text": "测试说明不进入本轮规则。",
+      "state": "omitted",
+      "omission_reason": "non-normative-test-note",
+      "modality": null,
+      "premise": null,
+      "conclusion": null,
+      "exception": null,
+      "priority_over": null,
+      "permission": null,
+      "temporal": null,
+      "numeric": null
+    }
+  ]
+}
