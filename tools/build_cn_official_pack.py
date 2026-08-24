@@ -715,14 +715,84 @@ def build_fixture_bytes(source_path: Path = SOURCE_PATH) -> bytes:
     return canonical_bytes(build_document(source))
 
 
+def render_review_markdown(
+    source_document: object,
+    candidate_document: object,
+) -> bytes:
+    """Render the exact candidate review subject without recording a decision."""
+
+    source, _ = _validate_source(source_document)
+    candidate = build_document(source)
+    if candidate_document != candidate:
+        _fail("review source and candidate bundle do not match")
+    rules = candidate["candidate_rules"]
+    review = candidate["review_subject"]
+    pack = candidate["candidate_pack"]
+    coverage = candidate["coverage"]
+    source_snapshot = candidate["source"]["snapshot"]
+    locator = source_snapshot["canonical_locator"]["value"]
+    rule_by_id = {rule["rule_id"]: rule for rule in rules}
+    subject_by_id = {
+        rule["rule_id"]: digest
+        for rule, digest in zip(rules, review["rule_subject_digests"], strict=True)
+    }
+    lines = [
+        "# cn-official 候选规则人工复核件",
+        "",
+        f"- 法源：{source_snapshot['title']}",
+        f"- 发布机关：{source_snapshot['issuer']}",
+        f"- 正式来源：{locator}",
+        f"- 生效时间：{source_snapshot['effective_from']['wire']}",
+        f"- 候选规则：{len(rules)} 条；遗漏：{len(coverage['omissions'])} 条",
+        f"- 候选状态：{pack['state']}（production_allowed=false）",
+        f"- 法源快照：`{candidate['source']['snapshot_ref']['digest']}`",
+        f"- 覆盖摘要：`{coverage['coverage_digest']}`",
+        f"- 规则包摘要：`{pack['pack_digest']}`",
+        f"- 本次复核对象：`{review['subject_digest']}`",
+        f"- 所需角色：{', '.join(review['required_roles'])}",
+        "",
+        "复核对象仅为下列法源切分和规则语义；本文不记录批准，也不使候选包获得生产资格。",
+    ]
+    number = 0
+    for unit in source["normative_units"]:
+        if unit["state"] == "omitted":
+            continue
+        number += 1
+        rule = rule_by_id[unit["unit_id"]]
+        lines.extend([
+            "",
+            f"## {number}. {unit['unit_id']}",
+            "",
+            f"- 原文：{unit['text']}",
+            f"- 模态：`{unit['modality']}`",
+            f"- 前提：`{unit['premise']}`",
+            f"- 结论：`{unit['conclusion']}`",
+            f"- 例外：`{unit['exception'] or '-'}`",
+            f"- 优先于：`{unit['priority_over'] or '-'}`",
+            f"- 许可：`{unit['permission'] or '-'}`",
+            f"- 时间约束：`{unit['temporal'] or '-'}`",
+            f"- 数值约束：`{unit['numeric'] or '-'}`",
+            f"- 规则摘要：`{rule['rule_digest']}`",
+            f"- 晋级对象摘要：`{subject_by_id[unit['unit_id']]}`",
+        ])
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=SOURCE_PATH)
     parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
+    parser.add_argument("--review-output", type=Path)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
     try:
-        expected = build_fixture_bytes(args.source)
+        source = parse_json_document(args.source.read_bytes())
+        document = build_document(source)
+        expected = canonical_bytes(document)
+        review_expected = (
+            render_review_markdown(source, document)
+            if args.review_output is not None else None
+        )
     except (OSError, CandidatePackError, TypeError, ValueError) as exc:
         print(f"candidate pack build failed: {exc}", file=sys.stderr)
         return 1
@@ -730,10 +800,19 @@ def main(argv: list[str] | None = None) -> int:
         if not args.output.is_file() or args.output.read_bytes() != expected:
             print("candidate pack fixture drifted", file=sys.stderr)
             return 1
+        if review_expected is not None and (
+            not args.review_output.is_file()
+            or args.review_output.read_bytes() != review_expected
+        ):
+            print("candidate review document drifted", file=sys.stderr)
+            return 1
         print(f"candidate pack fixture OK: {len(expected)} bytes")
         return 0
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(expected)
+    if review_expected is not None:
+        args.review_output.parent.mkdir(parents=True, exist_ok=True)
+        args.review_output.write_bytes(review_expected)
     print(f"candidate pack fixture written: {args.output} ({len(expected)} bytes)")
     return 0
 

@@ -85,3 +85,18 @@ def test_normative_unit_text_must_be_anchored_in_raw_source() -> None:
 
     with pytest.raises(builder.CandidatePackError, match="not anchored in source"):
         builder.build_document(source)
+
+
+def test_review_markdown_binds_exact_source_and_subject_without_approval() -> None:
+    source = _source()
+    document = builder.build_document(source)
+
+    review = builder.render_review_markdown(source, document).decode("utf-8")
+
+    first_unit = source["normative_units"][0]
+    assert first_unit["unit_id"] in review
+    assert first_unit["text"] in review
+    assert document["review_subject"]["subject_digest"] in review
+    assert document["review_subject"]["rule_subject_digests"][0] in review
+    assert "production_allowed=false" in review
+    assert "本文不记录批准" in review
