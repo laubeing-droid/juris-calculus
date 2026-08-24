@@ -4,12 +4,14 @@ Updated: 2026-08-24
 
 - Goal status: `ACTIVE`.
 - Authoritative state root: `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state`.
-- Current runner result: 51 tasks `COMPLETED`; only `H7-00=WAITING_EXTERNAL`.
-- `H7-00` is a production-target capability gate. It requires evidence from the real target provider for the state provider, platform, encryption at rest, and SLO. It does not require an `authorized_reviewer`, and a user reply or test-only key cannot satisfy it.
-- `H6-07` is not reached and is not an active blocker. Old request files are retained as history; `run.json` contains only the currently reached wait state.
-- The local release-candidate MCP implementation is usable for candidate testing, but it is not evidence of a real production target and does not make `legal_production_ready=true`.
+- Current runner result: 56 tasks `COMPLETED`; only `H8-00=WAITING_HUMAN` is currently reached.
+- The current Windows host is the authorized production target. `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-production-state` is directory-level EFS encrypted; H7-00 and W7-01..04 completed with content-bound receipts.
+- Measured local target results: p50 `139.66 ms`, p95/p99 `150.57 ms`, throughput `7.15 operations/s`, RSS `102854656 bytes`, artifact growth `36864 bytes/run`; all are within the declared single-user local budgets.
+- `H8-00` now requires the selected immutable first-party China-law source inventory and an `authorized_reviewer` cryptographic approval. No source/reviewer/signature has been fabricated.
+- `H6-07` is not reached and is not an active blocker. No push, tag or remote release occurred.
+- The local release-candidate MCP and the production storage target are verified separately; `legal_production_ready` remains false until cn-official, signing, DSH and final Z gates complete.
 - All 44 audit IDs remain registered until the downstream target, remote-governance, production-validation, and Z00-Z03 tasks produce their required evidence.
-- The single external ledger is `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state\external-ledger.json` (`sha256:eae4fcc7aebd4b3ad1fa3f798726851e677479f1e6577b35ca83a06a09cd3aab`).
+- The single external ledger is `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state\external-ledger.json` (`sha256:d6d333083207322d7bfeeac0722df2124cd08d477cdea7be67685bad0fbdb130`).
 - The prior bootstrap `B00 FAILED` / `B00-CG UNVERIFIED` / `B01 UNVERIFIED` status is superseded by the current receipt chain.
 - Unique recovery command:
 
