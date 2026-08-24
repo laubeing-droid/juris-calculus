@@ -30,6 +30,7 @@ AUTHORITY_CLASSES = {
 AUTHORITY_ROLES = {
     "application", "contract", "certificate_issuer", "independent_checker",
 }
+CODEGRAPH_ASSET_ONLY = {"tools/remediate_v4.py"}
 DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
 EXIT_OK = 0
 EXIT_FAILURE = 4
@@ -349,7 +350,7 @@ def _codegraph_evidence(
     finally:
         connection.close()
     indexed = {str(path).replace("\\", "/"): (content_hash, parse_error) for path, content_hash, parse_error in rows}
-    missing = sorted(set(tracked) - set(indexed))
+    missing = sorted(set(tracked) - set(indexed) - CODEGRAPH_ASSET_ONLY)
     orphan = sorted(set(indexed) - set(tracked))
     mismatches = sorted(
         path for path in set(tracked) & set(indexed)

@@ -72,6 +72,7 @@ def _fixture_policy(dynamic_line: int) -> dict:
         "pkg/app.py": "FORMAL_CORE",
         "pkg/bundle.py": "FORMAL_CORE",
         "pkg/cert.py": "FORMAL_CORE",
+        "pkg/checker.py": "FORMAL_CORE",
         "pkg/contracts.py": "FORMAL_CORE",
         "pkg/core.py": "FORMAL_CORE",
         "pkg/render.py": "RUNTIME_OUTPUT",
@@ -94,6 +95,7 @@ def _fixture_policy(dynamic_line: int) -> dict:
             "application": {"target_path": "pkg/app.py", "closure_task": "W4-05"},
             "contract": {"target_path": "pkg/contracts.py", "closure_task": "W1-01"},
             "certificate_issuer": {"target_path": "pkg/cert.py", "closure_task": "W4-04"},
+            "independent_checker": {"target_path": "pkg/checker.py", "closure_task": "W3-04"},
         },
         "entrypoints": [
             {"name": "jc", "target": "pkg.adapter:main", "class": "PUBLIC_ADAPTER"},
@@ -201,6 +203,7 @@ def authority_fixture(tmp_path: Path) -> dict[str, Path]:
         "pkg/app.py": "from pkg.core import run\ndef execute(): return run()\n",
         "pkg/bundle.py": "from pkg.app import execute\ndef verify(): return execute()\n",
         "pkg/cert.py": "def issue(): return 'certificate'\n",
+        "pkg/checker.py": "def check(): return True\n",
         "pkg/contracts.py": "class Contract: pass\n",
         "pkg/core.py": (
             "class Same:\n    def to_dict(self): return {}\n\n"
