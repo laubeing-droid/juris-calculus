@@ -5193,7 +5193,7 @@
     {
       "id": "H7-00",
       "wave": "W7",
-      "mode": "EXTERNAL_GATE",
+      "mode": "HUMAN_GATE",
       "depends_on": [
         "W9-I00"
       ],
@@ -5203,28 +5203,27 @@
         "P1-11",
         "P1-12"
       ],
-      "objective": "取得真实生产目标 state provider、平台、静态加密和 SLO 证明",
+      "objective": "绑定生产所有者对当前 Windows 主机和目录级 EFS state 的明确授权",
       "allowed_paths": [
-        "remediation/v4/approvals/H7-00*",
-        "$JC_REMEDIATION_STATE_ROOT/approvals/H7-00*"
+        "$JC_REMEDIATION_STATE_ROOT/authority/H7-00-user-directive.txt",
+        "$JC_REMEDIATION_STATE_ROOT/directives/H7-00/*.json"
       ],
       "terminal_states": [],
       "approval": {
         "gate_id": "H7-00-APPROVAL",
-        "subject": "真实生产目标 state provider、平台、静态加密和 SLO 证明",
+        "subject": "当前 Windows 主机作为生产目标并使用目录级 EFS state；不启用 BitLocker、不 push、不远程发布",
         "subject_paths": [
-          "remediation/v4/approvals/H7-00*",
-          "$JC_REMEDIATION_STATE_ROOT/approvals/H7-00*"
+          "$JC_REMEDIATION_STATE_ROOT/authority/H7-00-user-directive.txt"
         ],
         "required_roles": [
-          "external_provider"
+          "production_owner"
         ],
         "allowed_scopes": [
           "H7-00"
         ],
         "minimum_signers": 1,
         "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
+        "evidence_kind": "USER_DIRECTIVE"
       }
     },
     {

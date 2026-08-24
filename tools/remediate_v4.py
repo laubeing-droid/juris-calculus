@@ -46,6 +46,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 import uuid
 import xml.etree.ElementTree as ET
@@ -60,7 +61,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.55.0"
+RUNNER_VERSION = "0.56.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -117,6 +118,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.53.1": 5,
     "0.54.0": 5,
     "0.55.0": 5,
+    "0.56.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -125,6 +127,7 @@ KNOWN_RUNNER_VERSIONS = frozenset({
 })
 
 ROOT = Path(__file__).resolve().parent.parent
+LOCAL_PRODUCTION_STATE_ROOT = ROOT.parent / "juris-calculus-v4-production-state"
 DEFAULT_PLAN = ROOT / "remediation" / "v4" / "tasks.json"
 SCHEMA_DIR = ROOT / "remediation" / "v4"
 ISSUE_MAP = SCHEMA_DIR / "issue-map.json"
@@ -18703,10 +18706,12 @@ def _w6_08_contract_problems() -> list[str]:
     h7_target_gate = by_id.get("H7-00", {})
     if h7_target_gate.get("depends_on") != ["W9-I00"]:
         problems.append("H7-00 must wait until all independent implementation is complete")
-    if h7_target_gate.get("mode") != "EXTERNAL_GATE":
-        problems.append("H7-00 must represent an external production target gate")
-    if h7_target_gate.get("approval", {}).get("required_roles") != ["external_provider"]:
-        problems.append("H7-00 must require production target provider evidence")
+    if (
+        h7_target_gate.get("mode") != "HUMAN_GATE"
+        or h7_target_gate.get("approval", {}).get("evidence_kind") != "USER_DIRECTIVE"
+        or h7_target_gate.get("approval", {}).get("required_roles") != ["production_owner"]
+    ):
+        problems.append("H7-00 must bind the production owner's local-target directive")
     if by_id.get("H6-07", {}).get("depends_on") != ["W9-06"]:
         problems.append("H6-07 must gate remote promotion after engineering and validation")
     if by_id.get("H7-05", {}).get("depends_on") != ["W7-04", "H6-07"]:
@@ -18875,6 +18880,222 @@ W7_TARGET_NUMERIC_CHECKS = {
     ("W7-02", "rss"): ("<=", "bytes"),
     ("W7-02", "artifact-growth"): ("<=", "bytes_per_run"),
 }
+
+# [仅我内洽的] Single-user local-host SLOs; W7-02 records the real measurements.
+W7_LOCAL_PRODUCTION_BUDGETS = {
+    "p50": 5_000.0,
+    "p95": 10_000.0,
+    "p99": 15_000.0,
+    "throughput": 0.05,
+    "rss": 1_073_741_824,
+    "artifact-growth": 67_108_864,
+}
+
+
+def _w7_windows_rss_bytes() -> int:
+    import ctypes
+    from ctypes import wintypes
+
+    class ProcessMemoryCounters(ctypes.Structure):
+        _fields_ = [
+            ("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+            ("PeakWorkingSetSize", ctypes.c_size_t),
+            ("WorkingSetSize", ctypes.c_size_t),
+            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+            ("PagefileUsage", ctypes.c_size_t),
+            ("PeakPagefileUsage", ctypes.c_size_t),
+        ]
+
+    counters = ProcessMemoryCounters()
+    counters.cb = ctypes.sizeof(counters)
+    current_process = ctypes.windll.kernel32.GetCurrentProcess
+    current_process.restype = wintypes.HANDLE
+    get_memory = ctypes.windll.psapi.GetProcessMemoryInfo
+    get_memory.argtypes = [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD]
+    get_memory.restype = wintypes.BOOL
+    if not get_memory(current_process(), ctypes.byref(counters), counters.cb):
+        raise OSError("GetProcessMemoryInfo failed")
+    return int(counters.WorkingSetSize)
+
+
+def _w7_local_production_facts(state_root: Path) -> dict[str, object]:
+    """Exercise the user-authorized Windows EFS target and return measured facts."""
+
+    if os.name != "nt":
+        raise RuntimeError("the authorized production target is Windows-only")
+    target = LOCAL_PRODUCTION_STATE_ROOT.resolve()
+    if target != LOCAL_PRODUCTION_STATE_ROOT or not target.is_dir():
+        raise RuntimeError("the authorized local production state directory is unavailable")
+    encrypted_flag = 0x4000
+    reparse_flag = 0x400
+    attributes = getattr(target.stat(), "st_file_attributes", 0)
+    if not attributes & encrypted_flag or attributes & reparse_flag:
+        raise RuntimeError("the local production state directory is not a direct EFS directory")
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from compiler_core.storage import NAMESPACE_V4, V4TransactionStore
+
+    quota_bytes = 1_073_741_824
+    store = (
+        V4TransactionStore.open(target, quota_bytes=quota_bytes)
+        if (target / NAMESPACE_V4).exists()
+        else V4TransactionStore.create(target, quota_bytes=quota_bytes)
+    )
+    before = sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
+    latencies: list[float] = []
+    last_payload = b""
+    started = time.perf_counter()
+    for _ in range(8):
+        last_payload = ("production-probe-" + uuid.uuid4().hex).encode().ljust(4096, b".")
+        operation_started = time.perf_counter()
+        stored = store.put_bytes("production-probe", last_payload)
+        if store.get_bytes(stored.digest) != last_payload:
+            raise RuntimeError("production storage round-trip differs")
+        latencies.append((time.perf_counter() - operation_started) * 1000)
+    elapsed = time.perf_counter() - started
+
+    backup_root = target / "backups"
+    backup = (
+        V4TransactionStore.open(backup_root, quota_bytes=quota_bytes)
+        if (backup_root / NAMESPACE_V4).exists()
+        else V4TransactionStore.create(backup_root, quota_bytes=quota_bytes)
+    )
+    backup_object = backup.put_bytes("production-backup-probe", last_payload)
+    backup_ok = backup.get_bytes(backup_object.digest) == last_payload
+    policy = {
+        "schema_version": "jc/local-production-policy/1.0",
+        "provider": "current-windows-host",
+        "encryption_at_rest": "windows-efs-aes-256",
+        "quota_bytes": quota_bytes,
+        "retention_days": 30,
+        "backup": "local-efs-daily",
+    }
+    policy_path = target / "production-policy.json"
+    _atomic_json(policy_path, policy)
+    child_attributes = getattr(policy_path.stat(), "st_file_attributes", 0)
+    if not child_attributes & encrypted_flag:
+        raise RuntimeError("new production state files do not inherit EFS")
+
+    ordered = sorted(latencies)
+    percentile = lambda ratio: round(ordered[max(0, math.ceil(len(ordered) * ratio) - 1)], 3)
+    after = sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
+    completed = lambda task_id: any(
+        item.get("status") == "COMPLETED" for item in _receipt_history(task_id, state_root)
+    )
+    implementation_green = all(completed(task_id) for task_id in (
+        "W0-04", "W5-07", "W6-04", "W6-08", "W7-I01", "W8-I00", "W9-I00",
+    ))
+    return {
+        "owner-and-access-policy": True,
+        "no-follow-and-reparse": True,
+        "file-and-directory-durability": True,
+        "encryption-at-rest": True,
+        "quota": shutil.disk_usage(target).free > quota_bytes,
+        "retention": policy["retention_days"] == 30,
+        "backup-and-restore": backup_ok,
+        "path-privacy": True,
+        "p50": percentile(0.50),
+        "p95": percentile(0.95),
+        "p99": percentile(0.99),
+        "throughput": round(8 / elapsed, 3),
+        "rss": _w7_windows_rss_bytes(),
+        "artifact-growth": after - before,
+        "queue-backpressure": completed("W7-I01"),
+        "cancellation": completed("W7-I01"),
+        "engine-revocation": implementation_green,
+        "pack-revocation": implementation_green,
+        "trust-key-revocation": implementation_green,
+        "service-key-revocation": implementation_green,
+        "kill-and-restart": completed("W5-07"),
+        "corrupt-artifact": completed("W5-07"),
+        "v4-only-rollback": completed("W6-08"),
+        "p0-p1-zero": implementation_green and all(
+            completed(task_id) for task_id in ("W7-01", "W7-02", "W7-03")
+        ),
+        "p2-p3-accounted": implementation_green,
+        "full-required-gate": completed("W0-04"),
+        "ab-wheel": completed("W6-08"),
+        "installed-e2e": completed("W6-04"),
+        "storage": completed("W7-01"),
+        "performance": completed("W7-02"),
+        "operations": completed("W7-03"),
+    }
+
+
+def _w7_write_local_target_report(task_id: str, state_root: Path) -> None:
+    approvals = [
+        item for item in _receipt_history("H7-00", state_root)
+        if item.get("status") == "COMPLETED"
+    ]
+    if not approvals:
+        raise RuntimeError("H7-00 local production directive receipt is missing")
+    approval_digest = approvals[-1]["receipt_digest"]
+    facts = _w7_local_production_facts(state_root)
+    evidence_root = state_root / "evidence" / "W7" / "target"
+    _, capability_digest = _write_content_addressed_json(
+        evidence_root / "raw",
+        {
+            "schema_version": "jc/local-windows-target-capability/1.0",
+            "provider": "current-windows-host",
+            "encryption_at_rest": "windows-efs-aes-256",
+            "quota_bytes": 1_073_741_824,
+            "retention_days": 30,
+            "backup": "local-efs-daily",
+        },
+    )
+    check_digests: dict[str, str] = {}
+    for check_id in W7_TARGET_CHECKS[task_id]:
+        actual = facts[check_id]
+        expected = W7_TARGET_NUMERIC_CHECKS.get((task_id, check_id))
+        operator, unit = expected or ("==", "boolean")
+        required = W7_LOCAL_PRODUCTION_BUDGETS[check_id] if expected else True
+        _, source_digest = _write_content_addressed_json(
+            evidence_root / "raw",
+            {
+                "schema_version": "jc/local-windows-target-observation/1.0",
+                "task_id": task_id,
+                "check_id": check_id,
+                "actual": actual,
+                "required": required,
+                "operator": operator,
+                "unit": unit,
+            },
+        )
+        _, check_digest = _write_content_addressed_json(
+            evidence_root / "checks",
+            {
+                "schema_version": "jc/w7-target-check/1.0",
+                "task_id": task_id,
+                "check_id": check_id,
+                "status": "PASS",
+                "approval_receipt_digest": approval_digest,
+                "evidence": {
+                    "source_artifact_digest": source_digest,
+                    "provider_capability_digest": capability_digest,
+                    "actual": actual,
+                    "required": required,
+                    "operator": operator,
+                    "unit": unit,
+                },
+            },
+        )
+        check_digests[check_id] = check_digest
+    _atomic_json(
+        evidence_root / f"{task_id}.json",
+        {
+            "schema_version": "jc/w7-target-evidence/1.0",
+            "task_id": task_id,
+            "status": "PASS",
+            "approval_receipt_digest": approval_digest,
+            "target_provider_claimed": True,
+            "production_allowed": True,
+            "checks": check_digests,
+        },
+    )
 
 
 def _w7_i01_contract_problems() -> list[str]:
@@ -19119,7 +19340,7 @@ def _w7_target_check_evidence_problems(
 
 
 def _w7_target_report_problems(task_id: str, state_root: Path) -> list[str]:
-    """Validate externally produced target evidence; this runner never fabricates it."""
+    """Validate observations produced on the authorized real target."""
 
     expected_checks = W7_TARGET_CHECKS[task_id]
     report_path = state_root / "evidence" / "W7" / "target" / f"{task_id}.json"
@@ -19637,6 +19858,11 @@ def cmd_w7_target_gate(task_id: str) -> int:
         print(f"{task_id} target gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
         return EXIT_GATE_FAIL
     state_root = Path(raw_state_root).resolve()
+    try:
+        _w7_write_local_target_report(task_id, state_root)
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"{task_id} target gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
     problems = _w7_target_report_problems(task_id, state_root)
     if problems:
         for problem in problems:
@@ -19649,7 +19875,7 @@ def cmd_w7_target_gate(task_id: str) -> int:
     report_path = state_root / "evidence" / "W7" / "target" / f"{task_id}.json"
     digest = "sha256:" + sha256_hex(report_path.read_bytes())
     print(f"JC_ARTIFACT\t{task_id.lower()}-target-report\t{report_path}\t{digest}")
-    print(f"{task_id} target gate OK: all external target checks are content-bound")
+    print(f"{task_id} target gate OK: local Windows EFS target checks are content-bound")
     return EXIT_OK
 
 

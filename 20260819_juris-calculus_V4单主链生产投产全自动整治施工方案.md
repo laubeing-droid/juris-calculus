@@ -908,9 +908,9 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 
 ### H7-00　目标 state provider、平台和 SLO 输入
 
-- **Mode / depends**：`EXTERNAL_GATE + HUMAN_GATE / W9-I00`。到达它时 W7～W9 的独立实现已完成。
-- **请求**：Windows/NTFS 与 Linux/ext4 隔离环境、service identity、DACL/permissions、at-rest encryption、quota、retention/legal hold、backup/restore、capacity；性能测试先产基线，再由负责人批准 latency/throughput/RSS/artifact budgets。
-- **缺失行为**：可继续开发，不得把 RC 晋级为 production-ready。
+- **Mode / depends**：`HUMAN_GATE(USER_DIRECTIVE) / W9-I00`。到达它时 W7～W9 的独立实现已完成。
+- **当前目标**：生产所有者已指定当前 Windows 主机，唯一 state 为工作区内 `juris-calculus-v4-production-state`；目录级 EFS、owner-only V4 store、1 GiB 应用 quota、30 日 retention、本地 EFS backup 和单机 SLO 由 W7-01..04 实测。不得启用整盘 BitLocker。
+- **边界**：本地目标授权不授权 push、远程发布、生产签名或法律审签；这些后续 gate 仍按各自证据处理。
 
 ### W7-01　生产 storage capability 验收
 
