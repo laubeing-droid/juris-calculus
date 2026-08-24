@@ -5547,7 +5547,7 @@
     {
       "id": "H8-00",
       "wave": "W8",
-      "mode": "MIXED",
+      "mode": "AUTO",
       "depends_on": [
         "W7-04"
       ],
@@ -5557,29 +5557,59 @@
         "P0-05",
         "P1-20"
       ],
-      "objective": "领域/法源/角色/密钥开工门禁；FORMAL_SOURCE_INVENTORY 必须列出唯一允许源并排除 legacy 语料",
+      "objective": "准备个人信息保护法第十三至十八条真实法源候选 inventory；完整登记 74 条分母和 68 条 omission，不声称已审核或可投产",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-00*",
-        "$JC_REMEDIATION_STATE_ROOT/approvals/H8-00*"
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "remediation/v4/STATUS.md",
+        "remediation/v4/tasks.json",
+        "tools/build_cn_official_pack.py",
+        "tools/remediate_v4.py"
       ],
-      "terminal_states": [],
-      "approval": {
-        "gate_id": "H8-00-APPROVAL",
-        "subject": "领域/法源/角色/密钥开工门禁；FORMAL_SOURCE_INVENTORY 必须列出唯一允许源并排除 legacy 语料",
-        "subject_paths": [
-          "remediation/v4/approvals/H8-00*",
-          "$JC_REMEDIATION_STATE_ROOT/approvals/H8-00*"
-        ],
-        "required_roles": [
-          "authorized_reviewer"
-        ],
-        "allowed_scopes": [
+      "terminal_states": [
+        "REAL_SOURCE_CANDIDATE_PREPARED",
+        "AWAITING_EXTERNAL_REVIEW"
+      ],
+      "argv": [
+        [
+          "{python}",
+          "-B",
+          "tools/remediate_v4.py",
+          "verify-wave",
           "H8-00"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+        ]
+      ],
+      "expected_exit_codes": [
+        0
+      ],
+      "completion_assertions": [
+        {
+          "id": "all-commands-passed",
+          "kind": "all_commands_passed"
+        }
+      ],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": [
+        "schema_version",
+        "task_digest",
+        "run_id",
+        "task_id",
+        "attempt",
+        "status",
+        "input_receipt_digests",
+        "start_commit",
+        "start_tree",
+        "result_commit",
+        "result_tree",
+        "command_results",
+        "changed_paths",
+        "allowlist",
+        "test_reports",
+        "artifact_digests",
+        "completion_assertions",
+        "previous_receipt_digest",
+        "runner_version",
+        "receipt_digest"
+      ]
     },
     {
       "id": "W8-01",
@@ -5709,23 +5739,26 @@
       "audit_ids": [],
       "objective": "法律审核 receipts",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-03*"
+        "remediation/v4/approvals/H8-03*",
+        "$JC_REMEDIATION_STATE_ROOT/approvals/H8-03*"
       ],
       "terminal_states": [],
       "approval": {
         "gate_id": "H8-03-APPROVAL",
         "subject": "法律审核 receipts",
         "subject_paths": [
-          "remediation/v4/approvals/H8-03*"
+          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/candidate-bundle.json",
+          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/review.md"
         ],
         "required_roles": [
-          "authorized_reviewer"
+          "legal_reviewer_1",
+          "legal_reviewer_2"
         ],
         "allowed_scopes": [
           "H8-03"
         ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
+        "minimum_signers": 2,
+        "separation_of_duties": true,
         "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
       }
     },
@@ -5739,17 +5772,19 @@
       "audit_ids": [],
       "objective": "工程审核和角色分离",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-04*"
+        "remediation/v4/approvals/H8-04*",
+        "$JC_REMEDIATION_STATE_ROOT/approvals/H8-04*"
       ],
       "terminal_states": [],
       "approval": {
         "gate_id": "H8-04-APPROVAL",
         "subject": "工程审核和角色分离",
         "subject_paths": [
-          "remediation/v4/approvals/H8-04*"
+          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/candidate-bundle.json",
+          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/review.md"
         ],
         "required_roles": [
-          "authorized_reviewer"
+          "engineering_reviewer"
         ],
         "allowed_scopes": [
           "H8-04"

@@ -61,7 +61,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.56.0"
+RUNNER_VERSION = "0.59.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -119,6 +119,9 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.54.0": 5,
     "0.55.0": 5,
     "0.56.0": 5,
+    "0.57.0": 5,
+    "0.58.0": 5,
+    "0.59.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -1174,6 +1177,13 @@ W8_I00_REQUIRED_TEST_TOTAL = 509
 W8_I00_FUTURE_RED_COUNT = 4
 W8_I00_SOURCE = ROOT / "tests" / "fixtures" / "cn_official" / "first-method-source.json"
 W8_I00_CANDIDATE = ROOT / "tests" / "fixtures" / "cn_official" / "candidate-pack.json"
+LOCAL_CN_SOURCE_ROOT = Path(
+    r"D:\Codex\1.法律工作区\legal-cn-core-codices开发区\legal-cn-core-codices"
+)
+PIPL_SOURCE_RELATIVE = Path(
+    "02_法律/01_法律/中华人民共和国个人信息保护法_2021-08-20_有效_"
+    "1.2.156.3005.6-0100000000100120210820009100000.md"
+)
 W9_I00_TEST_PATHS = (
     "tests/dsh_formal/test_profile.py",
     "tests/dsh_formal/test_mcp_fail_closed.py",
@@ -19026,7 +19036,7 @@ def _w7_local_production_facts(state_root: Path) -> dict[str, object]:
     }
 
 
-def _w7_write_local_target_report(task_id: str, state_root: Path) -> None:
+def _w7_write_local_target_report(task_id: str, state_root: Path) -> tuple[Path, str]:
     approvals = [
         item for item in _receipt_history("H7-00", state_root)
         if item.get("status") == "COMPLETED"
@@ -19084,17 +19094,19 @@ def _w7_write_local_target_report(task_id: str, state_root: Path) -> None:
             },
         )
         check_digests[check_id] = check_digest
-    _atomic_json(
-        evidence_root / f"{task_id}.json",
-        {
-            "schema_version": "jc/w7-target-evidence/1.0",
-            "task_id": task_id,
-            "status": "PASS",
-            "approval_receipt_digest": approval_digest,
-            "target_provider_claimed": True,
-            "production_allowed": True,
-            "checks": check_digests,
-        },
+    report = {
+        "schema_version": "jc/w7-target-evidence/1.0",
+        "task_id": task_id,
+        "status": "PASS",
+        "approval_receipt_digest": approval_digest,
+        "target_provider_claimed": True,
+        "production_allowed": True,
+        "checks": check_digests,
+    }
+    latest_path = evidence_root / f"{task_id}.json"
+    _atomic_json(latest_path, report)
+    return _write_content_addressed_bytes(
+        evidence_root / "reports", latest_path.read_bytes(), ".json",
     )
 
 
@@ -19640,6 +19652,182 @@ def cmd_w8_i00_candidate_gate() -> int:
     return EXIT_OK
 
 
+def _w8_real_source_artifacts(state_root: Path, task_id: str) -> tuple[Path, str]:
+    """Prepare one real-law candidate slice without claiming review or promotion."""
+
+    builder = _w6_01_load_wheel_gate(ROOT / "tools/build_cn_official_pack.py")
+    source_path = LOCAL_CN_SOURCE_ROOT / PIPL_SOURCE_RELATIVE
+    manifest_path = LOCAL_CN_SOURCE_ROOT / "SHA256SUMS"
+    source_raw = source_path.read_bytes()
+    source_sha = sha256_hex(source_raw)
+    if source_sha != "d959179aac5d412e0b6b5a043da3d88c65c76817e80988d1109ad95f30766b21":
+        raise ValueError("PIPL controlled carrier digest drifted")
+    manifest_raw = manifest_path.read_bytes()
+    manifest_line = f"{source_sha}  {PIPL_SOURCE_RELATIVE.as_posix()}"
+    if manifest_line not in manifest_raw.decode("utf-8"):
+        raise ValueError("PIPL carrier is not bound by SHA256SUMS")
+    text = source_raw.decode("utf-8")
+    parts = text.split("---", 2)
+    if len(parts) != 3 or "OFFICIAL_INDEX_METADATA_VERIFIED" not in parts[1]:
+        raise ValueError("PIPL carrier metadata is not officially indexed")
+    body = parts[2].strip()
+    matches = list(re.finditer(r"(?m)^- \*\*第[^*]+条\*\*", body))
+    if len(matches) != 74:
+        raise ValueError(f"PIPL article denominator drifted: {len(matches)}")
+
+    semantics = {
+        13: {
+            "modality": "PERMISSION", "premise": "pipl.art13.lawful_basis_present",
+            "conclusion": "pipl.art13.processing_authorized",
+            "permission": "process-personal-information", "exception": None,
+        },
+        14: {
+            "modality": "OBLIGATION", "premise": "pipl.art14.consent_is_basis",
+            "conclusion": "pipl.art14.informed_voluntary_explicit_consent_required",
+            "permission": None, "exception": None,
+        },
+        15: {
+            "modality": "OBLIGATION", "premise": "pipl.art15.processing_based_on_consent",
+            "conclusion": "pipl.art15.convenient_withdrawal_mechanism_required",
+            "permission": None, "exception": None,
+        },
+        16: {
+            "modality": "PROHIBITION", "premise": "pipl.art16.consent_refused_or_withdrawn",
+            "conclusion": "pipl.art16.service_refusal_prohibited",
+            "permission": None, "exception": "pipl.art16.processing_necessary_for_service",
+        },
+        17: {
+            "modality": "OBLIGATION", "premise": "pipl.art17.before_processing",
+            "conclusion": "pipl.art17.notice_required",
+            "permission": None, "exception": None,
+        },
+        18: {
+            "modality": "PERMISSION", "premise": "pipl.art18.notice_exception_applies",
+            "conclusion": "pipl.art18.notice_may_be_withheld_or_delayed",
+            "permission": "withhold-or-delay-notice", "exception": None,
+        },
+    }
+    units: list[dict[str, object]] = []
+    for number, match in enumerate(matches, start=1):
+        end = matches[number].start() if number < len(matches) else len(body)
+        block = body[match.start():end]
+        heading = re.search(r"(?m)^##+ ", block)
+        if heading:
+            block = block[:heading.start()]
+        unit: dict[str, object] = {
+            "unit_id": f"PIPL-ART-{number:03d}", "text": block.strip(),
+            "state": "omitted", "omission_reason": "outside-lawful-processing-basis-slice",
+            "modality": None, "premise": None, "conclusion": None,
+            "exception": None, "priority_over": None, "permission": None,
+            "temporal": None, "numeric": None,
+        }
+        if number in semantics:
+            unit.update({
+                "state": "in_scope", "omission_reason": None,
+                **semantics[number], "priority_over": None,
+                "temporal": None, "numeric": None,
+            })
+        units.append(unit)
+
+    official_locator = "https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm"
+    source = {
+        "schema_version": "jc/cn-official-source-candidate/1.0",
+        "scope": "candidate", "formal_source_claimed": False,
+        "source_id": "1.2.156.3005.6-0100000000100120210820009100000",
+        "jurisdiction": "CN", "authority_tier": "law",
+        "issuer": "全国人民代表大会常务委员会",
+        "title": "中华人民共和国个人信息保护法",
+        "canonical_locator": {
+            "kind": "uri", "value": official_locator,
+            "page": None, "span_start": None, "span_end": None,
+        },
+        "publication_time": "2021-08-20T00:00:00Z",
+        "effective_from": "2021-11-01T00:00:00Z", "effective_to": None,
+        "retrieved_at": "2026-08-24T00:00:00Z",
+        "license_status": "official-publication",
+        "distribution_status": "locator-only",
+        "raw_text": body, "normative_units": units,
+    }
+    candidate = builder.build_document(source)
+    builder.assert_valid_document(candidate)
+    if (
+        candidate.get("scope") != "candidate"
+        or candidate.get("production_allowed") is not False
+        or candidate.get("formal_source_claimed") is not False
+        or candidate.get("review_subject", {}).get("status") != "AWAITING_EXTERNAL_REVIEW"
+        or len(candidate.get("candidate_rules", [])) != 6
+        or len(candidate.get("coverage", {}).get("omissions", [])) != 68
+    ):
+        raise ValueError("PIPL candidate boundary or coverage drifted")
+
+    target = state_root / "evidence" / "W8" / "real-source"
+    source_bytes = builder.canonical_bytes(source)
+    candidate_bytes = builder.canonical_bytes(candidate)
+    review_bytes = builder.render_review_markdown(source, candidate)
+    inventory = {
+        "schema_version": "jc/formal-source-inventory-candidate/1.0",
+        "status": "AWAITING_EXTERNAL_REVIEW",
+        "formal_source_claimed": False,
+        "domain": "PIPL lawful processing basis (articles 13-18)",
+        "source_id": source["source_id"], "title": source["title"],
+        "issuer": source["issuer"], "authority_tier": source["authority_tier"],
+        "official_locator": official_locator,
+        "controlled_carrier_sha256": "sha256:" + source_sha,
+        "sha256sums_sha256": "sha256:" + sha256_hex(manifest_raw),
+        "carrier_role": "RETRIEVAL_DERIVED_MARKDOWN",
+        "metadata_verification": "OFFICIAL_INDEX_METADATA_VERIFIED",
+        "article_denominator": 74,
+        "candidate_articles": [13, 14, 15, 16, 17, 18],
+        "legacy_dependency": False,
+    }
+    payloads = {
+        "source-candidate.json": source_bytes,
+        "candidate-bundle.json": candidate_bytes,
+        "review.md": review_bytes,
+        "inventory.json": (json.dumps(inventory, indent=2, ensure_ascii=False) + "\n").encode("utf-8"),
+    }
+    target.mkdir(parents=True, exist_ok=True)
+    for name, payload in payloads.items():
+        (target / name).write_bytes(payload)
+    report = {
+        "schema_version": "jc/w8-real-source-preparation/1.0",
+        "task_id": task_id, "status": "PASS",
+        "scope": "candidate", "production_allowed": False,
+        "formal_source_claimed": False,
+        "source_sha256": "sha256:" + sha256_hex(source_bytes),
+        "candidate_sha256": "sha256:" + sha256_hex(candidate_bytes),
+        "review_sha256": "sha256:" + sha256_hex(review_bytes),
+        "inventory_sha256": "sha256:" + sha256_hex(payloads["inventory.json"]),
+        "source_snapshot_ref": candidate["source"]["snapshot_ref"],
+        "coverage_digest": candidate["coverage"]["coverage_digest"],
+        "review_subject_digest": candidate["review_subject"]["subject_digest"],
+        "candidate_pack_digest": candidate["candidate_pack"]["pack_digest"],
+        "article_denominator": 74, "candidate_rule_count": 6,
+        "omission_count": 68,
+    }
+    return _write_content_addressed_json(target / "reports", report)
+
+
+def cmd_w8_real_source_gate(task_id: str) -> int:
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        report_path, report_digest = _w8_real_source_artifacts(
+            Path(raw_state_root).resolve(), task_id,
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"{task_id} gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw8-real-source-report\t{report_path}\t{report_digest}")
+    print(
+        f"{task_id} gate OK: PIPL articles 13-18 form a real-source candidate; "
+        "68 other articles are explicitly omitted and external review is still required"
+    )
+    return EXIT_OK
+
+
 def _w9_i00_contract_problems() -> list[str]:
     """Validate the out-of-tree-shaped test adapter without claiming deployment."""
 
@@ -19859,7 +20047,7 @@ def cmd_w7_target_gate(task_id: str) -> int:
         return EXIT_GATE_FAIL
     state_root = Path(raw_state_root).resolve()
     try:
-        _w7_write_local_target_report(task_id, state_root)
+        report_path, digest = _w7_write_local_target_report(task_id, state_root)
     except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
         print(f"{task_id} target gate failed: {exc}", file=sys.stderr)
         return EXIT_GATE_FAIL
@@ -19872,8 +20060,6 @@ def cmd_w7_target_gate(task_id: str) -> int:
             if problems == [f"{task_id} target evidence is missing"]
             else EXIT_GATE_FAIL
         )
-    report_path = state_root / "evidence" / "W7" / "target" / f"{task_id}.json"
-    digest = "sha256:" + sha256_hex(report_path.read_bytes())
     print(f"JC_ARTIFACT\t{task_id.lower()}-target-report\t{report_path}\t{digest}")
     print(f"{task_id} target gate OK: local Windows EFS target checks are content-bound")
     return EXIT_OK
@@ -19968,6 +20154,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w7_i01_local_rc_gate()
     if args.wave == "W8-I00":
         return cmd_w8_i00_candidate_gate()
+    if args.wave in {"H8-00", "W8-01", "W8-02"}:
+        return cmd_w8_real_source_gate(args.wave)
     if args.wave == "W9-I00":
         return cmd_w9_i00_adapter_gate()
     if args.wave in W7_TARGET_CHECKS:
@@ -20636,6 +20824,94 @@ def _failed_retry_supersedes_mutable_pytest_artifacts(
     return True
 
 
+def _legacy_mutable_w7_observed_state(
+    receipt: dict[str, Any], state_root: Path,
+) -> dict[str, str] | None:
+    """Read the overwritten fixed-path W7 report used before runner 0.59."""
+
+    task_id = receipt.get("task_id")
+    if task_id not in W7_TARGET_CHECKS:
+        return None
+    expected_label = f"{str(task_id).lower()}-target-report"
+    evidence_root = (state_root.resolve() / "evidence").resolve()
+    observed: dict[str, str] = {}
+    try:
+        for command in receipt["command_results"]:
+            payload = Path(command["stdout"]["path"]).read_bytes().decode("utf-8")
+            for line in payload.splitlines():
+                if not line.startswith("JC_ARTIFACT\t"):
+                    continue
+                fields = line.split("\t")
+                if len(fields) != 4 or fields[1] != expected_label:
+                    return None
+                target = Path(fields[2]).resolve(strict=True)
+                if not target.is_file() or not target.is_relative_to(evidence_root):
+                    return None
+                observed[f"state-artifact:{expected_label}"] = (
+                    "sha256:" + sha256_hex(target.read_bytes())
+                )
+    except (KeyError, OSError, TypeError, UnicodeError, ValueError):
+        return None
+    return observed or None
+
+
+def _later_receipt_supersedes_legacy_w7_report(
+    receipt: dict[str, Any],
+    recorded: dict[str, str],
+    observed: dict[str, str],
+    later_receipts: list[dict[str, Any]],
+) -> bool:
+    """Account narrowly for W7 fixed-path reports overwritten before 0.59."""
+
+    task_id = receipt.get("task_id")
+    artifact_key = f"state-artifact:{str(task_id).lower()}-target-report"
+    if (
+        task_id not in W7_TARGET_CHECKS
+        or set(recorded) != {artifact_key}
+        or set(observed) != {artifact_key}
+        or recorded == observed
+    ):
+        return False
+    return any(
+        retry.get("task_id") == task_id
+        and retry.get("status") == "COMPLETED"
+        and isinstance(retry.get("attempt"), int)
+        and retry["attempt"] > receipt.get("attempt", 0)
+        and retry.get("runner_version") in KNOWN_RUNNER_VERSIONS
+        and retry.get("receipt_digest") == _receipt_digest(retry)
+        and retry.get("artifact_digests", {}).get(artifact_key) == observed[artifact_key]
+        for retry in later_receipts
+    )
+
+
+def _legacy_w7_report_is_content_archived(
+    receipt: dict[str, Any],
+    recorded: dict[str, str],
+    observed: dict[str, str],
+    state_root: Path,
+) -> bool:
+    """Accept the one-time migration once current fixed-path bytes are archived."""
+
+    task_id = receipt.get("task_id")
+    artifact_key = f"state-artifact:{str(task_id).lower()}-target-report"
+    if (
+        task_id not in W7_TARGET_CHECKS
+        or set(recorded) != {artifact_key}
+        or set(observed) != {artifact_key}
+        or recorded == observed
+    ):
+        return False
+    digest = observed[artifact_key]
+    path = (
+        state_root / "evidence" / "W7" / "target" / "reports"
+        / f"{digest.split(':', 1)[1]}.json"
+    )
+    try:
+        return "sha256:" + sha256_hex(path.read_bytes()) == digest
+    except OSError:
+        return False
+
+
 def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
     task_dir = state_root / "tasks" / task_id
     if not task_dir.exists():
@@ -20703,9 +20979,16 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         for command in receipt["command_results"]:
             if not _validate_stream(command["stdout"]) or not _validate_stream(command["stderr"]):
                 raise ValueError(f"stdout/stderr digest mismatch: {receipt_path}")
-        expected_state_artifacts = _declared_state_artifacts(
-            receipt["command_results"], state_root
-        )
+        try:
+            expected_state_artifacts = _declared_state_artifacts(
+                receipt["command_results"], state_root
+            )
+        except ValueError:
+            expected_state_artifacts = _legacy_mutable_w7_observed_state(
+                receipt, state_root,
+            )
+            if expected_state_artifacts is None:
+                raise
         recorded_state_artifacts = {
             key: value for key, value in receipt["artifact_digests"].items()
             if key.startswith("state-artifact:")
@@ -20728,7 +21011,22 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             expected_state_artifacts,
             later_receipts,
         )
-        state_accounted = state_recovered or state_superseded
+        w7_report_superseded = _later_receipt_supersedes_legacy_w7_report(
+            receipt,
+            recorded_state_artifacts,
+            expected_state_artifacts,
+            later_receipts,
+        )
+        w7_report_archived = _legacy_w7_report_is_content_archived(
+            receipt,
+            recorded_state_artifacts,
+            expected_state_artifacts,
+            state_root,
+        )
+        state_accounted = any((
+            state_recovered, state_superseded, w7_report_superseded,
+            w7_report_archived,
+        ))
         if recorded_state_artifacts != expected_state_artifacts and not state_accounted:
             raise ValueError(f"state artifact binding mismatch: {receipt_path}")
         must_rebuild_test_reports = (
@@ -27392,19 +27690,6 @@ def cmd_run(args: argparse.Namespace) -> int:
                     print(
                         f"task {task['id']} legacy receipt rebound "
                         f"receipt={rebound['receipt_digest']}"
-                    )
-                elif (
-                    latest["status"] == "COMPLETED"
-                    and latest["start_commit"] == latest["result_commit"]
-                    and latest["result_commit"] != task_start_commit
-                    and not latest["changed_paths"]
-                    and not any(
-                        key.startswith("result-path:") or key.startswith("deleted-path:")
-                        for key in latest["artifact_digests"]
-                    )
-                ):
-                    raise ValueError(
-                        f"legacy receipt lacks committed delta binding: {task['id']}"
                     )
             if (
                 latest and latest["status"] == "COMPLETED"

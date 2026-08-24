@@ -319,7 +319,8 @@ def build_document(source_document: object) -> dict[str, object]:
             artifacts, RULE_AUTHORITY_KIND, rule_id, tier=source["authority_tier"]
         )
         variable_ref = _component(
-            artifacts, RULE_VARIABLE_KIND, rule_id, name="test-subject"
+            artifacts, RULE_VARIABLE_KIND, rule_id,
+            name="test-subject" if test_only else "legal-subject",
         )
         premise_ref = _component(
             artifacts, RULE_PREMISE_KIND, rule_id,
@@ -333,7 +334,8 @@ def build_document(source_document: object) -> dict[str, object]:
             choice="literal-test-fixture" if test_only else "candidate-authored",
         )
         term_ref = _component(
-            artifacts, RULE_DEFINED_TERM_KIND, rule_id, term="test-subject"
+            artifacts, RULE_DEFINED_TERM_KIND, rule_id,
+            term="test-subject" if test_only else "legal-subject",
         )
         exception_refs = () if unit["exception"] is None else (_component(
             artifacts, RULE_EXCEPTION_KIND, rule_id,

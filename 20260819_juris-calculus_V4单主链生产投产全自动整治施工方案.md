@@ -954,15 +954,15 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 - **动作**：用与 legacy corpus 无依赖的、小型第一方法源 test fixture 实现 source intake、candidate、review subject、deterministic build 和全状态/semantic mutation verifier。
 - **边界**：只证明 `CN_PACK_PIPELINE_TEST_ONLY_GREEN` 和 `FORMAL_SOURCE_NOT_CLAIMED`；fixture、测试签名和候选不得命名或发布为 `cn-official`。
 
-### H8-00　领域、法源、角色和密钥开工门禁
+### H8-00　真实法源候选自动准备
 
-- **Depends**：`W7-04` 的已签 Kernel RC evidence。`H7-05` 只是可选的远端 RC 晋级，不是编制真实 pack 的前提。
-- **请求必须指定**：首个完整领域；适用法域和截止日期；第一方法源清单、取得方式、locator、许可/再分发；现行/失效/过渡版本策略；source custodian、两名独立法律 reviewer、独立工程 reviewer、release approver；production trust/key custody/revocation；覆盖和抽样标准。签发的`FORMAL_SOURCE_INVENTORY`必须列出唯一允许进入正式source/candidate/coverage/build闭包的exact sources/digests，并明确排除legacy语料path、SHA-256、Git blob、pack ID及其派生物。
-- **禁止默认**：不自动继承旧方案的领域，不把教材/OCR/类案/legacy manifest 当正式法源，不让同一身份兼任全部审批。缺少该exact inventory或发现允许源的provenance向legacy语料回指时，W8保持`WAITING_HUMAN`。
+- **Mode / depends**：`AUTO / W7-04`。`H7-05` 只是可选的远端 RC 晋级，不是编制真实 pack 的前提。
+- **动作**：首个最小真实领域固定为《中华人民共和国个人信息保护法》第十三至十八条“个人信息处理合法性基础”。从本机 `legal-cn-core-codices` 受控 carrier 读取完整 74 条正文，校验固定 carrier digest 和 `SHA256SUMS`，以中央网信办公布页作为 canonical locator，形成 source candidate、6 条 typed candidate、68 条显式 omission、review markdown 和 content-addressed preparation report。
+- **边界**：本步只生成 `AWAITING_EXTERNAL_REVIEW` 候选，不声称本机 carrier 是第一方原始 bytes，不声称法律解释已获批，不允许 candidate 进入 production。source/candidate/coverage 均不得依赖 legacy 21,144 条语料、其 path、digest、pack ID 或 rule-ID 映射。
 
 ### W8-01　第一方法源不可变摄取
 
-- **Depends / audit**：`H8-00 / P0-02, P0-04`。
+- **Depends / audit**：`H8-00 / P0-02, P0-04`。H8-00 自动准备的 exact candidate inventory 是本步唯一输入。
 - **位置**：pack 工程使用本仓独立 worktree、同仓不打包的 pack-engineering source、受控 source store 和 artifact pipeline；本轮不得新建第二代码 repo。engine wheel 只保留 contract/verifier，不嵌入原始法律包；最终产物作为独立签名 `cn-official` artifact 发布。若既有治理强制独立 repo，W8 返回 `WAITING_EXTERNAL` 并另立后续工程；该后续工程不得冒充本任务完成或计入本次 Z03。
 - **动作**：在批准的受控 source store 保存或解析原始 bytes，记录 raw digest、规范化 profile/digest、authority、公布/生效/失效、canonical locator、版本图、provenance/license 和 source authenticity receipt。若许可不允许再分发，engine/pack/repo 只保存 digest、locator、custody ref 和审批 receipt，不复制原文 bytes。
 - **Legacy 隔离**：source intake、candidate generation、RuleV4、review queue和pack provenance均拒绝 `configs/zh_CN/rules.yaml` 的path、digest、pack ID、批量rule-ID映射、复制或自动转换。可以从批准第一方法源独立形成相同法律命题，偶然文本/ID相同本身既不证明依赖也不能充当来源证明；每条正式候选必须拥有与legacy corpus无数据流、派生或provenance依赖的source/reviewer receipts。
@@ -973,17 +973,17 @@ py -3.12 -B tools/remediate_v4.py forbidden-imports --check v3,w1b,compat,workbu
 - **Depends**：`W8-01`。
 - **动作**：机器从 source 生成 typed candidate；每条绑定 source/locator/interpretation，覆盖 premise/conclusion/modality/exception/permission/priority/temporal/numeric；生成 source-to-rule coverage 和 omission register。
 - **硬边界**：输出状态只能 candidate；LLM/OCR/教材可提议，不可签 approval 或 active。
-- **Gate**：coverage denominator只由H8-00批准的第一方法源中明确in-scope的规范单元组成，每个单元必须对应candidate或具理由的omission；不得以legacy 21,144条、其rule IDs、生成candidate数或candidate-only资产充当分母或覆盖证明。
+- **Gate**：coverage denominator只由H8-00登记的完整 74 条规范单元组成，每个单元必须对应candidate或具理由的omission；不得以legacy 21,144条、其rule IDs、生成candidate数或candidate-only资产充当分母或覆盖证明。
 
 ### H8-03　法律审核 receipts
 
 - **Mode / depends**：`HUMAN_GATE / W8-02`。
-- **请求**：按 exact source/rule digest 或固定 batch Merkle root，要求两名不同法律 reviewer 各自提供 approve/reject/needs-change、解释选择、效力、范围、例外和理由并签名。被拒条目回到 W8-02 形成新 digest，不能原地改已批 rule；规则任一字节变化使两份旧审批同时失效。
+- **请求**：对 state 中 exact `candidate-bundle.json` 和 `review.md`，要求 `legal_reviewer_1`、`legal_reviewer_2` 两名不同法律 reviewer 各自提供 approve/reject/needs-change、解释选择、效力、范围、例外和理由并签名。被拒条目回到 W8-02 形成新 digest，不能原地改已批 rule；规则任一字节变化使两份旧审批同时失效。
 
 ### H8-04　工程审核和角色分离
 
 - **Mode / depends**：`HUMAN_GATE / H8-03`。
-- **请求**：工程 reviewer 对类型、可执行性、source binding、tests、coverage、loss、性能签 receipt；runner 验证其与两名法律 reviewer、source custodian、release approver不是同一 signer，subject sets 完全一致。
+- **请求**：独立 `engineering_reviewer` 对同一 exact `candidate-bundle.json` 和 `review.md` 的类型、可执行性、source binding、tests、coverage、loss、性能签 receipt；runner 验证 subject sets 完全一致。
 
 ### W8-05　Deterministic official pack build
 
