@@ -219,7 +219,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 15982,
+      "line": 15945,
       "kind": "availability_probe",
       "target_pattern": "optional-test-module",
       "target_class": "BUILD_ONLY",
