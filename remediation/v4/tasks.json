@@ -6576,6 +6576,142 @@
         "runner_version",
         "receipt_digest"
       ]
+    },
+    {
+      "id": "W10-00", "wave": "W10-00", "mode": "AUTO", "depends_on": ["H8-07"],
+      "audit_ids": ["R-P0-01", "R-P0-02", "R-P0-03", "R-P0-04", "R-P0-05", "R-P0-06", "R-P1-03"],
+      "objective": "追加失效旧 shell-only 生产完成声明并启动 W10 corrective chain",
+      "allowed_paths": ["20260824_juris-calculus_V4生产运行闭环*.md", "remediation/v4/**", "tools/remediate_v4.py", "tools/remediate_v4_verify.py"],
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "supersede-runtime-gap"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-00"]],
+      "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-00-commands", "kind": "all_commands_passed"}],
+      "rollback": "保留旧 evidence bytes；删除尚未提交的新代码并重跑 W10-00",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-01", "wave": "W10-01", "mode": "AUTO", "depends_on": ["W10-00"],
+      "audit_ids": ["R-P0-03"],
+      "objective": "冻结完整且有界的 CaseInputBundleV4 公共合同",
+      "allowed_paths": ["compiler_core/contracts.py", "compiler_core/__init__.py", "schemas/jc-v4.schema.json", "mcp_manifest.json", "tests/contract/test_case_input_bundle.py", "tests/security/test_case_bundle_attacks.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/contract/test_case_input_bundle.py", "tests/security/test_case_bundle_attacks.py"], ["{python}", "-B", "tools/remediate_v4.py", "generated", "--check"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-01"]],
+      "expected_exit_codes": [0, 0, 0], "completion_assertions": [{"id": "w10-01-contract", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-01 contract commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-02", "wave": "W10-02", "mode": "AUTO", "depends_on": ["W10-01"],
+      "audit_ids": ["R-P0-03"],
+      "objective": "实现每案 resolver overlay 隔离和确定性清理",
+      "allowed_paths": ["compiler_core/artifact_store.py", "compiler_core/client.py", "tests/security/test_artifact_resolver.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/security/test_artifact_resolver.py"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-02"]],
+      "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-02-overlay", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-02 overlay commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-03", "wave": "W10-03", "mode": "AUTO", "depends_on": ["W10-02"],
+      "audit_ids": ["R-P0-04", "R-P1-04", "R-P1-05"],
+      "objective": "实现 production pack trust service-key current-time loader",
+      "allowed_paths": ["compiler_core/production_pack.py", "tools/local_production.py", "tests/integration/test_production_pack_loader.py", "tests/security/test_production_pack_attacks.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/integration/test_production_pack_loader.py", "tests/security/test_production_pack_attacks.py"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-03"]],
+      "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-03-loader", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-03 loader commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-04", "wave": "W10-04", "mode": "AUTO", "depends_on": ["W10-03"],
+      "audit_ids": ["R-P0-01", "R-P0-02", "R-P0-05", "R-P0-06", "R-P1-04"],
+      "objective": "装配完整 production ApplicationV4 composition root 与 handles",
+      "allowed_paths": ["compiler_core/production_runtime.py", "tests/integration/test_production_runtime.py", "tests/formal_e2e/test_local_production_chain.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/integration/test_production_runtime.py", "tests/formal_e2e/test_local_production_chain.py"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-04"]],
+      "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-04-runtime", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-04 composition commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-05", "wave": "W10-05", "mode": "AUTO", "depends_on": ["W10-04"],
+      "audit_ids": ["R-P0-02", "R-P0-03", "R-P0-06"],
+      "objective": "统一 CLI Python Client stdio MCP 的 CaseInputBundle 入口",
+      "allowed_paths": ["compiler_core/client.py", "compiler_core/cli.py", "compiler_core/mcp.py", "mcp_server.py", "schemas/jc-v4.schema.json", "mcp_manifest.json", "tests/formal_e2e/test_three_entrypoint_error_matrix.py", "tests/mcp_protocol/test_production_stdio.py", "README.md", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/formal_e2e/test_three_entrypoint_error_matrix.py", "tests/mcp_protocol/test_production_stdio.py"], ["{python}", "-B", "tools/remediate_v4.py", "generated", "--check"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-05"]],
+      "expected_exit_codes": [0, 0, 0], "completion_assertions": [{"id": "w10-05-entrypoints", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-05 entrypoint commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-06", "wave": "W10-06", "mode": "AUTO", "depends_on": ["W10-05"],
+      "audit_ids": ["R-P0-06", "R-P1-02"],
+      "objective": "实现正式 jc-formal bridge 与 active profile registry",
+      "allowed_paths": ["compiler_core/formal_bridge.py", "pyproject.toml", ".agents/skills/jc-formal/**", "tests/dsh_formal/**", "README.md", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/dsh_formal"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-06"]],
+      "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-06-bridge", "kind": "all_commands_passed"}],
+      "rollback": "revert W10-06 bridge commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-07", "wave": "W10-07", "mode": "AUTO", "depends_on": ["W10-06"],
+      "audit_ids": ["R-P0-01", "R-P1-01", "R-P1-05", "R-P1-06"],
+      "objective": "构建并准备 installed-wheel immutable production release",
+      "allowed_paths": ["tools/local_production.py", "pyproject.toml", "requirements/**", "tests/packaging/test_installed_production_runtime.py", "README.md", "CHANGELOG.md", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "tools/local_production.py", "prepare", "--state-root", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-07"]],
+      "expected_exit_codes": [0, 0], "timeout_seconds": 1800, "completion_assertions": [{"id": "w10-07-release", "kind": "all_commands_passed"}],
+      "rollback": "保留 current；移除未激活且未验证的 prepared release", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-08", "wave": "W10-08", "mode": "AUTO", "depends_on": ["W10-07"],
+      "audit_ids": ["R-P0-05", "R-P1-02", "R-P2-01"],
+      "objective": "在 installed release 上执行六条 PIPL 真实生产 E2E 并原子激活",
+      "allowed_paths": ["tools/local_production.py", "tests/fixtures/production/pipl/**", "tests/formal_e2e/test_local_production_chain.py", "tests/formal_e2e/test_installed_production.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "tools/local_production.py", "verify", "--state-root", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state", "--release-file", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state/deployment/prepared.json"], ["{python}", "-B", "tools/local_production.py", "activate", "--state-root", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state", "--release-file", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state/deployment/prepared.json"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-08"]],
+      "expected_exit_codes": [0, 0, 0], "timeout_seconds": 1800, "completion_assertions": [{"id": "w10-08-production", "kind": "all_commands_passed"}],
+      "rollback": "原子切回 previous verified release", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-09", "wave": "W10-09", "mode": "AUTO", "depends_on": ["W10-08"],
+      "audit_ids": ["R-P1-06", "R-P1-07"],
+      "objective": "闭合 status backup restore upgrade rollback revoke 与每日备份任务",
+      "allowed_paths": ["tools/local_production.py", "tests/storage_chaos/test_production_runtime_recovery.py", "tests/performance/**", "tests/security/**", "README.md", "CHANGELOG.md", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "argv": [["{python}", "-B", "tools/local_production.py", "exercise", "--state-root", "D:/Codex/1.法律工作区/juris-calculus工作区/juris-calculus-v4-production-state"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-09"]],
+      "expected_exit_codes": [0, 0], "timeout_seconds": 1800, "completion_assertions": [{"id": "w10-09-operations", "kind": "all_commands_passed"}],
+      "rollback": "保持 current 不变并从 operations evidence 恢复", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "W10-10", "wave": "W10-10", "mode": "AUTO", "depends_on": ["W10-09"],
+      "audit_ids": ["R-P1-03"],
+      "objective": "逐任务独立 verifier receipt 与恢复闭环",
+      "allowed_paths": ["tools/remediate_v4.py", "tools/remediate_v4_verify.py", "remediation/v4/**", "tests/unit/test_remediation_*.py"],
+      "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/unit/test_remediation_runner.py", "tests/unit/test_remediation_run.py"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-10"]],
+      "expected_exit_codes": [0, 0], "timeout_seconds": 1200, "completion_assertions": [{"id": "w10-10-receipts", "kind": "all_commands_passed"}],
+      "rollback": "修复 task-specific verifier 后从最新有效 W10 receipt 恢复", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "Z10-00", "wave": "Z10-00", "mode": "AUTO", "depends_on": ["W10-10"],
+      "audit_ids": ["R-P1-03"],
+      "objective": "全仓 DAG 文件问题地图和发布物独立复算",
+      "allowed_paths": ["tools/remediate_v4_verify.py", "remediation/v4/**"],
+      "argv": [["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "Z10-00"]], "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "z10-00-recompute", "kind": "all_commands_passed"}], "rollback": "修复复算差异后重跑",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "Z10-01", "wave": "Z10-01", "mode": "AUTO", "depends_on": ["Z10-00"],
+      "audit_ids": ["R-P0-04", "R-P0-05", "R-P0-06", "R-P1-01", "R-P1-02"],
+      "objective": "新进程 installed-wheel artifact run 独立复验",
+      "allowed_paths": ["tools/remediate_v4_verify.py", "remediation/v4/**"],
+      "argv": [["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "Z10-01"]], "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "z10-01-artifact", "kind": "all_commands_passed"}], "rollback": "修复 installed artifact 或 run 后重跑",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "Z10-02", "wave": "Z10-02", "mode": "AUTO", "depends_on": ["Z10-01"],
+      "audit_ids": ["R-P1-05", "R-P1-06", "R-P1-07"],
+      "objective": "Git EFS installation permissions backup operations final check",
+      "allowed_paths": ["tools/remediate_v4_verify.py", "remediation/v4/**"],
+      "argv": [["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "Z10-02"]], "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "z10-02-host", "kind": "all_commands_passed"}], "rollback": "修复主机状态后重跑",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
+    },
+    {
+      "id": "Z10-03", "wave": "Z10-03", "mode": "AUTO", "depends_on": ["Z10-02"],
+      "audit_ids": ["R-P0-01", "R-P0-02", "R-P0-03", "R-P0-04", "R-P0-05", "R-P0-06", "R-P1-01", "R-P1-02", "R-P1-03", "R-P1-04", "R-P1-05", "R-P1-06", "R-P1-07", "R-P2-01"],
+      "objective": "聚合唯一 LOCAL_PRODUCTION_ACTIVE 最终结果",
+      "allowed_paths": ["tools/remediate_v4_verify.py", "remediation/v4/**"],
+      "argv": [["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "Z10-03"]], "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "z10-03-final", "kind": "all_commands_passed"}], "rollback": "保持 INCOMPLETE 并从最新有效 receipt 重跑",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     }
   ]
 }

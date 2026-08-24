@@ -534,6 +534,48 @@
       ],
       "proof": "历史指南退出 current authority，Git artifact 可定位",
       "status": "registered"
+    },
+    {
+      "id": "R-P0-01", "severity": "P0", "title": "active profile lacks an installed production runtime factory", "closure_tasks": ["W10-04", "W10-07"], "proof": "installed create_client composes ApplicationV4 and profile contains factory/config without PYTHONPATH", "status": "registered"
+    },
+    {
+      "id": "R-P0-02", "severity": "P0", "title": "runtime_client can return an empty JCClient", "closure_tasks": ["W10-04", "W10-05"], "proof": "production startup fails before initialize unless all runtime authorities are configured", "status": "registered"
+    },
+    {
+      "id": "R-P0-03", "severity": "P0", "title": "case artifacts are not admitted through public entrypoints", "closure_tasks": ["W10-01", "W10-02", "W10-05"], "proof": "all three entrypoints consume one bounded CaseInputBundleV4", "status": "registered"
+    },
+    {
+      "id": "R-P0-04", "severity": "P0", "title": "active pack appears only as metadata", "closure_tasks": ["W10-03", "W10-04"], "proof": "strict production loader decodes and verifies the active pack at current UTC", "status": "registered"
+    },
+    {
+      "id": "R-P0-05", "severity": "P0", "title": "no valid production evaluate verify read chain", "closure_tasks": ["W10-04", "W10-08"], "proof": "six PIPL positive runs have formal certificates and verified readable handles", "status": "registered"
+    },
+    {
+      "id": "R-P0-06", "severity": "P0", "title": "verify and read are not wired through production MCP", "closure_tasks": ["W10-04", "W10-05", "W10-06"], "proof": "stdio and formal bridge execute evaluate verify read against the audit store", "status": "registered"
+    },
+    {
+      "id": "R-P1-01", "severity": "P1", "title": "production profile imports repository source", "closure_tasks": ["W10-07"], "proof": "new process imports immutable installed wheel outside repo with PYTHONPATH absent", "status": "registered"
+    },
+    {
+      "id": "R-P1-02", "severity": "P1", "title": "formal consumer exists only as test adapter", "closure_tasks": ["W10-06", "W10-08"], "proof": "installed jc-formal subprocess consumes the active registry and delivers exact verified bytes", "status": "registered"
+    },
+    {
+      "id": "R-P1-03", "severity": "P1", "title": "legacy W9 and Z tasks share self-verifying gates", "closure_tasks": ["W10-00", "W10-10", "Z10-00"], "proof": "old reports are superseded and each W10/Z10 task has an independent verifier", "status": "registered"
+    },
+    {
+      "id": "R-P1-04", "severity": "P1", "title": "pack build verification time is reused at runtime", "closure_tasks": ["W10-03", "W10-04"], "proof": "every load evaluate verify and read receives fresh canonical UTC", "status": "registered"
+    },
+    {
+      "id": "R-P1-05", "severity": "P1", "title": "runtime can reach the role-deriving master seed", "closure_tasks": ["W10-03", "W10-07"], "proof": "runtime reads only the EFS service key with minimal ACL", "status": "registered"
+    },
+    {
+      "id": "R-P1-06", "severity": "P1", "title": "engine and pack release identities drift", "closure_tasks": ["W10-07", "W10-09"], "proof": "final installed engine is 4.0.0 and RunIdentity binds engine and pack digests", "status": "registered"
+    },
+    {
+      "id": "R-P1-07", "severity": "P1", "title": "backup policy has no lifecycle executor", "closure_tasks": ["W10-09", "Z10-02"], "proof": "backup restore rollback and daily EFS task are executed and independently checked", "status": "registered"
+    },
+    {
+      "id": "R-P2-01", "severity": "P2", "title": "local pack covers only PIPL articles 13 through 18", "closure_tasks": ["W10-08", "Z10-03"], "proof": "final status states the exact limited domain and observation requirement", "status": "registered"
     }
   ]
 }

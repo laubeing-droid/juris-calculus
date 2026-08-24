@@ -61,7 +61,7 @@ try:
 except ImportError:  # pragma: no cover - exercised by tests via subprocess
     Draft202012Validator = None  # type: ignore
 
-RUNNER_VERSION = "0.59.0"
+RUNNER_VERSION = "0.60.0"
 STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.3.0": 2,
     "0.4.0": 2,
@@ -122,6 +122,7 @@ STRUCTURED_TEST_REPORT_FORMAT_BY_RUNNER_VERSION = {
     "0.57.0": 5,
     "0.58.0": 5,
     "0.59.0": 5,
+    "0.60.0": 5,
 }
 KNOWN_RUNNER_VERSIONS = frozenset({
     "0.2.0",
@@ -20488,6 +20489,59 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
     return EXIT_GATE_FAIL
 
 
+def cmd_supersede_runtime_gap(args: argparse.Namespace) -> int:
+    """Append one content-bound invalidation of the legacy shell-only closure."""
+
+    raw_state_root = (args.state_root or os.environ.get("JC_REMEDIATION_STATE_ROOT", "")).strip()
+    if not raw_state_root:
+        print("runtime-gap supersession failed: state root is unavailable", file=sys.stderr)
+        return EXIT_USAGE
+    state_root = Path(raw_state_root).resolve()
+    plan_path = ROOT / "20260824_juris-calculus_V4生产运行闭环彻底整治施工方案.md"
+    final_path = state_root / "evidence" / "final-remediation-result.json"
+    if not plan_path.is_file() or not final_path.is_file():
+        print("runtime-gap supersession failed: plan or legacy final result is missing", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    plan_digest = hashlib.sha256(plan_path.read_bytes()).hexdigest().upper()
+    if plan_digest != "FBFB9AE0D2DB18AEB91662D2DDA2D843BA998C0A6020695CD5487087832D695E":
+        print("runtime-gap supersession failed: plan digest drifted", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    legacy_receipts: list[dict[str, str]] = []
+    for task_id in ("H9-00", "W9-01", "W9-02", "W9-03", "W9-04", "W9-05", "W9-06", "Z00", "Z01", "Z02", "Z03"):
+        history = _receipt_history(task_id, state_root)
+        if not history:
+            print(f"runtime-gap supersession failed: {task_id} receipt missing", file=sys.stderr)
+            return EXIT_GATE_FAIL
+        legacy_receipts.append({
+            "task_id": task_id,
+            "receipt_digest": history[-1]["receipt_digest"],
+        })
+    body = {
+        "schema_version": "jc/runtime-gap-supersession/1.0",
+        "status": "INVALIDATED_BY_RUNTIME_GAP",
+        "legacy_interpretation": "PACK_READY+MCP_SHELL_READY+PRODUCTION_RUNTIME_MISSING",
+        "plan_sha256": f"sha256:{plan_digest.lower()}",
+        "legacy_final_result": {
+            "path": str(final_path),
+            "sha256": "sha256:" + hashlib.sha256(final_path.read_bytes()).hexdigest(),
+        },
+        "legacy_receipts": legacy_receipts,
+        "commit": _git_checked("rev-parse", "HEAD"),
+        "tree": _git_checked("rev-parse", "HEAD^{tree}"),
+    }
+    body["supersession_digest"] = _digest_object(body)
+    output = state_root / "evidence" / "runtime-gap-supersession.json"
+    if output.is_file():
+        current = json.loads(output.read_text(encoding="utf-8"))
+        if current != body:
+            print("runtime-gap supersession failed: append-only evidence already differs", file=sys.stderr)
+            return EXIT_GATE_FAIL
+    else:
+        _atomic_json(output, body)
+    print(f"JC_ARTIFACT\truntime-gap-supersession\t{output}\t{body['supersession_digest']}")
+    return EXIT_OK
+
+
 def _canonical_bytes(value: Any) -> bytes:
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -27903,8 +27957,10 @@ def _execute_auto_task(
 def cmd_run(args: argparse.Namespace) -> int:
     """Execute READY tasks and stop only at a reached failure or gate."""
     plan_path = Path(args.plan).resolve()
-    state_root = Path(args.state_root).resolve() if args.state_root else None
+    raw_state_root = (args.state_root or os.environ.get("JC_REMEDIATION_STATE_ROOT", "")).strip()
+    state_root = Path(raw_state_root).resolve() if raw_state_root else None
     through = args.through or "W9"
+    corrective_run = through.startswith("W10-") or through.startswith("Z10-")
     if not plan_path.is_file():
         print(f"plan not found: {plan_path}", file=sys.stderr)
         return EXIT_USAGE
@@ -27931,7 +27987,32 @@ def cmd_run(args: argparse.Namespace) -> int:
         if Path(run_state["plan_path"]).resolve() != plan_path:
             print("state root belongs to a different plan", file=sys.stderr)
             return EXIT_BASELINE_DRIFT
-        if run_state.get("through") != through:
+        if corrective_run and not run_state.get("corrective_generation"):
+            archive = state_root / "invalidated-runs" / "runtime-gap-legacy-run"
+            archive.mkdir(parents=True, exist_ok=True)
+            archived_run = archive / "run.json"
+            if archived_run.is_file() and archived_run.read_bytes() != run_path.read_bytes():
+                print("legacy run archive differs from current run", file=sys.stderr)
+                return EXIT_BASELINE_DRIFT
+            if not archived_run.is_file():
+                archived_run.write_bytes(run_path.read_bytes())
+            run_state = {
+                "schema_version": "jc/remediation-v4-run/2.0",
+                "run_id": uuid.uuid4().hex,
+                "runner_version": RUNNER_VERSION,
+                "plan_path": str(plan_path),
+                "through": through,
+                "baseline_commit": _git_checked("rev-parse", "HEAD"),
+                "baseline_tree": _git_checked("rev-parse", "HEAD^{tree}"),
+                "started_at": _iso_now(),
+                "task_status": {},
+                "corrective_generation": "W10",
+                "supersedes": str(archived_run),
+            }
+            _atomic_json(run_path, run_state)
+        elif corrective_run and run_state.get("corrective_generation") == "W10":
+            run_state["through"] = through
+        elif run_state.get("through") != through:
             print(
                 f"state root through target is {run_state.get('through')}, not {through}",
                 file=sys.stderr,
@@ -27962,6 +28043,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     completed_receipts: dict[str, dict[str, Any]] = {}
     try:
         ordered = _topological_tasks(plan)
+        if corrective_run:
+            ordered = [
+                task for task in ordered
+                if task["id"].startswith("W10-") or task["id"].startswith("Z10-")
+            ]
+            legacy_h8 = _receipt_history("H8-07", state_root)
+            if not legacy_h8:
+                raise ValueError("W10 correction requires the preserved H8-07 receipt")
+            completed_receipts["H8-07"] = legacy_h8[-1]
         task_ids = [task["id"] for task in ordered]
         if through == "ALL":
             pass
@@ -27981,8 +28071,10 @@ def cmd_run(args: argparse.Namespace) -> int:
                 dep: completed_receipts[dep]["receipt_digest"] for dep in task["depends_on"]
             }
             latest = history[-1] if history else None
-            task_start_commit = _task_start_commit(
-                task, completed_receipts, run_state["baseline_commit"]
+            task_start_commit = (
+                run_state["baseline_commit"]
+                if corrective_run and task["id"] == "W10-00"
+                else _task_start_commit(task, completed_receipts, run_state["baseline_commit"])
             )
             if history:
                 latest = next(
@@ -28243,9 +28335,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("wave")
     p.set_defaults(func=cmd_verify_wave)
 
+    p = sub.add_parser("supersede-runtime-gap", help="Append W10 legacy-runtime invalidation evidence")
+    p.add_argument("--state-root", default=None)
+    p.set_defaults(func=cmd_supersede_runtime_gap)
+
     p = sub.add_parser("run", help="Single entry point for resume / continue")
-    p.add_argument("--plan", required=True)
-    p.add_argument("--state-root", required=True)
+    p.add_argument("--plan", default="remediation/v4/tasks.json")
+    p.add_argument("--state-root", default=None)
     p.add_argument("--through", default="W9")
     p.add_argument(
         "--recover-state-artifact",
