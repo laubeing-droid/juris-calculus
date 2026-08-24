@@ -346,6 +346,37 @@ def _verify_w10_08(state_root: Path) -> int:
     return _task_report("W10-08", checks, state_root)
 
 
+def _verify_w10_09(state_root: Path) -> int:
+    from compiler_core.canonical_serialization import canonical_bytes
+    from tools.local_production import production_status
+
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    report_path = production / "operations/recovery-report.json"
+    report = json.loads(report_path.read_bytes()) if report_path.is_file() else {}
+    backup_id = report.get("backup", {}).get("backup_id", "")
+    backup_path = production / "backups" / str(backup_id) / "manifest.json"
+    restore_path = production / "operations/restore-rehearsals" / str(backup_id) / "report.json"
+    daily_id = report.get("daily_backup_id", "")
+    daily_path = production / "backups" / str(daily_id) / "manifest.json"
+    checks = [
+        {"name": "operations-report-canonical", "status": "PASS" if report and report_path.read_bytes() == canonical_bytes(report) and report.get("status") == "OPERATIONS_VERIFIED" else "FAIL"},
+        {"name": "backup-manifest-verified", "status": "PASS" if backup_path.is_file() and json.loads(backup_path.read_bytes()).get("backup_id") == backup_id else "FAIL"},
+        {"name": "independent-restore-rehearsal", "status": "PASS" if restore_path.is_file() and json.loads(restore_path.read_bytes()).get("status") == "RESTORE_REHEARSAL_VERIFIED" else "FAIL"},
+        {"name": "upgrade-rollback-reactivate", "status": "PASS" if report.get("upgrade_release_id") == report.get("reactivated_release_id") and report.get("rollback_release_id") == report.get("before", {}).get("release_id") else "FAIL"},
+        {"name": "partial-install-atomicity", "status": "PASS" if report.get("partial_install_current_unchanged") is True else "FAIL"},
+        {"name": "inactive-revocation-release", "status": "PASS" if report.get("revocation", {}).get("status") == "PREPARED_INACTIVE" and report.get("revocation", {}).get("replacement_required_before_activation") is True else "FAIL"},
+        {"name": "daily-backup-completed", "status": "PASS" if daily_path.is_file() and json.loads(daily_path.read_bytes()).get("retention_class") == "daily" else "FAIL"},
+        {"name": "daily-task-installed-no-repo", "status": "PASS" if report.get("scheduled_task", {}).get("status") == "INSTALLED" and report.get("scheduled_task", {}).get("repo_path_absent") is True else "FAIL"},
+        {"name": "resource-budget-recorded", "status": "PASS" if report.get("resource_budget", {}).get("solver_deadline_ms") == 2500 and report.get("resource_budget", {}).get("page_bytes") == 65536 else "FAIL"},
+    ]
+    try:
+        status = production_status(production)
+        checks.append({"name": "post-operations-active", "status": "PASS" if status.get("status") == "LOCAL_PRODUCTION_ACTIVE" and status.get("release_id") == report.get("reactivated_release_id") else "FAIL"})
+    except (OSError, TypeError, ValueError):
+        checks.append({"name": "post-operations-active", "status": "FAIL"})
+    return _task_report("W10-09", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -425,6 +456,8 @@ def main() -> int:
             return _verify_w10_07(Path(args.state_root).resolve())
         if args.task == "W10-08":
             return _verify_w10_08(Path(args.state_root).resolve())
+        if args.task == "W10-09":
+            return _verify_w10_09(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

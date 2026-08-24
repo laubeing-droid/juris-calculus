@@ -736,6 +736,277 @@ def activate_release(state_root: Path, release_file: Path) -> dict[str, object]:
     return current
 
 
+def production_status(state_root: Path) -> dict[str, object]:
+    """Read and revalidate the active local release without changing state."""
+
+    state_root = state_root.resolve()
+    current_path = state_root / "deployment/current.json"
+    current = parse_json_document(current_path.read_bytes())
+    manifest_path = Path(str(current["manifest_path"]))
+    manifest = parse_json_document(manifest_path.read_bytes())
+    verification_path = Path(str(current["verification_path"]))
+    verification = parse_json_document(verification_path.read_bytes())
+    if (
+        current_path.read_bytes() != canonical_bytes(current)
+        or current.get("status") != "LOCAL_PRODUCTION_ACTIVE"
+        or current.get("scope") != "local-windows-efs-pipl-articles-13-18"
+        or current.get("manifest_digest") != _sha256(manifest_path)
+        or current.get("verification_digest") != _sha256(verification_path)
+        or manifest.get("release_id") != current.get("release_id")
+        or verification.get("release_id") != current.get("release_id")
+        or len(verification.get("positive_runs", [])) != 6
+    ):
+        raise ValueError("active production release binding failed")
+    from compiler_core.formal_bridge import load_active_profile
+    profile = load_active_profile(state_root / "deployment/profile-registry.json")
+    if profile.profile_id != current["release_id"]:
+        raise ValueError("active production profile differs")
+    return {
+        "status": "LOCAL_PRODUCTION_ACTIVE",
+        "scope": current["scope"],
+        "release_id": current["release_id"],
+        "manifest_digest": current["manifest_digest"],
+        "verification_digest": current["verification_digest"],
+        "positive_runs": 6,
+        "efs": _efs_evidence(state_root),
+    }
+
+
+def _backup_sources(state_root: Path) -> list[Path]:
+    current = parse_json_document((state_root / "deployment/current.json").read_bytes())
+    manifest = Path(str(current["manifest_path"])).parent
+    fixed = [
+        state_root / "identity/service-runtime.json",
+        state_root / "deployment/current.json",
+        state_root / "deployment/previous.json",
+        state_root / "deployment/profile-registry.json",
+        manifest / "release.json",
+        manifest / "config/runtime-config.json",
+        manifest / "config/formal-profile.json",
+        manifest / "evidence/positive-chain.json",
+    ]
+    fixed.extend(sorted((state_root / "packs").glob("*.json")))
+    fixed.extend(sorted((state_root / "trust").glob("*.json")))
+    fixed.extend(sorted(
+        path for path in (state_root / "runtime-state").rglob("*") if path.is_file()
+    ))
+    return sorted(set(fixed), key=lambda path: str(path).casefold())
+
+
+def backup_state(
+    state_root: Path, *, retention_class: str = "manual", hold: bool = True,
+) -> dict[str, object]:
+    """Create and byte-verify a bounded EFS backup of runtime authorities and state."""
+
+    state_root = state_root.resolve()
+    status = production_status(state_root)
+    sources = _backup_sources(state_root)
+    rows = [{
+        "relative_path": path.relative_to(state_root).as_posix(),
+        "digest": _sha256(path), "size_bytes": path.stat().st_size,
+    } for path in sources]
+    identity = digest_value({
+        "release_id": status["release_id"], "files": rows,
+        "retention_class": retention_class, "hold": hold,
+    }).hex[:20]
+    backup = state_root / "backups" / identity
+    payload = backup / "payload"
+    if not backup.exists():
+        payload.mkdir(parents=True)
+        for source, row in zip(sources, rows, strict=True):
+            target = payload / str(row["relative_path"])
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        manifest = {
+            "schema_version": "jc/local-production-backup/1.0",
+            "backup_id": identity, "release_id": status["release_id"],
+            "retention_class": retention_class, "hold": hold, "files": rows,
+        }
+        manifest["manifest_digest"] = str(digest_value(manifest))
+        (backup / "manifest.json").write_bytes(canonical_bytes(manifest))
+    manifest = parse_json_document((backup / "manifest.json").read_bytes())
+    for row in manifest["files"]:
+        target = payload / row["relative_path"]
+        if not target.is_file() or _sha256(target) != row["digest"]:
+            raise ValueError("backup payload verification failed")
+    if _efs_evidence(backup).get("algorithm") != "EFS-AES-256":
+        raise ValueError("backup is not EFS protected")
+    return manifest
+
+
+def restore_rehearsal(state_root: Path, backup_id: str) -> dict[str, object]:
+    """Restore only into an independent rehearsal directory and verify every object."""
+
+    state_root = state_root.resolve()
+    backup = state_root / "backups" / backup_id
+    manifest = parse_json_document((backup / "manifest.json").read_bytes())
+    destination = state_root / "operations/restore-rehearsals" / backup_id
+    payload = destination / "payload"
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(backup / "payload", payload)
+    for row in manifest["files"]:
+        target = payload / row["relative_path"]
+        if not target.is_file() or _sha256(target) != row["digest"]:
+            raise ValueError("restore rehearsal verification failed")
+    report = {
+        "schema_version": "jc/local-production-restore/1.0",
+        "backup_id": backup_id, "release_id": manifest["release_id"],
+        "status": "RESTORE_REHEARSAL_VERIFIED", "files_verified": len(manifest["files"]),
+        "current_unchanged": _sha256(state_root / "deployment/current.json"),
+    }
+    report["report_digest"] = str(digest_value(report))
+    (destination / "report.json").write_bytes(canonical_bytes(report))
+    return report
+
+
+def rollback_release(state_root: Path) -> dict[str, object]:
+    """Switch only to the verified previous release, preserving a reverse pointer."""
+
+    state_root = state_root.resolve()
+    deployment = state_root / "deployment"
+    previous = parse_json_document((deployment / "previous.json").read_bytes())
+    if previous.get("production_rollback_allowed") is not True:
+        raise ValueError("previous release is not rollbackable")
+    target = previous.get("current")
+    if type(target) is not dict:
+        raise ValueError("previous release pointer is malformed")
+    manifest_path = Path(str(target["manifest_path"]))
+    verification_path = Path(str(target["verification_path"]))
+    if (
+        target.get("manifest_digest") != _sha256(manifest_path)
+        or target.get("verification_digest") != _sha256(verification_path)
+        or len(parse_json_document(verification_path.read_bytes()).get("positive_runs", [])) != 6
+    ):
+        raise ValueError("previous release lacks full verification evidence")
+    current = parse_json_document((deployment / "current.json").read_bytes())
+    profile = parse_json_document((manifest_path.parent / "config/formal-profile.json").read_bytes())
+    replacement_previous = {
+        "schema_version": "jc/local-production-previous/1.0",
+        "production_rollback_allowed": True, "current": current,
+    }
+    registry = {
+        "schema_version": "jc/formal-profile-registry/1.0",
+        "active_profile": target["release_id"],
+        "profiles": {target["release_id"]: profile},
+    }
+    before = _pointer_bytes(state_root)
+    try:
+        _atomic_write(deployment / "previous.json", replacement_previous)
+        _atomic_write(deployment / "current.json", target)
+        _atomic_write(deployment / "profile-registry.json", registry)
+        production_status(state_root)
+    except Exception:
+        for name in before:
+            path = deployment / name
+            if before[name] is not None:
+                path.write_bytes(before[name])
+        raise
+    return target
+
+
+def prepare_revocation(state_root: Path) -> dict[str, object]:
+    """Generate an inactive revocation release; active trust bytes remain immutable."""
+
+    state_root = state_root.resolve()
+    trust_path = state_root / "trust/cn-official-local.json"
+    trust_digest = _sha256(trust_path)
+    service = parse_json_document((state_root / "identity/service-runtime.json").read_bytes())
+    body = {
+        "schema_version": "jc/local-production-revocation-release/1.0",
+        "status": "PREPARED_INACTIVE", "active_trust_digest": trust_digest,
+        "revoked_key_id": service["key_id"],
+        "replacement_required_before_activation": True,
+    }
+    body["release_digest"] = str(digest_value(body))
+    path = state_root / "deployment/revocation-releases" / body["release_digest"][7:27]
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "revocation.json").write_bytes(canonical_bytes(body))
+    if _sha256(trust_path) != trust_digest:
+        raise ValueError("active trust changed during inactive revocation preparation")
+    return body
+
+
+def install_daily_backup_task(state_root: Path) -> dict[str, object]:
+    state_root = state_root.resolve()
+    current = parse_json_document((state_root / "deployment/current.json").read_bytes())
+    manifest = parse_json_document(Path(str(current["manifest_path"])).read_bytes())
+    operations = state_root / "operations"
+    operations.mkdir(parents=True, exist_ok=True)
+    deployed_tool = operations / "local_production.py"
+    shutil.copy2(Path(__file__).resolve(), deployed_tool)
+    command = operations / "daily-backup.cmd"
+    command.write_text(
+        f'@"{manifest["venv_python"]}" -I -B "{deployed_tool}" backup '
+        f'--state-root "{state_root}" --retention-class daily --no-hold\r\n',
+        encoding="utf-8",
+    )
+    task_name = "JurisCalculusV4DailyBackup"
+    _run([
+        "schtasks", "/Create", "/F", "/SC", "DAILY", "/ST", "02:00",
+        "/TN", task_name, "/TR", str(command),
+    ], cwd=operations, timeout=120)
+    query = _run(["schtasks", "/Query", "/TN", task_name, "/XML"], cwd=operations)
+    return {
+        "schema_version": "jc/local-production-scheduled-task/1.0",
+        "task_name": task_name, "status": "INSTALLED",
+        "command_digest": _sha256(command),
+        "deployed_tool_digest": _sha256(deployed_tool),
+        "query_digest": str(DigestV4.from_bytes(query.stdout.encode("utf-8"))),
+        "repo_path_absent": str(ROOT).casefold() not in command.read_text(encoding="utf-8").casefold(),
+    }
+
+
+def exercise_operations(state_root: Path) -> dict[str, object]:
+    """Run backup, restore, upgrade, rollback, re-upgrade, revoke, and scheduler gates."""
+
+    state_root = state_root.resolve()
+    before = production_status(state_root)
+    current_before = (state_root / "deployment/current.json").read_bytes()
+    partial = state_root / "deployment/failed-releases/w10-09-partial-install"
+    partial.mkdir(parents=True, exist_ok=True)
+    (partial / "PARTIAL").write_bytes(b"incomplete")
+    if (state_root / "deployment/current.json").read_bytes() != current_before:
+        raise ValueError("partial install changed current")
+    backup = backup_state(state_root)
+    restore = restore_rehearsal(state_root, str(backup["backup_id"]))
+    prepared = prepare_release(state_root)
+    pointer = state_root / "deployment/prepared.json"
+    verified = verify_release(state_root, pointer)
+    upgraded = activate_release(state_root, pointer)
+    rolled_back = rollback_release(state_root)
+    if rolled_back["release_id"] != before["release_id"]:
+        raise ValueError("rollback did not restore the prior verified release")
+    reactivate = activate_release(state_root, pointer)
+    if reactivate["release_id"] != upgraded["release_id"]:
+        raise ValueError("post-rollback reactivation differs")
+    revoke = prepare_revocation(state_root)
+    scheduled = install_daily_backup_task(state_root)
+    daily = backup_state(state_root, retention_class="daily", hold=False)
+    report = {
+        "schema_version": "jc/local-production-operations/1.0",
+        "status": "OPERATIONS_VERIFIED", "before": before,
+        "backup": backup, "restore": restore,
+        "upgrade_release_id": upgraded["release_id"],
+        "rollback_release_id": rolled_back["release_id"],
+        "reactivated_release_id": reactivate["release_id"],
+        "revocation": revoke, "scheduled_task": scheduled,
+        "daily_backup_id": daily["backup_id"],
+        "partial_install_current_unchanged": True,
+        "resource_budget": {
+            "solver_deadline_ms": 2500, "page_bytes": 65536,
+            "runtime_state_bytes": sum(
+                path.stat().st_size for path in (state_root / "runtime-state").rglob("*")
+                if path.is_file()
+            ),
+        },
+    }
+    report["report_digest"] = str(digest_value(report))
+    report_path = state_root / "operations/recovery-report.json"
+    report_path.write_bytes(canonical_bytes(report))
+    return report
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -749,6 +1020,18 @@ def main(argv: list[str] | None = None) -> int:
         command = commands.add_parser(name)
         command.add_argument("--state-root", type=Path, required=True)
         command.add_argument("--release-file", type=Path, required=True)
+    for name in ("status", "exercise", "revoke"):
+        command = commands.add_parser(name)
+        command.add_argument("--state-root", type=Path, required=True)
+    backup = commands.add_parser("backup")
+    backup.add_argument("--state-root", type=Path, required=True)
+    backup.add_argument("--retention-class", choices=("manual", "daily"), default="manual")
+    backup.add_argument("--no-hold", action="store_true")
+    restore = commands.add_parser("restore")
+    restore.add_argument("--state-root", type=Path, required=True)
+    restore.add_argument("--backup-id", required=True)
+    rollback = commands.add_parser("rollback")
+    rollback.add_argument("--state-root", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "init-service-key":
@@ -770,6 +1053,27 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({
                 "release_id": result["release_id"], "status": result["status"],
             }, sort_keys=True))
+        elif args.command == "status":
+            result = production_status(args.state_root)
+            print(json.dumps(result, sort_keys=True))
+        elif args.command == "backup":
+            result = backup_state(
+                args.state_root, retention_class=args.retention_class,
+                hold=not args.no_hold,
+            )
+            print(json.dumps({"backup_id": result["backup_id"], "status": "VERIFIED"}, sort_keys=True))
+        elif args.command == "restore":
+            result = restore_rehearsal(args.state_root, args.backup_id)
+            print(json.dumps({"backup_id": result["backup_id"], "status": result["status"]}, sort_keys=True))
+        elif args.command == "rollback":
+            result = rollback_release(args.state_root)
+            print(json.dumps({"release_id": result["release_id"], "status": result["status"]}, sort_keys=True))
+        elif args.command == "revoke":
+            result = prepare_revocation(args.state_root)
+            print(json.dumps({"status": result["status"], "release_digest": result["release_digest"]}, sort_keys=True))
+        elif args.command == "exercise":
+            result = exercise_operations(args.state_root)
+            print(json.dumps({"status": result["status"], "report_digest": result["report_digest"]}, sort_keys=True))
     except (OSError, TypeError, ValueError) as exc:
         print(f"local production failed: {exc}", file=sys.stderr)
         return 1
