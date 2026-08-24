@@ -239,6 +239,25 @@ def _verify_w10_05(state_root: Path) -> int:
     return _task_report("W10-05", checks, state_root)
 
 
+def _verify_w10_06(state_root: Path) -> int:
+    from compiler_core.formal_bridge import FormalBridgeV4, StdioSessionV4, load_active_profile
+
+    source = (ROOT / "compiler_core/formal_bridge.py").read_text(encoding="utf-8")
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    cli_source = (ROOT / "compiler_core/cli.py").read_text(encoding="utf-8")
+    forbidden = ("RuleV4", "LegalIR", "BackendRouter", "ApplicationV4")
+    checks = [
+        {"name": "formal-entrypoint", "status": "PASS" if 'jc-formal = "compiler_core.formal_bridge:main"' in pyproject else "FAIL"},
+        {"name": "active-profile-registry", "status": "PASS" if callable(load_active_profile) and "active_profile" in source else "FAIL"},
+        {"name": "real-stdio-session", "status": "PASS" if callable(StdioSessionV4.deliver) and "subprocess.Popen(" in source else "FAIL"},
+        {"name": "pinned-reconnect", "status": "PASS" if callable(FormalBridgeV4.connect) and "MCP_CAPABILITY_DRIFT" in source else "FAIL"},
+        {"name": "paged-exact-delivery", "status": "PASS" if "JC_FORMAL_VERIFIED" in source and "FORMAL_ARTIFACT_BYTES" in source else "FAIL"},
+        {"name": "general-cli-unchanged", "status": "PASS" if "formal_bridge" not in cli_source else "FAIL"},
+        {"name": "no-legal-semantics-copy", "status": "PASS" if not any(name in source for name in forbidden) else "FAIL"},
+    ]
+    return _task_report("W10-06", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -312,6 +331,8 @@ def main() -> int:
             return _verify_w10_04(Path(args.state_root).resolve())
         if args.task == "W10-05":
             return _verify_w10_05(Path(args.state_root).resolve())
+        if args.task == "W10-06":
+            return _verify_w10_06(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

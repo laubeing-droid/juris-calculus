@@ -1,8 +1,6 @@
-# DSH formal-profile tests
+# Local-production formal bridge tests
 
-The files in this directory are an out-of-tree-shaped, test/local reference adapter. They
-pin the four JC MCP tools, fail closed on startup/session drift, and permit a formal marker
-only for exact bytes re-read after current-session verification.
-
-They do not configure or claim a production DSH deployment. DSH release pinning, separate
-service identity, authenticated transport, and topology remain H9-00 inputs.
+These tests exercise the production `compiler_core.formal_bridge` against the real stdio
+server and production composition root. No protocol or delivery implementation lives in
+the test tree. This is a local DSH-compatible consumer, not a claim that external DSH is
+deployed.

@@ -40,6 +40,11 @@ jc render --input artifact-handle.json --format markdown --audience agent --json
 
 CLI, Python, and the four-tool stdio MCP adapter all accept the same closed `CaseInputBundleV4` and use the same application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
 
+`jc-formal --registry <deployment/profile-registry.json> --input <case-input-bundle.json>`
+starts the profile-pinned stdio server and emits a formal delivery only after capabilities,
+evaluation, run verification, and exact paged certificate bytes all bind. This is the
+local-production DSH-compatible consumer; the general `jc` command does not load it.
+
 ## Safety boundary
 
 - Only admitted `verified_fact` values enter formal reasoning.

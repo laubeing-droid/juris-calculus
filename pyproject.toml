@@ -19,6 +19,7 @@ dependencies = [
 
 [project.scripts]
 jc = "compiler_core.cli:main"
+jc-formal = "compiler_core.formal_bridge:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "compiler_core.version.__version__" }
