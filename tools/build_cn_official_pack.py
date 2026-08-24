@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Build and validate the fictional test-only first-method candidate pack."""
+"""Build a deterministic cn-official candidate from explicit first-party source data."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 import sys
 from typing import Any
@@ -58,6 +57,15 @@ from compiler_core.source_service import (
 SOURCE_PATH = ROOT / "tests/fixtures/cn_official/first-method-source.json"
 OUTPUT_PATH = ROOT / "tests/fixtures/cn_official/candidate-pack.json"
 PACK_ID = "cn-first-method-test-candidate"
+OFFICIAL_CANDIDATE_PACK_ID = "cn-official-candidate"
+_CANDIDATE_AUTHORITY_TIERS = {
+    "constitution", "law", "administrative_regulation", "judicial_interpretation",
+    "department_rule", "local_regulation",
+}
+_CANDIDATE_LICENSE_STATUSES = {
+    "official-publication", "public-domain", "permission-recorded",
+}
+_CANDIDATE_DISTRIBUTION_STATUSES = {"redistributable", "locator-only"}
 _SOURCE_FIELDS = {
     "schema_version", "scope", "formal_source_claimed", "source_id",
     "jurisdiction", "authority_tier", "issuer", "title", "canonical_locator",
@@ -137,11 +145,11 @@ def _component(
     )
 
 
-def _validate_source(document: object) -> dict[str, Any]:
+def _validate_source(document: object) -> tuple[dict[str, Any], bool]:
     source = _closed(document, _SOURCE_FIELDS, "source")
-    if (
-        source["schema_version"] != "jc/first-method-test-source/1.0"
-        or source["scope"] != "test-only"
+    test_only = source["schema_version"] == "jc/first-method-test-source/1.0"
+    if test_only and (
+        source["scope"] != "test-only"
         or source["formal_source_claimed"] is not False
         or source["jurisdiction"] != "TEST-CN"
         or source["authority_tier"] != "synthetic_test_only"
@@ -149,6 +157,16 @@ def _validate_source(document: object) -> dict[str, Any]:
         or source["distribution_status"] != "test-only"
     ):
         _fail("source identity or test-only boundary drifted")
+    if not test_only and (
+        source["schema_version"] != "jc/cn-official-source-candidate/1.0"
+        or source["scope"] != "candidate"
+        or source["formal_source_claimed"] is not False
+        or source["jurisdiction"] != "CN"
+        or source["authority_tier"] not in _CANDIDATE_AUTHORITY_TIERS
+        or source["license_status"] not in _CANDIDATE_LICENSE_STATUSES
+        or source["distribution_status"] not in _CANDIDATE_DISTRIBUTION_STATUSES
+    ):
+        _fail("source identity or candidate boundary drifted")
     CanonicalLocatorV4.from_dict(source["canonical_locator"])
     publication = _time(source["publication_time"])
     effective_from = _time(source["effective_from"])
@@ -208,24 +226,32 @@ def _validate_source(document: object) -> dict[str, Any]:
         _fail("normative unit ids are duplicated")
     if any(token in canonical_bytes(source) for token in _BANNED):
         _fail("source depends on a retired corpus identity")
-    return source
+    return source, test_only
 
 
 def build_document(source_document: object) -> dict[str, object]:
     """Build a deterministic candidate bundle without issuing any approval."""
 
-    source = _validate_source(source_document)
+    source, test_only = _validate_source(source_document)
+    artifact_scope = "test-only" if test_only else "candidate"
+    coverage_kind = "test-candidate-coverage" if test_only else "candidate-coverage"
+    review_kind = (
+        "test-candidate-review-subject" if test_only else "candidate-review-subject"
+    )
+    pack_kind = "test-candidate-pack" if test_only else "candidate-pack"
+    pack_id = PACK_ID if test_only else OFFICIAL_CANDIDATE_PACK_ID
     artifacts: dict[tuple[str, str], dict[str, object]] = {}
     raw = source["raw_text"].encode("utf-8")
     normalized = normalize_source_bytes(raw)
     raw_ref = _record(
-        artifacts, SOURCE_RAW_KIND, source["raw_text"], media_type="text/plain"
+        artifacts, SOURCE_RAW_KIND, source["raw_text"],
+        media_type="text/plain", scope=artifact_scope,
     )
     normalized_ref = _record(
         artifacts,
         SOURCE_NORMALIZED_KIND,
         normalized.decode("utf-8"),
-        media_type="text/plain",
+        media_type="text/plain", scope=artifact_scope,
     )
     unit_ids = [item["unit_id"] for item in source["normative_units"]]
     structure_ref = _record(artifacts, SOURCE_STRUCTURE_MAP_KIND, {
@@ -234,13 +260,16 @@ def build_document(source_document: object) -> dict[str, object]:
     }, scope="source-provenance")
     provenance_ref = _record(artifacts, SOURCE_PROVENANCE_KIND, {
         "schema_version": "jc/source-provenance/1.0",
-        "scope": "test-only",
+        "scope": artifact_scope,
         "formal_source_claimed": False,
-        "method": "user-authored-first-method-test-fixture",
+        "method": (
+            "user-authored-first-method-test-fixture"
+            if test_only else "explicit-first-party-source-intake"
+        ),
     }, scope="source-provenance")
     pending_authenticity_ref = _record(artifacts, "source-authenticity-pending", {
         "schema_version": "jc/source-authenticity-pending/1.0",
-        "scope": "test-only",
+        "scope": artifact_scope,
         "status": "NOT_CLAIMED",
     }, scope="source-authenticity")
     snapshot = SourceSnapshotV4(
@@ -260,9 +289,11 @@ def build_document(source_document: object) -> dict[str, object]:
         structure_map_ref=structure_ref,
         authenticity_receipt_ref=pending_authenticity_ref,
         provenance_refs=(provenance_ref,),
-        acquisition_method="user-authored-test-fixture",
-        license_status="test-fixture",
-        distribution_status="test-only",
+        acquisition_method=(
+            "user-authored-test-fixture" if test_only else "explicit-source-intake"
+        ),
+        license_status=source["license_status"],
+        distribution_status=source["distribution_status"],
     )
     snapshot_ref = source_snapshot_ref(snapshot)
     if _record(
@@ -282,7 +313,7 @@ def build_document(source_document: object) -> dict[str, object]:
             continue
         rule_id = unit["unit_id"]
         authority_ref = _component(
-            artifacts, RULE_AUTHORITY_KIND, rule_id, tier="synthetic_test_only"
+            artifacts, RULE_AUTHORITY_KIND, rule_id, tier=source["authority_tier"]
         )
         variable_ref = _component(
             artifacts, RULE_VARIABLE_KIND, rule_id, name="test-subject"
@@ -296,7 +327,7 @@ def build_document(source_document: object) -> dict[str, object]:
         )
         interpretation_ref = _component(
             artifacts, RULE_INTERPRETATION_KIND, rule_id,
-            choice="literal-test-fixture",
+            choice="literal-test-fixture" if test_only else "candidate-authored",
         )
         term_ref = _component(
             artifacts, RULE_DEFINED_TERM_KIND, rule_id, term="test-subject"
@@ -326,8 +357,11 @@ def build_document(source_document: object) -> dict[str, object]:
         ),)
         body = {
             "rule_id": rule_id,
-            "jurisdiction": "TEST-CN",
-            "governing_law": "fictional-first-method-test-specification",
+            "jurisdiction": source["jurisdiction"],
+            "governing_law": (
+                "fictional-first-method-test-specification"
+                if test_only else source["title"]
+            ),
             "authority_ref": authority_ref.to_dict(),
             "variable_declaration_refs": [variable_ref.to_dict()],
             "premise_refs": [premise_ref.to_dict()],
@@ -352,24 +386,34 @@ def build_document(source_document: object) -> dict[str, object]:
             ),
         }
         rule = RuleV4.from_dict({**body, "rule_digest": str(digest_value(body))})
-        rule_ref = _record(artifacts, RULE_KIND, rule.digest_body())
+        rule_ref = _record(
+            artifacts, RULE_KIND, rule.digest_body(), scope=artifact_scope
+        )
         if rule_ref.digest != rule.rule_digest:
             _fail(f"rule reference drifted: {rule_id}")
         rules.append(rule)
         rule_refs.append(rule_ref)
 
     coverage_body = {
-        "schema_version": "jc/test-candidate-coverage/1.0",
-        "status": "COMPLETE_FOR_TEST_FIXTURE",
+        "schema_version": (
+            "jc/test-candidate-coverage/1.0"
+            if test_only else "jc/candidate-coverage/1.0"
+        ),
+        "status": "COMPLETE_FOR_TEST_FIXTURE" if test_only else "CANDIDATE_COMPLETE",
         "source_snapshot_ref": snapshot_ref.to_dict(),
         "denominator_unit_ids": unit_ids,
         "candidate_unit_ids": [rule.rule_id for rule in rules],
         "omissions": omissions,
     }
-    coverage_ref = _record(artifacts, "test-candidate-coverage", coverage_body)
+    coverage_ref = _record(
+        artifacts, coverage_kind, coverage_body, scope=artifact_scope,
+    )
     review_body = {
-        "schema_version": "jc/test-candidate-review-subject/1.0",
-        "scope": "test-only",
+        "schema_version": (
+            "jc/test-candidate-review-subject/1.0"
+            if test_only else "jc/candidate-review-subject/1.0"
+        ),
+        "scope": artifact_scope,
         "status": "AWAITING_EXTERNAL_REVIEW",
         "formal_source_claimed": False,
         "source_snapshot_ref": snapshot_ref.to_dict(),
@@ -379,13 +423,15 @@ def build_document(source_document: object) -> dict[str, object]:
             "legal_reviewer_1", "legal_reviewer_2", "engineering_reviewer",
         ],
     }
-    review_ref = _record(artifacts, "test-candidate-review-subject", review_body)
+    review_ref = _record(artifacts, review_kind, review_body, scope=artifact_scope)
     pack_body = {
-        "schema_version": "jc/test-candidate-pack/1.0",
-        "pack_id": PACK_ID,
-        "pack_version": "0.0.0-test",
+        "schema_version": (
+            "jc/test-candidate-pack/1.0" if test_only else "jc/candidate-pack/1.0"
+        ),
+        "pack_id": pack_id,
+        "pack_version": "0.0.0-test" if test_only else "0.0.0-candidate",
         "state": "CANDIDATE",
-        "scope": "test-only",
+        "scope": artifact_scope,
         "production_allowed": False,
         "formal_source_claimed": False,
         "source_snapshot_ref": snapshot_ref.to_dict(),
@@ -395,10 +441,13 @@ def build_document(source_document: object) -> dict[str, object]:
         "promotion_receipt_refs": [],
         "signature_ref": None,
     }
-    pack_ref = _record(artifacts, "test-candidate-pack", pack_body)
+    pack_ref = _record(artifacts, pack_kind, pack_body, scope=artifact_scope)
     document = {
-        "schema_version": "jc/first-method-test-candidate-bundle/1.0",
-        "scope": "test-only",
+        "schema_version": (
+            "jc/first-method-test-candidate-bundle/1.0"
+            if test_only else "jc/cn-official-candidate-bundle/1.0"
+        ),
+        "scope": artifact_scope,
         "production_allowed": False,
         "formal_source_claimed": False,
         "source": {
@@ -439,13 +488,21 @@ def validate_document(document: object) -> list[str]:
         encoded = canonical_bytes(value)
         if any(token in encoded for token in _BANNED):
             _fail("candidate bundle contains a retired corpus identity")
+        test_only = value["schema_version"] == "jc/first-method-test-candidate-bundle/1.0"
+        candidate = value["schema_version"] == "jc/cn-official-candidate-bundle/1.0"
+        expected_scope = "test-only" if test_only else "candidate"
         if (
-            value["schema_version"] != "jc/first-method-test-candidate-bundle/1.0"
-            or value["scope"] != "test-only"
+            not (test_only or candidate)
+            or value["scope"] != expected_scope
             or value["production_allowed"] is not False
             or value["formal_source_claimed"] is not False
         ):
-            _fail("candidate bundle test-only boundary drifted")
+            _fail("candidate bundle non-promotion boundary drifted")
+        coverage_kind = "test-candidate-coverage" if test_only else "candidate-coverage"
+        review_kind = (
+            "test-candidate-review-subject" if test_only else "candidate-review-subject"
+        )
+        pack_kind = "test-candidate-pack" if test_only else "candidate-pack"
         records = value["artifacts"]
         if not isinstance(records, list):
             _fail("candidate artifacts are not a list")
@@ -457,7 +514,10 @@ def validate_document(document: object) -> list[str]:
             reference = ContentRefV4.from_dict(record["content_ref"])
             if (
                 reference.kind != record["artifact_kind"]
-                or record["scope"] not in {"test-only", "source-provenance", "source-authenticity", RULE_COMPONENT_SCOPE}
+                or record["scope"] not in {
+                    expected_scope, "source-provenance", "source-authenticity",
+                    RULE_COMPONENT_SCOPE,
+                }
                 or DigestV4.from_bytes(_artifact_bytes(record)) != reference.digest
             ):
                 _fail("candidate artifact identity drifted")
@@ -487,9 +547,21 @@ def validate_document(document: object) -> list[str]:
             snapshot.raw_digest != raw_ref.digest
             or snapshot.normalized_digest != normalized_ref.digest
             or normalize_source_bytes(raw_bytes) != normalized_bytes
-            or snapshot.authority_tier != "synthetic_test_only"
-            or snapshot.license_status != "test-fixture"
-            or snapshot.distribution_status != "test-only"
+            or (
+                test_only and (
+                    snapshot.authority_tier != "synthetic_test_only"
+                    or snapshot.license_status != "test-fixture"
+                    or snapshot.distribution_status != "test-only"
+                )
+            )
+            or (
+                candidate and (
+                    snapshot.jurisdiction != "CN"
+                    or snapshot.authority_tier not in _CANDIDATE_AUTHORITY_TIERS
+                    or snapshot.license_status not in _CANDIDATE_LICENSE_STATUSES
+                    or snapshot.distribution_status not in _CANDIDATE_DISTRIBUTION_STATUSES
+                )
+            )
         ):
             _fail("candidate source snapshot bytes or boundary drifted")
         expected_refs = {
@@ -511,12 +583,12 @@ def validate_document(document: object) -> list[str]:
         rules = [RuleV4.from_dict(item) for item in raw_rules]
         if any(
             rule.promotion_receipt_refs
-            or rule.jurisdiction != "TEST-CN"
+            or rule.jurisdiction != snapshot.jurisdiction
             or rule.source_snapshot_ref != snapshot_ref
             for rule in rules
         ):
             _fail("candidate rule gained formal eligibility or another source")
-        if (
+        if test_only and (
             {rule.modality for rule in rules} != _MODALITIES
             or not any(rule.exception_refs for rule in rules)
             or not any(rule.priority_refs for rule in rules)
@@ -548,10 +620,12 @@ def validate_document(document: object) -> list[str]:
             "candidate_unit_ids", "omissions", "coverage_digest",
         }, "candidate coverage")
         coverage_body = {key: coverage[key] for key in coverage if key != "coverage_digest"}
-        coverage_ref = ContentRefV4("test-candidate-coverage", digest_value(coverage_body))
+        coverage_ref = ContentRefV4(coverage_kind, digest_value(coverage_body))
         if (
             coverage["coverage_digest"] != str(coverage_ref.digest)
-            or coverage["status"] != "COMPLETE_FOR_TEST_FIXTURE"
+            or coverage["status"] != (
+                "COMPLETE_FOR_TEST_FIXTURE" if test_only else "CANDIDATE_COMPLETE"
+            )
             or coverage["source_snapshot_ref"] != snapshot_ref.to_dict()
             or set(coverage["candidate_unit_ids"]) != {rule.rule_id for rule in rules}
             or set(coverage["denominator_unit_ids"]) != (
@@ -571,10 +645,10 @@ def validate_document(document: object) -> list[str]:
             "required_roles", "subject_digest",
         }, "candidate review subject")
         review_body = {key: review[key] for key in review if key != "subject_digest"}
-        review_ref = ContentRefV4("test-candidate-review-subject", digest_value(review_body))
+        review_ref = ContentRefV4(review_kind, digest_value(review_body))
         if (
             review["subject_digest"] != str(review_ref.digest)
-            or review["scope"] != "test-only"
+            or review["scope"] != expected_scope
             or review["status"] != "AWAITING_EXTERNAL_REVIEW"
             or review["formal_source_claimed"] is not False
             or review["source_snapshot_ref"] != snapshot_ref.to_dict()
@@ -597,13 +671,17 @@ def validate_document(document: object) -> list[str]:
             "promotion_receipt_refs", "signature_ref", "pack_digest",
         }, "candidate pack")
         pack_body = {key: pack[key] for key in pack if key != "pack_digest"}
-        pack_ref = ContentRefV4("test-candidate-pack", digest_value(pack_body))
+        pack_ref = ContentRefV4(pack_kind, digest_value(pack_body))
         if (
             pack["pack_digest"] != str(pack_ref.digest)
-            or pack["pack_id"] != PACK_ID
-            or pack["pack_version"] != "0.0.0-test"
+            or pack["pack_id"] != (
+                PACK_ID if test_only else OFFICIAL_CANDIDATE_PACK_ID
+            )
+            or pack["pack_version"] != (
+                "0.0.0-test" if test_only else "0.0.0-candidate"
+            )
             or pack["state"] != "CANDIDATE"
-            or pack["scope"] != "test-only"
+            or pack["scope"] != expected_scope
             or pack["production_allowed"] is not False
             or pack["formal_source_claimed"] is not False
             or pack["source_snapshot_ref"] != snapshot_ref.to_dict()

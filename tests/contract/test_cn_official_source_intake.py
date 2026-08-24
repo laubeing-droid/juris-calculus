@@ -30,6 +30,24 @@ def test_first_method_source_builds_content_bound_snapshot() -> None:
     assert snapshot.license_status == "test-fixture"
     assert snapshot.distribution_status == "test-only"
 
+    candidate_source = _source()
+    candidate_source.update({
+        "schema_version": "jc/cn-official-source-candidate/1.0",
+        "scope": "candidate",
+        "jurisdiction": "CN",
+        "authority_tier": "law",
+        "issuer": "candidate-source-custodian",
+        "title": "candidate first-party source",
+        "license_status": "official-publication",
+        "distribution_status": "redistributable",
+    })
+    candidate = builder.build_document(candidate_source)
+    assert candidate["schema_version"] == "jc/cn-official-candidate-bundle/1.0"
+    assert candidate["candidate_pack"]["pack_id"] == "cn-official-candidate"
+    assert candidate["candidate_pack"]["state"] == "CANDIDATE"
+    assert candidate["candidate_pack"]["signature_ref"] is None
+    assert candidate["production_allowed"] is False
+
 
 @pytest.mark.parametrize(
     ("field", "value"),
