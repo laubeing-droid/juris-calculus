@@ -27,7 +27,9 @@ AUTHORITY_CLASSES = {
     "FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL",
     "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE",
 }
-AUTHORITY_ROLES = {"application", "contract", "certificate_issuer"}
+AUTHORITY_ROLES = {
+    "application", "contract", "certificate_issuer", "independent_checker",
+}
 DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
 EXIT_OK = 0
 EXIT_FAILURE = 4

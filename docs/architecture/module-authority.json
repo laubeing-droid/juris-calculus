@@ -192,6 +192,62 @@
       "target_pattern": "tools/*.py",
       "target_class": "BUILD_ONLY",
       "closure_task": "W0-03"
+    },
+    {
+      "importer": "compiler_core/independent_checker.py",
+      "line": 347,
+      "kind": "dynamic_import",
+      "target_pattern": "compiler_core.independent_checker",
+      "target_class": "FORMAL_CORE",
+      "closure_task": "W3-04"
+    },
+    {
+      "importer": "tests/packaging/test_current_authority_docs.py",
+      "line": 92,
+      "kind": "dynamic_import",
+      "target_pattern": "compiler_core.*",
+      "target_class": "TEST_ONLY",
+      "closure_task": "W5-05"
+    },
+    {
+      "importer": "tools/remediate_v4.py",
+      "line": 16767,
+      "kind": "dynamic_path_load",
+      "target_pattern": "tools/wheel_gate.py",
+      "target_class": "BUILD_ONLY",
+      "closure_task": "W6-01"
+    },
+    {
+      "importer": "tools/remediate_v4.py",
+      "line": 15948,
+      "kind": "availability_probe",
+      "target_pattern": "optional-test-module",
+      "target_class": "BUILD_ONLY",
+      "closure_task": "W6-05"
+    },
+    {
+      "importer": "tools/remediate_v4.py",
+      "line": 16137,
+      "kind": "dynamic_import",
+      "target_pattern": "optional-test-module",
+      "target_class": "BUILD_ONLY",
+      "closure_task": "W6-05"
+    },
+    {
+      "importer": "tests/contract/w5_package_red.py",
+      "line": 73,
+      "kind": "availability_probe",
+      "target_pattern": "retired-module",
+      "target_class": "TEST_ONLY",
+      "closure_task": "W5-CUTOVER"
+    },
+    {
+      "importer": "tests/packaging/test_wheel_exact_set.py",
+      "line": 14,
+      "kind": "dynamic_path_load",
+      "target_pattern": "tools/wheel_gate.py",
+      "target_class": "TEST_ONLY",
+      "closure_task": "W6-01"
     }
   ],
   "external_imports": {

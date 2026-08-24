@@ -213,8 +213,7 @@ def _isolated_runner_repo(tmp_path: Path):
         "remediation/v4/issue-map.json",
         "remediation/v4/approvals/W0-05-dependency-decision.json",
         "tests/fixtures/keys/v4-test-ed25519.json",
-        "tests/unit/test_release_engineering.py",
-        "tests/unit/test_remediation_run.py",
+            "tests/unit/test_remediation_run.py",
     ]
     for relative in sources:
         source = REPO / relative

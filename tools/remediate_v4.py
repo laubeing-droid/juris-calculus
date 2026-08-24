@@ -1569,7 +1569,7 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
     """施工方案 §7 B00-CG: 校验 CodeGraph 索引与 start tree 的一致性。
 
     tracked union == codegraph-indexed ∪ asset-inventory。CN legacy corpus
-    (configs/zh_CN/rules.yaml) 必须在 asset-inventory 而非 codegraph 中。
+    (configs/zh_CN/rules.yaml) 必须从当前 tree、index 和 asset inventory 消失。
     normalized graph receipt 写到 $JC_REMEDIATION_STATE_ROOT/evidence/codegraph/$SOURCE_TREE_ID/。
     """
     codegraph_db = Path(args.codegraph).resolve()
@@ -1639,10 +1639,8 @@ def cmd_graph_map(args: argparse.Namespace) -> int:
         problems.append(f"missing_from_union={missing[:5]}{'...' if len(missing) > 5 else ''}")
     if orphan:
         problems.append(f"orphan_graph_entries={orphan[:5]}{'...' if len(orphan) > 5 else ''}")
-    if cn_in_indexed:
-        problems.append("configs/zh_CN/rules.yaml was indexed by codegraph; should be asset-only")
-    if not cn_in_assets:
-        problems.append("configs/zh_CN/rules.yaml missing from asset inventory")
+    if cn_rules in tracked_set or cn_in_indexed or cn_in_assets:
+        problems.append("configs/zh_CN/rules.yaml remains in current graph or assets")
 
     state_root = getattr(args, "state_root", None)
     if state_root:

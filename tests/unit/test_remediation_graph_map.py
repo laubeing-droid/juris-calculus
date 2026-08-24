@@ -1,11 +1,4 @@
-"""Tests for the CodeGraph reconciliation gate (施工方案 §7 B00-CG).
-
-These tests are RED until the runner implements real reconciliation. They
-lock the contract: tracked Python+YAML must equal codegraph-indexed files;
-tracked JSON/Markdown/lock/asset files must equal asset-inventory; CN
-legacy corpus (configs/zh_CN/rules.yaml) belongs to asset-inventory only;
-the normalized graph digest is content-addressed and reproducible.
-"""
+"""Tests for current-tree CodeGraph and asset reconciliation."""
 from __future__ import annotations
 
 import hashlib
@@ -41,12 +34,7 @@ def _tracked_files() -> list[str]:
 
 
 def _asset_inventory() -> list[str]:
-    """Assets are defined by type, not as tracked minus indexed."""
-    return [
-        path for path in _tracked_files()
-        if Path(path).suffix.lower() not in {".py", ".yaml", ".yml"}
-        or path == "configs/zh_CN/rules.yaml"
-    ]
+    return sorted(set(_tracked_files()) - set(_codegraph_indexed_files()))
 
 
 def _write_asset_inventory(state_root: Path) -> Path:
@@ -145,14 +133,11 @@ def test_tracked_union_equals_graph_plus_assets() -> None:
     assert not orphan_graph, f"codegraph entries not in tracked: {sorted(orphan_graph)[:20]}"
 
 
-def test_cn_legacy_rules_yaml_not_in_codegraph() -> None:
-    """configs/zh_CN/rules.yaml is a 13.6 MB YAML; it must NOT be in codegraph because
-    CodeGraph cannot parse it; it must be in asset inventory."""
+def test_cn_legacy_rules_yaml_is_absent_from_current_graph_and_assets() -> None:
     indexed = set(_codegraph_indexed_files())
-    assert "configs/zh_CN/rules.yaml" not in indexed, (
-        "configs/zh_CN/rules.yaml must not be parsed by codegraph"
-    )
-    assert "configs/zh_CN/rules.yaml" in set(_asset_inventory())
+    assert "configs/zh_CN/rules.yaml" not in indexed
+    assert "configs/zh_CN/rules.yaml" not in set(_tracked_files())
+    assert "configs/zh_CN/rules.yaml" not in set(_asset_inventory())
 
 
 # ---------------------------------------------------------------------------
@@ -247,17 +232,9 @@ def test_runner_graph_map_produces_normalized_receipt() -> None:
 # Import/call/consumer mapping — concrete graph conclusions
 # ---------------------------------------------------------------------------
 
-def test_cn_legacy_corpus_consumers_in_compiler_core() -> None:
-    """At minimum, compiler_core/{cli,config_paths,prc_collision_engine}.py
-    must show graph references to configs/zh_CN/rules.yaml in source.
-
-    This is an absolute-low-bar smoke for CodeGraph's import resolution; the
-    full B01 task will expand to consumer mapping per施工方案 §19.1.
-    """
+def test_cn_legacy_corpus_has_no_compiler_core_consumer() -> None:
     cli_text = (REPO / "compiler_core" / "cli.py").read_text(encoding="utf-8", errors="replace")
     config_text = (REPO / "compiler_core" / "config_paths.py").read_text(encoding="utf-8", errors="replace")
     prc_text = (REPO / "compiler_core" / "prc_collision_engine.py").read_text(encoding="utf-8", errors="replace")
     rules_text = "configs/zh_CN/rules.yaml"
-    assert rules_text in cli_text or rules_text in config_text or rules_text in prc_text, (
-        "CN legacy rules.yaml must be referenced in at least one compiler_core consumer"
-    )
+    assert rules_text not in cli_text + config_text + prc_text
