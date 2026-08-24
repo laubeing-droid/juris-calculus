@@ -399,11 +399,8 @@ def test_repository_policy_has_exact_python_and_codegraph_coverage() -> None:
     assert not any(
         item["kind"] == "authority_target_missing" for item in report["backlog"]
     )
-    assert any(
-        item["kind"] == "runtime_output_reachability"
-        and item["source"] == "compiler_core/rendering.py"
-        and item["target"] == "compiler_core/application.py"
-        for item in report["backlog"]
+    assert not any(
+        item["kind"] == "runtime_output_reachability" for item in report["backlog"]
     )
 
 
