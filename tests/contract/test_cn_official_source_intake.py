@@ -48,6 +48,20 @@ def test_first_method_source_builds_content_bound_snapshot() -> None:
     assert candidate["candidate_pack"]["signature_ref"] is None
     assert candidate["production_allowed"] is False
 
+    unanchored = _source()
+    unanchored["normative_units"][0]["text"] = "未见于原文的转述"
+    with pytest.raises(builder.CandidatePackError, match="not anchored in source"):
+        builder.build_document(unanchored)
+
+    review = builder.render_review_markdown(_source(), document).decode("utf-8")
+    first_unit = _source()["normative_units"][0]
+    assert first_unit["unit_id"] in review
+    assert first_unit["text"] in review
+    assert document["review_subject"]["subject_digest"] in review
+    assert document["review_subject"]["rule_subject_digests"][0] in review
+    assert "production_allowed=false" in review
+    assert "本文不记录批准" in review
+
 
 @pytest.mark.parametrize(
     ("field", "value"),
@@ -77,26 +91,3 @@ def test_legacy_identity_and_duplicate_units_are_rejected() -> None:
     )
     with pytest.raises(builder.CandidatePackError, match="duplicated"):
         builder.build_document(duplicated)
-
-
-def test_normative_unit_text_must_be_anchored_in_raw_source() -> None:
-    source = _source()
-    source["normative_units"][0]["text"] = "未见于原文的转述"
-
-    with pytest.raises(builder.CandidatePackError, match="not anchored in source"):
-        builder.build_document(source)
-
-
-def test_review_markdown_binds_exact_source_and_subject_without_approval() -> None:
-    source = _source()
-    document = builder.build_document(source)
-
-    review = builder.render_review_markdown(source, document).decode("utf-8")
-
-    first_unit = source["normative_units"][0]
-    assert first_unit["unit_id"] in review
-    assert first_unit["text"] in review
-    assert document["review_subject"]["subject_digest"] in review
-    assert document["review_subject"]["rule_subject_digests"][0] in review
-    assert "production_allowed=false" in review
-    assert "本文不记录批准" in review
