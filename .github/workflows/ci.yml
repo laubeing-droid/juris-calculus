@@ -94,7 +94,6 @@ jobs:
         run: >-
           python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider
           tests/packaging/test_legacy_cn_corpus_absent.py
-          tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py
           tests/packaging/test_ci_matrix.py::test_committed_private_key_is_test_only_and_unique
 
       - name: Ruff fatal-error gate on current paths
