@@ -180,6 +180,7 @@ def _validate_source(document: object) -> tuple[dict[str, Any], bool]:
         _fail("source temporal contract drifted")
     if not isinstance(source["raw_text"], str) or not source["raw_text"].strip():
         _fail("source raw text is empty")
+    anchored_text = "".join(source["raw_text"].split())
     units = source["normative_units"]
     if not isinstance(units, list) or len(units) < 2:
         _fail("source normative units are missing")
@@ -191,6 +192,8 @@ def _validate_source(document: object) -> tuple[dict[str, Any], bool]:
         ids.append(unit["unit_id"])
         if not isinstance(unit["text"], str) or not unit["text"].strip():
             _fail(f"normative unit text is empty: {unit['unit_id']}")
+        if "".join(unit["text"].split()) not in anchored_text:
+            _fail(f"normative unit text is not anchored in source: {unit['unit_id']}")
         if unit["state"] == "omitted":
             if not isinstance(unit["omission_reason"], str) or not unit["omission_reason"]:
                 _fail(f"omitted unit lacks a reason: {unit['unit_id']}")

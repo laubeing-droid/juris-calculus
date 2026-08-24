@@ -77,3 +77,11 @@ def test_legacy_identity_and_duplicate_units_are_rejected() -> None:
     )
     with pytest.raises(builder.CandidatePackError, match="duplicated"):
         builder.build_document(duplicated)
+
+
+def test_normative_unit_text_must_be_anchored_in_raw_source() -> None:
+    source = _source()
+    source["normative_units"][0]["text"] = "未见于原文的转述"
+
+    with pytest.raises(builder.CandidatePackError, match="not anchored in source"):
+        builder.build_document(source)
