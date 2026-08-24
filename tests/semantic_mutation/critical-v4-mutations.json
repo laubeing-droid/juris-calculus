@@ -58,7 +58,7 @@
   "deferred_runtime_closure": {
     "audit_id": "P1-07",
     "owner_task": "W4-05",
-    "selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_namespace_domain_patch_changes_evaluation",
-    "state": "RED_AT_TASK"
+    "selector": "tests/contract/test_application.py::test_signed_domain_config_has_no_global_fallback",
+    "state": "ACTIVE_REQUIRED"
   }
 }

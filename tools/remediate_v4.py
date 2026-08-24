@@ -1984,7 +1984,6 @@ def cmd_file_map(args: argparse.Namespace) -> int:
     required_corrections = {
         "configs/perf_patterns.yaml": ("KEEP_REWRITE", "W5-02C"),
         "tools/wheel_gate.py": ("KEEP_REWRITE", "W6-05"),
-        "tests/unit/test_rule_pack_manifest.py": ("TEST_ORACLE", "W5-01"),
     }
     for path, expected_pair in required_corrections.items():
         actual = (by_path.get(path, {}).get("disposition"), by_path.get(path, {}).get("closure_task"))

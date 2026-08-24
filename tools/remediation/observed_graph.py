@@ -471,9 +471,14 @@ def _packaged_paths(root: Path, tracked: list[str]) -> set[str]:
     if not pyproject_path.is_file():
         return set()
     payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    finder = payload.get("tool", {}).get("setuptools", {}).get("packages", {}).get("find", {})
-    include = list(finder.get("include", ["*"]))
-    exclude = list(finder.get("exclude", []))
+    packages = payload.get("tool", {}).get("setuptools", {}).get("packages", {})
+    if isinstance(packages, list):
+        include = packages
+        exclude: list[str] = []
+    else:
+        finder = packages.get("find", {})
+        include = list(finder.get("include", ["*"]))
+        exclude = list(finder.get("exclude", []))
     tracked_set = set(tracked)
     packaged: set[str] = set()
     for path in tracked:

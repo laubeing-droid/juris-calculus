@@ -116,7 +116,7 @@ def test_mutation_oracles_do_not_reuse_the_algorithm_under_test() -> None:
     assert "receipt=" in provider_source
 
 
-def test_p1_07_runtime_closure_stays_red_and_owned_by_w4_05() -> None:
+def test_p1_07_runtime_closure_is_active_after_w4_05() -> None:
     ledger = _load(LEDGER)
     required = _load(ROOT / "tests/required-v4-tests.json")
     task_plan = _load(ROOT / "remediation/v4/tasks.json")
@@ -127,9 +127,11 @@ def test_p1_07_runtime_closure_stays_red_and_owned_by_w4_05() -> None:
         "audit_id": "P1-07",
         "owner_task": "W4-05",
         "selector": p1_07["selector"],
-        "state": "RED_AT_TASK",
+        "state": "ACTIVE_REQUIRED",
     }
-    assert (p1_07["owner_task"], p1_07["state"]) == ("W4-05", "RED_AT_TASK")
+    assert (p1_07["owner_task"], p1_07["state"]) == (
+        "W4-05", "ACTIVE_REQUIRED"
+    )
     assert task["audit_ids"] == ["P0-06", "P1-05", "P1-06", "P1-07"]
 
 

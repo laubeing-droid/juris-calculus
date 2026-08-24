@@ -20,10 +20,9 @@ Acceptance paths must not contain silent placeholders. An intentionally incomple
 Minimum local checks:
 
 ```powershell
-python -m pytest tests\unit\test_spec_shadow_harness.py -q
-python -m pytest tests\unit\test_mcp_stdio_protocol.py -q
-python -m pytest tests\ -q
-python mcp_server.py --test
+python -m pytest tests\formal_e2e\test_three_entrypoint_error_matrix.py -q
+python -m pytest tests\formal_e2e\test_positive_vertical_slice.py -q
+python -m pytest tests\contract\test_rule_packs.py -q
 ```
 
 The real stdio subprocess test is the transport authority. The in-process smoke is not a readiness or product-UI claim. A blocked check must remain blocked in the report.

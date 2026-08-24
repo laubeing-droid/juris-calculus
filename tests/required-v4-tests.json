@@ -990,7 +990,7 @@
       "selector": "tests/unit/test_contracts_v4.py::TestFailClosed::test_engine_version_mismatch_rejected",
       "rewrite_task": "W1-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The test currently requires engine 3.0.2 to be accepted by V4.",
       "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_engine_3_payload_fails"
     },
@@ -999,7 +999,7 @@
       "selector": "tests/unit/test_contracts_v4.py::TestCompatAdapter",
       "rewrite_task": "W1-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "Compat projection tests protect the prohibited V3 adapter.",
       "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_v3_payload_has_no_upgrade_path"
     },
@@ -1008,7 +1008,7 @@
       "selector": "tests/unit/test_case_contracts.py::test_committed_schema_is_generated_from_contracts",
       "rewrite_task": "W1-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The test freezes the V3 schema and advisory definitions as current output.",
       "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_only_v4_schema_is_generated"
     },
@@ -1017,7 +1017,7 @@
       "selector": "tests/unit/test_application_service.py",
       "rewrite_task": "W4-07",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "Formal success directly constructs trusted facts, pack, source, and checker state.",
       "replacement_selector": "tests/formal_e2e/test_public_boundary_inputs.py::test_public_request_derives_all_trust"
     },
@@ -1026,7 +1026,7 @@
       "selector": "tests/unit/test_source_service_v2.py::TestSourceSnapshot::test_positive_official_snapshot_passes_source_gate",
       "rewrite_task": "W2-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The positive source test constructs the object that reports PASS.",
       "replacement_selector": "tests/integration/test_trust_chain.py::test_source_trust_is_derived_from_resolved_bytes"
     },
@@ -1035,7 +1035,7 @@
       "selector": "tests/unit/test_source_service_v2.py::TestApplicabilityGate::test_rule_effective_at_decision_time_passes",
       "rewrite_task": "W2-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The applicability test passes a caller-built source snapshot without the V4 resolver chain.",
       "replacement_selector": "tests/integration/test_trust_chain.py::test_applicability_consumes_verified_source_version_path"
     },
@@ -1044,7 +1044,7 @@
       "selector": "tests/unit/test_source_service_v2.py::TestSourcePath::test_positive_path_with_terminal_binding_passes",
       "rewrite_task": "W2-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The path test constructs and blesses its own terminal binding in memory.",
       "replacement_selector": "tests/integration/test_trust_chain.py::test_source_path_is_bound_to_resolved_authority_root"
     },
@@ -1053,7 +1053,7 @@
       "selector": "tests/unit/test_fact_admission_v1.py::TestFactGate::test_positive_attestation_admits_fact",
       "rewrite_task": "W2-06",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The fact test passes caller-created PASS gate outcomes into admission.",
       "replacement_selector": "tests/integration/test_trust_chain.py::test_fact_admission_consumes_verified_source_receipt"
     },
@@ -1089,7 +1089,7 @@
       "selector": "tests/unit/test_backend_router_v1.py::TestRouting",
       "rewrite_task": "W3-03",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "Routing tests construct caller features and never exercise a provider.",
       "replacement_selector": "tests/security/test_backend_attacks.py::test_caller_cannot_supply_backend_features"
     },
@@ -1098,7 +1098,7 @@
       "selector": "tests/unit/test_backend_router_v1.py::TestSolverReceipt",
       "rewrite_task": "W3-03",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "Solver receipt tests only construct DTOs and do not prove provider execution.",
       "replacement_selector": "tests/contract/test_backend_router.py::test_router_binds_compiler_issued_ivl_and_verified_fact_receipt"
     },
@@ -1107,7 +1107,7 @@
       "selector": "tests/unit/test_certificate_v1.py::TestFormalCertificate::test_full_pass_issues_certificate",
       "rewrite_task": "W4-07",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "Certificate success constructs PASS gates and receipts directly.",
       "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_certificate_uses_verified_run_receipts"
     },
@@ -1116,7 +1116,7 @@
       "selector": "tests/unit/test_audit_bundle.py::test_complete_bundle_has_fixed_files_hashes_and_semantic_digests",
       "rewrite_task": "W4-07",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The test proves the current V3 bundle writer, not a V4 verified vertical slice.",
       "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_v4_bundle_verifies_and_replays"
     },
@@ -1125,7 +1125,7 @@
       "selector": "tests/unit/test_mcp_manifest_dispatch.py",
       "rewrite_task": "W5-01",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The focused tests protect the addon WorkBuddy adapter instead of the V4 formal MCP boundary.",
       "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_tools_list_is_exact_v4_with_output_schemas"
     },
@@ -1134,7 +1134,7 @@
       "selector": "tests/unit/test_mcp_stdio_protocol.py",
       "rewrite_task": "W5-01",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The helper discards isError and the module exercises the old addon transport.",
       "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_blocked_and_engine_error_are_protocol_errors"
     },
@@ -1143,7 +1143,7 @@
       "selector": "tests/unit/test_three_entrypoint_parity.py",
       "rewrite_task": "W5-01",
       "retirement_task": "W5-CUTOVER",
-      "state": "REWRITE_AT_TASK",
+      "state": "RETIRED_AT_TASK",
       "reason": "The parity test follows V3 development entrypoints instead of an installed V4 formal chain.",
       "replacement_selector": "tests/formal_e2e/w5_entrypoint_red.py::test_cli_client_and_mcp_share_one_application_v4_sink"
     },

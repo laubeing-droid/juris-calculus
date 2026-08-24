@@ -11,17 +11,25 @@ LLM 提议 -> 验证门禁决定 -> 形式内核推理
 ## 开始使用
 
 ```powershell
-python -m pip install .
-jc doctor --json
-jc packs list --json
+git archive --format=tar HEAD -o source.tar
+New-Item -ItemType Directory source
+tar -xf source.tar -C source
+$epoch = git show -s --format=%ct HEAD
+python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
+python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
+$env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
+jc capabilities --json
 jc evaluate --input case-request.json --json
 ```
+
+运行宿主必须提供 `JC_RUNTIME_MANIFEST`。仅有 manifest 可以查询能力；执行
+`evaluate` 还必须注入 V4 application、信任材料、已签名规则包和 artifact store。
 
 `evaluate` 会写入输入快照、相关语义事件、正式结果、图、manifest、校验和与完成标记。之后可执行：
 
 ```powershell
-jc replay <run-id> --json
-jc render <run-id> --format markdown --audience agent --json
+jc replay --input artifact-handle.json --json
+jc render --input artifact-handle.json --format markdown --audience agent --json
 ```
 
 `replay` 校验完整性并重放；`render` 只读取已经完成的审计包，不会重新推理。
@@ -31,7 +39,7 @@ jc render <run-id> --format markdown --audience agent --json
 - 只有 `verified_fact` 能进入正式推理。
 - `UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 只能生成缺失事实、分支或假设结果，不能生成正式 certificate。
 - 未具明确来源的规则只能作为候选语料，不会静默进入推理。
-- 当前 `cn-official` 因缺官方一手来源快照而 BLOCKED；legacy 规则包仅供检索、治理和训练导出。
+- 当前 `cn-official` 尚未晋级；legacy 规则包已从当前运行时删除，不能检索、训练或回退使用。
 - Horn、attack、exception、permission、priority、checker、`DecisionStatus` 与 fail-closed 语义不可在本仓库随意弱化。
 
 ## 接口

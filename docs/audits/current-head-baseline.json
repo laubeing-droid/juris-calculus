@@ -56,7 +56,7 @@
     "legend": ["IMPLEMENTED", "PARTIAL", "BLOCKED", "ABSENT"],
     "items": [
       {"id": "single_version_source", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "compiler_core/version.py; MCP smoke reports version 3.0.2"},
-      {"id": "external_request_cannot_claim_verified_fact", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "tests/unit/test_v3_entrypoint_boundary.py 3 passed at HEAD"},
+      {"id": "external_request_cannot_claim_verified_fact", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "tests/formal_e2e/test_public_boundary_inputs.py and tests/packaging/test_current_authority_docs.py"},
       {"id": "development_pack_not_reasoning_ready", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "rule_packs.py registry_issued gating; full suite PASS at HEAD"},
       {"id": "jcclient_public_api_only", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "compiler_core/client.py JCClient; low-level evaluate not exported from package root"},
       {"id": "llm_extraction_proposal_only", "plan_ref": "1.1", "status": "IMPLEMENTED", "evidence": "pipeline/llm_client.py provider separation; boundary tests PASS"},

@@ -3,7 +3,7 @@
   "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
   "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
   "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 455,
+  "count": 417,
   "paths": [
     {
       "path": ".agents/skills/jc-formal/SKILL.md",
@@ -2545,13 +2545,6 @@
       "closure_task": "W5-01"
     },
     {
-      "path": "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03"
-    },
-    {
       "path": "tests/mcp_protocol/w5_transport_red.py",
       "disposition": "TEST_ORACLE",
       "terminal_state": "TEST_ORACLE",
@@ -2942,50 +2935,10 @@
       "namespace": "candidate_asset"
     },
     {
-      "path": "tests/unit/test_application_service.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_argumentation_v2.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_audit_bundle.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_audit_events.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_authority_observed_graph.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_backend_router_v1.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },
@@ -2996,51 +2949,6 @@
       "audit_role": "tests",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_case_admission.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_case_contracts.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_certificate_v1.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_cli_contract.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
-    },
-    {
-      "path": "tests/unit/test_cli_evaluate_subprocess.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/unit/test_cli_subprocess.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-01"
     },
     {
       "path": "tests/unit/test_completion_status.py",
@@ -3060,14 +2968,6 @@
     },
     {
       "path": "tests/unit/test_constraint_validator.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_contracts_v4.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
@@ -3115,23 +3015,7 @@
       "namespace": "candidate_asset"
     },
     {
-      "path": "tests/unit/test_fact_admission_v1.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_fast_path_interceptor.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_graph_document.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
@@ -3179,30 +3063,6 @@
       "namespace": "candidate_asset"
     },
     {
-      "path": "tests/unit/test_mcp_manifest_dispatch.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_mcp_stdio_protocol.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_module_authority_registry.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_new_modules.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
@@ -3212,22 +3072,6 @@
     },
     {
       "path": "tests/unit/test_nonmonotone_regression.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_p1_ir_smt.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_performance_gate.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
@@ -3250,54 +3094,6 @@
       "closure_task": "W5-02C"
     },
     {
-      "path": "tests/unit/test_reasoning_boundary_conflict_certificate.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_reasoning_boundary_provenance.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_reasoning_boundary_renderer_firewall.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_reasoning_boundary_result_status.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_reasoning_boundary_review_packet.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_reasoning_boundary_taint_propagation.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_release_engineering.py",
       "disposition": "DELETE_CURRENT",
       "terminal_state": "HISTORY_BOUND",
@@ -3311,22 +3107,6 @@
       "history_locator_only": true,
       "target_module": null,
       "target_artifact": null
-    },
-    {
-      "path": "tests/unit/test_remediation_b00cg_verify.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_remediation_consumer_map.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
     },
     {
       "path": "tests/unit/test_remediation_file_map_full.py",
@@ -3368,42 +3148,12 @@
       "namespace": "candidate_asset"
     },
     {
-      "path": "tests/unit/test_rendering.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_replay.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_rule_admission.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_rule_pack_manifest.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/unit/test_rule_pack_manifest_builder.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
     },
     {
       "path": "tests/unit/test_rule_platform_cn.py",
@@ -3418,14 +3168,6 @@
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_source_service_v2.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },
@@ -3446,14 +3188,6 @@
     },
     {
       "path": "tests/unit/test_supply_chain_gate.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_three_entrypoint_parity.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "tests",
@@ -3499,42 +3233,10 @@
       "namespace": "candidate_asset"
     },
     {
-      "path": "tests/unit/test_v3_entrypoint_boundary.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_v3_semantic_baseline.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_w1b_contracts.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
       "path": "tests/unit/test_w5_03_nonproduction_boundaries.py",
       "disposition": "RETAIN_NONPACKAGED",
       "terminal_state": "CANDIDATE_ASSET",
       "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_w9_admission.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
       "closure_task": "W5-03",
       "namespace": "candidate_asset"
     },

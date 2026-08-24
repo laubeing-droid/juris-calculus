@@ -84,7 +84,6 @@ def test_public_surfaces_omit_offline_commands_and_advisory_tools() -> None:
         "compiler_core/client.py",
         "compiler_core/contracts.py",
         "compiler_core/mcp.py",
-        "addons/workbuddy_mcp.py",
     )
     forbidden = (
         "compiler_core.analysis",

@@ -4,19 +4,19 @@ The CLI is the default JC interface. With `--json`, stdout carries the machine r
 
 | Command | Function |
 |---|---|
-| `jc doctor` | Check packaged resources and selected audit state. |
-| `jc packs list` / `verify` | Inspect manifests; verify hashes, inventory, and admission. |
-| `jc rules lookup` / `audit` | Search a corpus or emit governance blockers without promotion. |
+| `jc capabilities` | Report the configured runtime identity, tools, limits, pack, trust, and storage capabilities. |
 | `jc evaluate` | Evaluate an explicit `CaseRequest` and write an audit bundle. |
-| `jc replay` | Verify and semantically replay a completed bundle. |
+| `jc verify` | Verify a completed run selected by an artifact handle. |
+| `jc replay` | Verify and semantically replay a completed run selected by an artifact handle. |
+| `jc read-artifact` | Read a bounded artifact range through a signed handle. |
 | `jc render` | Render a completed bundle without evaluation. |
-| `jc training export` | Export governed rule-corpus splits. |
-| `jc analyze strategy` / `similar-cases` | Create advisory artifacts from a completed bundle. |
 
 ```powershell
+jc capabilities --json
 jc evaluate --input case-request.json --json
-jc replay <run-id> --json
-jc render <run-id> --format markdown --audience agent --json
+jc verify --input artifact-handle.json --json
+jc replay --input artifact-handle.json --json
+jc render --input artifact-handle.json --format markdown --audience agent --json
 ```
 
 | Exit code | Meaning |
@@ -28,4 +28,6 @@ jc render <run-id> --format markdown --audience agent --json
 | 5 | Replay or integrity mismatch. |
 | 6 | Optional pack/component missing. |
 
-Non-bundled rule roots require both `--development` and `--config-root`; environment variables cannot silently replace packaged rules. See `jc <command> --help` for exact arguments.
+`JC_RUNTIME_MANIFEST` configures published capabilities only. Evaluation, verification,
+replay, artifact reads, and rendering fail closed unless the host injects their V4
+runtime authorities. See `jc <command> --help` for exact arguments.

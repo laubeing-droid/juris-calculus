@@ -13,18 +13,27 @@ The repository is a local release candidate, not a production release. `cn-offic
 Supported Python: 3.11 and 3.12.
 
 ```powershell
-python -m pip install .
-jc doctor --json
-jc packs list --json
-jc packs verify --all --json
+git archive --format=tar HEAD -o source.tar
+New-Item -ItemType Directory source
+tar -xf source.tar -C source
+$epoch = git show -s --format=%ct HEAD
+python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
+python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
+$env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
+jc capabilities --json
 ```
+
+The runtime host supplies `JC_RUNTIME_MANIFEST`. A manifest publishes runtime
+identity and capabilities; evaluation additionally requires an injected V4
+application, trust material, signed pack, and artifact store.
 
 ## Formal workflow
 
 ```powershell
 jc evaluate --input case-request.json --json
-jc verify <run-id> --json
-jc replay <run-id> --json
+jc verify --input artifact-handle.json --json
+jc replay --input artifact-handle.json --json
+jc render --input artifact-handle.json --format markdown --audience agent --json
 ```
 
 CLI, Python, and the four-tool stdio MCP adapter all use the same V4 parser and application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
@@ -49,7 +58,7 @@ python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/contract te
 python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging
 python -B tools/wheel_gate.py --help
 python -B tools/build_provenance.py --help
-python -B mcp_server.py --test
+python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/formal_e2e/test_three_entrypoint_error_matrix.py
 git diff --check
 ```
 
