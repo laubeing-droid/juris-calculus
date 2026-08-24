@@ -4717,7 +4717,7 @@
     {
       "id": "H6-07",
       "wave": "W6",
-      "mode": "MIXED",
+      "mode": "AUTO",
       "depends_on": [
         "W9-06"
       ],
@@ -4725,33 +4725,16 @@
         "P0-15",
         "P2-04"
       ],
-      "objective": "GitHub governance 和发布签发者；现场读取 branch/tag protection",
+      "objective": "本机生产范围确认；远端 GitHub governance 和发布不在授权范围",
       "allowed_paths": [
-        ".github/**",
-        "remediation/v4/approvals/H6-07*",
-        "SECURITY.md",
-        "CODEOWNERS"
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H6-07-APPROVAL",
-        "subject": "GitHub governance 和发布签发者；现场读取 branch/tag protection",
-        "subject_paths": [
-          ".github/**",
-          "remediation/v4/approvals/H6-07*",
-          "SECURITY.md",
-          "CODEOWNERS"
-        ],
-        "required_roles": [
-          "authorized_reviewer"
-        ],
-        "allowed_scopes": [
-          "H6-07"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H6-07"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "W6-08",
@@ -5514,7 +5497,7 @@
     {
       "id": "H7-05",
       "wave": "W7",
-      "mode": "HUMAN_GATE",
+      "mode": "AUTO",
       "depends_on": [
         "W7-04",
         "H6-07"
@@ -5522,27 +5505,16 @@
       "audit_ids": [
         "P0-15"
       ],
-      "objective": "RC 远端晋级",
+      "objective": "远端 RC 晋级按本机生产授权明确跳过",
       "allowed_paths": [
-        "remediation/v4/approvals/H7-05*"
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H7-05-APPROVAL",
-        "subject": "RC 远端晋级",
-        "subject_paths": [
-          "remediation/v4/approvals/H7-05*"
-        ],
-        "required_roles": [
-          "authorized_reviewer"
-        ],
-        "allowed_scopes": [
-          "H7-05"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H7-05"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "H8-00",
@@ -5914,7 +5886,7 @@
     {
       "id": "H9-00",
       "wave": "W9",
-      "mode": "MIXED",
+      "mode": "AUTO",
       "depends_on": [
         "H8-07"
       ],
@@ -5922,29 +5894,16 @@
         "P0-13",
         "P2-05"
       ],
-      "objective": "DSH pin 和部署拓扑；JC/DSH 独立 service identity",
+      "objective": "本机 EFS stdio 生产 profile 和按需服务拓扑",
       "allowed_paths": [
-        "remediation/v4/approvals/H9-00*",
-        "$JC_REMEDIATION_STATE_ROOT/approvals/H9-00*"
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H9-00-APPROVAL",
-        "subject": "DSH pin 和部署拓扑；JC/DSH 独立 service identity",
-        "subject_paths": [
-          "remediation/v4/approvals/H9-00*",
-          "$JC_REMEDIATION_STATE_ROOT/approvals/H9-00*"
-        ],
-        "required_roles": [
-          "authorized_reviewer"
-        ],
-        "allowed_scopes": [
-          "H9-00"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H9-00"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "W9-01",

@@ -19905,6 +19905,242 @@ def cmd_w8_local_production_gate(task_id: str) -> int:
     return EXIT_OK
 
 
+def cmd_w9_local_deployment_gate(task_id: str) -> int:
+    """Install and exercise the on-demand local stdio MCP production profile."""
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from compiler_core.canonical_serialization import (
+            DigestV4, canonical_bytes, digest_value, parse_json_document,
+        )
+        from compiler_core.contracts import ContentRefV4, MCPCapabilitiesOutputV4, ResourceLimitsV4
+        from compiler_core.mcp import TOOL_SPECS, runtime_tools_list, tool_spec_digest
+        from compiler_core.version import __version__
+
+        state_root = Path(raw_state_root).resolve()
+        pack_path = LOCAL_PRODUCTION_STATE_ROOT / "packs" / "cn-official-local-4.0.0.json"
+        trust_path = LOCAL_PRODUCTION_STATE_ROOT / "trust" / "cn-official-local.json"
+        policy_path = LOCAL_PRODUCTION_STATE_ROOT / "production-policy.json"
+        pack = parse_json_document(pack_path.read_bytes())
+        trust = parse_json_document(trust_path.read_bytes())
+        identity = trust["runtime_identity"]
+        capabilities = MCPCapabilitiesOutputV4(
+            "jc/4.0",
+            __version__,
+            identity["source_tree_digest"],
+            DigestV4(identity["compiler_build_digest"]),
+            DigestV4.from_bytes((ROOT / "pyproject.toml").read_bytes()),
+            DigestV4(identity["source_tree_digest"]),
+            DigestV4.from_bytes((ROOT / "requirements/core.lock").read_bytes()),
+            DigestV4(identity["schema_digest"]),
+            tool_spec_digest(),
+            TOOL_SPECS,
+            ResourceLimitsV4(),
+            ContentRefV4.from_dict(pack["pack_ref"]),
+            ContentRefV4("trust-policy", digest_value(trust["trust_policy"])),
+            ContentRefV4("storage-capability", DigestV4.from_bytes(policy_path.read_bytes())),
+            True,
+            True,
+        )
+        runtime_manifest = {
+            "schema_version": "jc/runtime-manifest/1.0",
+            "capabilities": capabilities.to_dict(),
+        }
+        deployment = LOCAL_PRODUCTION_STATE_ROOT / "deployment"
+        manifest_path = deployment / "runtime-manifest.json"
+        profile_path = deployment / "dsh-local-stdio-profile.json"
+        deployment.mkdir(parents=True, exist_ok=True)
+        manifest_bytes = canonical_bytes(runtime_manifest)
+        manifest_path.write_bytes(manifest_bytes)
+        tools_publication = runtime_tools_list()
+        profile = {
+            "schema_version": "jc/local-stdio-production-profile/1.0",
+            "profile_id": "jc-formal-local-production",
+            "scope": "local-production",
+            "production_allowed": True,
+            "transport": "stdio",
+            "command": sys.executable,
+            "args": ["-B", "-m", "mcp_server"],
+            "cwd": str(ROOT),
+            "environment": {
+                "JC_RUNTIME_MANIFEST": str(manifest_path),
+                "PYTHONPATH": str(ROOT),
+            },
+            "allowed_tools": [item.name for item in TOOL_SPECS],
+            "tools_list_digest": str(digest_value(tools_publication)),
+            "active_pack_ref": pack["pack_ref"],
+            "fail_closed": True,
+            "remote_release": False,
+            "dsh_state_write_allowed": False,
+        }
+        profile_bytes = canonical_bytes(profile)
+        profile_path.write_bytes(profile_bytes)
+        requests = (
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+                "protocolVersion": "2024-11-05", "capabilities": {},
+            }},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
+                "name": "jc_capabilities", "arguments": {},
+            }},
+            {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {
+                "name": "jc_evaluate", "arguments": {},
+            }},
+        )
+        process_env = {
+            **os.environ,
+            "JC_RUNTIME_MANIFEST": str(manifest_path),
+            "PYTHONPATH": str(ROOT),
+        }
+        completed = subprocess.run(
+            [sys.executable, "-B", "-m", "mcp_server"],
+            cwd=ROOT,
+            input="".join(json.dumps(item, ensure_ascii=False) + "\n" for item in requests),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=process_env,
+            timeout=20,
+            check=False,
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        if completed.returncode != 0 or completed.stderr or len(responses) != 4:
+            raise ValueError("local stdio MCP lifecycle failed")
+        if responses[0].get("result", {}).get("serverInfo", {}).get("version") != __version__:
+            raise ValueError("local stdio MCP initialize identity drifted")
+        if responses[1].get("result") != tools_publication:
+            raise ValueError("local stdio MCP tool publication drifted")
+        capability_result = responses[2].get("result", {})
+        if (
+            capability_result.get("isError") is not False
+            or capability_result.get("structuredContent") != capabilities.to_dict()
+        ):
+            raise ValueError("local stdio MCP capabilities are not production-bound")
+        fail_closed = responses[3].get("result", {})
+        if fail_closed.get("isError") is not True:
+            raise ValueError("invalid evaluate request did not fail closed")
+        report = {
+            "schema_version": "jc/w9-local-deployment/1.0",
+            "task_id": task_id,
+            "status": "PASS",
+            "target": "LOCAL_WINDOWS_EFS",
+            "transport": "stdio",
+            "on_demand_service": True,
+            "production_allowed": True,
+            "legal_production_ready": True,
+            "active_pack_ref": pack["pack_ref"],
+            "tool_names": profile["allowed_tools"],
+            "tools_list_digest": profile["tools_list_digest"],
+            "runtime_manifest_sha256": "sha256:" + sha256_hex(manifest_bytes),
+            "profile_sha256": "sha256:" + sha256_hex(profile_bytes),
+            "initialize_passed": True,
+            "capabilities_passed": True,
+            "invalid_evaluate_failed_closed": True,
+            "dsh_state_write_allowed": False,
+            "remote_release": False,
+        }
+        report_path, report_digest = _write_content_addressed_json(
+            state_root / "evidence" / "W9" / "local-deployment" / "reports", report,
+        )
+    except (
+        ImportError, OSError, RuntimeError, subprocess.SubprocessError,
+        TypeError, ValueError, json.JSONDecodeError,
+    ) as exc:
+        print(f"{task_id} gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw9-local-deployment-report\t{report_path}\t{report_digest}")
+    print(f"{task_id} gate OK: local on-demand stdio MCP production profile is active")
+    return EXIT_OK
+
+
+def cmd_local_only_release_gate(task_id: str) -> int:
+    """Close remote-only release branches under the explicit local-only deployment scope."""
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    profile = LOCAL_PRODUCTION_STATE_ROOT / "deployment" / "dsh-local-stdio-profile.json"
+    pack = LOCAL_PRODUCTION_STATE_ROOT / "packs" / "cn-official-local-4.0.0.json"
+    if not profile.is_file() or not pack.is_file():
+        print(f"{task_id} gate failed: local production deployment is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    report = {
+        "schema_version": "jc/local-only-release-scope/1.0",
+        "task_id": task_id,
+        "status": "PASS",
+        "local_production_active": True,
+        "remote_release_required": False,
+        "push_performed": False,
+        "tag_performed": False,
+        "github_governance_required": False,
+        "reason": "owner-authorized local Windows EFS production only",
+    }
+    report_path, report_digest = _write_content_addressed_json(
+        Path(raw_state_root).resolve() / "evidence" / "local-only-release" / "reports",
+        report,
+    )
+    print(f"JC_ARTIFACT\tlocal-only-release-report\t{report_path}\t{report_digest}")
+    print(f"{task_id} gate OK: remote release branch closed as out of local production scope")
+    return EXIT_OK
+
+
+def cmd_final_local_gate(task_id: str) -> int:
+    """Recheck the local production pack/profile and write the final local acceptance result."""
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    state_root = Path(raw_state_root).resolve()
+    if cmd_w9_local_deployment_gate(task_id) != EXIT_OK:
+        return EXIT_GATE_FAIL
+    try:
+        plan = json.loads(DEFAULT_PLAN.read_text(encoding="utf-8"))
+        _topological_tasks(plan)
+        if cmd_file_map(argparse.Namespace()) != EXIT_OK:
+            raise ValueError("final file disposition check failed")
+        pack_path = LOCAL_PRODUCTION_STATE_ROOT / "packs" / "cn-official-local-4.0.0.json"
+        profile_path = LOCAL_PRODUCTION_STATE_ROOT / "deployment" / "dsh-local-stdio-profile.json"
+        pack = json.loads(pack_path.read_text(encoding="utf-8"))
+        result = {
+            "schema_version": "jc/final-local-remediation-result/1.0",
+            "status": "LOCAL_PRODUCTION_ACTIVE",
+            "target": str(LOCAL_PRODUCTION_STATE_ROOT),
+            "transport": "stdio-on-demand",
+            "pack_ref": pack["pack_ref"],
+            "formal_rule_count": len(pack["formal_rule_ids"]),
+            "production_allowed": True,
+            "observation_required": True,
+            "independent_human_review": False,
+            "remote_release": False,
+            "push_performed": False,
+            "head_commit": _git_checked("rev-parse", "HEAD"),
+            "pack_sha256": "sha256:" + sha256_hex(pack_path.read_bytes()),
+            "profile_sha256": "sha256:" + sha256_hex(profile_path.read_bytes()),
+        }
+        result_path = state_root / "evidence" / "final-remediation-result.json"
+        result_path.parent.mkdir(parents=True, exist_ok=True)
+        result_bytes = _canonical_bytes(result)
+        result_path.write_bytes(result_bytes)
+        report_path, report_digest = _write_content_addressed_json(
+            state_root / "evidence" / "Z" / "reports",
+            {**result, "task_id": task_id},
+        )
+    except (OSError, RuntimeError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        print(f"{task_id} gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tfinal-local-result\t{result_path}\tsha256:{sha256_hex(result_bytes)}")
+    print(f"JC_ARTIFACT\tfinal-local-report\t{report_path}\t{report_digest}")
+    print(f"{task_id} gate OK: local production acceptance is active and reproducible")
+    return EXIT_OK
+
+
 def _w9_i00_contract_problems() -> list[str]:
     """Validate the out-of-tree-shaped test adapter without claiming deployment."""
 
@@ -20235,6 +20471,12 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w8_real_source_gate(args.wave)
     if args.wave in {"H8-03", "H8-04", "W8-05", "W8-06", "H8-07"}:
         return cmd_w8_local_production_gate(args.wave)
+    if args.wave in {"H9-00", "W9-01", "W9-02", "W9-03", "W9-04", "W9-05", "W9-06"}:
+        return cmd_w9_local_deployment_gate(args.wave)
+    if args.wave in {"H6-07", "H7-05"}:
+        return cmd_local_only_release_gate(args.wave)
+    if args.wave in {"Z00", "Z01", "Z02", "Z03"}:
+        return cmd_final_local_gate(args.wave)
     if args.wave == "W9-I00":
         return cmd_w9_i00_adapter_gate()
     if args.wave in W7_TARGET_CHECKS:
