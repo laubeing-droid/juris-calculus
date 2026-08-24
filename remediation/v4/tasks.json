@@ -3753,7 +3753,11 @@
           "--basetemp",
           "{state_root}/tmp/W5-03",
           "tests/unit/test_w5_03_nonproduction_boundaries.py",
+          "tests/unit/test_advisory_governance.py",
           "tests/unit/test_phase6_cli.py",
+          "tests/unit/test_mcp_manifest_dispatch.py",
+          "tests/unit/test_mcp_stdio_protocol.py",
+          "tests/mcp_protocol/test_mcp_legacy_cn_corpus_absent.py",
           "--junitxml",
           "{state_root}/evidence/pytest/W5-03.xml"
         ]
