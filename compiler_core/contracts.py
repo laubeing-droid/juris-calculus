@@ -8,6 +8,7 @@ arrays are JSON lists and are copied to tuples at the admission boundary.
 
 from __future__ import annotations
 
+import base64
 import calendar
 from dataclasses import MISSING, dataclass, field, fields
 from datetime import datetime, timezone
@@ -133,6 +134,9 @@ _LIMIT_DEFAULTS = {
     "max_total_reference_values": 1_536,
     "max_fact_attestation_refs": 512,
     "max_proposal_refs": 512,
+    "max_case_bundle_bytes": 4_194_304,
+    "max_case_artifact_bytes": 1_048_576,
+    "max_case_artifacts": 256,
     "admission_deadline_ms": 250,
     "artifact_page_bytes": 65_536,
     "solver_deadline_ms": 2_500,
@@ -154,6 +158,9 @@ _LIMIT_HARD_MAXIMA = {
     "max_total_reference_values": 2_048,
     "max_fact_attestation_refs": 512,
     "max_proposal_refs": 512,
+    "max_case_bundle_bytes": 8_388_608,
+    "max_case_artifact_bytes": 1_048_576,
+    "max_case_artifacts": 512,
     "admission_deadline_ms": 1_000,
     "artifact_page_bytes": 262_144,
     "solver_deadline_ms": 10_000,
@@ -175,6 +182,9 @@ _LIMIT_ERROR_CODES = {
     "max_total_reference_values": "REFERENCE_LIMIT",
     "max_fact_attestation_refs": "FACT_REFERENCE_LIMIT",
     "max_proposal_refs": "PROPOSAL_REFERENCE_LIMIT",
+    "max_case_bundle_bytes": "CASE_BUNDLE_TOO_LARGE",
+    "max_case_artifact_bytes": "CASE_ARTIFACT_TOO_LARGE",
+    "max_case_artifacts": "CASE_ARTIFACT_COUNT",
     "admission_deadline_ms": "ADMISSION_DEADLINE",
     "artifact_page_bytes": "ARTIFACT_PAGE_LIMIT",
     "solver_deadline_ms": "SOLVER_DEADLINE",
@@ -426,6 +436,7 @@ _SELF_DIGEST_FIELDS_V4 = MappingProxyType({
     "TrustPolicyV4": "policy_digest",
     "StorageCapabilityV4": "capability_digest",
     "SourceBundleV4": "bundle_digest",
+    "CaseInputBundleV4": "bundle_digest",
     "EvidenceManifestV4": "manifest_digest",
     "RuleV4": "rule_digest",
     "PackManifestV4": "manifest_digest",
@@ -840,6 +851,9 @@ class ResourceLimitsV4(V4Contract):
     max_total_reference_values: int = 1_536
     max_fact_attestation_refs: int = 512
     max_proposal_refs: int = 512
+    max_case_bundle_bytes: int = 4_194_304
+    max_case_artifact_bytes: int = 1_048_576
+    max_case_artifacts: int = 256
     admission_deadline_ms: int = 250
     artifact_page_bytes: int = 65_536
     solver_deadline_ms: int = 2_500
@@ -973,6 +987,89 @@ class CaseRequestV4(V4Contract):
         if len(result.proposal_refs) > admitted_limits.max_proposal_refs:
             _fail("PROPOSAL_REFERENCE_LIMIT", "proposal_refs exceeds configured limit")
         _check_deadline(absolute_deadline)
+        return result
+
+
+CASE_INPUT_BUNDLE_SCHEMA_V4 = "jc/case-input-bundle/1.0"
+
+
+@dataclass(frozen=True, slots=True)
+class CaseArtifactV4(V4Contract):
+    artifact_id: str
+    content_ref: ContentRefV4
+    artifact_kind: str
+    media_type: str
+    scope: str
+    content_base64: str
+
+    def _validate(self) -> None:
+        for name in ("artifact_id", "artifact_kind", "media_type", "scope"):
+            _nonempty(getattr(self, name), f"CaseArtifactV4.{name}")
+        if len(self.content_base64) > 1_398_104:
+            _fail("CASE_ARTIFACT_TOO_LARGE", "encoded artifact exceeds the hard bound")
+        try:
+            content = base64.b64decode(self.content_base64, validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise ContractV4Error("INVALID_BASE64", "artifact content is not strict base64") from exc
+        if len(content) > 1_048_576:
+            _fail("CASE_ARTIFACT_TOO_LARGE", "decoded artifact exceeds the hard bound")
+        if DigestV4.from_bytes(content) != self.content_ref.digest:
+            _fail("ARTIFACT_DIGEST_MISMATCH", "artifact bytes do not match content_ref")
+
+    def content_bytes(self) -> bytes:
+        return base64.b64decode(self.content_base64, validate=True)
+
+
+@dataclass(frozen=True, slots=True)
+class CaseInputBundleV4(V4Contract):
+    schema_version: str
+    bundle_id: str
+    request: CaseRequestV4
+    artifacts: tuple[CaseArtifactV4, ...]
+    bundle_digest: DigestV4
+
+    def _validate(self) -> None:
+        if self.schema_version != CASE_INPUT_BUNDLE_SCHEMA_V4:
+            _fail("CASE_BUNDLE_SCHEMA", f"schema_version must be {CASE_INPUT_BUNDLE_SCHEMA_V4}")
+        _nonempty(self.bundle_id, "CaseInputBundleV4.bundle_id")
+        if len(self.artifacts) > 512:
+            _fail("CASE_ARTIFACT_COUNT", "case bundle exceeds the hard artifact count")
+        identities = [(item.artifact_id, item.content_ref) for item in self.artifacts]
+        if len({item[0] for item in identities}) != len(identities):
+            _fail("ARTIFACT_ID_COLLISION", "case bundle contains duplicate artifact_id")
+        if len({item[1] for item in identities}) != len(identities):
+            _fail("ARTIFACT_REFERENCE_COLLISION", "case bundle contains duplicate content_ref")
+        if sum(len(item.content_bytes()) for item in self.artifacts) > 8_388_608:
+            _fail("CASE_BUNDLE_TOO_LARGE", "decoded case bundle exceeds the hard bound")
+        if any(item.content_ref == self.request.rule_pack_ref for item in self.artifacts):
+            _fail("PACK_OVERRIDE", "callers cannot submit the active pack artifact")
+
+    @classmethod
+    def from_json_bytes(
+        cls, raw: bytes, *, limits: ResourceLimitsV4 | None = None
+    ) -> CaseInputBundleV4:
+        if type(raw) is not bytes:
+            _fail("INPUT_TYPE", "CaseInputBundleV4.from_json_bytes requires bytes")
+        admitted_limits = ResourceLimitsV4() if limits is None else limits
+        validate_resource_limits_v4(admitted_limits)
+        if len(raw) > admitted_limits.max_case_bundle_bytes:
+            _fail("CASE_BUNDLE_TOO_LARGE", "encoded case bundle exceeds configured limit")
+        try:
+            document = parse_json_document(raw)
+        except (CanonicalizationError, UnicodeDecodeError) as exc:
+            code = getattr(exc, "code", "INVALID_UTF8")
+            detail = getattr(exc, "detail", "case bundle is not valid JSON")
+            raise ContractV4Error(code, detail) from exc
+        if type(document) is not dict:
+            _fail("TYPE_MISMATCH", "CaseInputBundleV4 document must be an object")
+        result = cls.from_dict(document)
+        if len(result.artifacts) > admitted_limits.max_case_artifacts:
+            _fail("CASE_ARTIFACT_COUNT", "case bundle exceeds configured artifact count")
+        if any(
+            len(item.content_bytes()) > admitted_limits.max_case_artifact_bytes
+            for item in result.artifacts
+        ):
+            _fail("CASE_ARTIFACT_TOO_LARGE", "case artifact exceeds configured limit")
         return result
 
 
@@ -2219,12 +2316,7 @@ class MCPCapabilitiesErrorV4(V4Contract):
 
 @dataclass(frozen=True, slots=True)
 class MCPEvaluateInputV4(V4Contract):
-    request: CaseRequestV4 | None
-    request_handle: ArtifactHandleV4 | None
-
-    def _validate(self) -> None:
-        if (self.request is None) == (self.request_handle is None):
-            _fail("MCP_REQUEST_SOURCE", "exactly one of request or request_handle is required")
+    case_bundle: CaseInputBundleV4
 
 
 @dataclass(frozen=True, slots=True)
@@ -2327,6 +2419,8 @@ _REGISTRY_TYPES = (
     StorageCapabilityV4,
     ObservabilityEnvelopeV4,
     CaseRequestV4,
+    CaseArtifactV4,
+    CaseInputBundleV4,
     LegalContextV4,
     RequestedOutputV4,
     ResourceLimitsV4,
@@ -2404,8 +2498,11 @@ OBJECT_TYPE_REGISTRY_V4 = V4_OBJECT_REGISTRY
 
 __all__ = [
     "SCHEMA_VERSION_V4",
+    "CASE_INPUT_BUNDLE_SCHEMA_V4",
     "ContractV4Error",
     "V4Contract",
+    "CaseArtifactV4",
+    "CaseInputBundleV4",
     "V4_TYPE_REGISTRY",
     "V4_OBJECT_REGISTRY",
     "OBJECT_TYPE_REGISTRY_V4",

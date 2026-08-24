@@ -6591,7 +6591,7 @@
       "id": "W10-01", "wave": "W10-01", "mode": "AUTO", "depends_on": ["W10-00"],
       "audit_ids": ["R-P0-03"],
       "objective": "冻结完整且有界的 CaseInputBundleV4 公共合同",
-      "allowed_paths": ["compiler_core/contracts.py", "compiler_core/__init__.py", "schemas/jc-v4.schema.json", "mcp_manifest.json", "tests/contract/test_case_input_bundle.py", "tests/security/test_case_bundle_attacks.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "allowed_paths": ["compiler_core/contracts.py", "compiler_core/__init__.py", "compiler_core/mcp.py", "schemas/jc-v4.schema.json", "mcp_manifest.json", "tests/contract/test_case_input_bundle.py", "tests/security/test_case_bundle_attacks.py", "remediation/v4/**", "tools/remediate_v4*.py"],
       "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/contract/test_case_input_bundle.py", "tests/security/test_case_bundle_attacks.py"], ["{python}", "-B", "tools/remediate_v4.py", "generated", "--check"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-01"]],
       "expected_exit_codes": [0, 0, 0], "completion_assertions": [{"id": "w10-01-contract", "kind": "all_commands_passed"}],
       "rollback": "revert W10-01 contract commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]

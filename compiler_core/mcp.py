@@ -62,7 +62,7 @@ TOOL_SPECS: tuple[ToolSpecV4, ...] = (
     ),
     ToolSpecV4(
         name="jc_evaluate",
-        description="Evaluate one strict V4 request or signed request capability.",
+        description="Evaluate one complete bounded V4 case input bundle.",
         input_type="MCPEvaluateInputV4",
         output_type="MCPEvaluateOutputV4",
         error_type="MCPEvaluateErrorV4",
@@ -195,8 +195,12 @@ def _field_schema(
             "format": "jc-canonical-time",
             "not": {"pattern": r"\.[0-9]*0Z$"},
         }
+    elif contract_type is _contracts.CaseInputBundleV4 and field_name == "schema_version":
+        schema = {"type": "string", "const": _contracts.CASE_INPUT_BUNDLE_SCHEMA_V4}
     elif field_name == "schema_version" and annotation is str:
         schema = {"type": "string", "const": _contracts.SCHEMA_VERSION_V4}
+    elif contract_type is _contracts.CaseArtifactV4 and field_name == "content_base64":
+        schema = {"type": "string", "maxLength": 1_398_104}
     elif field_name == "engine_version" and annotation is str:
         schema = {
             "type": "string",

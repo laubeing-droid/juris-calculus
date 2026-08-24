@@ -8,6 +8,8 @@ from compiler_core.audit_bundle import (
 )
 from compiler_core.client import JCClient
 from compiler_core.contracts import (
+    CaseArtifactV4,
+    CaseInputBundleV4,
     CaseRequestV4,
     ContentRefV4,
     EvaluationEnvelopeV4,
@@ -21,6 +23,8 @@ __all__ = (
     "ApplicationV4Error",
     "AuditBundleV4Error",
     "CaseRequestV4",
+    "CaseArtifactV4",
+    "CaseInputBundleV4",
     "ContentRefV4",
     "EvaluationEnvelopeV4",
     "JCClient",

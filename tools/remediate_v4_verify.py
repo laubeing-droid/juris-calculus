@@ -21,6 +21,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 HIGH_RISK = [
     {
         "claim": "render_run 被 CLI / JCClient 调用 (施工方案 §19.1)",
@@ -154,6 +156,27 @@ def _verify_w10_00(state_root: Path) -> int:
     return _task_report("W10-00", checks, state_root)
 
 
+def _verify_w10_01(state_root: Path) -> int:
+    from dataclasses import fields
+    from compiler_core.contracts import CaseArtifactV4, CaseInputBundleV4, MCPEvaluateInputV4
+    from compiler_core.mcp import TOOL_SPECS, manifest_bytes, schema_bytes, standalone_type_schema
+
+    bundle_fields = [item.name for item in fields(CaseInputBundleV4)]
+    artifact_fields = [item.name for item in fields(CaseArtifactV4)]
+    mcp_fields = [item.name for item in fields(MCPEvaluateInputV4)]
+    mcp_schema = standalone_type_schema("MCPEvaluateInputV4")
+    checks = [
+        {"name": "case-artifact-fields", "status": "PASS" if artifact_fields == ["artifact_id", "content_ref", "artifact_kind", "media_type", "scope", "content_base64"] else "FAIL"},
+        {"name": "case-bundle-fields", "status": "PASS" if bundle_fields == ["schema_version", "bundle_id", "request", "artifacts", "bundle_digest"] else "FAIL"},
+        {"name": "mcp-one-bundle-field", "status": "PASS" if mcp_fields == ["case_bundle"] else "FAIL"},
+        {"name": "mcp-four-tools", "status": "PASS" if len(TOOL_SPECS) == 4 else "FAIL"},
+        {"name": "schema-publication-exact", "status": "PASS" if (ROOT / "schemas/jc-v4.schema.json").read_bytes() == schema_bytes() else "FAIL"},
+        {"name": "manifest-publication-exact", "status": "PASS" if (ROOT / "mcp_manifest.json").read_bytes() == manifest_bytes() else "FAIL"},
+        {"name": "closed-mcp-input", "status": "PASS" if mcp_schema["$defs"]["MCPEvaluateInputV4"]["additionalProperties"] is False else "FAIL"},
+    ]
+    return _task_report("W10-01", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -217,6 +240,8 @@ def main() -> int:
             return 2
         if args.task == "W10-00":
             return _verify_w10_00(Path(args.state_root).resolve())
+        if args.task == "W10-01":
+            return _verify_w10_01(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 
