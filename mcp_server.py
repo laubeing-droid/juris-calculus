@@ -6,7 +6,11 @@ from compiler_core.mcp import MCPServerV4, run_stdio
 
 
 def main() -> int:
-    run_stdio(MCPServerV4(runtime_client()))
+    try:
+        client = runtime_client()
+    except Exception:
+        return 1
+    run_stdio(MCPServerV4(client))
     return 0
 
 

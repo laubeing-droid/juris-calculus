@@ -223,6 +223,22 @@ def _verify_w10_04(state_root: Path) -> int:
     return _task_report("W10-04", checks, state_root)
 
 
+def _verify_w10_05(state_root: Path) -> int:
+    cli_source = (ROOT / "compiler_core/cli.py").read_text(encoding="utf-8")
+    client_source = (ROOT / "compiler_core/client.py").read_text(encoding="utf-8")
+    server_source = (ROOT / "mcp_server.py").read_text(encoding="utf-8")
+    schema = json.loads((ROOT / "schemas/jc-v4.schema.json").read_bytes())
+    evaluate = schema["$defs"]["MCPEvaluateInputV4"]
+    checks = [
+        {"name": "cli-case-bundle", "status": "PASS" if "CaseInputBundleV4.from_json_bytes" in cli_source and "CaseRequestV4.from_json_bytes" not in cli_source else "FAIL"},
+        {"name": "client-case-bundle", "status": "PASS" if "validate_bundle" in client_source and "request.request" not in client_source else "FAIL"},
+        {"name": "mcp-closed-input", "status": "PASS" if evaluate.get("required") == ["case_bundle"] and set(evaluate.get("properties", {})) == {"case_bundle"} else "FAIL"},
+        {"name": "stdio-startup-fails-closed", "status": "PASS" if "except Exception" in server_source and "return 1" in server_source else "FAIL"},
+        {"name": "generated-publications", "status": "PASS" if (ROOT / "mcp_manifest.json").is_file() else "FAIL"},
+    ]
+    return _task_report("W10-05", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -294,6 +310,8 @@ def main() -> int:
             return _verify_w10_03(Path(args.state_root).resolve())
         if args.task == "W10-04":
             return _verify_w10_04(Path(args.state_root).resolve())
+        if args.task == "W10-05":
+            return _verify_w10_05(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

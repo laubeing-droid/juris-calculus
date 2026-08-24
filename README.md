@@ -20,7 +20,8 @@ $epoch = git show -s --format=%ct HEAD
 python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
 python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
 $env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
-$env:JC_RUNTIME_FACTORY = "installed_runtime_host"
+$env:JC_RUNTIME_FACTORY = "compiler_core.production_runtime"
+$env:JC_PRODUCTION_CONFIG = "C:\path\to\production-runtime.json"
 jc capabilities --json
 ```
 
@@ -31,13 +32,13 @@ The runtime host supplies `JC_RUNTIME_MANIFEST` and an installed module named by
 ## Formal workflow
 
 ```powershell
-jc evaluate --input case-request.json --json
+jc evaluate --input case-input-bundle.json --json
 jc verify --input artifact-handle.json --json
 jc replay --input artifact-handle.json --json
 jc render --input artifact-handle.json --format markdown --audience agent --json
 ```
 
-CLI, Python, and the four-tool stdio MCP adapter all use the same V4 parser and application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
+CLI, Python, and the four-tool stdio MCP adapter all accept the same closed `CaseInputBundleV4` and use the same application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
 
 ## Safety boundary
 

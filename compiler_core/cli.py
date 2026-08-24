@@ -13,7 +13,7 @@ from compiler_core.audit_bundle import AuditBundleV4Error
 from compiler_core.client import ClientV4Error, JCClient, runtime_client
 from compiler_core.contracts import (
     ArtifactHandleV4,
-    CaseRequestV4,
+    CaseInputBundleV4,
     ContractV4Error,
     DecisionStatusV4,
     MCPReadArtifactInputV4,
@@ -115,8 +115,8 @@ def _execute(args: argparse.Namespace, client: JCClient) -> tuple[dict[str, Any]
     if args.command == "capabilities":
         return {"command": "capabilities", **client.capabilities().to_dict()}, EXIT_OK
     if args.command == "evaluate":
-        request = CaseRequestV4.from_json_bytes(_read(args.input))
-        envelope = client.evaluate(request)
+        bundle = CaseInputBundleV4.from_json_bytes(_read(args.input))
+        envelope = client.evaluate(bundle)
         status = envelope.result.decision_status
         exit_code = (
             EXIT_ADMISSION_BLOCKED

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 import errno
 import io
 import json
@@ -18,10 +19,11 @@ from compiler_core import cli
 from compiler_core.application import ApplicationV4, ApplicationV4Error
 from compiler_core.audit_bundle import AuditBundleStoreV4
 from compiler_core.backend_router import BackendV4Error
-from compiler_core.canonical_serialization import DigestV4
+from compiler_core.canonical_serialization import DigestV4, digest_value
 from compiler_core.client import JCClient, runtime_client
 from compiler_core.contracts import (
     CanonicalTimeV4,
+    CaseInputBundleV4,
     CaseRequestV4,
     CertificateKindV4,
     ContentRefV4,
@@ -140,9 +142,10 @@ def _scenario(
 
 
 def _client(scenario: _Scenario) -> JCClient:
-    def context(request: CaseRequestV4):
-        assert request.canonical_digest() == scenario.request.canonical_digest()
-        return scenario.request_ref, scenario.run_ref, CASE_SCOPE
+    @contextmanager
+    def context(bundle: CaseInputBundleV4):
+        assert bundle.request.canonical_digest() == scenario.request.canonical_digest()
+        yield scenario.request_ref, scenario.run_ref, CASE_SCOPE
 
     def mcp_output(envelope) -> MCPEvaluateOutputV4:
         capability = scenario.store.capability_for(envelope.result.run_identity_ref)
@@ -172,6 +175,18 @@ def _client(scenario: _Scenario) -> JCClient:
         evaluation_context=context,
         mcp_output_factory=mcp_output,
     )
+
+
+def _bundle(request: CaseRequestV4) -> CaseInputBundleV4:
+    body = {
+        "schema_version": "jc/case-input-bundle/1.0",
+        "bundle_id": f"matrix-{request.request_id}",
+        "request": request.to_dict(),
+        "artifacts": [],
+    }
+    return CaseInputBundleV4.from_dict({
+        **body, "bundle_digest": str(digest_value(body)),
+    })
 
 
 def _stdio_tool(
@@ -233,7 +248,8 @@ def test_canonical_result_matrix_across_cli_client_and_stdio_mcp(
 ) -> None:
     scenario = _scenario(tmp_path, case, monkeypatch)
     client = _client(scenario)
-    envelope = client.evaluate(scenario.request)
+    bundle = _bundle(scenario.request)
+    envelope = client.evaluate(bundle)
     assert envelope.result.decision_status is decision
     assert envelope.result.execution_status is execution
     assert envelope.certificate.kind is certificate_kind
@@ -244,7 +260,7 @@ def test_canonical_result_matrix_across_cli_client_and_stdio_mcp(
     monkeypatch.setattr(client, "evaluate", lambda *_args, **_kwargs: envelope)
 
     input_path = tmp_path / "request.json"
-    input_path.write_bytes(scenario.request.canonical_bytes())
+    input_path.write_bytes(bundle.canonical_bytes())
     assert cli.main(
         ["evaluate", "--input", str(input_path), "--json"], client=client,
     ) == exit_code
@@ -257,7 +273,7 @@ def test_canonical_result_matrix_across_cli_client_and_stdio_mcp(
         monkeypatch,
         server,
         "jc_evaluate",
-        MCPEvaluateInputV4(scenario.request, None).to_dict(),
+        MCPEvaluateInputV4(bundle).to_dict(),
     )
     assert evaluated["isError"] is (decision in {DecisionStatusV4.BLOCKED, DecisionStatusV4.ENGINE_ERROR})
     structured = evaluated["structuredContent"]
@@ -307,7 +323,7 @@ def test_contract_error_code_is_identical_across_entrypoints(
         monkeypatch,
         MCPServerV4(client),
         "jc_evaluate",
-        {"request": {}, "request_handle": None},
+        {"case_bundle": {}},
     )
     assert mcp_error["isError"] is True
     assert cli_error["code"] == caught.value.code
@@ -327,7 +343,7 @@ def test_storage_error_is_typed_retryable_redacted_and_uncommitted(
 
     monkeypatch.setattr(scenario.store, "_write_file", fail)
     with pytest.raises(ApplicationV4Error) as caught:
-        client.evaluate(scenario.request)
+        client.evaluate(_bundle(scenario.request))
     failure = caught.value
     assert (failure.code, failure.stage, failure.retryable) == (
         "STORAGE_CAPACITY", "audit", True,
@@ -341,7 +357,8 @@ def test_storage_error_is_typed_retryable_redacted_and_uncommitted(
 
     monkeypatch.setattr(client, "evaluate", raise_failure)
     input_path = tmp_path / "request.json"
-    input_path.write_bytes(scenario.request.canonical_bytes())
+    bundle = _bundle(scenario.request)
+    input_path.write_bytes(bundle.canonical_bytes())
     assert cli.main(
         ["evaluate", "--input", str(input_path), "--json"], client=client,
     ) == cli.EXIT_ENGINE_ERROR
@@ -350,7 +367,7 @@ def test_storage_error_is_typed_retryable_redacted_and_uncommitted(
         monkeypatch,
         MCPServerV4(client),
         "jc_evaluate",
-        MCPEvaluateInputV4(scenario.request, None).to_dict(),
+        MCPEvaluateInputV4(bundle).to_dict(),
     )
     assert (cli_error["code"], cli_error["stage"], cli_error["retryable"]) == (
         "STORAGE_CAPACITY", "audit", True,
@@ -370,7 +387,7 @@ def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    request = _ChainHarness().request
+    bundle = _bundle(_ChainHarness().request)
     messages = (
         {
             "jsonrpc": "2.0",
@@ -384,7 +401,7 @@ def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(
             "method": "tools/call",
             "params": {
                 "name": "jc_evaluate",
-                "arguments": MCPEvaluateInputV4(request, None).to_dict(),
+                "arguments": MCPEvaluateInputV4(bundle).to_dict(),
             },
         },
     )
