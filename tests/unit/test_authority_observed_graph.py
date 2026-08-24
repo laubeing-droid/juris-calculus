@@ -396,7 +396,9 @@ def test_repository_policy_has_exact_python_and_codegraph_coverage() -> None:
         "independent_checker": "compiler_core/independent_checker.py",
     }
     assert report["status"] == "OPEN_VIOLATIONS"
-    assert any(item["kind"] == "authority_target_missing" for item in report["backlog"])
+    assert not any(
+        item["kind"] == "authority_target_missing" for item in report["backlog"]
+    )
     assert any(
         item["kind"] == "runtime_output_reachability"
         and item["source"] == "compiler_core/rendering.py"
