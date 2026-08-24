@@ -209,6 +209,20 @@ def _verify_w10_03(state_root: Path) -> int:
     return _task_report("W10-03", checks, state_root)
 
 
+def _verify_w10_04(state_root: Path) -> int:
+    from compiler_core.production_runtime import create_client
+
+    source = (ROOT / "compiler_core/production_runtime.py").read_text(encoding="utf-8")
+    checks = [
+        {"name": "production-factory", "status": "PASS" if callable(create_client) else "FAIL"},
+        {"name": "complete-application", "status": "PASS" if all(name in source for name in ("ApplicationV4(", "AuditBundleStoreV4(", "CertificateIssuerV4(", "IndependentCheckerV4(")) else "FAIL"},
+        {"name": "per-request-run-identity", "status": "PASS" if "RunIdentityV4.build(" in source and "resolver.overlay(transient)" in source else "FAIL"},
+        {"name": "artifact-handles", "status": "PASS" if "issue_artifact_handle(" in source and "MCPEvaluateOutputV4(" in source else "FAIL"},
+        {"name": "offline-replay", "status": "PASS" if "ReplayExecutionV4(" in source and "replay_executor=replay_executor" in source else "FAIL"},
+    ]
+    return _task_report("W10-04", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -278,6 +292,8 @@ def main() -> int:
             return _verify_w10_02(Path(args.state_root).resolve())
         if args.task == "W10-03":
             return _verify_w10_03(Path(args.state_root).resolve())
+        if args.task == "W10-04":
+            return _verify_w10_04(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

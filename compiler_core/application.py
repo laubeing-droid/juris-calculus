@@ -1256,7 +1256,8 @@ class ApplicationV4:
             "graph_artifacts": [],
         }
         with self._resolver._lock:
-            records = dict(self._resolver._by_ref)
+            snapshot = self._resolver._active_snapshot.get()
+            records = dict(self._resolver._by_ref if snapshot is None else snapshot)
         selected: dict[ContentRefV4, object] = {}
         pending = list(roots)
         while pending:

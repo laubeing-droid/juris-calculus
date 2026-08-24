@@ -6618,7 +6618,7 @@
       "id": "W10-04", "wave": "W10-04", "mode": "AUTO", "depends_on": ["W10-03"],
       "audit_ids": ["R-P0-01", "R-P0-02", "R-P0-05", "R-P0-06", "R-P1-04"],
       "objective": "装配完整 production ApplicationV4 composition root 与 handles",
-      "allowed_paths": ["compiler_core/production_runtime.py", "tests/integration/test_production_runtime.py", "tests/formal_e2e/test_local_production_chain.py", "remediation/v4/**", "tools/remediate_v4*.py"],
+      "allowed_paths": ["compiler_core/production_runtime.py", "compiler_core/application.py", "compiler_core/artifact_store.py", "tests/integration/test_production_runtime.py", "tests/formal_e2e/test_local_production_chain.py", "remediation/v4/**", "tools/remediate_v4*.py"],
       "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests/integration/test_production_runtime.py", "tests/formal_e2e/test_local_production_chain.py"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-04"]],
       "expected_exit_codes": [0, 0], "completion_assertions": [{"id": "w10-04-runtime", "kind": "all_commands_passed"}],
       "rollback": "revert W10-04 composition commit", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]

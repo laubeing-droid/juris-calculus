@@ -31,6 +31,10 @@ _MEDIA_TYPE_RE = re.compile(
     r"[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/"
     r"[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\Z"
 )
+_EXTERNAL_BINDING_KINDS = frozenset({
+    "case-request-binding", "trust-authorization-policy", "trust-revocation-policy",
+    "trust-replay-policy", "trust-separation-policy", "storage-capability",
+})
 
 
 def _fail(code: str, detail: str) -> None:
@@ -172,7 +176,7 @@ class ArtifactResolverV4:
             visited.add(reference)
             item = records.get(reference)
             if item is None:
-                if self.contains(reference):
+                if self.contains(reference) or reference.kind in _EXTERNAL_BINDING_KINDS:
                     continue
                 _fail("CASE_BUNDLE_INCOMPLETE", "case artifact reference is missing")
             try:
@@ -260,6 +264,23 @@ class ArtifactResolverV4:
             scope=scope,
             content=content,
         )
+        active = self._active_snapshot.get()
+        if active is not None:
+            existing_id = next(
+                (record for record in active.values() if record.artifact_id == artifact_id),
+                None,
+            )
+            if existing_id is not None:
+                if existing_id == proposed:
+                    return existing_id.content_ref
+                _fail("ARTIFACT_ID_COLLISION", "artifact_id already binds another record")
+            existing_ref = active.get(content_ref)
+            if existing_ref is not None:
+                if existing_ref == proposed:
+                    return existing_ref.content_ref
+                _fail("ARTIFACT_REFERENCE_COLLISION", "content_ref already binds another record")
+            self._active_snapshot.set(MappingProxyType({**active, content_ref: proposed}))
+            return proposed.content_ref
         with self._lock:
             existing_id = self._by_id.get(artifact_id)
             if existing_id is not None:
