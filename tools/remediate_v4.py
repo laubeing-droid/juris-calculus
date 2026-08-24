@@ -21359,20 +21359,23 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         for command in receipt["command_results"]:
             if not _validate_stream(command["stdout"]) or not _validate_stream(command["stderr"]):
                 raise ValueError(f"stdout/stderr digest mismatch: {receipt_path}")
-        try:
-            expected_state_artifacts = _declared_state_artifacts(
-                receipt["command_results"], state_root
-            )
-        except ValueError:
-            expected_state_artifacts = _legacy_mutable_w7_observed_state(
-                receipt, state_root,
-            )
-            if expected_state_artifacts is None:
-                raise
         recorded_state_artifacts = {
             key: value for key, value in receipt["artifact_digests"].items()
             if key.startswith("state-artifact:")
         }
+        if receipt["status"] != "COMPLETED":
+            expected_state_artifacts = recorded_state_artifacts
+        else:
+            try:
+                expected_state_artifacts = _declared_state_artifacts(
+                    receipt["command_results"], state_root
+                )
+            except ValueError:
+                expected_state_artifacts = _legacy_mutable_w7_observed_state(
+                    receipt, state_root,
+                )
+                if expected_state_artifacts is None:
+                    raise
         later_receipts = [
             raw_receipts[number]
             for number in sorted(raw_receipts)
