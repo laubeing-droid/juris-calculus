@@ -177,12 +177,13 @@
     {"prefix": "tools/", "class": "BUILD_ONLY", "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."}
   ],
   "entrypoints": [
-    {"name": "jc", "target": "compiler_core.cli:main", "class": "PUBLIC_ADAPTER"}
+    {"name": "jc", "target": "compiler_core.cli:main", "class": "PUBLIC_ADAPTER"},
+    {"name": "jc-formal", "target": "compiler_core.formal_bridge:main", "class": "RUNTIME_OUTPUT"}
   ],
   "declared_dynamic_edges": [
     {
       "importer": "compiler_core/client.py",
-      "line": 280,
+      "line": 289,
       "kind": "dynamic_import",
       "target_pattern": "installed-runtime-host",
       "target_class": "PUBLIC_ADAPTER",
@@ -222,7 +223,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 16768,
+      "line": 16815,
       "kind": "dynamic_path_load",
       "target_pattern": "tools/wheel_gate.py",
       "target_class": "BUILD_ONLY",
@@ -230,7 +231,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 15949,
+      "line": 15996,
       "kind": "availability_probe",
       "target_pattern": "optional-test-module",
       "target_class": "BUILD_ONLY",
@@ -238,7 +239,7 @@
     },
     {
       "importer": "tools/remediate_v4.py",
-      "line": 16138,
+      "line": 16185,
       "kind": "dynamic_import",
       "target_pattern": "optional-test-module",
       "target_class": "BUILD_ONLY",
