@@ -1,20 +1,17 @@
 # V4 remediation authoritative status
 
-Updated: 2026-08-22
-
-This file supersedes the bootstrap status emitted by commit `a881f2827b9112e98f500bab5200c6db20cb7ebf`.
+Updated: 2026-08-24
 
 - Goal status: `ACTIVE`.
-- `B00`: `FAILED`. `tools/remediate_v4.py run` did not execute the task DAG and hard-coded completed phases.
-- `B00-CG`: `UNVERIFIED`. Existing CodeGraph reports remain observations only; all closure and `CONFIRMED` claims require reconstruction against the current commit and tree.
-- `B01`: `UNVERIFIED`. Tracked-path enumeration may be reused as input, but every disposition, terminal state, and closure task requires semantic review.
-- The 12 requests under `C:\Users\being\AppData\Local\Temp\jc_remediation_state` are `INVALID_SUPERSEDED`. They were not reached through the DAG, their subject digests were not bound to actual review artifacts, their baseline drifted, and the runner did not verify or consume approvals.
-- The old state root is retained unchanged. Its invalidation manifest records 22 files, 211,469 bytes, and aggregate manifest SHA-256 `44bf0b3b7902f17ad8d354528e0078aef904e67fa91f919e0f22c4fac9ac59e1`.
 - Authoritative state root: `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state`.
+- Current runner result: 51 tasks `COMPLETED`; only `H7-00=WAITING_EXTERNAL`.
+- `H7-00` is a production-target capability gate. It requires evidence from the real target provider for the state provider, platform, encryption at rest, and SLO. It does not require an `authorized_reviewer`, and a user reply or test-only key cannot satisfy it.
+- `H6-07` is not reached and is not an active blocker. Old request files are retained as history; `run.json` contains only the currently reached wait state.
+- The local release-candidate MCP implementation is usable for candidate testing, but it is not evidence of a real production target and does not make `legal_production_ready=true`.
+- All 44 audit IDs remain registered until the downstream target, remote-governance, production-validation, and Z00-Z03 tasks produce their required evidence.
+- The prior bootstrap `B00 FAILED` / `B00-CG UNVERIFIED` / `B01 UNVERIFIED` status is superseded by the current receipt chain.
 - Unique recovery command:
 
 ```powershell
 py -3.12 -B D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation\tools\remediate_v4.py run --plan D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation\remediation\v4\tasks.json --state-root D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state --through W9
 ```
-
-No gate request is valid until the rebuilt runner reaches that task in `WAITING` state and binds the request to the actual subject artifact.
