@@ -5193,7 +5193,7 @@
     {
       "id": "H7-00",
       "wave": "W7",
-      "mode": "MIXED",
+      "mode": "EXTERNAL_GATE",
       "depends_on": [
         "W9-I00"
       ],
@@ -5203,7 +5203,7 @@
         "P1-11",
         "P1-12"
       ],
-      "objective": "目标 state provider、平台和 SLO 输入",
+      "objective": "取得真实生产目标 state provider、平台、静态加密和 SLO 证明",
       "allowed_paths": [
         "remediation/v4/approvals/H7-00*",
         "$JC_REMEDIATION_STATE_ROOT/approvals/H7-00*"
@@ -5211,13 +5211,13 @@
       "terminal_states": [],
       "approval": {
         "gate_id": "H7-00-APPROVAL",
-        "subject": "目标 state provider、平台和 SLO 输入",
+        "subject": "真实生产目标 state provider、平台、静态加密和 SLO 证明",
         "subject_paths": [
           "remediation/v4/approvals/H7-00*",
           "$JC_REMEDIATION_STATE_ROOT/approvals/H7-00*"
         ],
         "required_roles": [
-          "authorized_reviewer"
+          "external_provider"
         ],
         "allowed_scopes": [
           "H7-00"

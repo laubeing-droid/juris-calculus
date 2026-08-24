@@ -652,6 +652,22 @@ def test_only_reached_gate_gets_request(tmp_path: Path) -> None:
     assert "G2" not in result.stdout
 
 
+def test_rerun_drops_stale_unreached_gate_status(tmp_path: Path) -> None:
+    plan = _write_plan(tmp_path, [_gate_task("G1", [])])
+    state_root = tmp_path / "state"
+    assert _run(plan, state_root).returncode == 21
+    assert json.loads((state_root / "run.json").read_text(encoding="utf-8"))["task_status"] == {
+        "G1": "WAITING_EXTERNAL",
+    }
+
+    _write_plan(tmp_path, [_gate_task("G0", []), _gate_task("G1", ["G0"])])
+    result = _run(plan, state_root)
+    assert result.returncode == 21, result.stderr
+    assert json.loads((state_root / "run.json").read_text(encoding="utf-8"))["task_status"] == {
+        "G0": "WAITING_EXTERNAL",
+    }
+
+
 def test_valid_ed25519_approval_is_consumed(tmp_path: Path) -> None:
     plan = _write_plan(tmp_path, [_gate_task("G1", [])])
     state_root = tmp_path / "state"

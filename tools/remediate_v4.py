@@ -18700,8 +18700,13 @@ def _w6_08_contract_problems() -> list[str]:
         objective = str(candidate.get("objective", ""))
         if not any(marker in objective for marker in ("不得宣称", "只产出")):
             problems.append(f"{task_id} lacks an explicit non-production boundary")
-    if by_id.get("H7-00", {}).get("depends_on") != ["W9-I00"]:
+    h7_target_gate = by_id.get("H7-00", {})
+    if h7_target_gate.get("depends_on") != ["W9-I00"]:
         problems.append("H7-00 must wait until all independent implementation is complete")
+    if h7_target_gate.get("mode") != "EXTERNAL_GATE":
+        problems.append("H7-00 must represent an external production target gate")
+    if h7_target_gate.get("approval", {}).get("required_roles") != ["external_provider"]:
+        problems.append("H7-00 must require production target provider evidence")
     if by_id.get("H6-07", {}).get("depends_on") != ["W9-06"]:
         problems.append("H6-07 must gate remote promotion after engineering and validation")
     if by_id.get("H7-05", {}).get("depends_on") != ["W7-04", "H6-07"]:
@@ -27105,6 +27110,10 @@ def cmd_run(args: argparse.Namespace) -> int:
         except (OSError, RuntimeError, ValueError) as exc:
             print(f"state artifact recovery failed: {exc}", file=sys.stderr)
             return EXIT_RECEIPT_FAIL
+    run_state["task_status"] = {}
+    run_state.pop("status", None)
+    run_state["updated_at"] = _iso_now()
+    _atomic_json(run_path, run_state)
     completed_receipts: dict[str, dict[str, Any]] = {}
     try:
         ordered = _topological_tasks(plan)
