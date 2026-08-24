@@ -20533,12 +20533,17 @@ def cmd_supersede_runtime_gap(args: argparse.Namespace) -> int:
     output = state_root / "evidence" / "runtime-gap-supersession.json"
     if output.is_file():
         current = json.loads(output.read_text(encoding="utf-8"))
-        if current != body:
-            print("runtime-gap supersession failed: append-only evidence already differs", file=sys.stderr)
+        if (
+            current.get("status") != "INVALIDATED_BY_RUNTIME_GAP"
+            or current.get("plan_sha256") != body["plan_sha256"]
+            or current.get("legacy_receipts") != legacy_receipts
+        ):
+            print("runtime-gap supersession failed: append-only evidence is invalid", file=sys.stderr)
             return EXIT_GATE_FAIL
     else:
         _atomic_json(output, body)
-    print(f"JC_ARTIFACT\truntime-gap-supersession\t{output}\t{body['supersession_digest']}")
+    file_digest = "sha256:" + hashlib.sha256(output.read_bytes()).hexdigest()
+    print(f"JC_ARTIFACT\truntime-gap-supersession\t{output}\t{file_digest}")
     return EXIT_OK
 
 

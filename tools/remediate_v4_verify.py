@@ -116,7 +116,8 @@ def _task_report(task_id: str, checks: list[dict[str, object]], state_root: Path
     path = state_root / "evidence" / "w10" / task_id / "report.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(_canonical(body))
-    print(f"JC_ARTIFACT\t{task_id.lower()}-verification\t{path}\t{body['report_digest']}")
+    file_digest = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    print(f"JC_ARTIFACT\t{task_id.lower()}-verification\t{path}\t{file_digest}")
     if not passed:
         for check in checks:
             if check.get("status") != "PASS":
