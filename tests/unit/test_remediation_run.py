@@ -999,4 +999,3 @@ def test_manual_mixed_gate_receipts_preapproved_committed_delta(tmp_path: Path) 
     assert receipt["artifact_digests"]["request-raw"] == _raw_digest(request_path)
     assert receipt["artifact_digests"][f"approval-raw:{key_id}"] == _raw_digest(directive_path)
     assert receipt["artifact_digests"][f"authority-source:{key_id}"] == directive["authority_source"]["sha256"]
-
