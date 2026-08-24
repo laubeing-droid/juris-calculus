@@ -91,6 +91,7 @@ def production_bundle(
     fact_key: str | None = None,
     dispute_state: str = "UNDISPUTED",
     assumption_state: str = "NONE",
+    label: str = "case",
 ) -> CaseInputBundleV4:
     loaded = load_production_pack(
         PRODUCTION / "packs/cn-official-local-4.0.0.json",
@@ -99,7 +100,7 @@ def production_bundle(
     )
     now = current_utc_time()
     fact_key = fact_key or FACTS[article]
-    variant = f"{article}-{dispute_state.lower()}-{assumption_state.lower()}-{fact_key}"
+    variant = f"{label}-{article}-{dispute_state.lower()}-{assumption_state.lower()}-{fact_key}"
     source_ref = loaded.verified_pack.manifest.source_refs[0]
     source_raw = loaded.resolver.resolve_content(
         source_ref, expected_artifact_kind=SOURCE_SNAPSHOT_KIND,

@@ -630,12 +630,16 @@ def verify_release(state_root: Path, release_file: Path) -> dict[str, object]:
     }
     registry_path = evidence / "preactivation-profile-registry.json"
     registry_path.write_bytes(canonical_bytes(registry))
+    bridge_bundle_path = smoke / "article-15-bridge.json"
+    bridge_bundle_path.write_bytes(
+        production_bundle(15, label="bridge").canonical_bytes()
+    )
     bridge = Path(str(manifest["venv_python"])).with_name(
         "jc-formal.exe" if os.name == "nt" else "jc-formal"
     )
     bridge_output = json.loads(_run(
         [str(bridge), "--registry", str(registry_path), "--input",
-         str(smoke / "article-15-positive.json")],
+         str(bridge_bundle_path)],
         cwd=manifest_path.parent / "runtime", env=_clean_environment(), timeout=300,
     ).stdout)
     if bridge_output.get("marker") != "JC_FORMAL_VERIFIED":
