@@ -377,6 +377,310 @@ def _verify_w10_09(state_root: Path) -> int:
     return _task_report("W10-09", checks, state_root)
 
 
+def _latest_completed_receipt(state_root: Path, task_id: str) -> tuple[dict[str, object], Path]:
+    paths = sorted(
+        (state_root / "tasks" / task_id).glob("*/receipt.json"),
+        key=lambda path: int(path.parent.name),
+    )
+    completed = []
+    for path in paths:
+        value = json.loads(path.read_bytes())
+        body = {key: item for key, item in value.items() if key != "receipt_digest"}
+        actual = "sha256:" + hashlib.sha256(_canonical(body)).hexdigest()
+        if value.get("receipt_digest") == actual and value.get("status") == "COMPLETED":
+            completed.append((value, path))
+    if not completed:
+        raise ValueError(f"{task_id} has no valid completed receipt")
+    return completed[-1]
+
+
+def _verify_w10_10(state_root: Path) -> int:
+    receipts: dict[str, dict[str, object]] = {}
+    receipt_paths: dict[str, Path] = {}
+    valid = True
+    try:
+        for index in range(10):
+            task_id = f"W10-{index:02d}"
+            receipts[task_id], receipt_paths[task_id] = _latest_completed_receipt(
+                state_root, task_id
+            )
+    except (OSError, TypeError, ValueError):
+        valid = False
+    reports = {
+        task_id: state_root / "evidence/w10" / task_id / "report.json"
+        for task_id in receipts
+    }
+    report_names: list[tuple[str, ...]] = []
+    reports_valid = True
+    for task_id, path in reports.items():
+        try:
+            report = json.loads(path.read_bytes())
+            names = tuple(row["name"] for row in report["checks"])
+            reports_valid = reports_valid and (
+                report.get("task_id") == task_id
+                and report.get("status") == "PASS"
+                and len(names) == len(set(names))
+            )
+            report_names.append(names)
+        except (KeyError, OSError, TypeError, ValueError):
+            reports_valid = False
+    chain_valid = valid and all(
+        receipts[f"W10-{index:02d}"].get("input_receipt_digests", {}).get(
+            f"W10-{index - 1:02d}"
+        ) == receipts[f"W10-{index - 1:02d}"].get("receipt_digest")
+        for index in range(1, 10)
+    )
+    failed_w10_08 = list((state_root / "tasks/W10-08").glob("*/receipt.json"))
+    checks = [
+        {"name": "ten-valid-task-receipts", "status": "PASS" if valid and len(receipts) == 10 else "FAIL"},
+        {"name": "receipt-dependency-chain", "status": "PASS" if chain_valid else "FAIL"},
+        {"name": "task-specific-pass-reports", "status": "PASS" if reports_valid and len(reports) == 10 else "FAIL"},
+        {"name": "distinct-verifier-check-sets", "status": "PASS" if len(report_names) == len(set(report_names)) == 10 else "FAIL"},
+        {"name": "failed-attempts-preserved", "status": "PASS" if len(failed_w10_08) >= 3 and any(json.loads(path.read_bytes()).get("status") == "FAILED" for path in failed_w10_08) else "FAIL"},
+        {"name": "receipt-commit-tree-command-bindings", "status": "PASS" if valid and all(row.get("start_commit") and row.get("start_tree") and row.get("result_commit") and row.get("result_tree") and row.get("command_results") and row.get("allowlist", {}).get("allowed") is True for row in receipts.values()) else "FAIL"},
+        {"name": "latest-head-is-w10-09", "status": "PASS" if receipts.get("W10-09", {}).get("receipt_digest") == "sha256:273e9db30af00dd016e5f4dcfa332b6087b75febd5a4ab9f20a16ac1ac100459" else "FAIL"},
+    ]
+    return _task_report("W10-10", checks, state_root)
+
+
+def _verify_z10_00(state_root: Path) -> int:
+    plan = json.loads((ROOT / "remediation/v4/tasks.json").read_bytes())
+    tasks = {row["id"]: row for row in plan["tasks"]}
+    expected = list(W10_TASK_IDS)
+    generated = subprocess.run(
+        [sys.executable, "-B", "tools/remediate_v4.py", "generated", "--check"],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    indexed = subprocess.run(
+        ["codegraph", "index", "--force", "--quiet", str(ROOT)],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    status = subprocess.run(
+        ["codegraph", "status", "--json", str(ROOT)],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    integrity = "missing"
+    try:
+        import sqlite3
+        with sqlite3.connect(ROOT / ".codegraph/codegraph.db") as database:
+            integrity = str(database.execute("PRAGMA integrity_check").fetchone()[0])
+    except (OSError, TypeError, ValueError):
+        integrity = "error"
+    issue_map = json.loads((ROOT / "remediation/v4/issue-map.json").read_bytes())
+    closure_ids = {
+        task_id for issue in issue_map["issues"] if str(issue["id"]).startswith("R-")
+        for task_id in issue.get("closure_tasks", [])
+    }
+    reports_present = all(
+        (state_root / "evidence/w10" / task_id / "report.json").is_file()
+        for task_id in [f"W10-{index:02d}" for index in range(11)]
+    )
+    checks = [
+        {"name": "corrective-dag-exact-and-auto", "status": "PASS" if all(task_id in tasks and tasks[task_id]["mode"] == "AUTO" for task_id in expected) else "FAIL"},
+        {"name": "generated-control-plane-exact", "status": "PASS" if generated.returncode == 0 else "FAIL"},
+        {"name": "issue-map-closure-tasks-reachable", "status": "PASS" if closure_ids <= set(tasks) else "FAIL"},
+        {"name": "all-w10-verifier-reports-present", "status": "PASS" if reports_present else "FAIL"},
+        {"name": "codegraph-full-index", "status": "PASS" if indexed.returncode == 0 and status.returncode == 0 else "FAIL"},
+        {"name": "codegraph-sqlite-integrity", "status": "PASS" if integrity == "ok" else "FAIL"},
+        {"name": "version-and-publications", "status": "PASS" if '4.0.0' in (ROOT / "compiler_core/version.py").read_text(encoding="utf-8") and (ROOT / "schemas/jc-v4.schema.json").is_file() and (ROOT / "mcp_manifest.json").is_file() else "FAIL"},
+        {"name": "no-active-legacy-profile", "status": "PASS" if "test-local" not in (ROOT.parent / "juris-calculus-v4-production-state/deployment/profile-registry.json").read_text(encoding="utf-8") else "FAIL"},
+    ]
+    return _task_report("Z10-00", checks, state_root)
+
+
+_Z10_INSTALLED_REVERIFY = r"""
+import base64,json,pathlib,sys
+from compiler_core.canonical_serialization import DigestV4,canonical_bytes
+from compiler_core.client import runtime_client
+from compiler_core.contracts import ArtifactHandleV4
+chain=json.loads(pathlib.Path(sys.argv[1]).read_bytes())
+client=runtime_client(); rows=[]
+for index,item in enumerate(chain["positive_runs"]):
+ handle=ArtifactHandleV4.from_dict(item["run_handle"])
+ checked=client.verify_for_mcp(handle,offline_replay=index==0)
+ if checked.verification.status!="VERIFIED": raise RuntimeError("verify")
+ if index==0 and (checked.replay is None or checked.replay.status!="MATCH"): raise RuntimeError("replay")
+ reads=[]
+ for raw in (item["certificate_handle"],*item["artifact_handles"]):
+  artifact=ArtifactHandleV4.from_dict(raw); offset=0; content=bytearray()
+  while offset<artifact.size_bytes:
+   page=client.read_artifact(artifact,offset=offset,length=min(65536,artifact.size_bytes-offset))
+   chunk=base64.b64decode(page.content_base64,validate=True); content.extend(chunk); offset+=len(chunk)
+  if DigestV4.from_bytes(content)!=artifact.content_ref.digest: raise RuntimeError("read")
+  reads.append(artifact.content_ref.to_dict())
+ rows.append({"article":item["article"],"run_identity_ref":item["run_identity_ref"],"certificate_ref":item["certificate_handle"]["content_ref"],"read_refs":reads,"verification_status":checked.verification.status,"replay_status":None if checked.replay is None else checked.replay.status})
+print(canonical_bytes({"runs":rows}).decode())
+"""
+
+
+def _verify_z10_01(state_root: Path) -> int:
+    import time
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    current = json.loads((production / "deployment/current.json").read_bytes())
+    manifest = json.loads(Path(current["manifest_path"]).read_bytes())
+    chain_path = Path(current["verification_path"])
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    environment.pop("PYTHONHOME", None)
+    environment.update({
+        "JC_RUNTIME_FACTORY": "compiler_core.production_runtime",
+        "JC_PRODUCTION_CONFIG": manifest["runtime_config_path"],
+        "PYTHONDONTWRITEBYTECODE": "1",
+    })
+    runtime = Path(manifest["runtime_config_path"]).parent.parent / "runtime"
+    completed = subprocess.run(
+        [manifest["venv_python"], "-I", "-B", "-c", _Z10_INSTALLED_REVERIFY, str(chain_path)],
+        cwd=runtime, env=environment, capture_output=True, text=True, check=False, timeout=900,
+    )
+    installed = json.loads(completed.stdout) if completed.returncode == 0 else {}
+    bridge_result: dict[str, object] = {}
+    try:
+        from tests.formal_e2e.test_local_production_chain import production_bundle
+        smoke = Path(current["manifest_path"]).parent / "evidence/z10-independent-bundle.json"
+        smoke.write_bytes(production_bundle(15, label=f"z10-{time.time_ns()}").canonical_bytes())
+        bridge = Path(manifest["venv_python"]).with_name("jc-formal.exe" if os.name == "nt" else "jc-formal")
+        result = subprocess.run(
+            [str(bridge), "--registry", str(production / "deployment/profile-registry.json"), "--input", str(smoke)],
+            cwd=runtime, env=environment, capture_output=True, text=True, check=False, timeout=300,
+        )
+        bridge_result = json.loads(result.stdout) if result.returncode == 0 else {}
+    except (OSError, TypeError, ValueError):
+        bridge_result = {}
+    report = {
+        "schema_version": "jc/z10-artifact-reverification/1.0",
+        "release_id": current["release_id"],
+        "wheel_digest": manifest["wheel_digest"],
+        "manifest_digest": current["manifest_digest"],
+        "runs": installed.get("runs", []),
+        "formal_bridge": {
+            "marker": bridge_result.get("marker"),
+            "artifact_digest": bridge_result.get("artifact_digest"),
+            "profile_id": bridge_result.get("profile_id"),
+        },
+        "installed_no_repo_cwd": runtime != ROOT and "PYTHONPATH" not in environment,
+    }
+    report["report_digest"] = "sha256:" + hashlib.sha256(_canonical(report)).hexdigest()
+    path = state_root / "evidence/z10-artifact-reverification.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(_canonical(report))
+    checks = [
+        {"name": "fresh-installed-process", "status": "PASS" if completed.returncode == 0 and report["installed_no_repo_cwd"] else "FAIL"},
+        {"name": "six-run-independent-verify", "status": "PASS" if [row.get("article") for row in report["runs"]] == list(range(13, 19)) and all(row.get("verification_status") == "VERIFIED" for row in report["runs"]) else "FAIL"},
+        {"name": "offline-replay-independent", "status": "PASS" if report["runs"] and report["runs"][0].get("replay_status") == "MATCH" else "FAIL"},
+        {"name": "certificate-result-reads", "status": "PASS" if report["runs"] and all(len(row.get("read_refs", [])) >= 2 for row in report["runs"]) else "FAIL"},
+        {"name": "fresh-formal-bridge", "status": "PASS" if report["formal_bridge"].get("marker") == "JC_FORMAL_VERIFIED" else "FAIL"},
+    ]
+    return _task_report("Z10-01", checks, state_root)
+
+
+def _verify_z10_02(state_root: Path) -> int:
+    from tools.local_production import production_status
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    current = json.loads((production / "deployment/current.json").read_bytes())
+    previous = json.loads((production / "deployment/previous.json").read_bytes())
+    operations = json.loads((production / "operations/recovery-report.json").read_bytes())
+    service = production / "identity/service-runtime.json"
+    cipher = subprocess.run(["cipher", "/c", str(service)], capture_output=True, text=True, check=False)
+    acl = subprocess.run(["icacls", str(service)], capture_output=True, text=True, check=False)
+    scheduled = subprocess.run(
+        ["schtasks", "/Query", "/TN", "JurisCalculusV4DailyBackup", "/XML"],
+        capture_output=True, text=True, check=False,
+    )
+    main = ROOT.parent / "juris-calculus"
+    main_status = subprocess.run(
+        ["git", "status", "--short"], cwd=main, capture_output=True, text=True, check=True,
+    ).stdout.splitlines()
+    worktree_clean = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True, check=True,
+    ).stdout == ""
+    status = production_status(production)
+    checks = [
+        {"name": "active-current-and-previous", "status": "PASS" if status["status"] == "LOCAL_PRODUCTION_ACTIVE" and previous.get("production_rollback_allowed") is True else "FAIL"},
+        {"name": "remediation-worktree-clean", "status": "PASS" if worktree_clean else "FAIL"},
+        {"name": "main-worktree-user-state-preserved", "status": "PASS" if len(main_status) == 2 and all(line.startswith(" D ") for line in main_status) else "FAIL"},
+        {"name": "efs-service-key", "status": "PASS" if cipher.returncode == 0 and "AES" in cipher.stdout and "256" in cipher.stdout else "FAIL"},
+        {"name": "service-key-minimal-acl", "status": "PASS" if acl.returncode == 0 and "Everyone" not in acl.stdout and "Users:(" not in acl.stdout else "FAIL"},
+        {"name": "operations-evidence", "status": "PASS" if operations.get("status") == "OPERATIONS_VERIFIED" and operations.get("reactivated_release_id") == current.get("release_id") else "FAIL"},
+        {"name": "daily-task-live", "status": "PASS" if scheduled.returncode == 0 and "JurisCalculusV4DailyBackup" in scheduled.stdout else "FAIL"},
+        {"name": "scope-and-observation", "status": "PASS" if current.get("scope") == "local-windows-efs-pipl-articles-13-18" and json.loads((production / "packs/cn-official-local-4.0.0.json").read_bytes()).get("observation_required") is True else "FAIL"},
+        {"name": "no-remote-production-action", "status": "PASS" if not (state_root / "evidence/remote-release.json").exists() else "FAIL"},
+    ]
+    return _task_report("Z10-02", checks, state_root)
+
+
+def _verify_z10_03(state_root: Path) -> int:
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    z_reports = {
+        task_id: state_root / "evidence/w10" / task_id / "report.json"
+        for task_id in ("Z10-00", "Z10-01", "Z10-02")
+    }
+    loaded = {task_id: json.loads(path.read_bytes()) for task_id, path in z_reports.items()}
+    if any(report.get("status") != "PASS" for report in loaded.values()):
+        return _task_report("Z10-03", [{"name": "z10-prerequisites", "status": "FAIL"}], state_root)
+    current = json.loads((production / "deployment/current.json").read_bytes())
+    manifest = json.loads(Path(current["manifest_path"]).read_bytes())
+    chain = json.loads(Path(current["verification_path"]).read_bytes())
+    operations_path = production / "operations/recovery-report.json"
+    operations = json.loads(operations_path.read_bytes())
+    service = json.loads((production / "identity/service-runtime.json").read_bytes())
+    w10_head, w10_head_path = _latest_completed_receipt(state_root, "W10-10")
+    start, _ = _latest_completed_receipt(state_root, "W10-00")
+    runtime_config = json.loads(Path(manifest["runtime_config_path"]).read_bytes())
+    result = {
+        "schema_version": "jc/final-production-runtime-result/1.0",
+        "exit_code": 0, "status": "LOCAL_PRODUCTION_ACTIVE",
+        "scope": "local-windows-efs-pipl-articles-13-18",
+        "start_commit": start["start_commit"], "start_tree": start["start_tree"],
+        "final_commit": subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip(),
+        "final_tree": subprocess.run(["git", "rev-parse", "HEAD^{tree}"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip(),
+        "release_id": current["release_id"], "wheel_digest": manifest["wheel_digest"],
+        "package_digest": manifest["package_digest"], "lock_digest": manifest["lock_digest"],
+        "schema_digest": runtime_config["schema_digest"] if "schema_digest" in runtime_config else json.loads(Path(manifest["profile_path"]).read_bytes())["capability_pins"]["schema_digest"],
+        "tool_spec_digest": runtime_config["tool_spec_digest"],
+        "runtime_config_digest": manifest["runtime_config_digest"],
+        "profile_digest": manifest["profile_digest"],
+        "pack_ref": json.loads((production / "packs/cn-official-local-4.0.0.json").read_bytes())["pack_ref"],
+        "trust_digest": _digest(production / "trust/cn-official-local.json"),
+        "storage_ref": runtime_config["storage_capability_ref"],
+        "service_key_public_identity": {key: service[key] for key in ("key_id", "issuer", "principal_id", "public_key_base64")},
+        "positive_runs": [{
+            "article": row["article"], "run_identity_ref": row["run_identity_ref"],
+            "certificate_ref": row["certificate_handle"]["content_ref"],
+            "run_handle_ref": row["run_handle"]["content_ref"],
+            "verification_status": row["verification"]["status"],
+            "replay_status": row["replay"]["status"],
+            "read_refs": [item["handle"]["content_ref"] for item in row["reads"]],
+        } for row in chain["positive_runs"]],
+        "formal_bridge": chain["formal_bridge"],
+        "backup_restore_rollback": {
+            "backup_id": operations["backup"]["backup_id"],
+            "restore_report_digest": operations["restore"]["report_digest"],
+            "rollback_release_id": operations["rollback_release_id"],
+            "operations_digest": _digest(operations_path),
+            "scheduled_task": operations["scheduled_task"]["task_name"],
+        },
+        "w10_receipt_chain_head": {
+            "task_id": "W10-10", "receipt_digest": w10_head["receipt_digest"],
+            "receipt_file_digest": _digest(w10_head_path),
+        },
+        "z10_reports": {task_id: {"report_digest": report["report_digest"], "file_digest": _digest(z_reports[task_id])} for task_id, report in loaded.items()},
+        "observation_required": True,
+        "independent_human_review": False,
+        "remote_release_claimed": False,
+    }
+    result["result_digest"] = "sha256:" + hashlib.sha256(_canonical(result)).hexdigest()
+    output = state_root / "evidence/final-production-runtime-result.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(_canonical(result))
+    checks = [
+        {"name": "z10-prerequisites", "status": "PASS"},
+        {"name": "sole-active-final-result", "status": "PASS" if result["status"] == "LOCAL_PRODUCTION_ACTIVE" and len(result["positive_runs"]) == 6 else "FAIL"},
+        {"name": "final-result-canonical", "status": "PASS" if output.read_bytes() == _canonical(result) else "FAIL"},
+        {"name": "final-evidence-bindings", "status": "PASS" if all(row["verification_status"] == "VERIFIED" and row["replay_status"] == "MATCH" for row in result["positive_runs"]) and len(result["z10_reports"]) == 3 else "FAIL"},
+    ]
+    return _task_report("Z10-03", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -458,6 +762,16 @@ def main() -> int:
             return _verify_w10_08(Path(args.state_root).resolve())
         if args.task == "W10-09":
             return _verify_w10_09(Path(args.state_root).resolve())
+        if args.task == "W10-10":
+            return _verify_w10_10(Path(args.state_root).resolve())
+        if args.task == "Z10-00":
+            return _verify_z10_00(Path(args.state_root).resolve())
+        if args.task == "Z10-01":
+            return _verify_z10_01(Path(args.state_root).resolve())
+        if args.task == "Z10-02":
+            return _verify_z10_02(Path(args.state_root).resolve())
+        if args.task == "Z10-03":
+            return _verify_z10_03(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

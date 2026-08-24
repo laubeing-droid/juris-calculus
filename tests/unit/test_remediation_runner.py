@@ -95,8 +95,8 @@ def test_tasks_json_validates_against_task_schema() -> None:
     validator.validate(plan)
 
 
-def test_issue_map_has_44_entries() -> None:
-    """issue-map.json 必须恰好 44 项：P0=15, P1=20, P2=7, P3=2。"""
+def test_issue_map_has_58_entries_after_runtime_gap_registration() -> None:
+    """issue-map.json 包含原 44 项及 W10 runtime-gap 的 14 项。"""
     issue_map = json.loads((REMEDIATION_DIR / "issue-map.json").read_text(encoding="utf-8"))
     issues = issue_map.get("issues") or issue_map
     assert isinstance(issues, list), "issue-map.json must contain an issues list"
@@ -106,9 +106,9 @@ def test_issue_map_has_44_entries() -> None:
         if sev is None:
             continue
         by_severity[sev] = by_severity.get(sev, 0) + 1
-    assert by_severity.get("P0") == 15, f"P0 count: {by_severity.get('P0')}"
-    assert by_severity.get("P1") == 20, f"P1 count: {by_severity.get('P1')}"
-    assert by_severity.get("P2") == 7, f"P2 count: {by_severity.get('P2')}"
+    assert by_severity.get("P0") == 21, f"P0 count: {by_severity.get('P0')}"
+    assert by_severity.get("P1") == 27, f"P1 count: {by_severity.get('P1')}"
+    assert by_severity.get("P2") == 8, f"P2 count: {by_severity.get('P2')}"
     assert by_severity.get("P3") == 2, f"P3 count: {by_severity.get('P3')}"
 
 
