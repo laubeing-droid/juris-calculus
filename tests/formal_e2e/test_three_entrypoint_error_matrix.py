@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import errno
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -28,10 +29,12 @@ from compiler_core.contracts import (
     DecisionStatusV4,
     ExecutionStatusV4,
     LegalContextV4,
+    MCPCapabilitiesOutputV4,
     MCPEvaluateInputV4,
     MCPEvaluateOutputV4,
+    ResourceLimitsV4,
 )
-from compiler_core.mcp import MCPServerV4, run_stdio
+from compiler_core.mcp import MCPServerV4, TOOL_SPECS, run_stdio, tool_spec_digest
 from tests.contract.test_application import (
     _application,
     _nonformal_attestation,
@@ -363,7 +366,7 @@ def test_storage_error_is_typed_retryable_redacted_and_uncommitted(
     assert str(tmp_path.resolve()) not in wire
 
 
-def test_source_tree_stdio_launcher_returns_typed_pathless_runtime_error() -> None:
+def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(tmp_path: Path) -> None:
     request = _ChainHarness().request
     messages = (
         {
@@ -402,3 +405,52 @@ def test_source_tree_stdio_launcher_returns_typed_pathless_runtime_error() -> No
     assert "input_path" not in wire
     assert "audit_out" not in wire
     assert str(ROOT).lower() not in wire
+
+    runtime_capabilities = MCPCapabilitiesOutputV4(
+        "jc/4.0",
+        "4.0.0rc1",
+        "deployed-tree",
+        DigestV4.from_bytes(b"engine"),
+        DigestV4.from_bytes(b"wheel"),
+        DigestV4.from_bytes(b"package"),
+        DigestV4.from_bytes(b"lock"),
+        DigestV4.from_bytes(b"schema"),
+        tool_spec_digest(),
+        TOOL_SPECS,
+        ResourceLimitsV4(),
+        None,
+        ContentRefV4("trust-policy-v4", DigestV4.from_bytes(b"trust")),
+        ContentRefV4("storage-capability-v4", DigestV4.from_bytes(b"storage")),
+        True,
+        False,
+    )
+    manifest = tmp_path / "runtime.json"
+    manifest.write_text(json.dumps({
+        "schema_version": "jc/runtime-manifest/1.0",
+        "capabilities": runtime_capabilities.to_dict(),
+    }), encoding="utf-8")
+    capability_messages = (
+        messages[0],
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "jc_capabilities", "arguments": {}},
+        },
+    )
+    configured = subprocess.run(
+        [sys.executable, "-B", "mcp_server.py"],
+        cwd=ROOT,
+        input="".join(json.dumps(item) + "\n" for item in capability_messages),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env={**os.environ, "JC_RUNTIME_MANIFEST": str(manifest)},
+        timeout=20,
+        check=False,
+    )
+    configured_tool = json.loads(configured.stdout.splitlines()[1])["result"]
+    assert configured.returncode == 0
+    assert configured.stderr == ""
+    assert configured_tool["isError"] is False
+    assert configured_tool["structuredContent"] == runtime_capabilities.to_dict()

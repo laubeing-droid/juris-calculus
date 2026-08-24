@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+import os
+from pathlib import Path
 from typing import Any
 
 from compiler_core.application import ApplicationV4
@@ -26,6 +28,7 @@ from compiler_core.contracts import (
     ReplayResultV4,
     ResourceLimitsV4,
 )
+from compiler_core.canonical_serialization import parse_json_document
 from compiler_core.rendering import RenderOutputV4, render_verified_bundle
 
 
@@ -34,6 +37,25 @@ EvaluationContextV4 = Callable[
 ]
 ReplayExecutorV4 = Callable[[object], ReplayExecutionV4]
 MCPOutputFactoryV4 = Callable[[EvaluationEnvelopeV4], MCPEvaluateOutputV4]
+
+
+def _environment_capabilities() -> MCPCapabilitiesOutputV4 | None:
+    manifest = os.environ.get("JC_RUNTIME_MANIFEST", "").strip()
+    if not manifest:
+        return None
+    try:
+        document = parse_json_document(Path(manifest).read_bytes())
+        if not isinstance(document, dict) or set(document) != {
+            "schema_version", "capabilities",
+        } or document["schema_version"] != "jc/runtime-manifest/1.0":
+            raise ValueError("runtime manifest fields are invalid")
+        return MCPCapabilitiesOutputV4.from_dict(document["capabilities"])
+    except (OSError, TypeError, UnicodeError, ValueError) as exc:
+        raise ClientV4Error(
+            "RUNTIME_MANIFEST_INVALID",
+            "V4 runtime manifest is unavailable or invalid",
+            stage="runtime",
+        ) from exc
 
 
 class ClientV4Error(RuntimeError):
@@ -88,7 +110,7 @@ class JCClient:
         self._clock = clock
         self._evaluation_context = evaluation_context
         self._replay_executor = replay_executor
-        self._capabilities = capabilities
+        self._capabilities = capabilities or _environment_capabilities()
         self._mcp_output_factory = mcp_output_factory
 
     @staticmethod
