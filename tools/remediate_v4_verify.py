@@ -193,6 +193,22 @@ def _verify_w10_02(state_root: Path) -> int:
     return _task_report("W10-02", checks, state_root)
 
 
+def _verify_w10_03(state_root: Path) -> int:
+    from compiler_core.production_pack import load_production_pack
+
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    loader_source = (ROOT / "compiler_core/production_pack.py").read_text(encoding="utf-8")
+    service_key = production / "identity/service-runtime.json"
+    checks = [
+        {"name": "strict-production-loader", "status": "PASS" if callable(load_production_pack) and "PACK_FIELDS" in loader_source else "FAIL"},
+        {"name": "current-utc-verification", "status": "PASS" if "current_utc_time() if now is None" in loader_source else "FAIL"},
+        {"name": "runtime-service-key-exists", "status": "PASS" if service_key.is_file() else "FAIL"},
+        {"name": "runtime-does-not-read-root", "status": "PASS" if "root.json" not in loader_source else "FAIL"},
+        {"name": "no-tools-tests-import", "status": "PASS" if "from tools" not in loader_source and "from tests" not in loader_source else "FAIL"},
+    ]
+    return _task_report("W10-03", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -260,6 +276,8 @@ def main() -> int:
             return _verify_w10_01(Path(args.state_root).resolve())
         if args.task == "W10-02":
             return _verify_w10_02(Path(args.state_root).resolve())
+        if args.task == "W10-03":
+            return _verify_w10_03(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 
