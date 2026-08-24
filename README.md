@@ -20,12 +20,13 @@ $epoch = git show -s --format=%ct HEAD
 python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
 python -m pip install .\dist\juris_calculus-4.0.0rc1-py3-none-any.whl
 $env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
+$env:JC_RUNTIME_FACTORY = "installed_runtime_host"
 jc capabilities --json
 ```
 
-The runtime host supplies `JC_RUNTIME_MANIFEST`. A manifest publishes runtime
-identity and capabilities; evaluation additionally requires an injected V4
-application, trust material, signed pack, and artifact store.
+The runtime host supplies `JC_RUNTIME_MANIFEST` and an installed module named by
+`JC_RUNTIME_FACTORY`. Its `create_client()` function returns the configured
+`JCClient` with the V4 application, trust material, signed pack, and artifact store.
 
 ## Formal workflow
 

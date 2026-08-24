@@ -178,6 +178,14 @@
   ],
   "declared_dynamic_edges": [
     {
+      "importer": "compiler_core/client.py",
+      "line": 280,
+      "kind": "dynamic_import",
+      "target_pattern": "installed-runtime-host",
+      "target_class": "PUBLIC_ADAPTER",
+      "closure_task": "W7-I01"
+    },
+    {
       "importer": "compiler_core/plugin_registry.py",
       "line": 74,
       "kind": "dynamic_import",

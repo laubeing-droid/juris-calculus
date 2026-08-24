@@ -10,7 +10,7 @@ from typing import Any, Sequence
 
 from compiler_core.application import ApplicationV4Error
 from compiler_core.audit_bundle import AuditBundleV4Error
-from compiler_core.client import ClientV4Error, JCClient
+from compiler_core.client import ClientV4Error, JCClient, runtime_client
 from compiler_core.contracts import (
     ArtifactHandleV4,
     CaseRequestV4,
@@ -205,7 +205,7 @@ def _write(document: dict[str, Any], *, json_output: bool) -> None:
 def main(argv: Sequence[str] | None = None, *, client: JCClient | None = None) -> int:
     try:
         args = build_parser().parse_args(list(argv) if argv is not None else None)
-        document, exit_code = _execute(args, client or JCClient())
+        document, exit_code = _execute(args, client or runtime_client())
         _write(document, json_output=bool(getattr(args, "json_output", False)))
         return exit_code
     except CLIError as exc:

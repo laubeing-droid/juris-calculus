@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+import importlib
 import os
 from pathlib import Path
+import re
 from typing import Any
 
 from compiler_core.application import ApplicationV4
@@ -262,4 +264,34 @@ class JCClient:
         )
 
 
-__all__ = ("ClientV4Error", "EvaluationContextV4", "JCClient")
+def runtime_client() -> JCClient:
+    """Load the host-installed runtime factory or retain the fail-closed client."""
+
+    module_name = os.environ.get("JC_RUNTIME_FACTORY", "").strip()
+    if not module_name:
+        return JCClient()
+    if re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*", module_name) is None:
+        raise ClientV4Error(
+            "RUNTIME_FACTORY_INVALID",
+            "runtime factory must be an installed Python module",
+            stage="runtime",
+        )
+    try:
+        factory = getattr(importlib.import_module(module_name), "create_client")
+        client = factory()
+    except (AttributeError, ImportError, TypeError) as exc:
+        raise ClientV4Error(
+            "RUNTIME_FACTORY_INVALID",
+            "runtime factory is unavailable or invalid",
+            stage="runtime",
+        ) from exc
+    if type(client) is not JCClient:
+        raise ClientV4Error(
+            "RUNTIME_FACTORY_INVALID",
+            "runtime factory returned an invalid client",
+            stage="runtime",
+        )
+    return client
+
+
+__all__ = ("ClientV4Error", "EvaluationContextV4", "JCClient", "runtime_client")

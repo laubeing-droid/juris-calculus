@@ -28,6 +28,7 @@ jc render --input artifact-handle.json --format markdown --audience agent --json
 | 5 | Replay or integrity mismatch. |
 | 6 | Optional pack/component missing. |
 
-`JC_RUNTIME_MANIFEST` configures published capabilities only. Evaluation, verification,
-replay, artifact reads, and rendering fail closed unless the host injects their V4
-runtime authorities. See `jc <command> --help` for exact arguments.
+`JC_RUNTIME_MANIFEST` configures published capabilities. `JC_RUNTIME_FACTORY` names an
+installed module whose `create_client()` returns the configured `JCClient`. Evaluation,
+verification, replay, artifact reads, and rendering fail closed when that host factory is
+absent. See `jc <command> --help` for exact arguments.

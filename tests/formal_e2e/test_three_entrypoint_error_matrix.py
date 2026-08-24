@@ -19,7 +19,7 @@ from compiler_core.application import ApplicationV4, ApplicationV4Error
 from compiler_core.audit_bundle import AuditBundleStoreV4
 from compiler_core.backend_router import BackendV4Error
 from compiler_core.canonical_serialization import DigestV4
-from compiler_core.client import JCClient
+from compiler_core.client import JCClient, runtime_client
 from compiler_core.contracts import (
     CanonicalTimeV4,
     CaseRequestV4,
@@ -366,7 +366,10 @@ def test_storage_error_is_typed_retryable_redacted_and_uncommitted(
     assert str(tmp_path.resolve()) not in wire
 
 
-def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(tmp_path: Path) -> None:
+def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     request = _ChainHarness().request
     messages = (
         {
@@ -454,3 +457,20 @@ def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(tmp_path: Pat
     assert configured.stderr == ""
     assert configured_tool["isError"] is False
     assert configured_tool["structuredContent"] == runtime_capabilities.to_dict()
+
+    factory = tmp_path / "jc_test_runtime_factory.py"
+    factory.write_text(
+        "from compiler_core.client import JCClient\n"
+        "def create_client():\n"
+        "    client = JCClient()\n"
+        "    client._factory_loaded = True\n"
+        "    return client\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setenv("JC_RUNTIME_FACTORY", "jc_test_runtime_factory")
+
+    client = runtime_client()
+
+    assert type(client) is JCClient
+    assert client._factory_loaded is True
