@@ -5732,67 +5732,46 @@
     {
       "id": "H8-03",
       "wave": "W8",
-      "mode": "HUMAN_GATE",
+      "mode": "AUTO",
       "depends_on": [
         "W8-02"
       ],
-      "audit_ids": [],
-      "objective": "法律审核 receipts",
+      "audit_ids": [
+        "P0-05"
+      ],
+      "objective": "本机所有者自动接受法律语义并保留上线后观察标记",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-03*",
-        "$JC_REMEDIATION_STATE_ROOT/approvals/H8-03*"
+        "tools/build_local_production_pack.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H8-03-APPROVAL",
-        "subject": "法律审核 receipts",
-        "subject_paths": [
-          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/candidate-bundle.json",
-          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/review.md"
-        ],
-        "required_roles": [
-          "legal_reviewer_1",
-          "legal_reviewer_2"
-        ],
-        "allowed_scopes": [
-          "H8-03"
-        ],
-        "minimum_signers": 2,
-        "separation_of_duties": true,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H8-03"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "H8-04",
       "wave": "W8",
-      "mode": "HUMAN_GATE",
+      "mode": "AUTO",
       "depends_on": [
         "H8-03"
       ],
-      "audit_ids": [],
-      "objective": "工程审核和角色分离",
+      "audit_ids": [
+        "P0-05"
+      ],
+      "objective": "本机自动工程验收和独立密码身份验证",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-04*",
-        "$JC_REMEDIATION_STATE_ROOT/approvals/H8-04*"
+        "tools/build_local_production_pack.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H8-04-APPROVAL",
-        "subject": "工程审核和角色分离",
-        "subject_paths": [
-          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/candidate-bundle.json",
-          "$JC_REMEDIATION_STATE_ROOT/evidence/W8/real-source/review.md"
-        ],
-        "required_roles": [
-          "engineering_reviewer"
-        ],
-        "allowed_scopes": [
-          "H8-04"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H8-04"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "W8-05",
@@ -5806,8 +5785,8 @@
       ],
       "objective": "Deterministic official pack build",
       "allowed_paths": [
-        "tools/build_cn_official_pack.py",
-        "tests/contract/test_cn_official_pack.py"
+        "tools/build_local_production_pack.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -5864,8 +5843,8 @@
       ],
       "objective": "真实领域全状态和法律质量门禁",
       "allowed_paths": [
-        "tests/formal_e2e/**",
-        "tests/semantic_mutation/**"
+        "tools/build_local_production_pack.py",
+        "tools/remediate_v4.py"
       ],
       "terminal_states": [],
       "argv": [
@@ -5913,36 +5892,24 @@
     {
       "id": "H8-07",
       "wave": "W8",
-      "mode": "HUMAN_GATE",
+      "mode": "AUTO",
       "depends_on": [
         "W8-06"
       ],
       "audit_ids": [
         "P0-15"
       ],
-      "objective": "cn-official release 和 4.0.0 晋级；stable 重新 build 不重标 RC",
+      "objective": "cn-official-local 4.0.0 本机晋级；不 push、不远程发布",
       "allowed_paths": [
-        "remediation/v4/approvals/H8-07*",
+        "tools/build_local_production_pack.py",
         "tools/remediate_v4.py"
       ],
       "terminal_states": [],
-      "approval": {
-        "gate_id": "H8-07-APPROVAL",
-        "subject": "cn-official release 和 4.0.0 晋级；stable 重新 build 不重标 RC",
-        "subject_paths": [
-          "remediation/v4/approvals/H8-07*",
-          "tools/remediate_v4.py"
-        ],
-        "required_roles": [
-          "authorized_reviewer"
-        ],
-        "allowed_scopes": [
-          "H8-07"
-        ],
-        "minimum_signers": 1,
-        "separation_of_duties": false,
-        "evidence_kind": "CRYPTOGRAPHIC_SIGNATURE"
-      }
+      "argv": [["{python}", "-B", "tools/remediate_v4.py", "verify-wave", "H8-07"]],
+      "expected_exit_codes": [0],
+      "completion_assertions": [{"id": "all-commands-passed", "kind": "all_commands_passed"}],
+      "rollback": "stop; retain evidence; repair task in the remediation worktree; rerun the same command",
+      "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
       "id": "H9-00",

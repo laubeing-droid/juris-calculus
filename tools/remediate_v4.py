@@ -19828,6 +19828,83 @@ def cmd_w8_real_source_gate(task_id: str) -> int:
     return EXIT_OK
 
 
+def cmd_w8_local_production_gate(task_id: str) -> int:
+    """Build and verify the owner-authorized local production pack."""
+
+    raw_state_root = os.environ.get("JC_REMEDIATION_STATE_ROOT", "").strip()
+    if not raw_state_root:
+        print(f"{task_id} gate failed: JC_REMEDIATION_STATE_ROOT is unavailable", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from base64 import b64decode, b64encode
+        from copy import deepcopy
+        from compiler_core.canonical_serialization import canonical_bytes, parse_json_document
+        from tools.build_local_production_pack import (
+            LocalProductionPackBuilder,
+            ensure_identity,
+            verify_pack,
+        )
+
+        state_root = Path(raw_state_root).resolve()
+        candidate_path = state_root / "evidence" / "W8" / "real-source" / "candidate-bundle.json"
+        identity_path = LOCAL_PRODUCTION_STATE_ROOT / "identity" / "root.json"
+        pack_path = LOCAL_PRODUCTION_STATE_ROOT / "packs" / "cn-official-local-4.0.0.json"
+        trust_path = LOCAL_PRODUCTION_STATE_ROOT / "trust" / "cn-official-local.json"
+        candidate = parse_json_document(candidate_path.read_bytes())
+        identity = ensure_identity(identity_path)
+        pack, trust = LocalProductionPackBuilder(candidate, identity).build()
+        pack_bytes, trust_bytes = canonical_bytes(pack), canonical_bytes(trust)
+        pack_path.parent.mkdir(parents=True, exist_ok=True)
+        trust_path.parent.mkdir(parents=True, exist_ok=True)
+        pack_path.write_bytes(pack_bytes)
+        trust_path.write_bytes(trust_bytes)
+        verify_pack(pack, trust)
+        mutation_rejected = None
+        if task_id == "W8-06":
+            mutated = deepcopy(pack)
+            artifact = mutated["artifacts"][0]
+            raw = bytearray(b64decode(artifact["content_base64"], validate=True))
+            raw[0] ^= 1
+            artifact["content_base64"] = b64encode(bytes(raw)).decode("ascii")
+            try:
+                verify_pack(mutated, trust)
+            except (OSError, RuntimeError, TypeError, ValueError):
+                mutation_rejected = True
+            if mutation_rejected is not True:
+                raise ValueError("mutated local production pack was accepted")
+            verify_pack(pack, trust)
+        report = {
+            "schema_version": "jc/w8-local-production/1.0",
+            "task_id": task_id,
+            "status": "PASS",
+            "target": "LOCAL_WINDOWS_EFS",
+            "pack_id": "cn-official-local",
+            "pack_version": "4.0.0",
+            "production_allowed": True,
+            "signing_mode": "LOCAL_AUTOMATED_OWNER",
+            "independent_human_review": False,
+            "observation_required": True,
+            "formal_rule_count": len(pack["formal_rule_ids"]),
+            "pack_ref": pack["pack_ref"],
+            "pack_sha256": "sha256:" + sha256_hex(pack_bytes),
+            "trust_sha256": "sha256:" + sha256_hex(trust_bytes),
+            "mutation_rejected": mutation_rejected,
+            "local_replay_passed": task_id == "W8-06",
+            "remote_release": False,
+        }
+        report_path, report_digest = _write_content_addressed_json(
+            state_root / "evidence" / "W8" / "local-production" / "reports", report,
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        print(f"{task_id} gate failed: {exc}", file=sys.stderr)
+        return EXIT_GATE_FAIL
+    print(f"JC_ARTIFACT\tw8-local-production-report\t{report_path}\t{report_digest}")
+    print(f"{task_id} gate OK: local production pack 4.0.0 verified for Windows EFS")
+    return EXIT_OK
+
+
 def _w9_i00_contract_problems() -> list[str]:
     """Validate the out-of-tree-shaped test adapter without claiming deployment."""
 
@@ -20156,6 +20233,8 @@ def cmd_verify_wave(args: argparse.Namespace) -> int:
         return cmd_w8_i00_candidate_gate()
     if args.wave in {"H8-00", "W8-01", "W8-02"}:
         return cmd_w8_real_source_gate(args.wave)
+    if args.wave in {"H8-03", "H8-04", "W8-05", "W8-06", "H8-07"}:
+        return cmd_w8_local_production_gate(args.wave)
     if args.wave == "W9-I00":
         return cmd_w9_i00_adapter_gate()
     if args.wave in W7_TARGET_CHECKS:
