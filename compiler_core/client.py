@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager
 import importlib
 import os
 from pathlib import Path
@@ -19,6 +20,7 @@ from compiler_core.audit_bundle import (
 from compiler_core.contracts import (
     ArtifactHandleV4,
     CanonicalTimeV4,
+    CaseInputBundleV4,
     CaseRequestV4,
     ContentRefV4,
     EvaluationEnvelopeV4,
@@ -35,7 +37,7 @@ from compiler_core.rendering import RenderOutputV4, render_verified_bundle
 
 
 EvaluationContextV4 = Callable[
-    [CaseRequestV4], tuple[ContentRefV4, ContentRefV4, str]
+    [CaseInputBundleV4], AbstractContextManager[tuple[ContentRefV4, ContentRefV4, str]]
 ]
 ReplayExecutorV4 = Callable[[object], ReplayExecutionV4]
 MCPOutputFactoryV4 = Callable[[EvaluationEnvelopeV4], MCPEvaluateOutputV4]
@@ -125,6 +127,20 @@ class JCClient:
             raise ClientV4Error("INVALID_CASE_REQUEST", "request must be a JSON object")
         return CaseRequestV4.from_dict(dict(payload))
 
+    @staticmethod
+    def validate_bundle(
+        payload: CaseInputBundleV4 | Mapping[str, Any] | bytes | str,
+    ) -> CaseInputBundleV4:
+        if type(payload) is CaseInputBundleV4:
+            return payload
+        if type(payload) is bytes:
+            return CaseInputBundleV4.from_json_bytes(payload)
+        if type(payload) is str:
+            return CaseInputBundleV4.from_json_bytes(payload.encode("utf-8"))
+        if not isinstance(payload, Mapping):
+            raise ClientV4Error("INVALID_CASE_BUNDLE", "case bundle must be a JSON object")
+        return CaseInputBundleV4.from_dict(dict(payload))
+
     def _now(self) -> CanonicalTimeV4:
         if self._clock is None:
             raise ClientV4Error(
@@ -146,7 +162,7 @@ class JCClient:
 
     def evaluate(
         self,
-        request: CaseRequestV4 | Mapping[str, Any],
+        case_bundle: CaseInputBundleV4 | Mapping[str, Any] | bytes | str,
         *,
         limits: ResourceLimitsV4 | None = None,
         seed: int = 0,
@@ -157,26 +173,25 @@ class JCClient:
                 "V4 application and derived runtime context are not configured",
                 stage="runtime",
             )
-        admitted = (
-            request if type(request) is CaseRequestV4 else self.validate_request(request)
-        )
-        request_ref, run_identity_ref, case_scope = self._evaluation_context(admitted)
-        if (
-            type(request_ref) is not ContentRefV4
-            or type(run_identity_ref) is not ContentRefV4
-            or type(case_scope) is not str
-            or not case_scope
-        ):
-            raise ClientV4Error(
-                "RUNTIME_CONTEXT", "derived evaluation context is invalid", stage="runtime"
+        admitted = self.validate_bundle(case_bundle)
+        with self._evaluation_context(admitted) as context:
+            request_ref, run_identity_ref, case_scope = context
+            if (
+                type(request_ref) is not ContentRefV4
+                or type(run_identity_ref) is not ContentRefV4
+                or type(case_scope) is not str
+                or not case_scope
+            ):
+                raise ClientV4Error(
+                    "RUNTIME_CONTEXT", "derived evaluation context is invalid", stage="runtime"
+                )
+            return self._application.evaluate(
+                request_ref,
+                run_identity_ref,
+                case_scope=case_scope,
+                limits=limits,
+                seed=seed,
             )
-        return self._application.evaluate(
-            request_ref,
-            run_identity_ref,
-            case_scope=case_scope,
-            limits=limits,
-            seed=seed,
-        )
 
     def evaluate_for_mcp(self, request: MCPEvaluateInputV4) -> MCPEvaluateOutputV4:
         if self._mcp_output_factory is None:
@@ -185,13 +200,7 @@ class JCClient:
                 "MCP artifact-handle issuer is not configured",
                 stage="runtime",
             )
-        if request.request is None:
-            raise ClientV4Error(
-                "REQUEST_HANDLE_UNAVAILABLE",
-                "request handles require a configured inbound artifact authority",
-                stage="resolver",
-            )
-        return self._mcp_output_factory(self.evaluate(request.request))
+        return self._mcp_output_factory(self.evaluate(request.case_bundle))
 
     def _store(self) -> AuditBundleStoreV4:
         if self._audit_store is None:

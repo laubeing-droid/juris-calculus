@@ -10,9 +10,15 @@ import re
 from threading import Lock
 from types import MappingProxyType
 
-from compiler_core.canonical_serialization import DigestV4
+from compiler_core.canonical_serialization import (
+    CanonicalizationError,
+    DigestV4,
+    parse_json_document,
+)
 from compiler_core.contracts import (
     ArtifactHandleV4,
+    CaseArtifactV4,
+    CaseInputBundleV4,
     ContentRefV4,
     ContractV4Error,
     DEFAULT_RESOURCE_LIMITS_V4,
@@ -118,6 +124,94 @@ class ArtifactResolverV4:
                 for reference, record in self._by_ref.items()
             })
         token = self._active_snapshot.set(records)
+        try:
+            yield
+        finally:
+            self._active_snapshot.reset(token)
+
+    def contains(self, content_ref: ContentRefV4) -> bool:
+        exact_ref = _content_ref(content_ref)
+        snapshot = self._active_snapshot.get()
+        if snapshot is not None:
+            return exact_ref in snapshot
+        with self._lock:
+            return exact_ref in self._by_ref
+
+    @staticmethod
+    def _wire_refs(value: object) -> Iterator[ContentRefV4]:
+        stack = [value]
+        while stack:
+            current = stack.pop()
+            if type(current) is dict:
+                if set(current) == {"kind", "digest"}:
+                    try:
+                        yield ContentRefV4.from_dict(current)
+                    except ContractV4Error:
+                        pass
+                else:
+                    stack.extend(current.values())
+            elif type(current) is list:
+                stack.extend(current)
+
+    def validate_case_bundle(self, bundle: CaseInputBundleV4) -> None:
+        if type(bundle) is not CaseInputBundleV4:
+            _fail("CASE_BUNDLE_TYPE", "bundle must be CaseInputBundleV4")
+        records = {item.content_ref: item for item in bundle.artifacts}
+        roots = (
+            bundle.request.source_bundle_ref,
+            bundle.request.evidence_manifest_ref,
+            *bundle.request.fact_attestation_refs,
+            *bundle.request.proposal_refs,
+        )
+        pending = list(roots)
+        visited: set[ContentRefV4] = set()
+        while pending:
+            reference = pending.pop()
+            if reference in visited:
+                continue
+            visited.add(reference)
+            item = records.get(reference)
+            if item is None:
+                if self.contains(reference):
+                    continue
+                _fail("CASE_BUNDLE_INCOMPLETE", "case artifact reference is missing")
+            try:
+                value = parse_json_document(item.content_bytes())
+            except (CanonicalizationError, UnicodeDecodeError) as exc:
+                if item.media_type == "application/json":
+                    raise ContractV4Error(
+                        "CASE_ARTIFACT_JSON", "JSON case artifact is invalid"
+                    ) from exc
+                continue
+            pending.extend(self._wire_refs(value))
+        orphaned = set(records) - visited
+        if orphaned:
+            _fail("CASE_BUNDLE_ORPHAN", "case bundle contains an unreachable artifact")
+
+    @contextmanager
+    def overlay(self, artifacts: tuple[CaseArtifactV4, ...]) -> Iterator[None]:
+        if self._active_snapshot.get() is not None:
+            _fail("ARTIFACT_OVERLAY_NESTED", "resolver overlays cannot be nested")
+        proposed: dict[ContentRefV4, _ArtifactRecordV4] = {}
+        by_id: dict[str, _ArtifactRecordV4] = {}
+        with self._lock:
+            global_records = dict(self._by_ref)
+            global_ids = set(self._by_id)
+        for item in artifacts:
+            if type(item) is not CaseArtifactV4:
+                _fail("CASE_ARTIFACT_TYPE", "overlay entries must be CaseArtifactV4")
+            if item.content_ref in global_records or item.artifact_id in global_ids:
+                _fail("ARTIFACT_NAMESPACE_COLLISION", "case artifact collides with pack namespace")
+            record = _ArtifactRecordV4(
+                item.artifact_id, item.content_ref, item.artifact_kind,
+                item.media_type, item.scope, item.content_bytes(),
+            )
+            if item.content_ref in proposed or item.artifact_id in by_id:
+                _fail("ARTIFACT_REFERENCE_COLLISION", "overlay contains duplicate bindings")
+            proposed[item.content_ref] = record
+            by_id[item.artifact_id] = record
+        snapshot = MappingProxyType({**global_records, **proposed})
+        token = self._active_snapshot.set(snapshot)
         try:
             yield
         finally:

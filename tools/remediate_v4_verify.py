@@ -177,6 +177,22 @@ def _verify_w10_01(state_root: Path) -> int:
     return _task_report("W10-01", checks, state_root)
 
 
+def _verify_w10_02(state_root: Path) -> int:
+    from compiler_core.artifact_store import ArtifactResolverV4
+    from compiler_core.client import JCClient
+
+    resolver_source = (ROOT / "compiler_core/artifact_store.py").read_text(encoding="utf-8")
+    client_source = (ROOT / "compiler_core/client.py").read_text(encoding="utf-8")
+    checks = [
+        {"name": "overlay-context-manager", "status": "PASS" if callable(getattr(ArtifactResolverV4, "overlay", None)) and "ContextVar" in resolver_source else "FAIL"},
+        {"name": "bundle-closure-validator", "status": "PASS" if callable(getattr(ArtifactResolverV4, "validate_case_bundle", None)) else "FAIL"},
+        {"name": "client-bundle-boundary", "status": "PASS" if callable(getattr(JCClient, "validate_bundle", None)) and "with self._evaluation_context(admitted)" in client_source else "FAIL"},
+        {"name": "no-overlay-dict-clear", "status": "PASS" if ".clear()" not in resolver_source else "FAIL"},
+        {"name": "no-process-restart-isolation", "status": "PASS" if "subprocess" not in resolver_source and "multiprocessing" not in resolver_source else "FAIL"},
+    ]
+    return _task_report("W10-02", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -242,6 +258,8 @@ def main() -> int:
             return _verify_w10_00(Path(args.state_root).resolve())
         if args.task == "W10-01":
             return _verify_w10_01(Path(args.state_root).resolve())
+        if args.task == "W10-02":
+            return _verify_w10_02(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

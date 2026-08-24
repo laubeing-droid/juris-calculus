@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from base64 import b64encode
+
 import builtins
 from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +22,8 @@ from compiler_core.artifact_store import ArtifactResolverV4
 from compiler_core.canonical_serialization import DigestV4, digest_value
 from compiler_core.contracts import (
     ArtifactHandleV4,
+    CaseArtifactV4,
+    CaseInputBundleV4,
     CanonicalTimeV4,
     ContentRefV4,
     ContractV4Error,
@@ -745,3 +749,93 @@ def test_process_local_colliding_writer_smoke_never_overwrites_the_winner() -> N
             max_bytes=1024,
         )
     ) == winner
+
+
+def _case_artifact(identifier: str, content: bytes) -> CaseArtifactV4:
+    return CaseArtifactV4(
+        identifier, ContentRefV4("case-json", DigestV4.from_bytes(content)),
+        "case-json", "application/json", "case-input", b64encode(content).decode("ascii"),
+    )
+
+
+def _complete_case_bundle() -> CaseInputBundleV4:
+    from tests.contract.test_case_input_bundle import bundle as incomplete_bundle
+
+    value = incomplete_bundle()
+    evidence = _case_artifact("evidence", b"{}")
+    request = value.request.to_dict()
+    request["evidence_manifest_ref"] = evidence.content_ref.to_dict()
+    body = {
+        "schema_version": value.schema_version,
+        "bundle_id": value.bundle_id,
+        "request": request,
+        "artifacts": [value.artifacts[0].to_dict(), evidence.to_dict()],
+    }
+    return CaseInputBundleV4.from_dict({**body, "bundle_digest": str(digest_value(body))})
+
+
+def test_case_overlay_does_not_grow_global_records() -> None:
+    resolver = ArtifactResolverV4(max_artifact_bytes=1_048_576)
+    initial = len(resolver._by_ref)
+    for index in range(100):
+        item = _case_artifact("same-id", f'{{"case":{index}}}'.encode())
+        with resolver.overlay((item,)):
+            assert resolver.resolve_content(
+                item.content_ref, expected_artifact_kind=item.artifact_kind,
+                expected_media_type=item.media_type, expected_scope=item.scope,
+                max_bytes=100,
+            ) == item.content_bytes()
+    assert len(resolver._by_ref) == initial
+    assert not resolver.contains(item.content_ref)
+
+
+def test_parallel_case_overlays_with_same_id_are_isolated() -> None:
+    resolver = ArtifactResolverV4(max_artifact_bytes=1_048_576)
+
+    def resolve(content: bytes) -> bytes:
+        item = _case_artifact("shared-id", content)
+        with resolver.overlay((item,)):
+            return resolver.resolve_content(
+                item.content_ref, expected_artifact_kind=item.artifact_kind,
+                expected_media_type=item.media_type, expected_scope=item.scope,
+                max_bytes=100,
+            )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert set(pool.map(resolve, (b'{"case":1}', b'{"case":2}'))) == {
+            b'{"case":1}', b'{"case":2}'
+        }
+
+
+def test_case_overlay_cleans_up_and_blocks_pack_collision() -> None:
+    resolver = ArtifactResolverV4(max_artifact_bytes=1_048_576)
+    item = _case_artifact("case", b"{}")
+    with pytest.raises(RuntimeError):
+        with resolver.overlay((item,)):
+            raise RuntimeError("boom")
+    assert not resolver.contains(item.content_ref)
+    resolver.register_bytes(
+        artifact_id=item.artifact_id, content_ref=item.content_ref,
+        artifact_kind=item.artifact_kind, media_type=item.media_type,
+        scope=item.scope, content=item.content_bytes(),
+    )
+    with pytest.raises(ContractV4Error, match="ARTIFACT_NAMESPACE_COLLISION"):
+        with resolver.overlay((item,)):
+            pass
+
+
+def test_case_bundle_closure_rejects_missing_and_orphan_artifacts() -> None:
+    from tests.contract.test_case_input_bundle import bundle as incomplete_bundle
+
+    resolver = ArtifactResolverV4(max_artifact_bytes=1_048_576)
+    with pytest.raises(ContractV4Error, match="CASE_BUNDLE_INCOMPLETE"):
+        resolver.validate_case_bundle(incomplete_bundle())
+    complete = _complete_case_bundle()
+    resolver.validate_case_bundle(complete)
+    orphan = _case_artifact("orphan", b'{"orphan":true}')
+    body = complete.digest_body()
+    body["artifacts"].append(orphan.to_dict())
+    with pytest.raises(ContractV4Error, match="CASE_BUNDLE_ORPHAN"):
+        resolver.validate_case_bundle(CaseInputBundleV4.from_dict({
+            **body, "bundle_digest": str(digest_value(body)),
+        }))
