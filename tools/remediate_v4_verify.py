@@ -307,6 +307,45 @@ def _verify_w10_07(state_root: Path) -> int:
     return _task_report("W10-07", checks, state_root)
 
 
+def _verify_w10_08(state_root: Path) -> int:
+    from compiler_core.canonical_serialization import canonical_bytes
+    from compiler_core.formal_bridge import load_active_profile
+
+    production = ROOT.parent / "juris-calculus-v4-production-state"
+    current_path = production / "deployment/current.json"
+    registry_path = production / "deployment/profile-registry.json"
+    previous_path = production / "deployment/previous.json"
+    current = json.loads(current_path.read_bytes()) if current_path.is_file() else {}
+    manifest_path = Path(current.get("manifest_path", "."))
+    manifest = json.loads(manifest_path.read_bytes()) if manifest_path.is_file() else {}
+    chain_path = Path(current.get("verification_path", "."))
+    chain = json.loads(chain_path.read_bytes()) if chain_path.is_file() else {}
+    positives = chain.get("positive_runs", [])
+    matrix = chain.get("state_matrix", {})
+    expected_matrix = {
+        "missing": "missing_required_fact",
+        "review": "review_only_result",
+        "hypothetical": "hypothetical_result",
+    }
+    checks = [
+        {"name": "active-current-canonical", "status": "PASS" if current and current_path.read_bytes() == canonical_bytes(current) and current.get("status") == "LOCAL_PRODUCTION_ACTIVE" else "FAIL"},
+        {"name": "release-binding", "status": "PASS" if manifest and current.get("release_id") == manifest.get("release_id") and current.get("manifest_digest") == _digest(manifest_path) else "FAIL"},
+        {"name": "six-positive-installed-runs", "status": "PASS" if [row.get("article") for row in positives] == list(range(13, 19)) and all(row.get("decision_status") == "accepted_formal_result" for row in positives) else "FAIL"},
+        {"name": "verify-replay-read", "status": "PASS" if positives and all(row.get("verification", {}).get("status") == "VERIFIED" and row.get("replay", {}).get("status") == "MATCH" and row.get("reads") for row in positives) else "FAIL"},
+        {"name": "nonformal-state-matrix", "status": "PASS" if all(matrix.get(name, {}).get("decision_status") == status for name, status in expected_matrix.items()) and ("error_code" in matrix.get("wrong_fact_signature", {}) or matrix.get("wrong_fact_signature", {}).get("decision_status") in {"blocked", "engine_error"}) else "FAIL"},
+        {"name": "formal-bridge-exact-delivery", "status": "PASS" if chain.get("formal_bridge", {}).get("marker") == "JC_FORMAL_VERIFIED" else "FAIL"},
+        {"name": "positive-chain-binding", "status": "PASS" if chain.get("release_id") == current.get("release_id") and current.get("verification_digest") == _digest(chain_path) else "FAIL"},
+        {"name": "legacy-previous-not-rollbackable", "status": "PASS" if previous_path.is_file() and json.loads(previous_path.read_bytes()).get("production_rollback_allowed") is False else "FAIL"},
+        {"name": "efs-active-scope", "status": "PASS" if manifest.get("efs", {}).get("algorithm") == "EFS-AES-256" and current.get("scope") == "local-windows-efs-pipl-articles-13-18" else "FAIL"},
+    ]
+    try:
+        profile = load_active_profile(registry_path)
+        checks.append({"name": "active-installed-profile", "status": "PASS" if profile.profile_id == current.get("release_id") else "FAIL"})
+    except (OSError, TypeError, ValueError):
+        checks.append({"name": "active-installed-profile", "status": "FAIL"})
+    return _task_report("W10-08", checks, state_root)
+
+
 def _rg(pattern: str, file_glob: list[str] | None = None) -> list[tuple[str, int, str]]:
     args = ["rg", "--no-heading", "--line-number",
             "-g", "!.codegraph/**", "-g", "!.git/**", pattern]
@@ -384,6 +423,8 @@ def main() -> int:
             return _verify_w10_06(Path(args.state_root).resolve())
         if args.task == "W10-07":
             return _verify_w10_07(Path(args.state_root).resolve())
+        if args.task == "W10-08":
+            return _verify_w10_08(Path(args.state_root).resolve())
         print(f"{args.task} verifier is not implemented", file=sys.stderr)
         return 1
 

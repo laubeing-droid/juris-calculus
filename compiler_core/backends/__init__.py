@@ -560,6 +560,30 @@ def execute_aaf(problem_bytes: bytes) -> ProviderRunV4:
                 ))
             else:
                 permits = row["permits"]
+                standalone = source == target
+                if standalone:
+                    if (
+                        source_ref.kind != "rule-permission"
+                        or modality_by_id[source] != "PERMISSION"
+                        or row["relation_kind"] not in {"exception", "standalone"}
+                        or type(row["permission_id"]) is not str
+                        or not row["permission_id"]
+                        or type(permits) is not str
+                        or not permits
+                    ):
+                        raise ProviderV4Error(
+                            "UNSUPPORTED_SEMANTICS",
+                            "standalone permission is malformed",
+                        )
+                    if source not in refs:
+                        continue
+                    permissions.append(PermissionRelationV4(
+                        permission_id=row["permission_id"],
+                        permission_claim_ref=by_id[source].claim_ref,
+                        prohibition_claim_ref=None,
+                        source_ref=source_ref,
+                    ))
+                    continue
                 if (
                     source_ref.kind != "rule-permission"
                     or modality_by_id[source] != "PERMISSION"

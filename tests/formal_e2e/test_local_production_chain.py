@@ -4,6 +4,7 @@ from base64 import b64decode, b64encode
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -84,13 +85,21 @@ def _case_artifact(
     )
 
 
-def production_bundle(article: int = 13) -> CaseInputBundleV4:
+def production_bundle(
+    article: int = 13,
+    *,
+    fact_key: str | None = None,
+    dispute_state: str = "UNDISPUTED",
+    assumption_state: str = "NONE",
+) -> CaseInputBundleV4:
     loaded = load_production_pack(
         PRODUCTION / "packs/cn-official-local-4.0.0.json",
         PRODUCTION / "trust/cn-official-local.json",
         PRODUCTION / "identity/service-runtime.json",
     )
     now = current_utc_time()
+    fact_key = fact_key or FACTS[article]
+    variant = f"{article}-{dispute_state.lower()}-{assumption_state.lower()}-{fact_key}"
     source_ref = loaded.verified_pack.manifest.source_refs[0]
     source_raw = loaded.resolver.resolve_content(
         source_ref, expected_artifact_kind=SOURCE_SNAPSHOT_KIND,
@@ -119,7 +128,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
 
     proposition_ref = add_json(
         FACT_PROPOSITION_KIND,
-        {"schema_version": "jc/fact-proposition/1.0", "proposition": FACTS[article]},
+        {"schema_version": "jc/fact-proposition/1.0", "proposition": fact_key},
         FACT_ADMISSION_SCOPE,
     )
     value_ref = add_json(
@@ -148,7 +157,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
         len(artifacts) + 1, evidence_ref, evidence.canonical_bytes(), scope=CASE_EVIDENCE_SCOPE,
     ))
     candidate = FactCandidateV4(
-        f"pipl-{article}-candidate", proposition_ref, "boolean", value_ref,
+        f"pipl-{variant}-candidate", proposition_ref, "boolean", value_ref,
         (evidence_ref,), "lawyer", None,
     )
     candidate_ref = ContentRefV4(FACT_CANDIDATE_KIND, candidate.canonical_digest())
@@ -162,7 +171,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
     )
     placeholder = ContentRefV4("placeholder", DigestV4.from_bytes(b"placeholder"))
     seed_request = CaseRequestV4(
-        f"pipl-{article}-request", "jc/4.0",
+        f"pipl-{variant}-request", "jc/4.0",
         LegalContextV4("CN", "中华人民共和国个人信息保护法"), now,
         source_bundle_ref, placeholder, (placeholder,), loaded.pack_ref,
         (RequestedOutputV4("semantic_result", "json", "zh-CN"),), (rule_ref,),
@@ -181,7 +190,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
     }
     assert DigestV4.from_bytes(canonical_bytes(binding_body)) == request_binding.digest
     manifest_body = {
-        "manifest_id": f"pipl-{article}-manifest", "request_ref": request_binding.to_dict(),
+        "manifest_id": f"pipl-{variant}-manifest", "request_ref": request_binding.to_dict(),
         "case_scope": CASE_SCOPE, "items": [evidence.to_dict()],
         "fact_candidate_refs": [candidate_ref.to_dict()], "contradictions": [],
     }
@@ -200,15 +209,15 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
         replay_policy_ref=loaded.policy.replay_policy_ref,
     )
     attestation_body = {
-        "attestation_id": f"pipl-{article}-attestation", "candidate_ref": candidate_ref.to_dict(),
+        "attestation_id": f"pipl-{variant}-attestation", "candidate_ref": candidate_ref.to_dict(),
         "request_ref": request_binding.to_dict(), "case_scope": CASE_SCOPE,
         "proposition_digest": str(proposition_ref.digest), "value_digest": str(value_ref.digest),
         "source_refs": [source_ref.to_dict()], "evidence_refs": [evidence_ref.to_dict()],
         "interpretation_version": "local-production-v1",
         "admission_basis": "documentary_evidence_human_reviewed",
         "issuer_role": "legal_reviewer", "issued_at": now.to_dict(),
-        "expires_at": loaded.policy.valid_to.to_dict(), "dispute_state": "UNDISPUTED",
-        "assumption_state": "NONE", "nonce": f"pipl-{article}-legal-fact",
+        "expires_at": loaded.policy.valid_to.to_dict(), "dispute_state": dispute_state,
+        "assumption_state": assumption_state, "nonce": f"pipl-{variant}-legal-fact",
         "replay_policy_ref": loaded.policy.replay_policy_ref.to_dict(), "revocation_ref": None,
     }
     signature_body = {
@@ -217,7 +226,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
         "scope": "legal-approval", "kind": "legal-approval", "schema_version": "jc/4.0",
         "subject_digest": str(candidate_ref.digest), "run_identity_ref": None,
         "status": "APPROVED", "issued_at": now.to_dict(),
-        "expires_at": loaded.policy.valid_to.to_dict(), "nonce": f"pipl-{article}-legal-fact",
+        "expires_at": loaded.policy.valid_to.to_dict(), "nonce": f"pipl-{variant}-legal-fact",
         "evidence_refs": [item.to_dict() for item in legal_evidence],
         "payload_digest": str(digest_value(attestation_body)),
         "policy_digest": str(loaded.policy.policy_digest),
@@ -241,7 +250,7 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
     )
     body = {
         "schema_version": "jc/case-input-bundle/1.0",
-        "bundle_id": f"pipl-{article}-bundle", "request": request.to_dict(),
+        "bundle_id": f"pipl-{variant}-bundle", "request": request.to_dict(),
         "artifacts": [item.to_dict() for item in artifacts],
     }
     return CaseInputBundleV4.from_dict({
@@ -249,11 +258,14 @@ def production_bundle(article: int = 13) -> CaseInputBundleV4:
     })
 
 
-def test_article_15_real_production_chain_and_handles(tmp_path: Path, monkeypatch) -> None:
+@pytest.mark.parametrize("article", range(13, 19))
+def test_six_article_real_production_chain_and_handles(
+    article: int, tmp_path: Path, monkeypatch
+) -> None:
     config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
     monkeypatch.setenv("JC_PRODUCTION_CONFIG", str(config))
     client = create_client()
-    output = client.evaluate_for_mcp(MCPEvaluateInputV4(production_bundle(15)))
+    output = client.evaluate_for_mcp(MCPEvaluateInputV4(production_bundle(article)))
     assert output.result.decision_status is DecisionStatusV4.ACCEPTED_FORMAL_RESULT
     assert output.certificate_handle.kind == "audit-certificate-binding"
     verified = client.verify_run(output.run_handle)
@@ -265,3 +277,27 @@ def test_article_15_real_production_chain_and_handles(tmp_path: Path, monkeypatc
     assert DigestV4.from_bytes(b64decode(page.content_base64, validate=True)) == output.certificate_handle.content_ref.digest
     replay = client.verify_for_mcp(output.run_handle, offline_replay=True).replay
     assert replay is not None and replay.status == "MATCH" and replay.semantic_equal is True
+
+
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    (
+        ({"fact_key": "pipl.unrelated.fact"}, DecisionStatusV4.MISSING_REQUIRED_FACT),
+        ({"dispute_state": "DISPUTED"}, DecisionStatusV4.REVIEW_ONLY_RESULT),
+        (
+            {"assumption_state": "USER_ASSUMED"},
+            DecisionStatusV4.HYPOTHETICAL_RESULT,
+        ),
+    ),
+)
+def test_real_production_nonformal_state_matrix(
+    options: dict[str, str], expected: DecisionStatusV4,
+    tmp_path: Path, monkeypatch,
+) -> None:
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+    monkeypatch.setenv("JC_PRODUCTION_CONFIG", str(config))
+    output = create_client().evaluate_for_mcp(
+        MCPEvaluateInputV4(production_bundle(15, **options))
+    )
+    assert output.result.decision_status is expected
+    assert output.result.certificate_kind.value == "none"

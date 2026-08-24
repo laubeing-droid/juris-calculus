@@ -704,6 +704,26 @@ def _graph_and_evaluation(
                 })
             elif kind == "permission":
                 permits = row["permits"]
+                if source == target:
+                    if (
+                        source_ref.kind != RULE_PERMISSION_KIND
+                        or modality_by_id[source] != "PERMISSION"
+                        or row["relation_kind"] not in {"exception", "standalone"}
+                        or type(row["permission_id"]) is not str
+                        or not row["permission_id"]
+                        or type(permits) is not str
+                        or not permits
+                    ):
+                        _fail("CHECKER_UNSUPPORTED", "standalone permission is malformed")
+                    if source not in refs:
+                        continue
+                    permissions.append({
+                        "permission_id": row["permission_id"],
+                        "permission_claim_ref": by_id[source].claim_ref.to_dict(),
+                        "prohibition_claim_ref": None,
+                        "source_ref": source_ref.to_dict(),
+                    })
+                    continue
                 if (
                     source_ref.kind != RULE_PERMISSION_KIND
                     or modality_by_id[source] != "PERMISSION"
@@ -793,9 +813,15 @@ def _graph_and_evaluation(
     label_by_ref = {refs[key]: value for key, value in labels_by_id.items()}
     for row in permissions:
         permission_claim = _wire_ref(row["permission_claim_ref"], "permission_claim_ref")
-        prohibition_claim = _wire_ref(row["prohibition_claim_ref"], "prohibition_claim_ref")
+        prohibition_claim = (
+            None
+            if row["prohibition_claim_ref"] is None
+            else _wire_ref(row["prohibition_claim_ref"], "prohibition_claim_ref")
+        )
         permission_args = arguments_by_claim[permission_claim]
-        prohibition_args = arguments_by_claim[prohibition_claim]
+        prohibition_args = (
+            [] if prohibition_claim is None else arguments_by_claim[prohibition_claim]
+        )
         permission_labels = {label_by_ref[item] for item in permission_args}
         prohibition_labels = {label_by_ref[item] for item in prohibition_args}
         if "UNDEC" in permission_labels | prohibition_labels:
@@ -814,7 +840,9 @@ def _graph_and_evaluation(
         permission_resolutions.append({
             "permission_id": row["permission_id"],
             "claim_ref": permission_claim.to_dict(),
-            "prohibition_ref": prohibition_claim.to_dict(),
+            "prohibition_ref": (
+                None if prohibition_claim is None else prohibition_claim.to_dict()
+            ),
             "status": status,
             "witness_refs": [item.to_dict() for item in witnesses],
         })

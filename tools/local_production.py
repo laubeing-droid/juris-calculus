@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from datetime import datetime, timezone
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -446,6 +447,291 @@ def prepare_release(state_root: Path) -> dict[str, object]:
     return manifest
 
 
+_INSTALLED_CASE_CODE = r"""
+import base64
+import json
+import pathlib
+import sys
+from compiler_core.canonical_serialization import DigestV4, canonical_bytes
+from compiler_core.client import runtime_client
+from compiler_core.contracts import CaseInputBundleV4, DecisionStatusV4, MCPEvaluateInputV4
+
+bundle = CaseInputBundleV4.from_json_bytes(pathlib.Path(sys.argv[1]).read_bytes())
+client = runtime_client()
+try:
+    evaluated = client.evaluate_for_mcp(MCPEvaluateInputV4(bundle))
+    row = {
+        "decision_status": evaluated.result.decision_status.value,
+        "execution_status": evaluated.result.execution_status.value,
+        "certificate_kind": evaluated.result.certificate_kind.value,
+        "run_identity_ref": evaluated.result.run_identity_ref.to_dict(),
+        "result_digest": str(evaluated.result.result_digest),
+    }
+    if evaluated.result.decision_status is DecisionStatusV4.ACCEPTED_FORMAL_RESULT:
+        verified = client.verify_for_mcp(evaluated.run_handle, offline_replay=True)
+        if (
+            verified.verification.status != "VERIFIED"
+            or verified.replay is None
+            or verified.replay.status != "MATCH"
+            or verified.replay.semantic_equal is not True
+        ):
+            raise RuntimeError("installed verification or replay failed")
+        read_rows = []
+        for handle in (evaluated.certificate_handle, evaluated.run_handle, *evaluated.artifact_handles):
+            content = bytearray()
+            offset = 0
+            while offset < handle.size_bytes:
+                page = client.read_artifact(
+                    handle, offset=offset, length=min(65536, handle.size_bytes - offset)
+                )
+                chunk = base64.b64decode(page.content_base64, validate=True)
+                if page.offset != offset or page.chunk_digest != DigestV4.from_bytes(chunk):
+                    raise RuntimeError("installed artifact page binding failed")
+                content.extend(chunk)
+                offset += len(chunk)
+            if DigestV4.from_bytes(content) != handle.content_ref.digest:
+                raise RuntimeError("installed artifact digest failed")
+            read_rows.append({
+                "handle": handle.to_dict(),
+                "bytes_digest": str(DigestV4.from_bytes(content)),
+                "bytes_read": len(content),
+            })
+        row.update({
+            "certificate_handle": evaluated.certificate_handle.to_dict(),
+            "run_handle": evaluated.run_handle.to_dict(),
+            "artifact_handles": [item.to_dict() for item in evaluated.artifact_handles],
+            "verification": verified.verification.to_dict(),
+            "replay": verified.replay.to_dict(),
+            "reads": read_rows,
+        })
+except Exception as exc:
+    row = {
+        "error_code": getattr(exc, "code", type(exc).__name__),
+        "error_stage": getattr(exc, "stage", "runtime"),
+    }
+print(canonical_bytes(row).decode("utf-8"))
+"""
+
+
+def _release_from_pointer(release_file: Path) -> tuple[dict[str, object], Path]:
+    pointer = parse_json_document(release_file.read_bytes())
+    if type(pointer) is not dict or release_file.read_bytes() != canonical_bytes(pointer):
+        raise ValueError("release pointer is not canonical")
+    manifest_path = Path(str(pointer["manifest_path"])).resolve()
+    manifest = parse_json_document(manifest_path.read_bytes())
+    if (
+        type(manifest) is not dict
+        or manifest_path.read_bytes() != canonical_bytes(manifest)
+        or pointer["manifest_digest"] != _sha256(manifest_path)
+        or pointer["release_id"] != manifest["release_id"]
+    ):
+        raise ValueError("release pointer does not bind its manifest")
+    return manifest, manifest_path
+
+
+def _atomic_write(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".new")
+    with temporary.open("wb") as stream:
+        stream.write(canonical_bytes(value))
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
+
+
+def _installed_case(
+    manifest: dict[str, object], bundle_path: Path,
+) -> dict[str, object]:
+    python = Path(str(manifest["venv_python"]))
+    runtime = Path(str(manifest["runtime_config_path"])).parent.parent / "runtime"
+    environment = {
+        **_clean_environment(),
+        "JC_RUNTIME_FACTORY": "compiler_core.production_runtime",
+        "JC_PRODUCTION_CONFIG": str(manifest["runtime_config_path"]),
+    }
+    completed = _run(
+        [str(python), "-I", "-B", "-c", _INSTALLED_CASE_CODE, str(bundle_path)],
+        cwd=runtime, env=environment, timeout=300,
+    )
+    return json.loads(completed.stdout)
+
+
+def verify_release(state_root: Path, release_file: Path) -> dict[str, object]:
+    """Run real smoke bundles in the installed release without activating it."""
+
+    prepared = prepare_release(state_root)
+    manifest, manifest_path = _release_from_pointer(release_file)
+    if prepared["release_id"] != manifest["release_id"]:
+        raise ValueError("prepared release changed during verification")
+    evidence = manifest_path.parent / "evidence"
+    smoke = evidence / "smoke-bundles"
+    smoke.mkdir(parents=True, exist_ok=True)
+
+    # The fixture builder owns only no-personal-information test material; evaluation
+    # remains entirely inside the installed wheel and its production composition root.
+    from tests.formal_e2e.test_local_production_chain import production_bundle
+
+    positives: list[dict[str, object]] = []
+    for article in range(13, 19):
+        path = smoke / f"article-{article}-positive.json"
+        path.write_bytes(production_bundle(article).canonical_bytes())
+        row = _installed_case(manifest, path)
+        if (
+            row.get("decision_status") != "accepted_formal_result"
+            or row.get("certificate_kind") != "formal_verified"
+            or row.get("verification", {}).get("status") != "VERIFIED"
+            or row.get("replay", {}).get("status") != "MATCH"
+        ):
+            raise ValueError(f"PIPL article {article} installed chain failed")
+        positives.append({"article": article, **row})
+
+    matrix_inputs = {
+        "missing": production_bundle(15, fact_key="pipl.unrelated.fact"),
+        "review": production_bundle(15, dispute_state="DISPUTED"),
+        "hypothetical": production_bundle(15, assumption_state="USER_ASSUMED"),
+    }
+    expected = {
+        "missing": "missing_required_fact",
+        "review": "review_only_result",
+        "hypothetical": "hypothetical_result",
+    }
+    matrix: dict[str, dict[str, object]] = {}
+    for name, bundle in matrix_inputs.items():
+        path = smoke / f"{name}.json"
+        path.write_bytes(bundle.canonical_bytes())
+        row = _installed_case(manifest, path)
+        if row.get("decision_status") != expected[name]:
+            raise ValueError(f"installed {name} state differs")
+        matrix[name] = row
+
+    tampered = production_bundle(15).to_dict()
+    artifact = next(
+        item for item in tampered["artifacts"] if item["artifact_kind"] == "fact-attestation"
+    )
+    encoded = bytearray(b64decode(artifact["content_base64"], validate=True))
+    encoded[-1] ^= 1
+    artifact["content_base64"] = b64encode(encoded).decode("ascii")
+    body = {key: value for key, value in tampered.items() if key != "bundle_digest"}
+    tampered["bundle_digest"] = str(digest_value(body))
+    tamper_path = smoke / "wrong-fact-signature.json"
+    tamper_path.write_bytes(canonical_bytes(tampered))
+    tamper_result = _installed_case(manifest, tamper_path)
+    if "error_code" not in tamper_result and tamper_result.get("decision_status") not in {
+        "blocked", "engine_error",
+    }:
+        raise ValueError("wrong fact signature did not fail closed")
+    matrix["wrong_fact_signature"] = tamper_result
+
+    profile = parse_json_document(Path(str(manifest["profile_path"])).read_bytes())
+    registry = {
+        "schema_version": "jc/formal-profile-registry/1.0",
+        "active_profile": manifest["release_id"],
+        "profiles": {manifest["release_id"]: profile},
+    }
+    registry_path = evidence / "preactivation-profile-registry.json"
+    registry_path.write_bytes(canonical_bytes(registry))
+    bridge = Path(str(manifest["venv_python"])).with_name(
+        "jc-formal.exe" if os.name == "nt" else "jc-formal"
+    )
+    bridge_output = json.loads(_run(
+        [str(bridge), "--registry", str(registry_path), "--input",
+         str(smoke / "article-15-positive.json")],
+        cwd=manifest_path.parent / "runtime", env=_clean_environment(), timeout=300,
+    ).stdout)
+    if bridge_output.get("marker") != "JC_FORMAL_VERIFIED":
+        raise ValueError("installed formal bridge did not deliver verified bytes")
+
+    report = {
+        "schema_version": "jc/local-production-positive-chain/1.0",
+        "release_id": manifest["release_id"],
+        "source_commit": manifest["source_commit"],
+        "scope": manifest["scope"],
+        "installed_origin_verified": True,
+        "positive_runs": positives,
+        "state_matrix": matrix,
+        "formal_bridge": bridge_output,
+    }
+    report["report_digest"] = str(digest_value(report))
+    report_path = evidence / "positive-chain.json"
+    report_path.write_bytes(canonical_bytes(report))
+    return report
+
+
+def activate_release(state_root: Path, release_file: Path) -> dict[str, object]:
+    """Atomically publish a verified release and its sole formal profile."""
+
+    manifest, manifest_path = _release_from_pointer(release_file)
+    evidence_path = manifest_path.parent / "evidence/positive-chain.json"
+    evidence = parse_json_document(evidence_path.read_bytes())
+    if (
+        type(evidence) is not dict
+        or evidence_path.read_bytes() != canonical_bytes(evidence)
+        or evidence.get("release_id") != manifest["release_id"]
+        or len(evidence.get("positive_runs", [])) != 6
+    ):
+        raise ValueError("release lacks exact positive verification evidence")
+    profile = parse_json_document(Path(str(manifest["profile_path"])).read_bytes())
+    deployment = state_root.resolve() / "deployment"
+    current_path = deployment / "current.json"
+    previous_path = deployment / "previous.json"
+    registry_path = deployment / "profile-registry.json"
+    existing = _pointer_bytes(state_root.resolve())
+    if existing["current.json"] is not None:
+        old = parse_json_document(existing["current.json"])
+        if old.get("release_id") == manifest["release_id"]:
+            return old
+        previous = {
+            "schema_version": "jc/local-production-previous/1.0",
+            "production_rollback_allowed": True,
+            "current": old,
+        }
+    else:
+        previous = {
+            "schema_version": "jc/local-production-previous/1.0",
+            "production_rollback_allowed": False,
+            "reason": "legacy_shell_only_deployment_has_no_runtime_verification",
+        }
+    activated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(
+        "+00:00", "Z"
+    )
+    current = {
+        "schema_version": "jc/local-production-current/1.0",
+        "status": "LOCAL_PRODUCTION_ACTIVE",
+        "scope": manifest["scope"],
+        "release_id": manifest["release_id"],
+        "manifest_path": str(manifest_path),
+        "manifest_digest": _sha256(manifest_path),
+        "verification_path": str(evidence_path),
+        "verification_digest": _sha256(evidence_path),
+        "activated_at": activated_at,
+    }
+    registry = {
+        "schema_version": "jc/formal-profile-registry/1.0",
+        "active_profile": manifest["release_id"],
+        "profiles": {manifest["release_id"]: profile},
+    }
+    try:
+        _atomic_write(previous_path, previous)
+        _atomic_write(current_path, current)
+        _atomic_write(registry_path, registry)
+        from compiler_core.formal_bridge import load_active_profile
+        if load_active_profile(registry_path).profile_id != manifest["release_id"]:
+            raise ValueError("activated profile identity differs")
+    except Exception:
+        for name, path in (
+            ("current.json", current_path), ("previous.json", previous_path),
+            ("profile-registry.json", registry_path),
+        ):
+            raw = existing[name]
+            if raw is None:
+                if path.exists():
+                    path.unlink()
+            else:
+                path.write_bytes(raw)
+        raise
+    return current
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -455,6 +741,10 @@ def main(argv: list[str] | None = None) -> int:
     init_key.add_argument("--trust", type=Path, required=True)
     prepare = commands.add_parser("prepare")
     prepare.add_argument("--state-root", type=Path, required=True)
+    for name in ("verify", "activate"):
+        command = commands.add_parser(name)
+        command.add_argument("--state-root", type=Path, required=True)
+        command.add_argument("--release-file", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "init-service-key":
@@ -464,6 +754,17 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({
                 "release_id": result["release_id"], "status": result["status"],
                 "wheel_digest": result["wheel_digest"],
+            }, sort_keys=True))
+        elif args.command == "verify":
+            result = verify_release(args.state_root, args.release_file)
+            print(json.dumps({
+                "release_id": result["release_id"], "status": "POSITIVE_VERIFIED",
+                "positive_runs": len(result["positive_runs"]),
+            }, sort_keys=True))
+        elif args.command == "activate":
+            result = activate_release(args.state_root, args.release_file)
+            print(json.dumps({
+                "release_id": result["release_id"], "status": result["status"],
             }, sort_keys=True))
     except (OSError, TypeError, ValueError) as exc:
         print(f"local production failed: {exc}", file=sys.stderr)
