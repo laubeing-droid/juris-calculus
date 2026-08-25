@@ -92,6 +92,9 @@ configs/en_US/pdf_glossary_terms.json
 reports/asymmetry_distillation_v1.1.0.json
 reports/parallax_detail_v1.1.0.json
 scripts/
+!scripts/
+scripts/*
+!scripts/audit-engine.sh
 tests/results/
 下载存放区/
 源码/

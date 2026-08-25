@@ -71,6 +71,16 @@ git diff --check
 
 Tests, a clean wheel, and test-only provenance prove a release candidate only. Remote promotion additionally requires the governance and production-signing conditions in `.github/workflows/ci.yml` and `.github/workflows/auto-release.yml`.
 
+## Pre-release audit
+
+Before any public push or release, run the tracked zero-trust scan:
+
+```bash
+bash scripts/audit-engine.sh
+```
+
+Any blocker prevents `git push` and `gh release create`. The local matrix controller and AI prompts are transient ignored tooling; the CI workflow reruns the tracked deterministic scan.
+
 ## License
 
 [MIT](LICENSE) © 2026 laubeing-droid.
