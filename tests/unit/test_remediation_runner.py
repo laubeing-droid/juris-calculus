@@ -401,7 +401,7 @@ def test_later_w10_receipt_supersedes_legacy_fixed_report(tmp_path: Path) -> Non
     retry = {
         "task_id": "W10-10",
         "attempt": 2,
-        "status": "COMPLETED",
+        "status": "FAILED",
         "runner_version": runner.RUNNER_VERSION,
         "artifact_digests": observed,
     }

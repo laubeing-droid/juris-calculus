@@ -21347,7 +21347,7 @@ def _later_receipt_supersedes_legacy_w10_report(
         return False
     return any(
         retry.get("task_id") == task_id
-        and retry.get("status") == "COMPLETED"
+        and retry.get("status") in {"FAILED", "COMPLETED"}
         and isinstance(retry.get("attempt"), int)
         and retry["attempt"] > receipt.get("attempt", 0)
         and retry.get("runner_version") in KNOWN_RUNNER_VERSIONS
