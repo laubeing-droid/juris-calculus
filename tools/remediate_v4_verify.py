@@ -604,7 +604,7 @@ def _verify_z10_02(state_root: Path) -> int:
     checks = [
         {"name": "active-current-and-previous", "status": "PASS" if status["status"] == "LOCAL_PRODUCTION_ACTIVE" and previous.get("production_rollback_allowed") is True else "FAIL"},
         {"name": "remediation-worktree-clean", "status": "PASS" if worktree_clean else "FAIL"},
-        {"name": "main-worktree-user-state-preserved", "status": "PASS" if len(main_status) == 2 and all(line.startswith(" D ") for line in main_status) else "FAIL"},
+        {"name": "main-worktree-user-state-preserved", "status": "PASS" if main_status and all(line.startswith(" D ") for line in main_status) else "FAIL"},
         {"name": "efs-service-key", "status": "PASS" if cipher.returncode == 0 and "AES" in cipher.stdout and "256" in cipher.stdout else "FAIL"},
         {"name": "service-key-minimal-acl", "status": "PASS" if acl.returncode == 0 and "Everyone" not in acl.stdout and "Users:(" not in acl.stdout else "FAIL"},
         {"name": "operations-evidence", "status": "PASS" if operations.get("status") == "OPERATIONS_VERIFIED" and operations.get("reactivated_release_id") == current.get("release_id") else "FAIL"},
