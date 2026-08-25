@@ -21268,6 +21268,37 @@ def _legacy_mutable_w7_observed_state(
     return observed or None
 
 
+def _legacy_mutable_w10_observed_state(
+    receipt: dict[str, Any], state_root: Path,
+) -> dict[str, str] | None:
+    """Read a W10/Z10 fixed-path report written before content snapshots."""
+
+    task_id = str(receipt.get("task_id", ""))
+    if re.fullmatch(r"[WZ]10-[0-9]{2}", task_id) is None:
+        return None
+    expected_label = f"{task_id.lower()}-verification"
+    evidence_root = (state_root.resolve() / "evidence").resolve()
+    observed: dict[str, str] = {}
+    try:
+        for command in receipt["command_results"]:
+            payload = Path(command["stdout"]["path"]).read_bytes().decode("utf-8")
+            for line in payload.splitlines():
+                if not line.startswith("JC_ARTIFACT\t"):
+                    continue
+                fields = line.split("\t")
+                if len(fields) != 4 or fields[1] != expected_label:
+                    return None
+                target = Path(fields[2]).resolve(strict=True)
+                if not target.is_file() or not target.is_relative_to(evidence_root):
+                    return None
+                observed[f"state-artifact:{expected_label}"] = (
+                    "sha256:" + sha256_hex(target.read_bytes())
+                )
+    except (KeyError, OSError, TypeError, UnicodeError, ValueError):
+        return None
+    return observed or None
+
+
 def _later_receipt_supersedes_legacy_w7_report(
     receipt: dict[str, Any],
     recorded: dict[str, str],
@@ -21280,6 +21311,35 @@ def _later_receipt_supersedes_legacy_w7_report(
     artifact_key = f"state-artifact:{str(task_id).lower()}-target-report"
     if (
         task_id not in W7_TARGET_CHECKS
+        or set(recorded) != {artifact_key}
+        or set(observed) != {artifact_key}
+        or recorded == observed
+    ):
+        return False
+    return any(
+        retry.get("task_id") == task_id
+        and retry.get("status") == "COMPLETED"
+        and isinstance(retry.get("attempt"), int)
+        and retry["attempt"] > receipt.get("attempt", 0)
+        and retry.get("runner_version") in KNOWN_RUNNER_VERSIONS
+        and retry.get("receipt_digest") == _receipt_digest(retry)
+        and retry.get("artifact_digests", {}).get(artifact_key) == observed[artifact_key]
+        for retry in later_receipts
+    )
+
+
+def _later_receipt_supersedes_legacy_w10_report(
+    receipt: dict[str, Any],
+    recorded: dict[str, str],
+    observed: dict[str, str],
+    later_receipts: list[dict[str, Any]],
+) -> bool:
+    """Account for W10/Z10 fixed-path reports written before content snapshots."""
+
+    task_id = str(receipt.get("task_id", ""))
+    artifact_key = f"state-artifact:{task_id.lower()}-verification"
+    if (
+        re.fullmatch(r"[WZ]10-[0-9]{2}", task_id) is None
         or set(recorded) != {artifact_key}
         or set(observed) != {artifact_key}
         or recorded == observed
@@ -21408,6 +21468,10 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
                     receipt, state_root,
                 )
                 if expected_state_artifacts is None:
+                    expected_state_artifacts = _legacy_mutable_w10_observed_state(
+                        receipt, state_root,
+                    )
+                if expected_state_artifacts is None:
                     raise
         later_receipts = [
             raw_receipts[number]
@@ -21433,6 +21497,12 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
             expected_state_artifacts,
             later_receipts,
         )
+        w10_report_superseded = _later_receipt_supersedes_legacy_w10_report(
+            receipt,
+            recorded_state_artifacts,
+            expected_state_artifacts,
+            later_receipts,
+        )
         w7_report_archived = _legacy_w7_report_is_content_archived(
             receipt,
             recorded_state_artifacts,
@@ -21441,7 +21511,7 @@ def _receipt_history(task_id: str, state_root: Path) -> list[dict[str, Any]]:
         )
         state_accounted = any((
             state_recovered, state_superseded, w7_report_superseded,
-            w7_report_archived,
+            w7_report_archived, w10_report_superseded,
         ))
         if recorded_state_artifacts != expected_state_artifacts and not state_accounted:
             raise ValueError(f"state artifact binding mismatch: {receipt_path}")

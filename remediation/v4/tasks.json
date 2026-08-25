@@ -6671,7 +6671,7 @@
     {
       "id": "W10-10", "wave": "W10-10", "mode": "AUTO", "depends_on": ["W10-09"],
       "audit_ids": ["R-P1-03"],
-      "objective": "逐任务独立 verifier receipt 与恢复闭环",
+      "objective": "逐任务独立 verifier 内容寻址 receipt 与恢复闭环",
       "allowed_paths": ["docs/architecture/module-authority.json", "tools/remediate_v4.py", "tools/remediate_v4_verify.py", "remediation/v4/**", "tests/contract/**", "tests/differential/test_self_contained_v4.py", "tests/dsh_formal/test_production_bridge.py", "tests/fixtures/**", "tests/required-v4-tests.json", "tests/security/test_pack_toctou.py", "tests/unit/test_remediation_*.py"],
       "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-10"]],
       "expected_exit_codes": [0, 0], "timeout_seconds": 1200, "completion_assertions": [{"id": "w10-10-receipts", "kind": "all_commands_passed"}],

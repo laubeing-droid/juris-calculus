@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -25,10 +26,19 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 RUNNER = REPO / "tools" / "remediate_v4.py"
 REMEDIATION_DIR = REPO / "remediation" / "v4"
+VERIFY = REPO / "tools" / "remediate_v4_verify.py"
 
 
 def _load_runner_module():
     spec = importlib.util.spec_from_file_location("remediate_v4_test_module", RUNNER)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_verify_module():
+    spec = importlib.util.spec_from_file_location("remediate_v4_verify_test_module", VERIFY)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -345,3 +355,61 @@ def test_w0_object_state_matrix_gate_rejects_critical_mutations(tmp_path: Path) 
         path.write_text(json.dumps(payload), encoding="utf-8")
         result = _run_runner("object-state-matrix", "--path", str(path))
         assert result.returncode != 0, f"mutation {index} unexpectedly passed"
+
+
+def test_w10_verifier_artifacts_are_content_addressed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    verifier = _load_verify_module()
+    identities = iter(("commit-a", "tree-a", "commit-b", "tree-b"))
+    monkeypatch.setattr(
+        verifier.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(stdout=next(identities)),
+    )
+    checks = [{"name": "closure", "status": "PASS"}]
+
+    assert verifier._task_report("W10-10", checks, tmp_path) == 0
+    first = Path(capsys.readouterr().out.strip().split("\t")[2])
+    first_bytes = first.read_bytes()
+    assert verifier._task_report("W10-10", checks, tmp_path) == 0
+    second = Path(capsys.readouterr().out.strip().split("\t")[2])
+
+    assert first != second
+    assert first.read_bytes() == first_bytes
+    assert second.read_bytes() != first_bytes
+    assert (tmp_path / "evidence/w10/W10-10/report.json").read_bytes() == second.read_bytes()
+
+
+def test_later_w10_receipt_supersedes_legacy_fixed_report(tmp_path: Path) -> None:
+    runner = _load_runner_module()
+    artifact_key = "state-artifact:w10-10-verification"
+    report = tmp_path / "evidence/w10/W10-10/report.json"
+    report.parent.mkdir(parents=True)
+    report.write_bytes(b"new report")
+    stdout = tmp_path / "stdout.bin"
+    stdout.write_text(
+        f"JC_ARTIFACT\tw10-10-verification\t{report}\tsha256:{'a' * 64}\n",
+        encoding="utf-8",
+    )
+    original = {
+        "task_id": "W10-10", "attempt": 1,
+        "command_results": [{"stdout": {"path": str(stdout)}}],
+    }
+    observed = runner._legacy_mutable_w10_observed_state(original, tmp_path)
+    assert observed == {artifact_key: "sha256:" + hashlib.sha256(b"new report").hexdigest()}
+    retry = {
+        "task_id": "W10-10",
+        "attempt": 2,
+        "status": "COMPLETED",
+        "runner_version": runner.RUNNER_VERSION,
+        "artifact_digests": observed,
+    }
+    retry["receipt_digest"] = runner._receipt_digest(retry)
+
+    assert runner._later_receipt_supersedes_legacy_w10_report(
+        original,
+        {artifact_key: "sha256:" + "a" * 64},
+        observed,
+        [retry],
+    )

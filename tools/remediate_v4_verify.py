@@ -119,11 +119,16 @@ def _task_report(task_id: str, checks: list[dict[str, object]], state_root: Path
         "checks": checks,
     }
     body["report_digest"] = "sha256:" + hashlib.sha256(_canonical(body)).hexdigest()
-    path = state_root / "evidence" / "w10" / task_id / "report.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(_canonical(body))
-    file_digest = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
-    print(f"JC_ARTIFACT\t{task_id.lower()}-verification\t{path}\t{file_digest}")
+    payload = _canonical(body)
+    latest = state_root / "evidence" / "w10" / task_id / "report.json"
+    latest.parent.mkdir(parents=True, exist_ok=True)
+    latest.write_bytes(payload)
+    file_digest = "sha256:" + hashlib.sha256(payload).hexdigest()
+    snapshot = latest.parent / "reports" / f"{file_digest.removeprefix('sha256:')}.json"
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    if not snapshot.exists():
+        snapshot.write_bytes(payload)
+    print(f"JC_ARTIFACT\t{task_id.lower()}-verification\t{snapshot}\t{file_digest}")
     if not passed:
         for check in checks:
             if check.get("status") != "PASS":
