@@ -691,9 +691,9 @@ def test_v3_classes_aliases_and_imports_are_absent() -> None:
         "/etc/passwd",
         "\\\\host\\share",
         "a/../b",
-        "file:///C:/Users/being/secret.pdf",
+        "file:///C:/Profiles/example/secret.pdf",
         "file://server/share/secret.pdf",
-        "file:C:/Users/being/secret.pdf",
+        "file:C:/Profiles/example/secret.pdf",
         "C:case-secret.pdf",
     ):
         payload = deepcopy(VECTORS["objects"]["CanonicalLocatorV4"])

@@ -142,6 +142,7 @@ def test_nonproduction_assets_add_no_distribution_or_deployment_authority() -> N
     assert sorted(path for path in normalized if path.startswith(".github/workflows/")) == [
         ".github/workflows/auto-release.yml",
         ".github/workflows/ci.yml",
+        ".github/workflows/release-audit.yml",
     ]
     deployment_names = {
         "Dockerfile", "Chart.yaml", "Procfile", "fly.toml",

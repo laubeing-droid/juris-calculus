@@ -104,11 +104,7 @@ EXIT_CODE=0
 SECRETS_REGEX="(sk-[a-zA-Z0-9]{32,}|ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}|AIzaSy[a-zA-Z0-9_-]{33}|amzn\.mws\.[a-z0-9-]{36}|(password|passwd|secret|api_key)\s*=\s*['\"][^'\"]+['\"])"
 # 简化版内网 IP 正则：去掉嵌套组和边界断言，防止 Git Bash grep 崩溃
 INTERNAL_IP_REGEX="(192\.168\.[0-9]{1,3}\.[0-9]{1,3}|10\.([0-9]{1,3}\.){2}[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3})"
-if [ "$PLATFORM" = "windows_gitbash" ]; then
-    ABSOLUTE_PATH_REGEX="(\/[a-zA-Z]\/[a-zA-Z0-9_-]+\/|[a-zA-Z]:\\\\(Users|home)\\[a-zA-Z0-9_-]+\\)"
-else
-    ABSOLUTE_PATH_REGEX="(\/Users\/[a-zA-Z0-9_-]+\/|[a-zA-Z]:\\\\Users\\\\[a-zA-Z0-9_-]+\\\\)"
-fi
+ABSOLUTE_PATH_REGEX='(/Users/[a-zA-Z0-9_-]+/|/[a-zA-Z]/[a-zA-Z0-9_-]+/|[a-zA-Z]:[\\/](Users|home)[\\/][a-zA-Z0-9_-]+[\\/])'
 DEBUG_KEYWORDS="(console\.log|debugger|print\(|throw new Error\(['\"]not implemented)"
 
 # ==================== Phase 0: 全仓扫描（逐文件） ====================
@@ -156,13 +152,14 @@ EXIT_CODE=$((EXIT_CODE + HIST_BLOCKER))
 echo -e "\n${BLUE}[Phase 1/5] 🔐 扫描暂存区变更 (凭证&签名)...${NC}"
 
 STAGED_DIFF=$(git diff --cached 2>/dev/null || echo "")
-if [ -z "$STAGED_DIFF" ]; then
+ADDED_DIFF=$(echo "$STAGED_DIFF" | grep '^+' | grep -v '^+++' || true)
+if [ -z "$ADDED_DIFF" ]; then
     echo -e "  ${YELLOW}⚠️  暂存区无变更，跳过。${NC}"
 else
-    HAS_SECRET=$(safe_grep_count "$SECRETS_REGEX" "$STAGED_DIFF" "-i")
+    HAS_SECRET=$(safe_grep_count "$SECRETS_REGEX" "$ADDED_DIFF" "-i")
     if [ "$HAS_SECRET" -gt 0 ]; then
         echo -e "${RED}🚨 [BLOCKER] 检测到疑似硬编码凭证或敏感赋值!${NC}"
-        safe_grep "$SECRETS_REGEX" "$STAGED_DIFF" "-n -i"
+        safe_grep "$SECRETS_REGEX" "$ADDED_DIFF" "-n -i"
         EXIT_CODE=1
     else
         echo -e "  ${GREEN}✅ 凭证特征扫描安全。${NC}"
@@ -173,18 +170,18 @@ fi
 echo -e "\n${BLUE}[Phase 2/5] 🌐 扫描基础设施拓扑残留...${NC}"
 
 HAS_TOPOLOGY=0
-if [ -n "$STAGED_DIFF" ]; then
-    HAS_IP=$(safe_grep_count "$INTERNAL_IP_REGEX" "$STAGED_DIFF" "")
+if [ -n "$ADDED_DIFF" ]; then
+    HAS_IP=$(safe_grep_count "$INTERNAL_IP_REGEX" "$ADDED_DIFF" "")
     if [ "$HAS_IP" -gt 0 ]; then
         echo -e "${YELLOW}⚠️  [WARNING] 代码中疑似包含内部局域网 IP 地址:${NC}"
-        safe_grep "$INTERNAL_IP_REGEX" "$STAGED_DIFF" "-n"
+        safe_grep "$INTERNAL_IP_REGEX" "$ADDED_DIFF" "-n"
         HAS_TOPOLOGY=1
     fi
 
-    HAS_PATH=$(safe_grep_count "$ABSOLUTE_PATH_REGEX" "$STAGED_DIFF" "")
+    HAS_PATH=$(safe_grep_count "$ABSOLUTE_PATH_REGEX" "$ADDED_DIFF" "")
     if [ "$HAS_PATH" -gt 0 ]; then
         echo -e "${RED}🚨 [BLOCKER] 包含硬编码的本地用户绝对物理路径:${NC}"
-        safe_grep "$ABSOLUTE_PATH_REGEX" "$STAGED_DIFF" "-n"
+        safe_grep "$ABSOLUTE_PATH_REGEX" "$ADDED_DIFF" "-n"
         EXIT_CODE=1
         HAS_TOPOLOGY=1
     fi
