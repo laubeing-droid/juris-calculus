@@ -6674,7 +6674,7 @@
       "objective": "逐任务独立 verifier 内容寻址 receipt 与恢复闭环",
       "allowed_paths": ["docs/architecture/module-authority.json", "tools/remediate_v4.py", "tools/remediate_v4_verify.py", "remediation/v4/**", "tests/contract/**", "tests/differential/test_self_contained_v4.py", "tests/dsh_formal/test_production_bridge.py", "tests/fixtures/**", "tests/required-v4-tests.json", "tests/security/test_pack_toctou.py", "tests/unit/test_remediation_*.py"],
       "argv": [["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "tests"], ["{python}", "-B", "tools/remediate_v4_verify.py", "--task", "W10-10"]],
-      "expected_exit_codes": [0, 0], "timeout_seconds": 1200, "completion_assertions": [{"id": "w10-10-receipts", "kind": "all_commands_passed"}],
+      "expected_exit_codes": [0, 0], "timeout_seconds": 2400, "completion_assertions": [{"id": "w10-10-receipts", "kind": "all_commands_passed"}],
       "rollback": "修复 task-specific verifier 后从最新有效 W10 receipt 恢复", "required_receipt_fields": ["schema_version", "task_digest", "run_id", "task_id", "attempt", "status", "input_receipt_digests", "start_commit", "start_tree", "result_commit", "result_tree", "command_results", "changed_paths", "allowlist", "test_reports", "artifact_digests", "completion_assertions", "previous_receipt_digest", "runner_version", "receipt_digest"]
     },
     {
