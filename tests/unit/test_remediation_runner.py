@@ -193,6 +193,36 @@ def test_every_task_has_allowed_paths() -> None:
             assert t.get("audit_ids"), f"task {t['id']} (mode={t.get('mode')}) missing audit_ids"
 
 
+def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
+    plan = json.loads((REMEDIATION_DIR / "tasks.json").read_text(encoding="utf-8"))
+    task = next(item for item in plan["tasks"] if item["id"] == "Z10-03")
+    assert set(task["allowed_paths"]) == {
+        ".github/workflows/release-audit.yml",
+        ".gitignore",
+        "20260815_juris-calculus理论成果全量吸收施工方案.md",
+        "20260819_juris-calculus_V4单主链全量切换与生产投产施工方案.md",
+        "20260819_juris-calculus_V4单主链生产投产全量代码审计.md",
+        "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
+        "20260824_juris-calculus_V4生产运行闭环Goal模式启动提示词.md",
+        "20260824_juris-calculus_V4生产运行闭环彻底整治施工方案.md",
+        "CHANGELOG.md",
+        "HANDOFF.md",
+        "README.md",
+        "docs/**",
+        "memory.md",
+        "remediation/v4/**",
+        "scripts/audit-engine.sh",
+        "tests/contract/test_contracts.py",
+        "tests/unit/test_remediation_runner.py",
+        "tests/unit/test_w5_03_nonproduction_boundaries.py",
+        "tools/remediate_v4_verify.py",
+    }
+    assert not any(
+        path.startswith(("compiler_core/", "configs/", "schemas/"))
+        for path in task["allowed_paths"]
+    )
+
+
 # ---------------------------------------------------------------------------
 # Runner CLI surface (§3.7, §24)
 # ---------------------------------------------------------------------------
