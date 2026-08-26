@@ -26,7 +26,7 @@ JC is a CLI-first, auditable legal-reasoning kernel. Start here after the root [
 - [Offline governance, training, and advisory boundary](operations/governance-training-analysis.md)
 - [V4 build-once release and promotion](operations/RELEASE_V4.md)
 
-## Historical records — not current authority
+## Historical replay (not current authority)
 
 - [Isolated V3.0.2 replay](operations/V3_HISTORICAL_REPLAY.md) is an artifact locator and recovery procedure only. It does not define the current schema, API, runtime, or migration behavior.
 - [Historical branch adoption decision](audits/branch-adoption-decision.md) records the 2026-08-16 branch ruling only.

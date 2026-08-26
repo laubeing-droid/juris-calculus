@@ -20,6 +20,10 @@ the external remediation-state directory. See the repository projection in
 - Observation is still required; independent human review is not claimed.
 - `cn-official-local` does not imply remote promotion of the public `cn-official`
   pack.
+- Remote production release is not completed or claimed.
+- Remote promotion still requires the branch protection and release-governance gates
+  documented below.
+- Remote promotion also requires an authorized production Ed25519 attestor key.
 - No push, tag, GitHub release, or external production promotion is claimed.
 - Any remote release remains subject to the separately governed release process in
   [docs/operations/RELEASE_V4.md](docs/operations/RELEASE_V4.md).
