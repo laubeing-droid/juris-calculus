@@ -27,3 +27,10 @@ Route a proposed change to `legal-math-modeling` before changing `DecisionStatus
 ## Evidence
 
 Report the command, result, affected boundary, remaining risk, and any upstream-decision need. Runtime tests, differential fixtures, finite SMT checks, upstream Lean theorems, and empirical heuristics are distinct evidence classes.
+
+## Related documents
+
+- [Formal runtime conformance](FORMAL_RUNTIME_CONFORMANCE.md)
+- [Rule packs](RULE_PACKS.md)
+- [External protocol](EXTERNAL_PROTOCOL.md)
+- [Documentation index](../README.md)

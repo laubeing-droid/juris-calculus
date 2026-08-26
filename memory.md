@@ -6,6 +6,7 @@
 - Formal path: structured request -> deterministic admission -> application service -> canonical result, audit bundle, graph, and replay.
 - The four-tool, zero-resource stdio MCP adapter delegates to the same V4 parser and application service as CLI and Python; it is not a compatibility evaluator.
 - The public kernel provides neutral, stable, auditable output only. Private client data, legal workflows, strategy decisions, personal style, OCR/model pipelines, and proprietary rule packs remain outside.
+- The bounded Windows/EFS deployment for PIPL Articles 13–18 is locally active; this is separate from remote repository release and public `cn-official` promotion.
 
 ## Protected semantics
 
@@ -15,7 +16,8 @@
 
 ## Rule packs
 
-- `cn-official` remains absent until an approved first-party source inventory and independent reviews exist.
+- `cn-official-local` is the bounded local-production pack for the approved PIPL Articles 13–18 scope. It does not promote or sign the public `cn-official` candidate.
+- Public `cn-official` remains unpromoted until its separate source, review, signing, and release gates pass.
 - The retired CN legacy corpus is history-bound and absent from the current tree/runtime/wheel; it is never a formal fallback or an input to `cn-official`.
 - Runtime inventory and manifests are the only count authority. Do not hard-code inventory numbers in public prose.
 - CI builds one exact release candidate. The reusable promotion workflow can only advance that artifact after external governance, protected-environment approval, an authorized production key, and exact tag verification; workflow code alone is not promotion authority.
@@ -30,9 +32,17 @@
 
 - Supported Python: 3.11 and 3.12. Core dependency: PyYAML; optional profiles stay separate.
 - `compiler_core.version.__version__` is the single package, CLI, audit, and MCP version source. Release tags must match it exactly.
-- Supply-chain auditing uses `pip-audit --disable-pip` with hash-pinned lock profiles; vulnerability lookup and fail-closed PASS/FAIL/BLOCKED remain mandatory.
+- Supply-chain auditing uses the tracked `scripts/audit-engine.sh` gate and hash-pinned lock profiles; vulnerability lookup and fail-closed PASS/FAIL/BLOCKED remain mandatory.
 - Clean wheel checks must remove generated build caches first because stale `build/lib` can resurrect deleted modules.
 - Tri-rail is an engineering harness only; without official reasoning-ready packs it remains review-only with `formal_kernel_used=false`.
+
+## 2026-08-25 W10/Z10 local-production closure
+
+- Runner `0.60.0` completed all 92 tasks through `Z10-03`; `run.json` has no incomplete task.
+- The final production result is `LOCAL_PRODUCTION_ACTIVE` with `exit_code=0` for the bounded Windows/EFS PIPL Articles 13–18 deployment.
+- The installed runtime source commit is `91daa6658dcd555d02199d91f16fe49bf0b5ba09`; the active local pack is `cn-official-local`.
+- Independent human review is not claimed, observation remains required, and no push, tag, remote release, or external production promotion occurred.
+- Retained pre-W10 `goal.json` and `external-ledger.json` snapshots do not override `run.json` and the final Z10 result evidence.
 
 ## Legal compiler research baseline
 

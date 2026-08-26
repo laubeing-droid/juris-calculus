@@ -6,7 +6,7 @@ JC 4.0.0 is a public, auditable V4 legal-reasoning kernel. It accepts an explici
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-The repository is a local release candidate, not a production release. `cn-official` is absent until an approved first-party source inventory, independent legal and engineering review, and production signing are all real. The retired legacy corpus is not present in the current runtime or wheel and is never a fallback.
+The bounded Windows/EFS deployment for《中华人民共和国个人信息保护法》第十三至十八条 is `LOCAL_PRODUCTION_ACTIVE` with the `cn-official-local` pack. The public repository has not been remotely released, and `cn-official-local` does not promote the public `cn-official` candidate. The retired legacy corpus is not present in the current runtime or wheel and is never a fallback.
 
 ## Start
 
@@ -19,9 +19,9 @@ tar -xf source.tar -C source
 $epoch = git show -s --format=%ct HEAD
 python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
 python -m pip install .\dist\juris_calculus-4.0.0-py3-none-any.whl
-$env:JC_RUNTIME_MANIFEST = "C:\path\to\runtime-manifest.json"
+$env:JC_RUNTIME_MANIFEST = "<path-to-runtime-manifest.json>"
 $env:JC_RUNTIME_FACTORY = "compiler_core.production_runtime"
-$env:JC_PRODUCTION_CONFIG = "C:\path\to\production-runtime.json"
+$env:JC_PRODUCTION_CONFIG = "<path-to-production-runtime.json>"
 jc capabilities --json
 ```
 
@@ -38,7 +38,7 @@ jc replay --input artifact-handle.json --json
 jc render --input artifact-handle.json --format markdown --audience agent --json
 ```
 
-CLI, Python, and the four-tool stdio MCP adapter all accept the same closed `CaseInputBundleV4` and use the same application service. The machine contracts are generated from `schemas/jc-v4.schema.json` and `mcp_manifest.json`; the version authority is `compiler_core/version.py`.
+CLI, Python, and the four-tool stdio MCP adapter all accept the same closed `CaseInputBundleV4` and use the same application service. `compiler_core/contracts.py` generates the published `schemas/jc-v4.schema.json`; the V4 tool specifications generate `mcp_manifest.json`. The version authority is `compiler_core/version.py`.
 
 `jc-formal --registry <deployment/profile-registry.json> --input <case-input-bundle.json>`
 starts the profile-pinned stdio server and emits a formal delivery only after capabilities,
@@ -69,7 +69,7 @@ python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/formal_e2e/
 git diff --check
 ```
 
-Tests, a clean wheel, and test-only provenance prove a release candidate only. Remote promotion additionally requires the governance and production-signing conditions in `.github/workflows/ci.yml` and `.github/workflows/auto-release.yml`.
+Tests, a clean wheel, and test-only provenance prove a release candidate only. The bounded local-production result is separately recorded in [remediation/v4/STATUS.md](remediation/v4/STATUS.md). Remote promotion additionally requires the governance and production-signing conditions in `.github/workflows/ci.yml` and `.github/workflows/auto-release.yml`.
 
 ## Pre-release audit
 

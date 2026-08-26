@@ -1,5 +1,7 @@
 # Juris Calculus V4 单主链生产投产全自动整治施工方案
 
+> **已归档：** 本文仅保留历史规划与施工上下文，不描述当前运行状态。当前信息见[状态页](remediation/v4/STATUS.md)与[文档索引](docs/README.md)。
+
 日期：2026-08-19
 
 修订：2026-08-19 CodeGraph 调用图复核、反过度工程校正及 CN legacy corpus 删除决策

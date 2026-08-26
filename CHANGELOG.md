@@ -14,10 +14,12 @@
 - Hash-locked build, runtime, test, and release profiles drive a byte-identical A/B wheel build and repository-outside installed-wheel tests.
 - `tools/build_provenance.py` binds the exact wheel, RECORD, runtime SBOM, source commit/tree, schema, tool contract, authority registry, trust material, and locks.
 - `.github/workflows/ci.yml` builds once; `.github/workflows/auto-release.yml` only promotes that exact artifact after tag, production signature, environment, and governance checks.
+- The W10/Z10 remediation run completed all 92 tasks through `Z10-03`; the external final result records `LOCAL_PRODUCTION_ACTIVE` and `exit_code=0`.
+- The tracked pre-release audit gate covers supply-chain, sensitive-data, stale-language, disclosure, and documentation checks before any public push or release.
 
-### Not yet promoted
+### Remote boundary
 
-- Local Windows/EFS production uses the installed-wheel runtime, active profile registry, and bounded `cn-official-local` pack. No remote release or external DSH deployment is claimed.
+- Local Windows/EFS production uses the installed-wheel runtime, active profile registry, and bounded `cn-official-local` pack for PIPL Articles 13–18. No remote release or external DSH deployment is claimed.
 - Test-only provenance is explicitly `TEST_ONLY_NOT_PROMOTABLE`.
 
 ## Historical lines

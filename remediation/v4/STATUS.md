@@ -1,21 +1,42 @@
 # V4 remediation authoritative status
 
-Updated: 2026-08-24
+Updated: 2026-08-26
 
-- Goal status: `ACTIVE`.
-- Authoritative state root: `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state`.
-- Current runner result: 59 tasks `COMPLETED`; only `H8-03=WAITING_HUMAN` is currently reached.
-- The current Windows host is the authorized production target. `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-production-state` is directory-level EFS encrypted; H7-00 and W7-01..04 completed with content-bound receipts.
-- The latest volatile measurements are authoritative in state evidence `evidence/W7/target/W7-02.json`; p50/p95/p99, throughput, RSS, and artifact-growth checks all pass the declared single-user local budgets.
-- `H8-00`, `W8-01`, and `W8-02` completed for《中华人民共和国个人信息保护法》第十三至十八条。The inventory binds all 74 articles: 6 typed candidates and 68 explicit omissions, with no legacy-corpus dependency.
-- The exact `candidate-bundle.json` (`sha256:4b1424c4bb334d3d7c1f165c2cad270905ddae39f9cdd1a666799679b4050002`) and `review.md` (`sha256:3644d55a0e14a4cad60271234bc04528e5d75f2ac77cf7d90716f1f46ebb2f51`) are candidate-only and await the two distinct legal reviews requested by `H8-03`. No reviewer/signature has been fabricated.
-- `H6-07` is not reached and is not an active blocker. No push, tag or remote release occurred.
-- The local release-candidate MCP and the production storage target are verified separately; `legal_production_ready` remains false until cn-official, signing, DSH and final Z gates complete.
-- All 44 audit IDs remain registered until the downstream target, remote-governance, production-validation, and Z00-Z03 tasks produce their required evidence.
-- The single external ledger is `D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state\external-ledger.json`; it points to the current H8-03 request and is updated outside Git.
-- The prior bootstrap `B00 FAILED` / `B00-CG UNVERIFIED` / `B01 UNVERIFIED` status is superseded by the current receipt chain.
-- Unique recovery command:
+This page is the human-readable projection of the completed remediation run. The
+external append-only receipts remain authoritative for exact commands, digests, and
+timestamps.
+
+## Current result
+
+- Runner `0.60.0` completed all 92 tasks through `Z10-03`; no task remains incomplete.
+- The final result is `LOCAL_PRODUCTION_ACTIVE` with `exit_code=0` for the bounded
+  Windows/EFS deployment covering《中华人民共和国个人信息保护法》第十三至十八条。
+- The installed runtime source commit is
+  `91daa6658dcd555d02199d91f16fe49bf0b5ba09`.
+- The active local pack is `cn-official-local`. It is a bounded local-production pack,
+  not the remotely promoted public `cn-official` pack.
+- Independent human review is not claimed. Observation remains required for the
+  local deployment.
+- No push, tag, remote release, or external production promotion is claimed.
+
+The retained `goal.json` and `external-ledger.json` are pre-W10 workflow snapshots.
+For current completion state, use `run.json` and the final Z10 result evidence.
+
+## Resume and verify
+
+Set `JC_REMEDIATION_STATE_ROOT` to the existing external remediation-state directory,
+then run the single governed entrypoint from the repository root:
 
 ```powershell
-py -3.12 -B D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation\tools\remediate_v4.py run --plan D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation\remediation\v4\tasks.json --state-root D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation-state --through W9
+python -B tools\remediate_v4.py run --through Z10-03
 ```
+
+A successful no-op verification prints the plan summary and exits `0`. Digest or
+receipt drift exits nonzero and must not be described as production completion.
+
+## Related documents
+
+- [Release boundary](../../docs/operations/RELEASE_V4.md)
+- [Audit-bundle contract](../../docs/contracts/AUDIT_BUNDLE.md)
+- [Operator handoff](../../HANDOFF.md)
+- [Documentation index](../../docs/README.md)

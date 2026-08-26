@@ -59,3 +59,10 @@ Two failures are intentional and distinct:
 - If the historical run's exact pack material is absent, V3 replay exits `6` with `REPLAY_MATERIAL_MISSING`; it does not evaluate again or fall back.
 
 The retired current-tree guides remain locatable only by Git blobs `66070f1b28f5658e0e380dbff480556b624b110a` (`MIGRATION_V2_TO_V3.md`) and `028df6c25bc8a8896f02d2c49a19b0255cac64f5` (`WORKBUDDY.md`). Git history and this frozen bundle are sufficient; no compatibility code or automatic migration command is provided.
+
+## Related documents
+
+- [External V4 protocol](../contracts/EXTERNAL_PROTOCOL.md)
+- [Contract authority map](../architecture/contract-authority-v4.md)
+- [Current remediation status](../../remediation/v4/STATUS.md)
+- [Documentation index](../README.md)

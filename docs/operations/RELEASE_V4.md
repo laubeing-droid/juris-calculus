@@ -23,3 +23,14 @@ The committed fixture key can create only a release candidate. Its provenance st
 Local workflow files cannot prove item 7, cannot create a production key, and cannot impersonate a release approver. Until those external conditions are real, production release is not authorized.
 
 `cn-official` has a separate legal promotion boundary. No engine release makes candidate, OCR, textbook, case, or retired legacy material an official legal source.
+
+The completed local Windows/EFS deployment is a separate boundary. Its
+`cn-official-local` pack and `LOCAL_PRODUCTION_ACTIVE` status do not satisfy or bypass
+the remote GitHub and `cn-official` promotion requirements above.
+
+## Related documents
+
+- [Current remediation status](../../remediation/v4/STATUS.md)
+- [Rule packs](../contracts/RULE_PACKS.md)
+- [Audit bundle and replay](../contracts/AUDIT_BUNDLE.md)
+- [Documentation index](../README.md)

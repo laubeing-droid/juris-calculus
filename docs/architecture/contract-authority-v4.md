@@ -23,3 +23,10 @@
 ## 权威分工
 
 `docs/architecture/module-authority.json` 是唯一 current 模块分类注册表。正式合同、事实准入、规则包、后端、独立检查、证书、审计事件和审计包分别只有一个未版本化模块；候选、实验、离线 source tool 和标为 `REMOVE` 的文件不具有正式权威，也不进入生产 wheel。
+
+## 相关文档
+
+- [运行路径清单](runtime-path-inventory.md)
+- [对象与状态矩阵](../contracts/V4_OBJECT_STATE_MATRIX.md)
+- [输入与语义边界](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [文档索引](../README.md)

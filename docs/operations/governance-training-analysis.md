@@ -1,19 +1,30 @@
-# Governance, training, and advisory analysis
+# Governance, training, and advisory analysis boundary
 
-## Governance
+The public `jc` CLI does not expose `rules`, `training`, or `analyze` commands. Its
+current command surface is `capabilities`, `evaluate`, `verify`, `replay`,
+`read-artifact`, and `render`.
 
-`jc rules audit <pack-id>` verifies the pack before producing a governance artifact. It may identify missing sources, duplicate IDs, dangling relations, invalid dates, invalid modality, or test-coverage gaps. It cannot edit a pack or promote a candidate.
+## Non-production assets
 
-## Training export
+Repository governance reports, corpus tooling, training-export experiments, advisory
+analysis, and tri-rail fixtures are offline source or test assets. They are not public
+runtime entrypoints and must not be described as installed CLI capabilities.
 
-`jc training export <pack-id> --out <dir> --seed <n>` produces deterministic JSONL splits and a manifest from a verified corpus. Candidate-only rules remain represented. The command rejects pack configuration roots and does not read case audit bundles; exported data cannot promote rules.
+These assets may identify missing sources, duplicate identifiers, invalid relations,
+coverage gaps, missing facts, or candidate similarities. They cannot edit or promote a
+rule pack, change a canonical result, issue a formal certificate, or predict a court
+outcome. Candidate material remains non-reasoning unless it passes the formal rule-pack
+admission and promotion boundary.
 
-## Missing facts and advisory output
+## Missing facts
 
-Canonical results can include `missing_fact_review`: affected rules/claims, reason, permitted answer types, and conditions for formal fact admission. The graph represents possible influence separately from completed inference.
+Canonical results may include structured missing-fact data and review-only branches.
+That output records what prevents a formal conclusion; it does not silently convert
+unknown, disputed, or user-assumed material into verified facts.
 
-`jc analyze strategy` and `jc analyze similar-cases` read only a verified completed run. Their output is `ADVISORY`, requires review, cannot change the canonical result, and cannot create a formal certificate. Similar-case comparison requires an explicit versioned index; structural similarity does not predict a court outcome.
+## Related documents
 
-## Tri-rail
-
-HK/US/PRC tri-rail remains an engineering harness. Without official reasoning-ready packs, it is review-only and reports `formal_kernel_used=false`. It is not a public case-conclusion service.
+- [CLI reference](../guides/CLI.md)
+- [Rule packs](../contracts/RULE_PACKS.md)
+- [Input and semantic boundary](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [Documentation index](../README.md)

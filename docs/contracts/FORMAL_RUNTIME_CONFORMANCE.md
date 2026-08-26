@@ -26,3 +26,10 @@ python -m pytest tests\contract\test_rule_packs.py -q
 ```
 
 The real stdio subprocess test is the transport authority. The in-process smoke is not a readiness or product-UI claim. A blocked check must remain blocked in the report.
+
+## Related documents
+
+- [Contract authority map](../architecture/contract-authority-v4.md)
+- [Runtime path inventory](../architecture/runtime-path-inventory.md)
+- [Object and state matrix](V4_OBJECT_STATE_MATRIX.md)
+- [Documentation index](../README.md)

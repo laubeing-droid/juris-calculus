@@ -5,7 +5,7 @@ The CLI is the default JC interface. With `--json`, stdout carries the machine r
 | Command | Function |
 |---|---|
 | `jc capabilities` | Report the configured runtime identity, tools, limits, pack, trust, and storage capabilities. |
-| `jc evaluate` | Evaluate an explicit `CaseRequest` and write an audit bundle. |
+| `jc evaluate` | Evaluate an explicit `CaseInputBundleV4` and write an audit bundle. |
 | `jc verify` | Verify a completed run selected by an artifact handle. |
 | `jc replay` | Verify and semantically replay a completed run selected by an artifact handle. |
 | `jc read-artifact` | Read a bounded artifact range through a signed handle. |
@@ -13,7 +13,7 @@ The CLI is the default JC interface. With `--json`, stdout carries the machine r
 
 ```powershell
 jc capabilities --json
-jc evaluate --input case-request.json --json
+jc evaluate --input case-input-bundle.json --json
 jc verify --input artifact-handle.json --json
 jc replay --input artifact-handle.json --json
 jc render --input artifact-handle.json --format markdown --audience agent --json
@@ -29,6 +29,14 @@ jc render --input artifact-handle.json --format markdown --audience agent --json
 | 6 | Optional pack/component missing. |
 
 `JC_RUNTIME_MANIFEST` configures published capabilities. `JC_RUNTIME_FACTORY` names an
-installed module whose `create_client()` returns the configured `JCClient`. Evaluation,
-verification, replay, artifact reads, and rendering fail closed when that host factory is
-absent. See `jc <command> --help` for exact arguments.
+installed module whose `create_client()` returns the configured `JCClient`.
+`JC_PRODUCTION_CONFIG` selects the production configuration. Evaluation, verification,
+replay, artifact reads, and rendering fail closed when the configured host is absent.
+See `jc <command> --help` for exact arguments.
+
+## Related documents
+
+- [Chinese guide](README_CN.md)
+- [Input and semantic boundary](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [Audit-bundle contract](../contracts/AUDIT_BUNDLE.md)
+- [Documentation index](../README.md)

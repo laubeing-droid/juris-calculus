@@ -1,5 +1,7 @@
 # 历史分支裁决：codex/lmm-runtime-receipt
 
+> **归档说明：** 本页记录 2026-08-16 的分支裁决，不描述当前运行时或生产状态。当前信息见[合同权威图](../architecture/contract-authority-v4.md)与[状态页](../../remediation/v4/STATUS.md)。
+
 裁决日期：2026-08-16（W0）
 裁决基线：`main@5b7bd00`，当前施工分支 `codex/jc-theory-absorption-plan@d9ec2fc`
 依据：20260815 施工方案 §1.3、§6 动作 4 与 Gate。
@@ -45,3 +47,8 @@
 - 不 merge `codex/lmm-runtime-receipt`；分支保留供 W8 重写时逐文件摘取。
 - 所有 REWRITE 项在对应波次（W1 CLI、W8 receipt）落地前，不产生任何主线行为变化。
 - ADOPT-PENDING-ORACLE 项必须先通过独立 oracle 核对（差分，不以修改期望值消除差异）才能进入 `tests/fixtures/theory_absorption/` 或主线断言。
+
+## 相关文档
+
+- [文档索引](../README.md)
+- [历史 V3 回放](../operations/V3_HISTORICAL_REPLAY.md)

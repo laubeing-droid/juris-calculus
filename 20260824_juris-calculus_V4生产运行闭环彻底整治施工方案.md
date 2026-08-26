@@ -1,5 +1,7 @@
 # Juris Calculus V4 生产运行闭环彻底整治施工方案
 
+> **已归档：** 本文仅保留历史规划与施工上下文，不描述当前运行状态。当前信息见[状态页](remediation/v4/STATUS.md)与[文档索引](docs/README.md)。
+
 日期：2026-08-24  
 施工仓库：`D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-remediation`  
 本机生产状态：`D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-production-state`  

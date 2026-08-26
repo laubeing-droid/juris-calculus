@@ -22,9 +22,20 @@ The builder can emit an unsigned `cn-official` candidate bundle from explicit
 first-party source input. It cannot sign or promote that bundle. Legacy corpora are
 absent from the current runtime and are not formal fallbacks.
 
+The bounded Windows/EFS local-production deployment uses `cn-official-local` for its
+declared PIPL Articles 13–18 scope. That local pack identity does not promote, sign, or
+release the public `cn-official` candidate.
+
 ## Rule fields
 
 A rule requires a stable ID, modality, conclusion, premises, source metadata, and admission metadata. Optional attack, exception, permission, priority, dates, and jurisdiction fields must be structurally valid when present. Duplicate IDs, invalid modality, invalid dates, missing required source anchors for admission, and dangling references fail validation.
 
 The authoritative machine schema is the packaged `schemas/jc-v4.schema.json`; the
 runtime contracts and validation tests are the implementation authority.
+
+## Related documents
+
+- [Input and semantic boundary](INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [External protocol](EXTERNAL_PROTOCOL.md)
+- [Release boundary](../operations/RELEASE_V4.md)
+- [Current remediation status](../../remediation/v4/STATUS.md)

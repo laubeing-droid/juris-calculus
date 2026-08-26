@@ -20,4 +20,15 @@ The JSON constraints classify all 6,720 Cartesian combinations; 115 are reachabl
 3. `blocked` and `engine_error` use transport error and never carry a certificate.
 4. Only `accepted_formal_result` may carry `formal_verified`; only `conflict_certificate` may carry `conflict_verified`.
 
-`tools/remediate_v4.py object-state-matrix` independently checks registry completeness, field closure, state reachability, exact Cartesian counts, and the illegal-certificate/transport mutations. W1-W5 must make runtime code and generated schemas implement this authority. Until then, this is a target contract, not a production-readiness claim.
+`tools/remediate_v4.py object-state-matrix` independently checks registry completeness,
+field closure, state reachability, exact Cartesian counts, and the
+illegal-certificate/transport mutations. Runtime code and generated schemas implement
+this authority; production status still depends on the separate host, pack, storage,
+receipt, and release gates.
+
+## Related documents
+
+- [Input and semantic boundary](INPUT_AND_SEMANTIC_BOUNDARY.md)
+- [Formal runtime conformance](FORMAL_RUNTIME_CONFORMANCE.md)
+- [Contract authority map](../architecture/contract-authority-v4.md)
+- [Documentation index](../README.md)
