@@ -216,6 +216,7 @@ def test_z10_03_post_closure_allowlist_is_exact() -> None:
         "remediation/v4/**",
         "scripts/audit-engine.sh",
         "tests/contract/test_contracts.py",
+        "tests/contract/test_required_test_manifest.py",
         "tests/dsh_formal/conftest.py",
         "tests/dsh_formal/jc-formal-profile.json",
         "tests/dsh_formal/jc_formal_adapter.py",
