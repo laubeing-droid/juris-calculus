@@ -422,7 +422,11 @@ def test_w10_verifier_artifacts_are_content_addressed(
     assert (tmp_path / "evidence/w10/W10-10/report.json").read_bytes() == second.read_bytes()
 
 
-def test_later_w10_receipt_supersedes_legacy_fixed_report(tmp_path: Path) -> None:
+@pytest.mark.parametrize("retry_status", ("FAILED", "SCOPE_VIOLATION"))
+def test_later_w10_receipt_supersedes_legacy_fixed_report(
+    tmp_path: Path,
+    retry_status: str,
+) -> None:
     runner = _load_runner_module()
     artifact_key = "state-artifact:w10-10-verification"
     report = tmp_path / "evidence/w10/W10-10/report.json"
@@ -442,7 +446,7 @@ def test_later_w10_receipt_supersedes_legacy_fixed_report(tmp_path: Path) -> Non
     retry = {
         "task_id": "W10-10",
         "attempt": 2,
-        "status": "FAILED",
+        "status": retry_status,
         "runner_version": runner.RUNNER_VERSION,
         "artifact_digests": observed,
     }
