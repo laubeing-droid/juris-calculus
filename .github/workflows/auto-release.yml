@@ -38,10 +38,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements/release.lock
+          cache-dependency-path: |
+            requirements/core.lock
+            requirements/release.lock
 
-      - name: Install hash-locked release graph
-        run: python -m pip install --require-hashes -r requirements/release.lock
+      - name: Install hash-locked core and release graphs
+        run: |
+          python -m pip install --require-hashes -r requirements/core.lock
+          python -m pip install --require-hashes -r requirements/release.lock
 
       - name: Download exact caller artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093

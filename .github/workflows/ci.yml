@@ -140,11 +140,13 @@ jobs:
           cache: pip
           cache-dependency-path: |
             requirements/build.lock
+            requirements/core.lock
             requirements/release.lock
 
-      - name: Install hash-locked build and release graphs
+      - name: Install hash-locked build, core, and release graphs
         run: |
           python -m pip install --require-hashes -r requirements/build.lock
+          python -m pip install --require-hashes -r requirements/core.lock
           python -m pip install --require-hashes -r requirements/release.lock
 
       - name: Two clean source archives and byte-identical wheels
