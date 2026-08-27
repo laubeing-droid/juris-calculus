@@ -54,7 +54,7 @@ def _ci_problems(text: str) -> list[str]:
         problems.append("action-pin")
     required_runs = _runs(required)
     package_runs = _runs(jobs.get("package", {}))
-    if "verify-wave W0-04" not in required_runs:
+    if "tests/contract tests/differential tests/dsh_formal" not in required_runs:
         problems.append("required")
     if "--installed-wheel" not in package_runs or "cmp work/dist-a/*.whl" not in package_runs:
         problems.append("package")
@@ -92,11 +92,12 @@ def test_ci_covers_required_suites_and_platform_subsets() -> None:
     required = _document()["jobs"]["required"]
     names = {step["name"] for step in _steps(required)}
     runs = _runs(required)
-    assert "Required current suites and explicit future RED" in names
+    assert "Required current suites" in names
     assert "Ubuntu storage and chaos subset" in names
     assert "Windows DACL and reparse subset" in names
-    assert "verify-wave W0-04" in runs
+    assert "tests/contract tests/differential tests/dsh_formal" in runs
     assert "tests/storage_chaos" in runs and "tests/windows_security" in runs
+    assert "verify-wave W0-04" not in runs
 
 
 def test_ci_static_lane_covers_generated_authority_purity_secrets_lint_type_unit() -> None:
@@ -114,6 +115,8 @@ def test_ci_static_lane_covers_generated_authority_purity_secrets_lint_type_unit
     } <= names
     assert "python -m ruff check" in runs and "python -m mypy" in runs
     assert "--all-profiles" in runs
+    assert "generated --check" in runs and "file-map --check --all-tracked" in runs
+    assert "verify-wave W1-03" not in runs and "verify-wave W5-05" not in runs
 
 
 def test_ci_release_lane_covers_ab_build_installed_sbom_provenance_perf_docs() -> None:

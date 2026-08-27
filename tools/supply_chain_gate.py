@@ -23,11 +23,11 @@ PROFILE_FILES = {
     "source-tool": "source-tool.lock",
     "release": "release.lock",
 }
-PROFILE_COUNTS = {"production": 4, "build": 6, "test": 12, "source-tool": 16, "release": 38}
+PROFILE_COUNTS = {"production": 4, "build": 6, "test": 18, "source-tool": 16, "release": 38}
 PROFILE_DIRECT = {
     "production": {"pyyaml", "cryptography"},
     "build": {"build", "setuptools", "wheel"},
-    "test": {"pyyaml", "cryptography", "hypothesis", "pytest"},
+    "test": {"pyyaml", "cryptography", "hypothesis", "jsonschema", "pytest"},
     "source-tool": {"pyyaml", "cryptography", "pydantic", "python-docx", "pdfplumber"},
     "release": {"build", "setuptools", "wheel", "pip-audit", "ruff", "mypy"},
 }
@@ -35,7 +35,7 @@ PROFILE_DIRECT = {
 PROFILE_DIGESTS = {
     "production": "sha256:38c31bd070b4e9b5cfe0ace8723bb3fc08c25deb724d18a9ac7b2d3b1d8b0ba1",
     "build": "sha256:58a1991e555e12cbb69b178f70c6e8b4dddefb58ec4430777330f7c08d2c54ba",
-    "test": "sha256:c3adb79533ae39db92efee2efb2800d0e52b8337df9622ef2b5d7c605e45fc9a",
+    "test": "sha256:edfc366bf7559b20a80eb05d30e442a4a1aeaf7ca2b66a117eaae9591cf1a60b",
     "source-tool": "sha256:bade5d3e8b6f5df6c24b56ee54d9fb290d0e55e4838cfc76b674bf93a5a5df48",
     "release": "sha256:d4123c89c77e1b73e17206177ab69345f47e5620cc737bab5fcd69c64a568304",
 }

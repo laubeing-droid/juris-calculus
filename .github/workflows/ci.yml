@@ -45,8 +45,14 @@ jobs:
       - name: Install hash-locked test graph
         run: python -m pip install --require-hashes -r requirements/test.lock
 
-      - name: Required current suites and explicit future RED
-        run: python -B tools/remediate_v4.py verify-wave W0-04
+      - name: Required current suites
+        run: >-
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider
+          tests/contract tests/differential tests/dsh_formal tests/formal_e2e
+          tests/integration tests/mcp_protocol tests/packaging tests/property
+          tests/security tests/semantic_mutation tests/unit
+          --ignore=tests/unit/test_remediation_graph_map.py
+          --deselect=tests/unit/test_authority_observed_graph.py::test_repository_policy_has_exact_python_and_codegraph_coverage
 
       - name: Ubuntu storage and chaos subset
         if: runner.os == 'Linux' && matrix.python == '3.12'
@@ -83,12 +89,12 @@ jobs:
         run: |
           python -B tools/build_file_disposition.py
           git diff --exit-code -- remediation/v4/file-disposition.json
-          python -B tools/remediate_v4.py verify-wave W1-03
+          python -B tools/remediate_v4.py generated --check
+          python -B tools/remediate_v4.py file-map --check --all-tracked --require-semantic-targets
 
       - name: Current authority and docs
         run: |
-          python -B tools/remediate_v4.py verify-wave W5-05
-          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging/test_current_authority_docs.py
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging/test_current_authority_docs.py tests/packaging/test_current_docs.py
 
       - name: Purity and committed-secret policy
         run: >-

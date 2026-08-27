@@ -3,6 +3,12 @@
 # supported: CPython 3.11/3.12; win_amd64; manylinux_2_28_x86_64
 # source: exact wheels downloaded from https://pypi.org/simple
 
+# package: attrs
+# role: transitive
+# license: MIT
+attrs==26.1.0 \
+    --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309
+
 # package: cffi
 # role: transitive
 # license: MIT-0
@@ -39,6 +45,18 @@ hypothesis==6.156.6 \
 # license: MIT
 iniconfig==2.3.0 \
     --hash=sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12
+
+# package: jsonschema
+# role: direct
+# license: MIT
+jsonschema==4.26.0 \
+    --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
+
+# package: jsonschema-specifications
+# role: transitive
+# license: MIT
+jsonschema-specifications==2025.9.1 \
+    --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe
 
 # package: packaging
 # role: transitive
@@ -79,8 +97,29 @@ pyyaml==6.0.3 \
     --hash=sha256:b8bb0864c5a28024fac8a632c443c87c5aa6f215c0b126c449ae1a150412f31d \
     --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc
 
+# package: referencing
+# role: transitive
+# license: MIT
+referencing==0.37.0 \
+    --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231
+
+# package: rpds-py
+# role: transitive
+# license: MIT
+rpds-py==2026.6.3 \
+    --hash=sha256:9c1255b302953c86a486b81d330d5ee1d5bd937691ce271b6be0ef0e299eaab7 \
+    --hash=sha256:2c54a076ca4d370980ab57bc0e31df57bbe8d41340436a90ef8b1219a3cbb127 \
+    --hash=sha256:ecabd69db66de867690f9797f2f8fa27ba501bbc24540cbdbdc649cd15888ba6 \
+    --hash=sha256:2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f
+
 # package: sortedcontainers
 # role: transitive
 # license: Apache-2.0
 sortedcontainers==2.4.0 \
     --hash=sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0
+
+# package: typing-extensions
+# role: transitive
+# license: PSF-2.0
+typing-extensions==4.16.0 \
+    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8

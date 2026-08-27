@@ -197,6 +197,7 @@ def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
     plan = json.loads((REMEDIATION_DIR / "tasks.json").read_text(encoding="utf-8"))
     task = next(item for item in plan["tasks"] if item["id"] == "Z10-03")
     assert set(task["allowed_paths"]) == {
+        ".github/workflows/ci.yml",
         ".github/workflows/release-audit.yml",
         ".gitignore",
         "20260815_juris-calculus理论成果全量吸收施工方案.md",
@@ -210,12 +211,16 @@ def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
         "README.md",
         "docs/**",
         "memory.md",
+        "requirements/test.lock",
         "remediation/v4/**",
         "scripts/audit-engine.sh",
         "tests/contract/test_contracts.py",
+        "tests/packaging/test_ci_matrix.py",
+        "tests/packaging/test_hash_locks.py",
         "tests/unit/test_remediation_runner.py",
         "tests/unit/test_w5_03_nonproduction_boundaries.py",
         "tools/remediate_v4_verify.py",
+        "tools/supply_chain_gate.py",
     }
     assert not any(
         path.startswith(("compiler_core/", "configs/", "schemas/"))

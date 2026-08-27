@@ -32,7 +32,7 @@ def test_all_profiles_are_transitively_hash_locked() -> None:
     report = verify_lock_profiles(ROOT / "requirements", ROOT / "pyproject.toml")
     assert report["status"] == "PASS", report["problems"]
     assert {name: row["package_count"] for name, row in report["profiles"].items()} == {
-        "build": 6, "production": 4, "release": 38, "source-tool": 16, "test": 12,
+        "build": 6, "production": 4, "release": 38, "source-tool": 16, "test": 18,
     }
 
 
@@ -49,7 +49,7 @@ def test_profile_ownership_is_exact() -> None:
     }
     assert profiles["production"] == {"pyyaml", "cryptography", "cffi", "pycparser"}
     assert {"pydantic", "python-docx", "pdfplumber"} <= profiles["source-tool"]
-    assert "hypothesis" in profiles["test"]
+    assert {"hypothesis", "jsonschema", "jsonschema-specifications", "referencing", "rpds-py"} <= profiles["test"]
     assert "filelock" in profiles["release"]
     assert {"ruff", "mypy", "mypy-extensions", "pathspec"} <= profiles["release"]
     assert all("jinja2" not in packages and "markupsafe" not in packages for packages in profiles.values())
