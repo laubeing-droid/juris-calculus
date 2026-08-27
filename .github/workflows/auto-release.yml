@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           test "$GITHUB_REF_TYPE" = "tag"
-          version="$(python -c 'from compiler_core.version import __version__; print(__version__)')"
+          version="$(python -c 'import runpy; print(runpy.run_path("compiler_core/version.py")["__version__"])')"
           test "$GITHUB_REF_NAME" = "v$version"
           test "$(git rev-parse "refs/tags/$GITHUB_REF_NAME^{commit}")" = "$GITHUB_SHA"
           test "$(find "$RUNNER_TEMP/release-candidate/work/dist-a" -name '*.whl' -type f | wc -l)" -eq 1

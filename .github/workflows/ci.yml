@@ -174,7 +174,7 @@ jobs:
         run: |
           wheel="$(find work/dist-a -name '*.whl' -print -quit)"
           rebuild="$(find work/dist-b -name '*.whl' -print -quit)"
-          version="$(python -c 'from compiler_core.version import __version__; print(__version__)')"
+          version="$(python -c 'import runpy; print(runpy.run_path("compiler_core/version.py")["__version__"])')"
           python -B tools/build_provenance.py create --wheel "$wheel" --rebuild-wheel "$rebuild" --source-commit "$GITHUB_SHA" --tag "v$version" --key tests/fixtures/keys/v4-test-ed25519.json --sbom-output reports/release-sbom.json --output reports/build-provenance.json --checksums-output reports/SHA256SUMS --release-candidate
           python -B tools/build_provenance.py verify --wheel "$wheel" --sbom reports/release-sbom.json --provenance reports/build-provenance.json --checksums reports/SHA256SUMS --key tests/fixtures/keys/v4-test-ed25519.json --allow-test-key
 
