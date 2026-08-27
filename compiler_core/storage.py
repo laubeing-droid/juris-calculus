@@ -642,13 +642,13 @@ class V4TransactionStore:
 
             stage_descriptor = _open_exact(stage, write=True, create=True)
             try:
+                if os.name == "nt":
+                    _harden_windows(stage)
                 _write_all(stage_descriptor, content)
                 _checkpoint("stage-written")
                 _flush_file(stage_descriptor)
             finally:
                 os.close(stage_descriptor)
-            if os.name == "nt":
-                _harden_windows(stage)
             _checkpoint("stage-durable")
             if self._read_path(stage, expected_digest=digest) != content:
                 _fail("STORAGE_COLLISION", "staging verification differs")
