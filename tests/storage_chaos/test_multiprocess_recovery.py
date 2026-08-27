@@ -8,7 +8,12 @@ import time
 import pytest
 
 from compiler_core.canonical_serialization import DigestV4
-from compiler_core.storage import NAMESPACE_V4, StorageV4Error, V4TransactionStore
+from compiler_core.storage import (
+    NAMESPACE_V4,
+    StorageV4Error,
+    V4TransactionStore,
+    _harden_windows,
+)
 
 
 _PAYLOAD = b"juris-calculus-v4-cross-process"
@@ -59,7 +64,9 @@ def test_cross_process_lock_and_stale_staging_recovery(
     stale_paths = (staging / "dead.1.stage", staging / "dead.1.lease")
     for path, content in zip(stale_paths, (b"partial", b"lease"), strict=True):
         path.write_bytes(content)
-        if os.name != "nt":
+        if os.name == "nt":
+            _harden_windows(path)
+        else:
             path.chmod(0o600)
     assert V4TransactionStore.open(tmp_path, quota_bytes=1_000_000).recover() == 2
     assert list(staging.iterdir()) == []
