@@ -163,18 +163,18 @@ def test_committed_required_test_manifest_is_structurally_valid() -> None:
     assert w9_required == {
         "W9-DSH-PROFILE": (
             "dsh_formal",
-            "tests/dsh_formal/test_production_bridge.py::test_startup_pin_drift_fails_closed",
-            2,
+            "tests/dsh_formal/test_profile.py",
+            17,
         ),
         "W9-MCP-FAIL-CLOSED": (
             "dsh_formal",
-            "tests/dsh_formal/test_production_bridge.py::test_real_stdio_production_factory_delivers_exact_certificate",
-            1,
+            "tests/dsh_formal/test_mcp_fail_closed.py",
+            8,
         ),
         "W9-DELIVERY-GUARD": (
             "dsh_formal",
-            "tests/dsh_formal/test_production_bridge.py::test_delivery_guard_rejects_verified_or_byte_drift",
-            2,
+            "tests/dsh_formal/test_delivery_guard.py",
+            12,
         ),
     }
     assert {

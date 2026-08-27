@@ -28,6 +28,7 @@
 *.bak.*
 *.csv
 *.json
+!tests/dsh_formal/jc-formal-profile.json
 !schemas/
 !schemas/jc-v3.schema.json
 !schemas/jc-v4.schema.json

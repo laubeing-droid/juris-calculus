@@ -5059,23 +5059,23 @@ def _required_test_manifest_problems(
         {
             "id": "W9-DSH-PROFILE",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_production_bridge.py::test_startup_pin_drift_fails_closed",
+            "selector": "tests/dsh_formal/test_profile.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 2,
+            "expected_tests": 17,
         },
         {
             "id": "W9-MCP-FAIL-CLOSED",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_production_bridge.py::test_real_stdio_production_factory_delivers_exact_certificate",
+            "selector": "tests/dsh_formal/test_mcp_fail_closed.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 1,
+            "expected_tests": 8,
         },
         {
             "id": "W9-DELIVERY-GUARD",
             "suite": "dsh_formal",
-            "selector": "tests/dsh_formal/test_production_bridge.py::test_delivery_guard_rejects_verified_or_byte_drift",
+            "selector": "tests/dsh_formal/test_delivery_guard.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 2,
+            "expected_tests": 12,
         },
     ]
     if required_now != expected_required_now:
