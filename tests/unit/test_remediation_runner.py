@@ -225,6 +225,7 @@ def test_z10_03_post_closure_allowlist_is_exact() -> None:
         "tests/dsh_formal/test_profile.py",
         "tests/packaging/test_ci_matrix.py",
         "tests/packaging/test_hash_locks.py",
+        "tests/packaging/test_wheel_exact_set.py",
         "tests/required-v4-tests.json",
         "tests/storage_chaos/test_multiprocess_recovery.py",
         "tests/unit/test_remediation_runner.py",
@@ -233,7 +234,12 @@ def test_z10_03_post_closure_allowlist_is_exact() -> None:
         "tools/remediate_v4.py",
         "tools/remediate_v4_verify.py",
         "tools/supply_chain_gate.py",
+        "tools/wheel_gate.py",
     }
+    module = _load_runner_module()
+    stale = {"result_commit": "old"}
+    assert module._receipt_can_resume_at_head("Z10-02", "Z10-03", stale, "new")
+    assert not module._receipt_can_resume_at_head("Z10-03", "Z10-03", stale, "new")
 # ---------------------------------------------------------------------------
 # Runner CLI surface (§3.7, §24)
 # ---------------------------------------------------------------------------

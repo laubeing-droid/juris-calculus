@@ -28065,6 +28065,15 @@ def _execute_auto_task(
     return EXIT_GATE_FAIL, receipt
 
 
+def _receipt_can_resume_at_head(
+    task_id: str,
+    terminal_task_id: str,
+    receipt: dict[str, Any],
+    current_commit: str,
+) -> bool:
+    return task_id != terminal_task_id or receipt.get("result_commit") == current_commit
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """Execute READY tasks and stop only at a reached failure or gate."""
     plan_path = Path(args.plan).resolve()
@@ -28176,6 +28185,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             if not wave_indexes:
                 raise ValueError(f"unknown --through target: {through}")
             ordered = ordered[:wave_indexes[-1] + 1]
+        terminal_task_id = ordered[-1]["id"] if ordered else ""
         for task in ordered:
             history = _receipt_history(task["id"], state_root)
             input_receipts = {
@@ -28224,6 +28234,10 @@ def cmd_run(args: argparse.Namespace) -> int:
                 and latest.get("task_digest") == _task_digest(task)
                 and latest["input_receipt_digests"] == input_receipts
                 and latest["start_commit"] == task_start_commit
+                and _receipt_can_resume_at_head(
+                    task["id"], terminal_task_id, latest,
+                    _git_checked("rev-parse", "HEAD"),
+                )
             ):
                 resume_problems = _auto_receipt_resume_problems(
                     task, latest, state_root,
