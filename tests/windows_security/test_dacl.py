@@ -10,25 +10,19 @@ import compiler_core.storage as storage
 from compiler_core.storage import StorageV4Error, V4TransactionStore
 
 
-def test_current_windows_sid_does_not_spawn_whoami(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    if os.name != "nt":
-        return
-    storage._current_windows_sid.cache_clear()
-    monkeypatch.setattr(
-        storage.subprocess,
-        "run",
-        lambda *_args, **_kwargs: pytest.fail("SID lookup spawned a subprocess"),
-    )
-
-    assert storage._current_windows_sid().startswith("S-")
-
-
 def test_windows_hardening_sets_exact_service_owner_and_dacl(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if os.name == "nt":
+        storage._current_windows_sid.cache_clear()
+        monkeypatch.setattr(
+            storage.subprocess,
+            "run",
+            lambda *_args, **_kwargs: pytest.fail("SID lookup spawned a subprocess"),
+        )
+        assert storage._current_windows_sid().startswith("S-")
+
     commands: list[list[str]] = []
 
     def completed(command: list[str], **_kwargs: object) -> object:
