@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-import csv
 import errno
 from functools import lru_cache
 import os
@@ -229,22 +228,59 @@ def _move_write_through(source: Path, target: Path) -> None:
 
 @lru_cache(maxsize=1)
 def _current_windows_sid() -> str:
-    completed = subprocess.run(
-        ["whoami.exe", "/user", "/fo", "csv", "/nh"],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=10,
-    )
-    if completed.returncode != 0:
+    import ctypes
+    from ctypes import wintypes
+
+    class SidAndAttributes(ctypes.Structure):
+        _fields_ = [("sid", ctypes.c_void_p), ("attributes", wintypes.DWORD)]
+
+    class TokenUser(ctypes.Structure):
+        _fields_ = [("user", SidAndAttributes)]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    advapi32.OpenProcessToken.argtypes = [
+        wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE),
+    ]
+    advapi32.OpenProcessToken.restype = wintypes.BOOL
+    advapi32.GetTokenInformation.argtypes = [
+        wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+        wintypes.DWORD, ctypes.POINTER(wintypes.DWORD),
+    ]
+    advapi32.GetTokenInformation.restype = wintypes.BOOL
+    advapi32.ConvertSidToStringSidW.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p),
+    ]
+    advapi32.ConvertSidToStringSidW.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
+
+    token = wintypes.HANDLE()
+    if not advapi32.OpenProcessToken(kernel32.GetCurrentProcess(), 0x0008, ctypes.byref(token)):
         _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is unavailable")
     try:
-        row = next(csv.reader([completed.stdout.strip()]))
-    except (StopIteration, csv.Error):
-        _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is malformed")
-    if len(row) < 2 or not row[1].startswith("S-"):
-        _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is malformed")
-    return row[1]
+        required = wintypes.DWORD()
+        advapi32.GetTokenInformation(token, 1, None, 0, ctypes.byref(required))
+        if required.value == 0:
+            _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is unavailable")
+        buffer = ctypes.create_string_buffer(required.value)
+        if not advapi32.GetTokenInformation(
+            token, 1, buffer, required, ctypes.byref(required),
+        ):
+            _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is unavailable")
+        sid = ctypes.cast(buffer, ctypes.POINTER(TokenUser)).contents.user.sid
+        text = ctypes.c_void_p()
+        if not sid or not advapi32.ConvertSidToStringSidW(sid, ctypes.byref(text)):
+            _fail("STORAGE_CAPABILITY_BLOCKED", "current Windows SID is unavailable")
+        try:
+            return ctypes.wstring_at(text.value)
+        finally:
+            kernel32.LocalFree(text)
+    finally:
+        kernel32.CloseHandle(token)
 
 
 def _harden_windows(path: Path) -> None:
