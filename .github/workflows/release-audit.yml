@@ -11,6 +11,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   static-security-audit:
     name: Running L1 Hard-Blocking Auditor
@@ -18,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout Code Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0 # 获取完整历史以确保 diff 计算精确
 
