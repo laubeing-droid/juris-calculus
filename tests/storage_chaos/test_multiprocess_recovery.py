@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import multiprocessing
+import os
 from pathlib import Path
 import time
 
@@ -55,8 +56,11 @@ def test_cross_process_lock_and_stale_staging_recovery(
     assert store.get_bytes(digest) == _PAYLOAD
 
     staging = tmp_path / NAMESPACE_V4 / "staging"
-    (staging / "dead.1.stage").write_bytes(b"partial")
-    (staging / "dead.1.lease").write_bytes(b"lease")
+    stale_paths = (staging / "dead.1.stage", staging / "dead.1.lease")
+    for path, content in zip(stale_paths, (b"partial", b"lease"), strict=True):
+        path.write_bytes(content)
+        if os.name != "nt":
+            path.chmod(0o600)
     assert V4TransactionStore.open(tmp_path, quota_bytes=1_000_000).recover() == 2
     assert list(staging.iterdir()) == []
     assert len(list((tmp_path / NAMESPACE_V4 / "quarantine").iterdir())) == 2

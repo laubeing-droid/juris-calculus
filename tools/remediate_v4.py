@@ -4851,7 +4851,7 @@ def _required_test_manifest_problems(
             "suite": "windows_security",
             "selector": "tests/windows_security/test_dacl.py",
             "state": "REQUIRED_NOW",
-            "expected_tests": 3,
+            "expected_tests": 4,
         },
         {
             "id": "W4-CERTIFICATE-CONTRACT",
@@ -13644,7 +13644,7 @@ def _cmd_w4_02_storage_gate() -> int:
         {
             "id": "W4-STORAGE-DACL", "suite": "windows_security",
             "selector": "tests/windows_security/test_dacl.py",
-            "state": "REQUIRED_NOW", "expected_tests": 3,
+            "state": "REQUIRED_NOW", "expected_tests": 4,
         },
     ]
     storage_required = [

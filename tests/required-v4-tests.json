@@ -233,7 +233,7 @@
       "suite": "windows_security",
       "selector": "tests/windows_security/test_dacl.py",
       "state": "REQUIRED_NOW",
-      "expected_tests": 3
+      "expected_tests": 4
     },
     {
       "id": "W4-CERTIFICATE-CONTRACT",

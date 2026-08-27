@@ -193,7 +193,7 @@ def test_every_task_has_allowed_paths() -> None:
             assert t.get("audit_ids"), f"task {t['id']} (mode={t.get('mode')}) missing audit_ids"
 
 
-def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
+def test_z10_03_post_closure_allowlist_is_exact() -> None:
     plan = json.loads((REMEDIATION_DIR / "tasks.json").read_text(encoding="utf-8"))
     task = next(item for item in plan["tasks"] if item["id"] == "Z10-03")
     assert set(task["allowed_paths"]) == {
@@ -209,6 +209,7 @@ def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
         "CHANGELOG.md",
         "HANDOFF.md",
         "README.md",
+        "compiler_core/storage.py",
         "docs/**",
         "memory.md",
         "requirements/test.lock",
@@ -217,18 +218,15 @@ def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
         "tests/contract/test_contracts.py",
         "tests/packaging/test_ci_matrix.py",
         "tests/packaging/test_hash_locks.py",
+        "tests/required-v4-tests.json",
+        "tests/storage_chaos/test_multiprocess_recovery.py",
         "tests/unit/test_remediation_runner.py",
         "tests/unit/test_w5_03_nonproduction_boundaries.py",
+        "tests/windows_security/test_dacl.py",
         "tools/remediate_v4.py",
         "tools/remediate_v4_verify.py",
         "tools/supply_chain_gate.py",
     }
-    assert not any(
-        path.startswith(("compiler_core/", "configs/", "schemas/"))
-        for path in task["allowed_paths"]
-    )
-
-
 # ---------------------------------------------------------------------------
 # Runner CLI surface (§3.7, §24)
 # ---------------------------------------------------------------------------

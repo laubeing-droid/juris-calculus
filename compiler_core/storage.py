@@ -251,13 +251,15 @@ def _harden_windows(path: Path) -> None:
     sid = _current_windows_sid()
     rights = "(OI)(CI)F" if path.is_dir() else "F"
     commands = (
+        ["icacls.exe", str(path), "/setowner", f"*{sid}"],
         [
             "icacls.exe", str(path), "/inheritance:r", "/grant:r",
             f"*{sid}:{rights}", f"*S-1-5-18:{rights}",
         ],
         [
             "icacls.exe", str(path), "/remove:g",
-            "*S-1-5-32-544", "*S-1-3-4",
+            "*S-1-1-0", "*S-1-5-11", "*S-1-5-32-544", "*S-1-5-32-545",
+            "*S-1-3-4",
         ],
     )
     for command in commands:

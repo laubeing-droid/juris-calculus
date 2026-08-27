@@ -10,6 +10,33 @@ import compiler_core.storage as storage
 from compiler_core.storage import StorageV4Error, V4TransactionStore
 
 
+def test_windows_hardening_sets_exact_service_owner_and_dacl(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def completed(command: list[str], **_kwargs: object) -> object:
+        commands.append(command)
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr(storage, "_current_windows_sid", lambda: "S-1-5-21-42")
+    monkeypatch.setattr(storage.subprocess, "run", completed)
+
+    storage._harden_windows(tmp_path)
+
+    assert commands[0] == [
+        "icacls.exe", str(tmp_path), "/setowner", "*S-1-5-21-42",
+    ]
+    assert commands[1][-2:] == [
+        "*S-1-5-21-42:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F",
+    ]
+    assert commands[2][-5:] == [
+        "*S-1-1-0", "*S-1-5-11", "*S-1-5-32-544", "*S-1-5-32-545",
+        "*S-1-3-4",
+    ]
+
+
 def test_unverified_dacl_fails_closed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
