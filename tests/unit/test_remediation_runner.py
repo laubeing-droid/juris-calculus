@@ -219,6 +219,7 @@ def test_z10_03_post_closure_allowlist_is_nonruntime_and_exact() -> None:
         "tests/packaging/test_hash_locks.py",
         "tests/unit/test_remediation_runner.py",
         "tests/unit/test_w5_03_nonproduction_boundaries.py",
+        "tools/remediate_v4.py",
         "tools/remediate_v4_verify.py",
         "tools/supply_chain_gate.py",
     }

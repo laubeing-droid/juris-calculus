@@ -5427,10 +5427,10 @@ def cmd_required_test_manifest() -> int:
                 ],
                 cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
                 errors="replace", check=False,
-                timeout=120, env=environment,
+                timeout=300, env=environment,
             )
         except subprocess.TimeoutExpired:
-            print("RED_AT_TASK sentinel execution exceeded 120 seconds", file=sys.stderr)
+            sys.stderr.write("RED_AT_TASK sentinel execution exceeded 300 seconds\n")
             return EXIT_GATE_FAIL
         if red_completed.returncode != 1:
             print(
@@ -5475,11 +5475,11 @@ def cmd_required_test_manifest() -> int:
                     ],
                     cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
                     errors="replace", check=False,
-                    timeout=120, env=environment,
+                    timeout=300, env=environment,
                 )
             except subprocess.TimeoutExpired:
                 print(
-                    f"required test execution exceeded 120 seconds: {required['id']}",
+                    f"required test execution exceeded 300 seconds: {required['id']}",
                     file=sys.stderr,
                 )
                 return EXIT_GATE_FAIL

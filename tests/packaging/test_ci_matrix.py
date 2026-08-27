@@ -82,9 +82,12 @@ def test_ci_uses_only_pinned_actions_and_hash_locked_installs() -> None:
     steps = [step for job in document["jobs"].values() for step in _steps(job)]
     uses = [step["uses"] for step in steps if "uses" in step]
     installs = [line.strip() for step in steps for line in step.get("run", "").splitlines() if "pip install" in line]
+    required_runs = _runs(document["jobs"]["required"])
 
     assert uses and all(ACTION_PIN.fullmatch(value) for value in uses)
     assert installs and all("--require-hashes" in line and "requirements/" in line for line in installs)
+    assert "requirements/build.lock" in required_runs
+    assert "requirements/test.lock" in required_runs
     assert "requirements/dev.lock" not in CI.read_text(encoding="utf-8")
 
 

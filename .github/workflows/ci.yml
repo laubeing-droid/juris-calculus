@@ -40,10 +40,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-          cache-dependency-path: requirements/test.lock
+          cache-dependency-path: |
+            requirements/build.lock
+            requirements/test.lock
 
-      - name: Install hash-locked test graph
-        run: python -m pip install --require-hashes -r requirements/test.lock
+      - name: Install hash-locked build and test graphs
+        run: |
+          python -m pip install --require-hashes -r requirements/build.lock
+          python -m pip install --require-hashes -r requirements/test.lock
 
       - name: Required current suites
         run: python -B tools/remediate_v4.py verify-wave W0-04
