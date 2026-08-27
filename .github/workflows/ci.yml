@@ -46,13 +46,7 @@ jobs:
         run: python -m pip install --require-hashes -r requirements/test.lock
 
       - name: Required current suites
-        run: >-
-          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider
-          tests/contract tests/differential tests/dsh_formal tests/formal_e2e
-          tests/integration tests/mcp_protocol tests/packaging tests/property
-          tests/security tests/semantic_mutation tests/unit
-          --ignore=tests/unit/test_remediation_graph_map.py
-          --deselect=tests/unit/test_authority_observed_graph.py::test_repository_policy_has_exact_python_and_codegraph_coverage
+        run: python -B tools/remediate_v4.py verify-wave W0-04
 
       - name: Ubuntu storage and chaos subset
         if: runner.os == 'Linux' && matrix.python == '3.12'

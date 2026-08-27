@@ -54,7 +54,7 @@ def _ci_problems(text: str) -> list[str]:
         problems.append("action-pin")
     required_runs = _runs(required)
     package_runs = _runs(jobs.get("package", {}))
-    if "tests/contract tests/differential tests/dsh_formal" not in required_runs:
+    if "verify-wave W0-04" not in required_runs:
         problems.append("required")
     if "--installed-wheel" not in package_runs or "cmp work/dist-a/*.whl" not in package_runs:
         problems.append("package")
@@ -95,9 +95,9 @@ def test_ci_covers_required_suites_and_platform_subsets() -> None:
     assert "Required current suites" in names
     assert "Ubuntu storage and chaos subset" in names
     assert "Windows DACL and reparse subset" in names
-    assert "tests/contract tests/differential tests/dsh_formal" in runs
+    assert "verify-wave W0-04" in runs
     assert "tests/storage_chaos" in runs and "tests/windows_security" in runs
-    assert "verify-wave W0-04" not in runs
+    assert "tests/contract tests/differential tests/dsh_formal" not in runs
 
 
 def test_ci_static_lane_covers_generated_authority_purity_secrets_lint_type_unit() -> None:
