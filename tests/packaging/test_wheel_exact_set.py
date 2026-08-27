@@ -82,6 +82,14 @@ def test_nonformal_module_injection_fails_exact_record_gate(tmp_path: Path) -> N
 
 def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
     assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 27
+    assert WHEEL_GATE.INSTALLED_TEST_CASE_IDS_SHA256 == (
+        "sha256:12c563b67fe1c06ff1f7be0114b3105394d03e747115c40592f480f91bf56708"
+    )
+    assert WHEEL_GATE._portable_junit_classname(
+        "tests.formal_e2e.test_positive_vertical_slice"
+    ) == WHEEL_GATE._portable_junit_classname(
+        "formal_e2e.test_positive_vertical_slice"
+    )
     assert set(WHEEL_GATE.INSTALLED_TEST_SELECTORS) == {
         "tests/formal_e2e/test_positive_vertical_slice.py",
         "tests/formal_e2e/test_three_entrypoint_error_matrix.py::"

@@ -92,7 +92,7 @@ INSTALLED_TEST_SELECTORS = (
 )
 INSTALLED_TEST_CASE_COUNT = 27
 INSTALLED_TEST_CASE_IDS_SHA256 = (
-    "sha256:479fbf2b45f2decada1e3f69a0c97068f4190e9d90c0058bce4e93192c662714"
+    "sha256:12c563b67fe1c06ff1f7be0114b3105394d03e747115c40592f480f91bf56708"
 )
 
 
@@ -392,6 +392,10 @@ def _copy_installed_harness(source: Path, destination: Path) -> None:
     )
 
 
+def _portable_junit_classname(value: str) -> str:
+    return value.removeprefix("tests.")
+
+
 def _junit_summary(path: Path) -> dict[str, object]:
     root = ET.parse(path).getroot()
     suites = [root] if root.tag == "testsuite" else list(root.findall("testsuite"))
@@ -400,7 +404,8 @@ def _junit_summary(path: Path) -> dict[str, object]:
         for key in ("tests", "skipped", "failures", "errors")
     }
     case_ids = sorted(
-        f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}"
+        f"{_portable_junit_classname(case.attrib.get('classname', ''))}::"
+        f"{case.attrib.get('name', '')}"
         for case in root.iter("testcase")
     )
     if (
