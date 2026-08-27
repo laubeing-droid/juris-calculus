@@ -197,6 +197,7 @@ def test_z10_03_post_closure_allowlist_is_exact() -> None:
     plan = json.loads((REMEDIATION_DIR / "tasks.json").read_text(encoding="utf-8"))
     task = next(item for item in plan["tasks"] if item["id"] == "Z10-03")
     assert set(task["allowed_paths"]) == {
+        ".github/workflows/auto-release.yml",
         ".github/workflows/ci.yml",
         ".github/workflows/release-audit.yml",
         ".gitignore",
