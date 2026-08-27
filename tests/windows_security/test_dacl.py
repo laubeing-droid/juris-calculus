@@ -10,10 +10,11 @@ import compiler_core.storage as storage
 from compiler_core.storage import StorageV4Error, V4TransactionStore
 
 
-@pytest.mark.skipif(os.name != "nt", reason="Windows token API only")
 def test_current_windows_sid_does_not_spawn_whoami(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if os.name != "nt":
+        return
     storage._current_windows_sid.cache_clear()
     monkeypatch.setattr(
         storage.subprocess,
