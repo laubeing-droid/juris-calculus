@@ -13,11 +13,15 @@ from compiler_core.formal_bridge import (
 )
 from compiler_core.mcp import runtime_tools_list
 from compiler_core.production_runtime import ProductionRuntimeConfigV4, create_client
+from tests.conftest import ProductionMaterial
 from tests.formal_e2e.test_local_production_chain import production_bundle, runtime_config
 
 
-def _registry(tmp_path: Path, *, pin_mutation: tuple[str, object] | None = None) -> Path:
-    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+def _registry(
+    tmp_path: Path, material: ProductionMaterial,
+    *, pin_mutation: tuple[str, object] | None = None,
+) -> Path:
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state", material)
     client = create_client(ProductionRuntimeConfigV4.from_path(config))
     capabilities = client.capabilities().to_dict()
     pins = {
@@ -62,9 +66,11 @@ def _registry(tmp_path: Path, *, pin_mutation: tuple[str, object] | None = None)
     return path
 
 
-def test_real_stdio_production_factory_delivers_exact_certificate(tmp_path: Path) -> None:
-    bundle = production_bundle(15)
-    profile = load_active_profile(_registry(tmp_path))
+def test_real_stdio_production_factory_delivers_exact_certificate(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    bundle = production_bundle(15, material=production_material)
+    profile = load_active_profile(_registry(tmp_path, production_material))
     with FormalBridgeV4(profile) as bridge:
         delivery = bridge.deliver(bundle)
     assert delivery.marker == "JC_FORMAL_VERIFIED"
@@ -73,15 +79,18 @@ def test_real_stdio_production_factory_delivers_exact_certificate(tmp_path: Path
 
 
 @pytest.mark.parametrize("mutation", ("tools", "capabilities"))
-def test_startup_pin_drift_fails_closed(tmp_path: Path, mutation: str) -> None:
+def test_startup_pin_drift_fails_closed(
+    tmp_path: Path, mutation: str, production_material: ProductionMaterial,
+) -> None:
     if mutation == "tools":
-        registry_path = _registry(tmp_path)
+        registry_path = _registry(tmp_path, production_material)
         registry = json.loads(registry_path.read_bytes())
         registry["profiles"]["local-production"]["tools_list_digest"] = "sha256:" + "f" * 64
         registry_path.write_bytes(canonical_bytes(registry))
     else:
         registry_path = _registry(
-            tmp_path, pin_mutation=("wheel_digest", "sha256:" + "f" * 64),
+            tmp_path, production_material,
+            pin_mutation=("wheel_digest", "sha256:" + "f" * 64),
         )
     with pytest.raises(FormalBridgeError, match="MCP_.*DRIFT"):
         FormalBridgeV4(load_active_profile(registry_path)).connect()
@@ -90,8 +99,9 @@ def test_startup_pin_drift_fails_closed(tmp_path: Path, mutation: str) -> None:
 @pytest.mark.parametrize("mutation", ("verify", "read"))
 def test_delivery_guard_rejects_verified_or_byte_drift(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str,
+    production_material: ProductionMaterial,
 ) -> None:
-    profile = load_active_profile(_registry(tmp_path))
+    profile = load_active_profile(_registry(tmp_path, production_material))
     with FormalBridgeV4(profile) as bridge:
         session = bridge.session
         assert session is not None
@@ -107,26 +117,31 @@ def test_delivery_guard_rejects_verified_or_byte_drift(
 
         monkeypatch.setattr(session, "_call_tool", altered)
         with pytest.raises(FormalBridgeError):
-            bridge.deliver(production_bundle(15))
+            bridge.deliver(production_bundle(15, material=production_material))
 
 
-def test_reconnect_revalidates_and_delivers_article_13(tmp_path: Path) -> None:
-    profile = load_active_profile(_registry(tmp_path))
+def test_reconnect_revalidates_and_delivers_article_13(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    profile = load_active_profile(_registry(tmp_path, production_material))
     with FormalBridgeV4(profile) as bridge:
         first = bridge.session
         second = bridge.connect()
         assert first is not None and first.generation == 0 and second.generation == 1
-        delivery = bridge.deliver(production_bundle(13))
+        delivery = bridge.deliver(production_bundle(13, material=production_material))
         assert delivery.marker == "JC_FORMAL_VERIFIED"
         assert delivery.generation == 1
 
 
 def test_cli_uses_registry_without_changing_general_jc(
     tmp_path: Path, capsys: pytest.CaptureFixture[str],
+    production_material: ProductionMaterial,
 ) -> None:
     bundle_path = tmp_path / "bundle.json"
-    bundle_path.write_bytes(production_bundle(15).canonical_bytes())
-    assert main(["--registry", str(_registry(tmp_path)), "--input", str(bundle_path)]) == 0
+    bundle = production_bundle(15, material=production_material)
+    bundle_path.write_bytes(bundle.canonical_bytes())
+    registry_path = _registry(tmp_path, production_material)
+    assert main(["--registry", str(registry_path), "--input", str(bundle_path)]) == 0
     output = json.loads(capsys.readouterr().out)
     assert output["marker"] == "JC_FORMAL_VERIFIED"
     assert "formal_bridge" not in Path("compiler_core/cli.py").read_text(encoding="utf-8")

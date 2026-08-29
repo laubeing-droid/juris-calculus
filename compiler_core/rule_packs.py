@@ -36,6 +36,7 @@ from compiler_core.contracts import (
     SourceSnapshotV4,
     require_engine_match,
 )
+from compiler_core.rule_admission import DataQuality, normalize_rule_admission
 from compiler_core.source_service import (
     SOURCE_AUTHENTICITY_RECEIPT_KIND,
     SOURCE_SNAPSHOT_KIND,
@@ -1625,8 +1626,6 @@ def _official_rule_eligible(
     issues: list[dict[str, str]],
 ) -> bool:
     """执行official规则的来源、质量、日期和modality准入。"""
-
-    from compiler_core.types import DataQuality, normalize_rule_admission
 
     rule = normalize_rule_admission(raw_rule)
     rule_id = str(rule.get("id", ""))

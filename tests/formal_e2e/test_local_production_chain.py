@@ -28,9 +28,9 @@ from compiler_core.production_pack import current_utc_time, load_production_pack
 from compiler_core.production_runtime import _algorithm_profile_digest, create_client
 from compiler_core.rule_packs import LEGAL_APPROVAL_SCOPE
 from compiler_core.source_service import SOURCE_BUNDLE_KIND, SOURCE_SNAPSHOT_KIND
+from tests.conftest import ProductionMaterial
 
 
-PRODUCTION = Path(r"D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-production-state")
 FACTS = {
     13: "pipl.art13.lawful_basis_present",
     14: "pipl.art14.consent_is_basis",
@@ -42,12 +42,12 @@ FACTS = {
 CASE_SCOPE = "local-production-case"
 
 
-def runtime_config(path: Path, state_root: Path) -> Path:
+def runtime_config(path: Path, state_root: Path, material: ProductionMaterial) -> Path:
     document = {
         "schema_version": "jc/production-runtime/1.0",
-        "pack_path": str(PRODUCTION / "packs/cn-official-local-4.0.0.json"),
-        "trust_path": str(PRODUCTION / "trust/cn-official-local.json"),
-        "service_key_path": str(PRODUCTION / "identity/service-runtime.json"),
+        "pack_path": str(material.pack_path),
+        "trust_path": str(material.trust_path),
+        "service_key_path": str(material.service_key_path),
         "state_root": str(state_root.resolve()), "quota_bytes": 268435456,
         "engine_source_commit": "a" * 40,
         "wheel_digest": str(DigestV4.from_bytes(b"w10-wheel")),
@@ -64,8 +64,8 @@ def runtime_config(path: Path, state_root: Path) -> Path:
     return path
 
 
-def _legal_key() -> Ed25519PrivateKey:
-    root = parse_json_document((PRODUCTION / "identity/root.json").read_bytes())
+def _legal_key(material: ProductionMaterial) -> Ed25519PrivateKey:
+    root = parse_json_document(material.identity_path.read_bytes())
     master = b64decode(root["private_seed_base64"], validate=True)
     seed = HKDF(
         algorithm=hashes.SHA256(), length=32,
@@ -92,11 +92,12 @@ def production_bundle(
     dispute_state: str = "UNDISPUTED",
     assumption_state: str = "NONE",
     label: str = "case",
+    material: ProductionMaterial | None = None,
 ) -> CaseInputBundleV4:
+    if material is None:
+        raise TypeError("production_bundle requires the production_material fixture")
     loaded = load_production_pack(
-        PRODUCTION / "packs/cn-official-local-4.0.0.json",
-        PRODUCTION / "trust/cn-official-local.json",
-        PRODUCTION / "identity/service-runtime.json",
+        material.pack_path, material.trust_path, material.service_key_path,
     )
     now = current_utc_time()
     fact_key = fact_key or FACTS[article]
@@ -235,7 +236,7 @@ def production_bundle(
     }
     signature = SignatureEnvelopeV4.from_dict({
         **signature_body,
-        "signature": b64encode(_legal_key().sign(canonical_bytes(signature_body))).decode("ascii"),
+        "signature": b64encode(_legal_key(material).sign(canonical_bytes(signature_body))).decode("ascii"),
     })
     attestation = FactAttestationV4.from_dict({
         **attestation_body, "signature": signature.to_dict(),
@@ -259,15 +260,27 @@ def production_bundle(
     })
 
 
+@pytest.fixture()
+def bundle_factory(production_material: ProductionMaterial):
+    def build(article: int = 13, **options: object) -> CaseInputBundleV4:
+        return production_bundle(article, material=production_material, **options)
+
+    return build
+
+
 @pytest.mark.parametrize("article", range(13, 19))
 def test_six_article_real_production_chain_and_handles(
-    article: int, tmp_path: Path, monkeypatch
+    article: int, tmp_path: Path, monkeypatch, bundle_factory,
+    production_material: ProductionMaterial,
 ) -> None:
-    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state", production_material)
     monkeypatch.setenv("JC_PRODUCTION_CONFIG", str(config))
     client = create_client()
-    output = client.evaluate_for_mcp(MCPEvaluateInputV4(production_bundle(article)))
-    assert output.result.decision_status is DecisionStatusV4.ACCEPTED_FORMAL_RESULT
+    output = client.evaluate_for_mcp(MCPEvaluateInputV4(bundle_factory(article)))
+    assert output.result.decision_status is DecisionStatusV4.ACCEPTED_FORMAL_RESULT, (
+        output.result.decision_reason_codes,
+        output.result.interruption_state,
+    )
     assert output.certificate_handle.kind == "audit-certificate-binding"
     verified = client.verify_run(output.run_handle)
     assert verified.verification.status == "VERIFIED"
@@ -293,12 +306,13 @@ def test_six_article_real_production_chain_and_handles(
 )
 def test_real_production_nonformal_state_matrix(
     options: dict[str, str], expected: DecisionStatusV4,
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path, monkeypatch, bundle_factory,
+    production_material: ProductionMaterial,
 ) -> None:
-    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state", production_material)
     monkeypatch.setenv("JC_PRODUCTION_CONFIG", str(config))
     output = create_client().evaluate_for_mcp(
-        MCPEvaluateInputV4(production_bundle(15, **options))
+        MCPEvaluateInputV4(bundle_factory(15, **options))
     )
     assert output.result.decision_status is expected
     assert output.result.certificate_kind.value == "none"

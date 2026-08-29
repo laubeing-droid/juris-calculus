@@ -483,6 +483,9 @@ def _write_response(value: dict[str, object]) -> None:
 def run_stdio(server: MCPServerV4 | None = None) -> None:
     """Run a silent MCP stdio lifecycle; one tool error never kills the server."""
 
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="strict")
     service = server or MCPServerV4()
     initialized = False
     for raw_line in sys.stdin:

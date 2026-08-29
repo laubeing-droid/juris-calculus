@@ -1,27 +1,14 @@
 # Changelog
 
-## 4.0.0 — Local production
+## 4.0.0 — Current V4
 
-### Runtime boundary
+- CLI、Python、MCP、schema、application、certificate、verify 与 replay 统一到 V4。
+- 删除 23 个零消费者旧模块、旧 pipeline 导入 shim、旧 runner 验证器和旧施工状态文档。
+- remediation runner 改为小型通用 DAG 执行器，当前使用 3.0 任务定义；2.0 任务定义保持原字节不变。
+- 正式 wheel 新增独立 `rule_admission.py`，完整支持 official YAML 规则准入正反验证。
+- 生产链测试改为在 pytest 临时目录内生成材料；Git/子进程边界统一使用严格 UTF-8。
+- 当前 authority 检查使用 Git 跟踪清单、本地 AST、入口点和 wheel 清单，不依赖外部 CodeGraph。
+- CN/HK/US/federation addons 保留用于规则对齐，继续排除在正式 wheel 之外。
+- CI 改用当前 V4 runner、authority、cleanup、文档链接、完整测试和隔离 wheel 门禁。
 
-- Public CLI, Python, MCP, schema, application, certificate, verify, and replay surfaces are V4-only.
-- V3/W1b adapters, caller-trusted shortcuts, duplicate authorities, and legacy rule fallback were removed from the current tree and wheel.
-- `configs/zh_CN/rules.yaml` and the `cn-legacy-corpus` manifest were retired with history-bound evidence; no content was promoted into `cn-official`.
-
-### Evidence and packaging
-
-- Required tests are governed by `tests/required-v4-tests.json` with zero required skip/xfail bypass.
-- Hash-locked build, runtime, test, and release profiles drive a byte-identical A/B wheel build and repository-outside installed-wheel tests.
-- `tools/build_provenance.py` binds the exact wheel, RECORD, runtime SBOM, source commit/tree, schema, tool contract, authority registry, trust material, and locks.
-- `.github/workflows/ci.yml` builds once; `.github/workflows/auto-release.yml` only promotes that exact artifact after tag, production signature, environment, and governance checks.
-- The W10/Z10 remediation run completed all 92 tasks through `Z10-03`; the external final result records `LOCAL_PRODUCTION_ACTIVE` and `exit_code=0`.
-- The tracked pre-release audit gate covers supply-chain, sensitive-data, stale-language, disclosure, and documentation checks before any public push or release.
-
-### Remote boundary
-
-- Local Windows/EFS production uses the installed-wheel runtime, active profile registry, and bounded `cn-official-local` pack for PIPL Articles 13–18. No remote release or external DSH deployment is claimed.
-- Test-only provenance is explicitly `TEST_ONLY_NOT_PROMOTABLE`.
-
-## Historical lines
-
-V3.0.2 and older interfaces are retained only in frozen historical artifacts. See `docs/operations/V3_HISTORICAL_REPLAY.md`; it is not current runtime authority.
+本版本条目只描述当前仓库可复现内容，不声明外部部署、远程发布或历史任务完成状态。

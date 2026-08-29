@@ -1,4 +1,4 @@
-"""W5-03 source-tool and candidate-asset isolation contract."""
+"""Current source-tool and candidate-asset isolation contract."""
 
 from __future__ import annotations
 
@@ -109,12 +109,11 @@ def test_disposition_preserves_candidates_and_classifies_source_tools() -> None:
     by_path = {item["path"]: item for item in document["paths"]}
     for path in SOURCE_TOOL_PATHS:
         item = by_path[path]
-        assert (
-            item["disposition"],
-            item["terminal_state"],
-            item["closure_task"],
-            item["namespace"],
-        ) == ("MOVE_IN_REPO_SOURCE_TOOL", "CANDIDATE_ASSET", "W5-03", "source_tool")
+        assert item == {
+            "path": path,
+            "authority_class": "SOURCE_TOOL",
+            "production_wheel": False,
+        }
 
     for path in (
         "configs/zh_CN/source_manifest.yaml",
@@ -135,6 +134,8 @@ def test_nonproduction_assets_add_no_distribution_or_deployment_authority() -> N
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="strict",
     ).stdout.splitlines()
     normalized = [path.replace("\\", "/") for path in tracked]
 

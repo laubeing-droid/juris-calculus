@@ -299,8 +299,10 @@ def _harden_windows(path: Path) -> None:
         ],
     )
     for command in commands:
+        # icacls prints localized console text (GBK on Chinese Windows); only
+        # the exit code is consumed, so capture bytes and never decode it.
         completed = subprocess.run(
-            command, capture_output=True, text=True, check=False, timeout=20,
+            command, capture_output=True, check=False, timeout=20,
         )
         if completed.returncode != 0:
             _fail("STORAGE_CAPABILITY_BLOCKED", "owner-only Windows DACL cannot be set")

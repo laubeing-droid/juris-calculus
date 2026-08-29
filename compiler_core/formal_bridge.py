@@ -38,8 +38,8 @@ PIN_FIELDS = (
 class FormalBridgeError(RuntimeError):
     """Stable public failure; details never contain case bytes or internal paths."""
 
-    def __init__(self, code: str) -> None:
-        super().__init__(code)
+    def __init__(self, code: str, detail: str = "") -> None:
+        super().__init__(f"{code}: {detail}" if detail else code)
         self.code = code
 
 
@@ -168,6 +168,7 @@ class StdioSessionV4:
             key: value for key, value in os.environ.items()
             if key.upper() not in {"PYTHONPATH", "PYTHONHOME", "JC_PROFILE_REGISTRY"}
         }
+        env.update({"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
         env.update(profile.environment)
         try:
             self._process = subprocess.Popen(
@@ -241,7 +242,10 @@ class StdioSessionV4:
         if set(result) != {"content", "structuredContent", "isError"}:
             raise FormalBridgeError("MCP_TOOL_RESULT_FIELDS")
         if type(result["isError"]) is not bool or result["isError"]:
-            raise FormalBridgeError("MCP_TOOL_ERROR")
+            structured = result.get("structuredContent")
+            error = structured.get("error") if type(structured) is dict else None
+            detail = str(error.get("code", "UNKNOWN")) if type(error) is dict else "UNKNOWN"
+            raise FormalBridgeError("MCP_TOOL_ERROR", detail)
         structured = result["structuredContent"]
         if type(structured) is not dict:
             raise FormalBridgeError("MCP_TOOL_RESULT_SHAPE")

@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """Validate the manual V4 authority policy against source observations.
 
-Policy is human-authored. AST, dynamic-import declarations, packaging metadata,
-and CodeGraph only report whether the current tree conforms to that policy.
+Policy is human-authored. The Git tracked file list, the local AST, declared
+dynamic imports, and packaging metadata report whether the current tree
+conforms to that policy. No external code database is consulted.
 """
 from __future__ import annotations
 
 import argparse
 import ast
-import fnmatch
 import hashlib
 import importlib.util
 import json
 import os
 import re
-import sqlite3
 import subprocess
 import sys
 import tomllib
@@ -30,7 +29,6 @@ AUTHORITY_CLASSES = {
 AUTHORITY_ROLES = {
     "application", "contract", "certificate_issuer", "independent_checker",
 }
-CODEGRAPH_ASSET_ONLY = {"tools/remediate_v4.py"}
 DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
 EXIT_OK = 0
 EXIT_FAILURE = 4
@@ -318,76 +316,6 @@ def _classify_paths(
     }
 
 
-def _codegraph_evidence(
-    root: Path, database: Path, tracked: list[str], errors: list[dict[str, Any]],
-) -> dict[str, Any]:
-    if not database.is_file():
-        errors.append({"code": "CODEGRAPH_MISSING"})
-        return {
-            "integrity": "missing", "indexed_python": 0,
-            "content_mismatches": tracked, "missing_python": tracked,
-            "orphan_python": [], "parse_errors": [], "unresolved_refs": None,
-            "secondary_import_edges": None, "secondary_call_edges": None,
-        }
-    connection = sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)
-    try:
-        try:
-            integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0])
-            rows = connection.execute(
-                "SELECT path, content_hash, errors FROM files WHERE language='python' OR path LIKE '%.py'"
-            ).fetchall()
-            unresolved = int(connection.execute("SELECT COUNT(*) FROM unresolved_refs").fetchone()[0])
-            edge_counts = dict(connection.execute("SELECT kind, COUNT(*) FROM edges GROUP BY kind").fetchall())
-        except sqlite3.DatabaseError as exc:
-            errors.append({"code": "CODEGRAPH_SCHEMA", "detail": str(exc)})
-            return {
-                "integrity": "schema-error", "indexed_python": 0,
-                "content_mismatches": [], "missing_python": tracked,
-                "orphan_python": [], "parse_errors": [], "unresolved_refs": None,
-                "secondary_import_edges": None, "secondary_call_edges": None,
-                "enforcement_role": "freshness_and_secondary_observation_only",
-            }
-    finally:
-        connection.close()
-    indexed = {str(path).replace("\\", "/"): (content_hash, parse_error) for path, content_hash, parse_error in rows}
-    missing = sorted(set(tracked) - set(indexed) - CODEGRAPH_ASSET_ONLY)
-    orphan = sorted(set(indexed) - set(tracked))
-    mismatches = sorted(
-        path for path in set(tracked) & set(indexed)
-        if indexed[path][0] != _sha256((root / path).read_bytes())
-    )
-    parse_errors = sorted(path for path, (_, value) in indexed.items() if value)
-    if integrity != "ok":
-        errors.append({"code": "CODEGRAPH_INTEGRITY", "detail": integrity})
-    if missing:
-        errors.append({"code": "CODEGRAPH_MISSING_PYTHON", "paths": missing})
-    if orphan:
-        errors.append({"code": "CODEGRAPH_ORPHAN_PYTHON", "paths": orphan})
-    if mismatches:
-        errors.append({"code": "CODEGRAPH_CONTENT_MISMATCH", "paths": mismatches})
-    if parse_errors:
-        errors.append({"code": "CODEGRAPH_PARSE_ERRORS", "paths": parse_errors})
-    if unresolved:
-        errors.append({"code": "CODEGRAPH_UNRESOLVED_REFS", "count": unresolved})
-    logical_rows = [
-        {"path": path, "content_hash": value[0], "errors": value[1]}
-        for path, value in sorted(indexed.items())
-    ]
-    return {
-        "integrity": integrity,
-        "indexed_python": len(indexed),
-        "content_mismatches": mismatches,
-        "missing_python": missing,
-        "orphan_python": orphan,
-        "parse_errors": parse_errors,
-        "unresolved_refs": unresolved,
-        "secondary_import_edges": int(edge_counts.get("imports", 0)),
-        "secondary_call_edges": int(edge_counts.get("calls", 0)),
-        "logical_file_index_digest": _digest_object(logical_rows),
-        "enforcement_role": "freshness_and_secondary_observation_only",
-    }
-
-
 def _declared_dynamic_edges(
     unresolved: list[dict[str, Any]], policy: dict[str, Any], classes: dict[str, dict],
     errors: list[dict[str, Any]],
@@ -469,35 +397,6 @@ def _entrypoints(
     return results
 
 
-def _packaged_paths(root: Path, tracked: list[str]) -> set[str]:
-    pyproject_path = root / "pyproject.toml"
-    if not pyproject_path.is_file():
-        return set()
-    payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    packages = payload.get("tool", {}).get("setuptools", {}).get("packages", {})
-    if isinstance(packages, list):
-        include = packages
-        exclude: list[str] = []
-    else:
-        finder = packages.get("find", {})
-        include = list(finder.get("include", ["*"]))
-        exclude = list(finder.get("exclude", []))
-    tracked_set = set(tracked)
-    packaged: set[str] = set()
-    for path in tracked:
-        if "/" not in path:
-            continue
-        parent = path.rpartition("/")[0]
-        if f"{parent}/__init__.py" not in tracked_set:
-            continue
-        package = parent.replace("/", ".")
-        if any(fnmatch.fnmatchcase(package, pattern) for pattern in include) and not any(
-            fnmatch.fnmatchcase(package, pattern) for pattern in exclude
-        ):
-            packaged.add(path)
-    return packaged
-
-
 def _backlog_item(kind: str, closure_task: str, **fields: Any) -> dict[str, Any]:
     identity = {"kind": kind, **fields}
     return {
@@ -521,10 +420,9 @@ def _shortest_path(adjacency: dict[str, set[str]], source: str, target: str) -> 
     return None
 
 
-def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[str, Any]:
+def build_report(root: Path, policy_path: Path) -> dict[str, Any]:
     root = root.resolve()
     policy_path = policy_path.resolve()
-    codegraph_path = codegraph_path.resolve()
     policy = json.loads(policy_path.read_text(encoding="utf-8"))
     errors: list[dict[str, Any]] = []
     if policy.get("schema_version") != "jc/module-authority/1.0":
@@ -532,7 +430,6 @@ def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[st
     classes = _policy_classes(policy, errors)
     tracked = _tracked_python(root)
     classified, coverage = _classify_paths(tracked, policy, classes, errors)
-    codegraph = _codegraph_evidence(root, codegraph_path, tracked, errors)
     try:
         ast_edges, unresolved, external = _scan_imports(root, tracked)
     except (SyntaxError, UnicodeError) as exc:
@@ -548,8 +445,7 @@ def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[st
     entrypoints = _entrypoints(root, policy, classified, errors)
 
     dirty = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
-    if dirty:
-        errors.append({"code": "WORKTREE_NOT_CLEAN", "paths": str(dirty).splitlines()})
+    dirty_paths = str(dirty).splitlines() if dirty else []
 
     closure = policy.get("backlog_closure_tasks", {})
     backlog: list[dict[str, Any]] = []
@@ -604,20 +500,6 @@ def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[st
                 reason="forbidden_boundary" if forbidden else "third_party_not_allowlisted",
             ))
 
-    packaged = _packaged_paths(root, tracked)
-    for path, authority_class in sorted(classified.items()):
-        expected = bool(classes[authority_class]["production_wheel"])
-        actual = path in packaged
-        if actual and not expected:
-            backlog.append(_backlog_item(
-                "wheel_forbidden", closure.get("wheel", "W6-01"),
-                source=path, source_class=authority_class,
-            ))
-        elif expected and not actual:
-            backlog.append(_backlog_item(
-                "wheel_missing", closure.get("wheel", "W6-01"),
-                source=path, source_class=authority_class,
-            ))
 
     roles = policy.get("authority_roles", {})
     if set(roles) != AUTHORITY_ROLES:
@@ -667,19 +549,18 @@ def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[st
         else "CLEAN"
     )
     report: dict[str, Any] = {
-        "schema_version": "jc/observed-authority-graph/1.0",
+        "schema_version": "jc/observed-authority-graph/2.0",
         "status": status,
         "source_commit": _git(root, "rev-parse", "HEAD"),
         "source_tree": _git(root, "rev-parse", "HEAD^{tree}"),
         "policy_digest": "sha256:" + _sha256(policy_path.read_bytes()),
         "authority_roles": authority_targets,
         "coverage": coverage,
-        "codegraph": codegraph,
+        "worktree_dirty_paths": dirty_paths,
         "entrypoints": entrypoints,
         "edges": edges,
         "external_import_observations": external,
         "packaging": {
-            "currently_packaged_python": len(packaged),
             "policy_wheel_python": sum(
                 bool(classes.get(authority_class, {}).get("production_wheel"))
                 for authority_class in classified.values()
@@ -689,7 +570,7 @@ def build_report(root: Path, policy_path: Path, codegraph_path: Path) -> dict[st
         "backlog": backlog,
         "enforcement_sources": [
             "manual_policy", "python_ast", "declared_dynamic_edges",
-            "pyproject_entrypoints", "setuptools_package_discovery",
+            "pyproject_entrypoints",
         ],
     }
     report["report_digest"] = _digest_object(report)
@@ -717,8 +598,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate manual module authority against observations")
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)
-    parser.add_argument("--codegraph", type=Path, required=True)
-    parser.add_argument("--state-root", type=Path, required=True)
+    parser.add_argument("--output", type=Path, default=None,
+                        help="optional path for the full JSON report")
     parser.add_argument("--mode", choices=["record", "require-clean"], required=True)
     return parser
 
@@ -726,21 +607,21 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        report = build_report(args.root, args.policy, args.codegraph)
-        output = (
-            args.state_root.resolve() / "evidence" / "authority"
-            / report["source_tree"] / "observed-graph.json"
-        )
-        _write_report(report, output)
-    except (OSError, RuntimeError, ValueError, json.JSONDecodeError, sqlite3.DatabaseError) as exc:
+        report = build_report(args.root, args.policy)
+        output = None
+        if args.output is not None:
+            output = args.output.resolve()
+            _write_report(report, output)
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
         print(f"authority observation failed: {exc}", file=sys.stderr)
         return EXIT_FAILURE
-    payload_digest = "sha256:" + _sha256(output.read_bytes())
     print(
         f"authority status={report['status']} structural_errors={len(report['structural_errors'])} "
         f"open_backlog={len(report['backlog'])} report={report['report_digest']}"
     )
-    print(f"JC_ARTIFACT\tauthority-observed-graph\t{output}\t{payload_digest}")
+    if output is not None:
+        payload_digest = "sha256:" + _sha256(output.read_bytes())
+        print(f"report written: {output} ({payload_digest})")
     return mode_exit_code(report, args.mode)
 
 

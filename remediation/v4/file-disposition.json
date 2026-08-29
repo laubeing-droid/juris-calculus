@@ -1,3508 +1,1235 @@
 {
-  "schema_version": "jc/remediation-v4-file-disposition/1.0",
-  "baseline_commit": "dfdfab110a7ba34bbb94def6e52945602ab0b0ec",
-  "audit_baseline_sha256": "9b38e52c0181dbace4758d8c681009a61427baa53b1af2dae9e9c5d20f5e31a3",
-  "plan_sha256": "138b18236acc77bdfb80870e944407e9854da60c157e4a539f0458e3ff07014e",
-  "count": 435,
+  "schema_version": "jc/file-disposition/2.0",
+  "source": {
+    "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
+    "authority_policy": "docs/architecture/module-authority.json"
+  },
+  "count": 245,
   "paths": [
     {
-      "path": ".agents/skills/jc-formal/SKILL.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": ".gitattributes",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "other-assets",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": ".github/CODEOWNERS",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "formal_core"
-    },
-    {
-      "path": ".github/workflows/auto-release.yml",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-08",
-      "namespace": "formal_core"
-    },
-    {
-      "path": ".github/workflows/ci.yml",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-08",
-      "namespace": "formal_core"
-    },
-    {
-      "path": ".github/workflows/release-audit.yml",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": ".gitignore",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "other-assets",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "20260815_juris-calculus理论成果全量吸收施工方案.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "20260819_juris-calculus_V4单主链全量切换与生产投产施工方案.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "20260819_juris-calculus_V4单主链生产投产全自动整治施工方案.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "20260819_juris-calculus_V4单主链生产投产全量代码审计.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "20260824_juris-calculus_V4生产运行闭环Goal模式启动提示词.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "20260824_juris-calculus_V4生产运行闭环彻底整治施工方案.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "AGENTS.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "CHANGELOG.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "CLAUDE.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "HANDOFF.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "LICENSE",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "other-assets",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "README.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "SECURITY.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
       "path": "addons/__init__.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/cn/__init__.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/cn/adapter.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
-    },
-    {
-      "path": "addons/cn/modal_mapping.yaml",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/federation/__init__.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/hk/__init__.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/hk/adapter.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/us/__init__.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "addons/us/adapter.py",
-      "disposition": "MOVE_IN_REPO_EXPERIMENT",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "experiment"
-    },
-    {
-      "path": "addons/workbuddy_mcp.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "630fa1285d77a8dc34d232ee5c396a53c364a440",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/mcp.py",
-      "target_test": "tests/mcp_protocol/w5_transport_red.py"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/__init__.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/adapter_base.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/adjudication_draft.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/admission.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/analysis.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/application.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W4-07",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/arbitration_reasoning.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/argumentation.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/argumentation_v2.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "dd70775fbc85ba9234ef0729bba90f083062965a",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/argumentation.py",
-      "target_test": "tests/contract/test_argumentation.py"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/artifact_store.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/audit.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-05",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/audit_bundle.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W4-07",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/backend_router.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/backend_router_v1.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "975b190026e02cc0be70ac7d5377c24a4117beeb",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/backend_router.py",
-      "target_test": "tests/contract/test_backend_router.py"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/backends/__init__.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/banach_verifier.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/breakthrough_candidates.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/breakthrough_verification.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/burden_of_proof.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/canonical_serialization.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/certificate_checker.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/certificate_v1.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "4184f144346739e396c59b602b04ee9f6913b2d0",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/certificates.py",
-      "target_test": "tests/contract/test_certificates.py"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/certificates.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-04",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/classifier.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/cli.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-06",
-      "namespace": "formal_core"
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/client.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/compat_v3_v4.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "b61f3e88251058b1fdc367ce0119409160211dda",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/completion_status.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/compliance_monitoring.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/config_paths.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/conflict_of_laws.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/constraint_validator.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/contracts.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/contracts_v4.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "79e1d82627e51670ecb3aab877bdb783aaff420c",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/contracts.py",
-      "target_test": "tests/contract/test_contracts.py"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/criminal_complexity.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/criminal_sentencing.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/cross_jurisdiction_compare.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/cross_jurisdiction_router.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/defeasible_priority.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/domain_config.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/evaluator.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/evidence_chain_validator.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/evidence_checklist.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/evidence_evaluation.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/fact_admission.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/fact_admission_v1.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "49614956352489322753d693b5ef277705fd8603",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/fact_admission.py",
-      "target_test": "tests/contract/test_fact_admission.py"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/fact_trust_envelope.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/formal_bridge.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/g8_evaluator_patch.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/grounded_smt_verifier.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/horn_completeness.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/incremental_grounded.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "RUNTIME_OUTPUT",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/independent_checker.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/independent_grounded_checker.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "target_module": "compiler_core/independent_checker.py",
-      "target_test": "tests/contract/test_independent_checker.py"
-    },
-    {
-      "path": "compiler_core/invariance_metrics.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/ip_valuation.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/jcs.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/kg_recall.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/legal_ir.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/legal_ir_v3.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "7e913bb7f9775bbfea8c194325fc44db65329119",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/legal_ir.py",
-      "target_test": "tests/contract/test_legal_ir.py"
-    },
-    {
-      "path": "compiler_core/legal_memory.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/legal_reasoning.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/legal_spec_ivl.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MERGE_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/litigation_engineering.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/mcp.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/output_firewall.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/plugin_registry.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/prc_collision_engine.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/production_pack.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/production_runtime.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/proleg_translator.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "403c7046aedc52ccde03dc00a9f6e3225caed404",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/proof_trace.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/proof_trace_visualizer.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/proof_tree.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/reasoning_boundary.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/rendering.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "RUNTIME_OUTPUT",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/resources.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
-      "path": "compiler_core/result_diff.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/result_exporter.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/review_packet.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "path": "compiler_core/rule_admission.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/rule_governance.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/rule_lookup.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/rule_packs.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-05",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/rule_platform_cn.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/rule_router.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/smt_sidecar.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/source_anchor.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/source_manifest.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/source_service.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/source_service_v2.py",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "a4e21ee2e049beac36fc5b8a2f88cd5066d55336",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "target_module": "compiler_core/source_service.py",
-      "target_test": "tests/contract/test_source_service.py"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/spec_shadow_harness.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/step_verifier.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/storage.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W7-I01",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "compiler_core/stratified_evaluator.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/taint.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/training.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/transformer.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/trust.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/trust_labels.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/type_checker.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/types.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
-    },
-    {
-      "path": "compiler_core/universal_grounded_smt.py",
-      "disposition": "CANDIDATE_ASSET",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "production-code",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "compiler_core/validity_state_machine.py",
-      "disposition": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "terminal_state": "MIGRATE_INVARIANTS_THEN_DELETE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/version.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "production-code",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "configs/L0_overrides_cn.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/L0_overrides_hk.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "configs/__init__.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/core_ontology.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/en_US/L0_overrides_us.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/en_US/US_Adapter.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/en_US/rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/blocking_rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/extended_rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/provenance.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/term_L0_mappings.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/hk/trilingual_alignment.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/packs/cn-legacy-corpus/manifest.yaml",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-02C",
-      "frozen_fingerprint": {
-        "sha256": "5613b20bc5e3f61655f087b827e946e58cb38e13ff985f4e01779dc4993f41f7",
-        "git_blob_v3_0_2": "1b29b412ee97563381f5a9b32e8b8efb9f62e90c",
-        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "configs/packs/cn-official/build/README.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "HISTORY_ONLY",
-      "audit_role": "config/rule-pack",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "configs/packs/cn-official/manifest.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "HISTORY_ONLY",
-      "audit_role": "config/rule-pack",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "configs/packs/cn-official/release/README.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "HISTORY_ONLY",
-      "audit_role": "config/rule-pack",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "configs/packs/cn-official/staging/README.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "HISTORY_ONLY",
-      "audit_role": "config/rule-pack",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "configs/packs/hk-legacy-corpus/manifest.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/packs/us-federal-legacy-corpus/manifest.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/packs/us-l0-adapter-legacy-corpus/manifest.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/perf_patterns.yaml",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-02C",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "configs/prc_us_alignment/blocking_rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/prc_us_alignment/meta_constraints.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/prc_us_alignment/spc_rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/prc_us_alignment/term_L0_mappings.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/prc_us_alignment/term_L0_mappings_batch2.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/prc_us_alignment/trirail_matrix_report.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/render_profiles/neutral.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/us/rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/us/term_L0_mappings.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/classifier_rules.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/criminal_complexity.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/domain_config.example.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "frozen_fingerprint": {
-        "_note": "domain config example, not CN legacy corpus"
-      },
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/ontology_map.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "frozen_fingerprint": {
-        "_note": "ontology is candidate source, not CN legacy corpus"
-      },
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/router_moe.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "configs/zh_CN/rules.yaml",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-02C",
-      "frozen_fingerprint": {
-        "sha256": "032206c349154d77eeef771d2b40dcfb62e1f7724c420ba4c09e69aaf88e8a44",
-        "bytes": 13620766,
-        "unique_rule_ids": 21144,
-        "git_blob_v3_0_2": "8f51fdfd1db3e343812e8f35a321418fa854f4f7",
-        "git_blob_v3_0_2_commit": "aa0e038daf066bfc0baa4d27ee54adef12c3ae16"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "configs/zh_CN/source_manifest.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "config/rule-pack",
-      "closure_task": "W5-03",
-      "frozen_fingerprint": {
-        "_note": "source manifest is candidate source, not CN legacy corpus"
-      },
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "docs/README.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/architecture/contract-authority-v4.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-05",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/architecture/module-authority.json",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-05",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/architecture/runtime-path-inventory.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-05",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/audits/branch-adoption-decision.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/audits/current-head-baseline.json",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/AUDIT_BUNDLE.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/EXTERNAL_PROTOCOL.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/FORMAL_RUNTIME_CONFORMANCE.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/INPUT_AND_SEMANTIC_BOUNDARY.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/RULE_PACKS.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/V4_OBJECT_STATE_MATRIX.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/contracts/rendering-and-profiles.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/guides/CLI.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/guides/MIGRATION_V2_TO_V3.md",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-07",
-      "frozen_fingerprint": {
-        "git_blob_head": "66070f1b28f5658e0e380dbff480556b624b110a",
-        "sha256": "ae6fe1d6dde9e5fd197e607e1255954628b3c5746a8901a572f06b5f9a62180d",
-        "bytes": 1096,
-        "note": "retired at W5-07; Git history locator and frozen digest only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "docs/guides/README_CN.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-07",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/guides/WORKBUDDY.md",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W5-07",
-      "frozen_fingerprint": {
-        "git_blob_head": "028df6c25bc8a8896f02d2c49a19b0255cac64f5",
-        "sha256": "0d85a042c4702f485c180761bb830c420eb0c44c4631ded34ad440d39d792c67",
-        "bytes": 1236,
-        "note": "retired at W5-07; Git history locator and frozen digest only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "docs/operations/RELEASE_V4.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/operations/V3_HISTORICAL_REPLAY.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-07",
-      "namespace": "docs"
-    },
-    {
-      "path": "docs/operations/governance-training-analysis.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
-    },
-    {
-      "path": "mcp_manifest.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "mcp_server.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CLI/Client/MCP",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "memory.md",
-      "disposition": "DOC_UPDATE",
-      "terminal_state": "DOC_UPDATE",
-      "audit_role": "docs/baseline/memory",
-      "closure_task": "W6-08",
-      "namespace": "docs"
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
     },
     {
       "path": "pipeline/__init__.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/adversarial_pipeline.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/experimental/__init__.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/experimental/llm_client.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/extract_concepts.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
-    },
-    {
-      "path": "pipeline/fix_single_premise.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-02C",
-      "frozen_fingerprint": {
-        "git_blob_head": "5f0109ebbb0785f8a062ec78990e8132b3238f74",
-        "note": "retired current-tree mutator; Git history locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/guardian.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
-    },
-    {
-      "path": "pipeline/llm_client.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/pipeline.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/prc_us_alignment.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "pipeline/schemas.py",
-      "disposition": "MOVE_IN_REPO_SOURCE_TOOL",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "source_tool"
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
-      "path": "pyproject.toml",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "remediation/v4/STATUS.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/approval.schema.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/approvals/H5-02-user-authorized-history-bound.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/approvals/W0-05-dependency-decision.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/file-disposition.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "remediation/v4/issue-map.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "remediation/v4/receipt.schema.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/task.schema.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "remediation/v4/tasks.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "remediation/v4/user-directive.schema.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "BUILD_ONLY",
-      "audit_role": "new_after_audit",
-      "closure_task": "Z02"
-    },
-    {
-      "path": "requirements/build.lock",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "requirements/core.lock",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "requirements/dev.lock",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "frozen_fingerprint": {
-        "git_blob_head": "0313594d7d21b1dc0d44db1bd9bb6504f8143fa4",
-        "sha256": "ffacd6f2d832926b2af12fbd911b5857f9e86003db23a191030c68bc9fe1f4d3",
-        "bytes": 104
-      },
-      "target_module": "requirements/build.lock",
-      "target_artifacts": [
-        "requirements/build.lock",
-        "requirements/test.lock",
-        "requirements/release.lock"
-      ],
-      "target_test": "tests/packaging/test_hash_locks.py"
-    },
-    {
-      "path": "requirements/documents.lock",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "frozen_fingerprint": {
-        "git_blob_head": "0f5608400f4984011a6bbd4bf93654d3cb4ed37b",
-        "sha256": "96ebfc87f26d987f8608ece069f034d60f0d786dbf6c8947c0d8db47d48a326e",
-        "bytes": 40
-      },
-      "target_module": "requirements/source-tool.lock",
-      "target_artifacts": [
-        "requirements/source-tool.lock"
-      ],
-      "target_test": "tests/packaging/test_hash_locks.py"
-    },
-    {
-      "path": "requirements/pipeline.lock",
-      "disposition": "MERGE_DELETE",
-      "terminal_state": "MIGRATED_GREEN",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "frozen_fingerprint": {
-        "git_blob_head": "4b5fe4d67d6aa95e64f4be521ec189e7bac77ff3",
-        "sha256": "f806f7e2f1a0eac9d9346baf64284535dce1c6dbdec3f3c47519752e26beda54",
-        "bytes": 18
-      },
-      "target_module": "requirements/source-tool.lock",
-      "target_artifacts": [
-        "requirements/source-tool.lock"
-      ],
-      "target_test": "tests/packaging/test_hash_locks.py"
-    },
-    {
-      "path": "requirements/release.lock",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "requirements/render.lock",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-03",
-      "frozen_fingerprint": {
-        "git_blob_head": "f7c9608a79bd0f7f35f2649e73e1bff9658af05b",
-        "sha256": "77aeb2dd7399fefb991f8ac568cfa12b8c69fd2237fa63a8c318186295f46c75",
-        "bytes": 15
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "requirements/source-tool.lock",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
-      "namespace": "formal_core"
-    },
-    {
-      "path": "requirements/test.lock",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-03",
-      "namespace": "formal_core"
+      "path": "privacy_egress_adapter.py",
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
     },
     {
       "path": "schemas/__init__.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
-      "path": "schemas/jc-v3.schema.json",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "8890718afad14634682ee3899e737bcf20a6fbf4",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "path": "tests/adapters/__init__.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
-      "path": "schemas/jc-v4.schema.json",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "path": "tests/adapters/test_privacy_egress.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
-      "path": "schemas/w1b/admission-result.schema.json",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "83b45154f575610669d0f48e7da54aa2bb662aae",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "schemas/w1b/case-request.schema.json",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "e5459aff6c1ec828fb6457623f1e8773e16ee9bc",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "schemas/w1b/proof-bundle-ref.schema.json",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "ce12dfd36b40b258824c0112875d8dcc8edaaaf8",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "schemas/w1b/rule-admission-request.schema.json",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "Schema/protocol",
-      "closure_task": "W5-CUTOVER",
-      "frozen_fingerprint": {
-        "git_blob_head": "4e9888871854a965170caec474119f67ef60d32a",
-        "note": "retired at W5-CUTOVER; current HEAD blob locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "scripts/audit-engine.sh",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/contract/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/contract/jcs_node_oracle.mjs",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W1-01"
+      "path": "tests/conftest.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_application.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_argumentation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_audit_bundle.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-03"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_backend_router.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_case_input_bundle.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_certificates.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-04"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_cn_official_candidate.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_cn_official_pack.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_cn_official_source_intake.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_contracts.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_fact_admission.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_independent_checker.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_jcs_v4.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_legal_ir.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_public_version.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_python_schema_mcp_differential.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_required_test_manifest.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_rule_packs.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_run_identity.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_source_service.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_synthetic_pack.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/contract/test_v4_foundation_contract.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-06"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/test_v4_legacy_rejection.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W1-06"
-    },
-    {
-      "path": "tests/contract/v4-contract-vectors.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/contract/w5_package_red.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/differential/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/differential/test_pinned_companion_spec.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/differential/test_self_contained_v4.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
-    },
-    {
-      "path": "tests/dsh_formal/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/conftest.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/dsh_formal/jc-formal-profile.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/jc_formal_adapter.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/test_delivery_guard.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/test_mcp_fail_closed.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/test_production_bridge.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/dsh_formal/test_profile.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
-    },
-    {
-      "path": "tests/fixtures/ci_promotion_candidate.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/ci_requests.jsonl",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/cn_official/NOTICE.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
-    },
-    {
-      "path": "tests/fixtures/cn_official/candidate-pack.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
-    },
-    {
-      "path": "tests/fixtures/cn_official/first-method-source.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
-    },
-    {
-      "path": "tests/fixtures/companion_spec/NOTICE.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
-    },
-    {
-      "path": "tests/fixtures/companion_spec/manifest.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
-    },
-    {
-      "path": "tests/fixtures/companion_spec/oracle.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
-    },
-    {
-      "path": "tests/fixtures/golden/jcs-v4-vectors.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W1-01"
-    },
-    {
-      "path": "tests/fixtures/golden/jcs-vectors.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "fixture/generated",
-      "closure_task": "W1-01"
-    },
-    {
-      "path": "tests/fixtures/golden/v4-artifact-page-probe.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/fixtures/golden/v4-backend-provider-probe.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W3-03"
-    },
-    {
-      "path": "tests/fixtures/golden/v4-foundation-contract.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-06"
-    },
-    {
-      "path": "tests/fixtures/golden/v4-resource-limit-probe.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-06"
-    },
-    {
-      "path": "tests/fixtures/golden/v4-test-trust-policy.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/fixtures/keys/v4-synthetic-trust.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/fixtures/keys/v4-test-ed25519.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/fixtures/legal_ir_v3_sample.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/p0_regressions/README.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/p0_regressions/p0_regression_matrix.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/packs/synthetic/signed-pack.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/fixtures/rule_migration_sample.yaml",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/synthetic_case_index.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/README.md",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/manifest.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p01_human_research_receipt.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p02_source_snapshot.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p03_argumentation.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p04_solver_routing.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p05_proposal_envelope.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p06_temporal_applicability.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p07_translation.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p08_source_path.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/theory_absorption/p09_fact_admission.json",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "fixture/generated",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/fixtures/v4_contract/object-state-matrix.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W1-02"
-    },
-    {
-      "path": "tests/formal_e2e/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_cn_first_method_candidate.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_installed_production.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_local_production_chain.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_positive_vertical_slice.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-07"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_public_boundary_inputs.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-07"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_single_chain.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-06"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/formal_e2e/w5_entrypoint_red.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/integration/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/integration/test_production_pack_loader.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/integration/test_production_runtime.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/integration/test_trust_chain.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/mcp_protocol/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/mcp_protocol/test_production_stdio.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/mcp_protocol/w5_transport_red.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/packaging/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_ci_matrix.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_current_authority_docs.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_current_docs.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_hash_locks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/packaging/test_installed_official_yaml.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_installed_production_runtime.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_legacy_cn_corpus_absent.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-02C"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/packaging/test_official_yaml_admission.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_provenance.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-06"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_release_promotion.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-08"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_wheel_exact_set.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/packaging/test_wheel_gate_v4.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W6-01"
-    },
-    {
-      "path": "tests/performance/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W7-I01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/performance/test_local_rc_baseline.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W7-I01"
-    },
-    {
-      "path": "tests/property/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/property/test_canonicalization.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/property/test_ir_properties.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/property/test_resolver_properties.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/pytest.ini",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/required-v4-tests.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/required_red_sentinels.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/run_benchmark_zh.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "frozen_fingerprint": {
-        "git_blob_head": "92eb07be371db5fd753fe646244a76712247c974",
-        "note": "retired current-tree benchmark; Git history locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "tests/security/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_application_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-05"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_artifact_resolver.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_audit_bundle_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-03"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_backend_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_case_bundle_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_certificate_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-04"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_checker_independence.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_pack_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_pack_toctou.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_privacy_firewall.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-06"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_production_pack_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_resource_limits.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-06"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_source_service_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_trust_chain_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_trust_policy.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/security/test_vertical_slice_attacks.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-07"
-    },
-    {
-      "path": "tests/semantic_mutation/critical-v4-mutations.json",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/semantic_mutation/test_argumentation_mutation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/semantic_mutation/test_domain_provider_mutation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/semantic_mutation/test_ir_mutation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
-    },
-    {
-      "path": "tests/storage_chaos/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_audit_bundle_recovery.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-03"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_generation_isolation.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_multiprocess_recovery.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_power_loss.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_production_runtime_recovery.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_storage_capability.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W7-I01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/storage_chaos/test_vertical_slice_recovery.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W4-07"
-    },
-    {
-      "path": "tests/stress_test_facts.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "tests",
-      "closure_task": "W5-02C",
-      "frozen_fingerprint": {
-        "git_blob_head": "34cf9823073e25938f0b4e92ecf9a38839b3c2155",
-        "note": "retired current-tree stress script; Git history locator only"
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/__init__.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_adjudication_draft_and_smt.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_adversarial.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_authority_observed_graph.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_canonical_serialization.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_completion_status.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_conflict_of_laws.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_constraint_validator.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_criminal_complexity.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_cross_process_determinism.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_ddl_modal_gate.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_evaluator.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_fact_admission.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_fast_path_interceptor.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_file_disposition.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_grounded_g9a.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_independent_checker.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_legal_spec_ivl.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_litigation_certificates.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_llm_proposal_boundary.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_new_modules.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_nonmonotone_regression.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_phase6_cli.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_plugin_registry.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
-    },
-    {
-      "path": "tests/unit/test_release_engineering.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "tests",
-      "closure_task": "W6-05",
-      "frozen_fingerprint": {
-        "git_blob_head": "da706db39c6857e828661775ce5483c30ef10776",
-        "sha256": "d1ec7f83c35aa1755ac150e040ce080f05565c4db524c95d6cc455fea790ce9b",
-        "bytes": 3676
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
-    },
-    {
-      "path": "tests/unit/test_remediation_file_map_full.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_remediation_graph_map.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_remediation_legacy_cn_corpus.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-02C"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_remediation_run.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_remediation_runner.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_rule_admission.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_rule_platform_cn.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_semantic_mutation_manifest.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
-    },
-    {
-      "path": "tests/unit/test_spec_shadow_harness.py",
-      "disposition": "DELETE_CURRENT",
-      "terminal_state": "HISTORY_BOUND",
-      "audit_role": "tests",
-      "closure_task": "W6-05",
-      "frozen_fingerprint": {
-        "git_blob_head": "c27dcca942edfaba68ab691c20bcafdc85dcf345",
-        "sha256": "b3e4e355cb3b1e905600470d6d792d2984fd469097e231c20525743794dfd93e",
-        "bytes": 1824
-      },
-      "history_locator_only": true,
-      "target_module": null,
-      "target_artifact": null
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_supply_chain_gate.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_training_export.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_trirail_collision.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_trirail_runtime.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_trust_labels.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_us_pack_identity.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "tests",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_w5_03_nonproduction_boundaries.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_windows_utf8_git.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/unit/test_zh_rules.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "tests",
-      "closure_task": "W5-02C"
-    },
-    {
-      "path": "tests/windows_security/README.md",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/windows_security/test_dacl.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tests/windows_security/test_reparse_escape.py",
-      "disposition": "TEST_ORACLE",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/build_cn_official_pack.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-I00"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/build_file_disposition.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/build_local_production_pack.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W8-05",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/build_provenance.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-06",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/build_rule_pack_manifests.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "REMOVE",
+      "production_wheel": false
     },
     {
       "path": "tools/build_synthetic_pack.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "TEST_ORACLE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-01"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/fast_path_interceptor.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/local_production.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/perf_baseline.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W7-I01",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/remediate_v4.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W9-I00",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
-      "path": "tools/remediate_v4_verify.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "path": "tools/remediation/checks.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/remediation/cli.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/remediation/observed_graph.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "new_after_audit",
-      "closure_task": "W5-CUTOVER",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/remediation/plan.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/remediation/process.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/remediation/run_log.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/remediation/runner.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/run_trirail_matrix.py",
-      "disposition": "RETAIN_NONPACKAGED",
-      "terminal_state": "CANDIDATE_ASSET",
-      "audit_role": "legacy/candidate/advisory",
-      "closure_task": "W5-03",
-      "namespace": "candidate_asset"
+      "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/supply_chain_gate.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-05",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     },
     {
       "path": "tools/wheel_gate.py",
-      "disposition": "KEEP_REWRITE",
-      "terminal_state": "KEEP_REWRITE",
-      "audit_role": "CI/build/release",
-      "closure_task": "W6-05",
-      "namespace": "formal_core"
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
     }
   ]
 }

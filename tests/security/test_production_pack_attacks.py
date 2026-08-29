@@ -8,18 +8,12 @@ import pytest
 from compiler_core.canonical_serialization import canonical_bytes, parse_json_document
 from compiler_core.contracts import CanonicalTimeV4, ContractV4Error
 from compiler_core.production_pack import load_production_pack
+from tests.conftest import ProductionMaterial
 
 
-PRODUCTION = Path(r"D:\Codex\1.法律工作区\juris-calculus工作区\juris-calculus-v4-production-state")
-
-
-def _copies(tmp_path: Path) -> tuple[Path, Path, Path]:
+def _copies(tmp_path: Path, material: ProductionMaterial) -> tuple[Path, Path, Path]:
     paths = tuple(tmp_path / name for name in ("pack.json", "trust.json", "key.json"))
-    sources = (
-        PRODUCTION / "packs/cn-official-local-4.0.0.json",
-        PRODUCTION / "trust/cn-official-local.json",
-        PRODUCTION / "identity/service-runtime.json",
-    )
+    sources = (material.pack_path, material.trust_path, material.service_key_path)
     for source, target in zip(sources, paths, strict=True):
         target.write_bytes(source.read_bytes())
     return paths
@@ -31,8 +25,10 @@ def _rewrite(path: Path, edit) -> None:
     path.write_bytes(canonical_bytes(value))
 
 
-def test_pack_artifact_bit_flip_is_rejected(tmp_path: Path) -> None:
-    pack, trust, key = _copies(tmp_path)
+def test_pack_artifact_bit_flip_is_rejected(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    pack, trust, key = _copies(tmp_path, production_material)
 
     def flip(value):
         raw = bytearray(b64decode(value["artifacts"][0]["content_base64"], validate=True))
@@ -44,8 +40,10 @@ def test_pack_artifact_bit_flip_is_rejected(tmp_path: Path) -> None:
         load_production_pack(pack, trust, key)
 
 
-def test_service_private_key_bit_flip_is_rejected(tmp_path: Path) -> None:
-    pack, trust, key = _copies(tmp_path)
+def test_service_private_key_bit_flip_is_rejected(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    pack, trust, key = _copies(tmp_path, production_material)
 
     def flip(value):
         raw = bytearray(b64decode(value["private_seed_base64"], validate=True))
@@ -57,16 +55,20 @@ def test_service_private_key_bit_flip_is_rejected(tmp_path: Path) -> None:
         load_production_pack(pack, trust, key)
 
 
-def test_expiry_is_checked_against_current_time_not_build_time(tmp_path: Path) -> None:
-    pack, trust, key = _copies(tmp_path)
+def test_expiry_is_checked_against_current_time_not_build_time(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    pack, trust, key = _copies(tmp_path, production_material)
     with pytest.raises(ContractV4Error, match="TRUST_POLICY_INACTIVE"):
         load_production_pack(
             pack, trust, key, now=CanonicalTimeV4("2037-01-01T00:00:00Z")
         )
 
 
-def test_revoked_or_nonproduction_service_key_is_rejected(tmp_path: Path) -> None:
-    pack, trust, key = _copies(tmp_path)
+def test_revoked_or_nonproduction_service_key_is_rejected(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    pack, trust, key = _copies(tmp_path, production_material)
 
     def revoke(value):
         value["trust_policy"]["trusted_key_ids"].remove("local-production-release-key")

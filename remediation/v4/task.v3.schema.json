@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jc/remediation-task/3.0",
+  "title": "juris-calculus V4 remediation task plan 3.0",
+  "description": "Closed task definition for the generic remediation runner: id, dependency DAG, objective, commands, timeout, and expected exit codes. Historical fields (human/external approval, receipts, audit ids, deployment terminal states, machine paths) are intentionally absent.",
+  "type": "object",
+  "required": ["schema_version", "tasks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "jc/remediation-task/3.0"},
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "depends_on", "objective", "argv",
+          "timeout_seconds", "expected_exit_codes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^V4-[0-9]{2}-[A-Z][A-Z0-9-]*$",
+            "minLength": 1
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "uniqueItems": true
+          },
+          "objective": {"type": "string", "minLength": 1},
+          "argv": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1}
+            }
+          },
+          "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 14400},
+          "expected_exit_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "integer", "minimum": 0, "maximum": 255}
+          }
+        }
+      }
+    }
+  }
+}

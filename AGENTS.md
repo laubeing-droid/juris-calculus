@@ -24,7 +24,8 @@ Do not weaken `DecisionStatus`, `verified_fact` admission, Horn, attack, excepti
 Use the narrowest relevant checks first, then broader checks for user-visible work:
 
 ```powershell
-python -B tools\remediate_v4.py verify-wave W0-04
+python -B tools\remediate_v4.py lint-plan
+python -B tools\remediate_v4.py run --through V4-03-OFFICIAL-YAML
 python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\formal_e2e tests\mcp_protocol
 python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\
 python -B mcp_server.py --test
@@ -38,7 +39,7 @@ Run supply-chain, privacy, stale-narrative, and disclosure checks when relevant.
 After making changes to production code, always run the appropriate validation checks:
 
 1. **For core module changes** (compiler_core/*, pipeline/*, addons/*, tools/*):
-   - Run the required manifest gate: `python -B tools\remediate_v4.py verify-wave W0-04`
+   - Run the current focused plan: `python -B tools\remediate_v4.py run --through V4-03-OFFICIAL-YAML`
    - Run the V4 formal and MCP protocol tests: `python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\formal_e2e tests\mcp_protocol`
 
 2. **For configuration changes** (configs/*, schemas/*, pyproject.toml):
@@ -57,11 +58,10 @@ Document the validation results in your commit message or change summary.
 ## Core Code Boundary
 
 ### Critical (fail-closed)
-- `compiler_core/evaluator.py` — Fixed-point evaluation engine
-- `compiler_core/reasoning_boundary.py` — DecisionStatus classification
-- `compiler_core/contracts.py` — CaseRequest/CanonicalResult contracts
-- `compiler_core/types.py` — Core type definitions
-- `compiler_core/step_verifier.py` — Step verification logic
+- `compiler_core/application.py` — sole application authority
+- `compiler_core/contracts.py` — sole public contract authority
+- `compiler_core/certificates.py` — sole certificate issuer authority
+- `compiler_core/independent_checker.py` — sole independent checker authority
 
 Changes to these files require:
 1. Full test suite pass

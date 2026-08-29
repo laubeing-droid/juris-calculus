@@ -1,34 +1,28 @@
 # Documentation
 
-JC is a CLI-first, auditable legal-reasoning kernel. Start here after the root [README](../README.md).
+JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README](../README.md)。
 
-## Users and operators
+## 用户与集成方
 
 - [CLI reference](guides/CLI.md)
 - [中文说明](guides/README_CN.md)
-- [Audit bundle, replay, storage, and retention](contracts/AUDIT_BUNDLE.md)
-- [Rendering and neutral output](contracts/rendering-and-profiles.md)
-- [Current local-production status](../remediation/v4/STATUS.md)
-
-## Integrators
-
 - [Input and semantic boundary](contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
-- [Rule packs and rule schema](contracts/RULE_PACKS.md)
+- [Rule packs](contracts/RULE_PACKS.md)
+- [Audit bundle and replay](contracts/AUDIT_BUNDLE.md)
 - [External repository protocol](contracts/EXTERNAL_PROTOCOL.md)
-- [Runtime claims and evidence limits](contracts/FORMAL_RUNTIME_CONFORMANCE.md)
 
-## Maintainers
+## 维护者
 
-- [Contract authority map](architecture/contract-authority-v4.md)
+- [Contract authority](architecture/contract-authority-v4.md)
+- [Module authority registry](architecture/module-authority.json)
 - [Runtime path inventory](architecture/runtime-path-inventory.md)
 - [V4 object and state matrix](contracts/V4_OBJECT_STATE_MATRIX.md)
-- [Canonical identity, time, numeric, limits, and platform contract](contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md)
-- [Offline governance, training, and advisory boundary](operations/governance-training-analysis.md)
-- [V4 build-once release and promotion](operations/RELEASE_V4.md)
+- [Canonical identity, time, numeric and limits](contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md)
+- [V4 remediation status](../remediation/v4/STATUS.md)
+- [V4 release procedure](operations/RELEASE_V4.md)
 
-## Historical replay (not current authority)
+## Historical task definitions (not current authority)
 
-- [Isolated V3.0.2 replay](operations/V3_HISTORICAL_REPLAY.md) is an artifact locator and recovery procedure only. It does not define the current schema, API, runtime, or migration behavior.
-- [Historical branch adoption decision](audits/branch-adoption-decision.md) records the 2026-08-16 branch ruling only.
+`remediation/v4/tasks.json` 与 `task.schema.json` 只作为字节冻结的旧任务定义保留。当前 runner 只读取 `tasks.v3.json` 和 `task.v3.schema.json`；旧施工报告、旧回放指南和外部状态记录已从当前文档树删除。
 
-The public repository does not document private case management, client data, proprietary rule packs, lawyer workflow automation, or personal writing profiles.
+本仓库不记录私有案件管理、客户数据、专有规则包、律师工作流或生产密钥。

@@ -64,27 +64,6 @@ def _is_canonical_time(value: object) -> bool:
     return True
 
 
-def _load_runner():
-    spec = importlib.util.spec_from_file_location(
-        "remediate_v4_w1_03", REPO / "tools" / "remediate_v4.py"
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def _load_file_disposition_generator():
-    spec = importlib.util.spec_from_file_location(
-        "build_file_disposition_w1_03",
-        REPO / "tools" / "build_file_disposition.py",
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 def _schema_accepts(type_name: str, payload: object) -> bool:
     validator = StrictDraft202012Validator(
         {
@@ -296,29 +275,15 @@ def test_committed_publications_are_canonical_emitter_bytes() -> None:
     assert mcp.manifest_bytes() == MANIFEST_PATH.read_bytes()
     assert canonical_bytes(SCHEMA) == SCHEMA_PATH.read_bytes()
     assert canonical_bytes(MANIFEST) == MANIFEST_PATH.read_bytes()
-    generator = _load_file_disposition_generator()
+    from tools.build_file_disposition import build_document, canonical_bytes as canonical_json
+
     disposition = json.loads(
         (REPO / "remediation" / "v4" / "file-disposition.json").read_text(
             encoding="utf-8"
         )
     )
-    assert generator.build_document() == disposition
-    mcp_entry = next(
-        item for item in disposition["paths"]
-        if item["path"] == "compiler_core/mcp.py"
-    )
-    assert {
-        key: mcp_entry[key]
-        for key in (
-            "disposition", "terminal_state", "audit_role", "closure_task", "namespace"
-        )
-    } == {
-        "disposition": "KEEP_REWRITE",
-        "terminal_state": "KEEP_REWRITE",
-        "audit_role": "CLI/Client/MCP",
-        "closure_task": "W5-CUTOVER",
-        "namespace": "formal_core",
-    }
+    assert canonical_json(build_document(REPO)) == (REPO / "remediation" / "v4" / "file-disposition.json").read_bytes()
+    assert disposition["schema_version"] == "jc/file-disposition/2.0"
 
 
 PUBLICATION_MUTATIONS = (
@@ -344,12 +309,13 @@ def test_publication_mutation_fails_generated_gate(
     mutation_id: str,
     publication: str,
 ) -> None:
-    runner = _load_runner()
+    from tools.remediation.checks import generated_problems
+
     schema_path = tmp_path / "jc-v4.schema.json"
     manifest_path = tmp_path / "mcp_manifest.json"
     schema_path.write_bytes(mcp.schema_bytes())
     manifest_path.write_bytes(mcp.manifest_bytes())
-    assert runner._generated_publication_problems(schema_path, manifest_path) == []
+    assert generated_problems(REPO, schema_path, manifest_path) == []
 
     if mutation_id == "schema-raw-byte":
         schema_path.write_bytes(mcp.schema_bytes() + b"\n")
@@ -387,19 +353,8 @@ def test_publication_mutation_fails_generated_gate(
         raise AssertionError(mutation_id)
     assert any(
         publication in problem
-        for problem in runner._generated_publication_problems(schema_path, manifest_path)
+        for problem in generated_problems(REPO, schema_path, manifest_path)
     )
-    if mutation_id == "manifest-tool-name":
-        manifest_path.write_bytes(canonical_bytes([]))
-        monkeypatch.setattr(runner, "V4_SCHEMA_PUBLICATION", schema_path)
-        monkeypatch.setattr(runner, "MCP_MANIFEST_PUBLICATION", manifest_path)
-        assert runner.cmd_w1_03_publication_gate() == runner.EXIT_GATE_FAIL
-
-        def fail_load():
-            raise RuntimeError("mutated staged authority")
-
-        monkeypatch.setattr(runner, "_load_w1_03_mcp_authority", fail_load)
-        assert runner.cmd_w1_03_publication_gate() == runner.EXIT_GATE_FAIL
 
 
 def test_raw_json_codec_rejects_float_and_duplicate_members() -> None:

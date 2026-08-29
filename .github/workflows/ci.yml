@@ -50,7 +50,7 @@ jobs:
           python -m pip install --require-hashes -r requirements/test.lock
 
       - name: Required current suites
-        run: python -B tools/remediate_v4.py verify-wave W0-04
+        run: python -B tools/remediate_v4.py run --through V4-03-OFFICIAL-YAML --log work/required-run.json
 
       - name: Ubuntu storage and chaos subset
         if: runner.os == 'Linux' && matrix.python == '3.12'
@@ -85,10 +85,16 @@ jobs:
 
       - name: Generated publications are current
         run: |
-          python -B tools/build_file_disposition.py
-          git diff --exit-code -- remediation/v4/file-disposition.json
-          python -B tools/remediate_v4.py generated --check
-          python -B tools/remediate_v4.py file-map --check --all-tracked --require-semantic-targets
+          python -B tools/remediation/checks.py generated
+          python -B tools/build_file_disposition.py --check
+          python -B tools/remediation/checks.py cleanup
+          python -B tools/remediation/checks.py manifest
+
+      - name: Git and AST authority
+        run: >-
+          python -B tools/remediation/observed_graph.py
+          --root . --policy docs/architecture/module-authority.json
+          --mode require-clean
 
       - name: Current authority and docs
         run: |
@@ -119,7 +125,9 @@ jobs:
       - name: Current unit gates
         run: >-
           python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider
-          tests/unit/test_remediation_runner.py tests/unit/test_supply_chain_gate.py
+          tests/unit/test_remediation_runner.py tests/unit/test_remediation_run.py
+          tests/unit/test_authority_observed_graph.py tests/unit/test_file_disposition.py
+          tests/unit/test_supply_chain_gate.py
 
       - name: Lock hash license and vulnerability audit
         run: python -B tools/supply_chain_gate.py --all-profiles --output reports/supply-chain.json
@@ -169,6 +177,9 @@ jobs:
           python -m pip download --require-hashes --dest work/wheelhouse -r requirements/core.lock -r requirements/test.lock
           wheel="$(find work/dist-a -name '*.whl' -print -quit)"
           python -B tools/wheel_gate.py --source work/source-a --installed-wheel "$wheel" --test-lock work/source-a/requirements/test.lock --wheelhouse work/wheelhouse --work-dir work/installed --output reports/installed-wheel.json
+
+      - name: Installed official YAML admission
+        run: python -B tools/remediation/checks.py wheel --out-dir work/official-wheel
 
       - name: CycloneDX SBOM
         run: python -m pip_audit --requirement requirements/core.lock --format cyclonedx-json --output reports/sbom-core.cdx.json --progress-spinner off --strict --disable-pip

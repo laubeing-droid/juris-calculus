@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from compiler_core.client import JCClient
 from compiler_core.production_runtime import create_client
+from tests.conftest import ProductionMaterial
 from tests.formal_e2e.test_local_production_chain import runtime_config
 
 
-def test_create_client_returns_fully_configured_runtime(tmp_path, monkeypatch) -> None:
-    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+def test_create_client_returns_fully_configured_runtime(
+    tmp_path, monkeypatch, production_material: ProductionMaterial,
+) -> None:
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state", production_material)
     monkeypatch.setenv("JC_PRODUCTION_CONFIG", str(config))
     client = create_client()
     assert type(client) is JCClient

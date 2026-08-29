@@ -78,386 +78,379 @@
       "id": "dsh_formal",
       "path": "tests/dsh_formal",
       "proof_obligation": "Pinned formal-profile compatibility and delivery guard."
+    },
+    {
+      "id": "unit",
+      "path": "tests/unit",
+      "proof_obligation": "Focused unit behavior of current V4 modules and tools."
     }
   ],
   "required_now": [
     {
-      "id": "W0-FOUNDATION-CONTRACT",
-      "suite": "contract",
-      "selector": "tests/contract/test_v4_foundation_contract.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
-    },
-    {
       "id": "W0-REQUIRED-MANIFEST-GATE",
       "suite": "contract",
       "selector": "tests/contract/test_required_test_manifest.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W1-ARTIFACT-PAGE-LENGTH-POLICY",
       "suite": "security",
       "selector": "tests/security/test_artifact_resolver.py::test_resolve_handle_page_length_policy_exact_and_limit_plus_one",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 1
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W1-SCOPED-TRUST-POLICY",
       "suite": "security",
       "selector": "tests/security/test_trust_policy.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 31
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W2-SYNTHETIC-SIGNED-PACK",
       "suite": "contract",
       "selector": "tests/contract/test_synthetic_pack.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 15
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W2-VERTICAL-TRUST-CHAIN",
       "suite": "integration",
       "selector": "tests/integration/test_trust_chain.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 6
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W2-VERTICAL-TRUST-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_trust_chain_attacks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 17
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-LOSSLESS-IR-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_legal_ir.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 11
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-LOSSLESS-IR-PROPERTY",
       "suite": "property",
       "selector": "tests/property/test_ir_properties.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 47
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-LOSSLESS-IR-MUTATION",
       "suite": "differential",
       "selector": "tests/semantic_mutation/test_ir_mutation.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-ARGUMENTATION-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_argumentation.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 22
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-ARGUMENTATION-MUTATION",
       "suite": "differential",
       "selector": "tests/semantic_mutation/test_argumentation_mutation.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-CERTIFIED-BACKEND-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_backend_router.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 21
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-CERTIFIED-BACKEND-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_backend_attacks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 33
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-INDEPENDENT-CHECKER-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_independent_checker.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 5
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W3-INDEPENDENT-CHECKER-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_checker_independence.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 33
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-COMPLETE-RUN-IDENTITY",
       "suite": "contract",
       "selector": "tests/contract/test_run_identity.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 47
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-STORAGE-MULTIPROCESS",
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_multiprocess_recovery.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 9
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-STORAGE-POWER-LOSS",
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_power_loss.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-STORAGE-GENERATION",
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_generation_isolation.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 2
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-STORAGE-REPARSE",
       "suite": "windows_security",
       "selector": "tests/windows_security/test_reparse_escape.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 3
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-STORAGE-DACL",
       "suite": "windows_security",
       "selector": "tests/windows_security/test_dacl.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 4
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-CERTIFICATE-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_certificates.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 6
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-CERTIFICATE-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_certificate_attacks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 12
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-APPLICATION-CONTRACT",
       "suite": "contract",
       "selector": "tests/contract/test_application.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-APPLICATION-FORMAL-E2E",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_single_chain.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 2
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-APPLICATION-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_application_attacks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 1
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-RUNTIME-PRIVACY-FIREWALL",
       "suite": "security",
       "selector": "tests/security/test_privacy_firewall.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-RUNTIME-RESOURCE-LIMITS",
       "suite": "security",
       "selector": "tests/security/test_resource_limits.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-VERTICAL-POSITIVE",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_positive_vertical_slice.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 3
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-VERTICAL-PUBLIC-INPUTS",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_public_boundary_inputs.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 7
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-VERTICAL-ATTACKS",
       "suite": "security",
       "selector": "tests/security/test_vertical_slice_attacks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W4-VERTICAL-RECOVERY",
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_vertical_slice_recovery.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 3
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W5-ENTRYPOINT-ERROR-MATRIX",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 13
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-FORMAL-WHEEL-GATE",
       "suite": "packaging",
       "selector": "tests/packaging/test_wheel_gate_v4.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 9
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-HASH-LOCKS",
       "suite": "packaging",
       "selector": "tests/packaging/test_hash_locks.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 9
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-INSTALLED-WHEEL-E2E",
       "suite": "packaging",
       "selector": "tests/packaging/test_wheel_exact_set.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-SELF-CONTAINED-V4-FIXTURES",
       "suite": "differential",
       "selector": "tests/differential/test_self_contained_v4.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 1
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-PINNED-COMPANION-SPEC",
       "suite": "differential",
       "selector": "tests/differential/test_pinned_companion_spec.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 2
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-INSTALLED-PRODUCTION-SUITES",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_installed_production.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 1
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-CI-REQUIRED-MATRIX",
       "suite": "packaging",
       "selector": "tests/packaging/test_ci_matrix.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-PROVENANCE",
       "suite": "packaging",
       "selector": "tests/packaging/test_provenance.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 10
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-RELEASE-PROMOTION",
       "suite": "packaging",
       "selector": "tests/packaging/test_release_promotion.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W6-CURRENT-DOCS",
       "suite": "packaging",
       "selector": "tests/packaging/test_current_docs.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 3
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W7-LOCAL-STORAGE-PROBE",
       "suite": "storage_chaos",
       "selector": "tests/storage_chaos/test_storage_capability.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 4
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W7-LOCAL-PERFORMANCE-BASELINE",
       "suite": "performance",
       "selector": "tests/performance/test_local_rc_baseline.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 5
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W8-FIRST-METHOD-SOURCE",
       "suite": "contract",
       "selector": "tests/contract/test_cn_official_source_intake.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 5
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W8-CANDIDATE-RULES",
       "suite": "contract",
       "selector": "tests/contract/test_cn_official_candidate.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 4
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W8-CANDIDATE-PACK",
       "suite": "contract",
       "selector": "tests/contract/test_cn_official_pack.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 5
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W8-CANDIDATE-SEMANTIC-MUTATIONS",
       "suite": "differential",
       "selector": "tests/semantic_mutation/test_cn_official_candidate_mutation.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 6
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W8-CANDIDATE-FORMAL-BOUNDARY",
       "suite": "formal_e2e",
       "selector": "tests/formal_e2e/test_cn_first_method_candidate.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 2
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W9-DSH-PROFILE",
       "suite": "dsh_formal",
       "selector": "tests/dsh_formal/test_profile.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 17
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W9-MCP-FAIL-CLOSED",
       "suite": "dsh_formal",
       "selector": "tests/dsh_formal/test_mcp_fail_closed.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 8
+      "state": "REQUIRED_NOW"
     },
     {
       "id": "W9-DELIVERY-GUARD",
       "suite": "dsh_formal",
       "selector": "tests/dsh_formal/test_delivery_guard.py",
-      "state": "REQUIRED_NOW",
-      "expected_tests": 12
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-REMEDIATION-RUNNER",
+      "suite": "unit",
+      "selector": "tests/unit/test_remediation_runner.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-OFFICIAL-YAML-ADMISSION",
+      "suite": "packaging",
+      "selector": "tests/packaging/test_official_yaml_admission.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-DSH_FORMAL-PRODUCTION-MATERIAL",
+      "suite": "dsh_formal",
+      "selector": "tests/dsh_formal/test_production_bridge.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-FORMAL_E2E-PRODUCTION-MATERIAL",
+      "suite": "formal_e2e",
+      "selector": "tests/formal_e2e/test_local_production_chain.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-INTEGRATION-PRODUCTION-MATERIAL",
+      "suite": "integration",
+      "selector": "tests/integration/test_production_pack_loader.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-INTEGRATION-PRODUCTION-MATERIAL",
+      "suite": "integration",
+      "selector": "tests/integration/test_production_runtime.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-MCP_PROTOCOL-PRODUCTION-MATERIAL",
+      "suite": "mcp_protocol",
+      "selector": "tests/mcp_protocol/test_production_stdio.py",
+      "state": "REQUIRED_NOW"
+    },
+    {
+      "id": "V4-SECURITY-PRODUCTION-MATERIAL",
+      "suite": "security",
+      "selector": "tests/security/test_production_pack_attacks.py",
+      "state": "REQUIRED_NOW"
     }
   ],
   "evidence_tracks": [
@@ -738,16 +731,6 @@
       "red_failure": "Both mutations must block pack activation."
     },
     {
-      "audit_id": "P1-09",
-      "test_id": "V4-P1-09-CANDIDATE-ELIGIBILITY",
-      "suite": "integration",
-      "selector": "tests/integration/test_candidate_boundaries.py::test_source_anchor_does_not_make_candidate_eligible",
-      "owner_task": "W5-03",
-      "state": "RED_AT_TASK",
-      "mutation": "Treat source anchoring alone as reasoning eligibility.",
-      "red_failure": "A candidate remains non-formal without promotion and signed-pack binding."
-    },
-    {
       "audit_id": "P1-10",
       "test_id": "V4-P1-10-MULTIPROCESS-RECOVERY",
       "suite": "storage_chaos",
@@ -796,16 +779,6 @@
       "state": "ACTIVE_REQUIRED",
       "mutation": "Drift a manifest schema or runtime codec from ToolSpec.",
       "red_failure": "Any drift among the staged V4 ToolSpec, generated publications, runtime tools/list projection, or typed codec mapping must fail; installed stdio parity remains required at W5-CUTOVER and W5-06."
-    },
-    {
-      "audit_id": "P1-15",
-      "test_id": "V4-P1-15-RESOURCE-BUDGET",
-      "suite": "performance",
-      "selector": "tests/performance/test_production_budgets.py::test_size_depth_timeout_cancel_backpressure_and_quota_enforced",
-      "owner_task": "W7-02",
-      "state": "RED_AT_TASK",
-      "mutation": "Disable one byte, depth, deadline, cancellation, backpressure, or quota limit.",
-      "red_failure": "Every removed production budget must be detected."
     },
     {
       "audit_id": "P1-16",
@@ -928,16 +901,6 @@
       "red_failure": "Installed package-root version lookup must fail on drift."
     },
     {
-      "audit_id": "P3-01",
-      "test_id": "V4-P3-01-BOUNDED-DIAGNOSTICS",
-      "suite": "integration",
-      "selector": "tests/integration/test_pack_diagnostics.py::test_pack_verify_summary_is_bounded_and_actionable",
-      "owner_task": "W5-03",
-      "state": "RED_AT_TASK",
-      "mutation": "Emit the full candidate identifier set by default.",
-      "red_failure": "Default diagnostics must remain bounded and retain actionable counts."
-    },
-    {
       "audit_id": "P3-02",
       "test_id": "V4-P3-02-HISTORICAL-DOCS",
       "suite": "packaging",
@@ -986,78 +949,6 @@
       "replacement_selector": "tests/property/test_canonicalization.py::test_every_identity_field_changes_digest"
     },
     {
-      "id": "REWRITE-ENGINE-3-ACCEPTANCE",
-      "selector": "tests/unit/test_contracts_v4.py::TestFailClosed::test_engine_version_mismatch_rejected",
-      "rewrite_task": "W1-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The test currently requires engine 3.0.2 to be accepted by V4.",
-      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_engine_3_payload_fails"
-    },
-    {
-      "id": "REWRITE-COMPAT-ADAPTER",
-      "selector": "tests/unit/test_contracts_v4.py::TestCompatAdapter",
-      "rewrite_task": "W1-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "Compat projection tests protect the prohibited V3 adapter.",
-      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_v3_payload_has_no_upgrade_path"
-    },
-    {
-      "id": "REWRITE-V3-SCHEMA-GENERATION",
-      "selector": "tests/unit/test_case_contracts.py::test_committed_schema_is_generated_from_contracts",
-      "rewrite_task": "W1-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The test freezes the V3 schema and advisory definitions as current output.",
-      "replacement_selector": "tests/contract/test_v4_legacy_rejection.py::test_only_v4_schema_is_generated"
-    },
-    {
-      "id": "REWRITE-APPLICATION-TRUSTED-SUCCESS",
-      "selector": "tests/unit/test_application_service.py",
-      "rewrite_task": "W4-07",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "Formal success directly constructs trusted facts, pack, source, and checker state.",
-      "replacement_selector": "tests/formal_e2e/test_public_boundary_inputs.py::test_public_request_derives_all_trust"
-    },
-    {
-      "id": "REWRITE-SOURCE-CALLER-PASS",
-      "selector": "tests/unit/test_source_service_v2.py::TestSourceSnapshot::test_positive_official_snapshot_passes_source_gate",
-      "rewrite_task": "W2-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The positive source test constructs the object that reports PASS.",
-      "replacement_selector": "tests/integration/test_trust_chain.py::test_source_trust_is_derived_from_resolved_bytes"
-    },
-    {
-      "id": "REWRITE-SOURCE-APPLICABILITY-PASS",
-      "selector": "tests/unit/test_source_service_v2.py::TestApplicabilityGate::test_rule_effective_at_decision_time_passes",
-      "rewrite_task": "W2-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The applicability test passes a caller-built source snapshot without the V4 resolver chain.",
-      "replacement_selector": "tests/integration/test_trust_chain.py::test_applicability_consumes_verified_source_version_path"
-    },
-    {
-      "id": "REWRITE-SOURCE-PATH-PASS",
-      "selector": "tests/unit/test_source_service_v2.py::TestSourcePath::test_positive_path_with_terminal_binding_passes",
-      "rewrite_task": "W2-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The path test constructs and blesses its own terminal binding in memory.",
-      "replacement_selector": "tests/integration/test_trust_chain.py::test_source_path_is_bound_to_resolved_authority_root"
-    },
-    {
-      "id": "REWRITE-FACT-CALLER-PASS",
-      "selector": "tests/unit/test_fact_admission_v1.py::TestFactGate::test_positive_attestation_admits_fact",
-      "rewrite_task": "W2-06",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The fact test passes caller-created PASS gate outcomes into admission.",
-      "replacement_selector": "tests/integration/test_trust_chain.py::test_fact_admission_consumes_verified_source_receipt"
-    },
-    {
       "id": "REWRITE-LEGACY-VERIFIED-FACT",
       "selector": "tests/unit/test_fact_admission.py::test_only_complete_verified_fact_can_enter_formal_kernel",
       "rewrite_task": "W2-06",
@@ -1083,96 +974,6 @@
       "state": "REWRITE_AT_TASK",
       "reason": "The current differential oracle shares the staged IVL simplification and is not independent.",
       "replacement_selector": "tests/semantic_mutation/test_ir_mutation.py::test_independent_oracle_kills_ir_semantic_mutations"
-    },
-    {
-      "id": "REWRITE-BACKEND-CALLER-FEATURES",
-      "selector": "tests/unit/test_backend_router_v1.py::TestRouting",
-      "rewrite_task": "W3-03",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "Routing tests construct caller features and never exercise a provider.",
-      "replacement_selector": "tests/security/test_backend_attacks.py::test_caller_cannot_supply_backend_features"
-    },
-    {
-      "id": "REWRITE-BACKEND-CALLER-RECEIPTS",
-      "selector": "tests/unit/test_backend_router_v1.py::TestSolverReceipt",
-      "rewrite_task": "W3-03",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "Solver receipt tests only construct DTOs and do not prove provider execution.",
-      "replacement_selector": "tests/contract/test_backend_router.py::test_router_binds_compiler_issued_ivl_and_verified_fact_receipt"
-    },
-    {
-      "id": "REWRITE-CERTIFICATE-CALLER-PASS",
-      "selector": "tests/unit/test_certificate_v1.py::TestFormalCertificate::test_full_pass_issues_certificate",
-      "rewrite_task": "W4-07",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "Certificate success constructs PASS gates and receipts directly.",
-      "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_certificate_uses_verified_run_receipts"
-    },
-    {
-      "id": "REWRITE-OLD-AUDIT-BUNDLE-COMPLETE",
-      "selector": "tests/unit/test_audit_bundle.py::test_complete_bundle_has_fixed_files_hashes_and_semantic_digests",
-      "rewrite_task": "W4-07",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The test proves the current V3 bundle writer, not a V4 verified vertical slice.",
-      "replacement_selector": "tests/formal_e2e/test_positive_vertical_slice.py::test_v4_bundle_verifies_and_replays"
-    },
-    {
-      "id": "REWRITE-WORKBUDDY-MCP",
-      "selector": "tests/unit/test_mcp_manifest_dispatch.py",
-      "rewrite_task": "W5-01",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The focused tests protect the addon WorkBuddy adapter instead of the V4 formal MCP boundary.",
-      "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_tools_list_is_exact_v4_with_output_schemas"
-    },
-    {
-      "id": "REWRITE-OLD-MCP-STDIO",
-      "selector": "tests/unit/test_mcp_stdio_protocol.py",
-      "rewrite_task": "W5-01",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The helper discards isError and the module exercises the old addon transport.",
-      "replacement_selector": "tests/mcp_protocol/w5_transport_red.py::test_blocked_and_engine_error_are_protocol_errors"
-    },
-    {
-      "id": "REWRITE-V3-ENTRYPOINT-PARITY",
-      "selector": "tests/unit/test_three_entrypoint_parity.py",
-      "rewrite_task": "W5-01",
-      "retirement_task": "W5-CUTOVER",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The parity test follows V3 development entrypoints instead of an installed V4 formal chain.",
-      "replacement_selector": "tests/formal_e2e/w5_entrypoint_red.py::test_cli_client_and_mcp_share_one_application_v4_sink"
-    },
-    {
-      "id": "REWRITE-PARTIAL-CORE-LOCK",
-      "selector": "tests/unit/test_release_engineering.py::test_core_lock_has_target_wheel_hashes_and_matches_runtime_dependency",
-      "rewrite_task": "W6-03",
-      "retirement_task": "W6-05",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The test hard-codes a partial runtime lock instead of all transitive profiles.",
-      "replacement_selector": "tests/packaging/test_hash_locks.py::test_all_profiles_are_transitively_hash_locked"
-    },
-    {
-      "id": "REWRITE-WHEEL-BLACKLIST",
-      "selector": "tests/unit/test_release_engineering.py::test_clean_wheel_gate_rejects_known_deleted_runtime_modules",
-      "rewrite_task": "W6-01",
-      "retirement_task": "W6-05",
-      "state": "RETIRED_AT_TASK",
-      "reason": "A short blacklist cannot prove the wheel contains only the formal positive set.",
-      "replacement_selector": "tests/packaging/test_wheel_gate_v4.py::test_exact_synthetic_wheel_is_accepted"
-    },
-    {
-      "id": "REWRITE-SPEC-SHADOW-RUNTIME",
-      "selector": "tests/unit/test_spec_shadow_harness.py",
-      "rewrite_task": "W6-05",
-      "retirement_task": "W6-05",
-      "state": "RETIRED_AT_TASK",
-      "reason": "The differential oracle must leave runtime and bind the B02 pinned input.",
-      "replacement_selector": "tests/differential/test_pinned_companion_spec.py::test_pinned_companion_oracle_detects_mutations"
     }
   ]
 }

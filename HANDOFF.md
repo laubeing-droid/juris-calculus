@@ -1,42 +1,24 @@
-# `juris-calculus` V4 handoff
+# juris-calculus V4 handoff
 
-Status date: 2026-08-26 (Asia/Shanghai)
+## 当前事实
 
-## Current checkpoint
+- 当前系统版本为 4.0.0，只保留 V4 正式执行链。
+- 当前整改任务定义为 `remediation/v4/tasks.v3.json`，入口为 `tools/remediate_v4.py`。
+- `remediation/v4/tasks.json` 与 `task.schema.json` 仅作字节冻结的历史记录，当前 runner 不读取它们。
+- 正式 wheel 包含 official YAML 规则准入所需的 `compiler_core/rule_admission.py`，不依赖已退出正式包的 `compiler_core/types.py`。
+- addons 中 CN/HK/US/federation 代码保留在源码树，不进入正式 wheel。
+- 仓库不以外部状态目录、旧 receipt 或旧 CodeGraph 数据库作为当前 V4 验收前提。
 
-The 4.0.0 remediation run completed all 92 tasks through `Z10-03`. The external
-final result records `LOCAL_PRODUCTION_ACTIVE` and `exit_code=0` for the bounded
-Windows/EFS deployment covering《中华人民共和国个人信息保护法》第十三至十八条。
-The deployed runtime source commit is
-`91daa6658dcd555d02199d91f16fe49bf0b5ba09` and its active local pack is
-`cn-official-local`.
-
-The exact command streams, receipts, artifacts, and digests remain authoritative in
-the external remediation-state directory. See the repository projection in
-[remediation/v4/STATUS.md](remediation/v4/STATUS.md).
-
-## Remaining boundary
-
-- Observation is still required; independent human review is not claimed.
-- `cn-official-local` does not imply remote promotion of the public `cn-official`
-  pack.
-- Remote production release is not completed or claimed.
-- Remote promotion still requires the branch protection and release-governance gates
-  documented below.
-- Remote promotion also requires an authorized production Ed25519 attestor key.
-- No push, tag, GitHub release, or external production promotion is claimed.
-- Any remote release remains subject to the separately governed release process in
-  [docs/operations/RELEASE_V4.md](docs/operations/RELEASE_V4.md).
-
-## Resume and verify
-
-From the repository root, set `JC_REMEDIATION_STATE_ROOT` to the existing external
-state directory and run:
+## 接手命令
 
 ```powershell
-python -B tools\remediate_v4.py run --through Z10-03
+python -B tools\remediate_v4.py lint-plan
+python -B tools\remediate_v4.py run --through V4-03-OFFICIAL-YAML
+python -B tools\remediate_v4.py run
 ```
 
-The runner validates the receipt chain before returning success. Historical V3 replay
-is isolated under [docs/operations/V3_HISTORICAL_REPLAY.md](docs/operations/V3_HISTORICAL_REPLAY.md)
-and is not a current API, schema, runtime, or migration route.
+每次运行从头按依赖顺序执行，并写一份 JSON run log；没有旧收据修补、恢复或 supersede 流程。失败就修当前根因后重跑。
+
+## 发布边界
+
+生产发布 not completed。任何远程发布仍要求 branch protection、生产 Ed25519 签名材料及 [V4 发布流程](docs/operations/RELEASE_V4.md) 中的授权条件。本次整改不包含 push、tag、GitHub release 或部署。

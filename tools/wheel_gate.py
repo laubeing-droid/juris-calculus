@@ -315,7 +315,7 @@ def _smoke_install(source: Path, wheel: Path) -> None:
             "print(__version__)"
         )
         subprocess.run(
-            [sys.executable, "-I", "-B", "-c", code], cwd=temporary,
+            [sys.executable, "-I", "-S", "-B", "-c", code], cwd=temporary,
             env=environment, capture_output=True, text=True, check=True, timeout=120,
         )
 

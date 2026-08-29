@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+from tests.conftest import ProductionMaterial
 from tests.formal_e2e.test_local_production_chain import production_bundle, runtime_config
 
 
@@ -26,11 +27,14 @@ def _messages(bundle) -> str:
     return "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in values)
 
 
-def test_stdio_uses_production_factory_and_case_bundle(tmp_path: Path) -> None:
-    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state")
+def test_stdio_uses_production_factory_and_case_bundle(
+    tmp_path: Path, production_material: ProductionMaterial,
+) -> None:
+    config = runtime_config(tmp_path / "runtime.json", tmp_path / "state", production_material)
+    bundle = production_bundle(15, material=production_material)
     completed = subprocess.run(
         [sys.executable, "-B", "mcp_server.py"], cwd=ROOT,
-        input=_messages(production_bundle(15)), capture_output=True, text=True,
+        input=_messages(bundle), capture_output=True, text=True,
         encoding="utf-8", timeout=30, check=False,
         env={
             **os.environ,

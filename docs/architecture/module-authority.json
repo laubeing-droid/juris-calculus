@@ -5,47 +5,116 @@
     "FORMAL_CORE": {
       "deployable": true,
       "production_wheel": true,
-      "may_import": ["FORMAL_CORE"]
+      "may_import": [
+        "FORMAL_CORE"
+      ]
     },
     "PUBLIC_ADAPTER": {
       "deployable": true,
       "production_wheel": true,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT"
+      ]
     },
     "RUNTIME_OUTPUT": {
       "deployable": true,
       "production_wheel": true,
-      "may_import": ["FORMAL_CORE", "RUNTIME_OUTPUT"]
+      "may_import": [
+        "FORMAL_CORE",
+        "RUNTIME_OUTPUT"
+      ]
     },
     "SOURCE_TOOL": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     },
     "EXPERIMENT_ONLY": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     },
     "CANDIDATE_ASSET": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     },
     "BUILD_ONLY": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     },
     "TEST_ONLY": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     },
     "REMOVE": {
       "deployable": false,
       "production_wheel": false,
-      "may_import": ["FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT", "SOURCE_TOOL", "EXPERIMENT_ONLY", "CANDIDATE_ASSET", "BUILD_ONLY", "TEST_ONLY", "REMOVE"]
+      "may_import": [
+        "FORMAL_CORE",
+        "PUBLIC_ADAPTER",
+        "RUNTIME_OUTPUT",
+        "SOURCE_TOOL",
+        "EXPERIMENT_ONLY",
+        "CANDIDATE_ASSET",
+        "BUILD_ONLY",
+        "TEST_ONLY",
+        "REMOVE"
+      ]
     }
   },
   "authority_roles": {
@@ -67,118 +136,445 @@
     }
   },
   "path_rules": [
-    {"path": "compiler_core/__init__.py", "class": "PUBLIC_ADAPTER", "rationale": "Package-root public facade; no independent formal authority."},
-    {"path": "compiler_core/adapter_base.py", "class": "EXPERIMENT_ONLY", "rationale": "Legacy jurisdiction-adapter experiment component; excluded from production deployment."},
-    {"path": "compiler_core/adjudication_draft.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory drafting candidate; cannot issue formal outcomes."},
-    {"path": "compiler_core/admission.py", "class": "REMOVE", "rationale": "Legacy admission invariants must move to the V4 typed admission path before removal."},
-    {"path": "compiler_core/analysis.py", "class": "SOURCE_TOOL", "rationale": "Offline advisory analysis source tool; public runtime edges must be cut."},
-    {"path": "compiler_core/application.py", "class": "FORMAL_CORE", "rationale": "Sole target ApplicationV4 orchestration sink."},
-    {"path": "compiler_core/artifact_store.py", "class": "FORMAL_CORE", "rationale": "Bounded exact content-addressed byte resolver without path or network authority."},
-    {"path": "compiler_core/arbitration_reasoning.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory legal candidate code, not formal runtime."},
-    {"path": "compiler_core/argumentation.py", "class": "FORMAL_CORE", "rationale": "Target argument, attack, priority, permission, and grounded semantics."},
-    {"path": "compiler_core/audit.py", "class": "FORMAL_CORE", "rationale": "Sole typed append-only V4 semantic audit-event authority."},
-    {"path": "compiler_core/audit_bundle.py", "class": "FORMAL_CORE", "rationale": "Target V4 bundle writer, verifier, and replay authority."},
-    {"path": "compiler_core/backend_router.py", "class": "FORMAL_CORE", "rationale": "Certified provider invocation, runtime identity, result binding, and solver receipt authority; does not issue DecisionStatus or formal admission."},
-    {"path": "compiler_core/backends/__init__.py", "class": "FORMAL_CORE", "rationale": "Certified finite Horn, typed grounded AAF, and exact integer, rational, and Gregorian interval provider implementations; no formal admission authority."},
-    {"path": "compiler_core/banach_verifier.py", "class": "CANDIDATE_ASSET", "rationale": "Research verifier candidate; no production authority."},
-    {"path": "compiler_core/breakthrough_candidates.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate generator; cannot enter formal evaluation."},
-    {"path": "compiler_core/breakthrough_verification.py", "class": "TEST_ONLY", "rationale": "Independent oracle/mutation evidence only."},
-    {"path": "compiler_core/burden_of_proof.py", "class": "CANDIDATE_ASSET", "rationale": "Domain candidate awaiting typed rule and evidence mapping."},
-    {"path": "compiler_core/canonical_serialization.py", "class": "FORMAL_CORE", "rationale": "Sole canonical-byte and semantic-digest implementation target."},
-    {"path": "compiler_core/certificate_checker.py", "class": "REMOVE", "rationale": "Legacy certificate checks migrate to certificates.py."},
-    {"path": "compiler_core/certificates.py", "class": "FORMAL_CORE", "rationale": "Sole typed V4 certificate issuer and verifier authority."},
-    {"path": "compiler_core/classifier.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory classification candidate, not a formal decision path."},
-    {"path": "compiler_core/cli.py", "class": "PUBLIC_ADAPTER", "rationale": "Thin CLI protocol adapter; may call only formal core and runtime output."},
-    {"path": "compiler_core/client.py", "class": "PUBLIC_ADAPTER", "rationale": "Thin Python facade; may call only formal core and runtime output."},
-    {"path": "compiler_core/completion_status.py", "class": "REMOVE", "rationale": "Migrate completion invariants into the V4 state contract."},
-    {"path": "compiler_core/compliance_monitoring.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory domain candidate; no formal runtime authority."},
-    {"path": "compiler_core/config_paths.py", "class": "REMOVE", "rationale": "Legacy repository-path discovery cannot survive installed-wheel V4."},
-    {"path": "compiler_core/conflict_of_laws.py", "class": "CANDIDATE_ASSET", "rationale": "Domain candidate awaiting typed rule-pack admission."},
-    {"path": "compiler_core/constraint_validator.py", "class": "REMOVE", "rationale": "Migrate required constraints to explicit V4 contract and pack gates."},
-    {"path": "compiler_core/contracts.py", "class": "FORMAL_CORE", "rationale": "Sole target V4 typed wire-contract authority."},
-    {"path": "compiler_core/criminal_complexity.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory domain candidate; cannot route formal execution."},
-    {"path": "compiler_core/criminal_sentencing.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory sentencing candidate awaiting governed rule assets."},
-    {"path": "compiler_core/cross_jurisdiction_compare.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory comparison candidate; excluded from formal runtime."},
-    {"path": "compiler_core/cross_jurisdiction_router.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory routing candidate; cannot select a formal backend."},
-    {"path": "compiler_core/defeasible_priority.py", "class": "REMOVE", "rationale": "Migrate priority invariants to the target argumentation authority."},
-    {"path": "compiler_core/domain_config.py", "class": "REMOVE", "rationale": "Replace global fallback configuration with signed pack-bound data."},
-    {"path": "compiler_core/evaluator.py", "class": "REMOVE", "rationale": "Legacy evaluator invariants migrate into the V4 provider/application topology."},
-    {"path": "compiler_core/evidence_chain_validator.py", "class": "REMOVE", "rationale": "Migrate evidence-chain invariants to source_service.py."},
-    {"path": "compiler_core/evidence_checklist.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory evidence checklist candidate."},
-    {"path": "compiler_core/evidence_evaluation.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory evidence-evaluation candidate."},
-    {"path": "compiler_core/fact_admission.py", "class": "FORMAL_CORE", "rationale": "Sole evidence-bound V4 fact-admission authority; derives gates and signed receipts internally."},
-    {"path": "compiler_core/fact_trust_envelope.py", "class": "REMOVE", "rationale": "Merge trust-envelope invariants into V4 fact admission."},
-    {"path": "compiler_core/formal_bridge.py", "class": "RUNTIME_OUTPUT", "rationale": "Pinned stdio formal consumer and exact-byte delivery guard; contains no legal semantics."},
-    {"path": "compiler_core/g8_evaluator_patch.py", "class": "REMOVE", "rationale": "Migrate completeness witnesses; delete the patch layer."},
-    {"path": "compiler_core/grounded_smt_verifier.py", "class": "TEST_ONLY", "rationale": "Independent semantic oracle only."},
-    {"path": "compiler_core/horn_completeness.py", "class": "REMOVE", "rationale": "Migrate completeness and truncation witnesses into V4 results."},
-    {"path": "compiler_core/incremental_grounded.py", "class": "CANDIDATE_ASSET", "rationale": "Research candidate, not certified runtime semantics."},
-    {"path": "compiler_core/independent_checker.py", "class": "FORMAL_CORE", "rationale": "Sole independent V4 semantic verification authority; recomputes from canonical artifacts without provider, compiler, or evaluator internal state."},
-    {"path": "compiler_core/independent_grounded_checker.py", "class": "REMOVE", "rationale": "Migrate checker invariants to independent_checker.py."},
-    {"path": "compiler_core/invariance_metrics.py", "class": "TEST_ONLY", "rationale": "Differential and mutation metric oracle only."},
-    {"path": "compiler_core/ip_valuation.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory valuation candidate; no formal authority."},
-    {"path": "compiler_core/jcs.py", "class": "REMOVE", "rationale": "Merge the frozen canonicalization profile into canonical_serialization.py."},
-    {"path": "compiler_core/kg_recall.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate retrieval code; cannot admit facts or rules."},
-    {"path": "compiler_core/legal_ir.py", "class": "FORMAL_CORE", "rationale": "Sole loss-accounted RuleV4 to LegalSpecV4 to LegalIVLV4 lowering authority."},
-    {"path": "compiler_core/legal_memory.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate retrieval/memory code; excluded from formal runtime."},
-    {"path": "compiler_core/legal_reasoning.py", "class": "CANDIDATE_ASSET", "rationale": "Legacy advisory reasoning candidate."},
-    {"path": "compiler_core/legal_spec_ivl.py", "class": "REMOVE", "rationale": "Migrate proven translation invariants to legal_ir.py."},
-    {"path": "compiler_core/litigation_engineering.py", "class": "REMOVE", "rationale": "Move certificate witnesses to certificates.py and keep strategy content nonproduction."},
-    {"path": "compiler_core/mcp.py", "class": "PUBLIC_ADAPTER", "rationale": "Sole four-tool V4 ToolSpec, typed protocol codec, and deterministic publication adapter."},
-    {"path": "compiler_core/output_firewall.py", "class": "REMOVE", "rationale": "Migrate stable privacy and error invariants into the V4 output boundary."},
-    {"path": "compiler_core/plugin_registry.py", "class": "EXPERIMENT_ONLY", "rationale": "Dynamic addon discovery belongs only to the isolated experiment component."},
-    {"path": "compiler_core/production_pack.py", "class": "FORMAL_CORE", "rationale": "Strict current-time production pack, trust, and service-key loader."},
-    {"path": "compiler_core/production_runtime.py", "class": "PUBLIC_ADAPTER", "rationale": "Sole installed local-production composition root over formal authorities."},
-    {"path": "compiler_core/prc_collision_engine.py", "class": "EXPERIMENT_ONLY", "rationale": "TriRail/collision experiment component; excluded from production."},
-    {"path": "compiler_core/proof_trace.py", "class": "REMOVE", "rationale": "Migrate required witnesses to typed checker and audit receipts."},
-    {"path": "compiler_core/proof_trace_visualizer.py", "class": "CANDIDATE_ASSET", "rationale": "Presentation candidate; not a verified runtime renderer."},
-    {"path": "compiler_core/proof_tree.py", "class": "EXPERIMENT_ONLY", "rationale": "Connected legacy experiment component; not formal proof authority."},
-    {"path": "compiler_core/reasoning_boundary.py", "class": "REMOVE", "rationale": "Migrate fail-closed boundaries to typed V4 contracts and application."},
-    {"path": "compiler_core/rendering.py", "class": "RUNTIME_OUTPUT", "rationale": "Neutral renderer may consume only an independently verified bundle."},
-    {"path": "compiler_core/resources.py", "class": "FORMAL_CORE", "rationale": "Installed-wheel lookup for generated schemas and neutral static resources."},
-    {"path": "compiler_core/result_diff.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory comparison candidate, not formal semantics."},
-    {"path": "compiler_core/result_exporter.py", "class": "CANDIDATE_ASSET", "rationale": "Advisory export candidate; excluded from production decisions."},
-    {"path": "compiler_core/review_packet.py", "class": "CANDIDATE_ASSET", "rationale": "Human-review packet candidate; no formal authority."},
-    {"path": "compiler_core/rule_governance.py", "class": "REMOVE", "rationale": "Move deterministic admission to runtime and reports to source tools."},
-    {"path": "compiler_core/rule_lookup.py", "class": "SOURCE_TOOL", "rationale": "Candidate lookup source tool; public runtime edge must be cut."},
-    {"path": "compiler_core/rule_packs.py", "class": "FORMAL_CORE", "rationale": "Immutable signed pack verification and bounded admission target."},
-    {"path": "compiler_core/rule_platform_cn.py", "class": "CANDIDATE_ASSET", "rationale": "Candidate/build-side jurisdiction platform; not engine runtime authority."},
-    {"path": "compiler_core/rule_router.py", "class": "REMOVE", "rationale": "Legacy keyword routing cannot select a V4 formal backend."},
-    {"path": "compiler_core/smt_sidecar.py", "class": "CANDIDATE_ASSET", "rationale": "Research backend candidate without certified receipt contract."},
-    {"path": "compiler_core/source_anchor.py", "class": "REMOVE", "rationale": "Migrate locator invariants to source_service.py."},
-    {"path": "compiler_core/source_manifest.py", "class": "REMOVE", "rationale": "Migrate source/version evidence to the V4 source service."},
-    {"path": "compiler_core/source_service.py", "class": "FORMAL_CORE", "rationale": "Resolved-byte source authenticity, temporal applicability, and connected version-path authority."},
-    {"path": "compiler_core/storage.py", "class": "FORMAL_CORE", "rationale": "Sole durable V4 transaction-store and platform durability authority."},
-    {"path": "compiler_core/spec_shadow_harness.py", "class": "TEST_ONLY", "rationale": "Pinned companion-spec differential oracle only."},
-    {"path": "compiler_core/step_verifier.py", "class": "CANDIDATE_ASSET", "rationale": "Research verifier candidate; not production proof authority."},
-    {"path": "compiler_core/stratified_evaluator.py", "class": "REMOVE", "rationale": "Shadow-only semantics migrate to differential tests."},
-    {"path": "compiler_core/taint.py", "class": "REMOVE", "rationale": "Migrate required taint invariants to typed source/fact/result boundaries."},
-    {"path": "compiler_core/training.py", "class": "SOURCE_TOOL", "rationale": "Offline training/export source tool; excluded from runtime."},
-    {"path": "compiler_core/transformer.py", "class": "REMOVE", "rationale": "Delete runtime auto-patching; migrate only signed rule validation invariants."},
-    {"path": "compiler_core/trust.py", "class": "FORMAL_CORE", "rationale": "Scoped in-memory Ed25519 policy, revocation, role, and replay verifier."},
-    {"path": "compiler_core/trust_labels.py", "class": "REMOVE", "rationale": "Replace advisory labels with typed trust and receipt gates."},
-    {"path": "compiler_core/type_checker.py", "class": "REMOVE", "rationale": "Migrate type invariants into contracts.py and legal_ir.py."},
-    {"path": "compiler_core/types.py", "class": "REMOVE", "rationale": "Parallel type authority must merge into the V4 contract and IR authorities."},
-    {"path": "compiler_core/universal_grounded_smt.py", "class": "TEST_ONLY", "rationale": "Independent semantic oracle only."},
-    {"path": "compiler_core/validity_state_machine.py", "class": "REMOVE", "rationale": "Migrate valid states into the frozen V4 state contract."},
-    {"path": "compiler_core/version.py", "class": "FORMAL_CORE", "rationale": "Sole package and protocol version source."},
-    {"path": "configs/__init__.py", "class": "CANDIDATE_ASSET", "rationale": "Legacy/candidate configuration package marker; excluded from engine wheel."},
-    {"path": "mcp_server.py", "class": "PUBLIC_ADAPTER", "rationale": "Target thin installed MCP launcher."},
-    {"path": "schemas/__init__.py", "class": "FORMAL_CORE", "rationale": "Generated V4 schema resource package marker."},
-    {"path": "tools/build_rule_pack_manifests.py", "class": "REMOVE", "rationale": "Legacy V3 manifest builder must be removed after the single V4 builder exists."},
-    {"path": "tools/fast_path_interceptor.py", "class": "EXPERIMENT_ONLY", "rationale": "Fast-path experiment; excluded from production wheel and formal graph."},
-    {"path": "tools/perf_baseline.py", "class": "EXPERIMENT_ONLY", "rationale": "Local performance experiment, not production runtime."},
-    {"path": "tools/run_trirail_matrix.py", "class": "EXPERIMENT_ONLY", "rationale": "TriRail experiment runner; excluded from production."}
+    {
+      "path": "compiler_core/__init__.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Package-root public facade; no independent formal authority."
+    },
+    {
+      "path": "compiler_core/adapter_base.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Legacy jurisdiction-adapter experiment component; excluded from production deployment."
+    },
+    {
+      "path": "compiler_core/adjudication_draft.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory drafting candidate; cannot issue formal outcomes."
+    },
+    {
+      "path": "compiler_core/admission.py",
+      "class": "REMOVE",
+      "rationale": "Legacy admission invariants must move to the V4 typed admission path before removal."
+    },
+    {
+      "path": "compiler_core/analysis.py",
+      "class": "SOURCE_TOOL",
+      "rationale": "Offline advisory analysis source tool; public runtime edges must be cut."
+    },
+    {
+      "path": "compiler_core/application.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole target ApplicationV4 orchestration sink."
+    },
+    {
+      "path": "compiler_core/artifact_store.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Bounded exact content-addressed byte resolver without path or network authority."
+    },
+    {
+      "path": "compiler_core/arbitration_reasoning.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory legal candidate code, not formal runtime."
+    },
+    {
+      "path": "compiler_core/argumentation.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Target argument, attack, priority, permission, and grounded semantics."
+    },
+    {
+      "path": "compiler_core/audit.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole typed append-only V4 semantic audit-event authority."
+    },
+    {
+      "path": "compiler_core/audit_bundle.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Target V4 bundle writer, verifier, and replay authority."
+    },
+    {
+      "path": "compiler_core/backend_router.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Certified provider invocation, runtime identity, result binding, and solver receipt authority; does not issue DecisionStatus or formal admission."
+    },
+    {
+      "path": "compiler_core/backends/__init__.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Certified finite Horn, typed grounded AAF, and exact integer, rational, and Gregorian interval provider implementations; no formal admission authority."
+    },
+    {
+      "path": "compiler_core/burden_of_proof.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Domain candidate awaiting typed rule and evidence mapping."
+    },
+    {
+      "path": "compiler_core/canonical_serialization.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole canonical-byte and semantic-digest implementation target."
+    },
+    {
+      "path": "compiler_core/certificate_checker.py",
+      "class": "REMOVE",
+      "rationale": "Legacy certificate checks migrate to certificates.py."
+    },
+    {
+      "path": "compiler_core/certificates.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole typed V4 certificate issuer and verifier authority."
+    },
+    {
+      "path": "compiler_core/cli.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Thin CLI protocol adapter; may call only formal core and runtime output."
+    },
+    {
+      "path": "compiler_core/client.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Thin Python facade; may call only formal core and runtime output."
+    },
+    {
+      "path": "compiler_core/completion_status.py",
+      "class": "REMOVE",
+      "rationale": "Migrate completion invariants into the V4 state contract."
+    },
+    {
+      "path": "compiler_core/compliance_monitoring.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory domain candidate; no formal runtime authority."
+    },
+    {
+      "path": "compiler_core/config_paths.py",
+      "class": "REMOVE",
+      "rationale": "Legacy repository-path discovery cannot survive installed-wheel V4."
+    },
+    {
+      "path": "compiler_core/conflict_of_laws.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Domain candidate awaiting typed rule-pack admission."
+    },
+    {
+      "path": "compiler_core/constraint_validator.py",
+      "class": "REMOVE",
+      "rationale": "Migrate required constraints to explicit V4 contract and pack gates."
+    },
+    {
+      "path": "compiler_core/contracts.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole target V4 typed wire-contract authority."
+    },
+    {
+      "path": "compiler_core/criminal_complexity.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory domain candidate; cannot route formal execution."
+    },
+    {
+      "path": "compiler_core/criminal_sentencing.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory sentencing candidate awaiting governed rule assets."
+    },
+    {
+      "path": "compiler_core/domain_config.py",
+      "class": "REMOVE",
+      "rationale": "Replace global fallback configuration with signed pack-bound data."
+    },
+    {
+      "path": "compiler_core/evaluator.py",
+      "class": "REMOVE",
+      "rationale": "Legacy evaluator invariants migrate into the V4 provider/application topology."
+    },
+    {
+      "path": "compiler_core/evidence_chain_validator.py",
+      "class": "REMOVE",
+      "rationale": "Migrate evidence-chain invariants to source_service.py."
+    },
+    {
+      "path": "compiler_core/evidence_checklist.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory evidence checklist candidate."
+    },
+    {
+      "path": "compiler_core/evidence_evaluation.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory evidence-evaluation candidate."
+    },
+    {
+      "path": "compiler_core/fact_admission.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole evidence-bound V4 fact-admission authority; derives gates and signed receipts internally."
+    },
+    {
+      "path": "compiler_core/fact_trust_envelope.py",
+      "class": "REMOVE",
+      "rationale": "Merge trust-envelope invariants into V4 fact admission."
+    },
+    {
+      "path": "compiler_core/formal_bridge.py",
+      "class": "RUNTIME_OUTPUT",
+      "rationale": "Pinned stdio formal consumer and exact-byte delivery guard; contains no legal semantics."
+    },
+    {
+      "path": "compiler_core/independent_checker.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole independent V4 semantic verification authority; recomputes from canonical artifacts without provider, compiler, or evaluator internal state."
+    },
+    {
+      "path": "compiler_core/independent_grounded_checker.py",
+      "class": "REMOVE",
+      "rationale": "Migrate checker invariants to independent_checker.py."
+    },
+    {
+      "path": "compiler_core/ip_valuation.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Advisory valuation candidate; no formal authority."
+    },
+    {
+      "path": "compiler_core/jcs.py",
+      "class": "REMOVE",
+      "rationale": "Merge the frozen canonicalization profile into canonical_serialization.py."
+    },
+    {
+      "path": "compiler_core/legal_ir.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole loss-accounted RuleV4 to LegalSpecV4 to LegalIVLV4 lowering authority."
+    },
+    {
+      "path": "compiler_core/legal_reasoning.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Legacy advisory reasoning candidate."
+    },
+    {
+      "path": "compiler_core/legal_spec_ivl.py",
+      "class": "REMOVE",
+      "rationale": "Migrate proven translation invariants to legal_ir.py."
+    },
+    {
+      "path": "compiler_core/litigation_engineering.py",
+      "class": "REMOVE",
+      "rationale": "Move certificate witnesses to certificates.py and keep strategy content nonproduction."
+    },
+    {
+      "path": "compiler_core/mcp.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Sole four-tool V4 ToolSpec, typed protocol codec, and deterministic publication adapter."
+    },
+    {
+      "path": "compiler_core/plugin_registry.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Dynamic addon discovery belongs only to the isolated experiment component."
+    },
+    {
+      "path": "compiler_core/production_pack.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Strict current-time production pack, trust, and service-key loader."
+    },
+    {
+      "path": "compiler_core/production_runtime.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Sole installed local-production composition root over formal authorities."
+    },
+    {
+      "path": "compiler_core/prc_collision_engine.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "TriRail/collision experiment component; excluded from production."
+    },
+    {
+      "path": "compiler_core/proof_trace.py",
+      "class": "REMOVE",
+      "rationale": "Migrate required witnesses to typed checker and audit receipts."
+    },
+    {
+      "path": "compiler_core/proof_tree.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Connected legacy experiment component; not formal proof authority."
+    },
+    {
+      "path": "compiler_core/reasoning_boundary.py",
+      "class": "REMOVE",
+      "rationale": "Migrate fail-closed boundaries to typed V4 contracts and application."
+    },
+    {
+      "path": "compiler_core/rendering.py",
+      "class": "RUNTIME_OUTPUT",
+      "rationale": "Neutral renderer may consume only an independently verified bundle."
+    },
+    {
+      "path": "compiler_core/resources.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Installed-wheel lookup for generated schemas and neutral static resources."
+    },
+    {
+      "path": "compiler_core/rule_governance.py",
+      "class": "REMOVE",
+      "rationale": "Move deterministic admission to runtime and reports to source tools."
+    },
+    {
+      "path": "compiler_core/rule_lookup.py",
+      "class": "SOURCE_TOOL",
+      "rationale": "Candidate lookup source tool; public runtime edge must be cut."
+    },
+    {
+      "path": "compiler_core/rule_packs.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Immutable signed pack verification and bounded admission target."
+    },
+    {
+      "path": "compiler_core/rule_platform_cn.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Candidate/build-side jurisdiction platform; not engine runtime authority."
+    },
+    {
+      "path": "compiler_core/rule_router.py",
+      "class": "REMOVE",
+      "rationale": "Legacy keyword routing cannot select a V4 formal backend."
+    },
+    {
+      "path": "compiler_core/source_anchor.py",
+      "class": "REMOVE",
+      "rationale": "Migrate locator invariants to source_service.py."
+    },
+    {
+      "path": "compiler_core/source_manifest.py",
+      "class": "REMOVE",
+      "rationale": "Migrate source/version evidence to the V4 source service."
+    },
+    {
+      "path": "compiler_core/source_service.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Resolved-byte source authenticity, temporal applicability, and connected version-path authority."
+    },
+    {
+      "path": "compiler_core/storage.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole durable V4 transaction-store and platform durability authority."
+    },
+    {
+      "path": "compiler_core/spec_shadow_harness.py",
+      "class": "TEST_ONLY",
+      "rationale": "Pinned companion-spec differential oracle only."
+    },
+    {
+      "path": "compiler_core/step_verifier.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Research verifier candidate; not production proof authority."
+    },
+    {
+      "path": "compiler_core/taint.py",
+      "class": "REMOVE",
+      "rationale": "Migrate required taint invariants to typed source/fact/result boundaries."
+    },
+    {
+      "path": "compiler_core/training.py",
+      "class": "SOURCE_TOOL",
+      "rationale": "Offline training/export source tool; excluded from runtime."
+    },
+    {
+      "path": "compiler_core/transformer.py",
+      "class": "REMOVE",
+      "rationale": "Delete runtime auto-patching; migrate only signed rule validation invariants."
+    },
+    {
+      "path": "compiler_core/trust.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Scoped in-memory Ed25519 policy, revocation, role, and replay verifier."
+    },
+    {
+      "path": "compiler_core/trust_labels.py",
+      "class": "FORMAL_CORE",
+      "rationale": "trust label vocabulary required by official rule admission in the production wheel"
+    },
+    {
+      "path": "compiler_core/type_checker.py",
+      "class": "REMOVE",
+      "rationale": "Migrate type invariants into contracts.py and legal_ir.py."
+    },
+    {
+      "path": "compiler_core/types.py",
+      "class": "REMOVE",
+      "rationale": "Parallel type authority must merge into the V4 contract and IR authorities."
+    },
+    {
+      "path": "compiler_core/version.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole package and protocol version source."
+    },
+    {
+      "path": "configs/__init__.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Legacy/candidate configuration package marker; excluded from engine wheel."
+    },
+    {
+      "path": "mcp_server.py",
+      "class": "PUBLIC_ADAPTER",
+      "rationale": "Target thin installed MCP launcher."
+    },
+    {
+      "path": "schemas/__init__.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Generated V4 schema resource package marker."
+    },
+    {
+      "path": "tools/build_rule_pack_manifests.py",
+      "class": "REMOVE",
+      "rationale": "Legacy V3 manifest builder must be removed after the single V4 builder exists."
+    },
+    {
+      "path": "tools/fast_path_interceptor.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Fast-path experiment; excluded from production wheel and formal graph."
+    },
+    {
+      "path": "tools/perf_baseline.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Local performance experiment, not production runtime."
+    },
+    {
+      "path": "tools/run_trirail_matrix.py",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "TriRail experiment runner; excluded from production."
+    },
+    {
+      "path": "compiler_core/rule_admission.py",
+      "class": "FORMAL_CORE",
+      "rationale": "official YAML rule admission primitives carried by the production wheel"
+    },
+    {
+      "path": "privacy_egress_adapter.py",
+      "class": "SOURCE_TOOL",
+      "rationale": "signed privacy-facts consumer adapter outside the formal kernel"
+    }
   ],
   "prefix_rules": [
-    {"prefix": "addons/", "class": "EXPERIMENT_ONLY", "rationale": "Jurisdiction and federation addons are isolated repository experiments."},
-    {"prefix": "pipeline/", "class": "SOURCE_TOOL", "rationale": "Offline proposal/extraction pipeline; no formal runtime imports."},
-    {"prefix": "tests/", "class": "TEST_ONLY", "rationale": "Test code and oracles never enter the production wheel."},
-    {"prefix": "tools/", "class": "BUILD_ONLY", "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."}
+    {
+      "prefix": "addons/",
+      "class": "EXPERIMENT_ONLY",
+      "rationale": "Jurisdiction and federation addons are isolated repository experiments."
+    },
+    {
+      "prefix": "pipeline/",
+      "class": "SOURCE_TOOL",
+      "rationale": "Offline proposal/extraction pipeline; no formal runtime imports."
+    },
+    {
+      "prefix": "tests/",
+      "class": "TEST_ONLY",
+      "rationale": "Test code and oracles never enter the production wheel."
+    },
+    {
+      "prefix": "tools/",
+      "class": "BUILD_ONLY",
+      "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."
+    }
   ],
   "entrypoints": [
-    {"name": "jc", "target": "compiler_core.cli:main", "class": "PUBLIC_ADAPTER"},
-    {"name": "jc-formal", "target": "compiler_core.formal_bridge:main", "class": "RUNTIME_OUTPUT"}
+    {
+      "name": "jc",
+      "target": "compiler_core.cli:main",
+      "class": "PUBLIC_ADAPTER"
+    },
+    {
+      "name": "jc-formal",
+      "target": "compiler_core.formal_bridge:main",
+      "class": "RUNTIME_OUTPUT"
+    }
   ],
   "declared_dynamic_edges": [
     {
@@ -198,14 +594,6 @@
       "closure_task": "W5-CUTOVER"
     },
     {
-      "importer": "tests/unit/test_authority_observed_graph.py",
-      "line": 30,
-      "kind": "dynamic_path_load",
-      "target_pattern": "tools/*.py",
-      "target_class": "BUILD_ONLY",
-      "closure_task": "W0-03"
-    },
-    {
       "importer": "compiler_core/independent_checker.py",
       "line": 347,
       "kind": "dynamic_import",
@@ -220,30 +608,6 @@
       "target_pattern": "compiler_core.*",
       "target_class": "TEST_ONLY",
       "closure_task": "W5-05"
-    },
-    {
-      "importer": "tools/remediate_v4.py",
-      "line": 16815,
-      "kind": "dynamic_path_load",
-      "target_pattern": "tools/wheel_gate.py",
-      "target_class": "BUILD_ONLY",
-      "closure_task": "W6-01"
-    },
-    {
-      "importer": "tools/remediate_v4.py",
-      "line": 15996,
-      "kind": "availability_probe",
-      "target_pattern": "optional-test-module",
-      "target_class": "BUILD_ONLY",
-      "closure_task": "W6-05"
-    },
-    {
-      "importer": "tools/remediate_v4.py",
-      "line": 16185,
-      "kind": "dynamic_import",
-      "target_pattern": "optional-test-module",
-      "target_class": "BUILD_ONLY",
-      "closure_task": "W6-05"
     },
     {
       "importer": "tests/contract/w5_package_red.py",
@@ -263,16 +627,39 @@
     }
   ],
   "external_imports": {
-    "deployable_allowlist": ["cryptography", "yaml"],
+    "deployable_allowlist": [
+      "cryptography",
+      "yaml"
+    ],
     "class_allowlist": {
-      "FORMAL_CORE": ["cryptography", "yaml"],
-      "PUBLIC_ADAPTER": [],
-      "RUNTIME_OUTPUT": ["yaml", "jinja2"]
+      "FORMAL_CORE": [
+        "cryptography",
+        "yaml"
+      ],
+      "PUBLIC_ADAPTER": [
+        "cryptography"
+      ],
+      "RUNTIME_OUTPUT": [
+        "yaml",
+        "jinja2"
+      ]
     },
-    "forbidden_roots": ["requests", "httpx", "urllib", "http", "socket", "tkinter", "PyQt5", "PySide6"]
+    "forbidden_roots": [
+      "requests",
+      "httpx",
+      "urllib",
+      "http",
+      "socket",
+      "tkinter",
+      "PyQt5",
+      "PySide6"
+    ]
   },
   "runtime_output": {
-    "forbidden_reachability_paths": ["compiler_core/application.py", "compiler_core/evaluator.py"],
+    "forbidden_reachability_paths": [
+      "compiler_core/application.py",
+      "compiler_core/evaluator.py"
+    ],
     "closure_task": "W4-03"
   },
   "backlog_closure_tasks": {

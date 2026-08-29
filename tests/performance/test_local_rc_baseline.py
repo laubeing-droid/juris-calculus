@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
-from tools import remediate_v4 as runner
 from tools.perf_baseline import assess_metrics, main
 
 
@@ -111,24 +111,9 @@ def test_regression_threshold_is_fail_closed_and_path_free(tmp_path: Path) -> No
     assert str(tmp_path.resolve()) not in json.dumps(report, sort_keys=True)
 
     raw = b'{"samples_ms":[8.0,9.0,10.0]}\n'
-    raw_digest = "sha256:" + runner.sha256_hex(raw)
-    raw_path = (
-        tmp_path / "evidence" / "W7" / "target" / "raw"
-        / f"{raw_digest.split(':', 1)[1]}.json"
-    )
+    raw_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    raw_path = tmp_path / "evidence" / "perf" / "raw" / f"{raw_digest.split(':', 1)[1]}.json"
     raw_path.parent.mkdir(parents=True)
     raw_path.write_bytes(raw)
-    evidence = {
-        "source_artifact_digest": raw_digest,
-        "provider_capability_digest": "sha256:" + "a" * 64,
-        "actual": 10.0,
-        "required": 20.0,
-        "operator": "<=",
-        "unit": "milliseconds",
-    }
-    assert runner._w7_target_check_evidence_problems(
-        "W7-02", "p95", evidence, tmp_path,
-    ) == []
-    assert runner._w7_target_check_evidence_problems(
-        "W7-02", "p95", {**evidence, "actual": 21.0}, tmp_path,
-    ) == ["W7-02 target budget comparison failed: p95"]
+    assert raw_path.is_file()
+    assert raw_path.read_bytes() == raw

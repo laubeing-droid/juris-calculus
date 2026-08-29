@@ -1,0 +1,91 @@
+{
+  "schema_version": "jc/remediation-task/3.0",
+  "tasks": [
+    {
+      "id": "V4-01-AUTHORITY",
+      "depends_on": [],
+      "objective": "Git + AST + module-authority conformance and current schema/manifest publications.",
+      "argv": [
+        ["{python}", "-B", "tools/remediation/observed_graph.py", "--root", ".", "--policy", "docs/architecture/module-authority.json", "--mode", "require-clean"],
+        ["{python}", "-B", "tools/remediation/checks.py", "generated"]
+      ],
+      "timeout_seconds": 600,
+      "expected_exit_codes": [0, 0]
+    },
+    {
+      "id": "V4-02-PORTABILITY",
+      "depends_on": ["V4-01-AUTHORITY"],
+      "objective": "Windows UTF-8 path regression, production material generated inside pytest temporary directories, and no fixed machine paths.",
+      "argv": [
+        ["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "--basetemp", "{temp}/v4-02", "tests/unit/test_windows_utf8_git.py", "tests/dsh_formal/test_production_bridge.py", "tests/formal_e2e/test_local_production_chain.py", "tests/integration/test_production_pack_loader.py", "tests/integration/test_production_runtime.py", "tests/mcp_protocol/test_production_stdio.py", "tests/security/test_production_pack_attacks.py"],
+        ["{python}", "-B", "tools/remediation/checks.py", "machine-paths"]
+      ],
+      "timeout_seconds": 1800,
+      "expected_exit_codes": [0, 0]
+    },
+    {
+      "id": "V4-03-OFFICIAL-YAML",
+      "depends_on": ["V4-02-PORTABILITY"],
+      "objective": "Official YAML rule admission verified in source state: positive case plus candidate-only, unverified-source, and invalid-modality rejections.",
+      "argv": [
+        ["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "--basetemp", "{temp}/v4-03", "tests/packaging/test_official_yaml_admission.py", "tests/unit/test_rule_admission.py"]
+      ],
+      "timeout_seconds": 600,
+      "expected_exit_codes": [0]
+    },
+    {
+      "id": "V4-04-WHEEL",
+      "depends_on": ["V4-03-OFFICIAL-YAML"],
+      "objective": "Wheel built from a git-archive HEAD clean source, validated against module-authority, installed into an isolated environment, and re-verified with the same official YAML positive and negative cases.",
+      "argv": [
+        ["{python}", "-B", "tools/remediation/checks.py", "wheel"]
+      ],
+      "timeout_seconds": 3600,
+      "expected_exit_codes": [0]
+    },
+    {
+      "id": "V4-05-CLEANUP",
+      "depends_on": ["V4-04-WHEEL"],
+      "objective": "Retired zero-consumer modules, the pipeline forwarding shim, the old runner verifier, retired dated documents, generated file-disposition currency, and the required-test manifest all hold.",
+      "argv": [
+        ["{python}", "-B", "tools/remediation/checks.py", "cleanup"],
+        ["{python}", "-B", "tools/build_file_disposition.py", "--check"],
+        ["{python}", "-B", "tools/remediation/checks.py", "manifest"]
+      ],
+      "timeout_seconds": 300,
+      "expected_exit_codes": [0, 0, 0]
+    },
+    {
+      "id": "V4-06-ADDONS",
+      "depends_on": ["V4-05-CLEANUP"],
+      "objective": "CN/HK/US alignment adapters remain discoverable, instantiable, and readable for mappings and modal tables; federation stays intact.",
+      "argv": [
+        ["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "--basetemp", "{temp}/v4-06", "tests/unit/test_plugin_registry.py", "tests/adapters"]
+      ],
+      "timeout_seconds": 600,
+      "expected_exit_codes": [0]
+    },
+    {
+      "id": "V4-07-FORMAL",
+      "depends_on": ["V4-06-ADDONS"],
+      "objective": "Formal, contract, differential, MCP protocol, security, storage chaos, and Windows security suites pass.",
+      "argv": [
+        ["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "--basetemp", "{temp}/v4-07", "tests/contract", "tests/dsh_formal", "tests/differential", "tests/formal_e2e", "tests/mcp_protocol", "tests/security", "tests/storage_chaos", "tests/windows_security"]
+      ],
+      "timeout_seconds": 3600,
+      "expected_exit_codes": [0]
+    },
+    {
+      "id": "V4-08-FULL",
+      "depends_on": ["V4-07-FORMAL"],
+      "objective": "Full pytest suite, documentation link integrity, and git diff --check whitespace hygiene.",
+      "argv": [
+        ["{python}", "-B", "-m", "pytest", "-c", "tests/pytest.ini", "-q", "-p", "no:cacheprovider", "--basetemp", "{temp}/v4-08", "tests"],
+        ["{python}", "-B", "tools/remediation/checks.py", "doc-links"],
+        ["git", "diff", "--check"]
+      ],
+      "timeout_seconds": 7200,
+      "expected_exit_codes": [0, 0, 0]
+    }
+  ]
+}

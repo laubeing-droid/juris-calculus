@@ -1,36 +1,26 @@
 # V4 build-once release and promotion
 
-The current package version authority is `compiler_core/version.py`; the local-production release version is exactly `4.0.0`. The public contracts are `schemas/jc-v4.schema.json` and `mcp_manifest.json`.
+版本权威是 `compiler_core/version.py`；当前版本为 4.0.0。公共合同是 `schemas/jc-v4.schema.json` 与 `mcp_manifest.json`。
 
-## Local release candidate
+## 候选产物
 
-`.github/workflows/ci.yml` runs the required Ubuntu/Windows Python matrix, static gates, two clean source builds, byte comparison, installed-wheel suites, SBOM generation, and test-only provenance. It uploads both byte-identical wheels and the reports as one commit-addressed artifact.
+`.github/workflows/ci.yml` 执行 Ubuntu/Windows Python 矩阵、authority 和生成物检查、完整测试、两次干净源码构建、wheel 字节对比、隔离安装、official YAML 正反验证、SBOM 与 test-only provenance。
 
-The committed fixture key can create only a release candidate. Its provenance status is `TEST_ONLY_NOT_PROMOTABLE`; `tools/build_provenance.py` rejects that key in production verification unless the caller explicitly opts into test verification.
+测试夹具密钥只能生成 `TEST_ONLY_NOT_PROMOTABLE` 候选证明。`tools/build_provenance.py` 在生产验证中拒绝该密钥，除非调用者明确进入测试验证模式。
 
-## Production promotion
+## 生产晋级
 
-`.github/workflows/auto-release.yml` is callable only from the completed CI run. It downloads that run's exact artifact and does not build a wheel. Before `gh release create`, it requires all of the following:
+`.github/workflows/auto-release.yml` 只消费 CI 已构建的同一份产物，不重新构建。生产发布必须同时满足：
 
-1. the GitHub ref is a tag and resolves to the caller commit;
-2. tag, package metadata, CLI/MCP version, and `RunIdentityV4` share the version authority;
-3. the A/B wheels are still byte-identical;
-4. a protected `release` environment supplies `JC_RELEASE_ED25519_KEY_JSON`;
-5. the key is production-authorized Ed25519 material, not the test fixture;
-6. production provenance verifies with `--require-tag-ref` and without `--allow-test-key`;
-7. repository branch/tag rules, required checks, review policy, and retention are enabled externally.
+1. tag、源码提交、包版本和运行身份一致；
+2. A/B wheel 字节一致且隔离安装门禁通过；
+3. protected release environment 提供获授权的生产 Ed25519 密钥；
+4. 生产 provenance、SBOM 与 checksums 对同一产物验证通过；
+5. 仓库 branch/tag protection、required checks、review 和 retention 已在外部真实启用；
+6. 有当前操作授权。
 
-Local workflow files cannot prove item 7, cannot create a production key, and cannot impersonate a release approver. Until those external conditions are real, production release is not authorized.
+工作流文件不能证明外部治理已启用，也不能自行产生生产密钥或授权。`cn-official` 另有法律来源和签名边界；发布引擎不会把 candidate、OCR、教材、案例或旧语料自动变成官方规则。
 
-`cn-official` has a separate legal promotion boundary. No engine release makes candidate, OCR, textbook, case, or retired legacy material an official legal source.
+本次 V4 整改只完成本地代码与候选产物验收，不执行 push、tag、release 或 deploy。
 
-The completed local Windows/EFS deployment is a separate boundary. Its
-`cn-official-local` pack and `LOCAL_PRODUCTION_ACTIVE` status do not satisfy or bypass
-the remote GitHub and `cn-official` promotion requirements above.
-
-## Related documents
-
-- [Current remediation status](../../remediation/v4/STATUS.md)
-- [Rule packs](../contracts/RULE_PACKS.md)
-- [Audit bundle and replay](../contracts/AUDIT_BUNDLE.md)
-- [Documentation index](../README.md)
+[Current remediation status](../../remediation/v4/STATUS.md) · [Rule packs](../contracts/RULE_PACKS.md) · [Audit bundle](../contracts/AUDIT_BUNDLE.md) · [Documentation index](../README.md)
