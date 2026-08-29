@@ -1,6 +1,6 @@
 # V4 current contract authority
 
-状态：W5-05 current。历史合同和迁移说明只存在于 Git 历史与审计证据，不构成当前接口。
+状态：V4 current。历史合同和迁移说明只存在于 Git 历史，不构成当前接口。
 
 ## 唯一权威
 

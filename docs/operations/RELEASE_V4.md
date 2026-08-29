@@ -1,8 +1,8 @@
 # V4 build-once release and promotion
 
-版本权威是 `compiler_core/version.py`；当前版本为 4.0.0。公共合同是 `schemas/jc-v4.schema.json` 与 `mcp_manifest.json`。
+版本权威是 `compiler_core/version.py`。公共合同是 `schemas/jc-v4.schema.json` 与 `mcp_manifest.json`。
 
-## 候选产物
+## CI 构建产物
 
 `.github/workflows/ci.yml` 执行 Ubuntu/Windows Python 矩阵、authority 和生成物检查、完整测试、两次干净源码构建、wheel 字节对比、隔离安装、official YAML 正反验证、SBOM 与 test-only provenance。
 
@@ -21,6 +21,6 @@
 
 工作流文件不能证明外部治理已启用，也不能自行产生生产密钥或授权。`cn-official` 另有法律来源和签名边界；发布引擎不会把 candidate、OCR、教材、案例或旧语料自动变成官方规则。
 
-本次 V4 整改只完成本地代码与候选产物验收，不执行 push、tag、release 或 deploy。
+本页只描述发布机制。本地或 CI 验收不等于生产发布；远程晋级必须满足上述条件并获得当次操作授权。
 
 [Current remediation status](../../remediation/v4/STATUS.md) · [Rule packs](../contracts/RULE_PACKS.md) · [Audit bundle](../contracts/AUDIT_BUNDLE.md) · [Documentation index](../README.md)

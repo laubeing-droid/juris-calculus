@@ -46,9 +46,10 @@ After making changes to production code, always run the appropriate validation c
    - Run the full test suite: `python -m pytest tests\ -q`
    - Validate JSON schemas: `python -c "import json; json.load(open('schemas/jc-v4.schema.json'))"`
 
-3. **For documentation changes** (README*, memory.md, AGENTS.md):
-   - Run `git diff --check` to verify formatting
-   - Ensure any referenced commands or paths are accurate
+3. **For documentation changes** (README*, docs/*, memory.md, AGENTS.md, HANDOFF.md, SECURITY.md):
+   - Run `python -B tools\remediation\checks.py doc-links`
+   - Run the current documentation packaging tests
+   - Run `git diff --check`
 
 4. **For any change that might affect the MCP server**:
    - Run the in-process smoke test: `python mcp_server.py --test`
@@ -87,7 +88,7 @@ Changes require:
 Standard validation applies.
 
 ### Documentation
-- `README*`, `memory.md`, `AGENTS.md`, `CHANGELOG.md`
+- `README*`, `docs/*`, `memory.md`, `AGENTS.md`, `HANDOFF.md`, `CHANGELOG.md`, `SECURITY.md`
 - No runtime impact; formatting and accuracy checks only
 
 ## Documentation and commits

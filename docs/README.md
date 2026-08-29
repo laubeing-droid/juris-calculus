@@ -1,4 +1,4 @@
-# Documentation
+# Documentation index
 
 JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README](../README.md)。
 
@@ -9,6 +9,7 @@ JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README]
 - [Input and semantic boundary](contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
 - [Rule packs](contracts/RULE_PACKS.md)
 - [Audit bundle and replay](contracts/AUDIT_BUNDLE.md)
+- [Rendering and neutral output](contracts/rendering-and-profiles.md)
 - [External repository protocol](contracts/EXTERNAL_PROTOCOL.md)
 
 ## 维护者
@@ -18,6 +19,8 @@ JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README]
 - [Runtime path inventory](architecture/runtime-path-inventory.md)
 - [V4 object and state matrix](contracts/V4_OBJECT_STATE_MATRIX.md)
 - [Canonical identity, time, numeric and limits](contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md)
+- [Runtime claims and evidence limits](contracts/FORMAL_RUNTIME_CONFORMANCE.md)
+- [Governance, training and analysis boundary](operations/governance-training-analysis.md)
 - [V4 remediation status](../remediation/v4/STATUS.md)
 - [V4 release procedure](operations/RELEASE_V4.md)
 

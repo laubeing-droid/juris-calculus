@@ -1,10 +1,10 @@
-# V4 remediation status
+# V4 current system status
 
-Updated: 2026-08-29
+Updated: 2026-08-30
 
 ## 当前状态
 
-当前整改以仓库工作树、Git 跟踪清单、本地 AST、测试结果和实际 wheel 为唯一验收证据。外部状态目录、旧 receipt、旧 CodeGraph 数据库和旧部署声明均不是当前权威。
+当前 V4 以仓库工作树、Git 跟踪清单、本地 AST、测试结果和实际 wheel 为验收证据。外部状态目录、旧 receipt、旧 CodeGraph 数据库和旧部署声明均不是当前权威。
 
 当前 runner：
 
@@ -26,4 +26,4 @@ python -B tools\remediate_v4.py run
 
 ## 边界
 
-本状态页不声明本机或远程生产已经激活。本次整改不执行 push、tag、release 或 deploy。发布条件见 [V4 release procedure](../../docs/operations/RELEASE_V4.md)。
+本状态页不把本地验收等同于本机或远程生产激活。发布条件见 [V4 release procedure](../../docs/operations/RELEASE_V4.md)。

@@ -40,6 +40,9 @@ def test_historical_guides_are_not_current_authority() -> None:
     assert "Historical task definitions (not current authority)" in docs_index
     assert "V3_HISTORICAL_REPLAY.md" not in docs_index
     assert not (ROOT / "docs/operations/V3_HISTORICAL_REPLAY.md").exists()
+    assert "Historical V3 artifacts exist only for isolated replay" not in (
+        ROOT / "SECURITY.md"
+    ).read_text(encoding="utf-8")
 
 
 def test_release_docs_do_not_claim_external_promotion_is_complete() -> None:
@@ -47,9 +50,22 @@ def test_release_docs_do_not_claim_external_promotion_is_complete() -> None:
     handoff = (ROOT / "HANDOFF.md").read_text(encoding="utf-8")
     assert "TEST_ONLY_NOT_PROMOTABLE" in release
     assert "生产发布" in release
-    assert "not completed" in handoff
+    assert "远程生产发布尚未执行" in handoff
     assert "branch protection" in handoff
     assert "生产 Ed25519" in handoff
+
+
+def test_quick_start_and_document_index_are_current() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    assert "python -m pip install ." in readme
+    assert "pip install .juris_calculus" not in readme
+    for relative in (
+        "contracts/FORMAL_RUNTIME_CONFORMANCE.md",
+        "contracts/rendering-and-profiles.md",
+        "operations/governance-training-analysis.md",
+    ):
+        assert relative in docs_index
 
 
 def test_current_docs_make_no_unverifiable_external_completion_claim() -> None:

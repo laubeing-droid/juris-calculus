@@ -13,7 +13,8 @@ LLM proposes -> verification gates decide -> formal kernel reasons
 支持 Python 3.11 和 3.12。版本权威是 `compiler_core/version.py`，公共输入合同是 `schemas/jc-v4.schema.json`，MCP 工具合同是 `mcp_manifest.json`。
 
 ```powershell
-python -m pip install .juris_calculus-4.0.0-py3-none-any.whl
+python -m pip install .
+jc --version
 $env:JC_RUNTIME_MANIFEST = "<runtime-manifest.json>"
 $env:JC_RUNTIME_FACTORY = "compiler_core.production_runtime"
 $env:JC_PRODUCTION_CONFIG = "<production-runtime.json>"
@@ -41,11 +42,13 @@ git diff --check
 
 `remediation/v4/tasks.json` 和 `task.schema.json` 是冻结的历史任务定义；当前执行器只读取 `tasks.v3.json` 和 `task.v3.schema.json`。正式 wheel 的构建、隔离安装和 official YAML 正反验证由当前任务 `V4-04-WHEEL` 完成。
 
-## 文档与发布边界
+## 文档
 
-[文档索引](docs/README.md) · [CLI](docs/guides/CLI.md) · [规则包](docs/contracts/RULE_PACKS.md) · [审计与重放](docs/contracts/AUDIT_BUNDLE.md) · [V4 发布流程](docs/operations/RELEASE_V4.md)
+- 使用与集成：[中文说明](docs/guides/README_CN.md)、[CLI](docs/guides/CLI.md)、[规则包](docs/contracts/RULE_PACKS.md)、[审计与重放](docs/contracts/AUDIT_BUNDLE.md)
+- 开发与维护：[文档索引](docs/README.md)、[合同权威](docs/architecture/contract-authority-v4.md)、[当前系统状态](remediation/v4/STATUS.md)
+- 发布：[V4 发布流程](docs/operations/RELEASE_V4.md)
 
-`.github/workflows/ci.yml` 负责验证候选产物，`.github/workflows/auto-release.yml` 只负责在额外授权和生产签名条件满足后晋级既有产物。`tools/build_provenance.py` 生成的测试密钥证明不得冒充生产发布证明。本次整改不执行 push、tag、release 或 deploy。
+`.github/workflows/ci.yml` 负责验证发布构建产物，`.github/workflows/auto-release.yml` 只在额外授权和生产签名条件满足后晋级同一产物。`tools/build_provenance.py` 生成的测试密钥证明不得冒充生产发布证明。
 
 ## License
 

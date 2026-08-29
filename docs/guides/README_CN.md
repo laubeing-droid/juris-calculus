@@ -11,18 +11,17 @@ LLM 提议 -> 验证门禁决定 -> 形式内核推理
 ## 开始使用
 
 ```powershell
-git archive --format=tar HEAD -o source.tar
-New-Item -ItemType Directory source
-tar -xf source.tar -C source
-$epoch = git show -s --format=%ct HEAD
-python -B tools/wheel_gate.py --source source --out-dir dist --source-date-epoch $epoch
-python -m pip install .\dist\juris_calculus-4.0.0-py3-none-any.whl
+python -m pip install .
+jc --version
 $env:JC_RUNTIME_MANIFEST = "<path-to-runtime-manifest.json>"
-$env:JC_RUNTIME_FACTORY = "<installed-runtime-factory-module>"
+$env:JC_RUNTIME_FACTORY = "compiler_core.production_runtime"
 $env:JC_PRODUCTION_CONFIG = "<path-to-production-config.json>"
 jc capabilities --json
 jc evaluate --input case-input-bundle.json --json
 ```
+
+`jc --version` 应输出 `jc 4.0.0`。需要构建并验证正式 wheel 时，使用当前
+3.0 验收计划或按 [V4 发布流程](../operations/RELEASE_V4.md) 操作，不要在工作树里手工拼装发布包。
 
 运行宿主必须提供 `JC_RUNTIME_MANIFEST`。仅查询能力时可只读取 manifest；执行
 `evaluate`、`verify`、`replay`、`read-artifact` 或 `render` 时，还必须通过
