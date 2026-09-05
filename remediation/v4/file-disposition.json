@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 245,
+  "count": 247,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -697,6 +697,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/integration/test_runtime_refinement_receipts.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/integration/test_trust_chain.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -1164,6 +1169,11 @@
     {
       "path": "tools/fast_path_interceptor.py",
       "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/generate_runtime_refinement_receipts.py",
+      "authority_class": "BUILD_ONLY",
       "production_wheel": false
     },
     {
