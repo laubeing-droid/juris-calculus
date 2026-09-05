@@ -1,0 +1,67 @@
+{
+  "schema_version": "jc/runtime-refinement-fixture/1.0",
+  "group": "contract_breach",
+  "source_snapshot": {
+    "schema_version": "jc/runtime-refinement-source/1.0",
+    "cases": [
+      {
+        "case_id": "contract::plain",
+        "facts": {
+          "contract_exists": true,
+          "delivery_due": true,
+          "force_majeure": false,
+          "nonperformance": true
+        }
+      },
+      {
+        "case_id": "contract::force-majeure",
+        "facts": {
+          "contract_exists": true,
+          "delivery_due": true,
+          "force_majeure": true,
+          "nonperformance": true
+        }
+      },
+      {
+        "case_id": "contract::malformed-certificate",
+        "facts": {
+          "contract_exists": true,
+          "delivery_due": true,
+          "force_majeure": true,
+          "nonperformance": true
+        },
+        "malformed_attack_target": "missing-argument"
+      }
+    ]
+  },
+  "rule_pack": {
+    "schema_version": "jc/runtime-refinement-rules/1.0",
+    "focus_argument": "breach",
+    "arguments": [
+      {
+        "argument_id": "breach",
+        "claim_id": "contract-breach",
+        "requires": [
+          "contract_exists",
+          "delivery_due",
+          "nonperformance"
+        ]
+      },
+      {
+        "argument_id": "force-majeure",
+        "claim_id": "force-majeure",
+        "requires": [
+          "force_majeure"
+        ]
+      }
+    ],
+    "attacks": [
+      {
+        "attack_id": "force-majeure-defeats-breach",
+        "attacker": "force-majeure",
+        "target": "breach",
+        "when": "force_majeure"
+      }
+    ]
+  }
+}

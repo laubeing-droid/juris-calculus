@@ -40,6 +40,8 @@
 !tests/fixtures/cn_official/*.json
 !tests/fixtures/keys/v4-synthetic-trust.json
 !tests/fixtures/packs/synthetic/signed-pack.json
+!tests/fixtures/runtime_refinement/
+!tests/fixtures/runtime_refinement/*.json
 !tests/fixtures/theory_absorption/
 !tests/fixtures/theory_absorption/**
 !docs/architecture/module-authority-v4.json

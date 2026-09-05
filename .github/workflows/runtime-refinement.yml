@@ -1,0 +1,89 @@
+name: Runtime refinement receipt producer
+
+on:
+  workflow_call:
+    inputs:
+      lmm_repository:
+        description: Legal Math Modeling repository containing the expected-fixture builder
+        required: true
+        type: string
+      lmm_ref:
+        description: Exact 40-character Legal Math Modeling subject SHA
+        required: true
+        type: string
+      runtime_ref:
+        description: Exact 40-character Juris Calculus producer SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out Legal Math Modeling subject
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: ${{ inputs.lmm_repository }}
+          ref: ${{ inputs.lmm_ref }}
+          path: legal-math-modeling
+      - name: Check out Juris Calculus producer
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: laubeing-droid/juris-calculus
+          ref: ${{ inputs.runtime_ref }}
+          path: juris-calculus
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Verify immutable checkout identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legal-math-modeling rev-parse HEAD)" = "${{ inputs.lmm_ref }}"
+          test "$(git -C juris-calculus rev-parse HEAD)" = "${{ inputs.runtime_ref }}"
+      - name: Install runtime fixture dependencies
+        run: python -m pip install ./juris-calculus pytest
+      - name: Materialize subject-bound expected fixtures
+        run: >-
+          python legal-math-modeling/scripts/materialize_runtime_refinement_expected.py
+          --output-dir runtime-expected
+          --lmm-commit "${{ inputs.lmm_ref }}"
+          --runtime-fixture-dir juris-calculus/tests/fixtures/runtime_refinement
+      - name: Execute Juris Calculus fixtures and issue receipts
+        run: >-
+          python juris-calculus/tools/generate_runtime_refinement_receipts.py
+          --expected-dir runtime-expected
+          --fixture-dir juris-calculus/tests/fixtures/runtime_refinement
+          --runtime-commit "${{ inputs.runtime_ref }}"
+          --runtime-build-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}"
+          --output-dir runtime-actual
+      - name: Verify every receipt independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-reports runtime-evidence
+          : > runtime-evidence/runtime-refinement-report.json
+          for expected in runtime-expected/*.expected.json; do
+            group="$(basename "$expected" .expected.json)"
+            python legal-math-modeling/scripts/verify_runtime_refinement_receipt.py \
+              --expected "$expected" \
+              --actual "runtime-actual/${group}.actual.json" \
+              --expected-lmm-commit "${{ inputs.lmm_ref }}" \
+              --expected-runtime-commit "${{ inputs.runtime_ref }}" \
+              --output "runtime-reports/${group}.report.json"
+            cat "runtime-reports/${group}.report.json" >> runtime-evidence/runtime-refinement-report.json
+          done
+      - name: Upload bound runtime evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-refinement-run${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: |
+            runtime-expected/*.json
+            runtime-actual/*.json
+            runtime-reports/*.json
+            runtime-evidence/runtime-refinement-report.json
+          retention-days: 90
