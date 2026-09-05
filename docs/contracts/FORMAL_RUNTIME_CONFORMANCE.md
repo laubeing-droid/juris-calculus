@@ -27,6 +27,12 @@ python -m pytest tests\contract\test_rule_packs.py -q
 
 The real stdio subprocess test is the transport authority. The in-process smoke is not a readiness or product-UI claim. A blocked check must remain blocked in the report.
 
+The reusable `runtime-refinement.yml` workflow is a cross-repository conformance
+gate. It checks out exact LMM and JC commits, executes the synthetic fixtures in
+`tests/fixtures/runtime_refinement/`, and emits content-bound receipts for LMM's
+independent verifier. These receipts are finite runtime-test evidence; they are
+not Lean proofs and do not expand the formal claim surface.
+
 ## Related documents
 
 - [Contract authority map](../architecture/contract-authority-v4.md)

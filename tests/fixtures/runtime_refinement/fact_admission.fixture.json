@@ -1,0 +1,37 @@
+{
+  "schema_version": "jc/runtime-refinement-fixture/1.0",
+  "group": "fact_admission",
+  "source_snapshot": {
+    "schema_version": "jc/runtime-refinement-source/1.0",
+    "cases": [
+      {
+        "case_id": "admission::three-gates-pass",
+        "dispute_state": "UNDISPUTED",
+        "revoked": false
+      },
+      {
+        "case_id": "admission::disputed-fact",
+        "dispute_state": "DISPUTED",
+        "revoked": false
+      },
+      {
+        "case_id": "admission::revoked-attestation",
+        "dispute_state": "UNDISPUTED",
+        "revoked": true
+      }
+    ]
+  },
+  "rule_pack": {
+    "schema_version": "jc/runtime-refinement-rules/1.0",
+    "admission_service": "FactAdmissionServiceV4",
+    "required_gates": [
+      "source",
+      "interpretation",
+      "fact"
+    ],
+    "nonformal_error_codes": [
+      "FACT_ATTESTATION_REVOKED",
+      "FACT_NOT_FORMAL"
+    ]
+  }
+}

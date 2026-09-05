@@ -1,0 +1,27 @@
+{
+  "schema_version": "jc/runtime-refinement-fixture/1.0",
+  "group": "unknown_timeout",
+  "source_snapshot": {
+    "schema_version": "jc/runtime-refinement-source/1.0",
+    "cases": [
+      {
+        "case_id": "backend::unknown-outcome",
+        "deadline_ms": 10000,
+        "input": "invalid-provider-problem"
+      },
+      {
+        "case_id": "backend::timeout-outcome",
+        "deadline_ms": 0,
+        "input": "minimal-horn-problem"
+      }
+    ]
+  },
+  "rule_pack": {
+    "schema_version": "jc/runtime-refinement-rules/1.0",
+    "provider": "jc-horn-fixpoint",
+    "status_projection": {
+      "TIMEOUT": "UNDECIDED",
+      "UNKNOWN": "UNDECIDED"
+    }
+  }
+}
