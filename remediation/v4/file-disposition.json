@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 248,
+  "count": 262,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -88,6 +88,11 @@
     },
     {
       "path": "compiler_core/artifact_store.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/assurance.py",
       "authority_class": "FORMAL_CORE",
       "production_wheel": true
     },
@@ -182,6 +187,11 @@
       "production_wheel": false
     },
     {
+      "path": "compiler_core/domain_composition.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/domain_config.py",
       "authority_class": "REMOVE",
       "production_wheel": false
@@ -219,6 +229,11 @@
     {
       "path": "compiler_core/formal_bridge.py",
       "authority_class": "RUNTIME_OUTPUT",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/incremental.py",
+      "authority_class": "FORMAL_CORE",
       "production_wheel": true
     },
     {
@@ -277,6 +292,11 @@
       "production_wheel": false
     },
     {
+      "path": "compiler_core/procedure.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/production_pack.py",
       "authority_class": "FORMAL_CORE",
       "production_wheel": true
@@ -295,6 +315,11 @@
       "path": "compiler_core/proof_tree.py",
       "authority_class": "EXPERIMENT_ONLY",
       "production_wheel": false
+    },
+    {
+      "path": "compiler_core/query_semantics.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/reasoning_boundary.py",
@@ -607,6 +632,36 @@
       "production_wheel": false
     },
     {
+      "path": "tests/contract/test_v5_assurance.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_contracts.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_incremental.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_migration_render.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_procedure_composition.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_semantics.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/contract/w5_package_red.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -648,6 +703,11 @@
     },
     {
       "path": "tests/dsh_formal/test_profile.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/formal_e2e/run_migration_fixture.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -1187,6 +1247,11 @@
       "production_wheel": false
     },
     {
+      "path": "tools/migrate_v4_bundle.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tools/perf_baseline.py",
       "authority_class": "EXPERIMENT_ONLY",
       "production_wheel": false
@@ -1238,6 +1303,11 @@
     },
     {
       "path": "tools/supply_chain_gate.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/verify_upgrade.py",
       "authority_class": "BUILD_ONLY",
       "production_wheel": false
     },
