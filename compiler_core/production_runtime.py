@@ -349,7 +349,7 @@ def create_client(
     return JCClient(
         application, audit_store, clock=runtime_clock, evaluation_context=evaluation_context,
         replay_executor=replay_executor, capabilities=capabilities,
-        mcp_output_factory=mcp_output,
+        mcp_output_factory=mcp_output, default_limits=default_limits,
     )
 
 

@@ -92,6 +92,7 @@ class JCClient:
         replay_executor: ReplayExecutorV4 | None = None,
         capabilities: MCPCapabilitiesOutputV4 | None = None,
         mcp_output_factory: MCPOutputFactoryV4 | None = None,
+        default_limits: ResourceLimitsV4 | None = None,
     ) -> None:
         if application is not None and type(application) is not ApplicationV4:
             raise ClientV4Error("CLIENT_RUNTIME_TYPE", "application must be ApplicationV4")
@@ -109,6 +110,11 @@ class JCClient:
             raise ClientV4Error(
                 "CLIENT_RUNTIME_TYPE", "capabilities must be MCPCapabilitiesOutputV4"
             )
+        if default_limits is not None and type(default_limits) is not ResourceLimitsV4:
+            raise ClientV4Error(
+                "CLIENT_RUNTIME_TYPE", "default_limits must be ResourceLimitsV4"
+            )
+        self._default_limits = default_limits
         self._application = application
         self._audit_store = audit_store
         self._clock = clock
@@ -189,7 +195,7 @@ class JCClient:
                 request_ref,
                 run_identity_ref,
                 case_scope=case_scope,
-                limits=limits,
+                limits=self._default_limits if limits is None else limits,
                 seed=seed,
             )
 
