@@ -46,6 +46,42 @@ def test_windows_hardening_sets_exact_service_owner_and_dacl(
     ]
 
 
+def test_hardening_setowner_depends_on_verified_current_owner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A verified-current owner skips the redundant /setowner; others keep it.
+
+    icacls /setowner requires WRITE_OWNER, which volumes granting only
+    Modify to Authenticated Users deny (GitHub Actions Windows D:\ workspace).
+    The DACL grant/remove commands must always be issued.
+    """
+    commands: list[list[str]] = []
+
+    def completed(command: list[str], **_kwargs: object) -> object:
+        commands.append(command)
+        return type("Completed", (), {"returncode": 0})()
+
+    if os.name == "nt":
+        current = storage._current_windows_sid()
+        monkeypatch.setattr(
+            storage,
+            "_windows_acl_sids",
+            lambda path: (current, frozenset({current})),
+        )
+    monkeypatch.setattr(storage.subprocess, "run", completed)
+
+    storage._harden_windows(tmp_path)
+
+    subcommands = [command[2] for command in commands]
+    if os.name == "nt":
+        assert "/setowner" not in subcommands
+    else:
+        assert subcommands[0] == "/setowner"
+    assert "/inheritance:r" in subcommands
+    assert "/remove:g" in subcommands
+
+
 def test_unverified_dacl_fails_closed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

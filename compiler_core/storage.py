@@ -285,18 +285,33 @@ def _current_windows_sid() -> str:
 
 def _harden_windows(path: Path) -> None:
     sid = _current_windows_sid()
+    # icacls /setowner needs WRITE_OWNER on the target. Volumes whose
+    # inherited DACL grants Authenticated Users only Modify (for example the
+    # GitHub Actions Windows D:\ workspace) deny it even though a freshly
+    # created node is already owned by the current user, so the redundant
+    # re-assert is skipped after verifying the owner; the DACL commands below
+    # still enforce owner-only access and _verify_security re-checks the
+    # final state on open.
+    if os.name == "nt":
+        owner_is_current = _windows_acl_sids(path)[0] == sid
+    else:
+        owner_is_current = False
     rights = "(OI)(CI)F" if path.is_dir() else "F"
-    commands = (
-        ["icacls.exe", str(path), "/setowner", f"*{sid}"],
+    commands = []
+    if not owner_is_current:
+        commands.append(["icacls.exe", str(path), "/setowner", f"*{sid}"])
+    commands.append(
         [
             "icacls.exe", str(path), "/inheritance:r", "/grant:r",
             f"*{sid}:{rights}", f"*S-1-5-18:{rights}",
-        ],
+        ]
+    )
+    commands.append(
         [
             "icacls.exe", str(path), "/remove:g",
             "*S-1-1-0", "*S-1-5-11", "*S-1-5-32-544", "*S-1-5-32-545",
             "*S-1-3-4",
-        ],
+        ]
     )
     for command in commands:
         # icacls prints localized console text (GBK on Chinese Windows); only

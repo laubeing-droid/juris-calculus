@@ -12,7 +12,10 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = "jc/remediation-run-log/1.0"
-TAIL_CHARS = 2000
+# Large enough to carry the pytest failure summary and the first tracebacks of
+# a failed required task; the runner additionally writes the full child
+# streams of failed commands next to the run log.
+TAIL_CHARS = 20000
 
 
 def digest_text(value: str) -> str:

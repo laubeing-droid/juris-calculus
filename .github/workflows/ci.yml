@@ -52,6 +52,17 @@ jobs:
       - name: Required current suites
         run: python -B tools/remediate_v4.py run --through V4-03-OFFICIAL-YAML --log work/required-run.json
 
+      - name: Preserve required run evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: required-run-${{ matrix.os }}-${{ matrix.python }}-${{ github.sha }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            work/required-run.json
+            work/required-run-failed-output/
+
       - name: Ubuntu storage and chaos subset
         if: runner.os == 'Linux' && matrix.python == '3.12'
         run: python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/storage_chaos
