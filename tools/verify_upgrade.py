@@ -40,6 +40,11 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = output_dir / "required-run.json"
     report_path = output_dir / "acceptance-summary.json"
+    stale_dumps = output_dir / "required-run-failed-output"
+    if stale_dumps.is_dir():
+        import shutil
+
+        shutil.rmtree(stale_dumps, ignore_errors=True)
 
     try:
         plan = load_plan(args.plan)
