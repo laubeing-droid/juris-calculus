@@ -276,7 +276,7 @@ def _execute(
         compilations,
         run_identity_ref=harness.run_identity_ref,
         fact_admission_receipt_refs=(fact_receipt_ref,),
-        limits=ResourceLimitsV4(),
+        limits=harness.default_limits,
         now=harness.now,
     )
     return (

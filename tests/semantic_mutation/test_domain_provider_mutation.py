@@ -60,7 +60,7 @@ def test_independent_checker_kills_provider_fake_receipt(
         compilations,
         run_identity_ref=harness.run_identity_ref,
         fact_admission_receipt_refs=(fact_receipt_ref,),
-        limits=ResourceLimitsV4(),
+        limits=harness.default_limits,
         now=harness.now,
     )
     assert invoked == [executions[0].invocation.provider_id]
@@ -75,7 +75,7 @@ def test_independent_checker_kills_provider_fake_receipt(
             compilations,
             run_identity_ref=harness.run_identity_ref,
             fact_admission_receipt_refs=(fact_receipt_ref,),
-            limits=ResourceLimitsV4(),
+            limits=harness.default_limits,
             now=harness.now,
             receipt=executions[0].receipt,
         )

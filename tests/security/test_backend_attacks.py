@@ -93,7 +93,7 @@ def _execute(
     values = {
         "run_identity_ref": harness.run_identity_ref,
         "fact_admission_receipt_refs": (fact_receipt_ref,),
-        "limits": ResourceLimitsV4(),
+        "limits": harness.default_limits,
         "now": harness.now,
     }
     values.update(overrides)
@@ -255,7 +255,7 @@ def test_caller_cannot_override_request_time_or_omit_verified_facts() -> None:
             compilations,
             run_identity_ref=harness.run_identity_ref,
             fact_admission_receipt_refs=(),
-            limits=ResourceLimitsV4(),
+            limits=harness.default_limits,
             now=harness.now,
         )
     ) == "BACKEND_FACT_BINDING"
