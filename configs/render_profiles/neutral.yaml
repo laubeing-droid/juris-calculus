@@ -12,4 +12,12 @@ heading_order:
   - review
 heading_aliases: {}
 show_citations: true
-forbidden_phrases: []
+forbidden_phrases:
+  - "胜诉概率"
+  - "大概率胜诉"
+  - "必然胜诉"
+  - "100%胜诉"
+  - "稳赢"
+  - "win probability"
+  - "guaranteed win"
+  - "certain victory"

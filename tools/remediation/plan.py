@@ -219,13 +219,19 @@ def load_plan(path: Path) -> Plan:
 
 
 def _validate_against_schema(path: Path, document: Any, problems: list[str]) -> None:
-    """Cross-check the document with task.v3.schema.json when jsonschema exists."""
+    """Cross-check the document with the task schema when jsonschema exists.
+
+    A versioned plan directory may ship its own schema (task.v1.schema.json
+    for the V5 plan); otherwise the frozen V4 schema applies unchanged.
+    """
 
     try:
         import jsonschema
     except ImportError:
         return
-    schema_path = path.parent / "task.v3.schema.json"
+    schema_path = path.parent / "task.v1.schema.json"
+    if not schema_path.is_file():
+        schema_path = path.parent / "task.v3.schema.json"
     if not schema_path.is_file():
         schema_path = (
             Path(__file__).resolve().parents[2] / "remediation/v4/task.v3.schema.json"

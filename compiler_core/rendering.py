@@ -77,7 +77,7 @@ def _ref(reference: object) -> str:
 def _lines(verified: VerifiedAuditBundleV4, audience: str) -> list[str]:
     result = verified.result
     lines = [
-        "# JC V4 verified result",
+        "# JC V5 verified result",
         "",
         "## status",
         "",
