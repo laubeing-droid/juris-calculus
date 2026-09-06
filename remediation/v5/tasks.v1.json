@@ -1,0 +1,200 @@
+{
+ "schema_version": "jc/remediation-task/3.0",
+ "tasks": [
+  {
+   "id": "V5-01-AUTHORITY",
+   "depends_on": [],
+   "objective": "V5 authority, module registry, and generated publications (schema/manifest/disposition).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "tools/remediation/observed_graph.py",
+     "--root",
+     ".",
+     "--policy",
+     "docs/architecture/module-authority.json",
+     "--mode",
+     "require-clean"
+    ],
+    [
+     "{python}",
+     "-B",
+     "tools/remediation/checks.py",
+     "generated"
+    ],
+    [
+     "{python}",
+     "-B",
+     "tools/build_file_disposition.py",
+     "--check"
+    ]
+   ],
+   "timeout_seconds": 600,
+   "expected_exit_codes": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "V5-02-CONTRACT",
+   "depends_on": [
+    "V5-01-AUTHORITY"
+   ],
+   "objective": "Closed V5 contract acceptance: strict rejection, identity rebinding, obligation and authority gates (JT04-JT07), proof binding integrity (JT02/JT03).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "-m",
+     "pytest",
+     "-c",
+     "tests/pytest.ini",
+     "-q",
+     "-p",
+     "no:cacheprovider",
+     "--basetemp",
+     "{temp}/v5-02",
+     "tests/contract/test_v5_contracts.py",
+     "tests/contract/test_proof_binding.py",
+     "tests/contract/test_contracts.py",
+     "tests/contract/test_v4_legacy_rejection.py",
+     "tests/contract/test_python_schema_mcp_differential.py"
+    ]
+   ],
+   "timeout_seconds": 900,
+   "expected_exit_codes": [
+    0
+   ]
+  },
+  {
+   "id": "V5-03-SEMANTICS",
+   "depends_on": [
+    "V5-02-CONTRACT"
+   ],
+   "objective": "Bounded profile semantics, defeat policy, branch query, procedure, composition, assurance, incremental acceptance (JT16-JT43).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "-m",
+     "pytest",
+     "-c",
+     "tests/pytest.ini",
+     "-q",
+     "-p",
+     "no:cacheprovider",
+     "--basetemp",
+     "{temp}/v5-03",
+     "tests/contract/test_v5_semantics.py",
+     "tests/contract/test_v5_procedure_composition.py",
+     "tests/contract/test_v5_assurance.py",
+     "tests/contract/test_v5_incremental.py",
+     "tests/contract/test_argumentation.py",
+     "tests/contract/test_backend_router.py",
+     "tests/contract/test_fact_admission.py",
+     "tests/contract/test_rule_packs.py"
+    ]
+   ],
+   "timeout_seconds": 1800,
+   "expected_exit_codes": [
+    0
+   ]
+  },
+  {
+   "id": "V5-04-MIGRATION",
+   "depends_on": [
+    "V5-03-SEMANTICS"
+   ],
+   "objective": "Offline V4->V5 migration boundaries and renderer no-embellishment guard (JT46/JT47).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "-m",
+     "pytest",
+     "-c",
+     "tests/pytest.ini",
+     "-q",
+     "-p",
+     "no:cacheprovider",
+     "--basetemp",
+     "{temp}/v5-04",
+     "tests/contract/test_v5_migration_render.py",
+     "tests/contract/test_v4_legacy_rejection.py"
+    ],
+    [
+     "{python}",
+     "-B",
+     "tests/formal_e2e/run_migration_fixture.py"
+    ]
+   ],
+   "timeout_seconds": 900,
+   "expected_exit_codes": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "V5-05-PRODUCTION-CHAIN",
+   "depends_on": [
+    "V5-04-MIGRATION"
+   ],
+   "objective": "Real production chain on the V5 engine: portability, official YAML admission, wheel gate, full formal suites (JT01/JT45).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "-m",
+     "pytest",
+     "-c",
+     "tests/pytest.ini",
+     "-q",
+     "-p",
+     "no:cacheprovider",
+     "--basetemp",
+     "{temp}/v5-05",
+     "tests/dsh_formal",
+     "tests/formal_e2e",
+     "tests/integration",
+     "tests/mcp_protocol",
+     "tests/security",
+     "tests/windows_security",
+     "tests/storage_chaos"
+    ]
+   ],
+   "timeout_seconds": 3600,
+   "expected_exit_codes": [
+    0
+   ]
+  },
+  {
+   "id": "V5-06-WHEEL",
+   "depends_on": [
+    "V5-05-PRODUCTION-CHAIN"
+   ],
+   "objective": "Deterministic wheel build and validation on the V5 version; the candidate wheel lands in the run temp dir and the report digest is recorded in the run log (JT48 remote binding happens in CI).",
+   "argv": [
+    [
+     "{python}",
+     "-B",
+     "tools/wheel_gate.py",
+     "--source",
+     ".",
+     "--out-dir",
+     "{temp}/v5-wheel",
+     "--source-date-epoch",
+     "1760332800",
+     "--no-isolation",
+     "--output",
+     "{temp}/v5-wheel-report.json"
+    ]
+   ],
+   "timeout_seconds": 1800,
+   "expected_exit_codes": [
+    0
+   ]
+  }
+ ]
+}
