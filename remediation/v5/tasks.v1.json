@@ -179,49 +179,13 @@
     [
      "{python}",
      "-B",
-     "-c",
-     "import subprocess, sys, pathlib, time;\nroot = pathlib.Path('.);\na = pathlib.Path('{temp}/v5-src-a'); b = pathlib.Path('{temp}/v5-src-b');\na.mkdir(parents=True, exist_ok=True); b.mkdir(parents=True, exist_ok=True);\ntar = subprocess.run(['git','archive','--format=tar','HEAD'], capture_output=True, check=True).stdout;\nsubprocess.run(['tar','-xf','-','-C',str(a)], input=tar, check=True);\nsubprocess.run(['tar','-xf','-','-C',str(b)], input=tar, check=True);\nprint('archives extracted', a, b)"
-    ],
-    [
-     "{python}",
-     "-B",
-     "tools/wheel_gate.py",
-     "--source",
-     "{temp}/v5-src-a",
-     "--out-dir",
-     "{temp}/v5-wheel-a",
-     "--source-date-epoch",
-     "1760332800",
-     "--no-isolation",
-     "--output",
-     "{temp}/v5-wheel-report-a.json"
-    ],
-    [
-     "{python}",
-     "-B",
-     "tools/wheel_gate.py",
-     "--source",
-     "{temp}/v5-src-b",
-     "--out-dir",
-     "{temp}/v5-wheel-b",
-     "--source-date-epoch",
-     "1760332800",
-     "--no-isolation",
-     "--output",
-     "{temp}/v5-wheel-report-b.json"
-    ],
-    [
-     "{python}",
-     "-B",
-     "-c",
-     "import glob, sys, pathlib;\nwa = glob.glob('{temp}/v5-wheel-a/*.whl'); wb = glob.glob('{temp}/v5-wheel-b/*.whl');\nassert wa and wb, (wa, wb);\nda = pathlib.Path(wa[0]).read_bytes(); db = pathlib.Path(wb[0]).read_bytes();\nassert da == db, 'A/B wheels differ';\nimport hashlib; print('wheel byte-identical:', pathlib.Path(wa[0]).name, hashlib.sha256(da).hexdigest())"
+     "tests/formal_e2e/build_v5_wheels.py",
+     "--work-dir",
+     "{temp}/v5-wheel-work"
     ]
    ],
    "timeout_seconds": 1800,
    "expected_exit_codes": [
-    0,
-    0,
-    0,
     0
    ]
   }
