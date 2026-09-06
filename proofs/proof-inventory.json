@@ -1,0 +1,2633 @@
+{
+ "schema_version": "jc-upgrade-proof-source-inventory/1.0",
+ "origin": "Downloaded formal-release-certificate.json; source hashes and theorem declaration names retained verbatim",
+ "lmm_commit": "23c5a310ae02192f2f896515b00de51895da387f",
+ "ci_run": 33978186916,
+ "limitations": "Names are declaration names from the CI inventory, not guaranteed fully qualified symbols. Task U01 must resolve namespaces and theorem statements. A route is an implementation-scope decision, not proof of the runtime.",
+ "source_count": 91,
+ "theorem_declaration_count": 452,
+ "routes": {
+  "BACKEND_CONTRACT_ONLY": 4,
+  "CONDITIONAL_TRANSLATION": 3,
+  "FORMAL_SPINE": 53,
+  "OPTIONAL_NUMERICAL_THEORY": 9,
+  "PROOF_BINDING": 4,
+  "RESEARCH_ONLY": 2,
+  "ULM_REQUIRED_MAPPING": 16
+ },
+ "sources": [
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ASPWitness.lean",
+   "sha256": "61c7471383aeb5b0bf8757bf1a0f8636d116682ac93ff800aad08d974815c090",
+   "theorems": [
+    {
+     "name": "absent_witness_not_unsat",
+     "line": 30
+    },
+    {
+     "name": "absent_witness_is_unknown",
+     "line": 36
+    },
+    {
+     "name": "witness_present_is_sat",
+     "line": 41
+    },
+    {
+     "name": "digest_mismatch_not_recheckable",
+     "line": 45
+    },
+    {
+     "name": "empty_model_not_recheckable",
+     "line": 52
+    }
+   ],
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ArgumentCompilerSpec.lean",
+   "sha256": "9a90975447a9b1b35e93a1d9724f8e217707079c3694392071cb7f6cb91ad92f",
+   "theorems": [
+    {
+     "name": "omitted_attack_breaks_contract",
+     "line": 46
+    },
+    {
+     "name": "spurious_attack_breaks_contract",
+     "line": 54
+    },
+    {
+     "name": "reversed_edge_breaks_direction",
+     "line": 62
+    },
+    {
+     "name": "identity_translation_satisfies_contract",
+     "line": 72
+    },
+    {
+     "name": "empty_output_with_expectations_fails",
+     "line": 81
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ArgumentSemanticsRegistry.lean",
+   "sha256": "b77eed187a79cd3b3c311688c4a6161c88637d3a7d5e05a09ad5d353af64b240",
+   "theorems": [
+    {
+     "name": "grounded_is_protected_default",
+     "line": 38
+    },
+    {
+     "name": "registry_complete_and_nodup",
+     "line": 42
+    },
+    {
+     "name": "registry_contains_grounded",
+     "line": 47
+    },
+    {
+     "name": "unbound_switch_rejected",
+     "line": 52
+    },
+    {
+     "name": "no_silent_self_switch",
+     "line": 59
+    },
+    {
+     "name": "default_semantics_stable_without_contract",
+     "line": 64
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AttackDecision.lean",
+   "sha256": "4e8773ad24b9258e42cc63c0ac3719e4ba883633c9e1feab7b8ef7d9bf5da160",
+   "theorems": [
+    {
+     "name": "priority_defeat_requires_active",
+     "line": 28
+    },
+    {
+     "name": "priority_defeat_requires_evidence",
+     "line": 34
+    },
+    {
+     "name": "missing_priority_evidence_no_defeat",
+     "line": 40
+    },
+    {
+     "name": "self_attack_not_priority_defeat",
+     "line": 51
+    },
+    {
+     "name": "priority_cycle_symmetric",
+     "line": 62
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AuthorityLattice.lean",
+   "sha256": "189aa0c0e4e8ce18d2e541b304568a5f85d90e8ef0c12bd42e58613b41f85073",
+   "theorems": [
+    {
+     "name": "no_auto_escalation",
+     "line": 24
+    },
+    {
+     "name": "escalation_requires_rank_increase",
+     "line": 30
+    },
+    {
+     "name": "valid_receipt_strict_step",
+     "line": 38
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AxiomAudit.lean",
+   "sha256": "2e90d67b007220d8eb8fb2c6e72b6b2d3099b3ee0dc42ef6c89d8dba790c5026",
+   "theorems": [],
+   "upgrade_route": "PROOF_BINDING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BackendContract.lean",
+   "sha256": "a4cedb8eb903e14de48f2d686e93dd3252b3889205bd6e17dc6ef4b9f1336ed0",
+   "theorems": [
+    {
+     "name": "nonmonotonic_routes_to_asp",
+     "line": 56
+    },
+    {
+     "name": "arithmetic_routes_to_smt",
+     "line": 63
+    },
+    {
+     "name": "plain_horn_routes_to_horn",
+     "line": 71
+    },
+    {
+     "name": "routing_deterministic",
+     "line": 80
+    },
+    {
+     "name": "unknown_not_decisive",
+     "line": 84
+    },
+    {
+     "name": "timeout_not_decisive",
+     "line": 87
+    },
+    {
+     "name": "backend_unavailable_not_decisive",
+     "line": 90
+    },
+    {
+     "name": "decisive_iff_sat_or_unsat",
+     "line": 94
+    },
+    {
+     "name": "non_decisive_outcome_fail_closed",
+     "line": 107
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachCertificate.lean",
+   "sha256": "4bf478f5243faf9ecef0f1f964a3520c3a4387871a10e1715b8c2ffa18d98e0d",
+   "theorems": [],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachComplete.lean",
+   "sha256": "f09456882c07c69dbec1cb8082f101937c547a4cf697685854ac048a257a8cf4",
+   "theorems": [],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachContraction.lean",
+   "sha256": "4f4f93d6b48ffcddcb92551ea647e0a7fc0e1705d5cdcaf24a830f2544021129",
+   "theorems": [
+    {
+     "name": "weighted_contraction_bound",
+     "line": 21
+    },
+    {
+     "name": "weighted_contraction_bound_nnreal",
+     "line": 34
+    }
+   ],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachEffectiveNodes.lean",
+   "sha256": "62c8a1c4bd26cc5dc8cde705b4b7c72d3cc64b25ca8f5fae0eb01b2c922e5317",
+   "theorems": [
+    {
+     "name": "pricingFn_contraction",
+     "line": 81
+    },
+    {
+     "name": "pricingFn_fixed_point",
+     "line": 107
+    },
+    {
+     "name": "pricingFn_unique_fixed_point",
+     "line": 120
+    }
+   ],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachFixedPoint.lean",
+   "sha256": "be558332b26bdb8dda6abd182a384c2d5586d7d347cdf3fa9fd2c9f8487ea3bc",
+   "theorems": [
+    {
+     "name": "weightedContractionData_of_coupling",
+     "line": 34
+    }
+   ],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachScratch.lean",
+   "sha256": "207c5e708b4f8219d7c9755211c06099faf3fbe7effa3a397235af37f1938277",
+   "theorems": [],
+   "upgrade_route": "RESEARCH_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachWeightedNorm.lean",
+   "sha256": "baa62b7ebc6f9809402daf95922cb3dacc9f29df3d4a43f9d0ae9477c1b20dab",
+   "theorems": [],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/Basic.lean",
+   "sha256": "709315dc8a73a8465a3701046a7703b782743bc58beca792dd0f2029ee80358f",
+   "theorems": [],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CanonicalSerialization.lean",
+   "sha256": "d0456881374c8c27d941bb14290e2330e5030af4bbb8880f13a7c855143ccc5a",
+   "theorems": [
+    {
+     "name": "adjoin_idempotent_of_mem",
+     "line": 43
+    },
+    {
+     "name": "adjoin_adjoin_idempotent",
+     "line": 51
+    },
+    {
+     "name": "adjoin_preserves_membership",
+     "line": 58
+    },
+    {
+     "name": "adjoin_contains_element",
+     "line": 66
+    },
+    {
+     "name": "serialization_round_trip",
+     "line": 74
+    },
+    {
+     "name": "serialization_preserves_fields",
+     "line": 84
+    },
+    {
+     "name": "tokens_binding_consistent",
+     "line": 94
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateChecker.lean",
+   "sha256": "e4bc7f03e5a7eaa6e13f05a3785aece6789fb4bd29ce7728c513207c96415c88",
+   "theorems": [
+    {
+     "name": "malformed_certificate_rejected",
+     "line": 34
+    },
+    {
+     "name": "tainted_certificate_rejected",
+     "line": 45
+    },
+    {
+     "name": "candidate_evidence_not_accepted",
+     "line": 56
+    },
+    {
+     "name": "missing_required_facts_rejected",
+     "line": 68
+    },
+    {
+     "name": "missing_obligations_rejected",
+     "line": 80
+    },
+    {
+     "name": "checker_acceptance_requires_obligations",
+     "line": 92
+    },
+    {
+     "name": "checker_acceptance_requires_required_facts",
+     "line": 103
+    },
+    {
+     "name": "checker_acceptance_requires_non_candidate",
+     "line": 114
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateCheckerV2.lean",
+   "sha256": "c2c3dcae49fb4a10a0428c46ee082f99c0232ae882a47a7c465aa2929479b97b",
+   "theorems": [
+    {
+     "name": "checker_accept_implies_well_formed",
+     "line": 42
+    },
+    {
+     "name": "well_formed_envelope_accepted",
+     "line": 52
+    },
+    {
+     "name": "ill_formed_envelope_rejected",
+     "line": 60
+    },
+    {
+     "name": "v1_never_decisive",
+     "line": 68
+    },
+    {
+     "name": "checker_determined_by_content",
+     "line": 73
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateV2.lean",
+   "sha256": "7c698326e73d97ce5ce856de8e82ba9dd0f974b8186845861c4b6370f29c2c6c",
+   "theorems": [
+    {
+     "name": "empty_trace_not_well_formed",
+     "line": 62
+    },
+    {
+     "name": "missing_required_fact_not_well_formed",
+     "line": 70
+    },
+    {
+     "name": "undischarge_obligation_not_well_formed",
+     "line": 77
+    },
+    {
+     "name": "unknown_accepted_argument_not_well_formed",
+     "line": 84
+    },
+    {
+     "name": "certificate_claim_bounded_by_domain",
+     "line": 91
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ContractionCondition.lean",
+   "sha256": "c4c93a93d29dda07c5b661af4ff8599a595c66f28f23c6a49d4bb94ba8db9a19",
+   "theorems": [
+    {
+     "name": "lipschitz_coupling_implies_weighted_contraction",
+     "line": 33
+    }
+   ],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DDLDefinitions.lean",
+   "sha256": "c5291b2f14b50802cc655b78462aaafb6a2fadf4e6f1fdae772ae4000574a997",
+   "theorems": [
+    {
+     "name": "violation_implies_norm_active",
+     "line": 71
+    },
+    {
+     "name": "permission_no_direct_violation",
+     "line": 76
+    },
+    {
+     "name": "constitutive_no_direct_violation",
+     "line": 88
+    },
+    {
+     "name": "permission_does_not_imply_obligation",
+     "line": 100
+    },
+    {
+     "name": "contract_breach_direct_violation_shape",
+     "line": 109
+    },
+    {
+     "name": "license_permission_not_direct_violation",
+     "line": 117
+    },
+    {
+     "name": "permission_slice_permission_not_obligation",
+     "line": 124
+    },
+    {
+     "name": "priority_ordering_requires_verified_evidence",
+     "line": 129
+    },
+    {
+     "name": "remedial_consequence_same_norm",
+     "line": 134
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DefeasiblePriority.lean",
+   "sha256": "e755e5d9e6b213074a179e2b27dd3ec56b1b71b60a1b528211763c3c745f9185",
+   "theorems": [
+    {
+     "name": "priority_cycle_yields_undecided",
+     "line": 44
+    },
+    {
+     "name": "single_direction_priority_wins",
+     "line": 53
+    },
+    {
+     "name": "missing_priority_no_winner",
+     "line": 66
+    },
+    {
+     "name": "inactive_conditional_priority_excluded",
+     "line": 84
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungAAF.lean",
+   "sha256": "061d8465feb7bda05b9caf7239b4424b8c71f144919d1703aca21f81ebfd0cb1",
+   "theorems": [],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungDefinitions.lean",
+   "sha256": "d9a7e17199c3ae84ca229f994bfe80505ec166cfac85e58c46825807f241b165",
+   "theorems": [],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungFixedPoint.lean",
+   "sha256": "4b6189d7e447af19fde248c991c2564d0907bd69da43cb7c7798f6dbcd66cc6f",
+   "theorems": [
+    {
+     "name": "F_monotone",
+     "line": 44
+    },
+    {
+     "name": "iteration_monotone",
+     "line": 48
+    },
+    {
+     "name": "finite_termination",
+     "line": 56
+    },
+    {
+     "name": "iteration_bound",
+     "line": 60
+    },
+    {
+     "name": "groundedSpec_is_fixed_point",
+     "line": 64
+    },
+    {
+     "name": "grounded_is_fixed_point",
+     "line": 70
+    },
+    {
+     "name": "groundedSpec_is_least_fixed_point",
+     "line": 74
+    },
+    {
+     "name": "grounded_is_least_fixed_point",
+     "line": 90
+    },
+    {
+     "name": "grounded_is_least_complete",
+     "line": 94
+    },
+    {
+     "name": "groundedSpec_unique_least_fixed_point",
+     "line": 98
+    },
+    {
+     "name": "labelling_partition",
+     "line": 104
+    },
+    {
+     "name": "in_soundness",
+     "line": 154
+    },
+    {
+     "name": "out_soundness",
+     "line": 163
+    },
+    {
+     "name": "undecided_characterization",
+     "line": 169
+    },
+    {
+     "name": "self_attack_precise_theorem",
+     "line": 199
+    },
+    {
+     "name": "self_attack_not_in_grounded",
+     "line": 222
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/EndToEnd.lean",
+   "sha256": "7494ed3a62422386c924f9dae7042a326089b9619555ff2f5a904fbfe47b7cd6",
+   "theorems": [
+    {
+     "name": "contract_breach_ready_certificate_accepted",
+     "line": 104
+    },
+    {
+     "name": "contract_breach_missing_defense_fail_closed",
+     "line": 109
+    },
+    {
+     "name": "license_ready_certificate_accepted",
+     "line": 117
+    },
+    {
+     "name": "license_outside_scope_fail_closed",
+     "line": 122
+    },
+    {
+     "name": "permission_ready_certificate_accepted",
+     "line": 129
+    },
+    {
+     "name": "permission_conflict_fail_closed",
+     "line": 134
+    },
+    {
+     "name": "priority_ready_certificate_accepted",
+     "line": 141
+    },
+    {
+     "name": "priority_cycle_fail_closed",
+     "line": 146
+    },
+    {
+     "name": "candidate_certificate_fail_closed",
+     "line": 173
+    },
+    {
+     "name": "end_to_end_acceptance_requires_payload",
+     "line": 179
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ExactNumericContract.lean",
+   "sha256": "7383b6f116a66171b81b3088398c77bfd7a43813ea16c5915b5f81b2b9264dd8",
+   "theorems": [
+    {
+     "name": "division_by_zero_fail_closed",
+     "line": 46
+    },
+    {
+     "name": "division_by_nonzero_structured",
+     "line": 51
+    },
+    {
+     "name": "out_of_range_not_in_range",
+     "line": 56
+    },
+    {
+     "name": "missing_rounding_not_decisive",
+     "line": 62
+    },
+    {
+     "name": "explicit_rounding_decisive",
+     "line": 68
+    },
+    {
+     "name": "currencyless_amount_not_well_formed",
+     "line": 73
+    },
+    {
+     "name": "zero_denominator_rate_not_well_formed",
+     "line": 80
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FactAdmissionSpec.lean",
+   "sha256": "8f5b37ac8be7f02ea4765f032894aa95cca91d7537605cf963c968a65a947e1f",
+   "theorems": [
+    {
+     "name": "source_pass_not_interpretation_pass",
+     "line": 67
+    },
+    {
+     "name": "interpretation_pass_not_fact_pass",
+     "line": 72
+    },
+    {
+     "name": "admission_requires_all_gates_pass",
+     "line": 77
+    },
+    {
+     "name": "candidate_not_decisive",
+     "line": 87
+    },
+    {
+     "name": "user_assumed_not_decisive",
+     "line": 96
+    },
+    {
+     "name": "revoked_not_decisive",
+     "line": 105
+    },
+    {
+     "name": "expired_not_decisive",
+     "line": 114
+    },
+    {
+     "name": "cross_scope_replay_not_bound",
+     "line": 123
+    },
+    {
+     "name": "cross_run_replay_not_bound",
+     "line": 131
+    },
+    {
+     "name": "revocation_sets_revoked",
+     "line": 144
+    },
+    {
+     "name": "revocation_removes_admission",
+     "line": 153
+    },
+    {
+     "name": "revocation_frame",
+     "line": 162
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FailureStatus.lean",
+   "sha256": "98b93aca1c65b863ba16fc2036e6578491075fc4c82b443a3f07e44fbfdba9cb",
+   "theorems": [
+    {
+     "name": "only_success_is_decisive_pass",
+     "line": 32
+    },
+    {
+     "name": "unknown_never_decisive",
+     "line": 37
+    },
+    {
+     "name": "timeout_never_decisive",
+     "line": 41
+    },
+    {
+     "name": "ci_not_run_is_fail_closed",
+     "line": 45
+    },
+    {
+     "name": "non_success_is_fail_closed",
+     "line": 49
+    },
+    {
+     "name": "release_blocked_by_fail_closed",
+     "line": 58
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteGaloisAdjunction.lean",
+   "sha256": "9171b103b6b4ca8560cf4f4c6acf1955f77af659e406123996a6bca59fdf95de",
+   "theorems": [
+    {
+     "name": "galois_connection_of_residuated",
+     "line": 49
+    }
+   ],
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteMonotoneIteration.lean",
+   "sha256": "93e89c027ba52f2a4a2012ea78e62fc1fdc31124744179fb418f9940ba9beae1",
+   "theorems": [
+    {
+     "name": "iter_succ",
+     "line": 30
+    },
+    {
+     "name": "iter_subset_univ",
+     "line": 32
+    },
+    {
+     "name": "iter_mono",
+     "line": 39
+    },
+    {
+     "name": "iter_stable",
+     "line": 46
+    },
+    {
+     "name": "iter_ssubset_of_ne",
+     "line": 62
+    },
+    {
+     "name": "iter_card_lt_of_ne",
+     "line": 71
+    },
+    {
+     "name": "iter_card_le_univ",
+     "line": 75
+    },
+    {
+     "name": "exists_fixpoint_le_card",
+     "line": 80
+    },
+    {
+     "name": "fixed_at_card",
+     "line": 103
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteRosetta.lean",
+   "sha256": "fdc46750278d1bee206aba40f16b8ecdeaafe666b5cf90e13c4e7a93163b0cf9",
+   "theorems": [
+    {
+     "name": "cnOnly_eq_30",
+     "line": 71
+    },
+    {
+     "name": "collision_eq_4",
+     "line": 74
+    },
+    {
+     "name": "asymmetry_eq_3",
+     "line": 77
+    },
+    {
+     "name": "obstruction_eq_37",
+     "line": 80
+    },
+    {
+     "name": "cnOnly_exceeds_half",
+     "line": 83
+    },
+    {
+     "name": "obstruction_exceeds_half",
+     "line": 86
+    },
+    {
+     "name": "no_total_functor",
+     "line": 91
+    },
+    {
+     "name": "obstruction_density_gt_two_thirds",
+     "line": 98
+    },
+    {
+     "name": "pure_obstruction_majority",
+     "line": 103
+    }
+   ],
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornAAFContract.lean",
+   "sha256": "5c474f624ac5b61b0e46a9808a298968ddeca9477280c8833efc9e91caf18afe",
+   "theorems": [
+    {
+     "name": "horn_derivation_to_argument_conclusion",
+     "line": 57
+    },
+    {
+     "name": "horn_derivation_to_argument_supported",
+     "line": 62
+    },
+    {
+     "name": "exception_fact_to_attack_kind",
+     "line": 67
+    },
+    {
+     "name": "priority_defeat_to_attack_kind",
+     "line": 73
+    },
+    {
+     "name": "no_unsupported_argument_accepted",
+     "line": 77
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornDefinitions.lean",
+   "sha256": "9df4570ef9c1939cb7381140d0448da99f93174119d4d7acf407e2d50a327a21",
+   "theorems": [
+    {
+     "name": "TH_monotone",
+     "line": 41
+    },
+    {
+     "name": "TH_subset_univ",
+     "line": 55
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornFixedPoint.lean",
+   "sha256": "701bcab8a1d3b6fd2f6d2cc29645f3628b3dac5e5a7f02b8f59f8c07d73a1315",
+   "theorems": [
+    {
+     "name": "horn_operator_subset_univ",
+     "line": 17
+    },
+    {
+     "name": "horn_operator_monotone",
+     "line": 21
+    },
+    {
+     "name": "horn_iteration_monotone",
+     "line": 25
+    },
+    {
+     "name": "horn_finite_termination",
+     "line": 31
+    },
+    {
+     "name": "horn_iteration_bound",
+     "line": 37
+    },
+    {
+     "name": "horn_result_fixed_point",
+     "line": 43
+    },
+    {
+     "name": "horn_result_least_fixed_point",
+     "line": 60
+    },
+    {
+     "name": "horn_soundness",
+     "line": 74
+    },
+    {
+     "name": "horn_completeness",
+     "line": 79
+    },
+    {
+     "name": "horn_result_is_minimal_model",
+     "line": 85
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornOperationalRefinement.lean",
+   "sha256": "291c2d29beca6406088261f227524d41f98918ccaa3f32f57b0548360e24624a",
+   "theorems": [],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HumanResearchReceiptSpec.lean",
+   "sha256": "48fa4c72608af9bdf0512b806594abab729fd23d2fa43328717edda629205cfd",
+   "theorems": [
+    {
+     "name": "receipt_not_reusable_across_tasks",
+     "line": 40
+    },
+    {
+     "name": "receipt_not_reusable_across_inputs",
+     "line": 48
+    },
+    {
+     "name": "expired_receipt_invalid",
+     "line": 56
+    },
+    {
+     "name": "revoked_receipt_invalid",
+     "line": 62
+    },
+    {
+     "name": "human_receipt_does_not_imply_conclusion",
+     "line": 71
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToAAF.lean",
+   "sha256": "688b8dc826da58a68fbceb59d581a670ff8dbdb941f595cda47c5b44f958a8cf",
+   "theorems": [
+    {
+     "name": "unwitnessed_attack_produces_no_edge",
+     "line": 38
+    },
+    {
+     "name": "witnessed_attack_produces_edge",
+     "line": 47
+    },
+    {
+     "name": "aaf_nodes_from_rules",
+     "line": 57
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToASP.lean",
+   "sha256": "156813f0fc8bd1f4b1f6c5f97d515d8d9074ba973701e4e6d3df41acd6da8b78",
+   "theorems": [
+    {
+     "name": "asp_lowering_covers_rules",
+     "line": 31
+    },
+    {
+     "name": "asp_lowering_covers_priorities",
+     "line": 38
+    },
+    {
+     "name": "asp_lowering_size",
+     "line": 46
+    }
+   ],
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToHorn.lean",
+   "sha256": "91f88a1af15f738fce61d800308e91f909e15b65336661330f5d58542f43d580",
+   "theorems": [
+    {
+     "name": "horn_lowering_preserves_count",
+     "line": 32
+    },
+    {
+     "name": "horn_lowering_preserves_conclusion",
+     "line": 38
+    },
+    {
+     "name": "horn_lowering_no_spurious",
+     "line": 45
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToSMT.lean",
+   "sha256": "257a31d8a30f645ca4923e1cc5de44a820bd429384858032b34605d1708061ae",
+   "theorems": [
+    {
+     "name": "empty_guard_not_lowered",
+     "line": 44
+    },
+    {
+     "name": "temporal_guard_uses_int_sort",
+     "line": 52
+    },
+    {
+     "name": "source_guard_not_smt",
+     "line": 62
+    }
+   ],
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/JC_Formalization.lean",
+   "sha256": "5776fc36556d596f7c73830b71ee731b1d2d65b0f1490c496278b8306a6cba90",
+   "theorems": [
+    {
+     "name": "proved_theorems_card",
+     "line": 139
+    },
+    {
+     "name": "empirical_proxy_card",
+     "line": 147
+    },
+    {
+     "name": "refuted_theorems_card",
+     "line": 155
+    },
+    {
+     "name": "pending_theorems_card",
+     "line": 163
+    },
+    {
+     "name": "advance_preserves_domain_bound",
+     "line": 176
+    },
+    {
+     "name": "advance_cannot_revive_refuted",
+     "line": 182
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIVL.lean",
+   "sha256": "45a99cf2f51714bfcb8660a9abfa1bd92d24475d57127806f4ba5136aced8efe",
+   "theorems": [
+    {
+     "name": "lost_field_blocks_decisive",
+     "line": 96
+    },
+    {
+     "name": "defaulted_field_blocks_decisive",
+     "line": 102
+    },
+    {
+     "name": "failure_state_blocks_decisive",
+     "line": 108
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIVLWellFormed.lean",
+   "sha256": "5216d723a1ab9083ee7cd41784214baccdea90945e06b553f9bd0d476eb7b44a",
+   "theorems": [
+    {
+     "name": "empty_witness_attack_breaks_ivl_wf",
+     "line": 21
+    },
+    {
+     "name": "unknown_rule_norm_breaks_ivl_wf",
+     "line": 28
+    },
+    {
+     "name": "empty_guard_breaks_ivl_wf",
+     "line": 35
+    },
+    {
+     "name": "well_formed_ivl_attacks_witnessed",
+     "line": 42
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIds.lean",
+   "sha256": "b58fe523923ea733e3efe618eaa2c340e7a9e871e246c6a0edf7f3741952cbdb",
+   "theorems": [
+    {
+     "name": "legalId_serialization_faithful",
+     "line": 115
+    },
+    {
+     "name": "id_prefix_separated",
+     "line": 124
+    },
+    {
+     "name": "digest_binding_consistent",
+     "line": 129
+    },
+    {
+     "name": "digest_binding_reflexive",
+     "line": 135
+    },
+    {
+     "name": "cross_case_replay_changes_scope",
+     "line": 139
+    },
+    {
+     "name": "interval_valid_antisym_boundary",
+     "line": 149
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalModelV2.lean",
+   "sha256": "a08b4a6268999dd0fd41e8d841f6349d2af5527b3642284f249dec486b48eb28",
+   "theorems": [
+    {
+     "name": "v2_registry_covers_four_layers",
+     "line": 115
+    },
+    {
+     "name": "v1_types_preserved_in_v2",
+     "line": 121
+    },
+    {
+     "name": "v1_compatible_names_in_universe",
+     "line": 126
+    },
+    {
+     "name": "decision_status_in_v2_universe",
+     "line": 131
+    },
+    {
+     "name": "v2_registry_size",
+     "line": 136
+    },
+    {
+     "name": "v2_registry_nodup",
+     "line": 140
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpec.lean",
+   "sha256": "54ca4f2ef1893cde932cf2d3dd2639889b98bbced44609e0b604d2573945c4f1",
+   "theorems": [
+    {
+     "name": "spec_rule_ids_determined",
+     "line": 60
+    },
+    {
+     "name": "empty_spec_no_rule_references",
+     "line": 64
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecNormalize.lean",
+   "sha256": "665fc2cb74f6dc3aaa7219f22c9a1feba1d42dcd03de096b8bf08c3208c3e51d",
+   "theorems": [
+    {
+     "name": "located_filter_idem",
+     "line": 21
+    },
+    {
+     "name": "normalize_idempotent",
+     "line": 31
+    },
+    {
+     "name": "normalize_no_spurious_rules",
+     "line": 38
+    },
+    {
+     "name": "normalize_preserves_rule_wf",
+     "line": 44
+    },
+    {
+     "name": "dropped_rule_has_empty_locator",
+     "line": 50
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecToIVL.lean",
+   "sha256": "bdd9a53bbf61f8fba4ea2f681ef248fa5499644010d8784fc95c9c06b20008a0",
+   "theorems": [
+    {
+     "name": "lowering_preserves_rule_ids",
+     "line": 56
+    },
+    {
+     "name": "lowering_preserves_conclusions",
+     "line": 64
+    },
+    {
+     "name": "lowering_preserves_exceptions",
+     "line": 68
+    },
+    {
+     "name": "lowering_preserves_conditions",
+     "line": 72
+    },
+    {
+     "name": "lowering_modality_deterministic",
+     "line": 76
+    },
+    {
+     "name": "uncertain_spec_not_decisive",
+     "line": 80
+    },
+    {
+     "name": "certain_spec_lowering_clean",
+     "line": 90
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecWellFormed.lean",
+   "sha256": "a046a6346933329a76512fbb39e413257356c741ceeb3ff48bd121c97bf4ba9c",
+   "theorems": [
+    {
+     "name": "empty_locator_rule_not_well_formed",
+     "line": 22
+    },
+    {
+     "name": "empty_conclusion_rule_not_well_formed",
+     "line": 28
+    },
+    {
+     "name": "well_formed_spec_has_located_rules",
+     "line": 34
+    },
+    {
+     "name": "well_formed_priority_closure",
+     "line": 40
+    },
+    {
+     "name": "unclosed_priority_breaks_wf",
+     "line": 47
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSyntax.lean",
+   "sha256": "0c2e12a74800b0b199bdccbaea751cd8e715f9885aecda345627c6e9c831085f",
+   "theorems": [
+    {
+     "name": "fact_serialization_key_stable",
+     "line": 212
+    },
+    {
+     "name": "rule_serialization_key_stable",
+     "line": 216
+    },
+    {
+     "name": "decisionStatus_runtimeKey_injective",
+     "line": 220
+    },
+    {
+     "name": "trust_label_cannot_promote_status",
+     "line": 226
+    },
+    {
+     "name": "candidate_evidence_not_auditable",
+     "line": 231
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalWellFormed.lean",
+   "sha256": "b7033222cc6c706d6f80a6d45fb2c8213ea917ef0513ba9ded6b6cbf540c08c0",
+   "theorems": [
+    {
+     "name": "admitted_fact_requires_source",
+     "line": 36
+    },
+    {
+     "name": "candidate_fact_not_admitted",
+     "line": 42
+    },
+    {
+     "name": "lost_field_blocks_discharge",
+     "line": 49
+    },
+    {
+     "name": "defaulted_field_blocks_discharge",
+     "line": 57
+    },
+    {
+     "name": "empty_witness_attack_not_well_formed",
+     "line": 65
+    },
+    {
+     "name": "unknown_schema_fail_closed",
+     "line": 89
+    },
+    {
+     "name": "unknown_semantics_fail_closed",
+     "line": 97
+    },
+    {
+     "name": "registered_schema_resolves",
+     "line": 105
+    },
+    {
+     "name": "version_resolution_decisive",
+     "line": 113
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/PermissionConflict.lean",
+   "sha256": "04581666d5ca0253a32d9fad5a75431160d9a5f763d235600df2d9f88d18b010",
+   "theorems": [
+    {
+     "name": "permission_not_obligation",
+     "line": 54
+    },
+    {
+     "name": "permission_not_prohibition",
+     "line": 59
+    },
+    {
+     "name": "unresolved_conflict_fail_closed",
+     "line": 64
+    },
+    {
+     "name": "permit_override_decides",
+     "line": 69
+    },
+    {
+     "name": "conflicting_overrides_fail_closed",
+     "line": 74
+    },
+    {
+     "name": "exception_layer_explicit",
+     "line": 92
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ProposalEnvelopeSpec.lean",
+   "sha256": "bfc6ef8454a8c6a9373170c76f3dca45a2405d656bba6da8929a7a1f343a3184",
+   "theorems": [
+    {
+     "name": "llm_proposal_cannot_attest",
+     "line": 41
+    },
+    {
+     "name": "agent_proposal_cannot_certify",
+     "line": 49
+    },
+    {
+     "name": "agent_proposal_cannot_decide",
+     "line": 57
+    },
+    {
+     "name": "self_approval_does_not_escalate",
+     "line": 65
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ProposalNoninterference.lean",
+   "sha256": "0d22de56ce9b5fd5c6adf96cad02dd4e67deb445593bb8962b77b3ef7b5ea9a3",
+   "theorems": [
+    {
+     "name": "proposal_is_tainted_input",
+     "line": 17
+    },
+    {
+     "name": "proposal_taint_survives_stage",
+     "line": 24
+    },
+    {
+     "name": "proposal_never_clean_after_stage",
+     "line": 30
+    },
+    {
+     "name": "proposal_majority_stays_tainted",
+     "line": 39
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ReceiptAuthority.lean",
+   "sha256": "ae8c35bc9064a20736dca3ad4453738245167df0b822015e42911678becc45d4",
+   "theorems": [
+    {
+     "name": "proposal_cannot_issue_attestation",
+     "line": 64
+    },
+    {
+     "name": "proposal_cannot_issue_certificate",
+     "line": 70
+    },
+    {
+     "name": "proposal_cannot_issue_decision_status",
+     "line": 76
+    },
+    {
+     "name": "human_review_not_formal_input",
+     "line": 82
+    },
+    {
+     "name": "authority_strictly_ordered",
+     "line": 88
+    },
+    {
+     "name": "skipping_receipt_invalid",
+     "line": 95
+    },
+    {
+     "name": "consensus_does_not_escalate",
+     "line": 106
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SMTWitness.lean",
+   "sha256": "43dcafb39d07b1f90532ecb854436bb2809a6c239866b0a12111ad62dbb01efa",
+   "theorems": [
+    {
+     "name": "no_model_no_proof_is_unknown",
+     "line": 33
+    },
+    {
+     "name": "unsat_requires_proof_receipt",
+     "line": 39
+    },
+    {
+     "name": "sat_model_present",
+     "line": 44
+    },
+    {
+     "name": "sat_preferred_over_unsat",
+     "line": 50
+    },
+    {
+     "name": "smt_unknown_not_decisive",
+     "line": 56
+    }
+   ],
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SafetyTheorems.lean",
+   "sha256": "aa3ff7efde592033e67406da76ec18abd5318eae482cb4fc45e98a1d9a559002",
+   "theorems": [
+    {
+     "name": "candidate_cannot_enter_verified_fact_gate",
+     "line": 12
+    },
+    {
+     "name": "tainted_not_accepted_as_proved",
+     "line": 20
+    },
+    {
+     "name": "accepted_certificate_has_required_payload",
+     "line": 31
+    },
+    {
+     "name": "priority_missing_evidence_certificate_not_accepted",
+     "line": 38
+    },
+    {
+     "name": "priority_cycle_certificate_fail_closed",
+     "line": 51
+    },
+    {
+     "name": "license_outside_scope_not_permitted",
+     "line": 59
+    },
+    {
+     "name": "permission_conflict_not_forced_proved",
+     "line": 68
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ScratchApi.lean",
+   "sha256": "259322671ce2632b68f1c9bc31a6533272b2b95328aa6fb33b7a197e63d0901c",
+   "theorems": [],
+   "upgrade_route": "RESEARCH_ONLY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SolverRouting.lean",
+   "sha256": "cd2cfd17519d56960219760f3702c0c3c97726e7f947688415a18153af8bc5eb",
+   "theorems": [
+    {
+     "name": "problem_digest_change_changes_identity",
+     "line": 30
+    },
+    {
+     "name": "solver_change_changes_identity",
+     "line": 37
+    },
+    {
+     "name": "seed_change_changes_identity",
+     "line": 44
+    },
+    {
+     "name": "receipt_identity_reflexive",
+     "line": 51
+    },
+    {
+     "name": "identity_same_implies_problem_binding",
+     "line": 57
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SourceBundleSpec.lean",
+   "sha256": "eb05d6fe8076ffbbdb27729dcfc176049b90955d8070e2c7982feff0f1046829",
+   "theorems": [
+    {
+     "name": "content_change_breaks_binding",
+     "line": 60
+    },
+    {
+     "name": "locator_change_breaks_binding",
+     "line": 69
+    },
+    {
+     "name": "well_formed_entry_binding",
+     "line": 78
+    },
+    {
+     "name": "well_formed_no_duplicate_snapshots",
+     "line": 83
+    },
+    {
+     "name": "tampered_entry_not_well_formed",
+     "line": 88
+    },
+    {
+     "name": "reference_outside_closure_blocked",
+     "line": 95
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SourcePathSpec.lean",
+   "sha256": "25c32323c8b36956b5b6b15f46e06a82fbf3ac3c86ae394c2544fa370abe93fd",
+   "theorems": [
+    {
+     "name": "retrieval_not_applicability",
+     "line": 60
+    },
+    {
+     "name": "self_loop_not_well_formed",
+     "line": 67
+    },
+    {
+     "name": "empty_witness_not_well_formed",
+     "line": 73
+    },
+    {
+     "name": "broken_path_has_uncovered_endpoint",
+     "line": 79
+    },
+    {
+     "name": "reversed_noncitation_edges_form_cycle",
+     "line": 84
+    },
+    {
+     "name": "citation_cycle_not_dependency_cycle",
+     "line": 94
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SupZeroLemma.lean",
+   "sha256": "0165c40870ef5cde68f51df265f67eb144d9e1c6a564e6fc812fb493bc6f8533",
+   "theorems": [],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TaintNoninterference.lean",
+   "sha256": "f5278ff7f302197e97247b773a15ab000982a5a0c4ce836a29d8e60d4f680610",
+   "theorems": [
+    {
+     "name": "join_clean_clean",
+     "line": 40
+    },
+    {
+     "name": "join_with_tainted_is_tainted",
+     "line": 43
+    },
+    {
+     "name": "tainted_input_taints_collection",
+     "line": 48
+    },
+    {
+     "name": "stage_preserves_taint",
+     "line": 56
+    },
+    {
+     "name": "all_clean_inputs_clean_output",
+     "line": 64
+    },
+    {
+     "name": "majority_cannot_clean",
+     "line": 80
+    },
+    {
+     "name": "tainted_not_promoted_to_clean",
+     "line": 86
+    },
+    {
+     "name": "repetition_does_not_clean",
+     "line": 95
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalApplicability.lean",
+   "sha256": "b66b2cf03ebf4d6b378e05ca8d45e4dfa77e1270abe9af9b4ca3903b927d0373",
+   "theorems": [
+    {
+     "name": "effective_at_left_boundary",
+     "line": 61
+    },
+    {
+     "name": "before_effective_interval_not_effective",
+     "line": 73
+    },
+    {
+     "name": "future_information_blocked",
+     "line": 79
+    },
+    {
+     "name": "retracted_source_invalidates",
+     "line": 85
+    },
+    {
+     "name": "superseded_source_invalidates",
+     "line": 92
+    },
+    {
+     "name": "self_supersession_invalid",
+     "line": 99
+    },
+    {
+     "name": "only_active_versions_applicable",
+     "line": 105
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalArithmetic.lean",
+   "sha256": "b753a223f39e88f8a2802f98ca5455273f4e3c599462ee3ff5b2f41d0fb0aa94",
+   "theorems": [
+    {
+     "name": "interval_contains_left_endpoint",
+     "line": 37
+    },
+    {
+     "name": "interval_contains_right_endpoint",
+     "line": 43
+    },
+    {
+     "name": "interval_excludes_beyond_right",
+     "line": 49
+    },
+    {
+     "name": "intersection_some_is_valid",
+     "line": 55
+    },
+    {
+     "name": "intersection_contained_in_both",
+     "line": 66
+    },
+    {
+     "name": "disjoint_intervals_no_intersection",
+     "line": 81
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalKripke.lean",
+   "sha256": "6179c6981a4911670b1899d88891ced1d3466bb379a70ed9e561808905d2f6ae",
+   "theorems": [
+    {
+     "name": "temporal_guard_always",
+     "line": 55
+    },
+    {
+     "name": "litigation_always_guard",
+     "line": 105
+    }
+   ],
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TranslationRefinement.lean",
+   "sha256": "f59aeb65b4df47fdc0fa97e3240f2b3d1de1139391e6c27380d3c6d082e2099d",
+   "theorems": [
+    {
+     "name": "translation_soundness_fragment",
+     "line": 44
+    },
+    {
+     "name": "no_spurious_after_normalize",
+     "line": 51
+    },
+    {
+     "name": "full_soundness_implies_fragment",
+     "line": 61
+    },
+    {
+     "name": "unproved_obligations_stay_unproved",
+     "line": 70
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TranslationWitness.lean",
+   "sha256": "03c44cb2741befca2f9312f73d2088a91a2400014c1cf033e3b1a341d9a33899",
+   "theorems": [
+    {
+     "name": "lost_field_hop_not_discharged",
+     "line": 33
+    },
+    {
+     "name": "defaulted_field_hop_not_discharged",
+     "line": 40
+    },
+    {
+     "name": "chain_discharge_requires_both_hops",
+     "line": 47
+    },
+    {
+     "name": "witness_binds_source",
+     "line": 55
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TypedAttack.lean",
+   "sha256": "25b557b874d8a70dfd0eace5848a3feeaf9b4d7f5c42431b117ebcfb85db62da",
+   "theorems": [
+    {
+     "name": "attack_identity_stable",
+     "line": 38
+    },
+    {
+     "name": "empty_witness_attack_rejected",
+     "line": 46
+    },
+    {
+     "name": "priority_defeat_requires_witness",
+     "line": 52
+    },
+    {
+     "name": "self_attack_identified",
+     "line": 58
+    },
+    {
+     "name": "non_self_attack_not_self",
+     "line": 63
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM01NormalForm.lean",
+   "sha256": "63bc2bef2840a675261ed423c72184d987d7f12e206ebef21d074709be12dc43",
+   "theorems": [
+    {
+     "name": "preserves_comp",
+     "line": 138
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM02Outcome.lean",
+   "sha256": "93b5fde7af755a036ce20ae9b7c86c37add1c72e36bc1c658f5891d3f965b714",
+   "theorems": [
+    {
+     "name": "failure_ne_complete",
+     "line": 58
+    },
+    {
+     "name": "partial_ne_complete",
+     "line": 63
+    },
+    {
+     "name": "map_never_upgrades_failure",
+     "line": 68
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM03TypedGraph.lean",
+   "sha256": "adf54a74d45a48aeb61487f52c99af720c5a1932b11e8adbae649c10977738e6",
+   "theorems": [
+    {
+     "name": "target_subset_applyEdge",
+     "line": 60
+    },
+    {
+     "name": "localTransition_preserves_request",
+     "line": 69
+    },
+    {
+     "name": "localTransition_has_declared_edge",
+     "line": 74
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM04Obligations.lean",
+   "sha256": "76b742c9553f58d4cb65b63314a3192e716260d60ba60b5f47b40207e2b8e861",
+   "theorems": [
+    {
+     "name": "typeSafety_mem_required",
+     "line": 60
+    },
+    {
+     "name": "requiredObligations_nonempty",
+     "line": 64
+    },
+    {
+     "name": "sat_sound",
+     "line": 99
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM05Machine.lean",
+   "sha256": "923f1cb911692e5494b8bad529c85c6689a61d55edb2470b374612a34be51f38",
+   "theorems": [
+    {
+     "name": "applied_edge_not_reenabled",
+     "line": 66
+    },
+    {
+     "name": "step_preserves_request",
+     "line": 71
+    },
+    {
+     "name": "run_preserves_request",
+     "line": 75
+    },
+    {
+     "name": "halted_has_no_step",
+     "line": 81
+    },
+    {
+     "name": "all_graph_edges_completed_quiescent",
+     "line": 87
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM06FactEvidence.lean",
+   "sha256": "c4f8ebde3f96347821944a3d17f3d8a945ed3b357bff4c4644ca5d32395cd063",
+   "theorems": [
+    {
+     "name": "admitted_wf_has_admitted_status",
+     "line": 108
+    },
+    {
+     "name": "premise_origin_is_closed",
+     "line": 115
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM07HornSupport.lean",
+   "sha256": "28afc77433d93cce6a375823353727e6d7626a14064370207c1644ee27e7a332",
+   "theorems": [
+    {
+     "name": "supportClosure_least",
+     "line": 25
+    },
+    {
+     "name": "supportClosure_request_bound",
+     "line": 30
+    },
+    {
+     "name": "generated_candidate_sound",
+     "line": 54
+    },
+    {
+     "name": "generated_candidate_request_bound",
+     "line": 61
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM08ArgumentConstruction.lean",
+   "sha256": "74d1b2a34aae6c8358cdf1590d0bdb2a3f8a8824dbf5ae2e7ae99918776d1cb4",
+   "theorems": [
+    {
+     "name": "checkArgumentCoverage_sound",
+     "line": 87
+    },
+    {
+     "name": "checkArgumentCoverage_complete",
+     "line": 96
+    },
+    {
+     "name": "covered_argument_is_well_formed",
+     "line": 107
+    },
+    {
+     "name": "argument_supported_position_preserves_request",
+     "line": 127
+    },
+    {
+     "name": "argument_supported_position_preserves_claim",
+     "line": 131
+    },
+    {
+     "name": "argument_wf_has_well_founded_support",
+     "line": 138
+    },
+    {
+     "name": "argument_wf_has_no_dangling_edge",
+     "line": 142
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM09AttackDefeat.lean",
+   "sha256": "7767a7d7c326ad2b811c524259b9c77e86b1774758ec6eea695ca2bcec0e49d3",
+   "theorems": [
+    {
+     "name": "mem_resolveDefeat_iff",
+     "line": 46
+    },
+    {
+     "name": "resolved_defeat_has_wf_source",
+     "line": 65
+    },
+    {
+     "name": "resolved_defeat_preserves_request",
+     "line": 74
+    },
+    {
+     "name": "queryRefutes_irreflexive",
+     "line": 110
+    },
+    {
+     "name": "attack_witness_required",
+     "line": 118
+    },
+    {
+     "name": "attack_preserves_request",
+     "line": 121
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM10DungProfiles.lean",
+   "sha256": "b885ecc6e9ddc04ab5d7f63d39461dcda5de3c4053087f1213b9388db3ed29ff",
+   "theorems": [
+    {
+     "name": "resolveToDefeatAF_wellFormed",
+     "line": 44
+    },
+    {
+     "name": "groundedExtension_fixed",
+     "line": 94
+    },
+    {
+     "name": "groundedExtension_least",
+     "line": 99
+    },
+    {
+     "name": "groundedExtension_subset_args",
+     "line": 112
+    },
+    {
+     "name": "groundedExtension_is_grounded",
+     "line": 157
+    },
+    {
+     "name": "grounded_unique",
+     "line": 161
+    },
+    {
+     "name": "empty_admissible",
+     "line": 187
+    },
+    {
+     "name": "admissibleFamily_nonempty",
+     "line": 192
+    },
+    {
+     "name": "exists_preferred",
+     "line": 199
+    },
+    {
+     "name": "mem_completeExtensions_iff",
+     "line": 212
+    },
+    {
+     "name": "mem_preferredExtensions_iff",
+     "line": 223
+    },
+    {
+     "name": "mem_stableExtensions_iff",
+     "line": 234
+    },
+    {
+     "name": "preferredExtensions_sound",
+     "line": 245
+    },
+    {
+     "name": "preferredExtensions_complete",
+     "line": 250
+    },
+    {
+     "name": "preferredExtensions_nonempty",
+     "line": 255
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM11BranchQuery.lean",
+   "sha256": "80ce5a015f6e806e67f37108c3473ee8c4c834f7f262140cc7e466a1a26758d1",
+   "theorems": [
+    {
+     "name": "grounded_extension_family_nonempty",
+     "line": 76
+    },
+    {
+     "name": "preferred_extension_family_nonempty",
+     "line": 81
+    },
+    {
+     "name": "different_branches_not_composable",
+     "line": 118
+    },
+    {
+     "name": "undecided_requires_enterable",
+     "line": 204
+    },
+    {
+     "name": "inconsistent_requires_acceptance_and_refutation",
+     "line": 212
+    },
+    {
+     "name": "enterability_has_positive_witness",
+     "line": 220
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM12Procedure.lean",
+   "sha256": "e68f3e1511e9412002efaf70535b58cdcfd75fb964e2bf1d7b729d9b3859e906",
+   "theorems": [
+    {
+     "name": "procedural_input_is_procedural",
+     "line": 228
+    },
+    {
+     "name": "burden_success_is_nonprocedural",
+     "line": 232
+    },
+    {
+     "name": "burden_failure_is_nonprocedural",
+     "line": 237
+    },
+    {
+     "name": "adjudicated_statuses_are_nonprocedural",
+     "line": 242
+    },
+    {
+     "name": "pending_ne_adjudicated",
+     "line": 248
+    },
+    {
+     "name": "solverIncomplete_ne_adjudicated",
+     "line": 256
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM13DomainCompositionExact.lean",
+   "sha256": "913f670dc2de9bbaebba2049a597980c88176a2ede6fa71e78e5eeebc1a50b83",
+   "theorems": [
+    {
+     "name": "compositionChoices_sound",
+     "line": 56
+    },
+    {
+     "name": "choice_wf_selected_subset",
+     "line": 74
+    },
+    {
+     "name": "choice_wf_policy_bound",
+     "line": 80
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM14CoverageTrust.lean",
+   "sha256": "4c2fcec5e6f8f53aee69210de62fc98f7e8c6105c4c2c23d6fa9989909cea512",
+   "theorems": [
+    {
+     "name": "incomplete_not_complete",
+     "line": 57
+    },
+    {
+     "name": "trust_meet_le_left",
+     "line": 92
+    },
+    {
+     "name": "trust_meet_le_right",
+     "line": 97
+    },
+    {
+     "name": "incompatible_assurance_scope_rejected",
+     "line": 233
+    },
+    {
+     "name": "combined_assurance_preserves_scope",
+     "line": 238
+    },
+    {
+     "name": "combined_open_spec_cannot_be_proved",
+     "line": 247
+    },
+    {
+     "name": "combined_coverage_retains_left_open",
+     "line": 257
+    },
+    {
+     "name": "combined_coverage_retains_left_exemptions",
+     "line": 268
+    },
+    {
+     "name": "combined_legal_input_retains_left_pending",
+     "line": 279
+    },
+    {
+     "name": "combined_assurance_retains_left_open_spec_refs",
+     "line": 290
+    },
+    {
+     "name": "combined_assurance_retains_left_notices",
+     "line": 301
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM15IncrementalEmpiricalBanach.lean",
+   "sha256": "651801e8dc75ede72b99b797077760a20e61a08c65500ccaeb4552153b63627c",
+   "theorems": [
+    {
+     "name": "TH_subset_extend",
+     "line": 37
+    },
+    {
+     "name": "horn_iter_subset_extend",
+     "line": 48
+    },
+    {
+     "name": "horn_closure_subset_extend",
+     "line": 62
+    },
+    {
+     "name": "incremental_correct_returns_full_recompute",
+     "line": 82
+    },
+    {
+     "name": "childFullRecompute_fixed",
+     "line": 90
+    },
+    {
+     "name": "banach_exists_fixedPoint",
+     "line": 126
+    },
+    {
+     "name": "banach_fixedPoint_unique",
+     "line": 131
+    },
+    {
+     "name": "banach_iterates_converge",
+     "line": 139
+    },
+    {
+     "name": "banach_apriori_error_bound",
+     "line": 146
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM16TheoryComposition.lean",
+   "sha256": "da1f2f7e2e45e10f942e98d07a6790222674d372f5c0eec25c95035c98be174a",
+   "theorems": [
+    {
+     "name": "COMP_C01_trust_nonupgrade_left",
+     "line": 75
+    },
+    {
+     "name": "COMP_C01_trust_nonupgrade_right",
+     "line": 78
+    },
+    {
+     "name": "COMP_C02_observation_preservation",
+     "line": 82
+    },
+    {
+     "name": "COMP_C03_add_only_refinement",
+     "line": 92
+    },
+    {
+     "name": "COMP_C03_child_reference_fixed",
+     "line": 103
+    },
+    {
+     "name": "COMP_C04_failure_nonconversion",
+     "line": 111
+    },
+    {
+     "name": "CORE_01_typed_transition_request",
+     "line": 117
+    },
+    {
+     "name": "CORE_02_admitted_premise_status",
+     "line": 124
+    },
+    {
+     "name": "CORE_03_support_fixed",
+     "line": 133
+    },
+    {
+     "name": "CORE_04_generated_candidate_sound",
+     "line": 139
+    },
+    {
+     "name": "CORE_05_resolved_defeat_has_source",
+     "line": 146
+    },
+    {
+     "name": "CORE_07_resolved_bridge_wellFormed",
+     "line": 156
+    },
+    {
+     "name": "CORE_08_branch_nonmixing",
+     "line": 162
+    },
+    {
+     "name": "CORE_09_undecided_requires_enterable",
+     "line": 168
+    },
+    {
+     "name": "CORE_10_procedure_transition_nonmanufacture",
+     "line": 177
+    },
+    {
+     "name": "CORE_11_burden_failure_nonprocedural",
+     "line": 184
+    },
+    {
+     "name": "CORE_13_choice_membership",
+     "line": 191
+    },
+    {
+     "name": "CORE_14_exact_denotation",
+     "line": 199
+    },
+    {
+     "name": "CORE_15_empirical_read_only",
+     "line": 205
+    },
+    {
+     "name": "CORE_16_deviation_decomposition",
+     "line": 210
+    },
+    {
+     "name": "CORE_17_banach_exists",
+     "line": 217
+    },
+    {
+     "name": "CORE_19_argument_coverage_sound",
+     "line": 225
+    },
+    {
+     "name": "CORE_20_preferred_complete",
+     "line": 234
+    },
+    {
+     "name": "CORE_22_run_subject_preserved",
+     "line": 240
+    },
+    {
+     "name": "CORE_23_required_nonempty",
+     "line": 246
+    },
+    {
+     "name": "CORE_24_sat_sound",
+     "line": 252
+    },
+    {
+     "name": "CORE_25_incomplete_not_adjudicated",
+     "line": 262
+    }
+   ],
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMAllTheoremsAxiomAudit.lean",
+   "sha256": "050a56e1f89f0ed5f21cf24e948d6cd81962c0b865b60f561e95a84b2dd4ff2a",
+   "theorems": [],
+   "upgrade_route": "PROOF_BINDING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMAxiomAudit.lean",
+   "sha256": "7a4a3c892baa91c092810423b931c9462555c0ba6e7d24dd60da92fe60e28a6c",
+   "theorems": [],
+   "upgrade_route": "PROOF_BINDING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMCoreCompAxiomAudit.lean",
+   "sha256": "7a4a3c892baa91c092810423b931c9462555c0ba6e7d24dd60da92fe60e28a6c",
+   "theorems": [],
+   "upgrade_route": "PROOF_BINDING",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/UnifiedModel.lean",
+   "sha256": "5511f0893a534ff37f200b6bcda251f34df435b3d7566e70bf9d4dd9e3a97dec",
+   "theorems": [
+    {
+     "name": "horn_step_mono",
+     "line": 78
+    },
+    {
+     "name": "unattacked_in_ge",
+     "line": 124
+    },
+    {
+     "name": "unattacked_in_lfp",
+     "line": 200
+    },
+    {
+     "name": "banach_bounded",
+     "line": 238
+    },
+    {
+     "name": "soundness_aaf",
+     "line": 271
+    },
+    {
+     "name": "soundness_banach",
+     "line": 278
+    },
+    {
+     "name": "gc2_completeness",
+     "line": 293
+    },
+    {
+     "name": "unified_composition_v2",
+     "line": 309
+    },
+    {
+     "name": "full_chain",
+     "line": 335
+    },
+    {
+     "name": "horn_monotone",
+     "line": 355
+    },
+    {
+     "name": "banach_bound_uniform",
+     "line": 368
+    }
+   ],
+   "upgrade_route": "FORMAL_SPINE",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/WeightedSupNorm.lean",
+   "sha256": "d2018181439c16b5bf05cb568f402c8d46dbc3b89702de823a606927064ba05e",
+   "theorems": [
+    {
+     "name": "weightedSupDist_nonneg",
+     "line": 36
+    },
+    {
+     "name": "weightedSupDist_triangle",
+     "line": 47
+    },
+    {
+     "name": "weightedSupDist_symm",
+     "line": 69
+    },
+    {
+     "name": "weightedSupDist_complete",
+     "line": 76
+    }
+   ],
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "routing_is_not_a_proof_strength_assessment": true,
+   "runtime_mapping_status": "TO_BE_ESTABLISHED_DURING_IMPLEMENTATION"
+  }
+ ]
+}

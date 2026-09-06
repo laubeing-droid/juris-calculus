@@ -1,0 +1,1355 @@
+{
+ "schema_version": "jc/runtime-obligation-map/1.0",
+ "issued_on": "2026-09-06",
+ "master_document": "JC-UPGRADE-20260906-01",
+ "proof_binding": "proofs/lmm-binding.json",
+ "role": "Binds every external capability to precise Lean declarations, parameter preconditions, JC authority entries, verifiers and acceptance samples. Routes and mappings are implementation-scope decisions, never proof of the runtime. No field may be filled with kernelVerified without an implementation-level proof that does not exist today.",
+ "assurance_scale": {
+  "spec": "proved | assumed | openObligations",
+  "implementation": "crossCheckOnly | tcbSpecified | kernelVerified",
+  "runCheck": "checked | unchecked | checkFailed",
+  "default_granted": "crossCheckOnly"
+ },
+ "capability_mappings": [
+  {
+   "capability_id": "ULM01",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM01NormalForm.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.ContextKey",
+    "JurisLean.ULM.RequestKey",
+    "JurisLean.ULM.NormalForm",
+    "JurisLean.ULM.ContextKey.WellFormed",
+    "JurisLean.ULM.RequestKey.WellFormed",
+    "JurisLean.ULM.Preserves"
+   ],
+   "parameter_preconditions": [
+    "runScope.caseScope = caseScope (request belongs to its case)"
+   ],
+   "observable_quantities": [
+    "request identity fields observed on every admitted object"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/contracts.py (V5 request/context objects)",
+    "compiler_core/application.py (sole orchestration entry)"
+   ],
+   "independent_verifier": "compiler_core/independent_checker.py re-derives request binding from canonical bytes",
+   "acceptance_samples": [
+    "JT04",
+    "JT05",
+    "JT44"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "mappingVersion agreement is an engineering obligation; no Lean theorem proves the Python projection"
+   ]
+  },
+  {
+   "capability_id": "ULM02",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM02Outcome.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.Outcome",
+    "JurisLean.ULM.Outcome.map",
+    "JurisLean.ULM.PartialPayload",
+    "JurisLean.ULM.OpenObligation",
+    "JurisLean.ULM.FailureCore",
+    "JurisLean.ULM.map_never_upgrades_failure"
+   ],
+   "parameter_preconditions": [
+    "partial results carry a nonempty openObligations set"
+   ],
+   "observable_quantities": [
+    "exactly one of complete/partial/failure per solve; failure tag and reason preserved"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/contracts.py (V5 evaluation result constructors)",
+    "compiler_core/application.py (result assembly)"
+   ],
+   "independent_verifier": "independent_checker verifies result constructors against solver receipts",
+   "acceptance_samples": [
+    "JT20",
+    "JT28",
+    "JT29"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "timeout wrapping into success is forbidden; failure subjects must survive projection"
+   ]
+  },
+  {
+   "capability_id": "ULM03",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM03TypedGraph.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.TypedGraph",
+    "JurisLean.ULM.NFNode",
+    "JurisLean.ULM.NFEdge",
+    "JurisLean.ULM.EdgeWF",
+    "JurisLean.ULM.LocalTransition",
+    "JurisLean.ULM.localTransition_preserves_request"
+   ],
+   "parameter_preconditions": [
+    "edge request equals graph request; endpoints within graph nodes"
+   ],
+   "observable_quantities": [
+    "typed node/edge kinds, request identity on every edge"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/legal_ir.py + compiler_core/audit_bundle.py artifacts"
+   ],
+   "independent_verifier": "independent_checker re-derives edges and endpoints",
+   "acceptance_samples": [
+    "JT05"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "full dependency-payload refinement of node field domains remains an implementation duty (per ULM03 source); empirical nodes must never join normative outputs"
+   ]
+  },
+  {
+   "capability_id": "ULM04",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM04Obligations.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.ObligationKind",
+    "JurisLean.ULM.ProofSubject",
+    "JurisLean.ULM.ProofEvidence",
+    "JurisLean.ULM.VerifierSound",
+    "JurisLean.ULM.Sat",
+    "JurisLean.ULM.sat_sound",
+    "JurisLean.ULM.requiredObligations_nonempty"
+   ],
+   "parameter_preconditions": [
+    "VerifierSound assumed for the concrete verifier; obligations nonempty by construction"
+   ],
+   "observable_quantities": [
+    "per-edge obligation set; verifier acceptance evidence"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/certificates.py (receipt chain)",
+    "compiler_core/contracts.py (V5 obligation baseline)"
+   ],
+   "independent_verifier": "independent_checker refuses empty claims/obligations escape",
+   "acceptance_samples": [
+    "JT06",
+    "JT07"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "sat_sound presumes VerifierSound; Python checker reliability is engineering-verified, not Lean-verified"
+   ]
+  },
+  {
+   "capability_id": "ULM05",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM05Machine.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.Machine",
+    "JurisLean.ULM.Step",
+    "JurisLean.ULM.Run",
+    "JurisLean.ULM.RunConfig",
+    "JurisLean.ULM.SemResult",
+    "JurisLean.ULM.step_preserves_request",
+    "JurisLean.ULM.halted_has_no_step",
+    "JurisLean.ULM.applied_edge_not_reenabled"
+   ],
+   "parameter_preconditions": [
+    "transitions are edge and finalize only"
+   ],
+   "observable_quantities": [
+    "phase progression, edge completion, terminal states"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/application.py (run phases, interruption states)"
+   ],
+   "independent_verifier": "independent_checker + audit events replay",
+   "acceptance_samples": [
+    "JT20",
+    "JT05"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "concurrency, crash recovery and scheduler termination are engineering acceptance items, not covered by ULM05 theorems"
+   ]
+  },
+  {
+   "capability_id": "ULM06",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM06FactEvidence.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.PremiseOrigin",
+    "JurisLean.ULM.PremiseOrigin.admitted",
+    "JurisLean.ULM.PremiseOrigin.assumed",
+    "JurisLean.ULM.PremiseToken",
+    "JurisLean.ULM.AssumptionWitness",
+    "JurisLean.ULM.assumed_token_keeps_assumption",
+    "JurisLean.ULM.admitted_wf_has_admitted_status"
+   ],
+   "parameter_preconditions": [
+    "admitted tokens carry a matching FactAdmissionAttestation; assumed tokens carry a request-bound witness"
+   ],
+   "observable_quantities": [
+    "premise origin, dependency sets per derivation"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/fact_admission.py",
+    "compiler_core/source_service.py"
+   ],
+   "independent_verifier": "independent_checker re-verifies attestation binding and expiry/revocation",
+   "acceptance_samples": [
+    "JT08",
+    "JT09",
+    "JT10"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "admitted-zero-assumption does not mean reality is proved; disputes must not be upgraded by generators"
+   ]
+  },
+  {
+   "capability_id": "ULM07",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM07HornSupport.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.TaggedHornSystem",
+    "JurisLean.ULM.PositionCandidate",
+    "JurisLean.ULM.CandidateWF",
+    "JurisLean.ULM.supportClosure",
+    "JurisLean.ULM.supportClosure_least",
+    "JurisLean.ULM.generated_candidate_sound"
+   ],
+   "parameter_preconditions": [
+    "every atom in universe carries the system request"
+   ],
+   "observable_quantities": [
+    "least support closure per request; candidate positions"
+   ],
+   "applicable_profile": "all profiles (support layer, never final adjudication)",
+   "jc_authority_entry": [
+    "compiler_core/backends/__init__.py (jc-horn-fixpoint provider)",
+    "compiler_core/backend_router.py"
+   ],
+   "independent_verifier": "independent_checker re-runs its own Horn analysis from immutable bytes",
+   "acceptance_samples": [
+    "JT12",
+    "JT14"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "CandidateWF does not prove the candidate claim follows from its support; claim-root witness via ULM08 is required"
+   ]
+  },
+  {
+   "capability_id": "ULM08",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM08ArgumentConstruction.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.CanonicalArgument",
+    "JurisLean.ULM.SupportHyperedge",
+    "JurisLean.ULM.ArgumentWF",
+    "JurisLean.ULM.ArgumentCoverage",
+    "JurisLean.ULM.checkArgumentCoverage_sound",
+    "JurisLean.ULM.covered_argument_is_well_formed"
+   ],
+   "parameter_preconditions": [
+    "ArgumentCoverage compares actual against an independently produced expected carrier; expected must itself be well formed"
+   ],
+   "observable_quantities": [
+    "argument identity as full labelled support hypergraph; AND/OR routes"
+   ],
+   "applicable_profile": "profiles needing full carriers",
+   "jc_authority_entry": [
+    "compiler_core/argumentation.py (V5 structured arguments)",
+    "work reference constructor registered as the only expected producer"
+   ],
+   "independent_verifier": "independent_checker compares against the frozen reference, never generator self-output",
+   "acceptance_samples": [
+    "JT13",
+    "JT14",
+    "JT15"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "no self-comparison of actual to generator-copied expected; cyclic concrete derivations stay rejected"
+   ]
+  },
+  {
+   "capability_id": "ULM09",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM09AttackDefeat.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.AttackKind",
+    "JurisLean.ULM.TypedAttackV1",
+    "JurisLean.ULM.AttackWF",
+    "JurisLean.ULM.ValidatedAttackSet",
+    "JurisLean.ULM.DefeatPolicy",
+    "JurisLean.ULM.resolveDefeat",
+    "JurisLean.ULM.mem_resolveDefeat_iff",
+    "JurisLean.ULM.resolved_defeat_has_wf_source"
+   ],
+   "parameter_preconditions": [
+    "attack witness nonempty; attacker and target share the request; defeat policy frozen and evidence-bound"
+   ],
+   "observable_quantities": [
+    "seven attack kinds; resolved defeat relation entering Dung layer"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/argumentation.py (defeat resolution)",
+    "compiler_core/contracts.py (V5 attack objects)"
+   ],
+   "independent_verifier": "independent_checker re-derives attacks and defeat edges from inputs",
+   "acceptance_samples": [
+    "JT22",
+    "JT24"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "DefeatPolicy is a frozen legal policy decision; Lean proves binding of resolved edges, not the policy content; priority alone must not manufacture attacks"
+   ]
+  },
+  {
+   "capability_id": "ULM10",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM10DungProfiles.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.DefeatAF",
+    "JurisLean.ULM.StructuredArgumentation",
+    "JurisLean.ULM.SatisfiesProfile",
+    "JurisLean.ULM.groundedExtension",
+    "JurisLean.ULM.preferredExtensions",
+    "JurisLean.ULM.stableExtensions",
+    "JurisLean.ULM.completeExtensions",
+    "JurisLean.ULM.groundedExtension_least",
+    "JurisLean.ULM.mem_preferredExtensions_iff"
+   ],
+   "parameter_preconditions": [
+    "defeat AF well formed; powerset reference families are noncomputable references"
+   ],
+   "observable_quantities": [
+    "extension families for grounded/preferred/stable/complete"
+   ],
+   "applicable_profile": "grounded default; others on explicit request with enumeration budget",
+   "jc_authority_entry": [
+    "compiler_core/backend_router.py routing",
+    "compiler_core/backends/ (profile providers)",
+    "compiler_core/argumentation.py (grounded)"
+   ],
+   "independent_verifier": "independent_checker recomputes grounded; bounded reference enumeration verified for others",
+   "acceptance_samples": [
+    "JT16",
+    "JT17",
+    "JT18",
+    "JT19",
+    "JT20",
+    "JT21"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "NoExtension/{empty extension}/incomplete are distinct; maximality of partial preferred sets must be verified before verification claims"
+   ]
+  },
+  {
+   "capability_id": "ULM11",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM11BranchQuery.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.EvalResult",
+    "JurisLean.ULM.EvalResult.noExtension",
+    "JurisLean.ULM.EvalResult.extensions",
+    "JurisLean.ULM.EvalResult.incomplete",
+    "JurisLean.ULM.ScenarioKey",
+    "JurisLean.ULM.SemanticBranchKey",
+    "JurisLean.ULM.QueryGateState",
+    "JurisLean.ULM.QueryRefutation",
+    "JurisLean.ULM.Common",
+    "JurisLean.ULM.Possible",
+    "JurisLean.ULM.CommonRefuted",
+    "JurisLean.ULM.PossiblyRefuted",
+    "JurisLean.ULM.UndecidedSome",
+    "JurisLean.ULM.InconsistentSome",
+    "JurisLean.ULM.Excluded",
+    "JurisLean.ULM.different_branches_not_composable",
+    "JurisLean.ULM.undecided_requires_enterable",
+    "JurisLean.ULM.queryRefutes_irreflexive"
+   ],
+   "parameter_preconditions": [
+    "query gate enterable requires a positive witness; empty families forbid vacuous Common"
+   ],
+   "observable_quantities": [
+    "per-branch query statuses with witnesses; refutation direction"
+   ],
+   "applicable_profile": "profile chosen by request",
+   "jc_authority_entry": [
+    "compiler_core/query_semantics.py (new, V5)"
+   ],
+   "independent_verifier": "independent_checker re-derives query witnesses from the extension family",
+   "acceptance_samples": [
+    "JT23",
+    "JT25",
+    "JT26",
+    "JT27"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "argument OUT does not imply claim refutation; refutation is directed, never symmetric by default"
+   ]
+  },
+  {
+   "capability_id": "ULM12",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM12Procedure.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.ProcedureAdjudicateResult",
+    "JurisLean.ULM.ProcedureAdjudicateResult.adjudicatedStatus",
+    "JurisLean.ULM.ProcedureAdjudicateResult.proceduralDisposition",
+    "JurisLean.ULM.ProcedureAdjudicateResult.pendingLegalJudgment",
+    "JurisLean.ULM.ProcedureAdjudicateResult.solverIncomplete",
+    "JurisLean.ULM.AdjudicationAuthority",
+    "JurisLean.ULM.AdjudicationAuthority.ValidFor",
+    "JurisLean.ULM.BurdenRule",
+    "JurisLean.ULM.ProofStandard",
+    "JurisLean.ULM.adjudicate",
+    "JurisLean.ULM.adjudicate_incomplete",
+    "JurisLean.ULM.noExtension_without_authority_is_pending",
+    "JurisLean.ULM.procedural_disposition_precedes_entity_finding"
+   ],
+   "parameter_preconditions": [
+    "ValidFor requires issue match, request-bound consequences, nonempty reviewer and nonprocedural consequences; reviewer authorization is verified by engineering, not by the model string"
+   ],
+   "observable_quantities": [
+    "four-way procedure output; frozen decision table"
+   ],
+   "applicable_profile": "only when request asks for procedure/burden consequences",
+   "jc_authority_entry": [
+    "compiler_core/procedure.py (new, V5)",
+    "compiler_core/application.py wiring"
+   ],
+   "independent_verifier": "independent_checker validates authority references and decision table output",
+   "acceptance_samples": [
+    "JT28",
+    "JT29",
+    "JT30",
+    "JT31"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "NoExtension never implies losing; incomplete solves never produce terminal outcomes; actual remedies come from admitted rules, not hardcoded names"
+   ]
+  },
+  {
+   "capability_id": "ULM13",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM13DomainCompositionExact.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.DomainBundle",
+    "JurisLean.ULM.CompositionPolicy",
+    "JurisLean.ULM.CompositionChoice",
+    "JurisLean.ULM.ChoiceWF",
+    "JurisLean.ULM.compositionChoices",
+    "JurisLean.ULM.Dimension",
+    "JurisLean.ULM.ExactExpr",
+    "JurisLean.ULM.ExactExpr.add",
+    "JurisLean.ULM.ExactExpr.sub",
+    "JurisLean.ULM.ExactExpr.scale",
+    "JurisLean.ULM.ExactExpr.eval",
+    "JurisLean.ULM.ExactExpr.denote",
+    "JurisLean.ULM.ExactExpr.eval_eq_denote",
+    "JurisLean.ULM.childOfChoice"
+   ],
+   "parameter_preconditions": [
+    "candidates share one branch and request; selection is a nonempty policy-allowed subset; dimensions are type-level"
+   ],
+   "observable_quantities": [
+    "child branch keys; exact rational evaluation"
+   ],
+   "applicable_profile": "only when domain composition or exact arithmetic is requested",
+   "jc_authority_entry": [
+    "compiler_core/domain_composition.py (new, V5)",
+    "compiler_core/contracts.py exact numeric wire rules"
+   ],
+   "independent_verifier": "independent_checker re-evaluates expressions with independent arithmetic",
+   "acceptance_samples": [
+    "JT32",
+    "JT33",
+    "JT34"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "eval=denote proves interpreter correctness, not statutory policy choice; only lit/add/sub/scale are covered - other operations keep their existing numeric contracts"
+   ]
+  },
+  {
+   "capability_id": "ULM14",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM14CoverageTrust.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.AssuranceEnvelope",
+    "JurisLean.ULM.SpecStatus",
+    "JurisLean.ULM.ImplementationAssurance",
+    "JurisLean.ULM.RunCheckStatus",
+    "JurisLean.ULM.CoverageStatus",
+    "JurisLean.ULM.LegalInputStatus",
+    "JurisLean.ULM.AssuranceScope",
+    "JurisLean.ULM.TrustVector",
+    "JurisLean.ULM.combineAssurance",
+    "JurisLean.ULM.incompatible_assurance_scope_rejected",
+    "JurisLean.ULM.combined_coverage_retains_left_open",
+    "JurisLean.ULM.trust_meet_le_left"
+   ],
+   "parameter_preconditions": [
+    "same scope required for combination; every field aggregates by its own conservative rule"
+   ],
+   "observable_quantities": [
+    "assurance fields per run; kept assumption/pending/exempt evidence"
+   ],
+   "applicable_profile": "all profiles",
+   "jc_authority_entry": [
+    "compiler_core/assurance.py (new, V5)",
+    "compiler_core/certificates.py"
+   ],
+   "independent_verifier": "independent_checker refuses assurance upgrades and pseudo-exemptions",
+   "acceptance_samples": [
+    "JT35",
+    "JT36",
+    "JT37"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "kernelVerified is never granted by default; notApplicable needs verified applicability evidence"
+   ]
+  },
+  {
+   "capability_id": "ULM15",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM15IncrementalEmpiricalBanach.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.HornAddDelta",
+    "JurisLean.ULM.extendHorn",
+    "JurisLean.ULM.childFullRecompute",
+    "JurisLean.ULM.IncrementalImplementationCorrect",
+    "JurisLean.ULM.EmpiricalArtifact",
+    "JurisLean.ULM.attachEmpirical",
+    "JurisLean.ULM.empirical_is_read_only",
+    "JurisLean.ULM.incremental_correct_returns_full_recompute",
+    "JurisLean.ULM.banach_exists_fixedPoint",
+    "JurisLean.ULM.banach_fixedPoint_unique",
+    "JurisLean.ULM.banach_iterates_converge",
+    "JurisLean.ULM.banach_apriori_error_bound"
+   ],
+   "parameter_preconditions": [
+    "add-only deltas keep the universe fixed; IncrementalImplementationCorrect is a premise, not an observed fact; Banach guarantees need a declared complete space, a map with global contraction and an error bound"
+   ],
+   "observable_quantities": [
+    "incremental equality to full recompute; read-only empirical artifacts"
+   ],
+   "applicable_profile": "Horn add-only fast path off by default until benchmarked; empirical channel read-only",
+   "jc_authority_entry": [
+    "compiler_core/incremental.py (new, V5)",
+    "compiler_core/contracts.py empirical objects"
+   ],
+   "independent_verifier": "independent_checker compares against full recomputation; empirical perturbation must not move normative digests",
+   "acceptance_samples": [
+    "JT40",
+    "JT41",
+    "JT42",
+    "JT43"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "sample fitting is never a contraction proof; without a verified model reference no probability estimate is returned; downstream Dung/procedure layers still recompute"
+   ]
+  },
+  {
+   "capability_id": "ULM16",
+   "lean_module": "proofs/lean/juris_lean/JurisLean/ULM16TheoryComposition.lean",
+   "lean_namespace": "JurisLean.ULM",
+   "key_declarations_fully_qualified": [
+    "JurisLean.ULM.CoreId",
+    "JurisLean.ULM.CompId",
+    "JurisLean.ULM.COMP_C01_trust_nonupgrade_left",
+    "JurisLean.ULM.COMP_C03_add_only_refinement",
+    "JurisLean.ULM.COMP_C04_failure_nonconversion",
+    "JurisLean.ULM.CORE_05_resolved_defeat_has_source",
+    "JurisLean.ULM.CORE_08_branch_nonmixing",
+    "JurisLean.ULM.CORE_19_argument_coverage_sound",
+    "JurisLean.ULM.CORE_25_incomplete_not_adjudicated"
+   ],
+   "parameter_preconditions": [
+    "named theorems are concrete normal-form instances; ownership maps bind CORE/COMP ids to ULM modules"
+   ],
+   "observable_quantities": [
+    "composition index bound to real call edges through this map"
+   ],
+   "applicable_profile": "all profiles (cross-cutting)",
+   "jc_authority_entry": [
+    "compiler_core/proof_binding.py (new, V5)",
+    "proofs/runtime-obligation-map.json"
+   ],
+   "independent_verifier": "independent_checker + acceptance suite JT02/JT03 subject binding",
+   "acceptance_samples": [
+    "JT02",
+    "JT03"
+   ],
+   "implementation_assurance": "crossCheckOnly",
+   "exclusions": [
+    "the existence of CORE/COMP indices does not close every theorem family; Python refinement claims stay per-obligation"
+   ]
+  }
+ ],
+ "module_disposition_summary": {
+  "total_modules": 91,
+  "total_theorem_declarations_carried": 452,
+  "by_disposition": {
+   "CONTRACT_ONLY": 5,
+   "RUNTIME_MAPPING_OR_BUILD_AUDIT": 48,
+   "BUILD_AUDIT": 6,
+   "OPTIONAL_THEORY": 9,
+   "RESEARCH_RETENTION": 5,
+   "CONDITIONAL_BASIS": 2,
+   "RUNTIME_MAPPING": 16
+  }
+ },
+ "module_dispositions": [
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ASPWitness.lean",
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "disposition": "CONTRACT_ONLY",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Solver witness/lowering contract for ASP/SMT surfaces; JC V5 ships no ASP/SMT backend, admission of any such backend must satisfy these contracts."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ArgumentCompilerSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ArgumentSemanticsRegistry.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AttackDecision.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AuthorityLattice.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/AxiomAudit.lean",
+   "upgrade_route": "PROOF_BINDING",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BackendContract.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachCertificate.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachComplete.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachContraction.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 2,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachEffectiveNodes.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Contraction theory for an effectiveness-pricing map; citable only when a concrete iteration declares space, map, global contraction and error bound."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachFixedPoint.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 1,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachScratch.lean",
+   "upgrade_route": "RESEARCH_ONLY",
+   "disposition": "RESEARCH_RETENTION",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Mathlib API scratch checks; retained, never cited as runtime basis."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/BanachWeightedNorm.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/Basic.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Mathlib import scaffolding only; no runtime counterpart."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CanonicalSerialization.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateChecker.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 8,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateCheckerV2.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/CertificateV2.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ContractionCondition.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 1,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DDLDefinitions.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DefeasiblePriority.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungAAF.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Compatibility re-export shim for DungAAF namespace."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungDefinitions.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/DungFixedPoint.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 16,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/EndToEnd.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 10,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ExactNumericContract.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FactAdmissionSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 12,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FailureStatus.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteGaloisAdjunction.lean",
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "disposition": "CONDITIONAL_BASIS",
+   "theorem_count": 1,
+   "sha256_verified": true,
+   "note": "Order-theory scaffolding; usable only as a conditional basis for future translation theory."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteMonotoneIteration.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/FiniteRosetta.lean",
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "disposition": "RESEARCH_RETENTION",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Cross-jurisdiction mapping research results (44-entry claim mapping); not a runtime component."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornAAFContract.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornDefinitions.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 2,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornFixedPoint.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 10,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HornOperationalRefinement.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "CONTRACT_ONLY",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Declaration-free contract document: defines the RuntimeRefinementReceipt boundary that the Python runtime must satisfy; mismatches fail closed."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/HumanResearchReceiptSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToAAF.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToASP.lean",
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "disposition": "CONTRACT_ONLY",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Solver witness/lowering contract for ASP/SMT surfaces; JC V5 ships no ASP/SMT backend, admission of any such backend must satisfy these contracts."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToHorn.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/IVLToSMT.lean",
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "disposition": "CONTRACT_ONLY",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Solver witness/lowering contract for ASP/SMT surfaces; JC V5 ships no ASP/SMT backend, admission of any such backend must satisfy these contracts."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/JC_Formalization.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RESEARCH_RETENTION",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Research-progress bookkeeping of theorem statuses; not a reasoning runtime."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIVL.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIVLWellFormed.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalIds.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalModelV2.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 2,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecNormalize.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecToIVL.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSpecWellFormed.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalSyntax.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/LegalWellFormed.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/PermissionConflict.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ProposalEnvelopeSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ProposalNoninterference.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ReceiptAuthority.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SMTWitness.lean",
+   "upgrade_route": "BACKEND_CONTRACT_ONLY",
+   "disposition": "CONTRACT_ONLY",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Solver witness/lowering contract for ASP/SMT surfaces; JC V5 ships no ASP/SMT backend, admission of any such backend must satisfy these contracts."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SafetyTheorems.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ScratchApi.lean",
+   "upgrade_route": "RESEARCH_ONLY",
+   "disposition": "RESEARCH_RETENTION",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Mathlib API scratch checks; retained, never cited as runtime basis."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SolverRouting.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SourceBundleSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SourcePathSpec.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/SupZeroLemma.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TaintNoninterference.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 8,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalApplicability.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalArithmetic.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TemporalKripke.lean",
+   "upgrade_route": "CONDITIONAL_TRANSLATION",
+   "disposition": "CONDITIONAL_BASIS",
+   "theorem_count": 2,
+   "sha256_verified": true,
+   "note": "Finite LTL guard theory with a worked litigation example; citable only if a runtime iteration declares its finite world model."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TranslationRefinement.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TranslationWitness.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/TypedAttack.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RUNTIME_MAPPING_OR_BUILD_AUDIT",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Formal spine module; constrains the V5 runtime through its mapped obligations."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM01NormalForm.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 1,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM02Outcome.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM03TypedGraph.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM04Obligations.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM05Machine.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 5,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM06FactEvidence.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 2,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM07HornSupport.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM08ArgumentConstruction.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 7,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM09AttackDefeat.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM10DungProfiles.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 15,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM11BranchQuery.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM12Procedure.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 6,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM13DomainCompositionExact.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 3,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM14CoverageTrust.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 11,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM15IncrementalEmpiricalBanach.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 9,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULM16TheoryComposition.lean",
+   "upgrade_route": "ULM_REQUIRED_MAPPING",
+   "disposition": "RUNTIME_MAPPING",
+   "theorem_count": 27,
+   "sha256_verified": true,
+   "note": "Mapped through the ULM capability table above."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMAllTheoremsAxiomAudit.lean",
+   "upgrade_route": "PROOF_BINDING",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "CI axiom audit entry point for all JurisLean.ULM theorems."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMAxiomAudit.lean",
+   "upgrade_route": "PROOF_BINDING",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "CI axiom audit entry point for ULM CORE/COMP theorems."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/ULMCoreCompAxiomAudit.lean",
+   "upgrade_route": "PROOF_BINDING",
+   "disposition": "BUILD_AUDIT",
+   "theorem_count": 0,
+   "sha256_verified": true,
+   "note": "Byte-identical duplicate audit entry point; kept as CI artifact."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/UnifiedModel.lean",
+   "upgrade_route": "FORMAL_SPINE",
+   "disposition": "RESEARCH_RETENTION",
+   "theorem_count": 11,
+   "sha256_verified": true,
+   "note": "Legacy self-contained v6 pipeline (Kripke/Horn/AAF/Banach); superseded by ULM01-16 and the JurisLean spine; retained for history only."
+  },
+  {
+   "path": "proofs/lean/juris_lean/JurisLean/WeightedSupNorm.lean",
+   "upgrade_route": "OPTIONAL_NUMERICAL_THEORY",
+   "disposition": "OPTIONAL_THEORY",
+   "theorem_count": 4,
+   "sha256_verified": true,
+   "note": "Banach/metric theory retained as capability registration; marked not-applicable unless a concrete numerical iteration claims its premises."
+  }
+ ],
+ "limits": [
+  "Declaration names were resolved against the actual sources at the pinned commit; namespaces are exact.",
+  "Multiple theorems constrain one component and one component may rest on several theorems; the mapping is many-to-many by design.",
+  "Acceptance sample ids refer to the master document section 14; they pass only when actually run."
+ ]
+}

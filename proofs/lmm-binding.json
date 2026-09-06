@@ -1,0 +1,86 @@
+{
+ "schema_version": "jc/lmm-proof-binding/1.0",
+ "binding_date": "2026-09-06",
+ "role": "verifiable citation of the formal specification subject; never a runtime proof claim",
+ "legal_math_modeling_subject": {
+  "commit": "23c5a310ae02192f2f896515b00de51895da387f",
+  "tree": "97275b6b691bd1757a0e2af9018c124550792a56",
+  "remote": "https://github.com/laubeing-droid/legal-math-modeling",
+  "local_checkout_clean": true
+ },
+ "juris_calculus_baseline": {
+  "commit": "008198955db39917e755b32e806d9a24a715c6d6",
+  "tree": "42600f1a105f50a28059a7790bf309fe6b4a2a17",
+  "branch": "upgrade/ulm-bound-runtime-v5"
+ },
+ "ci_evidence": {
+  "run_id": 33978186916,
+  "attempt": 1,
+  "conclusion": "success",
+  "completed_at_utc": "2026-09-05T19:06:13Z",
+  "final_gate_job_id": 101350394797,
+  "final_gate_conclusion": "success",
+  "certificate_status_exact": "RELEASE_PASS_PENDING_INDEPENDENT_VERIFICATION",
+  "independent_verifier_verdict_exact": "VERIFIED_PENDING_RELEASE_GATE",
+  "pipeline_stage_note": "The two status strings are pipeline stage states; they are preserved verbatim and are read together with the final gate success.",
+  "artifact_archives": [
+   {
+    "name": "lmm-current-release-certificate.zip",
+    "archive_sha256": "306e9a7ca9b105e5efc898ba0a201c0d6ac362bbd586b4553fa0b6d8c9cab668",
+    "matches_github_artifact_digest": true
+   },
+   {
+    "name": "lmm-current-runtime-refinement.zip",
+    "archive_sha256": "aeb4d4035fbfd8aae5cb324586a47e8d5d171be14ad2dca391fca0deef1418e8",
+    "matches_github_artifact_digest": true
+   },
+   {
+    "name": "lmm-current-python-gates.zip",
+    "archive_sha256": "cc210741a50392b2e27569327444a58816fdcfc6fac5f683fd1d879a569f9dca",
+    "matches_github_artifact_digest": true
+   },
+   {
+    "name": "lmm-current-lean-build.zip",
+    "archive_sha256": "85a8c224bec6d1aaa5e4a567fbdf62819eccdd50fe792f756112d0660ac58ce9",
+    "matches_github_artifact_digest": true
+   }
+  ],
+  "clean_lean_build": {
+   "jobs_reported": 2993,
+   "success": true,
+   "toolchain": {
+    "lean_toolchain": "leanprover/lean4:v4.30.0",
+    "mathlib": "v4.30.0",
+    "lake_manifest_sha256": "7230ea7eeaf37899cdf17d1c878e853e3650d276e6ec6b7f1d2f4c841952963e"
+   }
+  },
+  "python_gates": {
+   "passed": 131,
+   "source": "pytest-full.log"
+  },
+  "controlled_checker_input_mutations": {
+   "total": 46,
+   "killed": 46,
+   "survived": 0
+  }
+ },
+ "source_inventory_verification": {
+  "inventory_schema": "jc-upgrade-proof-source-inventory/1.0",
+  "inventory_copy": "proofs/proof-inventory.json",
+  "source_count": 91,
+  "theorem_declaration_count": 452,
+  "hash_verified_locally": 91,
+  "hash_note": "Local working tree is CRLF on this machine; hashes verified after LF normalization, which reproduces the CI certificate digests. Raw-byte hashes of CRLF checkouts legitimately differ.",
+  "verification_command": "python -B work/gen_u01.py"
+ },
+ "runtime_refinement_receipts_bound_to": {
+  "runtime_commit": "c79e03b8d0cfed85c43cc013bf8a0b50326bc858",
+  "note": "The three existing cross-repo receipt groups (8 cases) executed on JC c79e03b8..., not on this upgrade branch; they are retained as component-level evidence and are not reused as V5 whole-chain acceptance."
+ },
+ "limits": [
+  "This binding cites the fixed LMM subject; it does not prove any JC runtime behavior.",
+  "The 91/452 inventory is carried from the CI certificate; no theorem was re-proved here.",
+  "Lean/Elan/Lake were never executed locally; GitHub Actions remains the Lean authority.",
+  "The independent verifier report was inspected, not re-executed."
+ ]
+}
