@@ -657,8 +657,7 @@ h1 {{ color:#f8fafc; font-size:24px; margin-bottom:4px; }}
 </body>
 </html>"""
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html)
+    Path(output_path).write_text(html, encoding="utf-8")
 
 
 def _build_stats(results: Dict) -> str:
@@ -680,16 +679,15 @@ def _build_stats(results: Dict) -> str:
 # 主入口
 # ═══════════════════════════════════════════
 
+# All harness reports land in this fixed, repository-adjacent ignored
+# directory; no operator-supplied path ever reaches a file write.
+REPORT_ROOT = Path(__file__).resolve().parents[1] / "过程文件" / "trirail"
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run the deterministic Tri-Rail matrix harness")
     parser.add_argument("--open", action="store_true", help="Open the generated HTML report in a browser")
-    parser.add_argument(
-        "--out-dir",
-        type=Path,
-        default=Path(__file__).resolve().parents[1] / "过程文件" / "trirail",
-        help="Write local text and HTML reports outside the tracked repository surface",
-    )
     args = parser.parse_args()
     print("=" * 60)
     print("  Tri-Rail Collider v1.2.0")
@@ -706,18 +704,18 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = output_dir / "trirail_matrix_report.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
+    json_path.write_text(
+        json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8",
+    )
 
     import os
     print(f"\n[OK] Tri-Rail Matrix -> {json_path} ({os.path.getsize(json_path):,} bytes)")
 
     # 保存报告
     report = collider.generate_report(results)
-    report_path = args.out_dir / "trirail_report_v1.2.0.txt"
+    report_path = REPORT_ROOT / "trirail_report_v1.2.0.txt"
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(report)
+    report_path.write_text(report, encoding="utf-8")
 
     print(f"[OK] Report -> {report_path}")
     print(report)

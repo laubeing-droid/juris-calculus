@@ -74,6 +74,8 @@ def export_rules_as_jsonl(
                 "pack_digest": metadata.get("pack_digest", ""),
                 "split_seed": seed,
             })
+    # Seeded (non-secret) RNG is the determinism contract for reproducible
+    # train/dev/test splits; never used for tokens, keys, or any secret.
     rng = random.Random(seed)
     rng.shuffle(items)
     total = len(items)

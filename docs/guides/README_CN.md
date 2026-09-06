@@ -20,8 +20,7 @@ jc capabilities --json
 jc evaluate --input case-input-bundle.json --json
 ```
 
-`jc --version` 应输出 `jc 5.0.0`。需要构建并验证正式 wheel 时，使用当前
-3.0 验收计划或按 [V4 发布流程](../operations/RELEASE_V4.md) 操作，不要在工作树里手工拼装发布包。
+`jc --version` 应输出 `jc 5.0.0`。需要构建并验证正式 wheel 时，使用 V5 验收计划（`remediation/v5/tasks.v1.json`，经 `tools/verify_upgrade.py`）或按 [V5 发布流程](../operations/RELEASE_V5.md) 操作，不要在工作树里手工拼装发布包。
 
 运行宿主必须提供 `JC_RUNTIME_MANIFEST`。仅查询能力时可只读取 manifest；执行
 `evaluate`、`verify`、`replay`、`read-artifact` 或 `render` 时，还必须通过
@@ -47,6 +46,6 @@ jc render --input artifact-handle.json --format markdown --audience agent --json
 
 ## 接口
 
-CLI、`JCClient` 与 stdio MCP 共用唯一 V4 application service；不存在 V3 或 WorkBuddy 兼容执行链。详见 [CLI](CLI.md)。
+CLI、`JCClient` 与 stdio MCP 共用唯一 application service（V5，jc/5.0）；不存在 V3 或 WorkBuddy 兼容执行链。详见 [CLI](CLI.md)。
 
-更多内容见 [文档索引](../README.md)、[输入与语义边界](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)和[发布边界](../operations/RELEASE_V4.md)。
+更多内容见 [文档索引](../README.md)、[输入与语义边界](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)、[V5 对象与状态矩阵](../contracts/V5_OBJECT_STATE_MATRIX.md)和[发布边界](../operations/RELEASE_V5.md)。

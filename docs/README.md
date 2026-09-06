@@ -1,6 +1,6 @@
 # Documentation index
 
-JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README](../README.md)。
+JC 是 CLI-first、可审计的法律推理内核，当前版本 5.0.0（公共协议 jc/5.0）。先读根目录 [README](../README.md)。
 
 ## 用户与集成方
 
@@ -17,12 +17,14 @@ JC 是 CLI-first、可审计的 V4 法律推理内核。先读根目录 [README]
 - [Contract authority](architecture/contract-authority-v4.md)
 - [Module authority registry](architecture/module-authority.json)
 - [Runtime path inventory](architecture/runtime-path-inventory.md)
-- [V4 object and state matrix](contracts/V4_OBJECT_STATE_MATRIX.md)
+- [V5 object and state matrix](contracts/V5_OBJECT_STATE_MATRIX.md)（当前权威；V4 矩阵为历史）
 - [Canonical identity, time, numeric and limits](contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md)
 - [Runtime claims and evidence limits](contracts/FORMAL_RUNTIME_CONFORMANCE.md)
+- [Proof subject binding](../proofs/lmm-binding.json) 与 [runtime obligation map](../proofs/runtime-obligation-map.json)
+- [Final V5 upgrade report](../FINAL_UPGRADE_REPORT.md)
 - [Governance, training and analysis boundary](operations/governance-training-analysis.md)
 - [V4 remediation status](../remediation/v4/STATUS.md)
-- [V4 release procedure](operations/RELEASE_V4.md)
+- [V5 release procedure](operations/RELEASE_V5.md)；[V4 release procedure（历史）](operations/RELEASE_V4.md)
 
 ## Historical task definitions (not current authority)
 

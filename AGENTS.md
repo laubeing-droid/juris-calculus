@@ -24,6 +24,7 @@ Do not weaken `DecisionStatus`, `verified_fact` admission, Horn, attack, excepti
 Use the narrowest relevant checks first, then broader checks for user-visible work:
 
 ```powershell
+python -B tools\verify_upgrade.py --plan remediation/v5/tasks.v1.json --output work/v5-acceptance
 python -B tools\remediate_v4.py lint-plan
 python -B tools\remediate_v4.py run --through V4-03-OFFICIAL-YAML
 python -B -m pytest -c tests\pytest.ini -q -p no:cacheprovider tests\formal_e2e tests\mcp_protocol
@@ -32,7 +33,7 @@ python -B mcp_server.py --test
 git diff --check
 ```
 
-Run supply-chain, privacy, stale-narrative, and disclosure checks when relevant. The stdio subprocess test is the MCP transport authority; `mcp_server.py --test` is only an in-process smoke.
+Run supply-chain, privacy, stale-narrative, and disclosure checks when relevant. `verify_upgrade.py` is the whole-upgrade acceptance aggregator: it reads only real exits and run logs, never a manual pass flag. The stdio subprocess test is the MCP transport authority; `mcp_server.py --test` is only an in-process smoke.
 
 ## Post-edit Validation
 

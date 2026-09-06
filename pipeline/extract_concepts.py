@@ -211,7 +211,12 @@ def main():
                   allow_unicode=True), encoding="utf-8")
 
     # 更新 domain_config.yaml
-    dc = yaml.safe_load(open(CONFIG_DIR / "domain_config.yaml", encoding="utf-8"))
+    config_root = CONFIG_DIR.resolve()
+    domain_config_path = (CONFIG_DIR / "domain_config.yaml").resolve()
+    if config_root not in domain_config_path.parents:
+        raise ValueError("domain_config path escapes the configured config directory")
+    with open(domain_config_path, encoding="utf-8") as handle:
+        dc = yaml.safe_load(handle)
     current = set(dc.get("concept_registry", []))
     new_concepts = [k for k, _ in all_concepts.most_common(600) if k not in current][:400]
     dc["concept_registry"] = sorted(list(current) + new_concepts)
