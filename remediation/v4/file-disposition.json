@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 262,
+  "count": 263,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -703,6 +703,11 @@
     },
     {
       "path": "tests/dsh_formal/test_profile.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/formal_e2e/build_v5_wheels.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
