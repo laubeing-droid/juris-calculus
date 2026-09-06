@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script Name: audit-engine.sh
+# Script Name: credential-barrier.sh
 # Description: 自动化物理层脱敏与工程完整性自检引擎 (L1 屏障)
 # Lifecycle:   Git Pre-commit Hook / CI Core Runner
-# Version:     3.3.0
+# Version:     3.3.1
 # Changes:
+#   v3.3.1 - 从 audit-engine.sh 更名，避免与审计工具链自身的过程产物命名冲突
 #   v3.3.0 - 新增 Phase 0 全仓扫描：对所有 git ls-files 中的文本文件执行凭证正则
 #          - 自动跳过二进制文件(.png/.jpg/.svg/.pdf/.exe/.zip 等)
 #          - 修复 safe_grep 空 flags 参数导致 grep 崩溃("Unmatched (")的 bug

@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0 # 获取完整历史以确保 diff 计算精确
 
       - name: Inject Audit Execution Permissions
-        run: chmod +x ./scripts/audit-engine.sh
+        run: chmod +x ./scripts/credential-barrier.sh
 
       - name: Execute Core Desensitization Scan
         run: |
@@ -38,4 +38,4 @@ jobs:
           fi
 
           # 运行扫描脚本
-          ./scripts/audit-engine.sh
+          ./scripts/credential-barrier.sh
