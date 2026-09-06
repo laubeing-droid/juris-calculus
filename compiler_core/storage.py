@@ -341,6 +341,31 @@ def _harden_windows(path: Path) -> None:
         )
         if completed.returncode != 0:
             _fail("STORAGE_CAPABILITY_BLOCKED", "owner-only Windows DACL cannot be set")
+    if os.name == "nt":
+        # Runner images differ in which principals a fresh node inherits or
+        # receives, and the fixed removal list above cannot cover every
+        # environment (one GitHub Actions Windows VM passed while another
+        # left an unapproved ACE behind). Enforce the service allowlist
+        # directly against the resulting DACL instead.
+        approved = frozenset({sid, "S-1-5-18"})
+        stray = sorted(_windows_acl_sids(path)[1] - approved)
+        if stray:
+            removal = ["icacls.exe", target, "/remove:g"]
+            removal.extend(f"*{principal}" for principal in stray)
+            completed = subprocess.run(
+                removal, capture_output=True, check=False, timeout=20,
+            )
+            if completed.returncode != 0:
+                _fail(
+                    "STORAGE_CAPABILITY_BLOCKED",
+                    "unapproved Windows principals cannot be removed",
+                )
+            stray = sorted(_windows_acl_sids(path)[1] - approved)
+            if stray:
+                _fail(
+                    "STORAGE_CAPABILITY_BLOCKED",
+                    "unapproved Windows principals remain: " + ",".join(stray),
+                )
 
 
 def _windows_acl_sids(path: Path) -> tuple[str, frozenset[str]]:
@@ -413,8 +438,13 @@ def _verify_security(path: Path, *, file: bool = False) -> None:
         owner, allowed = _windows_acl_sids(path)
         if owner != current or current not in allowed or "S-1-1-0" in allowed:
             _fail("STORAGE_DACL", "Windows storage owner/DACL is not service-only")
-        if not allowed <= {current, "S-1-5-18"}:
-            _fail("STORAGE_DACL", "Windows storage grants an unapproved principal")
+        unapproved = sorted(allowed - {current, "S-1-5-18"})
+        if unapproved:
+            _fail(
+                "STORAGE_DACL",
+                "Windows storage grants an unapproved principal: "
+                + ",".join(unapproved),
+            )
     else:
         expected = 0o600 if file else 0o700
         if stat.S_IMODE(info.st_mode) != expected or info.st_uid != os.geteuid():

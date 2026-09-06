@@ -30,6 +30,14 @@ def test_windows_hardening_sets_exact_service_owner_and_dacl(
         return type("Completed", (), {"returncode": 0})()
 
     monkeypatch.setattr(storage, "_current_windows_sid", lambda: "S-1-5-21-42")
+    if os.name == "nt":
+        # A foreign recorded owner keeps /setowner in the pinned sequence;
+        # the recorded DACL is already service-only so no extra removal runs.
+        monkeypatch.setattr(
+            storage,
+            "_windows_acl_sids",
+            lambda path: ("S-1-5-21-99", frozenset({"S-1-5-21-42", "S-1-5-18"})),
+        )
     monkeypatch.setattr(storage.subprocess, "run", completed)
 
     storage._harden_windows(tmp_path)
@@ -82,6 +90,44 @@ def test_hardening_setowner_depends_on_verified_current_owner(
         assert subcommands[0] == "/setowner"
     assert "/inheritance:r" in subcommands
     assert "/remove:g" in subcommands
+
+
+def test_hardening_removes_unapproved_principals_off_the_allowlist(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Whatever principal a platform image injects is removed by name.
+
+    One GitHub Actions Windows VM left an unallowed ACE behind after the
+    fixed removal list, so hardening verifies the resulting DACL against the
+    service allowlist {current SID, LOCAL SYSTEM} and removes any other
+    allow ACE by its SID; a principal that survives removal fails closed.
+    """
+    commands: list[list[str]] = []
+
+    def completed(command: list[str], **_kwargs: object) -> object:
+        commands.append(command)
+        return type("Completed", (), {"returncode": 0})()
+
+    sid = "S-1-5-21-42"
+    monkeypatch.setattr(storage, "_current_windows_sid", lambda: sid)
+    if os.name == "nt":
+        reads = iter([
+            (sid, frozenset({sid, "S-1-5-18", "S-1-5-32-544"})),
+            (sid, frozenset({sid, "S-1-5-18", "S-1-5-32-544"})),
+            (sid, frozenset({sid, "S-1-5-18"})),
+        ])
+        monkeypatch.setattr(storage, "_windows_acl_sids", lambda path: next(reads))
+    monkeypatch.setattr(storage.subprocess, "run", completed)
+
+    storage._harden_windows(tmp_path)
+
+    if os.name == "nt":
+        removals = [
+            command for command in commands
+            if len(command) > 3 and command[2] == "/remove:g" and command[3] == "*S-1-5-32-544"
+        ]
+        assert removals, commands
 
 
 def test_unverified_dacl_fails_closed(
