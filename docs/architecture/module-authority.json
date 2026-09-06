@@ -587,11 +587,6 @@
    "prefix": "tools/",
    "class": "BUILD_ONLY",
    "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."
-  },
-  {
-   "prefix": "proofs/",
-   "class": "RUNTIME_OUTPUT",
-   "rationale": "U01 proof-binding publications generated from the pinned LMM subject; data only, no runtime import."
   }
  ],
  "entrypoints": [
