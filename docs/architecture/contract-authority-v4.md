@@ -5,7 +5,7 @@
 ## 唯一权威
 
 - Python wire contract：`compiler_core/contracts.py`
-- 生成的 JSON Schema：`schemas/jc-v4.schema.json`
+- 生成的 JSON Schema：`schemas/jc-v5.schema.json`
 - 生成器：`tools/generate_v4_schema.py`
 - 协议版本：`compiler_core/version.py`
 

@@ -150,7 +150,7 @@ def _handle(
         role="caller",
         scope=scope,
         kind=artifact_kind,
-        schema_version="jc/4.0",
+        schema_version="jc/5.0",
         subject_digest=content_ref.digest,
         run_identity_ref=run_identity_ref,
         status=status,

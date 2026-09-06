@@ -149,7 +149,7 @@ def _signature(
         "role": role,
         "scope": scope,
         "kind": kind,
-        "schema_version": "jc/4.0",
+        "schema_version": "jc/5.0",
         "subject_digest": str(subject_digest),
         "run_identity_ref": None if run_identity_ref is None else run_identity_ref.to_dict(),
         "status": "APPROVED",
@@ -410,7 +410,7 @@ class _Harness:
         placeholder_manifest = _ref(EVIDENCE_MANIFEST_KIND, f"manifest-{request_id}")
         placeholder_attestation = _ref(FACT_ATTESTATION_KIND, f"attestation-{request_id}")
         seed_request = CaseRequestV4(
-            request_id, "jc/4.0", LegalContextV4("CN", "PRC"),
+            request_id, "jc/5.0", LegalContextV4("CN", "PRC"),
             CanonicalTimeV4("2026-08-22T00:00:00Z"), self.bundle_ref,
             placeholder_manifest, (placeholder_attestation,), _ref("rule-pack", "rules"),
             (RequestedOutputV4("semantic_result", "json", "zh-CN"),), (),
@@ -500,7 +500,7 @@ class _Harness:
             "evidence_manifest_ref": manifest_ref.to_dict(),
             "fact_attestation_refs": [attestation_ref.to_dict()],
             "rule_pack_ref": request.rule_pack_ref.to_dict(),
-            "engine_version": "4.0.0",
+            "engine_version": "5.0.0",
             "engine_source_commit": "a" * 40,
             "engine_source_tree": "b" * 40,
             "engine_build_digest": str(_digest("engine-build")),

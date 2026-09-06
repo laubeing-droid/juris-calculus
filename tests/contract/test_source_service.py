@@ -268,7 +268,7 @@ class _SourceHarness:
             "role": "source_attestor",
             "scope": "source-authenticity",
             "kind": SOURCE_SNAPSHOT_KIND,
-            "schema_version": "jc/4.0",
+            "schema_version": "jc/5.0",
             "subject_digest": str(snapshot.raw_digest),
             "run_identity_ref": None,
             "status": "APPROVED",

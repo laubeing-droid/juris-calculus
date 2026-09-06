@@ -20,7 +20,7 @@ jc capabilities --json
 jc evaluate --input case-input-bundle.json --json
 ```
 
-`jc --version` 应输出 `jc 4.0.0`。需要构建并验证正式 wheel 时，使用当前
+`jc --version` 应输出 `jc 5.0.0`。需要构建并验证正式 wheel 时，使用当前
 3.0 验收计划或按 [V4 发布流程](../operations/RELEASE_V4.md) 操作，不要在工作树里手工拼装发布包。
 
 运行宿主必须提供 `JC_RUNTIME_MANIFEST`。仅查询能力时可只读取 manifest；执行

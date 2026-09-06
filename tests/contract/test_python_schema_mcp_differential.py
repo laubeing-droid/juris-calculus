@@ -20,7 +20,7 @@ from compiler_core import mcp
 
 
 REPO = Path(__file__).resolve().parents[2]
-SCHEMA_PATH = REPO / "schemas" / "jc-v4.schema.json"
+SCHEMA_PATH = REPO / "schemas" / "jc-v5.schema.json"
 MANIFEST_PATH = REPO / "mcp_manifest.json"
 VECTORS_PATH = REPO / "tests" / "contract" / "v4-contract-vectors.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -235,7 +235,7 @@ def test_toolspec_manifest_and_runtime_codec_are_one_authority() -> None:
 def test_complete_schema_is_closed_and_resource_limits_are_published() -> None:
     Draft202012Validator.check_schema(SCHEMA)
     assert set(SCHEMA["$defs"]) == set(contracts.V4_TYPE_REGISTRY)
-    assert len(SCHEMA["$defs"]) == 75
+    assert len(SCHEMA["$defs"]) == 100
     assert "contracts_v4" not in json.dumps(SCHEMA, sort_keys=True)
 
     for type_name, contract_type in contracts.V4_OBJECT_REGISTRY.items():
@@ -311,7 +311,7 @@ def test_publication_mutation_fails_generated_gate(
 ) -> None:
     from tools.remediation.checks import generated_problems
 
-    schema_path = tmp_path / "jc-v4.schema.json"
+    schema_path = tmp_path / "jc-v5.schema.json"
     manifest_path = tmp_path / "mcp_manifest.json"
     schema_path.write_bytes(mcp.schema_bytes())
     manifest_path.write_bytes(mcp.manifest_bytes())

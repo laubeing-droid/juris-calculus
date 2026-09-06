@@ -34,9 +34,11 @@ def test_windows_hardening_sets_exact_service_owner_and_dacl(
 
     storage._harden_windows(tmp_path)
 
+    expected_target = storage._nt_long(tmp_path)
     assert commands[0] == [
-        "icacls.exe", str(tmp_path), "/setowner", "*S-1-5-21-42",
+        "icacls.exe", expected_target, "/setowner", "*S-1-5-21-42",
     ]
+    assert commands[1][:2] == ["icacls.exe", expected_target]
     assert commands[1][-2:] == [
         "*S-1-5-21-42:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F",
     ]

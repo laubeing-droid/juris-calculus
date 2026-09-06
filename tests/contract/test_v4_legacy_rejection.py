@@ -46,8 +46,8 @@ def test_only_v4_schema_is_generated() -> None:
     schema = mcp.schema_document()
     encoded = mcp.schema_bytes()
 
-    assert schema["$id"] == "https://juris-calculus.local/schemas/jc-v4.schema.json"
+    assert schema["$id"] == "https://juris-calculus.local/schemas/jc-v5.schema.json"
     assert set(schema["$defs"]) == set(contracts.V4_TYPE_REGISTRY)
-    assert encoded == (REPO / "schemas" / "jc-v4.schema.json").read_bytes()
+    assert encoded == (REPO / "schemas" / "jc-v5.schema.json").read_bytes()
     assert b"jc/3.0" not in encoded
     assert b"compat_v3_v4" not in encoded

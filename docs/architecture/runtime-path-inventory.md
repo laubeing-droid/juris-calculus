@@ -19,7 +19,7 @@
 
 ## 发布物
 
-- `schemas/jc-v4.schema.json` — 由 `contracts.py` 生成
+- `schemas/jc-v5.schema.json` — 由 `contracts.py` 生成
 - `mcp_manifest.json` — 由 V4 ToolSpec 生成
 - `pyproject.toml` — 声明 `jc` 与 `jc-formal` 两个公共脚本；wheel 精确清单由发布门禁管理
 

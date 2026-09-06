@@ -30,7 +30,7 @@ release the public `cn-official` candidate.
 
 A rule requires a stable ID, modality, conclusion, premises, source metadata, and admission metadata. Optional attack, exception, permission, priority, dates, and jurisdiction fields must be structurally valid when present. Duplicate IDs, invalid modality, invalid dates, missing required source anchors for admission, and dangling references fail validation.
 
-The authoritative machine schema is the packaged `schemas/jc-v4.schema.json`; the
+The authoritative machine schema is the packaged `schemas/jc-v5.schema.json`; the
 runtime contracts and validation tests are the implementation authority.
 
 ## Related documents

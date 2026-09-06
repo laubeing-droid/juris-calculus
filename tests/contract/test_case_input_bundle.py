@@ -31,7 +31,7 @@ def bundle() -> CaseInputBundleV4:
         b64encode(content).decode("ascii"),
     )
     request = CaseRequestV4(
-        "case-1", "jc/4.0", LegalContextV4("CN", "中华人民共和国个人信息保护法"),
+        "case-1", "jc/5.0", LegalContextV4("CN", "中华人民共和国个人信息保护法"),
         CanonicalTimeV4("2026-08-24T00:00:00Z"), artifact.content_ref,
         _ref("evidence-manifest", "evidence"), (), _ref("pack-signature", "pack"),
         (RequestedOutputV4("semantic_result", "json", "zh-CN"),), (),

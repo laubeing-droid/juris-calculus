@@ -75,7 +75,7 @@ from compiler_core.trust import TrustKeyV4, TrustVerifierV4
 NOW = CanonicalTimeV4("2026-08-22T12:00:00Z")
 ISSUED = CanonicalTimeV4("2026-08-22T11:00:00Z")
 EXPIRES = CanonicalTimeV4("2027-01-01T00:00:00Z")
-ENGINE_API = "4.0.0"
+ENGINE_API = "5.0.0"
 COMPILER_BUILD = DigestV4.from_bytes(b"compiler-build")
 SOURCE_TREE = DigestV4.from_bytes(b"source-tree")
 SCHEMA_DIGEST = DigestV4.from_bytes(b"schema")
@@ -238,7 +238,7 @@ class _PackHarness:
             "role": role,
             "scope": scope,
             "kind": kind,
-            "schema_version": "jc/4.0",
+            "schema_version": "jc/5.0",
             "subject_digest": str(subject_digest),
             "run_identity_ref": None,
             "status": "APPROVED",
@@ -749,7 +749,7 @@ def test_missing_or_corrupt_domain_config_blocks(config_state: str) -> None:
 @pytest.mark.parametrize(
     ("expected_field", "value"),
     (
-        ("expected_engine_api", "4.1.0"),
+        ("expected_engine_api", "5.1.0"),
         ("expected_compiler_build_digest", DigestV4.from_bytes(b"wrong-build")),
         ("expected_source_tree_digest", DigestV4.from_bytes(b"wrong-tree")),
         ("expected_schema_digest", DigestV4.from_bytes(b"wrong-schema")),

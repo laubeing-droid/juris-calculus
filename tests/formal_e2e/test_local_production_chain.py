@@ -173,7 +173,7 @@ def production_bundle(
     )
     placeholder = ContentRefV4("placeholder", DigestV4.from_bytes(b"placeholder"))
     seed_request = CaseRequestV4(
-        f"pipl-{variant}-request", "jc/4.0",
+        f"pipl-{variant}-request", "jc/5.0",
         LegalContextV4("CN", "中华人民共和国个人信息保护法"), now,
         source_bundle_ref, placeholder, (placeholder,), loaded.pack_ref,
         (RequestedOutputV4("semantic_result", "json", "zh-CN"),), (rule_ref,),
@@ -225,7 +225,7 @@ def production_bundle(
     signature_body = {
         "algorithm": "Ed25519", "key_id": "local-production-legal-key",
         "issuer": "local-production-legal-issuer", "role": "legal_reviewer",
-        "scope": "legal-approval", "kind": "legal-approval", "schema_version": "jc/4.0",
+        "scope": "legal-approval", "kind": "legal-approval", "schema_version": "jc/5.0",
         "subject_digest": str(candidate_ref.digest), "run_identity_ref": None,
         "status": "APPROVED", "issued_at": now.to_dict(),
         "expires_at": loaded.policy.valid_to.to_dict(), "nonce": f"pipl-{variant}-legal-fact",

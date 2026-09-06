@@ -61,7 +61,7 @@ def production_material(tmp_path_factory: pytest.TempPathFactory) -> ProductionM
     )
     candidate = build_document(source)
     pack, trust = LocalProductionPackBuilder(candidate, identity).build()
-    pack_path = root / "packs" / "cn-official-local-4.0.0.json"
+    pack_path = root / "packs" / "cn-official-local-5.0.0.json"
     trust_path = root / "trust" / "cn-official-local.json"
     pack_path.parent.mkdir()
     trust_path.parent.mkdir()

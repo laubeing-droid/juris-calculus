@@ -44,7 +44,7 @@ After making changes to production code, always run the appropriate validation c
 
 2. **For configuration changes** (configs/*, schemas/*, pyproject.toml):
    - Run the full test suite: `python -m pytest tests\ -q`
-   - Validate JSON schemas: `python -c "import json; json.load(open('schemas/jc-v4.schema.json'))"`
+   - Validate JSON schemas: `python -c "import json; json.load(open('schemas/jc-v5.schema.json'))"`
 
 3. **For documentation changes** (README*, docs/*, memory.md, AGENTS.md, HANDOFF.md, SECURITY.md):
    - Run `python -B tools\remediation\checks.py doc-links`

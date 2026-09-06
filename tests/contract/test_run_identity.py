@@ -76,7 +76,7 @@ def _request(*, two_facts: bool = False) -> CaseRequestV4:
 
 def _runtime_inputs() -> dict[str, object]:
     return {
-        "engine_version": "4.0.0",
+        "engine_version": "5.0.0",
         "engine_source_commit": "1" * 40,
         "engine_source_tree": "2" * 40,
         "engine_build_digest": _digest("engine-build"),
@@ -127,7 +127,7 @@ def test_each_complete_identity_axis_changes_run_digest(axis: str) -> None:
     elif axis == "fact_attestation_refs":
         payload[axis][0]["digest"] = str(_digest("changed-fact-attestation"))
     elif axis == "engine_version":
-        payload[axis] = "4.0.1"
+        payload[axis] = "5.0.1"
     elif axis == "engine_source_commit":
         payload[axis] = "3" * 40
     elif axis == "engine_source_tree":
@@ -377,7 +377,7 @@ def test_builder_rejects_invalid_engine_identity(
 
 def test_run_identity_rejects_stale_self_digest() -> None:
     payload = _build().to_dict()
-    payload["engine_version"] = "4.0.1"
+    payload["engine_version"] = "5.0.1"
 
     with pytest.raises(ContractV4Error) as caught:
         RunIdentityV4.from_dict(payload)

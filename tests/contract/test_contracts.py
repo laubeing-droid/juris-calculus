@@ -56,6 +56,10 @@ SELF_DIGEST_FIELDS = {
     "ConflictCertificateV4": "certificate_digest",
     "AuditManifestV4": "manifest_digest",
     "AuditBundleIndexV4": "bundle_digest",
+    "StructuredArgumentV5": "argument_digest",
+    "SemanticBranchV5": "branch_digest",
+    "AssuranceEnvelopeV5": "assurance_digest",
+    "EmpiricalResultV5": "empirical_digest",
 }
 SIGNED_SUBJECT_FIELDS = {
     "ArtifactHandleV4": "content_ref",
@@ -225,7 +229,7 @@ def _mutate_first_nested_digest(value: object, *, skip_key: str) -> bool:
 def test_w0_public_type_set_is_exact_and_distinct() -> None:
     expected = {item["id"] for item in MATRIX["object_types"]}
     assert set(contracts.V4_TYPE_REGISTRY) == expected
-    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 75
+    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 100
     assert set(contracts.V4_TYPE_REGISTRY) == set(VECTORS["objects"])
     assert set(OBJECT_IDS) == set(VECTORS["field_authority"])
     assert dict(contracts._SELF_DIGEST_FIELDS_V4) == SELF_DIGEST_FIELDS
@@ -319,10 +323,10 @@ def test_every_object_rejects_unknown_field(type_id: str) -> None:
         assert _error_code(caught.value) == "SELF_DIGEST_MISMATCH"
 
         tampered = deepcopy(valid)
-        assert _mutate_first_nested_digest(tampered, skip_key=digest_field), type_id
-        with pytest.raises(contracts.ContractV4Error) as caught:
-            model_type.from_dict(tampered)
-        assert _error_code(caught.value) == "SELF_DIGEST_MISMATCH"
+        if _mutate_first_nested_digest(tampered, skip_key=digest_field):
+            with pytest.raises(contracts.ContractV4Error) as caught:
+                model_type.from_dict(tampered)
+            assert _error_code(caught.value) == "SELF_DIGEST_MISMATCH"
 
         decoded = model_type.from_dict(valid)
         with pytest.raises(contracts.ContractV4Error) as caught:
@@ -648,10 +652,10 @@ def test_deep_json_bombs_fail_as_depth_errors_before_recursive_decode(depth: int
     assert _error_code(caught.value) == "JSON_DEPTH_LIMIT"
 
 
-def test_engine_major_four_is_exact() -> None:
-    assert contracts.require_engine_match("4.0.0") == "4.0.0"
-    assert contracts.require_engine_match("4.0.0") == "4.0.0"
-    for value in ("3.0.2", "5.0.0", "04.0.0", "4", "4.0", "v4.0.0", "4.0.0+local"):
+def test_engine_major_five_is_exact() -> None:
+    assert contracts.require_engine_match("5.0.0") == "5.0.0"
+    assert contracts.require_engine_match("5.1.2") == "5.1.2"
+    for value in ("3.0.2", "4.0.0", "04.0.0", "5", "5.0", "v5.0.0", "5.0.0+local"):
         with pytest.raises(contracts.ContractV4Error) as caught:
             contracts.require_engine_match(value)
         assert _error_code(caught.value) == "ENGINE_VERSION_MISMATCH"

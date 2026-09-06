@@ -16,7 +16,7 @@
 
 ## V4 合同
 
-- 请求：`CaseInputBundleV4`，权威为 `compiler_core/contracts.py` 与 `schemas/jc-v4.schema.json`。
+- 请求：`CaseInputBundleV4`，权威为 `compiler_core/contracts.py` 与 `schemas/jc-v5.schema.json`。
 - 来源：`SourceSnapshotV4` / `EvidenceManifestV4`。
 - 事实：`FactAdmissionReceiptV4` 与 `compiler_core/fact_admission.py`。
 - 规则：`RuleV4`、`compiler_core/legal_ir.py`、`compiler_core/rule_packs.py` 和 `compiler_core/rule_admission.py`。

@@ -1,6 +1,6 @@
 # V4 build-once release and promotion
 
-版本权威是 `compiler_core/version.py`。公共合同是 `schemas/jc-v4.schema.json` 与 `mcp_manifest.json`。
+版本权威是 `compiler_core/version.py`。公共合同是 `schemas/jc-v5.schema.json` 与 `mcp_manifest.json`。
 
 ## CI 构建产物
 

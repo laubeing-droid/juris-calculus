@@ -427,8 +427,8 @@ def test_source_tree_stdio_launcher_uses_explicit_runtime_manifest(
     assert str(ROOT).lower() not in wire
 
     runtime_capabilities = MCPCapabilitiesOutputV4(
-        "jc/4.0",
-        "4.0.0",
+        "jc/5.0",
+        "5.0.0",
         "deployed-tree",
         DigestV4.from_bytes(b"engine"),
         DigestV4.from_bytes(b"wheel"),
