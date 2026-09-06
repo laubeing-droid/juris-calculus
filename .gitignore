@@ -55,6 +55,8 @@
 !remediation/v4/*.json
 !remediation/v5/
 !remediation/v5/*.json
+work/
+.mimosa/
 *.key
 *.log
 !scripts/*.sh
