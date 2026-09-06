@@ -270,7 +270,7 @@ class _ChainHarness:
             "role": role,
             "scope": scope,
             "kind": kind,
-            "schema_version": "jc/4.0",
+            "schema_version": "jc/5.0",
             "subject_digest": str(subject_digest),
             "run_identity_ref": (
                 None if run_identity_ref is None else run_identity_ref.to_dict()
@@ -376,7 +376,7 @@ class _ChainHarness:
         placeholder_attestation = _ref(FACT_ATTESTATION_KIND, "w2-06-attestation")
         seed_request = CaseRequestV4(
             "w2-06-request",
-            "jc/4.0",
+            "jc/5.0",
             LegalContextV4("TEST", "synthetic-test-law"),
             self.now,
             self.source_bundle_ref,

@@ -231,7 +231,7 @@ class _SyntheticPackBuilder:
             "role": role,
             "scope": scope,
             "kind": kind,
-            "schema_version": "jc/4.0",
+            "schema_version": "jc/5.0",
             "subject_digest": str(subject_digest),
             "run_identity_ref": None,
             "status": "APPROVED",

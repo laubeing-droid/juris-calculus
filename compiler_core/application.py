@@ -1354,7 +1354,7 @@ class ApplicationV4:
             code = _exception_code(exc)
             raise ApplicationV4Error(
                 code,
-                "formal audit storage failed",
+                f"formal audit storage failed: {exc}" + "",
                 stage="audit",
                 retryable=_is_retryable(code),
                 correlation_id=_correlation_id(run_identity_ref, "audit", code),

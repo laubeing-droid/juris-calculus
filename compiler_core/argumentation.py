@@ -1,4 +1,4 @@
-﻿"""v3.0 Dung AAF grounded extension — formal correctness (G9A).
+"""v3.0 Dung AAF grounded extension — formal correctness (G9A).
 
 Per Dung (1995):
   - Characteristic function F(S) = {a | all attackers of a are attacked by S}
@@ -933,3 +933,242 @@ def build_attack_edges_from_rules(
                 attacks.add((exception_head, source))
 
     return sorted((src, tgt) for src, tgt in attacks if src and tgt)
+
+
+# ---------------------------------------------------------------------------
+# V5 bounded profile semantics (ULM09/ULM10; JC-UPGRADE-20260906-01 U05).
+#
+# Grounded keeps the proved least-fixed-point oracle above. preferred, stable
+# and complete use a bounded finite reference enumeration over the same
+# resolved defeat graph. Enumeration budgets are engineering start values
+# awaiting U11 benchmarks, not performance facts; exhausting a budget yields
+# a sound partial result, never a claimed-complete family.
+# ---------------------------------------------------------------------------
+
+DEFAULT_ENUMERATION_ARGUMENT_LIMIT_V5 = 16
+HARD_ENUMERATION_ARGUMENT_LIMIT_V5 = 20
+DEFAULT_ENUMERATION_SUBSET_LIMIT_V5 = 65_536
+HARD_ENUMERATION_SUBSET_LIMIT_V5 = 1_048_576
+
+
+@dataclass(frozen=True, slots=True)
+class AttackRecordV5:
+    """One validated typed attack entering defeat resolution."""
+
+    attack_id: str
+    attacker: str
+    target: str
+    kind: str
+    witness: str
+
+    def __post_init__(self) -> None:
+        for field_name in ("attack_id", "attacker", "target", "kind", "witness"):
+            value = getattr(self, field_name)
+            if type(value) is not str or not value:
+                _v4_fail("DEFEAT_INPUT_FIELD", f"{field_name} must be a non-empty string")
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileEvaluationV5:
+    """Internal bounded solver result; wire form is contracts.EvalOutcomeV5."""
+
+    profile: str
+    kind: str
+    extensions: tuple[frozenset[str], ...]
+    open_obligations: tuple[tuple[str, str], ...]
+
+    @property
+    def claims_complete_family(self) -> bool:
+        return self.kind in ("no_extension", "extensions")
+
+
+def resolve_defeats_v5(
+    arguments: tuple[str, ...],
+    attacks: tuple[AttackRecordV5, ...],
+    *,
+    policy_id: str,
+    policy_version: str,
+    allowed_kinds: tuple[str, ...],
+    request_ref: str,
+) -> tuple[tuple[str, str], ...]:
+    """Resolve typed attacks into defeat pairs under one frozen policy.
+
+    An attack becomes a defeat only when its kind is allowed by the admitted
+    policy and both endpoints are known arguments of the same request. The
+    policy decision is explicit and auditable; priority or authority alone
+    manufactures no defeat edge.
+    """
+
+    if not allowed_kinds:
+        _v4_fail("DEFEAT_POLICY_EMPTY", "allowed_kinds must not be empty")
+    known = set(arguments)
+    resolved: list[tuple[str, str]] = []
+    for attack in attacks:
+        if attack.kind not in allowed_kinds:
+            continue
+        if attack.attacker not in known or attack.target not in known:
+            _v4_fail(
+                "DEFEAT_ENDPOINT_UNKNOWN",
+                f"attack {attack.attack_id!r} references an unknown argument",
+            )
+        resolved.append((attack.attacker, attack.target))
+    return tuple(sorted(set(resolved)))
+
+
+def _is_admissible(subset: frozenset[str], defeats: set[tuple[str, str]]) -> bool:
+    for source, target in defeats:
+        if source in subset and target in subset:
+            return False
+    for member in subset:
+        if (member, member) in defeats:
+            return False
+        for attacker, target in defeats:
+            if target == member and attacker not in subset:
+                if not any(
+                    defender in subset and defender_target == attacker
+                    for defender, defender_target in defeats
+                ):
+                    return False
+    return True
+
+
+def _characteristic(
+    arguments: frozenset[str], defeats: set[tuple[str, str]], subset: frozenset[str]
+) -> frozenset[str]:
+    """Dung's characteristic function: every attacker of the argument is attacked by S."""
+
+    return frozenset(
+        argument
+        for argument in arguments
+        if all(
+            any((member, attacker) in defeats for member in subset)
+            for attacker, target in defeats
+            if target == argument
+        )
+    )
+
+
+def _subsets(arguments: tuple[str, ...], total: int):
+    for mask in range(total):
+        yield frozenset(
+            argument for index, argument in enumerate(arguments) if mask >> index & 1
+        )
+
+
+def evaluate_profile_v5(
+    profile: str,
+    arguments: tuple[str, ...],
+    defeats: tuple[tuple[str, str], ...],
+    *,
+    argument_limit: int = DEFAULT_ENUMERATION_ARGUMENT_LIMIT_V5,
+    subset_limit: int = DEFAULT_ENUMERATION_SUBSET_LIMIT_V5,
+) -> ProfileEvaluationV5:
+    """Bounded finite reference evaluation of one Dung profile.
+
+    grounded delegates to the proved least-fixed-point oracle. preferred,
+    stable and complete enumerate the bounded powerset and verify maximality
+    or fixed-point membership directly. Exceeding a budget returns
+    kind="incomplete" with open obligations instead of a claimed family.
+    """
+
+    if profile not in ("grounded", "preferred", "stable", "complete"):
+        _v4_fail("PROFILE_UNKNOWN", f"unsupported profile {profile!r}")
+    if len(arguments) > HARD_ENUMERATION_ARGUMENT_LIMIT_V5:
+        return ProfileEvaluationV5(
+            profile, "incomplete", (),
+            (("argument_limit", "argument count exceeds the hard bound"),),
+        )
+    if len(arguments) > argument_limit:
+        return ProfileEvaluationV5(
+            profile, "incomplete", (),
+            (("argument_limit", "argument count exceeds the configured bound"),),
+        )
+    argument_set = frozenset(arguments)
+    defeat_set = set(defeats)
+
+    if profile == "grounded":
+        claims = [{"id": argument} for argument in arguments]
+        labels = grounded_extension(claims, sorted(defeat_set))
+        if not labels["convergent"]:
+            return ProfileEvaluationV5(
+                profile, "incomplete", (),
+                (("grounded_truncated", "grounded iteration exceeded its bound"),),
+            )
+        accepted = frozenset(labels["accepted"])
+        return ProfileEvaluationV5(profile, "extensions", (accepted,), ())
+
+    total = 1 << len(arguments)
+    subset_budget = min(subset_limit, HARD_ENUMERATION_SUBSET_LIMIT_V5)
+    if total > subset_budget:
+        return ProfileEvaluationV5(
+            profile, "incomplete", (),
+            (("enumeration_budget", "powerset exceeds the configured subset budget"),),
+        )
+
+    if profile == "stable":
+        stable: list[frozenset[str]] = []
+        for subset in _subsets(arguments, total):
+            outside = argument_set - subset
+            if any((source, target) in defeat_set for source in subset for target in subset):
+                continue
+            if all(
+                any((member, target) in defeat_set for target in subset)
+                for member in outside
+            ):
+                stable.append(subset)
+        if not stable:
+            return ProfileEvaluationV5(profile, "no_extension", (), ())
+        return ProfileEvaluationV5(profile, "extensions", tuple(sorted(stable)), ())
+
+    admissible_sets: list[frozenset[str]] = [
+        subset for subset in _subsets(arguments, total)
+        if _is_admissible(subset, defeat_set)
+    ]
+    if not admissible_sets:
+        return ProfileEvaluationV5(profile, "no_extension", (), ())
+    if profile == "complete":
+        complete = tuple(sorted(
+            subset for subset in admissible_sets
+            if _characteristic(argument_set, defeat_set, subset) == subset
+        ))
+        return ProfileEvaluationV5(profile, "extensions", complete, ())
+    # preferred: inclusion-maximal admissible sets, maximality actually verified
+    maximal = tuple(sorted(
+        candidate for candidate in admissible_sets
+        if not any(candidate < other for other in admissible_sets)
+    ))
+    return ProfileEvaluationV5(profile, "extensions", maximal, ())
+
+
+def verify_profile_family_v5(
+    profile: str,
+    arguments: tuple[str, ...],
+    defeats: tuple[tuple[str, str], ...],
+    claimed_extensions: tuple[frozenset[str], ...],
+    *,
+    coverage: str,
+) -> tuple[bool, str]:
+    """Independently recompute the family and compare it with a claim.
+
+    The reference family always comes from ``evaluate_profile_v5`` re-running
+    on the same inputs, never from the producer's own output. An exact claim
+    must equal the recomputed family; a discovered-only claim must at least be
+    a subset of it (soundness) but can never be promoted to exact here.
+    """
+
+    if coverage not in ("exact", "discovered_only"):
+        return False, "coverage_unknown"
+    expected = evaluate_profile_v5(profile, arguments, defeats)
+    if expected.kind == "incomplete":
+        return False, "reference_incomplete"
+    expected_sets = set(expected.extensions) if expected.kind == "extensions" else set()
+    claimed_sets = set(claimed_extensions)
+    if coverage == "exact":
+        if expected.kind == "no_extension":
+            return (not claimed_sets), "family_not_empty"
+        return claimed_sets == expected_sets, "family_mismatch"
+    if not claimed_sets <= expected_sets:
+        return False, "discovered_unsound"
+    return True, ""
+
+

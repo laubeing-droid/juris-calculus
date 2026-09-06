@@ -1,9 +1,16 @@
-"""Sole Python authority for the frozen JC V4 public contracts.
+"""Sole Python authority for the frozen JC V5 public contracts.
 
 W1-02 freezes the field names and field types in this module as the Python
 contract authority. Every wire object is closed, immutable, canonicalizable,
 and represented by an explicit ``frozen=True, slots=True`` dataclass. Wire
 arrays are JSON lists and are copied to tuples at the admission boundary.
+
+V5 (JC-UPGRADE-20260906-01) upgrades the public wire protocol to ``jc/5.0``
+and the engine major to 5. The V5 upgrade is a closed contract change: formal
+inputs carrying ``jc/4.0`` or a 4.x engine version are rejected instead of
+being loosely read. Existing object roles are preserved; new V5 object groups
+(branch/query, procedure, composition, assurance, incremental, empirical)
+extend the same registry rather than forming a second kernel.
 """
 
 from __future__ import annotations
@@ -31,9 +38,9 @@ from compiler_core.canonical_serialization import (
 )
 
 
-SCHEMA_VERSION_V4 = "jc/4.0"
+SCHEMA_VERSION_V5 = "jc/5.0"
 _ENGINE_VERSION_RE = re.compile(
-    r"4\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:(?:a|b|rc)(?:0|[1-9][0-9]*))?\Z"
+    r"5\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:(?:a|b|rc)(?:0|[1-9][0-9]*))?\Z"
 )
 _TIME_SYNTAX_RE = re.compile(
     r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})"
@@ -449,6 +456,10 @@ _SELF_DIGEST_FIELDS_V4 = MappingProxyType({
     "ConflictCertificateV4": "certificate_digest",
     "AuditManifestV4": "manifest_digest",
     "AuditBundleIndexV4": "bundle_digest",
+    "StructuredArgumentV5": "argument_digest",
+    "SemanticBranchV5": "branch_digest",
+    "AssuranceEnvelopeV5": "assurance_digest",
+    "EmpiricalResultV5": "empirical_digest",
 })
 _SIGNED_BODY_FIELDS_V4 = MappingProxyType({
     "ArtifactHandleV4": "signature",
@@ -733,8 +744,8 @@ class SignatureEnvelopeV4(V4Contract):
             "nonce", "signature",
         ):
             _nonempty(getattr(self, field_name), f"SignatureEnvelopeV4.{field_name}")
-        if self.schema_version != SCHEMA_VERSION_V4:
-            _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V4}")
+        if self.schema_version != SCHEMA_VERSION_V5:
+            _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V5}")
         if self.expires_at is not None and not self.issued_at < self.expires_at:
             _fail("SIGNATURE_TIME_ORDER", "expires_at must follow issued_at")
 
@@ -927,8 +938,8 @@ class CaseRequestV4(V4Contract):
 
     def _validate(self) -> None:
         _nonempty(self.request_id, "CaseRequestV4.request_id")
-        if self.schema_version != SCHEMA_VERSION_V4:
-            _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V4}")
+        if self.schema_version != SCHEMA_VERSION_V5:
+            _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V5}")
         if len(self.fact_attestation_refs) > 512:
             _fail("FACT_REFERENCE_LIMIT", "fact_attestation_refs exceeds 512")
         if len(self.proposal_refs) > 512:
@@ -1075,12 +1086,12 @@ class CaseInputBundleV4(V4Contract):
 
 def require_engine_match(
     engine_version: str,
-    schema_version: str = SCHEMA_VERSION_V4,
+    schema_version: str = SCHEMA_VERSION_V5,
 ) -> str:
     """Require the exact V4 schema and a well-formed engine version with major 4."""
 
-    if type(schema_version) is not str or schema_version != SCHEMA_VERSION_V4:
-        _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V4}")
+    if type(schema_version) is not str or schema_version != SCHEMA_VERSION_V5:
+        _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V5}")
     if type(engine_version) is not str or _ENGINE_VERSION_RE.fullmatch(engine_version) is None:
         _fail(
             "ENGINE_VERSION_MISMATCH",
@@ -2408,6 +2419,694 @@ class MCPReadArtifactErrorV4(V4Contract):
     artifact_handle: ArtifactHandleV4 | None
 
 
+# ---------------------------------------------------------------------------
+# V5 object groups (JC-UPGRADE-20260906-01 section 5.1).
+#
+# These groups extend the single closed registry; they do not form a second
+# kernel. Wire fields reuse the semantically equivalent V4 structures where one
+# exists. Every group below maps onto the ULM capability table recorded in
+# proofs/runtime-obligation-map.json.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class OpenObligationEntryV5(V4Contract):
+    code: str
+    detail: str
+
+    def _validate(self) -> None:
+        _nonempty(self.code, "OpenObligationEntryV5.code")
+        _nonempty(self.detail, "OpenObligationEntryV5.detail")
+
+
+@dataclass(frozen=True, slots=True)
+class ScenarioKeyV5(V4Contract):
+    """Request-bound scenario identity: one request plus an assumption set."""
+
+    request_ref: DigestV4
+    scenario_id: str
+    assumptions: tuple[str, ...]
+    assumptions_digest: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.scenario_id, "ScenarioKeyV5.scenario_id")
+        expected = digest_value({"assumptions": list(self.assumptions)})
+        if self.assumptions_digest != expected:
+            _fail(
+                "SELF_DIGEST_MISMATCH",
+                "ScenarioKeyV5.assumptions_digest does not bind the assumption set",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class QueryRequestV5(V4Contract):
+    """A query that a request makes against one profile under one mapping."""
+
+    query_id: str
+    claim: str
+    profile: str
+    mapping_version: str
+    scenario_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.query_id, "QueryRequestV5.query_id")
+        _nonempty(self.claim, "QueryRequestV5.claim")
+        _nonempty(self.profile, "QueryRequestV5.profile")
+        _nonempty(self.mapping_version, "QueryRequestV5.mapping_version")
+        if self.profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"QueryRequestV5.profile {self.profile!r} is not a V5 profile")
+
+
+_SEMANTIC_PROFILES_V5 = frozenset({
+    "grounded", "preferred", "stable", "complete",
+})
+
+_PREMISE_ORIGINS_V5 = frozenset({"admitted", "assumed"})
+
+
+@dataclass(frozen=True, slots=True)
+class PremiseTokenV5(V4Contract):
+    """One premise with its explicit origin; assumptions never silently vanish."""
+
+    fact_key: str
+    request_ref: DigestV4
+    origin: str
+    attestation_ref: DigestV4 | None
+    assumption_witness: str | None
+    dependencies: tuple[str, ...]
+
+    def _validate(self) -> None:
+        _nonempty(self.fact_key, "PremiseTokenV5.fact_key")
+        if self.origin not in _PREMISE_ORIGINS_V5:
+            _fail("ENUM_VALUE", f"PremiseTokenV5.origin {self.origin!r} is not admitted|assumed")
+        if self.origin == "admitted":
+            if self.attestation_ref is None:
+                _fail("MISSING_FIELD", "admitted PremiseTokenV5 requires attestation_ref")
+            if self.assumption_witness is not None:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "admitted PremiseTokenV5 must not carry an assumption witness",
+                )
+            if self.dependencies:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "admitted PremiseTokenV5 carries no assumption dependencies",
+                )
+        else:
+            _nonempty(self.assumption_witness or "", "PremiseTokenV5.assumption_witness")
+            if self.attestation_ref is not None:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "assumed PremiseTokenV5 must not carry an attestation",
+                )
+            if self.assumption_witness not in self.dependencies:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "assumed PremiseTokenV5 keeps its own witness in dependencies",
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class SupportHyperedgeV5(V4Contract):
+    """One labelled AND-support edge; competing routes to one conclusion are OR."""
+
+    rule_ref: str
+    premises: tuple[str, ...]
+    conclusion: str
+    request_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.rule_ref, "SupportHyperedgeV5.rule_ref")
+        _nonempty(self.conclusion, "SupportHyperedgeV5.conclusion")
+        if not self.premises:
+            _fail("EMPTY_STRING", "SupportHyperedgeV5.premises must not be empty")
+        for premise in self.premises:
+            _nonempty(premise, "SupportHyperedgeV5.premises[]")
+
+
+@dataclass(frozen=True, slots=True)
+class StructuredArgumentV5(V4Contract):
+    """Argument identity IS the full labelled support structure."""
+
+    request_ref: DigestV4
+    conclusion: str
+    base_premises: tuple[str, ...]
+    support_edges: tuple[SupportHyperedgeV5, ...]
+    argument_digest: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.conclusion, "StructuredArgumentV5.conclusion")
+        for edge in self.support_edges:
+            if edge.request_ref != self.request_ref:
+                _fail("TYPE_AUTHORITY", "StructuredArgumentV5 edge crosses requests")
+
+
+_ATTACK_KINDS_V5 = (
+    "rebut",
+    "undermine",
+    "undercut",
+    "exception_attack",
+    "authority_attack",
+    "scope_attack",
+    "procedure_attack",
+)
+_ATTACK_TARGET_ASPECTS_V5 = frozenset({"claim", "premise", "rule_applicability", "authority", "scope", "procedure"})
+# Frozen migration from V4 attack vocabulary; priority_defeat is intentionally
+# unmapped: priority becomes a defeat decision only through an admitted
+# DefeatPolicyV5, never by manufacturing an attack edge.
+_ATTACK_KIND_MIGRATION_V5 = MappingProxyType({
+    "rebut": "rebut",
+    "undercut": "undercut",
+    "premise_challenge": "undermine",
+    "exception": "exception_attack",
+    "priority_defeat": None,
+})
+SEMANTIC_PROFILES_V5 = _SEMANTIC_PROFILES_V5
+ATTACK_KINDS_V5 = _ATTACK_KINDS_V5
+ATTACK_KIND_MIGRATION_V5 = _ATTACK_KIND_MIGRATION_V5
+# The public V4 wire protocol is no longer a formal input of this engine.
+SCHEMA_VERSION_REJECTED = MappingProxyType({"jc/4.0": "V5 engine requires jc/5.0"})
+
+
+@dataclass(frozen=True, slots=True)
+class TypedAttackV5(V4Contract):
+    """One attack with kind, exact position, witness, and request binding."""
+
+    attack_id: str
+    attacker_ref: str
+    target_ref: str
+    kind: str
+    target_aspect: str
+    witness: str
+    request_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.attack_id, "TypedAttackV5.attack_id")
+        _nonempty(self.attacker_ref, "TypedAttackV5.attacker_ref")
+        _nonempty(self.target_ref, "TypedAttackV5.target_ref")
+        if self.kind not in _ATTACK_KINDS_V5:
+            _fail("ENUM_VALUE", f"TypedAttackV5.kind {self.kind!r} is not a V5 attack kind")
+        if self.target_aspect not in _ATTACK_TARGET_ASPECTS_V5:
+            _fail("ENUM_VALUE", f"TypedAttackV5.target_aspect {self.target_aspect!r} is unknown")
+        _nonempty(self.witness, "TypedAttackV5.witness")
+        # Self-attacks are representable (ULM09 tracks them as a predicate, and
+        # the abstract semantics of JT17 depend on them); the defeat layer
+        # decides their effect, never the admission gate.
+
+
+@dataclass(frozen=True, slots=True)
+class DefeatPolicyV5(V4Contract):
+    """A frozen, versioned, evidence-bound defeat policy decision."""
+
+    policy_id: str
+    policy_version: str
+    request_ref: DigestV4
+    allowed_kinds: tuple[str, ...]
+    legal_evidence_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.policy_id, "DefeatPolicyV5.policy_id")
+        _nonempty(self.policy_version, "DefeatPolicyV5.policy_version")
+        if not self.allowed_kinds:
+            _fail("EMPTY_STRING", "DefeatPolicyV5.allowed_kinds must not be empty")
+        for kind in self.allowed_kinds:
+            if kind not in _ATTACK_KINDS_V5:
+                _fail("ENUM_VALUE", f"DefeatPolicyV5.allowed_kinds has unknown kind {kind!r}")
+        _nonempty(self.legal_evidence_ref, "DefeatPolicyV5.legal_evidence_ref")
+
+
+@dataclass(frozen=True, slots=True)
+class DefeatEdgeV5(V4Contract):
+    """One resolved defeat relation that has entered the Dung layer."""
+
+    attacker_ref: str
+    target_ref: str
+    attack_id: str
+    policy_id: str
+    request_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.attacker_ref, "DefeatEdgeV5.attacker_ref")
+        _nonempty(self.target_ref, "DefeatEdgeV5.target_ref")
+        _nonempty(self.attack_id, "DefeatEdgeV5.attack_id")
+        _nonempty(self.policy_id, "DefeatEdgeV5.policy_id")
+
+
+_EXTENSION_KINDS_V5 = frozenset({"no_extension", "extensions", "incomplete"})
+_COVERAGES_V5 = frozenset({"exact", "discovered_only"})
+
+
+@dataclass(frozen=True, slots=True)
+class ExtensionFamilyV5(V4Contract):
+    """An extension family for one profile with its verification status."""
+
+    profile: str
+    extension_refs: tuple[DigestV4, ...]
+    coverage: str
+
+    def _validate(self) -> None:
+        if self.profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"ExtensionFamilyV5.profile {self.profile!r} is unknown")
+        if self.coverage not in _COVERAGES_V5:
+            _fail("ENUM_VALUE", f"ExtensionFamilyV5.coverage {self.coverage!r} is unknown")
+
+
+@dataclass(frozen=True, slots=True)
+class EvalOutcomeV5(V4Contract):
+    """Exactly one of: verified empty family, verified family, sound partial."""
+
+    profile: str
+    kind: str
+    family: ExtensionFamilyV5 | None
+    empty_family_evidence_ref: DigestV4 | None
+    open_obligations: tuple[OpenObligationEntryV5, ...]
+
+    def _validate(self) -> None:
+        if self.profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"EvalOutcomeV5.profile {self.profile!r} is unknown")
+        if self.kind not in _EXTENSION_KINDS_V5:
+            _fail("ENUM_VALUE", f"EvalOutcomeV5.kind {self.kind!r} is unknown")
+        if self.kind == "no_extension":
+            if self.family is not None or self.empty_family_evidence_ref is None:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "no_extension requires empty-family evidence and no family",
+                )
+            if self.open_obligations:
+                _fail("TYPE_AUTHORITY", "no_extension is a completed solve")
+        elif self.kind == "extensions":
+            if self.family is None or not self.family.extension_refs:
+                _fail("TYPE_AUTHORITY", "extensions requires a nonempty family")
+            if self.family.coverage != "exact":
+                _fail("TYPE_AUTHORITY", "extensions requires exact family coverage")
+            if self.empty_family_evidence_ref is not None:
+                _fail("TYPE_AUTHORITY", "extensions must not carry empty-family evidence")
+            if self.open_obligations:
+                _fail("TYPE_AUTHORITY", "complete extension family has no open obligations")
+        else:
+            if self.family is None or self.family.coverage != "discovered_only":
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "incomplete requires discovered-only partial results",
+                )
+            if not self.open_obligations:
+                _fail(
+                    "EMPTY_STRING",
+                    "incomplete must disclose at least one open obligation",
+                )
+            if self.empty_family_evidence_ref is not None:
+                _fail("TYPE_AUTHORITY", "incomplete must not claim verified emptiness")
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticBranchV5(V4Contract):
+    """Branch identity: scenario (request + assumptions) + profile + extension."""
+
+    scenario: ScenarioKeyV5
+    profile: str
+    extension_ref: DigestV4 | None
+    branch_digest: DigestV4
+
+    def _validate(self) -> None:
+        if self.profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"SemanticBranchV5.profile {self.profile!r} is unknown")
+
+
+_QUERY_GATES_V5 = frozenset({"enterable", "excluded", "incomplete"})
+
+
+@dataclass(frozen=True, slots=True)
+class QueryWitnessV5(V4Contract):
+    """Acceptance or refutation witness inside one branch."""
+
+    branch_ref: DigestV4
+    argument_ref: str
+    kind: str
+
+    def _validate(self) -> None:
+        _nonempty(self.argument_ref, "QueryWitnessV5.argument_ref")
+        if self.kind not in frozenset({"acceptance", "refutation"}):
+            _fail("ENUM_VALUE", f"QueryWitnessV5.kind {self.kind!r} is unknown")
+
+
+@dataclass(frozen=True, slots=True)
+class QueryResultV5(V4Contract):
+    """Multi-flag query answer with witnesses; never one squeezed three-value label."""
+
+    query_id: str
+    profile: str
+    branch_ref: DigestV4
+    gate: str
+    common: bool
+    possible: bool
+    common_refuted: bool
+    possibly_refuted: bool
+    undecided_some: bool
+    inconsistent_some: bool
+    excluded: bool
+    witnesses: tuple[QueryWitnessV5, ...]
+
+    def _validate(self) -> None:
+        _nonempty(self.query_id, "QueryResultV5.query_id")
+        if self.profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"QueryResultV5.profile {self.profile!r} is unknown")
+        if self.gate not in _QUERY_GATES_V5:
+            _fail("ENUM_VALUE", f"QueryResultV5.gate {self.gate!r} is unknown")
+        flags = (
+            self.common, self.possible, self.common_refuted, self.possibly_refuted,
+            self.undecided_some, self.inconsistent_some, self.excluded,
+        )
+        if any(type(flag) is not bool for flag in flags):
+            _fail("TYPE_MISMATCH", "QueryResultV5 status flags must be booleans")
+        if self.common and not self.possible:
+            _fail("TYPE_AUTHORITY", "common implies possible")
+        if self.common_refuted and not self.possibly_refuted:
+            _fail("TYPE_AUTHORITY", "common_refuted implies possibly_refuted")
+        if self.gate != "enterable":
+            if any(flags):
+                _fail(
+                    "TYPE_AUTHORITY",
+                    f"gate={self.gate} cannot witness any query status",
+                )
+        if self.excluded and any(flags[:6]):
+            _fail("TYPE_AUTHORITY", "excluded queries report no other status")
+        if self.inconsistent_some and not (self.common and self.common_refuted):
+            _fail(
+                "TYPE_AUTHORITY",
+                "inconsistent_some requires one branch accepting and refuting the query",
+            )
+
+
+_PROCEDURE_KINDS_V5 = frozenset({
+    "adjudicated_status", "procedural_disposition", "pending_legal_judgment",
+    "solver_incomplete",
+})
+
+
+@dataclass(frozen=True, slots=True)
+class ProcedureAuthorityV5(V4Contract):
+    """One burden-of-proof finding with its stated authority and standard."""
+
+    burden_rule_ref: str
+    standard_id: str
+    standard_version: str
+    finding: str
+    reviewer: str
+    authorization_ref: DigestV4
+    request_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.burden_rule_ref, "ProcedureAuthorityV5.burden_rule_ref")
+        _nonempty(self.standard_id, "ProcedureAuthorityV5.standard_id")
+        _nonempty(self.standard_version, "ProcedureAuthorityV5.standard_version")
+        if self.finding not in frozenset({"satisfied", "unmet"}):
+            _fail("ENUM_VALUE", f"ProcedureAuthorityV5.finding {self.finding!r} is unknown")
+        _nonempty(self.reviewer, "ProcedureAuthorityV5.reviewer")
+
+
+@dataclass(frozen=True, slots=True)
+class ProcedureResultV5(V4Contract):
+    """The frozen four-way procedure/burden output."""
+
+    request_ref: DigestV4
+    kind: str
+    status: str | None
+    missing: tuple[str, ...]
+    open_obligations: tuple[OpenObligationEntryV5, ...]
+    authority_ref: DigestV4 | None
+
+    def _validate(self) -> None:
+        if self.kind not in _PROCEDURE_KINDS_V5:
+            _fail("ENUM_VALUE", f"ProcedureResultV5.kind {self.kind!r} is unknown")
+        if self.kind == "solver_incomplete":
+            if not self.open_obligations:
+                _fail("EMPTY_STRING", "solver_incomplete requires open obligations")
+            if self.status is not None or self.authority_ref is not None:
+                _fail("TYPE_AUTHORITY", "solver_incomplete yields no entity or terminal result")
+        elif self.kind == "pending_legal_judgment":
+            if not self.missing:
+                _fail("EMPTY_STRING", "pending_legal_judgment must name what is missing")
+            if self.status is not None:
+                _fail("TYPE_AUTHORITY", "pending_legal_judgment yields no status")
+        else:
+            if self.status is None:
+                _fail("MISSING_FIELD", f"{self.kind} requires a status")
+            if self.open_obligations:
+                _fail("TYPE_AUTHORITY", f"{self.kind} is a completed adjudication")
+
+
+_CANDIDATE_EXISTS_V5 = frozenset({"scalar", "money", "duration", "rate"})
+
+
+@dataclass(frozen=True, slots=True)
+class ExactQuantityV5(V4Contract):
+    """A dimension-tagged exact quantity; adding across dimensions cannot typecheck."""
+
+    dimension: str
+    currency: str | None
+    unit: str | None
+    basis: str | None
+    numerator: int
+    denominator: int
+
+    def _validate(self) -> None:
+        if self.dimension not in _CANDIDATE_EXISTS_V5:
+            _fail("ENUM_VALUE", f"ExactQuantityV5.dimension {self.dimension!r} is unknown")
+        if self.denominator <= 0:
+            _fail("DENOMINATOR_NONPOSITIVE", "ExactQuantityV5.denominator must be positive")
+        if (self.numerator == 0 and self.denominator != 1) or gcd(
+            abs(self.numerator), self.denominator
+        ) != 1:
+            _fail("NON_CANONICAL_RATIONAL", "ExactQuantityV5 must be a reduced rational")
+        if self.dimension == "scalar" and any(
+            value is not None for value in (self.currency, self.unit, self.basis)
+        ):
+            _fail("TYPE_AUTHORITY", "scalar quantity carries no currency/unit/basis")
+        if self.dimension == "money":
+            if self.currency is None or _CURRENCY_RE.fullmatch(self.currency) is None:
+                _fail("CURRENCY_CODE", "money quantity requires an ISO currency code")
+            if self.unit is not None or self.basis is not None:
+                _fail("TYPE_AUTHORITY", "money quantity carries no duration unit or rate basis")
+        if self.dimension == "duration":
+            if self.unit not in frozenset({"day", "month", "year"}):
+                _fail("ENUM_VALUE", "duration quantity requires unit day|month|year")
+            if self.currency is not None or self.basis is not None:
+                _fail("TYPE_AUTHORITY", "duration quantity carries no currency or rate basis")
+        if self.dimension == "rate":
+            _nonempty(self.basis or "", "ExactQuantityV5.basis")
+            if self.currency is not None or self.unit is not None:
+                _fail("TYPE_AUTHORITY", "rate quantity carries no currency or duration unit")
+
+
+_COMPOSITION_OPS_V5 = frozenset({"lit", "add", "sub", "scale"})
+
+
+@dataclass(frozen=True, slots=True)
+class ExactExpressionV5(V4Contract):
+    """One node of an exact expression tree over the ULM13 operations."""
+
+    op: str
+    dimension: str
+    left_ref: DigestV4 | None
+    right_ref: DigestV4 | None
+    literal: ExactQuantityV5 | None
+    factor_numerator: int | None
+    factor_denominator: int | None
+
+    def _validate(self) -> None:
+        if self.op not in _COMPOSITION_OPS_V5:
+            _fail("ENUM_VALUE", f"ExactExpressionV5.op {self.op!r} is unknown")
+        if self.dimension not in _CANDIDATE_EXISTS_V5:
+            _fail("ENUM_VALUE", f"ExactExpressionV5.dimension {self.dimension!r} is unknown")
+        if self.op == "lit":
+            if self.literal is None:
+                _fail("MISSING_FIELD", "lit requires a literal quantity")
+            if self.literal.dimension != self.dimension:
+                _fail("TYPE_AUTHORITY", "literal dimension must match the expression dimension")
+            if self.left_ref is not None or self.right_ref is not None:
+                _fail("TYPE_AUTHORITY", "lit carries no operand references")
+        elif self.op == "scale":
+            if self.left_ref is None:
+                _fail("MISSING_FIELD", "scale requires its value operand reference")
+            if self.right_ref is not None or self.literal is not None:
+                _fail("TYPE_AUTHORITY", "scale carries no right operand or literal")
+            if self.factor_numerator is None or self.factor_denominator is None:
+                _fail("MISSING_FIELD", "scale requires a factor")
+            if self.factor_denominator <= 0:
+                _fail("DENOMINATOR_NONPOSITIVE", "scale factor denominator must be positive")
+        else:
+            if self.left_ref is None or self.right_ref is None:
+                _fail("MISSING_FIELD", f"{self.op} requires both operand references")
+            if self.literal is not None or self.factor_numerator is not None:
+                _fail("TYPE_AUTHORITY", f"{self.op} carries no literal or factor")
+
+
+@dataclass(frozen=True, slots=True)
+class CompositionCandidateV5(V4Contract):
+    """One candidate domain outcome bound to one branch of one request."""
+
+    outcome_id: str
+    request_ref: DigestV4
+    branch_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.outcome_id, "CompositionCandidateV5.outcome_id")
+
+
+@dataclass(frozen=True, slots=True)
+class CompositionPolicyV5(V4Contract):
+    """Identity of an admitted composition policy; wire carries no executable code."""
+
+    policy_id: str
+    policy_version: str
+    request_ref: DigestV4
+    governance_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.policy_id, "CompositionPolicyV5.policy_id")
+        _nonempty(self.policy_version, "CompositionPolicyV5.policy_version")
+
+
+@dataclass(frozen=True, slots=True)
+class CompositionChoiceV5(V4Contract):
+    """A nonempty policy-allowed selection among same-branch actual candidates."""
+
+    policy_id: str
+    policy_version: str
+    request_ref: DigestV4
+    branch_ref: DigestV4
+    selected: tuple[CompositionCandidateV5, ...]
+    child_branch_hint: str | None
+
+    def _validate(self) -> None:
+        _nonempty(self.policy_id, "CompositionChoiceV5.policy_id")
+        _nonempty(self.policy_version, "CompositionChoiceV5.policy_version")
+        if not self.selected:
+            _fail("EMPTY_STRING", "CompositionChoiceV5.selected must not be empty")
+        for candidate in self.selected:
+            if candidate.request_ref != self.request_ref or candidate.branch_ref != self.branch_ref:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "CompositionChoiceV5 selection crosses requests or branches",
+                )
+
+
+_SPEC_STATUSES_V5 = frozenset({"proved", "assumed", "openObligations"})
+_IMPLEMENTATION_ASSURANCES_V5 = frozenset({"crossCheckOnly", "tcbSpecified", "kernelVerified"})
+_RUN_CHECKS_V5 = frozenset({"checked", "unchecked", "checkFailed"})
+
+
+@dataclass(frozen=True, slots=True)
+class NotApplicableEvidenceV5(V4Contract):
+    """A verified exemption; never a button to clear blockers."""
+
+    obligation: str
+    reason: str
+    applicability_evidence_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.obligation, "NotApplicableEvidenceV5.obligation")
+        _nonempty(self.reason, "NotApplicableEvidenceV5.reason")
+
+
+@dataclass(frozen=True, slots=True)
+class AssuranceEnvelopeV5(V4Contract):
+    """The ULM14 assurance carrier; each field aggregates by its own rule."""
+
+    scope_request_ref: DigestV4
+    scope_profile: str
+    spec: str
+    implementation: str
+    run_check: str
+    coverage_open_obligations: tuple[OpenObligationEntryV5, ...]
+    coverage_not_applicable: tuple[NotApplicableEvidenceV5, ...]
+    pending_refs: tuple[str, ...]
+    assumed_refs: tuple[str, ...]
+    open_spec_refs: tuple[str, ...]
+    formal_assumption_refs: tuple[str, ...]
+    tcb_refs: tuple[str, ...]
+    notices: tuple[OpenObligationEntryV5, ...]
+    assurance_digest: DigestV4
+
+    def _validate(self) -> None:
+        if self.scope_profile not in _SEMANTIC_PROFILES_V5:
+            _fail("ENUM_VALUE", f"AssuranceEnvelopeV5.scope_profile {self.scope_profile!r}")
+        if self.spec not in _SPEC_STATUSES_V5:
+            _fail("ENUM_VALUE", f"AssuranceEnvelopeV5.spec {self.spec!r} is unknown")
+        if self.implementation not in _IMPLEMENTATION_ASSURANCES_V5:
+            _fail(
+                "ENUM_VALUE",
+                f"AssuranceEnvelopeV5.implementation {self.implementation!r} is unknown",
+            )
+        if self.run_check not in _RUN_CHECKS_V5:
+            _fail("ENUM_VALUE", f"AssuranceEnvelopeV5.run_check {self.run_check!r} is unknown")
+        if self.implementation == "kernelVerified" and not self.tcb_refs:
+            _fail(
+                "TYPE_AUTHORITY",
+                "kernelVerified requires a specified trusted computing base",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class HornDeltaV5(V4Contract):
+    """An add-only Horn delta inside one fixed finite universe."""
+
+    parent_subject_digest: DigestV4
+    child_subject_digest: DigestV4
+    universe_digest: DigestV4
+    added_facts: tuple[str, ...]
+    added_rules: tuple[DigestV4, ...]
+
+    def _validate(self) -> None:
+        if not self.added_facts and not self.added_rules:
+            _fail("EMPTY_STRING", "HornDeltaV5 must add at least one fact or rule")
+        for fact in self.added_facts:
+            _nonempty(fact, "HornDeltaV5.added_facts[]")
+
+
+_EMPIRICAL_TARGETS_V5 = frozenset({
+    "outcome_frequency", "predicted_probability", "risk_ranking",
+    "cost_estimate", "parameterized_score",
+})
+
+
+@dataclass(frozen=True, slots=True)
+class EmpiricalResultV5(V4Contract):
+    """A read-only empirical observation; never a normative conclusion."""
+
+    observation_target: str
+    model_ref: DigestV4 | None
+    dataset_ref: DigestV4 | None
+    evaluation_ref: DigestV4 | None
+    target_definition: str
+    population: str
+    time_range: str
+    missing_items: tuple[str, ...]
+    calibration_status: str
+    empirical_digest: DigestV4
+
+    def _validate(self) -> None:
+        if self.observation_target not in _EMPIRICAL_TARGETS_V5:
+            _fail(
+                "ENUM_VALUE",
+                f"EmpiricalResultV5.observation_target {self.observation_target!r} is unknown",
+            )
+        _nonempty(self.target_definition, "EmpiricalResultV5.target_definition")
+        _nonempty(self.population, "EmpiricalResultV5.population")
+        _nonempty(self.time_range, "EmpiricalResultV5.time_range")
+        if self.model_ref is None and self.evaluation_ref is None:
+            _fail(
+                "MISSING_FIELD",
+                "EmpiricalResultV5 requires a model or evaluation reference; "
+                "no estimate may be invented",
+            )
+        if self.calibration_status not in frozenset({"calibrated", "uncalibrated", "not_calibrated"}):
+            _fail(
+                "ENUM_VALUE",
+                f"EmpiricalResultV5.calibration_status {self.calibration_status!r} is unknown",
+            )
+
+
 _REGISTRY_TYPES = (
     DigestV4,
     CanonicalTimeV4,
@@ -2484,6 +3183,31 @@ _REGISTRY_TYPES = (
     MCPReadArtifactOutputV4,
     MCPReadArtifactErrorV4,
     ToolSpecV4,
+    OpenObligationEntryV5,
+    ScenarioKeyV5,
+    QueryRequestV5,
+    PremiseTokenV5,
+    SupportHyperedgeV5,
+    StructuredArgumentV5,
+    TypedAttackV5,
+    DefeatPolicyV5,
+    DefeatEdgeV5,
+    ExtensionFamilyV5,
+    EvalOutcomeV5,
+    SemanticBranchV5,
+    QueryWitnessV5,
+    QueryResultV5,
+    ProcedureAuthorityV5,
+    ProcedureResultV5,
+    ExactQuantityV5,
+    ExactExpressionV5,
+    CompositionCandidateV5,
+    CompositionPolicyV5,
+    CompositionChoiceV5,
+    NotApplicableEvidenceV5,
+    AssuranceEnvelopeV5,
+    HornDeltaV5,
+    EmpiricalResultV5,
 )
 V4_TYPE_REGISTRY = MappingProxyType({item.__name__: item for item in _REGISTRY_TYPES})
 V4_OBJECT_REGISTRY = MappingProxyType(
@@ -2497,7 +3221,7 @@ OBJECT_TYPE_REGISTRY_V4 = V4_OBJECT_REGISTRY
 
 
 __all__ = [
-    "SCHEMA_VERSION_V4",
+    "SCHEMA_VERSION_V5",
     "CASE_INPUT_BUNDLE_SCHEMA_V4",
     "ContractV4Error",
     "V4Contract",
@@ -2516,5 +3240,8 @@ __all__ = [
     "validate_resource_limits_v4",
     "require_engine_match",
     "validate_state_matrix",
+    "SEMANTIC_PROFILES_V5",
+    "ATTACK_KINDS_V5",
+    "ATTACK_KIND_MIGRATION_V5",
     *[item.__name__ for item in _REGISTRY_TYPES],
 ]

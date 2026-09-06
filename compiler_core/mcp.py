@@ -47,7 +47,7 @@ from compiler_core.version import MCP_PROTOCOL_VERSION, SERVER_NAME, __version__
 
 
 JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
-JSON_SCHEMA_ID = "https://juris-calculus.local/schemas/jc-v4.schema.json"
+JSON_SCHEMA_ID = "https://juris-calculus.local/schemas/jc-v5.schema.json"
 
 TOOL_SPECS: tuple[ToolSpecV4, ...] = (
     ToolSpecV4(
@@ -198,7 +198,7 @@ def _field_schema(
     elif contract_type is _contracts.CaseInputBundleV4 and field_name == "schema_version":
         schema = {"type": "string", "const": _contracts.CASE_INPUT_BUNDLE_SCHEMA_V4}
     elif field_name == "schema_version" and annotation is str:
-        schema = {"type": "string", "const": _contracts.SCHEMA_VERSION_V4}
+        schema = {"type": "string", "const": _contracts.SCHEMA_VERSION_V5}
     elif contract_type is _contracts.CaseArtifactV4 and field_name == "content_base64":
         schema = {"type": "string", "maxLength": 1_398_104}
     elif field_name == "engine_version" and annotation is str:
@@ -296,7 +296,7 @@ def schema_document() -> dict[str, object]:
     return {
         "$schema": JSON_SCHEMA_DIALECT,
         "$id": JSON_SCHEMA_ID,
-        "title": "Juris Calculus V4 public contracts",
+        "title": "Juris Calculus V5 public contracts",
         "description": (
             "Structural Draft 2020-12 publication of "
             "compiler_core.contracts.V4_TYPE_REGISTRY. Strict raw-JSON token "

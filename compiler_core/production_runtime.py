@@ -123,7 +123,7 @@ def _signer(materials: LoadedProductionPackV4):
             "algorithm": "Ed25519", "key_id": materials.service_key.key_id,
             "issuer": materials.service_key.issuer, "role": "service_signer",
             "scope": "service-certificate", "kind": "service-certificate",
-            "schema_version": "jc/4.0", "subject_digest": str(subject_digest),
+            "schema_version": "jc/5.0", "subject_digest": str(subject_digest),
             "run_identity_ref": run_identity_ref.to_dict(), "status": "APPROVED",
             "issued_at": now.to_dict(), "expires_at": expires_at.to_dict(),
             "nonce": f"service-{subject_digest.hex}-{payload_digest.hex}",
@@ -312,7 +312,7 @@ def create_client(
         )
 
     capabilities = MCPCapabilitiesOutputV4(
-        "jc/4.0", materials.identity.engine_api, materials.identity.source_tree_digest.hex,
+        "jc/5.0", materials.identity.engine_api, materials.identity.source_tree_digest.hex,
         materials.identity.compiler_build_digest, config.wheel_digest, config.package_digest,
         config.lock_digest, materials.identity.schema_digest, config.tool_spec_digest,
         TOOL_SPECS, ResourceLimitsV4(), materials.pack_ref,

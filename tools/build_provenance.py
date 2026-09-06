@@ -41,7 +41,7 @@ MATERIAL_PATHS = (
     "requirements/release.lock",
     "requirements/source-tool.lock",
     "requirements/test.lock",
-    "schemas/jc-v4.schema.json",
+    "schemas/jc-v5.schema.json",
     "tests/fixtures/golden/v4-test-trust-policy.json",
     "tests/fixtures/keys/v4-synthetic-trust.json",
     "tests/required-v4-tests.json",

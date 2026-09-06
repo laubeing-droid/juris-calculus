@@ -2,7 +2,7 @@
 # 覆盖 13 大门类 + 30+ 子领域
 # 每个域独立：registry_path + 原子前缀 + regex 触发器 + 概念白名单
 
-version: "4.0.0"
+version: "5.0.0"
 schema: "multi_namespace_isolated"
 total_domains: 13
 total_atoms: 140

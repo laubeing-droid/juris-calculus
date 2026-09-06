@@ -1,6 +1,6 @@
 # juris-calculus
 
-JC 4.0.0 是公开、可审计的 V4 法律推理内核。它接收结构化请求，只让已验证事实和已准入规则进入形式推理，并由同一 application service 向 CLI、Python 与四工具 stdio MCP 输出规范结果和可重放证据。
+JC 5.0.0 是公开、可审计的法律推理内核；公共协议为 jc/5.0，正式输入拒绝 jc/4.0 与 4.x 引擎版本。它接收结构化请求，只让已验证事实和已准入规则进入形式推理，并由同一 application service 向 CLI、Python 与四工具 stdio MCP 输出规范结果和可重放证据。
 
 ```text
 LLM proposes -> verification gates decide -> formal kernel reasons

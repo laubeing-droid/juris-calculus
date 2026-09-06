@@ -68,7 +68,7 @@
         "sha256": "sha256:4495e143f8666291698db15de1569b6975678ad16c6a0b1bd93c29a72761749c"
       },
       {
-        "path": "schemas/jc-v4.schema.json",
+        "path": "schemas/jc-v5.schema.json",
         "sha256": "sha256:60eace0cbf196f8c317f4f0ab89816838346ad760a559a10ee2f6815d10f84ba"
       }
     ],

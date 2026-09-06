@@ -63,7 +63,7 @@ def _is_reparse(info: os.stat_result) -> bool:
 
 def _file_id(path: Path) -> tuple[int, int]:
     try:
-        info = path.lstat()
+        info = os.lstat(_nt_long(path))
     except OSError as exc:
         _io_fail(exc, f"cannot stat {path.name}")
     if _is_reparse(info):
@@ -98,11 +98,28 @@ def _safe_root(value: object) -> Path:
     return root
 
 
+def _nt_long(path: Path) -> str:
+    """Return the extended-length form of an absolute Windows path.
+
+    Bundle files sit several directories below the state root and legitimately
+    exceed the legacy 260-character MAX_PATH bound (pytest tmp roots on GitHub
+    runners are long), so kernel-level calls must use the \\\\?\\ prefix. Only
+    drive paths reach this module: _safe_root rejects UNC and device forms.
+    """
+
+    if os.name != "nt":
+        return os.fspath(path)
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return absolute
+    return "\\\\?\\" + absolute
+
+
 def _mkdir(path: Path) -> None:
     try:
-        path.mkdir(mode=0o700)
+        os.mkdir(_nt_long(path), 0o700)
     except FileExistsError:
-        info = path.lstat()
+        info = os.lstat(_nt_long(path))
         if not stat.S_ISDIR(info.st_mode) or _is_reparse(info):
             _fail("STORAGE_LAYOUT", f"storage directory is unsafe: {path.name}")
     except OSError as exc:
@@ -137,7 +154,7 @@ def _open_exact(path: Path, *, write: bool, create: bool = False) -> int:
             ]
             open_file.restype = wintypes.HANDLE
             handle = open_file(
-                str(path), 0x40000000 if write else 0x80000000, 0x7, None,
+                _nt_long(path), 0x40000000 if write else 0x80000000, 0x7, None,
                 1 if create else 3, 0x00200000 | (0x80000000 if write else 0), None,
             )
             if handle == wintypes.HANDLE(-1).value:
@@ -155,7 +172,7 @@ def _open_exact(path: Path, *, write: bool, create: bool = False) -> int:
         _io_fail(exc, f"cannot open {path.name}")
     info = os.fstat(descriptor)
     try:
-        path_info = path.lstat()
+        path_info = os.lstat(_nt_long(path))
     except OSError as exc:
         os.close(descriptor)
         _io_fail(exc, f"cannot restat {path.name}")
@@ -294,21 +311,24 @@ def _harden_windows(path: Path) -> None:
     # final state on open.
     if os.name == "nt":
         owner_is_current = _windows_acl_sids(path)[0] == sid
+        is_directory = stat.S_ISDIR(os.lstat(_nt_long(path)).st_mode)
     else:
         owner_is_current = False
-    rights = "(OI)(CI)F" if path.is_dir() else "F"
+        is_directory = path.is_dir()
+    rights = "(OI)(CI)F" if is_directory else "F"
+    target = _nt_long(path)
     commands = []
     if not owner_is_current:
-        commands.append(["icacls.exe", str(path), "/setowner", f"*{sid}"])
+        commands.append(["icacls.exe", target, "/setowner", f"*{sid}"])
     commands.append(
         [
-            "icacls.exe", str(path), "/inheritance:r", "/grant:r",
+            "icacls.exe", target, "/inheritance:r", "/grant:r",
             f"*{sid}:{rights}", f"*S-1-5-18:{rights}",
         ]
     )
     commands.append(
         [
-            "icacls.exe", str(path), "/remove:g",
+            "icacls.exe", target, "/remove:g",
             "*S-1-1-0", "*S-1-5-11", "*S-1-5-32-544", "*S-1-5-32-545",
             "*S-1-3-4",
         ]
@@ -331,7 +351,7 @@ def _windows_acl_sids(path: Path) -> tuple[str, frozenset[str]]:
     dacl = ctypes.c_void_p()
     descriptor = ctypes.c_void_p()
     result = ctypes.windll.advapi32.GetNamedSecurityInfoW(
-        str(path), 1, 0x1 | 0x4,
+        _nt_long(path), 1, 0x1 | 0x4,
         ctypes.byref(owner), None, ctypes.byref(dacl), None, ctypes.byref(descriptor),
     )
     if result != 0 or not owner.value or not dacl.value:
@@ -379,7 +399,7 @@ def _windows_acl_sids(path: Path) -> tuple[str, frozenset[str]]:
 
 def _verify_security(path: Path, *, file: bool = False) -> None:
     try:
-        info = path.lstat()
+        info = os.lstat(_nt_long(path))
     except OSError as exc:
         _io_fail(exc, f"cannot inspect {path.name}")
     if _is_reparse(info):

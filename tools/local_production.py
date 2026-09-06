@@ -203,7 +203,7 @@ def _reuse_prepared(state_root: Path, source_commit: str) -> dict[str, object] |
         ):
             return None
         probe = _installed_probe(python, manifest_path.parent / "runtime", _clean_environment())
-        if probe["version"] != "4.0.0":
+        if probe["version"] != "5.0.0":
             return None
         return manifest
     except (KeyError, OSError, TypeError, ValueError):
@@ -263,7 +263,7 @@ def prepare_release(state_root: Path) -> dict[str, object]:
         if wheels[0].read_bytes() != wheels[1].read_bytes():
             raise ValueError("independent wheel builds are not byte-identical")
         wheel_digest = _sha256(wheels[0])
-        release_id = f"4.0.0-{source_commit[:12]}-{wheel_digest[7:19]}"
+        release_id = f"5.0.0-{source_commit[:12]}-{wheel_digest[7:19]}"
         release = deployment / "releases" / release_id
         if release.exists():
             raise ValueError("existing release identity is inconsistent with prepared pointer")
@@ -298,7 +298,7 @@ def prepare_release(state_root: Path) -> dict[str, object]:
         _run([str(python), "-B", "-m", "pip", "check"], cwd=runtime_dir, env=env)
         probe = _installed_probe(python, runtime_dir, env)
         if probe != {
-            "version": "4.0.0", "prefix": str(venv.resolve()), "origins_in_venv": True,
+            "version": "5.0.0", "prefix": str(venv.resolve()), "origins_in_venv": True,
         }:
             raise ValueError("installed wheel origin or version drifted")
         packages = json.loads(_run(
@@ -333,7 +333,7 @@ def prepare_release(state_root: Path) -> dict[str, object]:
         )
         runtime_config = {
             "schema_version": "jc/production-runtime/1.0",
-            "pack_path": str((state_root / "packs/cn-official-local-4.0.0.json").resolve()),
+            "pack_path": str((state_root / "packs/cn-official-local-5.0.0.json").resolve()),
             "trust_path": str((state_root / "trust/cn-official-local.json").resolve()),
             "service_key_path": str((state_root / "identity/service-runtime.json").resolve()),
             "state_root": str((state_root / "runtime-state").resolve()),

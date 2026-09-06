@@ -12,10 +12,10 @@
     "jc_verify_run",
     "jc_read_artifact"
   ],
-  "tools_list_digest": "sha256:3361665606b709a0e5a461cf7473af5ea9ffc3ae5cf4190c2a6789712fa37305",
+  "tools_list_digest": "sha256:80dccc504c7d72dbd22a4a551af90c1f52051419a641d62e0d2e3d1b7b878d70",
   "capability_pins": {
-    "schema_version": "jc/4.0",
-    "engine_version": "4.0.0rc1",
+    "schema_version": "jc/5.0",
+    "engine_version": "5.0.0rc1",
     "engine_source_tree": "test-local-engine-tree",
     "engine_build_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "wheel_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",

@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 247,
+  "count": 248,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -558,6 +558,11 @@
     },
     {
       "path": "tests/contract/test_legal_ir.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_proof_binding.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },

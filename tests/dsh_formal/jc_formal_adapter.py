@@ -118,8 +118,8 @@ def load_profile(path: Path = PROFILE_PATH) -> dict[str, Any]:
         ]
         or not DIGEST.fullmatch(profile["tools_list_digest"])
         or set(pins) != CAPABILITY_FIELDS
-        or pins["schema_version"] != "jc/4.0"
-        or not str(pins["engine_version"]).startswith("4.")
+        or pins["schema_version"] != "jc/5.0"
+        or not str(pins["engine_version"]).startswith("5.")
         or pins["kernel_ready"] is not True
         or pins["legal_production_ready"] is not False
         or any(

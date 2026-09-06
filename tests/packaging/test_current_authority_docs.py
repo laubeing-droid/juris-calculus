@@ -140,5 +140,5 @@ def test_current_architecture_docs_are_v4_only() -> None:
     for marker in RETIRED_MARKERS:
         assert marker not in joined
     assert "compiler_core/contracts.py" in joined
-    assert "schemas/jc-v4.schema.json" in joined
+    assert "schemas/jc-v5.schema.json" in joined
     assert "compiler_core/application.py" in joined

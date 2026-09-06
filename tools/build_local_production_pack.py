@@ -84,8 +84,8 @@ from tools.build_cn_official_pack import assert_valid_document as assert_valid_c
 
 
 PACK_ID = "cn-official-local"
-PACK_VERSION = "4.0.0"
-ENGINE_API = "4.0.0"
+PACK_VERSION = "5.0.0"
+ENGINE_API = "5.0.0"
 _PROFILES = {
     "source": ("source_attestor", "source-authenticity", SOURCE_SNAPSHOT_KIND),
     "legal": ("legal_reviewer", LEGAL_APPROVAL_SCOPE, LEGAL_APPROVAL_KIND),
@@ -251,7 +251,7 @@ class LocalProductionPackBuilder:
             "key_id": f"local-production-{signer}-key",
             "issuer": f"local-production-{signer}-issuer",
             "role": role, "scope": scope, "kind": kind,
-            "schema_version": "jc/4.0",
+            "schema_version": "jc/5.0",
             "subject_digest": str(subject_digest),
             "run_identity_ref": None,
             "status": "APPROVED",

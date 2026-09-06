@@ -1,9 +1,9 @@
-# juris-calculus V4 handoff
+# juris-calculus V5 handoff
 
 ## 当前检查点
 
 - 本地 V4 正式系统整改已经完成；当前没有待恢复的旧 receipt、外部状态或历史执行链。
-- 当前系统版本为 4.0.0，只保留 V4 正式执行链。
+- 当前系统版本为 5.0.0（公共协议 jc/5.0）；V4 冻结历史仍由封存 wheel 与旧证据承担，正式链只保留一套。
 - 当前整改任务定义为 `remediation/v4/tasks.v3.json`，入口为 `tools/remediate_v4.py`。
 - `remediation/v4/tasks.json` 与 `task.schema.json` 仅作字节冻结的历史记录，当前 runner 不读取它们。
 - 正式 wheel 包含 official YAML 规则准入所需的 `compiler_core/rule_admission.py`，不依赖已退出正式包的 `compiler_core/types.py`。

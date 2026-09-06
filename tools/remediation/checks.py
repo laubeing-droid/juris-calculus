@@ -145,11 +145,11 @@ def generated_problems(
     from compiler_core.canonical_serialization import canonical_bytes
     from compiler_core import mcp as authority
 
-    schema_path = schema_path or root / "schemas/jc-v4.schema.json"
+    schema_path = schema_path or root / "schemas/jc-v5.schema.json"
     manifest_path = manifest_path or root / "mcp_manifest.json"
     problems: list[str] = []
     pairs = (
-        ("schemas/jc-v4.schema.json", schema_path, authority.schema_bytes()),
+        ("schemas/jc-v5.schema.json", schema_path, authority.schema_bytes()),
         ("mcp_manifest.json", manifest_path, authority.manifest_bytes()),
     )
     documents: dict[str, Any] = {}
@@ -174,7 +174,7 @@ def generated_problems(
     except ImportError:
         problems.append("jsonschema is required for the generated publication check")
     else:
-        schema = documents.get("schemas/jc-v4.schema.json")
+        schema = documents.get("schemas/jc-v5.schema.json")
         if isinstance(schema, dict):
             try:
                 jsonschema.Draft202012Validator.check_schema(schema)

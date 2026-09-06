@@ -64,6 +64,7 @@ from compiler_core.storage import (
     _flush_file,
     _harden_windows,
     _mkdir,
+    _nt_long,
     _open_exact,
     _verify_security,
     _write_all,
@@ -1062,7 +1063,7 @@ class AuditBundleStoreV4:
                 import ctypes
 
                 move = ctypes.windll.kernel32.MoveFileExW
-                if not move(str(source), str(target), 0x8):
+                if not move(_nt_long(source), _nt_long(target), 0x8):
                     raise ctypes.WinError(ctypes.get_last_error())
             else:
                 source.rename(target)
@@ -1076,7 +1077,7 @@ class AuditBundleStoreV4:
         quarantine = self._store.root / "audit-quarantine"
         recovered = 0
         for path in sorted(staging.iterdir(), key=lambda item: item.name):
-            info = path.lstat()
+            info = os.lstat(_nt_long(path))
             if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
                 _fail("AUDIT_LAYOUT", "audit staging contains a non-directory entry")
             _verify_security(path)
@@ -1105,7 +1106,8 @@ class AuditBundleStoreV4:
         expected = set(DATA_FILES_V4) | {"checksums.sha256"}
         if require_complete:
             expected.add("COMPLETE")
-        children = {path.name for path in directory.iterdir()}
+        with os.scandir(_nt_long(directory)) as scan:
+            children = {entry.name for entry in scan}
         if children != expected:
             _fail("AUDIT_FILE_SET", "bundle directory has a missing or extra file")
         files = {
@@ -1153,8 +1155,12 @@ class AuditBundleStoreV4:
             while pending:
                 directory = pending.pop()
                 _verify_security(directory)
-                for path in directory.iterdir():
-                    info = path.lstat()
+                # scandir under the extended-length prefix: quarantine orphan
+                # names push child paths past the legacy MAX_PATH bound.
+                with os.scandir(_nt_long(directory)) as scan:
+                    entries = [(directory / entry.name, entry) for entry in scan]
+                for path, entry in entries:
+                    info = entry.stat(follow_symlinks=False)
                     if stat.S_ISLNK(info.st_mode):
                         _fail("AUDIT_REPARSE", "reparse points are forbidden in audit state")
                     if stat.S_ISDIR(info.st_mode):

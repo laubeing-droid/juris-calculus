@@ -144,6 +144,7 @@ def test_nonproduction_assets_add_no_distribution_or_deployment_authority() -> N
         ".github/workflows/auto-release.yml",
         ".github/workflows/ci.yml",
         ".github/workflows/release-audit.yml",
+        ".github/workflows/runtime-refinement.yml",
     ]
     deployment_names = {
         "Dockerfile", "Chart.yaml", "Procfile", "fly.toml",

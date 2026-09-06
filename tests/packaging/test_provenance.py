@@ -42,14 +42,14 @@ def _record_hash(payload: bytes) -> str:
 def _write_wheel(
     path: Path,
     *,
-    module_payload: bytes = b'__version__ = "4.0.0"\n',
+    module_payload: bytes = b'__version__ = "5.0.0"\n',
     recorded_module_payload: bytes | None = None,
 ) -> None:
-    dist_info = "juris_calculus-4.0.0.dist-info"
+    dist_info = "juris_calculus-5.0.0.dist-info"
     files = {
         "compiler_core/__init__.py": module_payload,
         f"{dist_info}/METADATA": (
-            b"Metadata-Version: 2.4\nName: juris-calculus\nVersion: 4.0.0\n\n"
+            b"Metadata-Version: 2.4\nName: juris-calculus\nVersion: 5.0.0\n\n"
         ),
         f"{dist_info}/WHEEL": (
             b"Wheel-Version: 1.0\nGenerator: jc-test\nRoot-Is-Purelib: true\n"
@@ -89,7 +89,7 @@ def _case(tmp_path: Path) -> dict[str, Any]:
     _git(repo, "add", "--all")
     _git(repo, "commit", "-m", "fixture")
     commit = _git(repo, "rev-parse", "HEAD")
-    wheel = tmp_path / "juris_calculus-4.0.0-py3-none-any.whl"
+    wheel = tmp_path / "juris_calculus-5.0.0-py3-none-any.whl"
     rebuild = tmp_path / "rebuild.whl"
     _write_wheel(wheel)
     shutil.copyfile(wheel, rebuild)
@@ -101,7 +101,7 @@ def _case(tmp_path: Path) -> dict[str, Any]:
         wheel=wheel,
         rebuild_wheel=rebuild,
         source_commit=commit,
-        tag="v4.0.0",
+        tag="v5.0.0",
         key_path=repo / KEY_PATH,
         sbom_output=sbom,
         provenance_output=provenance,
@@ -145,7 +145,7 @@ def test_release_identity_binds_commit_tag_version_and_artifacts(tmp_path: Path)
     statement = evidence["statement"]
     assert statement["source"]["commit"] == case["commit"]
     assert statement["release_identity"] == {
-        "project": "juris-calculus", "version": "4.0.0", "tag": "v4.0.0",
+        "project": "juris-calculus", "version": "5.0.0", "tag": "v5.0.0",
     }
     assert statement["subject"]["sha256"].startswith("sha256:")
     assert statement["build_evidence"]["kind"] == "BYTE_IDENTICAL_REBUILD"
@@ -192,7 +192,7 @@ def test_material_and_spec_mutations_fail_closed(tmp_path: Path) -> None:
     mutations = []
     for path in (
         "requirements/core.lock",
-        "schemas/jc-v4.schema.json",
+        "schemas/jc-v5.schema.json",
         "mcp_manifest.json",
         "docs/architecture/module-authority.json",
     ):
@@ -217,7 +217,7 @@ def test_wheel_and_record_mutations_fail_closed(tmp_path: Path) -> None:
     _write_wheel(
         broken,
         module_payload=b"tampered\n",
-        recorded_module_payload=b'__version__ = "4.0.0"\n',
+        recorded_module_payload=b'__version__ = "5.0.0"\n',
     )
     case["wheel"] = broken
     with pytest.raises(EvidenceError, match="RECORD"):
@@ -235,7 +235,7 @@ def test_test_key_is_non_promotable_without_explicit_allowance(tmp_path: Path) -
 
 def test_dirty_tracked_attestor_tree_fails_closed(tmp_path: Path) -> None:
     case = _case(tmp_path)
-    material = case["repo"] / "schemas/jc-v4.schema.json"
+    material = case["repo"] / "schemas/jc-v5.schema.json"
     material.write_bytes(material.read_bytes() + b"\n")
     with pytest.raises(EvidenceError, match="tracked or staged"):
         _verify(case)
@@ -247,7 +247,7 @@ def test_ab_rebuild_mismatch_fails_closed(tmp_path: Path) -> None:
     with pytest.raises(EvidenceError, match="byte-identical"):
         create_release_evidence(
             root=case["repo"], wheel=case["wheel"], rebuild_wheel=case["rebuild"],
-            source_commit=case["commit"], tag="v4.0.0", key_path=case["key"],
+            source_commit=case["commit"], tag="v5.0.0", key_path=case["key"],
             sbom_output=tmp_path / "other-sbom.json",
             provenance_output=tmp_path / "other-provenance.json",
             checksums_output=tmp_path / "other-checksums.txt", release_candidate=True,
@@ -266,4 +266,4 @@ def test_missing_build_evidence_and_wrong_tag_fail_closed(tmp_path: Path) -> Non
     with pytest.raises(EvidenceError, match="intended tag"):
         create_release_evidence(tag="v4.0.1", rebuild_wheel=case["rebuild"], **common)
     with pytest.raises(EvidenceError, match="exactly one"):
-        create_release_evidence(tag="v4.0.0", **common)
+        create_release_evidence(tag="v5.0.0", **common)
