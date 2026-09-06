@@ -18,6 +18,7 @@ from compiler_core.canonical_serialization import DigestV4, canonical_bytes, dig
 from compiler_core.certificates import CertificateIssuerV4
 from compiler_core.client import JCClient
 from compiler_core.contracts import (
+    DEFAULT_RESOURCE_LIMITS_V4, HARD_MAX_RESOURCE_LIMITS_V4,
     CanonicalTimeV4, CaseArtifactV4, CaseInputBundleV4, ContentRefV4,
     EvidenceManifestV4,
     MCPCapabilitiesOutputV4, MCPEvaluateOutputV4, ResourceLimitsV4,
@@ -102,7 +103,9 @@ class ProductionRuntimeConfigV4:
             or len(config.engine_source_commit) not in {40, 64}
             or config.tool_spec_digest != tool_spec_digest()
             or config.algorithm_profile_digest != _algorithm_profile_digest()
-            or config.backend_profile_digest != backend_profile_digest_v4(solver_deadline_ms=2500)
+            or config.backend_profile_digest != backend_profile_digest_v4(
+                solver_deadline_ms=10000 if os.name == "nt" else 2500,
+            )
         ):
             raise ValueError("production runtime identity or resource pins are invalid")
         return config
@@ -238,6 +241,18 @@ def create_client(
         current_engine_build_digest=materials.identity.compiler_build_digest,
         checker_receipt_issuer=materials.service_key.issuer,
     )
+    # Provider backends run as freshly spawned interpreters; on Windows the
+    # cold start (interpreter + imports) is part of the solver budget and the
+    # 2.5 s default sits below real spawn cost under load. The runtime client
+    # therefore grants the hard-maximum solver deadline there; the contract
+    # default is unchanged and callers may always pass explicit limits. Run
+    # identities bound to this client must pin the same deadline.
+    default_limits = None
+    if os.name == "nt":
+        default_limits = ResourceLimitsV4.from_dict({
+            **DEFAULT_RESOURCE_LIMITS_V4,
+            "solver_deadline_ms": HARD_MAX_RESOURCE_LIMITS_V4["solver_deadline_ms"],
+        })
     issuer = CertificateIssuerV4(
         materials.trust,
         current_engine_build_digest=materials.identity.compiler_build_digest,
@@ -246,7 +261,7 @@ def create_client(
     application = ApplicationV4(
         materials.resolver, materials.trust, materials.source_service, fact_service,
         materials.pack_verifier, compiler, router, checker, audit_store, issuer,
-        receipt_signer=signer, clock=runtime_clock,
+        receipt_signer=signer, clock=runtime_clock, default_limits=default_limits,
     )
 
     @contextmanager

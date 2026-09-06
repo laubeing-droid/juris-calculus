@@ -91,6 +91,7 @@ def _application(tmp_path: Path, harness: _ChainHarness):
         issuer,
         receipt_signer=harness._sign_receipt,
         clock=lambda: harness.now,
+        default_limits=harness.default_limits,
     )
     return application, store, router
 

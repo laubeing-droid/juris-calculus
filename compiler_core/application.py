@@ -273,7 +273,12 @@ class ApplicationV4:
         *,
         receipt_signer: ReceiptSignerV4,
         clock: Callable[[], CanonicalTimeV4],
+        default_limits: ResourceLimitsV4 | None = None,
     ) -> None:
+        if default_limits is not None and type(default_limits) is not ResourceLimitsV4:
+            raise ApplicationV4Error(
+                "APPLICATION_DEPENDENCY", "default_limits must be ResourceLimitsV4"
+            )
         if (
             type(resolver) is not ArtifactResolverV4
             or type(trust) is not TrustVerifierV4
@@ -329,6 +334,7 @@ class ApplicationV4:
         self._certificate_issuer = certificate_issuer
         self._receipt_signer = receipt_signer
         self._clock = clock
+        self._default_limits = default_limits
         self._execution_lock = RLock()
 
     def _document(
@@ -1428,7 +1434,11 @@ class ApplicationV4:
                 "evaluation context is invalid",
                 stage="resolver",
             )
-        admitted_limits = ResourceLimitsV4() if limits is None else limits
+        admitted_limits = (
+            self._default_limits if limits is None and self._default_limits is not None
+            else ResourceLimitsV4() if limits is None
+            else limits
+        )
         if type(admitted_limits) is not ResourceLimitsV4:
             raise ApplicationV4Error(
                 "APPLICATION_INPUT_TYPE",

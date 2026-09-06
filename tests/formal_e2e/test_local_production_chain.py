@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from base64 import b64decode, b64encode
 from dataclasses import replace
+import os
 from pathlib import Path
 
 import pytest
@@ -55,7 +56,8 @@ def runtime_config(path: Path, state_root: Path, material: ProductionMaterial) -
         "lock_digest": str(DigestV4.from_bytes(b"w10-lock")),
         "tool_spec_digest": str(tool_spec_digest()),
         "algorithm_profile_digest": str(_algorithm_profile_digest()),
-        "backend_profile_digest": str(backend_profile_digest_v4(solver_deadline_ms=2500)),
+        "backend_profile_digest": str(backend_profile_digest_v4(
+            solver_deadline_ms=10000 if os.name == "nt" else 2500)),
         "storage_capability_ref": ContentRefV4(
             "storage-capability", DigestV4.from_bytes(b"w10-storage")
         ).to_dict(),

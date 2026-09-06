@@ -3,6 +3,7 @@ from __future__ import annotations
 from base64 import b64decode, b64encode
 from dataclasses import replace
 import json
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -17,10 +18,12 @@ from compiler_core.canonical_serialization import (
     parse_json_document,
 )
 from compiler_core.contracts import (
+    DEFAULT_RESOURCE_LIMITS_V4,
     CanonicalLocatorV4,
     CanonicalTimeV4,
     CaseRequestV4,
     ContentRefV4,
+    ResourceLimitsV4,
     ContractV4Error,
     EvidenceItemV4,
     EvidenceManifestV4,
@@ -138,9 +141,16 @@ class _ChainHarness:
         self.policy = policy or TrustPolicyV4.from_dict(self.trusted["trust_policy"])
         self.backend_profile_digest = (
             backend_profile_digest
-            or backend_profile_digest_v4(solver_deadline_ms=2500)
+            or backend_profile_digest_v4(
+                solver_deadline_ms=10000 if os.name == "nt" else 2500,
+            )
         )
         self.now = CanonicalTimeV4.from_dict(self.trusted["verification_time"])
+        self.default_limits = ResourceLimitsV4.from_dict({
+            **DEFAULT_RESOURCE_LIMITS_V4,
+            "solver_deadline_ms": 10000 if os.name == "nt"
+            else DEFAULT_RESOURCE_LIMITS_V4["solver_deadline_ms"],
+        })
         self.resolver = ArtifactResolverV4(max_artifact_bytes=262_144)
         for row in self.fixture["artifacts"]:
             self.resolver.register_bytes(
