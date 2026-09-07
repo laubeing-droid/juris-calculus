@@ -352,16 +352,35 @@ class _SyntheticPackBuilder:
         *,
         features: tuple[str, ...],
         candidate: bool = False,
+        horn_premises: tuple[str, ...] = (),
+        horn_head: str | None = None,
     ) -> tuple[ContentRefV4, ContentRefV4 | None]:
         authority_ref = self._component(RULE_AUTHORITY_KIND, rule_id, tier="synthetic")
         variable_ref = self._component(RULE_VARIABLE_KIND, rule_id, name="claim")
-        premise_refs = [self._component(
-            RULE_PREMISE_KIND,
-            rule_id,
-            fact_key=f"{rule_id}.required-fact",
-            required=True,
-        )]
-        conclusion_ref = self._component(RULE_CONCLUSION_KIND, rule_id, value="applies")
+        if horn_head is not None:
+            # Constitutive Horn chain rule: explicit premise fact keys derive
+            # an explicit conclusion fact key (engineering test material for
+            # the ULM15 add-only incremental layer).
+            premise_refs = [
+                self._component(
+                    RULE_PREMISE_KIND,
+                    rule_id,
+                    fact_key=premise,
+                    required=True,
+                )
+                for premise in horn_premises
+            ]
+            conclusion_ref = self._component(
+                RULE_CONCLUSION_KIND, rule_id, fact_key=horn_head
+            )
+        else:
+            premise_refs = [self._component(
+                RULE_PREMISE_KIND,
+                rule_id,
+                fact_key=f"{rule_id}.required-fact",
+                required=True,
+            )]
+            conclusion_ref = self._component(RULE_CONCLUSION_KIND, rule_id, value="applies")
         interpretation_ref = self._component(
             RULE_INTERPRETATION_KIND, rule_id, choice="literal"
         )
@@ -423,7 +442,11 @@ class _SyntheticPackBuilder:
             "variable_declaration_refs": [variable_ref.to_dict()],
             "premise_refs": [item.to_dict() for item in premise_refs],
             "conclusion_ref": conclusion_ref.to_dict(),
-            "modality": "PERMISSION" if permission_ref is not None else "OBLIGATION",
+            "modality": (
+                "CONSTITUTIVE"
+                if horn_head is not None
+                else "PERMISSION" if permission_ref is not None else "OBLIGATION"
+            ),
             "permission_ref": permission_ref.to_dict() if permission_ref is not None else None,
             "exception_refs": [item.to_dict() for item in exception_refs],
             "priority_refs": [item.to_dict() for item in priority_refs],
@@ -645,11 +668,51 @@ class _SyntheticPackBuilder:
             ("synthetic-permission-temporal", ("permission", "temporal")),
             ("synthetic-missing-disputed", ("missing", "disputed")),
         )
+        # Constitutive Horn chain for the ULM15 incremental fixture. Every
+        # premise is an admissible fact key and every head is a derived key,
+        # so chains compose inside the closure (a -> b, c -> d, x -> b as an
+        # alternative route to b, never -> e guarded by a key the fixture
+        # never admits). The universe is fixed by the pack at
+        # {a, b, c, d, x, never, e} fact keys.
+        horn_rows = (
+            ("synthetic-horn-step-b", ("synthetic-horn.a",), "synthetic-horn.b"),
+            ("synthetic-horn-step-d", ("synthetic-horn.c",), "synthetic-horn.d"),
+            ("synthetic-horn-alt-b", ("synthetic-horn.x",), "synthetic-horn.b"),
+            ("synthetic-horn-guarded-e", ("synthetic-horn.never",), "synthetic-horn.e"),
+        )
+        # Budget-expansion rules: 15 additional single-premise rules whose
+        # facts the default chain never stages. When a test stages all of
+        # them the AAF graph reaches 17 arguments and the preferred-profile
+        # enumeration budget returns a sound incomplete result (D01/D02).
+        budget_rows = tuple(
+            (f"synthetic-budget-{index}", ("exception",))
+            for index in range(15)
+        )
         formal_rules: list[ContentRefV4] = []
         promotions: list[ContentRefV4] = []
         for rule_id, features in feature_rows:
             rule_ref, promotion_ref = self._rule(
                 rule_id, source_ref, source, features=features
+            )
+            formal_rules.append(rule_ref)
+            if promotion_ref is None:
+                raise AssertionError("formal synthetic rule lacks promotion receipt")
+            promotions.append(promotion_ref)
+        for row in (*horn_rows, *budget_rows):
+            if len(row) == 3:
+                rule_id, horn_premises, horn_head = row
+                features = ("horn",)
+            else:
+                rule_id, features = row
+                horn_premises = ()
+                horn_head = None
+            rule_ref, promotion_ref = self._rule(
+                rule_id,
+                source_ref,
+                source,
+                features=features,
+                horn_premises=horn_premises,
+                horn_head=horn_head,
             )
             formal_rules.append(rule_ref)
             if promotion_ref is None:
@@ -695,8 +758,12 @@ class _SyntheticPackBuilder:
             "production_allowed": False,
             "pack_ref": pack_ref.to_dict(),
             "candidate_pack_ref": candidate_pack_ref.to_dict(),
-            "formal_rule_ids": [row[0] for row in feature_rows],
+            "formal_rule_ids": [row[0] for row in feature_rows] + [
+                row[0] for row in horn_rows
+            ] + [row[0] for row in budget_rows],
             "feature_rules": {feature: rule_id for rule_id, features in feature_rows for feature in features},
+            "horn_rule_ids": [row[0] for row in horn_rows],
+            "budget_rule_ids": [row[0] for row in budget_rows],
             "case_vectors": [
                 {
                     "case_id": "missing-required-fact",

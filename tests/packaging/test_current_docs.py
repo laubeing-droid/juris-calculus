@@ -20,8 +20,8 @@ CURRENT = (
 
 def test_current_entrypoint_docs_are_v4_and_reference_live_paths() -> None:
     joined = "\n".join(path.read_text(encoding="utf-8") for path in CURRENT)
-    assert __version__ == "5.0.0"
-    assert "5.0.0" in joined
+    assert __version__ == "5.0.1"
+    assert "5.0.1" in joined
     for relative in (
         "compiler_core/version.py", "schemas/jc-v5.schema.json", "mcp_manifest.json",
         "tools/build_provenance.py", ".github/workflows/ci.yml",

@@ -51,6 +51,7 @@ def test_application_issues_and_reverifies_one_bundle_bound_formal_result(
         "evidence",
         "fact",
         "pack",
+        "horn-subject-v5",
         "ir",
         "backend",
         "checker",

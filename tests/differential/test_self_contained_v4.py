@@ -18,7 +18,7 @@ def _fixture_problems(document: dict[str, Any]) -> list[str]:
     problems: list[str] = []
     objects = document.get("object_types", [])
     object_ids = [row.get("id") for row in objects if isinstance(row, dict)]
-    if len(objects) != 100 or len(object_ids) != len(set(object_ids)):
+    if len(objects) != 105 or len(object_ids) != len(set(object_ids)):
         problems.append("object inventory")
     if any(row.get("formal") is not True for row in objects):
         problems.append("formal ownership")
@@ -41,7 +41,9 @@ def _fixture_problems(document: dict[str, Any]) -> list[str]:
     )
     if document.get("valid_combination_count") != valid:
         problems.append("valid combination count")
-    if constraints.get("accepted_formal_result", {}).get("certificate") != ["formal_verified"]:
+    if constraints.get("accepted_formal_result", {}).get("certificate") != [
+        "formal_verified", "none",
+    ]:
         problems.append("formal certificate")
     if constraints.get("blocked", {}).get("transport") != ["error"]:
         problems.append("blocked transport")

@@ -31,8 +31,8 @@ def test_installed_required_suites_have_zero_skip_or_xfail() -> None:
     files = {selector.split("::", 1)[0] for selector in selectors}
     suites = {Path(path).parts[1] for path in files}
 
-    assert suites == {"formal_e2e", "security", "storage_chaos"}
-    assert wheel_gate.INSTALLED_TEST_CASE_COUNT == 27
+    assert suites == {"contract", "formal_e2e", "security", "storage_chaos"}
+    assert wheel_gate.INSTALLED_TEST_CASE_COUNT == 67
     assert "tests/security/test_vertical_slice_attacks.py" in files
     assert "tests/storage_chaos/test_vertical_slice_recovery.py" in files
     recovery_source = (ROOT / "tests/storage_chaos/test_vertical_slice_recovery.py").read_text(

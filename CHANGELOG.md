@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.0.1 — final remediation (JC-FINAL-FIX-20260908)
+
+- 分支身份改为结构化无分隔符编码：`compose_branch_key_v5` 返回排序数组组件并对规范化结构取摘要，`{"a","b"}` 与 `{"a|b"}`、`("x","y")` 与 `("x|y",)` 不再可能共享身份（FIX-01/B01–B03）。
+- 查询反驳统一为 argument → conclusion → 有向反驳关系：`common_refuted`/`possibly_refuted` 由同一逐分支布尔量聚合，论证改名不再改变语义；`QueryResultV5` 合同允许合法 `gate=excluded, excluded=true`，`inconsistent_some` 改为存在语义（FIX-02/C01–C06）。反驳关系与分支门从公开请求（`query_refutations_v5`/`query_gates_v5`）进入查询阶段，跨请求或未知引用被拒。
+- solver 预算耗尽在 Application→procedure/assurance 边界统一转换为 `OpenObligationEntryV5`：17 论证 preferred 请求经公开入口返回 `solver_incomplete` + 非空义务 + `completeness=partial`，不再是 `TYPE_MISMATCH`（FIX-03/D01–D02）。
+- 优先关系语义落位：已准入 priority 通过登记策略（`target-preferred-rebut/1`，工程测试策略）参与击败判定并留下逐边处置记录；无策略/未知策略/策略不可解的循环进入正式映射覆盖缺口——查询 gate=incomplete、程序保持待判、保证信封 openObligations、顶层 partial、不签发证书；阶段内独立复核拒绝错误映射（FIX-04/E01–E06）。
+- 真增量默认启用：`horn-subject-state-v5` 阶段对合格 add-only 子请求以工作队列从父闭包推进增量（复用经密封审计包跨实例恢复），solver/checker 工作量分别计量，增量与强制全量结果等价，非单调变化自动回退并记录原因，错误传播 fail-closed（FIX-05/F01–F11）。
+- 程序四路全部可达：`procedural_input_v5` 公开输入驱动 adjudicated_status / procedural_disposition / pending_legal_judgment / solver_incomplete；授权只能由 trust 校验的已存法律签章产生，用户自报布尔永不生效（FIX-06/G01）。
+- 新增封闭 Harness 集成合同 `compiler_core/harness_contract.py`（`jc-harness-contract/1`）与三份可运行样本（`examples/harness/`）；接口文档 `docs/contracts/HARNESS_INTEGRATION.md`。
+- 合同注册表扩至 105 类型；合成包新增 constitutive Horn 规则族与 15 条预算扩展规则（观察隔离）；schema/manifest/向量再生成。
+
 ## 5.0.0 — V5 upgrade (JC-UPGRADE-20260906-01, released 2026-09-07)
 
 - 2026-09-07：tag `v5.0.0` 签名发布——CI run 34150936429 全绿，promote 任务以生产 Ed25519 密钥完成签名并创建 GitHub Release；provenance `BYTE_IDENTICAL_REBUILD`，绑定源提交 `12d4ddd`。`production_release_claimed=false` 保持设计语义：生产采用（部署激活）是宿主的显式决定。

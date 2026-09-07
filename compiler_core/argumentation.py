@@ -15,6 +15,7 @@ B3 fixes:
 """
 
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from compiler_core.canonical_serialization import DigestV4, canonical_bytes
@@ -990,6 +991,8 @@ def resolve_defeats_v5(
     policy_version: str,
     allowed_kinds: tuple[str, ...],
     request_ref: str,
+    priority_edges: tuple[tuple[str, str], ...] = (),
+    priority_policy_id: str | None = None,
 ) -> tuple[tuple[str, str], ...]:
     """Resolve typed attacks into defeat pairs under one frozen policy.
 
@@ -997,11 +1000,23 @@ def resolve_defeats_v5(
     policy and both endpoints are known arguments of the same request. The
     policy decision is explicit and auditable; priority or authority alone
     manufactures no defeat edge.
+
+    Admitted priority relations participate exactly through a registered
+    priority policy: under ``target-preferred-rebut/1`` an admitted rebut does
+    NOT become a defeat when its target is strictly preferred over its
+    attacker, while every other admitted attack still does. Priority input
+    without a registered policy, or a policy that cannot explain its input
+    (non-strict cycles), fails closed instead of being silently dropped.
     """
 
     if not allowed_kinds:
         _v4_fail("DEFEAT_POLICY_EMPTY", "allowed_kinds must not be empty")
     known = set(arguments)
+    blocked: frozenset[tuple[str, str]] = frozenset()
+    if priority_edges:
+        blocked = _priority_blocked_pairs_v5(
+            attacks, priority_edges, priority_policy_id
+        )
     resolved: list[tuple[str, str]] = []
     for attack in attacks:
         if attack.kind not in allowed_kinds:
@@ -1011,8 +1026,127 @@ def resolve_defeats_v5(
                 "DEFEAT_ENDPOINT_UNKNOWN",
                 f"attack {attack.attack_id!r} references an unknown argument",
             )
-        resolved.append((attack.attacker, attack.target))
+        pair = (attack.attacker, attack.target)
+        if pair in blocked:
+            continue
+        resolved.append(pair)
     return tuple(sorted(set(resolved)))
+
+
+PRIORITY_POLICIES_V5 = MappingProxyType({
+    # Registered engineering test strategy for wiring verification only: it is
+    # not a claim about any jurisdiction's conflict-of-norms rules.
+    "target-preferred-rebut/1": (
+        "For an admitted rebut, the attack does not become a defeat when its "
+        "target is strictly preferred over its attacker under the transitive "
+        "closure of the admitted priority relations; every other admitted "
+        "attack still becomes a defeat. The strategy never manufactures an "
+        "attack or defeat edge."
+    ),
+})
+
+
+def _strict_preference_closure_v5(
+    priority_edges: tuple[tuple[str, str], ...],
+) -> frozenset[tuple[str, str]]:
+    """Transitive closure of the strict preference relation.
+
+    Preference must stay a strict partial order: any non-strict cycle makes
+    "strictly preferred" undecidable for every node on it, so the closure
+    fails closed instead of guessing an orientation.
+    """
+
+    nodes = sorted({endpoint for pair in priority_edges for endpoint in pair})
+    reach = set(priority_edges)
+    for middle in nodes:
+        reach |= {
+            (start, end)
+            for start in nodes if (start, middle) in reach
+            for end in nodes if (middle, end) in reach
+        }
+    for node in nodes:
+        if (node, node) in reach:
+            _v4_fail(
+                "PRIORITY_CYCLE_UNRESOLVED",
+                f"priority relations form a non-strict cycle through {node!r}",
+            )
+    return frozenset(reach)
+
+
+def _priority_blocked_pairs_v5(
+    attacks: tuple[AttackRecordV5, ...],
+    priority_edges: tuple[tuple[str, str], ...],
+    priority_policy_id: str | None,
+) -> frozenset[tuple[str, str]]:
+    if priority_policy_id is None:
+        _v4_fail(
+            "PRIORITY_POLICY_REQUIRED",
+            "admitted priority relations require a registered priority policy",
+        )
+    if priority_policy_id not in PRIORITY_POLICIES_V5:
+        _v4_fail(
+            "PRIORITY_POLICY_UNKNOWN",
+            f"priority policy {priority_policy_id!r} is not registered",
+        )
+    closure = _strict_preference_closure_v5(priority_edges)
+    return frozenset(
+        (attack.attacker, attack.target)
+        for attack in attacks
+        if attack.kind == "rebut" and (attack.target, attack.attacker) in closure
+    )
+
+
+def priority_edge_decisions_v5(
+    arguments: tuple[str, ...],
+    attacks: tuple[AttackRecordV5, ...],
+    priority_edges: tuple[tuple[str, str], ...],
+    priority_policy_id: str | None,
+) -> tuple[dict[str, object], ...]:
+    """Per-edge audit record for how each admitted priority relation was handled.
+
+    Every admitted edge is accounted for exactly once: which attacks it (or a
+    closure it participates in) blocked, or an explicit statement that no
+    admitted conflict exists for it to decide.
+    """
+
+    if not priority_edges:
+        return ()
+    known = set(arguments)
+    closure = _strict_preference_closure_v5(priority_edges)
+    decisions: list[dict[str, object]] = []
+    for preferred, defeated in sorted(priority_edges):
+        if preferred not in known or defeated not in known:
+            _v4_fail(
+                "DEFEAT_ENDPOINT_UNKNOWN",
+                "priority relation references an unknown argument",
+            )
+        direct_blocks = sorted(
+            attack.attack_id for attack in attacks
+            if attack.kind == "rebut"
+            and attack.target == preferred
+            and attack.attacker == defeated
+        )
+        closure_blocks = sorted(
+            attack.attack_id for attack in attacks
+            if attack.kind == "rebut"
+            and (attack.target, attack.attacker) in closure
+            and {attack.attacker, attack.target} & {preferred, defeated}
+        )
+        if direct_blocks:
+            disposition = "blocked_attack"
+        elif closure_blocks:
+            disposition = "participates_in_closure_block"
+        else:
+            disposition = "no_applicable_conflict"
+        decisions.append({
+            "preferred": preferred,
+            "defeated": defeated,
+            "policy": priority_policy_id,
+            "disposition": disposition,
+            "directly_blocked_attacks": direct_blocks,
+            "closure_blocked_attacks": closure_blocks,
+        })
+    return tuple(decisions)
 
 
 def _is_admissible(subset: frozenset[str], defeats: set[tuple[str, str]]) -> bool:

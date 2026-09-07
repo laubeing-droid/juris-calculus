@@ -16,7 +16,7 @@ SPEC = importlib.util.spec_from_file_location("jc_wheel_gate", ROOT / "tools/whe
 assert SPEC is not None and SPEC.loader is not None
 WHEEL_GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(WHEEL_GATE)
-DIST = "juris_calculus-5.0.0.dist-info"
+DIST = "juris_calculus-5.0.1.dist-info"
 
 
 def _record_row(name: str, payload: bytes) -> list[str]:
@@ -32,7 +32,7 @@ def _wheel(tmp_path: Path, mutation: str = "valid") -> Path:
     entries.update({
         f"{DIST}/METADATA": (
             b"Metadata-Version: 2.4\r\nName: juris-calculus\r\n"
-            b"Version: 5.0.0\r\nRequires-Python: <3.13,>=3.11\r\n\r\n"
+            b"Version: 5.0.1\r\nRequires-Python: <3.13,>=3.11\r\n\r\n"
         ),
         f"{DIST}/WHEEL": (
             b"Wheel-Version: 1.0\nGenerator: setuptools (83.0.0)\n"
@@ -62,7 +62,7 @@ def _wheel(tmp_path: Path, mutation: str = "valid") -> Path:
     csv.writer(stream, lineterminator="\n").writerows(rows)
     entries[f"{DIST}/RECORD"] = stream.getvalue().encode()
 
-    wheel = tmp_path / "juris_calculus-5.0.0-py3-none-any.whl"
+    wheel = tmp_path / "juris_calculus-5.0.1-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, payload in entries.items():
             archive.writestr(name, payload)

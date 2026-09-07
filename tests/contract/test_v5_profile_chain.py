@@ -30,6 +30,7 @@ from compiler_core.contracts import (
     CanonicalLocatorV4,
     CaseRequestV4,
     CertificateKindV4,
+    ClaimRefutationV5,
     CompositionCandidateV5,
     CompositionChoiceV5,
     CompositionPolicyV5,
@@ -42,7 +43,10 @@ from compiler_core.contracts import (
     ExactQuantityV5,
     FactCandidateV4,
     FactAttestationV4,
+    IncrementalParentV5,
     LegalContextV4,
+    ProceduralInputV5,
+    QueryGateRequestV5,
     QueryRequestV5,
     RequestedOutputV4,
     RunIdentityV4,
@@ -231,6 +235,10 @@ def _seed_with_v5(
     composition_choice: CompositionChoiceV5 | None = None,
     expression: ExactExpressionV5 | None = None,
     operands: tuple[ExactExpressionV5, ...] = (),
+    incremental_parent: IncrementalParentV5 | None = None,
+    query_refutations: tuple[ClaimRefutationV5, ...] = (),
+    query_gates: tuple[QueryGateRequestV5, ...] = (),
+    procedural_input: ProceduralInputV5 | None = None,
 ) -> tuple[CaseRequestV4, ContentRefV4, RunIdentityV4, ContentRefV4]:
     from tests.integration.test_trust_chain import ISSUED_AT
 
@@ -256,6 +264,10 @@ def _seed_with_v5(
         composition_choice_v5=composition_choice,
         composition_expression_v5=expression,
         composition_operands_v5=operands,
+        incremental_parent_v5=incremental_parent,
+        query_refutations_v5=query_refutations,
+        query_gates_v5=query_gates,
+        procedural_input_v5=procedural_input,
     )
     binding = case_request_binding_ref(seed)
     manifest_body = {

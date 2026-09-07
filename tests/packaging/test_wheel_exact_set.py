@@ -42,14 +42,14 @@ def _report() -> dict[str, object]:
         "test_lock_sha256": DIGEST,
         "wheelhouse": {"file_count": 12, "manifest_sha256": DIGEST},
         "installed_distributions": {"count": 14, "sha256": DIGEST},
-        "installed_version": "5.0.0",
+        "installed_version": "5.0.1",
         "source_tree_absent": True,
         "imports_from_fresh_environment": True,
         "network_disabled_during_install_and_execution": True,
         "rejected_imports": list(WHEEL_GATE.REJECTED_IMPORTS),
-        "cli_version": "jc 5.0.0",
+        "cli_version": "jc 5.0.1",
         "cli_capabilities_error": "RUNTIME_NOT_CONFIGURED",
-        "mcp_server_version": "5.0.0",
+        "mcp_server_version": "5.0.1",
         "mcp_tools": [
             "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
         ],
@@ -81,9 +81,9 @@ def test_nonformal_module_injection_fails_exact_record_gate(tmp_path: Path) -> N
 
 
 def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
-    assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 27
+    assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 67
     assert WHEEL_GATE.INSTALLED_TEST_CASE_IDS_SHA256 == (
-        "sha256:198f9a6b4671cf349d16f56ce9cb89b6eb8b4518d5bba76585fd8c3db258ec7a"
+        "a5a5e931663eae694b6239a503c4af588818e09203a95e4bd3e656e9cd53901a"
     )
     assert set(WHEEL_GATE.INSTALLED_TEST_SELECTORS) == {
         "tests/formal_e2e/test_positive_vertical_slice.py",
@@ -97,6 +97,12 @@ def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
         "tests/storage_chaos/test_vertical_slice_recovery.py",
         "tests/formal_e2e/test_installed_production.py::"
         "test_installed_required_suites_have_zero_skip_or_xfail",
+        "tests/contract/test_v5_reference_enumeration.py",
+        "tests/contract/test_v5_final_remediation.py",
+        "tests/contract/test_v5_procedure_routes.py",
+        "tests/contract/test_v5_incremental_chain.py",
+        "tests/contract/test_harness_contract.py",
+        "tests/formal_e2e/test_v5_entry_equivalence.py",
     }
     assert not any(
         path.startswith(("compiler_core/", "configs/", "schemas/"))

@@ -700,6 +700,41 @@
    "schema_kind": "object",
    "formal": true,
    "additional_properties": false
+  },
+  {
+   "id": "ClaimRefutationV5",
+   "layer": "v5",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
+  },
+  {
+   "id": "QueryGateRequestV5",
+   "layer": "v5",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
+  },
+  {
+   "id": "BurdenRuleOutcomeWireV5",
+   "layer": "v5",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
+  },
+  {
+   "id": "ProceduralInputV5",
+   "layer": "v5",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
+  },
+  {
+   "id": "IncrementalParentV5",
+   "layer": "v5",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
   }
  ],
  "axes": {
@@ -746,7 +781,7 @@
   ]
  },
  "cartesian_cardinality": 6720,
- "valid_combination_count": 115,
+ "valid_combination_count": 124,
  "decision_constraints": {
   "accepted_formal_result": {
    "execution": [
@@ -756,10 +791,12 @@
     "not_required"
    ],
    "completeness": [
-    "complete"
+    "complete",
+    "partial"
    ],
    "certificate": [
-    "formal_verified"
+    "formal_verified",
+    "none"
    ],
    "transport": [
     "success"
@@ -838,7 +875,8 @@
     "partial"
    ],
    "certificate": [
-    "conflict_verified"
+    "conflict_verified",
+    "none"
    ],
    "transport": [
     "success"

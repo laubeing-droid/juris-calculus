@@ -245,7 +245,11 @@
    "composition_policy_v5": null,
    "composition_choice_v5": null,
    "composition_expression_v5": null,
-   "composition_operands_v5": []
+   "composition_operands_v5": [],
+   "query_refutations_v5": [],
+   "query_gates_v5": [],
+   "procedural_input_v5": null,
+   "incremental_parent_v5": null
   },
   "CaseArtifactV4": {
    "artifact_id": "case-artifact-value",
@@ -307,10 +311,14 @@
     "composition_policy_v5": null,
     "composition_choice_v5": null,
     "composition_expression_v5": null,
-    "composition_operands_v5": []
+    "composition_operands_v5": [],
+    "query_refutations_v5": [],
+    "query_gates_v5": [],
+    "procedural_input_v5": null,
+    "incremental_parent_v5": null
    },
    "artifacts": [],
-   "bundle_digest": "sha256:a47de9fb552ca2dc0fd76596ab770864c7cfd61148d34a69e751db706fb163e0"
+   "bundle_digest": "sha256:198d55757d68c973064a3fecd5e623250a0769266e3f6bf930be3c24d8a74435"
   },
   "LegalContextV4": {
    "jurisdiction": "jurisdiction-value",
@@ -2062,12 +2070,16 @@
     "composition_policy_v5": null,
     "composition_choice_v5": null,
     "composition_expression_v5": null,
-    "composition_operands_v5": []
+    "composition_operands_v5": [],
+    "query_refutations_v5": [],
+    "query_gates_v5": [],
+    "procedural_input_v5": null,
+    "incremental_parent_v5": null
    },
    "result": {
     "request_ref": {
      "kind": "runidentity-request-ref",
-     "digest": "sha256:0574146e99394f36872d6a100fac9eb19a9e2e8f2b5e8edd0017c3f9bad8a0ef"
+     "digest": "sha256:6709f342937cbaa7590730935ae794628e96fd37f5205fca616ad73f9d9885d7"
     },
     "execution_status": "completed",
     "decision_status": "unknown",
@@ -2086,6 +2098,7 @@
      "engine_build_digest": "sha256:29306c30f7a05d4ad3df68621103d4b4ef5eb4f71ecadc8babe770de35913a28",
      "formal_kernel": false,
      "backend_invocation_ref": null,
+     "backend_receipt_ref": null,
      "trust_policy_ref": {
       "kind": "runidentity-trust-policy-ref",
       "digest": "sha256:1fdebc79238be5bdfeb866988cd96dbe78fbaae4a3fad80f257e8b45beceacff"
@@ -2093,8 +2106,7 @@
      "storage_capability_ref": {
       "kind": "runidentity-storage-capability-ref",
       "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
-     },
-     "backend_receipt_ref": null
+     }
     },
     "claims": [],
     "branches": [],
@@ -2127,17 +2139,17 @@
     "risk_codes": [
      "risk_codes-value"
     ],
+    "receipt_refs": [],
     "run_identity_ref": {
      "kind": "semanticresult-run-identity-ref",
-     "digest": "sha256:8cfe574c393ea13a591a6789cfa743de22b644587bf615d27c3b456b9410b3b5"
+     "digest": "sha256:0b01879a1f5f44b55c8a977909d5af62ecffbadd8f97eec0b917a604ab23e55d"
     },
-    "result_digest": "sha256:c8943eb6a0700fcb584077332de341856415bbe662edd2ef4f983f8604b74be8",
-    "receipt_refs": []
+    "result_digest": "sha256:377f26e2d2111468a2eb12656a0183f9450bb8b5142bfbf16af5a98ac359a253"
    },
    "run_identity": {
     "request_ref": {
      "kind": "runidentity-request-ref",
-     "digest": "sha256:0574146e99394f36872d6a100fac9eb19a9e2e8f2b5e8edd0017c3f9bad8a0ef"
+     "digest": "sha256:6709f342937cbaa7590730935ae794628e96fd37f5205fca616ad73f9d9885d7"
     },
     "source_bundle_ref": {
      "kind": "runidentity-source-bundle-ref",
@@ -2177,7 +2189,7 @@
      "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
     },
     "backend_profile_digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03",
-    "run_digest": "sha256:8cfe574c393ea13a591a6789cfa743de22b644587bf615d27c3b456b9410b3b5"
+    "run_digest": "sha256:0b01879a1f5f44b55c8a977909d5af62ecffbadd8f97eec0b917a604ab23e55d"
    },
    "certificate": {
     "kind": "none",
@@ -2414,10 +2426,14 @@
      "composition_policy_v5": null,
      "composition_choice_v5": null,
      "composition_expression_v5": null,
-     "composition_operands_v5": []
+     "composition_operands_v5": [],
+     "query_refutations_v5": [],
+     "query_gates_v5": [],
+     "procedural_input_v5": null,
+     "incremental_parent_v5": null
     },
     "artifacts": [],
-    "bundle_digest": "sha256:a47de9fb552ca2dc0fd76596ab770864c7cfd61148d34a69e751db706fb163e0"
+    "bundle_digest": "sha256:198d55757d68c973064a3fecd5e623250a0769266e3f6bf930be3c24d8a74435"
    }
   },
   "MCPEvaluateOutputV4": {
@@ -3025,7 +3041,9 @@
     "undercut",
     "exception_attack"
    ],
-   "legal_evidence_ref": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+   "legal_evidence_ref": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+   "priority_policy_id": null,
+   "priority_policy_version": null
   },
   "DefeatEdgeV5": {
    "attacker_ref": "arg-counter",
@@ -3213,6 +3231,57 @@
    "missing_items": [],
    "calibration_status": "uncalibrated",
    "empirical_digest": "sha256:fa772837694e4eebf96800fc81aa7165b094e1d3f4463397f99a169a94fb2bed"
+  },
+  "ClaimRefutationV5": {
+   "refuter": "claim-r",
+   "target": "claim-q",
+   "request_ref": "sha256:846307a016db8c77a11e7d3fc5027adac07ba35bb1dade18388106fef069829f",
+   "basis_ref": "sha256:fe5972b0dd32c3ec6512121d2ae043306ff45ac8aa5c76471ca362e58d3a82a6"
+  },
+  "QueryGateRequestV5": {
+   "query_id": "q-1",
+   "gate": "excluded",
+   "reason": "procedurally excluded",
+   "basis_ref": "sha256:8b9752f2c9cc3fe6f60b377dd4e5cb84923eadd73e30e2f1d30ef5646af6b3ce",
+   "branch_digest": "sha256:d4202fb6230db6b925ad33901714e7d28dac9248105c5923f4db73b53c0aedda"
+  },
+  "BurdenRuleOutcomeWireV5": {
+   "burden_rule_ref": "burden-rule-1",
+   "satisfied_status": "claim-satisfied",
+   "failure_status": "claim-unmet",
+   "request_ref": "sha256:a68b5dddce8cbbe09bbca6248df5e153d32eefe895dd1af1bf88f9e7aeb5b026"
+  },
+  "ProceduralInputV5": {
+   "request_ref": "sha256:f50d0dea11921bf1b9f90d9cd22e07a60920721d57a843f63787b3a6b5ab1610",
+   "procedural_status": null,
+   "procedural_basis_ref": null,
+   "authority": {
+    "burden_rule_ref": "burden-rule-1",
+    "standard_id": "std-1",
+    "standard_version": "1",
+    "finding": "satisfied",
+    "reviewer": "reviewer-1",
+    "authorization_ref": "sha256:0be25d8832b076fe5e47daac263019ccd3c454a3dcc2014f79850b17bc56a5be",
+    "request_ref": "sha256:f50d0dea11921bf1b9f90d9cd22e07a60920721d57a843f63787b3a6b5ab1610"
+   },
+   "rule_outcomes": {
+    "burden_rule_ref": "burden-rule-1",
+    "satisfied_status": "claim-satisfied",
+    "failure_status": "claim-unmet",
+    "request_ref": "sha256:a68b5dddce8cbbe09bbca6248df5e153d32eefe895dd1af1bf88f9e7aeb5b026"
+   }
+  },
+  "IncrementalParentV5": {
+   "parent_run_ref": {
+    "kind": "run-identity",
+    "digest": "sha256:445cc7ec898ca14438806d5b052b0db93e872730761c41dc9deee38c28b1cfd8"
+   },
+   "parent_state_ref": {
+    "kind": "horn-subject-state-v5",
+    "digest": "sha256:52ec7ba19f7c22422c7d0ae70311d2116c154f2c74421d3e78a9e50cdd673846"
+   },
+   "parent_subject_digest": "sha256:18021a4263b1563f92ff8cde095109e494ae271447be22fbbcf06633814ef5ab",
+   "mode": "auto"
   }
  },
  "scalar_negative": {
@@ -3345,7 +3414,11 @@
    "composition_policy_v5",
    "composition_choice_v5",
    "composition_expression_v5",
-   "composition_operands_v5"
+   "composition_operands_v5",
+   "query_refutations_v5",
+   "query_gates_v5",
+   "procedural_input_v5",
+   "incremental_parent_v5"
   ],
   "CaseArtifactV4": [
    "artifact_id",
@@ -4050,7 +4123,9 @@
    "policy_version",
    "request_ref",
    "allowed_kinds",
-   "legal_evidence_ref"
+   "legal_evidence_ref",
+   "priority_policy_id",
+   "priority_policy_version"
   ],
   "DefeatEdgeV5": [
    "attacker_ref",
@@ -4188,6 +4263,38 @@
    "missing_items",
    "calibration_status",
    "empirical_digest"
+  ],
+  "ClaimRefutationV5": [
+   "refuter",
+   "target",
+   "request_ref",
+   "basis_ref"
+  ],
+  "QueryGateRequestV5": [
+   "query_id",
+   "gate",
+   "reason",
+   "basis_ref",
+   "branch_digest"
+  ],
+  "BurdenRuleOutcomeWireV5": [
+   "burden_rule_ref",
+   "satisfied_status",
+   "failure_status",
+   "request_ref"
+  ],
+  "ProceduralInputV5": [
+   "request_ref",
+   "procedural_status",
+   "procedural_basis_ref",
+   "authority",
+   "rule_outcomes"
+  ],
+  "IncrementalParentV5": [
+   "parent_run_ref",
+   "parent_state_ref",
+   "parent_subject_digest",
+   "mode"
   ]
  }
 }

@@ -63,6 +63,17 @@ INSTALLED_HARNESS_PATHS = (
     "tests/formal_e2e/test_installed_production.py",
     "tests/security/test_vertical_slice_attacks.py",
     "tests/storage_chaos/test_vertical_slice_recovery.py",
+    "tests/contract/test_v5_profile_chain.py",
+    "tests/contract/test_v5_final_remediation.py",
+    "tests/contract/test_v5_incremental_chain.py",
+    "tests/contract/test_v5_procedure_routes.py",
+    "tests/contract/test_v5_reference_enumeration.py",
+    "tests/contract/test_harness_contract.py",
+    "tests/formal_e2e/test_v5_entry_equivalence.py",
+    "examples/harness/_adapter.py",
+    "examples/harness/sample_normal.py",
+    "examples/harness/sample_incremental.py",
+    "examples/harness/sample_priority_blocked.py",
     "tests/fixtures/keys/v4-synthetic-trust.json",
     "tests/fixtures/keys/v4-test-ed25519.json",
     "tests/fixtures/packs/synthetic/signed-pack.json",
@@ -89,10 +100,16 @@ INSTALLED_TEST_SELECTORS = (
         "tests/formal_e2e/test_installed_production.py::"
         "test_installed_required_suites_have_zero_skip_or_xfail"
     ),
+    "tests/contract/test_v5_reference_enumeration.py",
+    "tests/contract/test_v5_final_remediation.py",
+    "tests/contract/test_v5_procedure_routes.py",
+    "tests/contract/test_v5_incremental_chain.py",
+    "tests/contract/test_harness_contract.py",
+    "tests/formal_e2e/test_v5_entry_equivalence.py",
 )
-INSTALLED_TEST_CASE_COUNT = 27
+INSTALLED_TEST_CASE_COUNT = 67
 INSTALLED_TEST_CASE_IDS_SHA256 = (
-    "sha256:198f9a6b4671cf349d16f56ce9cb89b6eb8b4518d5bba76585fd8c3db258ec7a"
+    "a5a5e931663eae694b6239a503c4af588818e09203a95e4bd3e656e9cd53901a"
 )
 
 
@@ -184,7 +201,7 @@ def _dist_info_prefix(names: list[str]) -> str:
     if len(prefixes) != 1:
         raise RuntimeError("wheel must contain exactly one dist-info directory")
     prefix = prefixes.pop()
-    if prefix != "juris_calculus-5.0.0.dist-info":
+    if prefix != "juris_calculus-5.0.1.dist-info":
         raise RuntimeError(f"wheel dist-info identity drifted: {prefix}")
     return prefix
 
@@ -217,7 +234,7 @@ def _validate_metadata(archive: zipfile.ZipFile, prefix: str, source: Path) -> N
     document = BytesParser().parsebytes(archive.read(f"{prefix}/METADATA"))
     if (
         document.get("Name") != "juris-calculus"
-        or document.get("Version") != "5.0.0"
+        or document.get("Version") != "5.0.1"
         or document.get("Requires-Python") != "<3.13,>=3.11"
     ):
         raise RuntimeError("wheel METADATA identity drifted")
@@ -307,7 +324,7 @@ def _smoke_install(source: Path, wheel: Path) -> None:
             f"t=pathlib.Path({str(target)!r}).resolve();sys.path.insert(0,str(t));"
             "import compiler_core,mcp_server;"
             "from compiler_core.version import __version__;"
-            "assert __version__=='5.0.0';"
+            "assert __version__=='5.0.1';"
             "assert pathlib.Path(compiler_core.__file__).resolve().is_relative_to(t);"
             "assert pathlib.Path(mcp_server.__file__).resolve().is_relative_to(t);"
             "assert importlib.util.find_spec('compiler_core.analysis') is None;"
@@ -432,14 +449,14 @@ def validate_installed_e2e_report(
         "status": "PASS",
         "wheel_sha256": wheel_digest,
         "test_lock_sha256": lock_digest,
-        "installed_version": "5.0.0",
+        "installed_version": "5.0.1",
         "source_tree_absent": True,
         "imports_from_fresh_environment": True,
         "network_disabled_during_install_and_execution": True,
         "rejected_imports": list(REJECTED_IMPORTS),
-        "cli_version": "jc 5.0.0",
+        "cli_version": "jc 5.0.1",
         "cli_capabilities_error": "RUNTIME_NOT_CONFIGURED",
-        "mcp_server_version": "5.0.0",
+        "mcp_server_version": "5.0.1",
         "mcp_tools": [
             "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
         ],
@@ -509,7 +526,7 @@ def run_installed_e2e(
     if work_dir.exists() and any(work_dir.iterdir()):
         raise RuntimeError("installed E2E work directory is not empty")
     work_dir.mkdir(parents=True, exist_ok=True)
-    installable_wheel = work_dir / "juris_calculus-5.0.0-py3-none-any.whl"
+    installable_wheel = work_dir / "juris_calculus-5.0.1-py3-none-any.whl"
     shutil.copyfile(wheel, installable_wheel)
     validate_wheel(source, installable_wheel)
 
@@ -595,7 +612,7 @@ def run_installed_e2e(
     commands.append(summary)
     origin = json.loads(completed.stdout)
     if origin != {
-        "version": "5.0.0",
+        "version": "5.0.1",
         "origins_in_environment": True,
         "rejected_imports": list(REJECTED_IMPORTS),
         "schema_sha256": hashlib.sha256((source / "schemas/jc-v5.schema.json").read_bytes()).hexdigest(),
@@ -608,7 +625,7 @@ def run_installed_e2e(
     )
     commands.append(summary)
     cli_version = completed.stdout.strip()
-    if cli_version != "jc 5.0.0":
+    if cli_version != "jc 5.0.1":
         raise RuntimeError("installed CLI version drifted")
     completed, summary = _run_process(
         "cli-capabilities",

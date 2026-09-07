@@ -481,6 +481,8 @@ def test_fixture_has_external_trust_context_no_private_or_orphan_artifacts() -> 
         "candidate_pack_ref",
         "formal_rule_ids",
         "feature_rules",
+        "horn_rule_ids",
+        "budget_rule_ids",
         "case_vectors",
         "artifacts",
     }
@@ -550,7 +552,7 @@ def test_fixture_has_external_trust_context_no_private_or_orphan_artifacts() -> 
                 ContentRefV4(SOURCE_NORMALIZED_KIND, DigestV4(document["normalized_digest"])),
             ))
     assert reachable == set(by_ref)
-    assert len(signatures) == len(set(signatures)) == 17
+    assert len(signatures) == len(set(signatures)) == 74
 
 
 def test_builder_fixture_and_private_test_keys_are_absent_from_wheel(tmp_path: Path) -> None:

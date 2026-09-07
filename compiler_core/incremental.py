@@ -16,6 +16,7 @@ typed absence, never a number.
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 
 from compiler_core.canonical_serialization import digest_value
@@ -95,6 +96,94 @@ def horn_closure(subject: HornSubjectV5) -> frozenset[str]:
                 derived.add(head)
                 changed = True
     return frozenset(derived)
+
+
+def horn_closure_with_metrics(
+    subject: HornSubjectV5,
+) -> tuple[frozenset[str], dict[str, int]]:
+    """Full-scan fixpoint of :func:`horn_closure` with workload accounting.
+
+    ``rule_evaluations`` counts premise-set evaluations of the same scan the
+    un-instrumented core performs; it is the deterministic full-recompute
+    workload used as the independent checker metric for the incremental stage.
+    """
+
+    derived: set[str] = set(subject.facts)
+    evaluations = 0
+    iterations = 0
+    changed = True
+    while changed:
+        changed = False
+        iterations += 1
+        for head, body in subject.rules:
+            if head in derived:
+                continue
+            evaluations += 1
+            if all(atom in derived for atom in body):
+                derived.add(head)
+                changed = True
+    return frozenset(derived), {
+        "rule_evaluations": evaluations,
+        "iterations": iterations,
+    }
+
+
+def incremental_horn_closure(
+    parent_closure: frozenset[str],
+    parent_rules: tuple[tuple[str, tuple[str, ...]], ...],
+    added_facts: frozenset[str],
+    added_rules: tuple[tuple[str, tuple[str, ...]], ...],
+) -> tuple[frozenset[str], dict[str, int]]:
+    """Extend a verified parent closure by only the add-only delta (ULM15).
+
+    This is the real fast path: it never rescans the parent fixpoint. The
+    worklist starts from the newly admitted facts, a premise index maps each
+    atom to the rules whose body mentions it, and the newly added rules are
+    each evaluated once even when every premise was already derived. A rule
+    can newly fire only when it is new or when one of its premises is a newly
+    derived atom, so the propagation is complete for add-only Horn subjects.
+    """
+
+    rules: tuple[tuple[str, tuple[str, ...]], ...] = (*parent_rules, *added_rules)
+    premise_index: dict[str, list[int]] = {}
+    for index, (_head, body) in enumerate(rules):
+        for atom in sorted(set(body)):
+            premise_index.setdefault(atom, []).append(index)
+    known: set[str] = set(parent_closure) | set(added_facts)
+    queue = deque(sorted(set(added_facts)))
+    enqueued: set[str] = set(added_facts)
+    new_rule_queue = deque(range(len(parent_rules), len(rules)))
+    evaluations = 0
+    fired: list[str] = []
+    while queue or new_rule_queue:
+        if new_rule_queue:
+            rule_index = new_rule_queue.popleft()
+            head, body = rules[rule_index]
+            evaluations += 1
+            if head not in known and all(atom in known for atom in body):
+                known.add(head)
+                fired.append(head)
+                if head not in enqueued:
+                    enqueued.add(head)
+                    queue.append(head)
+            continue
+        atom = queue.popleft()
+        for rule_index in premise_index.get(atom, ()):
+            head, body = rules[rule_index]
+            if head in known:
+                continue
+            evaluations += 1
+            if all(item in known for item in body):
+                known.add(head)
+                fired.append(head)
+                if head not in enqueued:
+                    enqueued.add(head)
+                    queue.append(head)
+    return frozenset(known), {
+        "rule_evaluations": evaluations,
+        "rules_fired": len(fired),
+        "propagated_atoms": len(known) - len(set(parent_closure) | set(added_facts)),
+    }
 
 
 def validate_add_only_delta(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from base64 import b64decode
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,10 +15,13 @@ from compiler_core.argumentation import (
     AttackRecordV5,
     PermissionRelationV4,
     ProfileEvaluationV5,
+    PRIORITY_POLICIES_V5,
     _effective_attacks_v4,
+    _strict_preference_closure_v5,
     argument_ref_v4,
     evaluate_argument_graph,
     evaluate_profile_v5,
+    priority_edge_decisions_v5,
     resolve_defeats_v5,
     verify_profile_family_v5,
 )
@@ -71,6 +75,8 @@ from compiler_core.contracts import (
     MissingFactRequirementV4,
     OpenObligationEntryV5,
     PriorityEdgeV4,
+    ProcedureAuthorityV5,
+    ProcedureResultV5,
     ProofReceiptV4,
     ResourceLimitsV4,
     ReviewStateV4,
@@ -88,6 +94,7 @@ from compiler_core.domain_composition import (
     validate_composition_choice_v5,
 )
 from compiler_core.fact_admission import (
+    ADMITTED_FACT_KIND,
     CASE_EVIDENCE_SCOPE,
     CASE_REQUEST_KIND,
     CASE_REQUEST_SCOPE,
@@ -96,16 +103,20 @@ from compiler_core.fact_admission import (
     FACT_ATTESTATION_KIND,
     FACT_CANDIDATE_KIND,
     FACT_PROPOSITION_KIND,
+    FACT_VALUE_KIND,
     LEGAL_APPROVAL_SCOPE,
     RUN_IDENTITY_KIND,
     RUN_IDENTITY_SCOPE,
     FactAdmissionServiceV4,
     case_request_binding_ref,
 )
-from compiler_core.procedure import ProcedureV5Error, adjudicate_v5
+from compiler_core.procedure import BurdenRuleOutcomeV5, ProcedureV5Error, adjudicate_v5
 from compiler_core.query_semantics import (
+    GateStateV5,
     QueryInputV5,
+    QueryRefutationV5,
     QuerySemanticsV5Error,
+    QueryStatusV5,
     compose_branch_key_v5,
     evaluate_query_v5,
 )
@@ -116,11 +127,17 @@ from compiler_core.independent_checker import (
     IndependentCheckerV4,
     IndependentCheckerV4Error,
 )
+from compiler_core.incremental import (
+    HornSubjectV5,
+    horn_closure_with_metrics,
+    incremental_horn_closure,
+)
 from compiler_core.legal_ir import LegalIRCompilationV4, LegalIRCompilerV4
 from compiler_core.rule_packs import (
     JSON_MEDIA_TYPE,
     PACK_CONFIG_KIND,
     RULE_COMPONENT_SCOPE,
+    RULE_CONCLUSION_KIND,
     RULE_KIND,
     RULE_PACK_SCOPE,
     RULE_PREMISE_KIND,
@@ -226,6 +243,11 @@ PROFILE_STAGE_KIND_V5 = "profile-stage-v5"
 PROFILE_MAPPING_VERSION_V5 = "jc-aaf-mapping-v5/1"
 PROFILE_STAGE_SCHEMA_V5 = "jc/profile-stage-v5/1.0"
 
+HORN_SUBJECT_STATE_KIND_V5 = "horn-subject-state-v5"
+HORN_SUBJECT_STATE_SCHEMA_V5 = "jc/horn-subject-state-v5/1.0"
+HORN_MAPPING_VERSION_V5 = "jc-horn-mapping-v5/1"
+HORN_SUBJECT_STATE_MAX_BYTES = 262_144
+
 _V5_STAGE_ERRORS = (
     ArgumentationV4Error,
     QuerySemanticsV5Error,
@@ -248,15 +270,22 @@ def _v5_scenario_ref(binding: DigestV4, query_id: str) -> DigestV4:
 def _v5_branch_identity(
     request_id: str, profile: str, extension: frozenset[str]
 ) -> tuple[str, DigestV4]:
-    """Deterministic branch id and branch ref for one evaluated extension."""
+    """Deterministic branch id and branch ref for one evaluated extension.
 
-    scenario_id, assumptions, profile_key = compose_branch_key_v5(
+    The branch ref digests the structured identity payload (scenario id,
+    assumptions array, profile, sorted extension array); no field is ever
+    flattened into a joined string, so ``{"a","b"}`` and ``{"a|b"}`` can never
+    share an identity.
+    """
+
+    scenario_id, assumptions, profile_name, extension_items = compose_branch_key_v5(
         request_id, (), profile, extension
     )
     branch_ref = digest_value({
         "scenario_id": scenario_id,
-        "assumptions": assumptions,
-        "branch": profile_key,
+        "assumptions": list(assumptions),
+        "profile": profile_name,
+        "extension": list(extension_items),
     })
     outcome_id = f"{profile}:{branch_ref.hex}"
     return outcome_id, branch_ref
@@ -325,6 +354,104 @@ def _v5_envelope(
 
 def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
     return reference.kind, reference.digest.hex
+
+
+@dataclass(frozen=True, slots=True)
+class _V5StageOutcome:
+    """What the V5 stage sealed for this run, beyond its artifact reference."""
+
+    stage_ref: ContentRefV4
+    mapping_coverage: str
+    open_obligations: tuple[OpenObligationEntryV5, ...]
+    mapping_obligations: tuple[OpenObligationEntryV5, ...]
+    solver_incomplete: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _HornStageOutcome:
+    """What the Horn subject stage sealed for this run (ULM15 provenance)."""
+
+    state_ref: ContentRefV4
+    mode: str
+    fallback_reason: str | None
+    subject_digest: "DigestV4"
+    parent: dict[str, object] | None
+    solver_metrics: dict[str, int]
+    checker_metrics: dict[str, int]
+
+
+def _v5_typed_obligations(
+    entries: tuple[object, ...],
+) -> tuple[OpenObligationEntryV5, ...]:
+    """Convert solver-shaped obligations to the typed V5 contract once.
+
+    The bounded profile solver reports ``(code, detail)`` tuples; every V5
+    boundary below this point (procedure, assurance, serialization) only ever
+    sees :class:`OpenObligationEntryV5`.
+    """
+
+    typed: list[OpenObligationEntryV5] = []
+    for item in entries:
+        if type(item) is OpenObligationEntryV5:
+            typed.append(item)
+        elif (
+            type(item) is tuple and len(item) == 2
+            and type(item[0]) is str and type(item[1]) is str and item[0] and item[1]
+        ):
+            typed.append(OpenObligationEntryV5(item[0], item[1]))
+        else:
+            raise ContractV4Error(
+                "APPLICATION_V5_STAGE",
+                "solver open obligations must be (code, detail) pairs",
+            )
+    return tuple(typed)
+
+
+def _v5_suppress_query_status(status: "QueryStatusV5") -> "QueryStatusV5":
+    """Mapping-incomplete queries may not witness any completed answer."""
+
+    return QueryStatusV5(
+        status.query_id, status.profile,
+        False, False, False, False, False, False, False,
+        "incomplete", (), (),
+    )
+
+
+def _v5_verify_priority_mapping(
+    arguments: tuple[str, ...],
+    attacks: tuple[AttackRecordV5, ...],
+    priority_pairs: tuple[tuple[str, str], ...],
+    priority_policy_id: str,
+    allowed_kinds: tuple[str, ...],
+    published_defeats: tuple[tuple[str, str], ...],
+) -> None:
+    """Independently recompute the priority-modulated defeat set.
+
+    This recheck re-derives the strategy's decision from the raw attack
+    records and the strict preference closure without calling the production
+    ``resolve_defeats_v5`` entry, so a mapping stage that silently drops or
+    inverts an admitted priority relation cannot certify this request.
+    """
+
+    closure = _strict_preference_closure_v5(priority_pairs)
+    known = set(arguments)
+    expected = sorted({
+        (attack.attacker, attack.target)
+        for attack in attacks
+        if attack.attacker in known and attack.target in known
+        and attack.kind in allowed_kinds
+        and not (attack.kind == "rebut" and (attack.target, attack.attacker) in closure)
+    })
+    if sorted(set(published_defeats)) != expected:
+        raise ContractV4Error(
+            "APPLICATION_V5_VERIFICATION",
+            "independent priority mapping recheck rejected the defeat set",
+        )
+
+
+PROCEDURE_AUTHORIZATION_KIND_V5 = "procedure-authorization-v5"
+PROCEDURE_AUTHORIZATION_SCHEMA_V5 = "jc/procedure-authorization-v5/1.0"
+PROCEDURE_AUTHORIZATION_MAX_BYTES = 262_144
 
 
 def _sorted_refs(references: tuple[ContentRefV4, ...]) -> tuple[ContentRefV4, ...]:
@@ -1180,16 +1307,20 @@ class ApplicationV4:
         request: CaseRequestV4,
         checked: CheckerExecutionV4,
         argument: _ArgumentOutcome,
-    ) -> ContentRefV4:
+        *,
+        now: CanonicalTimeV4,
+    ) -> "_V5StageOutcome":
         """Run the public V5 profile stage inside the sole formal spine.
 
         Takes the checker-verified argument graph of the current run, resolves
-        defeats under the request's admitted policy, evaluates every requested
-        profile, gates each complete family through the independent
-        definition-driven verifier, and derives query statuses, procedure
-        consequences, same-branch composition and per-profile assurance
-        envelopes. The deterministic stage document is registered as an
-        auditable artifact and referenced from the run result.
+        defeats under the request's admitted policy (admitted priority
+        relations participate through their registered priority policy or
+        block completeness), evaluates every requested profile, gates each
+        complete family through the independent definition-driven verifier,
+        and derives query statuses, procedure consequences, same-branch
+        composition and per-profile assurance envelopes. The deterministic
+        stage document is registered as an auditable artifact and referenced
+        from the run result.
         """
 
         graph = argument.graph
@@ -1216,6 +1347,7 @@ class ApplicationV4:
                 item.argument_id: str(item.claim_ref.digest) for item in graph.arguments
             }
             known_claims = frozenset(claim_by_argument.values())
+            known_query_ids = {query.query_id for query in queries}
             for query in queries:
                 if query.mapping_version != PROFILE_MAPPING_VERSION_V5:
                     raise ContractV4Error(
@@ -1234,17 +1366,42 @@ class ApplicationV4:
                         f"query {query.query_id!r} claims an argument conclusion "
                         "outside the checked graph",
                     )
+            for row in request.query_refutations_v5:
+                if row.request_ref != binding:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"refutation {row.refuter!r}->{row.target!r} does not bind "
+                        "this request identity",
+                    )
+                if row.refuter not in known_claims or row.target not in known_claims:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"refutation {row.refuter!r}->{row.target!r} cites a claim "
+                        "outside the checked graph",
+                    )
+            for gate_row in request.query_gates_v5:
+                if gate_row.query_id not in known_query_ids:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"gate cites unknown query {gate_row.query_id!r}",
+                    )
+            procedural = request.procedural_input_v5
+            if procedural is not None and procedural.request_ref != binding:
+                raise ContractV4Error(
+                    "APPLICATION_V5_STAGE",
+                    "procedural_input_v5 does not bind the request identity",
+                )
 
             id_by_ref = {
                 argument_ref_v4(item): item.argument_id for item in graph.arguments
             }
             effective = _effective_attacks_v4(graph)
             attacks: list[AttackRecordV5] = []
-            unmapped_priorities = 0
+            derived_priority_attacks = 0
             for attack in effective:
                 kind = ATTACK_KIND_MIGRATION_V5.get(attack.attack_type)
                 if kind is None:
-                    unmapped_priorities += 1
+                    derived_priority_attacks += 1
                     continue
                 attacks.append(AttackRecordV5(
                     attack.attack_id,
@@ -1253,6 +1410,24 @@ class ApplicationV4:
                     kind,
                     attack.attack_id,
                 ))
+            priority_pairs = tuple(
+                (
+                    id_by_ref[edge.preferred_ref],
+                    id_by_ref[edge.defeated_ref],
+                )
+                for edge in graph.priority_edges
+            )
+            if derived_priority_attacks != len(priority_pairs):
+                raise ContractV4Error(
+                    "APPLICATION_V5_STAGE",
+                    "derived priority attacks and graph priority edges disagree",
+                )
+
+            # Priority relations participate only through a registered policy;
+            # anything the build cannot explain becomes a formal mapping
+            # obligation that blocks completeness claims for this request.
+            mapping_obligations: list[OpenObligationEntryV5] = []
+            priority_decisions: tuple[dict[str, object], ...] = ()
             defeats = resolve_defeats_v5(
                 argument_ids,
                 tuple(attacks),
@@ -1261,6 +1436,50 @@ class ApplicationV4:
                 allowed_kinds=policy.allowed_kinds,
                 request_ref=str(binding),
             )
+            if priority_pairs:
+                declared = policy.priority_policy_id
+                if declared is None:
+                    mapping_obligations.append(OpenObligationEntryV5(
+                        "priority_policy_missing",
+                        f"{len(priority_pairs)} admitted priority relations have no "
+                        "registered priority policy in the defeat policy",
+                    ))
+                elif declared not in PRIORITY_POLICIES_V5:
+                    mapping_obligations.append(OpenObligationEntryV5(
+                        "priority_policy_unsupported",
+                        f"priority policy {declared!r} is not registered in this "
+                        "build; the defeat mapping is not coverage-complete",
+                    ))
+                else:
+                    try:
+                        defeats = resolve_defeats_v5(
+                            argument_ids,
+                            tuple(attacks),
+                            policy_id=policy.policy_id,
+                            policy_version=policy.policy_version,
+                            allowed_kinds=policy.allowed_kinds,
+                            request_ref=str(binding),
+                            priority_edges=priority_pairs,
+                            priority_policy_id=declared,
+                        )
+                        priority_decisions = priority_edge_decisions_v5(
+                            argument_ids, tuple(attacks), priority_pairs, declared,
+                        )
+                    except ArgumentationV4Error as exc:
+                        mapping_obligations.append(OpenObligationEntryV5(
+                            "priority_policy_unresolved",
+                            f"{exc.code}: {exc.detail}",
+                        ))
+                    else:
+                        _v5_verify_priority_mapping(
+                            argument_ids,
+                            tuple(attacks),
+                            priority_pairs,
+                            declared,
+                            policy.allowed_kinds,
+                            defeats,
+                        )
+            mapping_incomplete = bool(mapping_obligations)
 
             profiles = sorted({query.profile for query in queries})
             evaluations: dict[str, ProfileEvaluationV5] = {}
@@ -1283,17 +1502,12 @@ class ApplicationV4:
                         )
 
             notices: list[OpenObligationEntryV5] = []
-            if unmapped_priorities:
-                notices.append(OpenObligationEntryV5(
-                    "priority_edges_not_mapped",
-                    f"{unmapped_priorities} priority-derived edges are not V5 "
-                    "defeats without an admitted policy kind",
-                ))
 
             query_rows: list[dict[str, object]] = []
             procedure_rows: list[dict[str, object]] = []
             envelope_by_profile: dict[str, AssuranceEnvelopeV5] = {}
             candidates: list[CompositionCandidateV5] = []
+            solver_incomplete_profiles: set[str] = set()
             for profile in profiles:
                 evaluation = evaluations[profile]
                 for extension in evaluation.extensions:
@@ -1303,19 +1517,84 @@ class ApplicationV4:
                     candidates.append(CompositionCandidateV5(
                         outcome_id, binding, branch_ref,
                     ))
+            refutations = tuple(
+                QueryRefutationV5(row.refuter, row.target)
+                for row in request.query_refutations_v5
+            )
+            gates_by_query: dict[str, tuple[GateStateV5, ...]] = {}
+            branch_refs_by_profile: dict[str, list[DigestV4]] = {}
+            for profile in profiles:
+                branch_refs_by_profile[profile] = [
+                    _v5_branch_identity(request.request_id, profile, extension)[1]
+                    for extension in evaluations[profile].extensions
+                ]
+            for gate_row in request.query_gates_v5:
+                # Gate binding happens here, against the evaluated families of
+                # this very request; a stale or foreign branch digest is an
+                # admission violation, never a silent no-op.
+                profile_of_query = next(
+                    query.profile for query in queries
+                    if query.query_id == gate_row.query_id
+                )
+                family = branch_refs_by_profile[profile_of_query]
+                if gate_row.branch_digest is None:
+                    branch_indexes = tuple(range(len(family)))
+                else:
+                    branch_indexes = tuple(
+                        index for index, ref in enumerate(family)
+                        if ref == gate_row.branch_digest
+                    )
+                    if not branch_indexes:
+                        raise ContractV4Error(
+                            "APPLICATION_V5_STAGE",
+                            f"gate for {gate_row.query_id!r} cites a branch outside "
+                            "this request's evaluated family",
+                        )
+                current = gates_by_query.get(gate_row.query_id)
+                if current is None:
+                    current = tuple(
+                        GateStateV5(index, "enterable") for index in range(len(family))
+                    )
+                for index in branch_indexes:
+                    replaced = GateStateV5(
+                        index, gate_row.gate, gate_row.reason,
+                    )
+                    current = tuple(
+                        replaced if item.branch_index == index else item
+                        for item in current
+                    )
+                gates_by_query[gate_row.query_id] = current
+
+            authorization_verified = False
+            if procedural is not None and procedural.authority is not None:
+                authorization_verified = self._verify_procedure_authorization(
+                    procedural, binding, now=now,
+                )
             for query in queries:
                 evaluation = evaluations[query.profile]
+                if evaluation.kind == "incomplete":
+                    solver_incomplete_profiles.add(query.profile)
                 status = evaluate_query_v5(QueryInputV5(
                     query_id=query.query_id,
                     claim=query.claim,
                     profile=query.profile,
                     evaluation=evaluation,
                     argument_claims=claim_by_argument,
+                    refutations=refutations,
+                    gates=gates_by_query.get(query.query_id, ()),
                 ))
+                if mapping_incomplete:
+                    # An unmapped priority relation can change which attacks
+                    # survive, so no branch status of this request may carry a
+                    # completed query answer.
+                    status = _v5_suppress_query_status(status)
                 query_rows.append({
                     "query_id": query.query_id,
                     "profile": query.profile,
                     "claim": query.claim,
+                    "branch_refs": [
+                        str(ref) for ref in branch_refs_by_profile[query.profile]
+                    ],
                     **{
                         field: getattr(status, field)
                         for field in (
@@ -1325,25 +1604,77 @@ class ApplicationV4:
                     },
                     "acceptance_witnesses": list(status.acceptance_witnesses),
                     "refutation_witnesses": list(status.refutation_witnesses),
+                    "mapping_incomplete": mapping_incomplete,
                 })
+                typed_obligations = _v5_typed_obligations(
+                    evaluation.open_obligations
+                )
                 procedure = adjudicate_v5(
                     request_ref=binding,
                     evaluation_kind=evaluation.kind,
-                    evaluation_open_obligations=evaluation.open_obligations,
+                    evaluation_open_obligations=typed_obligations,
+                    procedural_status=(
+                        None if procedural is None else procedural.procedural_status
+                    ),
+                    authority=None if procedural is None else procedural.authority,
+                    authorization_verified=authorization_verified,
+                    rule_outcomes=(
+                        None if procedural is None or procedural.rule_outcomes is None
+                        else BurdenRuleOutcomeV5(
+                            satisfied_status=procedural.rule_outcomes.satisfied_status,
+                            failure_status=procedural.rule_outcomes.failure_status,
+                        )
+                    ),
                 )
+                if mapping_incomplete and procedure.kind in {
+                    "adjudicated_status", "procedural_disposition",
+                }:
+                    procedure = ProcedureResultV5(
+                        request_ref=procedure.request_ref,
+                        kind="pending_legal_judgment",
+                        status=None,
+                        missing=("v5-mapping-incomplete",),
+                        open_obligations=(),
+                        authority_ref=None,
+                    )
+                elif mapping_incomplete and procedure.kind == "pending_legal_judgment":
+                    procedure = ProcedureResultV5(
+                        request_ref=procedure.request_ref,
+                        kind="pending_legal_judgment",
+                        status=None,
+                        missing=(*procedure.missing, "v5-mapping-incomplete"),
+                        open_obligations=(),
+                        authority_ref=None,
+                    )
+                elif mapping_incomplete and procedure.kind == "solver_incomplete":
+                    procedure = ProcedureResultV5(
+                        request_ref=procedure.request_ref,
+                        kind="solver_incomplete",
+                        status=None,
+                        missing=(),
+                        open_obligations=(
+                            *procedure.open_obligations, *mapping_obligations,
+                        ),
+                        authority_ref=None,
+                    )
                 procedure_rows.append({
                     "query_id": query.query_id,
                     **procedure.to_dict(),
                 })
+                profile_obligations = (
+                    (*typed_obligations, *mapping_obligations)
+                    if evaluation.kind == "incomplete"
+                    else tuple(mapping_obligations)
+                )
                 envelope = _v5_envelope(
                     binding,
                     query.profile,
                     spec=(
                         "openObligations"
-                        if evaluation.kind == "incomplete" else "proved"
+                        if profile_obligations else "proved"
                     ),
                     run_check="checked",
-                    obligations=evaluation.open_obligations,
+                    obligations=profile_obligations,
                     notices=tuple(notices),
                 )
                 previous = envelope_by_profile.get(query.profile)
@@ -1422,6 +1753,20 @@ class ApplicationV4:
                     [item.attacker, item.target, item.kind] for item in attacks
                 ),
                 "defeats": [list(pair) for pair in defeats],
+                "priority": {
+                    "edges": [list(pair) for pair in priority_pairs],
+                    "policy": (
+                        None if policy.priority_policy_id is None
+                        else policy.priority_policy_id
+                    ),
+                    "decisions": [dict(row) for row in priority_decisions],
+                },
+                "mapping_coverage": {
+                    "status": "incomplete" if mapping_incomplete else "complete",
+                    "open_obligations": [
+                        item.to_dict() for item in mapping_obligations
+                    ],
+                },
                 "profiles": {
                     profile: {
                         "kind": evaluations[profile].kind,
@@ -1430,8 +1775,10 @@ class ApplicationV4:
                             for extension in evaluations[profile].extensions
                         ],
                         "open_obligations": [
-                            [code, detail]
-                            for code, detail in evaluations[profile].open_obligations
+                            item.to_dict()
+                            for item in _v5_typed_obligations(
+                                evaluations[profile].open_obligations
+                            )
                         ],
                         "verification": {
                             "coverage": (
@@ -1441,6 +1788,9 @@ class ApplicationV4:
                             ),
                             "verified": evaluations[profile].claims_complete_family,
                             "reason": "",
+                            "mapping": (
+                                "incomplete" if mapping_incomplete else "complete"
+                            ),
                         },
                         "assurance": envelope_by_profile[profile].to_dict(),
                     }
@@ -1454,7 +1804,7 @@ class ApplicationV4:
             raise ContractV4Error("APPLICATION_V5_STAGE", str(exc)) from exc
         raw = canonical_bytes(stage_document)
         reference = ContentRefV4(PROFILE_STAGE_KIND_V5, DigestV4.from_bytes(raw))
-        return self._resolver.register_bytes(
+        stage_ref = self._resolver.register_bytes(
             artifact_id=f"{PROFILE_STAGE_KIND_V5}-{reference.digest.hex}",
             content_ref=reference,
             artifact_kind=PROFILE_STAGE_KIND_V5,
@@ -1462,6 +1812,389 @@ class ApplicationV4:
             scope=CHECKER_SCOPE,
             content=raw,
         )
+        solver_obligations = tuple(
+            obligation
+            for profile in sorted(solver_incomplete_profiles)
+            for obligation in _v5_typed_obligations(
+                evaluations[profile].open_obligations
+            )
+        )
+        return _V5StageOutcome(
+            stage_ref=stage_ref,
+            mapping_coverage="incomplete" if mapping_incomplete else "complete",
+            open_obligations=(*mapping_obligations, *solver_obligations),
+            mapping_obligations=tuple(mapping_obligations),
+            solver_incomplete=bool(solver_incomplete_profiles),
+        )
+
+    def _horn_universe(self, pack: VerifiedRulePackV4) -> frozenset[str]:
+        """The fixed finite fact-key universe declared by the verified pack."""
+
+        keys: set[str] = set()
+        for rule in pack.rules:
+            for premise_ref in rule.premise_refs:
+                premise = self._document(
+                    premise_ref,
+                    kind=RULE_PREMISE_KIND,
+                    scope=RULE_COMPONENT_SCOPE,
+                )
+                if premise.get("required") is True and type(premise.get("fact_key")) is str:
+                    keys.add(premise["fact_key"])
+            conclusion = self._document(
+                rule.conclusion_ref,
+                kind=RULE_CONCLUSION_KIND,
+                scope=RULE_COMPONENT_SCOPE,
+            )
+            head = conclusion.get("fact_key")
+            if type(head) is str and head:
+                keys.add(head)
+        return frozenset(keys)
+
+    def _horn_true_fact_keys(self, facts: _FactState) -> frozenset[str]:
+        """Fact keys admitted with boolean-true values for this run."""
+
+        keys: set[str] = set()
+        for fact_ref in facts.admitted_refs:
+            document = self._document(
+                fact_ref,
+                kind=ADMITTED_FACT_KIND,
+                scope=FACT_ADMISSION_SCOPE,
+            )
+            if document.get("value_kind") != "boolean":
+                continue
+            proposition = self._document(
+                ContentRefV4.from_dict(document["proposition_ref"]),
+                kind=FACT_PROPOSITION_KIND,
+                scope=FACT_ADMISSION_SCOPE,
+            )
+            value = self._document(
+                ContentRefV4.from_dict(document["value_ref"]),
+                kind=FACT_VALUE_KIND,
+                scope=FACT_ADMISSION_SCOPE,
+            )
+            if (
+                proposition.get("schema_version") == "jc/fact-proposition/1.0"
+                and value.get("schema_version") == "jc/fact-value/1.0"
+                and value.get("value") is True
+                and type(proposition.get("proposition")) is str
+            ):
+                keys.add(proposition["proposition"])
+        return frozenset(keys)
+
+    def _horn_parent_state_document(
+        self,
+        parent: "IncrementalParentV5",
+        *,
+        case_scope: str,
+        now: CanonicalTimeV4,
+    ) -> tuple[dict[str, object] | None, str]:
+        """Load and bind-check a reusable parent Horn state (ULM15).
+
+        The state is read from the live resolver first, then from the sealed
+        audit bundle of the referenced parent run, so a later process with
+        only the persisted store can still reuse it. Binding, case scope,
+        run identity, mapping version and the self-digest of the subject are
+        all verified before any reuse; a forged or foreign reference is a
+        recorded fallback, never a silent cache hit.
+        """
+
+        def _bound(document: dict[str, object]) -> dict[str, object] | None:
+            if (
+                document.get("schema_version") != HORN_SUBJECT_STATE_SCHEMA_V5
+                or document.get("status") != "verified_complete"
+                or document.get("case_scope") != case_scope
+                or document.get("mapping_version") != HORN_MAPPING_VERSION_V5
+            ):
+                return None
+            try:
+                run_ref = ContentRefV4.from_dict(document["run_identity_ref"])
+            except (KeyError, TypeError, ValueError):
+                return None
+            if run_ref != parent.parent_run_ref:
+                return None
+            parent_subject = HornSubjectV5.build(
+                universe=frozenset(str(item) for item in document["universe"]),
+                facts=frozenset(str(item) for item in document["facts"]),
+                rules=tuple(
+                    (str(head), tuple(str(atom) for atom in body))
+                    for head, body, _rule_id in document["rules"]
+                ),
+            )
+            if str(parent_subject.subject_digest) != str(parent.parent_subject_digest):
+                return None
+            if document.get("subject_digest") != str(parent_subject.subject_digest):
+                return None
+            return document
+
+        try:
+            raw = self._resolver.resolve_content(
+                parent.parent_state_ref,
+                expected_artifact_kind=HORN_SUBJECT_STATE_KIND_V5,
+                expected_media_type=JSON_MEDIA_TYPE,
+                expected_scope=CHECKER_SCOPE,
+                max_bytes=HORN_SUBJECT_STATE_MAX_BYTES,
+            )
+            document = parse_json_document(raw)
+            if type(document) is dict:
+                bound = _bound(document)
+                if bound is not None:
+                    return bound, ""
+        except (ContractV4Error, ValueError):
+            pass
+        try:
+            capability = self._audit_store.capability_for(parent.parent_run_ref)
+            verified = self._audit_store.verify_run(capability, now=now)
+        except (AuditBundleV4Error, ContractV4Error, StorageV4Error, OSError):
+            return None, "parent_state_unavailable"
+        for name in sorted(verified.files):
+            try:
+                payload = parse_json_document(verified.files[name])
+            except ValueError:
+                continue
+            if type(payload) is not dict or type(payload.get("artifacts")) is not list:
+                continue
+            for row in payload["artifacts"]:
+                if type(row) is not dict or row.get("artifact_kind") != HORN_SUBJECT_STATE_KIND_V5:
+                    continue
+                try:
+                    reference = ContentRefV4.from_dict(row.get("content_ref"))
+                except (TypeError, ValueError):
+                    continue
+                if reference != parent.parent_state_ref:
+                    continue
+                try:
+                    content = b64decode(row["content_base64"], validate=True)
+                except (KeyError, ValueError, TypeError):
+                    continue
+                document = parse_json_document(content)
+                if type(document) is dict:
+                    bound = _bound(document)
+                    if bound is not None:
+                        return bound, ""
+        return None, "parent_state_unavailable"
+
+    def _horn_subject_stage_v5(
+        self,
+        request: CaseRequestV4,
+        run: RunIdentityV4,
+        run_identity_ref: ContentRefV4,
+        pack: VerifiedRulePackV4,
+        facts: _FactState,
+        selected: tuple[tuple[ContentRefV4, RuleV4, tuple[str, ...]], ...],
+        *,
+        case_scope: str,
+    ) -> "_HornStageOutcome":
+        """Compute, reuse and seal the Horn subject state of this run (ULM15).
+
+        First run or an ineligible parent computes the closure with the full
+        scan; a qualified add-only child of a completed, verified parent run
+        extends the parent closure through the incremental worklist. Either
+        way the independent full recomputation of the same child subject must
+        equal the produced closure or the run fails closed. The sealed state
+        artifact records the mode, the parent/child binding, the fallback
+        reason and the deterministic solver/checker workload counts.
+        """
+
+        true_facts = self._horn_true_fact_keys(facts)
+        horn_rules: list[tuple[str, str, tuple[str, ...]]] = []
+        for _reference, rule, requirements in selected:
+            if rule.modality != "CONSTITUTIVE":
+                continue
+            conclusion = self._document(
+                rule.conclusion_ref,
+                kind=RULE_CONCLUSION_KIND,
+                scope=RULE_COMPONENT_SCOPE,
+            )
+            head = conclusion.get("fact_key")
+            if type(head) is not str or not head:
+                continue
+            horn_rules.append((rule.rule_id, head, requirements))
+        universe = self._horn_universe(pack) | true_facts
+        subject = HornSubjectV5.build(
+            universe=universe,
+            facts=true_facts,
+            rules=tuple(
+                (head, body) for _rule_id, head, body in horn_rules
+            ),
+        )
+
+        mode = "full_recompute"
+        fallback_reason: str | None = "no_parent_reference"
+        parent_row: dict[str, object] | None = None
+        parent_closure: frozenset[str] | None = None
+        parent_rules: tuple[tuple[str, tuple[str, ...]], ...] = ()
+        added_facts: frozenset[str] = frozenset()
+        added_rules: tuple[tuple[str, tuple[str, ...]], ...] = ()
+        parent_input = request.incremental_parent_v5
+        if parent_input is not None:
+            if parent_input.mode == "force_full":
+                fallback_reason = "forced_full_diagnostic"
+            else:
+                document, unavailable_reason = self._horn_parent_state_document(
+                    parent_input, case_scope=case_scope, now=self._clock(),
+                )
+                if document is None:
+                    fallback_reason = unavailable_reason or "parent_state_unavailable"
+                else:
+                    parent_facts = frozenset(str(item) for item in document["facts"])
+                    parent_rule_rows = tuple(
+                        (str(head), tuple(str(atom) for atom in body))
+                        for head, body, _rule_id in document["rules"]
+                    )
+                    parent_universe = frozenset(
+                        str(item) for item in document["universe"]
+                    )
+                    if parent_facts - set(subject.facts):
+                        fallback_reason = "fact_deletion"
+                    elif set(parent_rule_rows) - set(subject.rules):
+                        fallback_reason = "rule_rewrite_or_removal"
+                    elif parent_universe != set(subject.universe):
+                        fallback_reason = "universe_growth"
+                    else:
+                        mode = "incremental"
+                        fallback_reason = None
+                        parent_closure = frozenset(
+                            str(item) for item in document["closure"]
+                        )
+                        parent_rules = parent_rule_rows
+                        added_facts = frozenset(subject.facts) - parent_facts
+                        added_rules = tuple(
+                            rule for rule in subject.rules
+                            if rule not in set(parent_rule_rows)
+                        )
+                        parent_row = {
+                            "run_ref": parent_input.parent_run_ref.to_dict(),
+                            "state_ref": parent_input.parent_state_ref.to_dict(),
+                            "subject_digest": str(parent_input.parent_subject_digest),
+                        }
+
+        if mode == "incremental" and parent_closure is not None:
+            closure, solver_metrics = incremental_horn_closure(
+                parent_closure, parent_rules, added_facts, added_rules,
+            )
+        else:
+            closure, solver_metrics = horn_closure_with_metrics(subject)
+        checker_closure, checker_metrics = horn_closure_with_metrics(subject)
+        if closure != checker_closure:
+            raise ContractV4Error(
+                "APPLICATION_HORN_INCREMENTAL_MISMATCH",
+                "the Horn closure differs from the independent full recomputation",
+            )
+
+        state_document = {
+            "schema_version": HORN_SUBJECT_STATE_SCHEMA_V5,
+            "status": "verified_complete",
+            "case_scope": case_scope,
+            "run_identity_ref": run_identity_ref.to_dict(),
+            "request_binding": str(case_request_binding_ref(request).digest),
+            "mapping_version": HORN_MAPPING_VERSION_V5,
+            "subject_digest": str(subject.subject_digest),
+            "universe": sorted(subject.universe),
+            "facts": sorted(subject.facts),
+            "rules": [
+                [head, list(body), rule_id]
+                for rule_id, head, body in sorted(horn_rules)
+            ],
+            "closure": sorted(closure),
+            "mode": mode,
+            "fallback_reason": fallback_reason,
+            "parent": parent_row,
+            "solver_metrics": dict(solver_metrics),
+            "checker_metrics": dict(checker_metrics),
+        }
+        raw = canonical_bytes(state_document)
+        reference = ContentRefV4(
+            HORN_SUBJECT_STATE_KIND_V5, DigestV4.from_bytes(raw),
+        )
+        state_ref = self._resolver.register_bytes(
+            artifact_id=f"{HORN_SUBJECT_STATE_KIND_V5}-{reference.digest.hex}",
+            content_ref=reference,
+            artifact_kind=HORN_SUBJECT_STATE_KIND_V5,
+            media_type=JSON_MEDIA_TYPE,
+            scope=CHECKER_SCOPE,
+            content=raw,
+        )
+        return _HornStageOutcome(
+            state_ref=state_ref,
+            mode=mode,
+            fallback_reason=fallback_reason,
+            subject_digest=subject.subject_digest,
+            parent=parent_row,
+            solver_metrics=solver_metrics,
+            checker_metrics=checker_metrics,
+        )
+
+    def _verify_procedure_authorization(
+        self,
+        procedural: "ProceduralInputV5",
+        binding: DigestV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> bool:
+        """Verify the referenced authorization artifact through trust.
+
+        The wire never carries verification: the authority's authorization
+        reference must resolve to a stored, self-consistent document whose
+        legal-approval signature verifies under the active trust policy and
+        whose findings match the request's authority row. Any failure leaves
+        the authority unverified, which routes the procedure to the pending
+        state — never to an adjudicated status.
+        """
+
+        authority = procedural.authority
+        if authority is None or authority.request_ref != binding:
+            return False
+        try:
+            raw = self._resolver.resolve_content(
+                ContentRefV4(
+                    PROCEDURE_AUTHORIZATION_KIND_V5, authority.authorization_ref,
+                ),
+                expected_artifact_kind=PROCEDURE_AUTHORIZATION_KIND_V5,
+                expected_media_type=JSON_MEDIA_TYPE,
+                expected_scope=LEGAL_APPROVAL_SCOPE,
+                max_bytes=PROCEDURE_AUTHORIZATION_MAX_BYTES,
+            )
+            document = parse_json_document(raw)
+        except (ContractV4Error, ValueError):
+            return False
+        if type(document) is not dict:
+            return False
+        if document.get("schema_version") != PROCEDURE_AUTHORIZATION_SCHEMA_V5:
+            return False
+        signature_row = document.get("signature")
+        body = {key: value for key, value in document.items() if key != "signature"}
+        expected_digest = digest_value(body)
+        if (
+            document.get("request_ref") != str(binding)
+            or document.get("burden_rule_ref") != authority.burden_rule_ref
+            or document.get("finding") != authority.finding
+            or document.get("reviewer") != authority.reviewer
+        ):
+            return False
+        try:
+            signature = SignatureEnvelopeV4.from_dict(signature_row)
+        except (ContractV4Error, TypeError):
+            return False
+        if (
+            signature.subject_digest != expected_digest
+            or signature.payload_digest != expected_digest
+        ):
+            return False
+        try:
+            self._trust._fresh_without_replay().verify(
+                signature,
+                expected_subject_digest=expected_digest,
+                expected_payload_digest=expected_digest,
+                required_role="legal_reviewer",
+                required_scope="legal-approval",
+                required_artifact_kind="legal-approval",
+                expected_status="APPROVED",
+                now=now,
+                separation_from_principals=(),
+            )
+        except ContractV4Error:
+            return False
+        return True
 
     def _proof_receipt(
         self,
@@ -1515,6 +2248,7 @@ class ApplicationV4:
         source_bundle: SourceBundleV4,
         *,
         now: CanonicalTimeV4,
+        v5_stage: "_V5StageOutcome | None" = None,
     ) -> SemanticResultV4:
         labels = {reference: (label, arguments) for reference, label, arguments in argument.labels}
         claims: list[ClaimResultV4] = []
@@ -1581,6 +2315,25 @@ class ApplicationV4:
             else ReviewStateV4("not_required", (), None, (), None)
         )
         applicable = tuple(reference for reference, _, _ in selected)
+        v5_reasons: tuple[str, ...] = ()
+        v5_completeness = CompletenessStateV4.COMPLETE
+        if v5_stage is not None:
+            if v5_stage.mapping_coverage == "incomplete":
+                v5_completeness = CompletenessStateV4.PARTIAL
+                v5_reasons = (*v5_reasons, "v5_mapping_incomplete")
+            if v5_stage.solver_incomplete:
+                v5_completeness = CompletenessStateV4.PARTIAL
+                v5_reasons = (*v5_reasons, "v5_solver_incomplete")
+        certificate_kind = (
+            CertificateKindV4.CONFLICT_VERIFIED
+            if conflict
+            else CertificateKindV4.FORMAL_VERIFIED
+        )
+        if v5_completeness is CompletenessStateV4.PARTIAL:
+            # A certificate asserts complete untainted verification; an open
+            # V5 mapping or solver coverage downgrades the run to partial and
+            # the sealed answer carries no certificate.
+            certificate_kind = CertificateKindV4.NONE
         return self._result(
             run.request_ref,
             run_identity_ref,
@@ -1592,13 +2345,9 @@ class ApplicationV4:
                 else DecisionStatusV4.ACCEPTED_FORMAL_RESULT
             ),
             review=review,
-            completeness=CompletenessStateV4.COMPLETE,
+            completeness=v5_completeness,
             interruption=None,
-            certificate=(
-                CertificateKindV4.CONFLICT_VERIFIED
-                if conflict
-                else CertificateKindV4.FORMAL_VERIFIED
-            ),
+            certificate=certificate_kind,
             claims=tuple(claims),
             admitted_fact_refs=facts.admitted_refs,
             rejected_fact_refs=facts.rejected_refs,
@@ -1608,7 +2357,9 @@ class ApplicationV4:
             attack_refs=argument.attack_refs,
             exception_resolution_refs=argument.exception_refs,
             permission_resolution_refs=argument.permission_refs,
-            decision_reason_codes=("argument_conflict",) if conflict else (),
+            decision_reason_codes=(
+                ("argument_conflict",) if conflict else ()
+            ) + v5_reasons,
             receipt_refs=receipts,
         )
 
@@ -2017,6 +2768,33 @@ class ApplicationV4:
             )
 
         try:
+            horn_stage = self._horn_subject_stage_v5(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                case_scope=case_scope,
+            )
+            events.append(("horn-subject-v5", horn_stage.state_ref))
+        except _EXPECTED_FAILURES as exc:
+            failure = self._failure("horn-subject-v5", exc)
+            result = self._nonformal_result(
+                request,
+                run,
+                run_identity_ref,
+                pack,
+                facts,
+                selected,
+                failure=failure,
+                execution=ExecutionStatusV4.ENGINE_ERROR,
+            )
+            return self._finish(
+                request, run, run_identity_ref, result, events, now=now, failure=failure
+            )
+
+        try:
             compilations = self._compile(
                 pack,
                 selected,
@@ -2183,10 +2961,10 @@ class ApplicationV4:
             return self._finish(
                 request, run, run_identity_ref, result, events, now=now, failure=None
             )
-        profile_stage_ref: ContentRefV4 | None = None
+        v5_stage: _V5StageOutcome | None = None
         if request.profile_queries_v5:
             try:
-                profile_stage_ref = self._profile_stage_v5(request, checked, argument)
+                v5_stage = self._profile_stage_v5(request, checked, argument, now=now)
             except _EXPECTED_FAILURES as exc:
                 failure = self._failure("profile-v5", exc)
                 result = self._nonformal_result(
@@ -2204,7 +2982,7 @@ class ApplicationV4:
                 return self._finish(
                     request, run, run_identity_ref, result, events, now=now, failure=failure
                 )
-            events.append(("profile-v5", profile_stage_ref))
+            events.append(("profile-v5", v5_stage.stage_ref))
         try:
             result = self._formal_result(
                 request,
@@ -2219,6 +2997,7 @@ class ApplicationV4:
                 argument,
                 source_bundle,
                 now=now,
+                v5_stage=v5_stage,
             )
         except _EXPECTED_FAILURES as exc:
             failure = self._failure("result", exc)

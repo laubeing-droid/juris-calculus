@@ -943,6 +943,18 @@ class CaseRequestV4(V4Contract):
     composition_choice_v5: CompositionChoiceV5 | None = None
     composition_expression_v5: ExactExpressionV5 | None = None
     composition_operands_v5: tuple[ExactExpressionV5, ...] = ()
+    # Optional V5 query-side inputs: admitted claim refutations and branch
+    # gates. Both bind this request; the profile stage rejects any row whose
+    # binding or referenced claim leaves the current run.
+    query_refutations_v5: tuple["ClaimRefutationV5", ...] = ()
+    query_gates_v5: tuple["QueryGateRequestV5", ...] = ()
+    # Optional V5 procedure/burden inputs; verification of the authority is
+    # performed by the application through the trust machinery, never taken
+    # from the wire.
+    procedural_input_v5: "ProceduralInputV5 | None" = None
+    # Optional V5 incremental Horn parent: a prior completed run of the same
+    # case whose verified Horn state may be reused under the add-only contract.
+    incremental_parent_v5: "IncrementalParentV5 | None" = None
 
     def _validate(self) -> None:
         _nonempty(self.request_id, "CaseRequestV4.request_id")
@@ -975,6 +987,25 @@ class CaseRequestV4(V4Contract):
             query_ids = [item.query_id for item in self.profile_queries_v5]
             if len(query_ids) != len(set(query_ids)):
                 _fail("DUPLICATE_REFERENCE", "profile_queries_v5 repeats a query_id")
+        if len(self.query_refutations_v5) > 256:
+            _fail("V5_STAGE_LIMIT", "query_refutations_v5 exceeds 256 rows")
+        if len(self.query_gates_v5) > 256:
+            _fail("V5_STAGE_LIMIT", "query_gates_v5 exceeds 256 rows")
+        gate_targets = [
+            (item.query_id, None if item.branch_digest is None else str(item.branch_digest))
+            for item in self.query_gates_v5
+        ]
+        if len(gate_targets) != len(set(gate_targets)):
+            _fail(
+                "DUPLICATE_REFERENCE",
+                "query_gates_v5 repeats one query and branch binding",
+            )
+        if self.query_refutations_v5 or self.query_gates_v5:
+            if not self.profile_queries_v5:
+                _fail(
+                    "V5_STAGE_PAIRING",
+                    "query refutations and gates require the profile stage",
+                )
         if (self.composition_choice_v5 is None) != (self.composition_policy_v5 is None):
             _fail(
                 "V5_STAGE_PAIRING",
@@ -1989,8 +2020,20 @@ _STATE_MATRIX = {
     "accepted_formal_result": (
         frozenset(("completed",)),
         frozenset(("not_required",)),
-        frozenset(("complete",)),
-        frozenset(("formal_verified",)),
+        # partial is only reachable when the request carries V5 profile
+        # queries whose semantic mapping or solver coverage stayed open; the
+        # formal chain itself remains verified, but the requested outputs
+        # were not completely answered, so the result may not claim complete
+        # and carries no certificate.
+        frozenset(("complete", "partial")),
+        frozenset(("formal_verified", "none")),
+        frozenset(("success",)),
+    ),
+    "conflict_certificate": (
+        frozenset(("completed",)),
+        frozenset(("required", "pending", "approved")),
+        frozenset(("complete", "partial")),
+        frozenset(("conflict_verified", "none")),
         frozenset(("success",)),
     ),
     "hypothetical_result": (
@@ -2012,13 +2055,6 @@ _STATE_MATRIX = {
         frozenset(("required", "pending")),
         frozenset(("partial",)),
         frozenset(("none",)),
-        frozenset(("success",)),
-    ),
-    "conflict_certificate": (
-        frozenset(("completed",)),
-        frozenset(("required", "pending", "approved")),
-        frozenset(("complete", "partial")),
-        frozenset(("conflict_verified",)),
         frozenset(("success",)),
     ),
     "blocked": (
@@ -2484,7 +2520,7 @@ class ScenarioKeyV5(V4Contract):
 
     def _validate(self) -> None:
         _nonempty(self.scenario_id, "ScenarioKeyV5.scenario_id")
-        expected = digest_value({"assumptions": list(self.assumptions)})
+        expected = digest_value({"assumptions": sorted(set(self.assumptions))})
         if self.assumptions_digest != expected:
             _fail(
                 "SELF_DIGEST_MISMATCH",
@@ -2657,6 +2693,11 @@ class DefeatPolicyV5(V4Contract):
     request_ref: DigestV4
     allowed_kinds: tuple[str, ...]
     legal_evidence_ref: DigestV4
+    # Optional registered priority strategy: when the request carries admitted
+    # priority relations, this named policy decides whether an existing attack
+    # becomes a defeat. Absent priority relations make the field moot.
+    priority_policy_id: str | None = None
+    priority_policy_version: str | None = None
 
     def _validate(self) -> None:
         _nonempty(self.policy_id, "DefeatPolicyV5.policy_id")
@@ -2667,6 +2708,13 @@ class DefeatPolicyV5(V4Contract):
             if kind not in _ATTACK_KINDS_V5:
                 _fail("ENUM_VALUE", f"DefeatPolicyV5.allowed_kinds has unknown kind {kind!r}")
         _nonempty(self.legal_evidence_ref, "DefeatPolicyV5.legal_evidence_ref")
+        if (self.priority_policy_id is None) != (self.priority_policy_version is None):
+            _fail(
+                "V5_STAGE_PAIRING",
+                "priority_policy_id and priority_policy_version are all-or-nothing",
+            )
+        if self.priority_policy_id == "":
+            _fail("EMPTY_STRING", "DefeatPolicyV5.priority_policy_id must be non-empty when set")
 
 
 @dataclass(frozen=True, slots=True)
@@ -2816,15 +2864,31 @@ class QueryResultV5(V4Contract):
             _fail("TYPE_AUTHORITY", "common implies possible")
         if self.common_refuted and not self.possibly_refuted:
             _fail("TYPE_AUTHORITY", "common_refuted implies possibly_refuted")
-        if self.gate != "enterable":
+        if self.gate == "incomplete":
             if any(flags):
                 _fail(
                     "TYPE_AUTHORITY",
-                    f"gate={self.gate} cannot witness any query status",
+                    "gate=incomplete cannot witness any query status",
+                )
+        elif self.gate == "excluded":
+            # A legally excluded query is a completed, valid answer: the only
+            # flag it may carry is `excluded` itself.
+            if any(flags[:6]):
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "excluded queries report no acceptance or refutation status",
+                )
+            if not self.excluded:
+                _fail(
+                    "TYPE_AUTHORITY",
+                    "gate=excluded requires excluded=true with its recorded reason",
                 )
         if self.excluded and any(flags[:6]):
             _fail("TYPE_AUTHORITY", "excluded queries report no other status")
-        if self.inconsistent_some and not (self.common and self.common_refuted):
+        if self.inconsistent_some and not (self.possible and self.possibly_refuted):
+            # inconsistent_some is existential: ONE branch both accepts and
+            # refutes the query. That branch already witnesses possible and
+            # possibly_refuted; universality (common) is NOT required.
             _fail(
                 "TYPE_AUTHORITY",
                 "inconsistent_some requires one branch accepting and refuting the query",
@@ -2835,6 +2899,144 @@ _PROCEDURE_KINDS_V5 = frozenset({
     "adjudicated_status", "procedural_disposition", "pending_legal_judgment",
     "solver_incomplete",
 })
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimRefutationV5(V4Contract):
+    """One admitted directed claim-level refutation binding one request.
+
+    ``refuter`` and ``target`` are claim (conclusion) identities, never
+    argument ids: ULM11 refutation runs argument -> conclusion -> directed
+    refutation relation. ``basis_ref`` is the admitted legal basis that makes
+    the relation usable inside the formal spine.
+    """
+
+    refuter: str
+    target: str
+    request_ref: DigestV4
+    basis_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.refuter, "ClaimRefutationV5.refuter")
+        _nonempty(self.target, "ClaimRefutationV5.target")
+        if self.refuter == self.target:
+            _fail("REFUTATION_IRREFLEXIVE", "a claim cannot refute itself")
+        _nonempty(self.basis_ref, "ClaimRefutationV5.basis_ref")
+
+
+@dataclass(frozen=True, slots=True)
+class QueryGateRequestV5(V4Contract):
+    """One publicly requested per-branch gate with its admission basis.
+
+    An ``excluded`` gate is only representable with a recorded reason and a
+    non-empty basis reference; ``incomplete`` gates must record why the branch
+    cannot be entered yet. ``branch_digest`` optionally binds the gate to one
+    evaluated branch; without it the gate applies to every branch of the query.
+    """
+
+    query_id: str
+    gate: str
+    reason: str
+    basis_ref: DigestV4 | None
+    branch_digest: DigestV4 | None = None
+
+    def _validate(self) -> None:
+        _nonempty(self.query_id, "QueryGateRequestV5.query_id")
+        if self.gate not in _QUERY_GATES_V5:
+            _fail("ENUM_VALUE", f"QueryGateRequestV5.gate {self.gate!r} is unknown")
+        if self.gate == "enterable":
+            _fail(
+                "QUERY_GATE_STATE",
+                "enterable is the default; a declared gate must exclude or defer",
+            )
+        if not self.reason:
+            _fail("QUERY_GATE_STATE", f"{self.gate} gates must record a reason")
+        if self.gate == "excluded" and self.basis_ref is None:
+            _fail(
+                "QUERY_GATE_BASIS",
+                "excluded gates require an admitted basis reference",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class BurdenRuleOutcomeWireV5(V4Contract):
+    """The admitted burden-rule consequences one request may rely on."""
+
+    burden_rule_ref: str
+    satisfied_status: str
+    failure_status: str
+    request_ref: DigestV4
+
+    def _validate(self) -> None:
+        _nonempty(self.burden_rule_ref, "BurdenRuleOutcomeWireV5.burden_rule_ref")
+        _nonempty(self.satisfied_status, "BurdenRuleOutcomeWireV5.satisfied_status")
+        _nonempty(self.failure_status, "BurdenRuleOutcomeWireV5.failure_status")
+        if self.satisfied_status == self.failure_status:
+            _fail(
+                "PROCEDURE_RULE_AMBIGUOUS",
+                "success and failure consequences must differ",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ProceduralInputV5(V4Contract):
+    """Public procedure/burden inputs bound to one request.
+
+    ``authority`` never carries verification by itself: the application
+    verifies the referenced authorization artifact through the trust
+    machinery, and only that verification can mark the authority as verified.
+    """
+
+    request_ref: DigestV4
+    procedural_status: str | None = None
+    procedural_basis_ref: DigestV4 | None = None
+    authority: ProcedureAuthorityV5 | None = None
+    rule_outcomes: BurdenRuleOutcomeWireV5 | None = None
+
+    def _validate(self) -> None:
+        if self.procedural_status is not None:
+            _nonempty(self.procedural_status, "ProceduralInputV5.procedural_status")
+            if self.procedural_basis_ref is None:
+                _fail(
+                    "PROCEDURE_INPUT",
+                    "a procedural status requires its admitted basis reference",
+                )
+        if self.procedural_basis_ref is not None and self.procedural_status is None:
+            _fail(
+                "PROCEDURE_INPUT",
+                "a procedural basis without its status carries no information",
+            )
+        if (self.authority is None) != (self.rule_outcomes is None):
+            _fail(
+                "PROCEDURE_INPUT",
+                "an authority finding and its rule outcomes are all-or-nothing",
+            )
+        if self.authority is not None and self.rule_outcomes is not None:
+            if self.authority.burden_rule_ref != self.rule_outcomes.burden_rule_ref:
+                _fail(
+                    "PROCEDURE_INPUT",
+                    "the authority finding and rule outcomes cite different burden rules",
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class IncrementalParentV5(V4Contract):
+    """Reference to a prior completed run whose Horn state may be reused.
+
+    ``mode`` is ``auto`` (use the parent when the add-only contract holds,
+    fall back to a recorded full recompute otherwise) or ``force_full``
+    (diagnostic full recomputation with the parent kept for comparison).
+    """
+
+    parent_run_ref: ContentRefV4
+    parent_state_ref: ContentRefV4
+    parent_subject_digest: DigestV4
+    mode: str = "auto"
+
+    def _validate(self) -> None:
+        if self.mode not in frozenset({"auto", "force_full"}):
+            _fail("ENUM_VALUE", f"IncrementalParentV5.mode {self.mode!r} is unknown")
+        _nonempty(self.parent_subject_digest, "IncrementalParentV5.parent_subject_digest")
 
 
 @dataclass(frozen=True, slots=True)
@@ -3242,6 +3444,11 @@ _REGISTRY_TYPES = (
     AssuranceEnvelopeV5,
     HornDeltaV5,
     EmpiricalResultV5,
+    ClaimRefutationV5,
+    QueryGateRequestV5,
+    BurdenRuleOutcomeWireV5,
+    ProceduralInputV5,
+    IncrementalParentV5,
 )
 V4_TYPE_REGISTRY = MappingProxyType({item.__name__: item for item in _REGISTRY_TYPES})
 V4_OBJECT_REGISTRY = MappingProxyType(

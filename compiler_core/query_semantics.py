@@ -143,6 +143,17 @@ def evaluate_query_v5(query: QueryInputV5) -> QueryStatusV5:
     for pair in query.refutations:
         refuted_by.setdefault(pair.target, set()).add(pair.refuter)
 
+    def _argument_refutes(argument: str) -> bool:
+        """ULM11 RefutedIn: the argument's CONCLUSION refutes the query claim.
+
+        Argument IDs are never compared against refuter claim ids; the
+        conclusion mapping is always resolved first, so renaming an argument
+        cannot change the refutation semantics.
+        """
+
+        conclusion = query.argument_claims.get(argument)
+        return conclusion is not None and conclusion in refuted_by.get(query.claim, ())
+
     accepting: list[str] = []
     refuting: list[str] = []
     common = common_refuted = True
@@ -156,7 +167,7 @@ def evaluate_query_v5(query: QueryInputV5) -> QueryStatusV5:
         accepts = bool(claim_arguments)
         refuters = [
             argument for argument in sorted(extension)
-            if argument in refuted_by.get(query.claim, ())
+            if _argument_refutes(argument)
         ]
         refutes = bool(refuters)
         if accepts:
@@ -175,17 +186,24 @@ def evaluate_query_v5(query: QueryInputV5) -> QueryStatusV5:
         for argument in evaluation.extensions[index]
     )
     possibly_refuted = any(
-        argument in refuted_by.get(query.claim, ())
-        and query.argument_claims.get(argument) == query.claim
+        _argument_refutes(argument)
         for index in enterable
         for argument in evaluation.extensions[index]
     )
 
     if not enterable:
-        # No enterable branch: the family either excluded the query everywhere
-        # or its gates are incomplete; no status may be reported.
+        # No enterable branch. A verified empty family is still a completed
+        # solve: nothing is witnessed and no vacuous universal is claimed.
+        # Otherwise the family either excluded the query everywhere or its
+        # gates are incomplete; no status may be reported.
         common = possible = common_refuted = possibly_refuted = False
         undecided_some = inconsistent_some = False
+        if evaluation.kind == "no_extension":
+            return QueryStatusV5(
+                query.query_id, query.profile,
+                False, False, False, False, False, False,
+                False, "enterable", (), (),
+            )
         if excluded and not incomplete:
             return QueryStatusV5(
                 query.query_id, query.profile,
@@ -220,19 +238,50 @@ def evaluate_query_v5(query: QueryInputV5) -> QueryStatusV5:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class BranchIdentityV5:
+    """Structured, delimiter-free branch identity components.
+
+    Every set-valued field is carried as a sorted tuple, so identity is
+    invariant under set reordering while distinct structures stay distinct:
+    ``{"a", "b"}`` and ``{"a|b"}`` never collide because no field is ever
+    flattened into a joined string.
+    """
+
+    scenario_id: str
+    assumptions: tuple[str, ...]
+    profile: str
+    extension: tuple[str, ...]
+
+    def canonical_payload(self) -> dict[str, object]:
+        return {
+            "scenario_id": self.scenario_id,
+            "assumptions": list(self.assumptions),
+            "profile": self.profile,
+            "extension": list(self.extension),
+        }
+
+
 def compose_branch_key_v5(
     scenario_id: str,
     assumptions: tuple[str, ...],
     profile: str,
     extension: frozenset[str],
-) -> tuple[str, str, str]:
+) -> tuple[str, tuple[str, ...], str, tuple[str, ...]]:
     """Return the deterministic branch identity components for one extension.
 
     Branch isolation is enforced by construction: different assumptions,
-    profiles or extension structures produce different keys. Cross-branch
-    composition of responsibilities and amounts stays rejected downstream.
+    profiles or extension structures produce different components. The caller
+    digests :class:`BranchIdentityV5.canonical_payload` — no delimiter join
+    exists anywhere in the identity chain. Cross-branch composition of
+    responsibilities and amounts stays rejected downstream.
     """
 
     if profile not in _QUERY_PROFILES:
         _fail("QUERY_FIELD", f"unsupported profile {profile!r}")
-    return scenario_id, "|".join(sorted(assumptions)), profile + "#" + "|".join(sorted(extension))
+    return (
+        scenario_id,
+        tuple(sorted(set(assumptions))),
+        profile,
+        tuple(sorted(extension)),
+    )

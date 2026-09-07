@@ -1,6 +1,6 @@
 # 文档索引
 
-本页按读者意图组织 juris-calculus 的全部当前文档，每条附一句"读了能得到什么"。项目定位先读根目录 [README](../README.md)。当前版本 5.0.0（公共协议 jc/5.0），版本权威是 `compiler_core/version.py`。
+本页按读者意图组织 juris-calculus 的全部当前文档，每条附一句"读了能得到什么"。项目定位先读根目录 [README](../README.md)。当前版本 5.0.1（公共协议 jc/5.0），版本权威是 `compiler_core/version.py`。
 
 ## 入门：先跑起来、看懂项目
 
@@ -23,6 +23,7 @@
 
 ## 参考：集成与机器权威
 
+- [JC ↔ Legal Harness 集成合同](contracts/HARNESS_INTEGRATION.md) — Harness 如何发请求、追加材料走增量、读结果与优先关系状态；三份可运行样本的位置。
 - [外仓协议](contracts/EXTERNAL_PROTOCOL.md) — Deli、Legal Harness、LMM 三类外仓各自允许和禁止的接入方式。
 - [Python 合同](../compiler_core/contracts.py) / [JSON Schema](../schemas/jc-v5.schema.json) / [MCP 工具清单](../mcp_manifest.json) — 字段与工具的机器权威，文档只解释不复制。
 - [证明绑定](../proofs/lmm-binding.json) 与 [运行时义务映射](../proofs/runtime-obligation-map.json) — 运行时模块与上游 Lean 声明的对应登记。
