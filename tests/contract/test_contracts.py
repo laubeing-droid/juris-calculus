@@ -377,6 +377,12 @@ def test_case_request_fields_are_exact_and_external_only() -> None:
         "rule_pack_ref",
         "requested_outputs",
         "proposal_refs",
+        "defeat_policy_v5",
+        "profile_queries_v5",
+        "composition_policy_v5",
+        "composition_choice_v5",
+        "composition_expression_v5",
+        "composition_operands_v5",
     )
     for forbidden in VECTORS["case_request_forbidden_fields"]:
         payload = _case_payload()

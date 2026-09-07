@@ -2,7 +2,7 @@
 
 **计划编号**：JC-UPGRADE-20260906-01
 **施工分支**：`upgrade/ulm-bound-runtime-v5`（自 `008198955db39917e755b32e806d9a24a715c6d6` 起点）
-**报告日期**：2026-09-06
+**报告日期**：2026-09-06（2026-09-07 增补独立核查修复，见 §八）
 **性质**：工程验收报告。本地全部必需验收已通过（`work/v5-acceptance/acceptance-summary.json` all_passed=true），候选 wheel 已构建并字节核验；这不是发布、不是生产激活、更不是现实法律正确性认证。
 
 ---
@@ -97,3 +97,64 @@ V5 升级已在本地完成并通过 `tools/verify_upgrade.py` 按计划 `remedi
 - 验收：48 项 JT 样本的对应测试文件（见 §二凭据列）与 `work/v5-acceptance/` 运行日志。
 - 迁移：`tools/migrate_v4_bundle.py` + `tests/formal_e2e/run_migration_fixture.py`。
 - 文档：`docs/contracts/V5_OBJECT_STATE_MATRIX.md`、`docs/operations/RELEASE_V5.md`、本报告。
+
+---
+
+## 八、2026-09-07 增补：独立核查（20260907jc_v5_upgrade_audit.md）三项阻断的修复
+
+本节记录针对外部独立核查报告 `20260907jc_v5_upgrade_audit.md`（对象为固定提交 `7b75b42`）所列三项阻断的工程修复。理论仓库无需再扩展：Stable 定义本身足以指出并修复反例。
+
+### 阻断一：stable 攻击方向已修复
+
+`compiler_core/argumentation.py` 中 `evaluate_profile_v5` 的 stable 分支原先检查"集合外 → 集合内"，与 `ULM10DungProfiles.lean` 的定义（集合内攻击集合外）相反。已调换方向，最小反例 a→b 现在返回唯一 stable 扩展 `{a}`（反向 b→a 返回 `{b}`）。
+
+新增回归（`tests/contract/test_v5_reference_enumeration.py`）：
+
+- **穷举对照**：0–3 个论证的全部有向图（含自攻击）共 531 张，四类语义共 2,124 项比较，逐一对照本测试文件内独立编写的定义驱动参考实现（与生产代码零共享）。修复前该穷举会在 stable 上产生约 252 项不一致（与核查报告一致）；修复后全部一致。
+- **最小反例、攻击链、分叉**的显式锚定用例。
+
+### 阻断二：V5 语义校验器已改为定义驱动独立校验
+
+`verify_profile_family_v5` 原先以重跑生产求解函数 `evaluate_profile_v5` 作为"参考结果"，无法识别求解器自身的算法错误。现已重写：参考实现基于攻击邻接独立计算冲突自由、防卫、特征函数与 stable 全外部攻击条件，**不再调用生产求解函数**。
+
+- 每个 claimed 扩展必须逐一通过定义校验（错误扩展/非极大 preferred/自相冲突均被拒绝，`discovered_unsound`）。
+- `exact` 覆盖必须等于独立重算的完整族（遗漏扩展 → `family_mismatch`）。
+- 超出枚举预算时 fail-closed：exact 声明一律拒绝（`reference_incomplete`），不允许伪称完整。
+- 审计报告 §四 的对照表已翻转并锁定为回归：`{{b}}` 声明被拒绝、`{{a}}` 声明被接受；monkeypatch 生产求解器返回谎言后，校验器结论不变（`tests/contract/test_v5_semantics.py::test_audit_verifier_*`）。
+
+### 阻断三：新能力已接入唯一正式主链
+
+公开请求合同 `CaseRequestV4` 新增闭合的可选 V5 阶段字段（缺省缺省等价于原行为，旧文档字节不变）：
+
+| 字段 | 说明 |
+|---|---|
+| `defeat_policy_v5` | 准入的击败策略（`DefeatPolicyV5`），`request_ref` 必须绑定请求身份投影 `case_request_binding_ref(request).digest` |
+| `profile_queries_v5` | 针对已检视图的 profile 查询（`QueryRequestV5`，≤64 条，query_id 唯一），mapping_version 必须为 `jc-aaf-mapping-v5/1`，scenario_ref 必须按请求绑定派生 |
+| `composition_policy_v5` / `composition_choice_v5` / `composition_expression_v5` / `composition_operands_v5` | 同分支组合：候选由已评估 profile 族按 `compose_branch_key_v5` 派生，选择必须落在实际候选内，表达式经 `evaluate_expression_v5` 精确求值 |
+
+`ApplicationV4` 在正式路径 checker 通过后执行 `_profile_stage_v5`：
+
+1. 从**独立 checker 已核验的参数图**构建 `AttackRecordV5`（按 `ATTACK_KIND_MIGRATION_V5` 迁移；priority 派生边不自动成为 V5 击败，记入 envelope notice）。
+2. `resolve_defeats_v5` 按准入策略解析击败边；`evaluate_profile_v5` 求解所请求 profile。
+3. **每个完整族必须通过独立校验器**（coverage=exact）；求解器错误在链内被拒 → `APPLICATION_V5_VERIFICATION` engine error，不签发证书。
+4. 每条查询经 `evaluate_query_v5` 得到 ULM11 多标志状态；每族经 `adjudicate_v5` 得到程序四路后果（无授权输入时诚实返回 `pending_legal_judgment`；族不完整返回 `solver_incomplete`）。
+5. 组合（按请求）经 ChoiceWF 门控与精确算术；非整结果挂 `rounding_required` 义务。
+6. 每 profile 生成 ULM14 保证信封（spec=proved/openObligations，implementation=crossCheckOnly，run_check=checked），同 profile 多查询经 `combine_assurance_v5` 保守聚合。
+7. 阶段文档（`jc/profile-stage-v5/1.0`）注册为内容寻址工件，经 run 事件进入审计包（checker-receipts.json 内密封），可经 `jc_verify_run` / `jc_read_artifact` 外部读取；重复运行字节级一致（可重放）。
+
+外部可观察性由端到端测试锁定（`tests/contract/test_v5_profile_chain.py`）：合成规则包 + 补充事实准入 → 异常规则攻击 positive 规则 → 四类 profile 族、查询状态、程序后果、组合金额（21/2 CNY + rounding 义务）、保证信封全部从**密封审计包**中读取断言；wrong-solver 注入在链内被独立校验器拒绝；无 AAF 图时 fail-closed（`APPLICATION_V5_STAGE`）；空图时以 `profile_queries_without_arguments` 理由可观察地延后。
+
+配套修复：`compiler_core/certificates.py` 多 claim 形式证书对"同一 checker 回执被多条 claim 引用"不再误判为重复（一次运行一个 checker 回执，多规则适用是合法形态）；合同向量、schema/manifest 出版物、`jc-formal-profile.json` 工具清单摘要已同步再生。
+
+### 范围声明（不在本次集成范围，保持禁用/不适用）
+
+- **增量 add-only 快路径（`incremental.py`）**：默认关闭。主链不做增量优化派发；其 proved core（Horn 闭包）与全量重算对照保留于单元验收（JT40–JT43）。这是合法范围选择，不为凑满理论清单而强行启用。
+- **Banach 经验通道**：不适用登记不变；经验接口保持只读、无模型即诚实返回。
+- `incremental.py` 与其他四个 V5 模块不同，未接入主链派发路径；本报告 §四"add-only Horn 增量（默认关闭优化路径，功能与对照已交付）"按此精确含义理解。
+
+### 本节验收状态
+
+- **支持矩阵全量重跑**：Python 3.12.10 与 Python 3.11.9（Windows 本地）各执行 `tests/` 全套（除 tests/performance），两次均为 **1703 passed, 0 failed**；含新增 profile 链端到端、531 图穷举与校验器独立性回归。
+- 合同固定向量、schema/manifest 出版物、`jc-formal-profile.json` 工具清单摘要全部再生并通过 `checks.py generated`、`build_file_disposition.py --check`、`checks.py manifest`、`checks.py cleanup`；模块权威 observed graph `require-clean` status=CLEAN。
+- 新增回归已纳入 `remediation/v5/tasks.v1.json` V5-03 验收任务清单。
+- wheel 重建、推送后 CI 四矩阵与 `package`/`promote` 证据属下一阶段（JT48；需网络写与生产授权），本节不据此宣称生产激活或签名产物变更。

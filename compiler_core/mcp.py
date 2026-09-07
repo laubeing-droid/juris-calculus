@@ -240,11 +240,12 @@ def _field_schema(
             "uniqueItems": True,
         }
     if default is not MISSING:
-        if default is not None and type(default) not in (str, bool, int):
+        if default is not None and type(default) not in (str, bool, int) and default != ():
             raise TypeError(
                 f"unsupported schema default for {contract_type.__name__}.{field_name}"
             )
-        schema = {**schema, "default": default}
+        # An empty-tuple field default is the closed wire form of an empty array.
+        schema = {**schema, "default": [] if default == () else default}
     return schema
 
 

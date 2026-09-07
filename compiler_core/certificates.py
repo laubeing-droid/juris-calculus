@@ -664,8 +664,14 @@ class CertificateVerifierV4:
         checker_refs = _sorted_refs(
             context.verified_checker_receipt_refs, "verified checker receipts"
         )
+        # One run has one independent checker receipt; several applicable rules
+        # therefore legitimately cite the same receipt from their own claims.
         claimed_checker_refs = _sorted_refs(
-            tuple(reference for claim in result.claims for reference in claim.checker_receipt_refs),
+            tuple(dict.fromkeys(
+                reference
+                for claim in result.claims
+                for reference in claim.checker_receipt_refs
+            )),
             "claim checker receipts",
         )
         if not checker_refs or claimed_checker_refs != checker_refs:

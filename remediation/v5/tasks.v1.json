@@ -94,7 +94,9 @@
      "tests/contract/test_argumentation.py",
      "tests/contract/test_backend_router.py",
      "tests/contract/test_fact_admission.py",
-     "tests/contract/test_rule_packs.py"
+     "tests/contract/test_rule_packs.py",
+     "tests/contract/test_v5_reference_enumeration.py",
+     "tests/contract/test_v5_profile_chain.py"
     ]
    ],
    "timeout_seconds": 1800,

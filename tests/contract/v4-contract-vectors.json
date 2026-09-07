@@ -239,7 +239,13 @@
      "kind": "caserequest-proposal-refs",
      "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
     }
-   ]
+   ],
+   "defeat_policy_v5": null,
+   "profile_queries_v5": [],
+   "composition_policy_v5": null,
+   "composition_choice_v5": null,
+   "composition_expression_v5": null,
+   "composition_operands_v5": []
   },
   "CaseArtifactV4": {
    "artifact_id": "case-artifact-value",
@@ -295,10 +301,16 @@
       "kind": "caserequest-proposal-refs",
       "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
      }
-    ]
+    ],
+    "defeat_policy_v5": null,
+    "profile_queries_v5": [],
+    "composition_policy_v5": null,
+    "composition_choice_v5": null,
+    "composition_expression_v5": null,
+    "composition_operands_v5": []
    },
    "artifacts": [],
-   "bundle_digest": "sha256:42429bb0e6191f6df050f11aca6c099e3c52a423dfb45f32bb31e60888bf69ee"
+   "bundle_digest": "sha256:a47de9fb552ca2dc0fd76596ab770864c7cfd61148d34a69e751db706fb163e0"
   },
   "LegalContextV4": {
    "jurisdiction": "jurisdiction-value",
@@ -2044,12 +2056,18 @@
       "kind": "caserequest-proposal-refs",
       "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
      }
-    ]
+    ],
+    "defeat_policy_v5": null,
+    "profile_queries_v5": [],
+    "composition_policy_v5": null,
+    "composition_choice_v5": null,
+    "composition_expression_v5": null,
+    "composition_operands_v5": []
    },
    "result": {
     "request_ref": {
      "kind": "runidentity-request-ref",
-     "digest": "sha256:64d60ac805a1bfd389e1929ad3e2365c5a61f5bcf7cdd73ee14d0599b2862959"
+     "digest": "sha256:0574146e99394f36872d6a100fac9eb19a9e2e8f2b5e8edd0017c3f9bad8a0ef"
     },
     "execution_status": "completed",
     "decision_status": "unknown",
@@ -2111,15 +2129,15 @@
     ],
     "run_identity_ref": {
      "kind": "semanticresult-run-identity-ref",
-     "digest": "sha256:1024a1230c24a5a002f6e3b124da6cacc99044cecfe36e4fcb0a4dcd4f2680a8"
+     "digest": "sha256:8cfe574c393ea13a591a6789cfa743de22b644587bf615d27c3b456b9410b3b5"
     },
-    "result_digest": "sha256:addc3cc93105591968dfae673d98ad29ef11cd73748513df4a66d061aa983575",
+    "result_digest": "sha256:c8943eb6a0700fcb584077332de341856415bbe662edd2ef4f983f8604b74be8",
     "receipt_refs": []
    },
    "run_identity": {
     "request_ref": {
      "kind": "runidentity-request-ref",
-     "digest": "sha256:64d60ac805a1bfd389e1929ad3e2365c5a61f5bcf7cdd73ee14d0599b2862959"
+     "digest": "sha256:0574146e99394f36872d6a100fac9eb19a9e2e8f2b5e8edd0017c3f9bad8a0ef"
     },
     "source_bundle_ref": {
      "kind": "runidentity-source-bundle-ref",
@@ -2159,7 +2177,7 @@
      "digest": "sha256:71462d49b92017010c3ae40e71b3e72e0140dba9cce1b35f10f1b92e2a8b8ec0"
     },
     "backend_profile_digest": "sha256:be2f6a23c407fb134f459eaa6b84301575051a222d7766377da9efb64daf2a03",
-    "run_digest": "sha256:1024a1230c24a5a002f6e3b124da6cacc99044cecfe36e4fcb0a4dcd4f2680a8"
+    "run_digest": "sha256:8cfe574c393ea13a591a6789cfa743de22b644587bf615d27c3b456b9410b3b5"
    },
    "certificate": {
     "kind": "none",
@@ -2390,10 +2408,16 @@
        "kind": "caserequest-proposal-refs",
        "digest": "sha256:a402ca93a977eeb565c1afd2109def933232e124522432d24558e45e4a11e0d6"
       }
-     ]
+     ],
+     "defeat_policy_v5": null,
+     "profile_queries_v5": [],
+     "composition_policy_v5": null,
+     "composition_choice_v5": null,
+     "composition_expression_v5": null,
+     "composition_operands_v5": []
     },
     "artifacts": [],
-    "bundle_digest": "sha256:42429bb0e6191f6df050f11aca6c099e3c52a423dfb45f32bb31e60888bf69ee"
+    "bundle_digest": "sha256:a47de9fb552ca2dc0fd76596ab770864c7cfd61148d34a69e751db706fb163e0"
    }
   },
   "MCPEvaluateOutputV4": {
@@ -3315,7 +3339,13 @@
    "fact_attestation_refs",
    "rule_pack_ref",
    "requested_outputs",
-   "proposal_refs"
+   "proposal_refs",
+   "defeat_policy_v5",
+   "profile_queries_v5",
+   "composition_policy_v5",
+   "composition_choice_v5",
+   "composition_expression_v5",
+   "composition_operands_v5"
   ],
   "CaseArtifactV4": [
    "artifact_id",

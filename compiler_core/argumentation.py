@@ -1111,8 +1111,11 @@ def evaluate_profile_v5(
             outside = argument_set - subset
             if any((source, target) in defeat_set for source in subset for target in subset):
                 continue
+            # ULM10DungProfiles.lean Stable: every argument OUTSIDE the set is
+            # attacked BY some member INSIDE the set ((b, a) in defeats with
+            # b in the subset, a outside it) — never the reverse direction.
             if all(
-                any((member, target) in defeat_set for target in subset)
+                any((source, member) in defeat_set for source in subset)
                 for member in outside
             ):
                 stable.append(subset)
@@ -1140,6 +1143,144 @@ def evaluate_profile_v5(
     return ProfileEvaluationV5(profile, "extensions", maximal, ())
 
 
+def _v5_attackers_of(
+    argument_set: frozenset[str], defeat_set: frozenset[tuple[str, str]]
+) -> dict[str, frozenset[str]]:
+    attackers: dict[str, set[str]] = {argument: set() for argument in argument_set}
+    for source, target in defeat_set:
+        if source in attackers and target in attackers:
+            attackers[target].add(source)
+    return {argument: frozenset(values) for argument, values in attackers.items()}
+
+
+def _v5_conflict_free(
+    subset: frozenset[str], defeat_set: frozenset[tuple[str, str]]
+) -> bool:
+    return not any(source in subset and target in subset for source, target in defeat_set)
+
+
+def _v5_defends(
+    subset: frozenset[str],
+    argument: str,
+    attackers_of: dict[str, frozenset[str]],
+) -> bool:
+    return all(
+        any(defender in subset for defender in attackers_of[attacker])
+        for attacker in attackers_of[argument]
+    )
+
+
+def _v5_admissible(
+    subset: frozenset[str],
+    argument_set: frozenset[str],
+    defeat_set: frozenset[tuple[str, str]],
+    attackers_of: dict[str, frozenset[str]],
+) -> bool:
+    if not subset <= argument_set or not _v5_conflict_free(subset, defeat_set):
+        return False
+    return all(_v5_defends(subset, member, attackers_of) for member in subset)
+
+
+def _v5_characteristic(
+    subset: frozenset[str],
+    argument_set: frozenset[str],
+    attackers_of: dict[str, frozenset[str]],
+) -> frozenset[str]:
+    return frozenset(
+        argument
+        for argument in argument_set
+        if all(
+            any(defender in subset for defender in attackers_of[attacker])
+            for attacker in attackers_of[argument]
+        )
+    )
+
+
+def _v5_independent_grounded(
+    argument_set: frozenset[str], attackers_of: dict[str, frozenset[str]]
+) -> frozenset[str] | None:
+    current = frozenset()
+    for _ in range(len(argument_set) + 1):
+        nxt = _v5_characteristic(current, argument_set, attackers_of)
+        if nxt == current:
+            return current
+        current = nxt
+    return None
+
+
+def _v5_independent_extension(
+    profile: str,
+    subset: frozenset[str],
+    argument_set: frozenset[str],
+    defeat_set: frozenset[tuple[str, str]],
+    attackers_of: dict[str, frozenset[str]],
+) -> bool:
+    """Definition-driven membership test for one claimed extension.
+
+    Computed from the Dung definitions through the attacker adjacency alone;
+    this path shares no code with ``evaluate_profile_v5`` so a solver error
+    cannot certify itself.
+    """
+
+    if not subset <= argument_set:
+        return False
+    if profile == "grounded":
+        grounded = _v5_independent_grounded(argument_set, attackers_of)
+        return grounded is not None and subset == grounded
+    if not _v5_conflict_free(subset, defeat_set):
+        return False
+    if profile == "stable":
+        outside = argument_set - subset
+        return all(
+            any((source, member) in defeat_set for source in subset)
+            for member in outside
+        )
+    if not _v5_admissible(subset, argument_set, defeat_set, attackers_of):
+        return False
+    if profile == "complete":
+        return _v5_characteristic(subset, argument_set, attackers_of) == subset
+    # preferred: admissible and no admissible strict superset exists
+    outside = sorted(argument_set - subset)
+    for mask in range(1 << len(outside)):
+        superset = frozenset(subset | {
+            argument for index, argument in enumerate(outside) if mask >> index & 1
+        })
+        if superset != subset and _v5_admissible(
+            superset, argument_set, defeat_set, attackers_of
+        ):
+            return False
+    return True
+
+
+def _v5_independent_family(
+    profile: str,
+    argument_set: frozenset[str],
+    defeat_set: frozenset[tuple[str, str]],
+    attackers_of: dict[str, frozenset[str]],
+) -> frozenset[frozenset[str]]:
+    if profile == "grounded":
+        grounded = _v5_independent_grounded(argument_set, attackers_of)
+        return frozenset({grounded}) if grounded is not None else frozenset()
+    return frozenset(
+        subset
+        for mask in range(1 << len(argument_set))
+        for subset in (
+            frozenset(
+                argument
+                for index, argument in enumerate(sorted(argument_set))
+                if mask >> index & 1
+            ),
+        )
+        if _v5_independent_extension(
+            profile,
+            subset,
+            argument_set,
+            defeat_set,
+            attackers_of,
+        )
+    )
+
+
 def verify_profile_family_v5(
     profile: str,
     arguments: tuple[str, ...],
@@ -1148,27 +1289,52 @@ def verify_profile_family_v5(
     *,
     coverage: str,
 ) -> tuple[bool, str]:
-    """Independently recompute the family and compare it with a claim.
+    """Verify a claimed profile family against the definitions, not the solver.
 
-    The reference family always comes from ``evaluate_profile_v5`` re-running
-    on the same inputs, never from the producer's own output. An exact claim
-    must equal the recomputed family; a discovered-only claim must at least be
-    a subset of it (soundness) but can never be promoted to exact here.
+    The reference here is a definition-driven recomputation through the
+    attacker adjacency (conflict-freedom, defense, the characteristic function
+    and the stable all-outside-attack condition) that never calls
+    ``evaluate_profile_v5``. A wrong solver result therefore cannot pass: every
+    claimed extension must be a genuine extension of the semantics, and an
+    ``exact`` claim must additionally equal the independently recomputed full
+    family — omissions, non-maximal preferred sets and over-budget
+    fake-completeness claims are all rejected. Budget exhaustion fails closed.
     """
 
     if coverage not in ("exact", "discovered_only"):
         return False, "coverage_unknown"
-    expected = evaluate_profile_v5(profile, arguments, defeats)
-    if expected.kind == "incomplete":
+    if profile not in ("grounded", "preferred", "stable", "complete"):
+        return False, "profile_unknown"
+    if len(claimed_extensions) != len(set(claimed_extensions)):
+        return False, "family_mismatch"
+    if any(type(subset) is not frozenset for subset in claimed_extensions):
+        return False, "family_mismatch"
+    if len(arguments) > HARD_ENUMERATION_ARGUMENT_LIMIT_V5:
         return False, "reference_incomplete"
-    expected_sets = set(expected.extensions) if expected.kind == "extensions" else set()
-    claimed_sets = set(claimed_extensions)
-    if coverage == "exact":
-        if expected.kind == "no_extension":
-            return (not claimed_sets), "family_not_empty"
-        return claimed_sets == expected_sets, "family_mismatch"
-    if not claimed_sets <= expected_sets:
-        return False, "discovered_unsound"
-    return True, ""
+
+    argument_set = frozenset(arguments)
+    defeat_set = frozenset(defeats)
+    attackers_of = _v5_attackers_of(argument_set, defeat_set)
+    total = 1 << len(argument_set)
+    subset_budget = min(DEFAULT_ENUMERATION_SUBSET_LIMIT_V5, HARD_ENUMERATION_SUBSET_LIMIT_V5)
+    if total > subset_budget:
+        # Neither membership-maximality nor family completeness is verifiable
+        # within the budget; no claim about this framework is accepted.
+        return False, "reference_incomplete"
+
+    for claimed in claimed_extensions:
+        if not _v5_independent_extension(
+            profile, claimed, argument_set, defeat_set, attackers_of
+        ):
+            return False, "discovered_unsound"
+    if coverage == "discovered_only":
+        return True, ""
+
+    expected = _v5_independent_family(profile, argument_set, defeat_set, attackers_of)
+    if profile == "grounded" and expected == frozenset():
+        return False, "reference_incomplete"
+    if set(claimed_extensions) == expected:
+        return True, ""
+    return False, "family_mismatch"
 
 

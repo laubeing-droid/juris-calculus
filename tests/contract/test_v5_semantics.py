@@ -217,3 +217,87 @@ def test_jt27_branch_keys_isolate_scenarios_profiles_and_extensions() -> None:
     other_profile = compose_branch_key_v5("s1", ("x",), "preferred", frozenset({"a"}))
     other_extension = compose_branch_key_v5("s1", ("x",), "grounded", frozenset({"b"}))
     assert len({base, other_scenario, other_assumptions, other_profile, other_extension}) == 5
+
+
+# ---------------------------------------------------------------------------
+# Audit regression: the family verifier must be definition-driven, never a
+# re-run of the production solver. With the historical inverted-stable solver
+# the wrong family {{b}} passed and the correct family {{a}} was rejected for
+# the minimal a->b counterexample; these tests pin the corrected behaviour.
+# ---------------------------------------------------------------------------
+
+
+def test_audit_verifier_rejects_wrong_stable_family_and_accepts_correct_one() -> None:
+    defeats = (("a", "b"),)
+    ok, reason = verify_profile_family_v5(
+        "stable", ("a", "b"), defeats, (frozenset({"b"}),), coverage="exact",
+    )
+    assert not ok
+    ok, reason = verify_profile_family_v5(
+        "stable", ("a", "b"), defeats, (frozenset({"a"}),), coverage="exact",
+    )
+    assert ok and not reason
+
+
+def test_audit_verifier_is_independent_of_the_production_solver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import compiler_core.argumentation as argumentation_module
+
+    production = argumentation_module.evaluate_profile_v5
+
+    def lying_solver(profile, arguments, defeats, **kwargs):
+        # Whatever the solver returns, the verifier must judge the claim
+        # against the Dung definitions, not against this output.
+        return argumentation_module.ProfileEvaluationV5(
+            profile, "extensions", (frozenset({"b"}),), ()
+        )
+
+    monkeypatch.setattr(argumentation_module, "evaluate_profile_v5", lying_solver)
+    try:
+        ok, reason = verify_profile_family_v5(
+            "stable", ("a", "b"), (("a", "b"),), (frozenset({"b"}),),
+            coverage="exact",
+        )
+        assert not ok
+        ok, reason = verify_profile_family_v5(
+            "stable", ("a", "b"), (("a", "b"),), (frozenset({"a"}),),
+            coverage="exact",
+        )
+        assert ok and not reason
+        # An omission under exact coverage is still caught without the solver.
+        ok, reason = verify_profile_family_v5(
+            "preferred", ("a", "b"), (("a", "b"), ("b", "a")), (frozenset({"a"}),),
+            coverage="exact",
+        )
+        assert not ok and reason == "family_mismatch"
+    finally:
+        monkeypatch.setattr(argumentation_module, "evaluate_profile_v5", production)
+
+
+def test_audit_verifier_rejects_omissions_intruders_and_budget_abuse() -> None:
+    defeats = (("a", "b"), ("b", "a"))
+    # preferred family is {{a},{b}}; omitting {b} fails the exact family check.
+    ok, reason = verify_profile_family_v5(
+        "preferred", ("a", "b"), defeats, (frozenset({"a"}),), coverage="exact",
+    )
+    assert not ok and reason == "family_mismatch"
+    # A stable claim for a framework without any stable extension is rejected.
+    cycle = (("a", "b"), ("b", "c"), ("c", "a"))
+    ok, reason = verify_profile_family_v5(
+        "stable", ("a", "b", "c"), cycle, (), coverage="exact",
+    )
+    assert ok and not reason
+    ok, reason = verify_profile_family_v5(
+        "stable", ("a", "b", "c"), cycle, (frozenset({"a"}),), coverage="exact",
+    )
+    assert not ok
+    # Beyond the enumeration budget no exact (complete) claim is verifiable.
+    big = tuple(f"n{index}" for index in range(17))
+    ok, reason = verify_profile_family_v5("stable", big, (), (), coverage="exact")
+    assert not ok and reason == "reference_incomplete"
+    # Duplicate claimed sets cannot pass as a family.
+    ok, reason = verify_profile_family_v5(
+        "stable", ("a",), (), (frozenset({"a"}), frozenset({"a"})), coverage="exact",
+    )
+    assert not ok
