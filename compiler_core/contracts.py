@@ -935,6 +935,14 @@ class CaseRequestV4(V4Contract):
     rule_pack_ref: ContentRefV4
     requested_outputs: tuple[RequestedOutputV4, ...]
     proposal_refs: tuple[ContentRefV4, ...]
+    # Optional V5 profile stage: absent by default; when present it must be a
+    # closed group (policy <-> queries, policy <-> choice, choice -> expression).
+    defeat_policy_v5: DefeatPolicyV5 | None = None
+    profile_queries_v5: tuple[QueryRequestV5, ...] = ()
+    composition_policy_v5: CompositionPolicyV5 | None = None
+    composition_choice_v5: CompositionChoiceV5 | None = None
+    composition_expression_v5: ExactExpressionV5 | None = None
+    composition_operands_v5: tuple[ExactExpressionV5, ...] = ()
 
     def _validate(self) -> None:
         _nonempty(self.request_id, "CaseRequestV4.request_id")
@@ -956,6 +964,32 @@ class CaseRequestV4(V4Contract):
         output_kinds = tuple(item.kind for item in self.requested_outputs)
         if len(output_kinds) != len(set(output_kinds)):
             _fail("DUPLICATE_REQUESTED_OUTPUT", "requested_outputs contains a duplicate kind")
+        if (self.defeat_policy_v5 is None) != (not self.profile_queries_v5):
+            _fail(
+                "V5_STAGE_PAIRING",
+                "profile_queries_v5 and defeat_policy_v5 are all-or-nothing",
+            )
+        if self.profile_queries_v5:
+            if len(self.profile_queries_v5) > 64:
+                _fail("V5_STAGE_LIMIT", "profile_queries_v5 exceeds 64 queries")
+            query_ids = [item.query_id for item in self.profile_queries_v5]
+            if len(query_ids) != len(set(query_ids)):
+                _fail("DUPLICATE_REFERENCE", "profile_queries_v5 repeats a query_id")
+        if (self.composition_choice_v5 is None) != (self.composition_policy_v5 is None):
+            _fail(
+                "V5_STAGE_PAIRING",
+                "composition_choice_v5 and composition_policy_v5 are all-or-nothing",
+            )
+        if self.composition_expression_v5 is not None and self.composition_choice_v5 is None:
+            _fail(
+                "V5_STAGE_PAIRING",
+                "composition_expression_v5 requires the composition policy and choice",
+            )
+        if self.composition_operands_v5 and self.composition_expression_v5 is None:
+            _fail(
+                "V5_STAGE_PAIRING",
+                "composition_operands_v5 requires a composition expression",
+            )
 
     @classmethod
     def from_json_bytes(

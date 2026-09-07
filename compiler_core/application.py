@@ -11,11 +11,18 @@ from threading import RLock
 from compiler_core.argumentation import (
     ArgumentGraphV4,
     ArgumentationV4Error,
+    AttackRecordV5,
     PermissionRelationV4,
+    ProfileEvaluationV5,
+    _effective_attacks_v4,
     argument_ref_v4,
     evaluate_argument_graph,
+    evaluate_profile_v5,
+    resolve_defeats_v5,
+    verify_profile_family_v5,
 )
 from compiler_core.artifact_store import ArtifactResolverV4
+from compiler_core.assurance import AssuranceV5Error, combine_assurance_v5
 from compiler_core.audit_bundle import (
     AuditArtifactV4,
     AuditBundleV4Error,
@@ -41,12 +48,14 @@ from compiler_core.certificates import CertificateIssuerV4
 from compiler_core.contracts import (
     ArgumentV4,
     AttackV4,
+    ATTACK_KIND_MIGRATION_V5,
     BranchResultV4,
     CanonicalTimeV4,
     CaseRequestV4,
     CertificateKindV4,
     ClaimResultV4,
     CompletenessStateV4,
+    CompositionCandidateV5,
     ContentRefV4,
     ContractV4Error,
     DecisionStatusV4,
@@ -54,10 +63,13 @@ from compiler_core.contracts import (
     EvaluationEnvelopeV4,
     EvidenceManifestV4,
     ExecutionStatusV4,
+    ExactExpressionV5,
+    AssuranceEnvelopeV5,
     FactAttestationV4,
     FactCandidateV4,
     InterruptionStateV4,
     MissingFactRequirementV4,
+    OpenObligationEntryV5,
     PriorityEdgeV4,
     ProofReceiptV4,
     ResourceLimitsV4,
@@ -69,6 +81,11 @@ from compiler_core.contracts import (
     SignatureEnvelopeV4,
     SourceBundleV4,
     TransportOutcomeV4,
+)
+from compiler_core.domain_composition import (
+    CompositionV5Error,
+    evaluate_expression_v5,
+    validate_composition_choice_v5,
 )
 from compiler_core.fact_admission import (
     CASE_EVIDENCE_SCOPE,
@@ -84,6 +101,13 @@ from compiler_core.fact_admission import (
     RUN_IDENTITY_SCOPE,
     FactAdmissionServiceV4,
     case_request_binding_ref,
+)
+from compiler_core.procedure import ProcedureV5Error, adjudicate_v5
+from compiler_core.query_semantics import (
+    QueryInputV5,
+    QuerySemanticsV5Error,
+    compose_branch_key_v5,
+    evaluate_query_v5,
 )
 from compiler_core.independent_checker import (
     ARGUMENT_GRAPH_KIND,
@@ -174,6 +198,7 @@ class _ArgumentOutcome:
     attack_refs: tuple[ContentRefV4, ...]
     exception_refs: tuple[ContentRefV4, ...]
     permission_refs: tuple[ContentRefV4, ...]
+    graph: ArgumentGraphV4 | None = None
 
 
 _EXPECTED_FAILURES = (
@@ -196,6 +221,45 @@ _RETRYABLE_CODES = frozenset({
     "STORAGE_IO",
     "STORAGE_PERMISSION",
 })
+
+PROFILE_STAGE_KIND_V5 = "profile-stage-v5"
+PROFILE_MAPPING_VERSION_V5 = "jc-aaf-mapping-v5/1"
+PROFILE_STAGE_SCHEMA_V5 = "jc/profile-stage-v5/1.0"
+
+_V5_STAGE_ERRORS = (
+    ArgumentationV4Error,
+    QuerySemanticsV5Error,
+    ProcedureV5Error,
+    CompositionV5Error,
+    AssuranceV5Error,
+)
+
+
+def _v5_scenario_ref(binding: DigestV4, query_id: str) -> DigestV4:
+    """Scenario identity a public V5 query must cite for this request."""
+
+    return digest_value({
+        "request_binding": str(binding),
+        "scenario_id": query_id,
+        "assumptions": [],
+    })
+
+
+def _v5_branch_identity(
+    request_id: str, profile: str, extension: frozenset[str]
+) -> tuple[str, DigestV4]:
+    """Deterministic branch id and branch ref for one evaluated extension."""
+
+    scenario_id, assumptions, profile_key = compose_branch_key_v5(
+        request_id, (), profile, extension
+    )
+    branch_ref = digest_value({
+        "scenario_id": scenario_id,
+        "assumptions": assumptions,
+        "branch": profile_key,
+    })
+    outcome_id = f"{profile}:{branch_ref.hex}"
+    return outcome_id, branch_ref
 
 
 def _exception_code(exc: Exception) -> str:
@@ -227,6 +291,36 @@ def _correlation_id(
         "stage": stage,
         "code": code,
     }).hex[:24]
+
+
+def _v5_envelope(
+    binding: DigestV4,
+    profile: str,
+    *,
+    spec: str,
+    run_check: str,
+    obligations: tuple[OpenObligationEntryV5, ...],
+    notices: tuple[OpenObligationEntryV5, ...],
+) -> "AssuranceEnvelopeV5":
+    """Build one ULM14 envelope for the V5 stage; implementation stays crossCheckOnly."""
+
+    payload = {
+        "scope_request_ref": str(binding),
+        "scope_profile": profile,
+        "spec": spec,
+        "implementation": "crossCheckOnly",
+        "run_check": run_check,
+        "coverage_open_obligations": [item.to_dict() for item in obligations],
+        "coverage_not_applicable": [],
+        "pending_refs": [],
+        "assumed_refs": [],
+        "open_spec_refs": [],
+        "formal_assumption_refs": [],
+        "tcb_refs": [],
+        "notices": [item.to_dict() for item in notices],
+    }
+    payload["assurance_digest"] = str(digest_value(payload))
+    return AssuranceEnvelopeV5.from_dict(payload)
 
 
 def _ref_key(reference: ContentRefV4) -> tuple[str, str]:
@@ -1078,6 +1172,295 @@ class ApplicationV4:
             attack_refs,
             exception_refs,
             permission_refs,
+            graph,
+        )
+
+    def _profile_stage_v5(
+        self,
+        request: CaseRequestV4,
+        checked: CheckerExecutionV4,
+        argument: _ArgumentOutcome,
+    ) -> ContentRefV4:
+        """Run the public V5 profile stage inside the sole formal spine.
+
+        Takes the checker-verified argument graph of the current run, resolves
+        defeats under the request's admitted policy, evaluates every requested
+        profile, gates each complete family through the independent
+        definition-driven verifier, and derives query statuses, procedure
+        consequences, same-branch composition and per-profile assurance
+        envelopes. The deterministic stage document is registered as an
+        auditable artifact and referenced from the run result.
+        """
+
+        graph = argument.graph
+        if graph is None:
+            raise ContractV4Error(
+                "APPLICATION_V5_STAGE",
+                "profile queries require the certified AAF argument provider",
+            )
+        policy = request.defeat_policy_v5
+        queries = request.profile_queries_v5
+        if policy is None or not queries:
+            raise ContractV4Error(
+                "APPLICATION_V5_STAGE", "profile stage requires policy and queries"
+            )
+        binding = case_request_binding_ref(request).digest
+        try:
+            if policy.request_ref != binding:
+                raise ContractV4Error(
+                    "APPLICATION_V5_STAGE",
+                    "defeat_policy_v5 does not bind the request identity",
+                )
+            argument_ids = tuple(sorted(item.argument_id for item in graph.arguments))
+            claim_by_argument = {
+                item.argument_id: str(item.claim_ref.digest) for item in graph.arguments
+            }
+            known_claims = frozenset(claim_by_argument.values())
+            for query in queries:
+                if query.mapping_version != PROFILE_MAPPING_VERSION_V5:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"query {query.query_id!r} cites mapping {query.mapping_version!r}; "
+                        f"this chain provides {PROFILE_MAPPING_VERSION_V5}",
+                    )
+                if query.scenario_ref != _v5_scenario_ref(binding, query.query_id):
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"query {query.query_id!r} cites a scenario outside this request",
+                    )
+                if query.claim not in known_claims:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        f"query {query.query_id!r} claims an argument conclusion "
+                        "outside the checked graph",
+                    )
+
+            id_by_ref = {
+                argument_ref_v4(item): item.argument_id for item in graph.arguments
+            }
+            effective = _effective_attacks_v4(graph)
+            attacks: list[AttackRecordV5] = []
+            unmapped_priorities = 0
+            for attack in effective:
+                kind = ATTACK_KIND_MIGRATION_V5.get(attack.attack_type)
+                if kind is None:
+                    unmapped_priorities += 1
+                    continue
+                attacks.append(AttackRecordV5(
+                    attack.attack_id,
+                    id_by_ref[attack.attacker_ref],
+                    id_by_ref[attack.target_ref],
+                    kind,
+                    attack.attack_id,
+                ))
+            defeats = resolve_defeats_v5(
+                argument_ids,
+                tuple(attacks),
+                policy_id=policy.policy_id,
+                policy_version=policy.policy_version,
+                allowed_kinds=policy.allowed_kinds,
+                request_ref=str(binding),
+            )
+
+            profiles = sorted({query.profile for query in queries})
+            evaluations: dict[str, ProfileEvaluationV5] = {}
+            for profile in profiles:
+                evaluation = evaluate_profile_v5(profile, argument_ids, defeats)
+                evaluations[profile] = evaluation
+                if evaluation.claims_complete_family:
+                    verified, reason = verify_profile_family_v5(
+                        profile,
+                        argument_ids,
+                        defeats,
+                        evaluation.extensions,
+                        coverage="exact",
+                    )
+                    if not verified:
+                        raise ContractV4Error(
+                            "APPLICATION_V5_VERIFICATION",
+                            f"independent verification rejected the {profile} "
+                            f"family ({reason}); refusing to certify the solve",
+                        )
+
+            notices: list[OpenObligationEntryV5] = []
+            if unmapped_priorities:
+                notices.append(OpenObligationEntryV5(
+                    "priority_edges_not_mapped",
+                    f"{unmapped_priorities} priority-derived edges are not V5 "
+                    "defeats without an admitted policy kind",
+                ))
+
+            query_rows: list[dict[str, object]] = []
+            procedure_rows: list[dict[str, object]] = []
+            envelope_by_profile: dict[str, AssuranceEnvelopeV5] = {}
+            candidates: list[CompositionCandidateV5] = []
+            for profile in profiles:
+                evaluation = evaluations[profile]
+                for extension in evaluation.extensions:
+                    outcome_id, branch_ref = _v5_branch_identity(
+                        request.request_id, profile, extension
+                    )
+                    candidates.append(CompositionCandidateV5(
+                        outcome_id, binding, branch_ref,
+                    ))
+            for query in queries:
+                evaluation = evaluations[query.profile]
+                status = evaluate_query_v5(QueryInputV5(
+                    query_id=query.query_id,
+                    claim=query.claim,
+                    profile=query.profile,
+                    evaluation=evaluation,
+                    argument_claims=claim_by_argument,
+                ))
+                query_rows.append({
+                    "query_id": query.query_id,
+                    "profile": query.profile,
+                    "claim": query.claim,
+                    **{
+                        field: getattr(status, field)
+                        for field in (
+                            "common", "possible", "common_refuted", "possibly_refuted",
+                            "undecided_some", "inconsistent_some", "excluded", "gate",
+                        )
+                    },
+                    "acceptance_witnesses": list(status.acceptance_witnesses),
+                    "refutation_witnesses": list(status.refutation_witnesses),
+                })
+                procedure = adjudicate_v5(
+                    request_ref=binding,
+                    evaluation_kind=evaluation.kind,
+                    evaluation_open_obligations=evaluation.open_obligations,
+                )
+                procedure_rows.append({
+                    "query_id": query.query_id,
+                    **procedure.to_dict(),
+                })
+                envelope = _v5_envelope(
+                    binding,
+                    query.profile,
+                    spec=(
+                        "openObligations"
+                        if evaluation.kind == "incomplete" else "proved"
+                    ),
+                    run_check="checked",
+                    obligations=evaluation.open_obligations,
+                    notices=tuple(notices),
+                )
+                previous = envelope_by_profile.get(query.profile)
+                envelope_by_profile[query.profile] = (
+                    envelope if previous is None
+                    else combine_assurance_v5(previous, envelope)
+                )
+
+            composition_document: dict[str, object] | None = None
+            if request.composition_choice_v5 is not None:
+                choice = request.composition_choice_v5
+                policy_v5 = request.composition_policy_v5
+                expression = request.composition_expression_v5
+                if policy_v5 is None or expression is None:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        "composition choice requires its policy and expression",
+                    )
+                if policy_v5.request_ref != binding or choice.request_ref != binding:
+                    raise ContractV4Error(
+                        "APPLICATION_V5_STAGE",
+                        "composition policy or choice does not bind the request identity",
+                    )
+                validate_composition_choice_v5(
+                    tuple(candidates),
+                    policy_v5,
+                    choice,
+                    allowed_outcome_ids=frozenset(item.outcome_id for item in candidates),
+                )
+                operands: dict[str, ExactExpressionV5] = {}
+                for node in request.composition_operands_v5:
+                    key = str(node.canonical_digest())
+                    if key in operands:
+                        raise ContractV4Error(
+                            "APPLICATION_V5_STAGE", "composition operands repeat a digest"
+                        )
+                    operands[key] = node
+                exact = evaluate_expression_v5(expression, operands)
+                rounding: tuple[OpenObligationEntryV5, ...] = (
+                    (OpenObligationEntryV5(
+                        "rounding_required", "exact result is not integral"
+                    ),)
+                    if exact.rounding_required else ()
+                )
+                composition_document = {
+                    "outcome_ids": sorted(item.outcome_id for item in choice.selected),
+                    "value": exact.value.to_dict(),
+                    "rounding_required": exact.rounding_required,
+                    "open_obligations": [item.to_dict() for item in rounding],
+                }
+                if rounding:
+                    for profile in list(envelope_by_profile):
+                        merged = envelope_by_profile[profile]
+                        for obligation in rounding:
+                            merged = combine_assurance_v5(
+                                merged,
+                                _v5_envelope(
+                                    binding,
+                                    profile,
+                                    spec="openObligations",
+                                    run_check="checked",
+                                    obligations=(obligation,),
+                                    notices=(),
+                                ),
+                            )
+                        envelope_by_profile[profile] = merged
+
+            stage_document = {
+                "schema_version": PROFILE_STAGE_SCHEMA_V5,
+                "request_binding": str(binding),
+                "mapping_version": PROFILE_MAPPING_VERSION_V5,
+                "argument_graph_ref": checked.receipt.argument_graph_ref.to_dict(),
+                "defeat_policy": policy.to_dict(),
+                "arguments": list(argument_ids),
+                "attacks": sorted(
+                    [item.attacker, item.target, item.kind] for item in attacks
+                ),
+                "defeats": [list(pair) for pair in defeats],
+                "profiles": {
+                    profile: {
+                        "kind": evaluations[profile].kind,
+                        "extensions": [
+                            sorted(extension)
+                            for extension in evaluations[profile].extensions
+                        ],
+                        "open_obligations": [
+                            [code, detail]
+                            for code, detail in evaluations[profile].open_obligations
+                        ],
+                        "verification": {
+                            "coverage": (
+                                "exact"
+                                if evaluations[profile].claims_complete_family
+                                else "incomplete"
+                            ),
+                            "verified": evaluations[profile].claims_complete_family,
+                            "reason": "",
+                        },
+                        "assurance": envelope_by_profile[profile].to_dict(),
+                    }
+                    for profile in profiles
+                },
+                "queries": query_rows,
+                "procedures": procedure_rows,
+                "composition": composition_document,
+            }
+        except _V5_STAGE_ERRORS as exc:
+            raise ContractV4Error("APPLICATION_V5_STAGE", str(exc)) from exc
+        raw = canonical_bytes(stage_document)
+        reference = ContentRefV4(PROFILE_STAGE_KIND_V5, DigestV4.from_bytes(raw))
+        return self._resolver.register_bytes(
+            artifact_id=f"{PROFILE_STAGE_KIND_V5}-{reference.digest.hex}",
+            content_ref=reference,
+            artifact_kind=PROFILE_STAGE_KIND_V5,
+            media_type=JSON_MEDIA_TYPE,
+            scope=CHECKER_SCOPE,
+            content=raw,
         )
 
     def _proof_receipt(
@@ -1781,6 +2164,9 @@ class ApplicationV4:
                 request, run, run_identity_ref, result, events, now=now, failure=failure
             )
         if argument.state in {"empty", "missing"}:
+            reasons = [f"argument_{argument.state}"]
+            if request.profile_queries_v5:
+                reasons.append("profile_queries_without_arguments")
             result = self._nonformal_result(
                 request,
                 run,
@@ -1791,12 +2177,34 @@ class ApplicationV4:
                 decision=DecisionStatusV4.UNKNOWN,
                 execution=ExecutionStatusV4.COMPLETED,
                 backend_execution=primary,
-                reasons=(f"argument_{argument.state}",),
+                reasons=tuple(reasons),
                 extra_receipts=(primary.receipt_ref, checked.receipt_ref),
             )
             return self._finish(
                 request, run, run_identity_ref, result, events, now=now, failure=None
             )
+        profile_stage_ref: ContentRefV4 | None = None
+        if request.profile_queries_v5:
+            try:
+                profile_stage_ref = self._profile_stage_v5(request, checked, argument)
+            except _EXPECTED_FAILURES as exc:
+                failure = self._failure("profile-v5", exc)
+                result = self._nonformal_result(
+                    request,
+                    run,
+                    run_identity_ref,
+                    pack,
+                    facts,
+                    selected,
+                    failure=failure,
+                    execution=ExecutionStatusV4.ENGINE_ERROR,
+                    backend_execution=primary,
+                    extra_receipts=(primary.receipt_ref, checked.receipt_ref),
+                )
+                return self._finish(
+                    request, run, run_identity_ref, result, events, now=now, failure=failure
+                )
+            events.append(("profile-v5", profile_stage_ref))
         try:
             result = self._formal_result(
                 request,
