@@ -13,7 +13,7 @@ CURRENT = (
     ROOT / "CHANGELOG.md",
     ROOT / "HANDOFF.md",
     ROOT / "AGENTS.md",
-    ROOT / "docs" / "README.md",
+    ROOT / "docs" / "INDEX.md",
     ROOT / "docs" / "operations" / "RELEASE_V4.md",
 )
 
@@ -36,7 +36,7 @@ def test_historical_guides_are_not_current_authority() -> None:
     joined = "\n".join(path.read_text(encoding="utf-8") for path in CURRENT)
     assert "MIGRATION_V2_TO_V3.md" not in joined
     assert "Legacy corpora are available" not in joined
-    docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs" / "INDEX.md").read_text(encoding="utf-8")
     assert "Historical task definitions (not current authority)" in docs_index
     assert "V3_HISTORICAL_REPLAY.md" not in docs_index
     assert not (ROOT / "docs/operations/V3_HISTORICAL_REPLAY.md").exists()
@@ -57,7 +57,7 @@ def test_release_docs_do_not_claim_external_promotion_is_complete() -> None:
 
 def test_quick_start_and_document_index_are_current() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs/INDEX.md").read_text(encoding="utf-8")
     assert "python -m pip install ." in readme
     assert "pip install .juris_calculus" not in readme
     for relative in (

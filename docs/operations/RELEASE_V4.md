@@ -1,5 +1,7 @@
 # V4 build-once release and promotion
 
+> **历史记录（2026-09 起）。** 本页是 V4 时代的发布与晋级机制记录，保留原始表述、不随 V5 更新；当前发布流程见 [V5 发布流程](RELEASE_V5.md)。
+
 版本权威是 `compiler_core/version.py`。公共合同是 `schemas/jc-v5.schema.json` 与 `mcp_manifest.json`。
 
 ## CI 构建产物
@@ -23,4 +25,4 @@
 
 本页只描述发布机制。本地或 CI 验收不等于生产发布；远程晋级必须满足上述条件并获得当次操作授权。
 
-[Current remediation status](../../remediation/v4/STATUS.md) · [Rule packs](../contracts/RULE_PACKS.md) · [Audit bundle](../contracts/AUDIT_BUNDLE.md) · [Documentation index](../README.md)
+[Current remediation status](../../remediation/v4/STATUS.md) · [Rule packs](../contracts/RULE_PACKS.md) · [Audit bundle](../contracts/AUDIT_BUNDLE.md) · [Documentation index](../INDEX.md)

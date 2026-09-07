@@ -37,5 +37,5 @@ not Lean proofs and do not expand the formal claim surface.
 
 - [Contract authority map](../architecture/contract-authority-v4.md)
 - [Runtime path inventory](../architecture/runtime-path-inventory.md)
-- [Object and state matrix](V4_OBJECT_STATE_MATRIX.md)
-- [Documentation index](../README.md)
+- [V5 object and state matrix (current)](V5_OBJECT_STATE_MATRIX.md)
+- [Documentation index](../INDEX.md)

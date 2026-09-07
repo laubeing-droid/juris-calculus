@@ -21,4 +21,4 @@ Mermaid maps existing graph nodes and edges only. HTML is opt-in, escapes conten
 - [Audit bundle and replay](AUDIT_BUNDLE.md)
 - [CLI reference](../guides/CLI.md)
 - [Input and semantic boundary](INPUT_AND_SEMANTIC_BOUNDARY.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

@@ -27,4 +27,4 @@ unknown, disputed, or user-assumed material into verified facts.
 - [CLI reference](../guides/CLI.md)
 - [Rule packs](../contracts/RULE_PACKS.md)
 - [Input and semantic boundary](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

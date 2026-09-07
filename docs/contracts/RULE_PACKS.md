@@ -1,8 +1,8 @@
 # Rule packs and rule schema
 
-A signed V4 rule-pack manifest binds pack identity, jurisdiction, governing dates,
+A signed rule-pack manifest binds pack identity, jurisdiction, governing dates,
 source snapshots, exact rule/config references, release evidence, and signature.
-Pack admission occurs inside the V4 application; the CLI has no separate mutable
+Pack admission occurs inside the current application; the CLI has no separate mutable
 pack-management command.
 
 ```powershell
@@ -37,5 +37,5 @@ runtime contracts and validation tests are the implementation authority.
 
 - [Input and semantic boundary](INPUT_AND_SEMANTIC_BOUNDARY.md)
 - [External protocol](EXTERNAL_PROTOCOL.md)
-- [Release boundary](../operations/RELEASE_V4.md)
-- [Current remediation status](../../remediation/v4/STATUS.md)
+- [Release procedure](../operations/RELEASE_V5.md)
+- [V4 remediation status (historical)](../../remediation/v4/STATUS.md)

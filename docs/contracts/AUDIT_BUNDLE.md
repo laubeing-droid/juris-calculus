@@ -38,5 +38,5 @@ JC does not automatically delete bundles or pack caches. Retention and litigatio
 
 - [CLI reference](../guides/CLI.md)
 - [Rendering and neutral output](rendering-and-profiles.md)
-- [Release boundary](../operations/RELEASE_V4.md)
-- [Documentation index](../README.md)
+- [Release procedure](../operations/RELEASE_V5.md)
+- [Documentation index](../INDEX.md)

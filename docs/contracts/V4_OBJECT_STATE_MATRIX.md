@@ -1,5 +1,7 @@
 # V4 formal object and state authority
 
+> **历史记录（2026-09 起）。** 本页冻结 V4 时代 73 类型注册表的 W0 验收权威，不再代表当前系统。当前权威是 [V5 对象与状态矩阵](V5_OBJECT_STATE_MATRIX.md)（100 类型，含 25 个 V5 对象组）；六轴终态分类器的语义由 V5 矩阵继承并扩展。
+
 `tests/fixtures/v4_contract/object-state-matrix.json` is the W0 authority for the target V4 public type registry and terminal state classifier. Runtime code does not become conformant merely because an older class has a similar name.
 
 The registry freezes 73 formal types: the prior 56 non-MCP contract types, four additional state-envelope types needed to make the matrix explicit, and input/output/error envelopes for each of the four MCP tools plus `ToolSpecV4`. Every entry with `schema_kind=object` must emit JSON Schema `additionalProperties=false`, and its Python decoder must reject unknown fields. Closed string enums and string patterns use `additional_properties=null` because that keyword does not apply to non-objects.
@@ -31,4 +33,4 @@ receipt, and release gates.
 - [Input and semantic boundary](INPUT_AND_SEMANTIC_BOUNDARY.md)
 - [Formal runtime conformance](FORMAL_RUNTIME_CONFORMANCE.md)
 - [Contract authority map](../architecture/contract-authority-v4.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

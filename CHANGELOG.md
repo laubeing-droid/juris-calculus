@@ -1,6 +1,9 @@
 # Changelog
 
-## 5.0.0 — V5 upgrade (JC-UPGRADE-20260906-01, in progress on upgrade/ulm-bound-runtime-v5)
+## 5.0.0 — V5 upgrade (JC-UPGRADE-20260906-01, released 2026-09-07)
+
+- 2026-09-07：tag `v5.0.0` 签名发布——CI run 34150936429 全绿，promote 任务以生产 Ed25519 密钥完成签名并创建 GitHub Release；provenance `BYTE_IDENTICAL_REBUILD`，绑定源提交 `12d4ddd`。`production_release_claimed=false` 保持设计语义：生产采用（部署激活）是宿主的显式决定。
+- 2026-09-07：独立核查（对象为固定提交 `7b75b42`）三项阻断修复——stable 攻击方向、定义驱动独立语义校验器、V5 新能力接入唯一正式主链（详见归档报告 `docs/archive/FINAL_UPGRADE_REPORT.md` §八）。
 
 - 公共协议升级为 `jc/5.0`，引擎 major 锁定为 5；正式输入拒绝 `jc/4.0` 与 4.x 引擎版本。
 - `compiler_core/contracts.py` 新增 25 个 V5 封闭对象组（情景/查询、前提、结构化论证、七类攻击与 defeat 策略、扩展族与三态求解结果、分支、程序四路输出、量纲精确表达式、组合选择、保证信封、增量 delta、只读经验结果），注册表扩至 100 个类型。

@@ -1,5 +1,7 @@
 # Input and semantic boundary
 
+本页回答：什么能进入正式推理、什么永远不能。面向集成方与审计者。
+
 ```text
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
@@ -33,4 +35,4 @@ Report the command, result, affected boundary, remaining risk, and any upstream-
 - [Formal runtime conformance](FORMAL_RUNTIME_CONFORMANCE.md)
 - [Rule packs](RULE_PACKS.md)
 - [External protocol](EXTERNAL_PROTOCOL.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

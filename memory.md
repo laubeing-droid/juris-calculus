@@ -2,7 +2,7 @@
 
 ## 当前边界
 
-- JC 当前只维护 V4：结构化请求 -> 确定性准入 -> application service -> canonical result、certificate、audit bundle、graph 和 replay。
+- JC 当前只维护 V5（公共协议 jc/5.0，版本 5.0.0，已签名发布）：结构化请求 -> 确定性准入 -> application service -> canonical result、certificate、audit bundle、graph 和 replay。
 - CLI、Python 与四工具 stdio MCP 共用同一合同和 application service。
 - 私有案件、律师工作流、诉讼策略、OCR/模型流水线、生产密钥和专有规则包均在仓库外。
 - 仓库内测试、wheel 和 test-only provenance 只能证明候选产物可复现，不能证明法律结论正确或生产已经部署。
@@ -10,7 +10,7 @@
 ## 正式权威
 
 - 版本：`compiler_core/version.py`。
-- 合同：`compiler_core/contracts.py` 与 `schemas/jc-v4.schema.json`。
+- 合同：`compiler_core/contracts.py` 与 `schemas/jc-v5.schema.json`。
 - application：`compiler_core/application.py`。
 - certificate issuer：`compiler_core/certificates.py`。
 - independent checker：`compiler_core/independent_checker.py`。

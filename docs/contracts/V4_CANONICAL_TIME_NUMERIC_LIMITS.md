@@ -1,5 +1,7 @@
 # V4 canonical identity, time, numeric, limits, and platform contract
 
+本页规则在当前协议 jc/5.0 下继续有效；文件名中的 V4 指合同对象代次命名（`DigestV4` 等），所引 fixture 仍是当前权威。本页覆盖范围：规范化字节与摘要、时间戳、数值、资源上限与目标平台。
+
 Machine authority is split by concern without duplicating values:
 
 - `tests/fixtures/golden/jcs-v4-vectors.json` freezes canonical bytes and digest vectors.
@@ -62,4 +64,4 @@ The target runtime matrix is Ubuntu and Windows on Python 3.11 and 3.12. Node 22
 - [Object and state matrix](V4_OBJECT_STATE_MATRIX.md)
 - [Audit-bundle contract](AUDIT_BUNDLE.md)
 - [Runtime path inventory](../architecture/runtime-path-inventory.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

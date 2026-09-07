@@ -1,6 +1,6 @@
 # V5 发布流程（JC-UPGRADE-20260906-01）
 
-状态：**BUILD_PENDING_FINAL_ACCEPTANCE** —— 本文档描述 V5 候选版本的构建、验收与撤回流程；不声明发布已完成，也不构成现实法律正确性认证。
+状态：**v5.0.0 已签名发布（2026-09-07）** —— tag `v5.0.0` 触发 CI run 34150936429 全绿，promote 任务以生产密钥完成 Ed25519 签名并创建 GitHub Release，provenance 为 `BYTE_IDENTICAL_REBUILD`、绑定源提交 `12d4ddd`。签名与发布是工程事实；`production_release_claimed=false`、`promotion_status=PENDING_TAG_VERIFICATION`，生产采用（部署激活）仍是宿主的显式决定，见"宿主激活条件"。本页继续作为后续版本的构建、验收与撤回流程；不构成现实法律正确性认证。
 
 ## 版本身份
 

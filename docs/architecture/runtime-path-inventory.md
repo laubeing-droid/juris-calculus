@@ -1,6 +1,6 @@
-# V4 current runtime path inventory
+# 正式运行路径清单
 
-状态：V4 current。唯一人工分类来源为 `module-authority.json`；本页只给出公共运行链的可读投影。
+状态：current（协议 jc/5.0；合同对象沿用 V4 代次命名）。本页回答：一次请求从公共入口到审计包经过哪些模块，哪些路径不是正式链。唯一人工分类来源为 `module-authority.json`；本页只给出公共运行链的可读投影。
 
 ## 公共入口
 
@@ -29,5 +29,5 @@
 
 - [合同权威图](contract-authority-v4.md)
 - [形式运行时一致性](../contracts/FORMAL_RUNTIME_CONFORMANCE.md)
-- [发布边界](../operations/RELEASE_V4.md)
-- [文档索引](../README.md)
+- [V5 发布流程](../operations/RELEASE_V5.md)
+- [文档索引](../INDEX.md)

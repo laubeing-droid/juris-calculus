@@ -1,6 +1,6 @@
 # CLI reference
 
-The CLI is the default JC interface. With `--json`, stdout carries the machine result and diagnostics use stderr.
+This page covers every `jc` subcommand, the exit codes, the host environment variables, and the second console script `jc-formal`. The CLI is the default JC interface; with `--json`, stdout carries the machine result and diagnostics use stderr.
 
 | Command | Function |
 |---|---|
@@ -34,9 +34,22 @@ installed module whose `create_client()` returns the configured `JCClient`.
 replay, artifact reads, and rendering fail closed when the configured host is absent.
 See `jc <command> --help` for exact arguments.
 
+## jc-formal
+
+`jc-formal` is the profile-fixed formal entry point. It loads one active profile from a
+deployment registry, evaluates the bundle through the formal bridge, and writes one
+verified canonical delivery to stdout:
+
+```powershell
+jc-formal --registry <deployment/profile-registry.json> --input <case-input-bundle.json>
+```
+
+`--registry` defaults to `JC_PROFILE_REGISTRY`, then to `deployment/profile-registry.json`.
+Errors print a stable code on stderr and exit 1.
+
 ## Related documents
 
 - [Chinese guide](README_CN.md)
 - [Input and semantic boundary](../contracts/INPUT_AND_SEMANTIC_BOUNDARY.md)
 - [Audit-bundle contract](../contracts/AUDIT_BUNDLE.md)
-- [Documentation index](../README.md)
+- [Documentation index](../INDEX.md)

@@ -1,6 +1,6 @@
 # 外仓协议
 
-本页只描述当前 V4 公共消费边界。
+本页描述当前公共消费边界（协议 jc/5.0；合同对象沿用 V4 代次命名，如 `CaseInputBundleV4`）。
 
 ## 入口
 
@@ -14,7 +14,7 @@
 | Legal Harness | 公共接口提交 attestation/approval refs 与运行请求 | 组织 JC 内部工作流；绕过 fact admission |
 | LMM | versioned semantic manifest、proof receipt、refinement fixtures | 直接改写 JC 正式内核语义 |
 
-## V4 合同
+## 公共合同
 
 - 请求：`CaseInputBundleV4`，权威为 `compiler_core/contracts.py` 与 `schemas/jc-v5.schema.json`。
 - 来源：`SourceSnapshotV4` / `EvidenceManifestV4`。
@@ -24,4 +24,4 @@
 
 当前公共包没有 V3 兼容执行链或迁移入口。仓库测试与 differential fixture 不构成法律正确性证明。
 
-[输入与语义边界](INPUT_AND_SEMANTIC_BOUNDARY.md) · [形式运行时一致性](FORMAL_RUNTIME_CONFORMANCE.md) · [文档索引](../README.md)
+[输入与语义边界](INPUT_AND_SEMANTIC_BOUNDARY.md) · [形式运行时一致性](FORMAL_RUNTIME_CONFORMANCE.md) · [文档索引](../INDEX.md)
