@@ -163,8 +163,14 @@ def test_examples_run_and_match_contract(tmp_path: Path) -> None:
             [sys.executable, str(path)],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(REPO),
             timeout=600,
+            env={
+                **__import__("os").environ,
+                "PYTHONIOENCODING": "utf-8",
+            },
         )
         assert completed.returncode == 0, (
             f"{sample} failed:\n{completed.stdout}\n{completed.stderr}"
