@@ -654,7 +654,7 @@ def run_installed_e2e(
     mcp_error = mcp[2]["result"]["structuredContent"]["error"]["code"]
     if (
         len(mcp) != 3
-        or mcp[0]["result"]["serverInfo"] != {"name": "juris-calculus", "version": "5.0.0"}
+        or mcp[0]["result"]["serverInfo"] != {"name": "juris-calculus", "version": "5.0.1"}
         or mcp_tools != ["jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact"]
         or mcp[2]["result"]["isError"] is not True
         or mcp_error != "RUNTIME_NOT_CONFIGURED"
