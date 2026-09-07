@@ -157,4 +157,6 @@ V5 升级已在本地完成并通过 `tools/verify_upgrade.py` 按计划 `remedi
 - **支持矩阵全量重跑**：Python 3.12.10 与 Python 3.11.9（Windows 本地）各执行 `tests/` 全套（除 tests/performance），两次均为 **1703 passed, 0 failed**；含新增 profile 链端到端、531 图穷举与校验器独立性回归。
 - 合同固定向量、schema/manifest 出版物、`jc-formal-profile.json` 工具清单摘要全部再生并通过 `checks.py generated`、`build_file_disposition.py --check`、`checks.py manifest`、`checks.py cleanup`；模块权威 observed graph `require-clean` status=CLEAN。
 - 新增回归已纳入 `remediation/v5/tasks.v1.json` V5-03 验收任务清单。
-- wheel 重建、推送后 CI 四矩阵与 `package`/`promote` 证据属下一阶段（JT48；需网络写与生产授权），本节不据此宣称生产激活或签名产物变更。
+- **本地候选 wheel 已按 V5-06 重建**：修复以提交 `7b4e47b`（分支 `remediation/v5-audit-20260907`）为源，`git archive` 双提取 A/B 构建，字节一致；`juris_calculus-5.0.0-py3-none-any.whl`，SHA-256 `a7971e305002a1cd57ae7d2250e5da3504a935392214c65b65a1bf8ce29fc51d`（构建报告 `work/v5-audit-wheel/wheel-report-{a,b}.json`，wheel_gate status=PASS，authority 45 入口 / payload 39 名单）。构建环境 Python 3.11.9 + 固定构建依赖（setuptools 83.0.0 / wheel 0.47.0），与 CI package job 同规格。
+- **补充验证运行在构建包上**（不依赖仓库源码）：解包该 wheel 后直接对包内代码执行——stable 反例返回 `{a}`；独立校验器拒绝 `{{b}}`、接受 `{{a}}`；2,124 项穷举对照全部一致；`_profile_stage_v5` 集成入口存在。
+- 仍需网络授权的剩余项：`git push` 与推送后 CI 四矩阵 + `package`/`promote` 远端证据（JT48 远端半）；生产签名与激活不变，仍属后续阶段。
