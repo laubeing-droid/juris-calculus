@@ -592,6 +592,11 @@
       "prefix": "tools/",
       "class": "BUILD_ONLY",
       "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."
+    },
+    {
+      "prefix": "examples/",
+      "class": "TEST_ONLY",
+      "rationale": "Runnable integration samples over synthetic admission material; never enter the production wheel."
     }
   ],
   "entrypoints": [

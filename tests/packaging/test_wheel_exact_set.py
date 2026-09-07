@@ -83,7 +83,7 @@ def test_nonformal_module_injection_fails_exact_record_gate(tmp_path: Path) -> N
 def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
     assert WHEEL_GATE.INSTALLED_TEST_CASE_COUNT == 67
     assert WHEEL_GATE.INSTALLED_TEST_CASE_IDS_SHA256 == (
-        "a5a5e931663eae694b6239a503c4af588818e09203a95e4bd3e656e9cd53901a"
+        "sha256:a5a5e931663eae694b6239a503c4af588818e09203a95e4bd3e656e9cd53901a"
     )
     assert set(WHEEL_GATE.INSTALLED_TEST_SELECTORS) == {
         "tests/formal_e2e/test_positive_vertical_slice.py",

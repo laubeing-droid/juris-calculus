@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 265,
+  "count": 275,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -232,6 +232,11 @@
       "production_wheel": true
     },
     {
+      "path": "compiler_core/harness_contract.py",
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/incremental.py",
       "authority_class": "FORMAL_CORE",
       "production_wheel": true
@@ -442,6 +447,26 @@
       "production_wheel": false
     },
     {
+      "path": "examples/harness/_adapter.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "examples/harness/sample_incremental.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "examples/harness/sample_normal.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "examples/harness/sample_priority_blocked.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "mcp_server.py",
       "authority_class": "PUBLIC_ADAPTER",
       "production_wheel": true
@@ -572,6 +597,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/contract/test_harness_contract.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/contract/test_independent_checker.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -642,7 +672,17 @@
       "production_wheel": false
     },
     {
+      "path": "tests/contract/test_v5_final_remediation.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/contract/test_v5_incremental.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_incremental_chain.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -653,6 +693,11 @@
     },
     {
       "path": "tests/contract/test_v5_procedure_composition.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_v5_procedure_routes.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -758,6 +803,11 @@
     },
     {
       "path": "tests/formal_e2e/test_three_entrypoint_error_matrix.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/formal_e2e/test_v5_entry_equivalence.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
