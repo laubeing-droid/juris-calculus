@@ -159,4 +159,10 @@ V5 升级已在本地完成并通过 `tools/verify_upgrade.py` 按计划 `remedi
 - 新增回归已纳入 `remediation/v5/tasks.v1.json` V5-03 验收任务清单。
 - **本地候选 wheel 已按 V5-06 重建**：修复以提交 `7b4e47b`（分支 `remediation/v5-audit-20260907`）为源，`git archive` 双提取 A/B 构建，字节一致；`juris_calculus-5.0.0-py3-none-any.whl`，SHA-256 `a7971e305002a1cd57ae7d2250e5da3504a935392214c65b65a1bf8ce29fc51d`（构建报告 `work/v5-audit-wheel/wheel-report-{a,b}.json`，wheel_gate status=PASS，authority 45 入口 / payload 39 名单）。构建环境 Python 3.11.9 + 固定构建依赖（setuptools 83.0.0 / wheel 0.47.0），与 CI package job 同规格。
 - **补充验证运行在构建包上**（不依赖仓库源码）：解包该 wheel 后直接对包内代码执行——stable 反例返回 `{a}`；独立校验器拒绝 `{{b}}`、接受 `{{a}}`；2,124 项穷举对照全部一致；`_profile_stage_v5` 集成入口存在。
-- 仍需网络授权的剩余项：`git push` 与推送后 CI 四矩阵 + `package`/`promote` 远端证据（JT48 远端半）；生产签名与激活不变，仍属后续阶段。
+- **远端 CI 证据已取得（JT48 远端半）**：分支 `remediation/v5-audit-20260907` 已推送，PR [#5](https://github.com/laubeing-droid/juris-calculus/pull/5)。
+  - CI run `34148046053`（pull_request，head `d89db08`，实际检出并测试 PR 与 main 的合并提交 `a287d8f55c09cb4efe4dcc3b9e2e590ff8a99d16` / tree `ed5706833874ce6e75687652cdf8359ee4b9e7f5`）：**全部任务成功**——generated/authority/lint/type/unit、四矩阵（windows/ubuntu × Python 3.11/3.12）、A-B build / installed wheel / release evidence；`Promote exact attested tag` 为 skipped（与 TEST_ONLY 状态一致）。
+  - 工件 `release-candidate-a287d8f…`（artifact id `10028525966`）：ZIP SHA-256 `03625aa39d3278b56a7d2c8e3110c3f7a75044033aa1048737f196318981ac33`（463,748 字节）；A/B wheel 字节一致，`juris_calculus-5.0.0-py3-none-any.whl` SHA-256 `dddad2a6b6940962d5af284dbccf5853319146825091719efae8eaa32ae35240`（各 230,320 字节）；provenance `BYTE_IDENTICAL_REBUILD`，`test_only=true`、`production_release_claimed=false`、`promotion_status=TEST_ONLY_NOT_PROMOTABLE`，`companion_spec_commit` 仍为历史 `a3a01594…`（历史 oracle 回归，范围声明不变）。
+  - `installed-wheel.json`：status=PASS，安装版本 5.0.0，fresh 环境导入通过、无源码树、安装与执行期间网络禁用，绑定 wheel 摘要 `dddad2a6…`。
+  - **补充验证运行在 CI 构建的 wheel 上**：stable 反例返回 `{a}`；独立校验器拒错纳正；2,124 项穷举对照全部一致；`_profile_stage_v5` 集成入口存在。
+  - 首次 CI 失败一次：新增测试文件使 `remediation/v4/file-disposition.json` 注册表漂移，已再生成并随 `d89db08` 提交；第二轮全绿。
+- 剩余项仅为生产签名与激活（`environment: release` 密钥、有效规则包、部署信任），与 CI 颜色无关，仍属后续阶段。
