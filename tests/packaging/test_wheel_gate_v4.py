@@ -78,7 +78,7 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
     payload = WHEEL_GATE.expected_payload_paths(ROOT)
     # 34 V4 modules + 5 V5 object-group modules (procedure,
     # domain_composition, assurance, incremental, query_semantics).
-    assert len(payload) == 39
+    assert len(payload) == 40
     for required in (
         "compiler_core/procedure.py",
         "compiler_core/domain_composition.py",
@@ -95,7 +95,7 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
 
 def test_exact_synthetic_wheel_is_accepted(tmp_path: Path) -> None:
     report = WHEEL_GATE.validate_wheel(ROOT, _wheel(tmp_path))
-    assert report["entry_count"] == 45
+    assert report["entry_count"] == 46
 
 
 @pytest.mark.parametrize("mutation", ["extra", "missing", "duplicate", "unsafe", "record"])
