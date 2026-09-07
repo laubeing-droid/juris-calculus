@@ -165,4 +165,7 @@ V5 升级已在本地完成并通过 `tools/verify_upgrade.py` 按计划 `remedi
   - `installed-wheel.json`：status=PASS，安装版本 5.0.0，fresh 环境导入通过、无源码树、安装与执行期间网络禁用，绑定 wheel 摘要 `dddad2a6…`。
   - **补充验证运行在 CI 构建的 wheel 上**：stable 反例返回 `{a}`；独立校验器拒错纳正；2,124 项穷举对照全部一致；`_profile_stage_v5` 集成入口存在。
   - 首次 CI 失败一次：新增测试文件使 `remediation/v4/file-disposition.json` 注册表漂移，已再生成并随 `d89db08` 提交；第二轮全绿。
-- 剩余项仅为生产签名与激活（`environment: release` 密钥、有效规则包、部署信任），与 CI 颜色无关，仍属后续阶段。
+- **PR #5 已合并**（merge commit `12d4ddd`），main CI run `34149153623` 全绿（四矩阵 + package）。
+- **v5.0.0 已正式签名发布**：tag `v5.0.0` 推送触发 CI run `34150936429` 全绿，promote 任务以生产密钥（`environment: release` + `JC_RELEASE_ED25519_KEY_JSON`，key_id `jc-release-ed25519-4a3c012cb69c`）完成 Ed25519 签名并创建 GitHub Release。发布 provenance：`test_only=false`、`production_allowed=true`、`BYTE_IDENTICAL_REBUILD`、绑定源提交 `12d4ddd`；本会话以公钥复核 `SIGNING_DOMAIN+statement` 的 Ed25519 签名通过；发布 wheel（SHA-256 `5b5aab74be36c67c05d4c020f4b64c35326da10a7dfa2dd296013e9461ab8d6e`）与 provenance/SHA256SUMS 一致，且在该 wheel 本体上复跑 stable 反例、独立校验器门与 2,124 项穷举全部通过。`production_release_claimed` 按设计保持 `false`、`promotion_status=PENDING_TAG_VERIFICATION`——签名与发布是工程事实，生产采用（部署激活）仍是宿主的显式决定。
+- 签名私钥文档由宿主持有（生成时写入仓库外 `~/.jc-release/`，未进对话与仓库）；泄露或更换密钥时更新 release 环境的 `JC_RELEASE_ED25519_KEY_JSON` 并按撤回流程处理。
+- 部署侧激活条件（`docs/operations/RELEASE_V5.md`：生产规则包、存储 state_root/资源预算、经验模型数据）属于具体部署环境，不在仓库内。
