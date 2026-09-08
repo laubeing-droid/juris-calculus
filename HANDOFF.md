@@ -1,6 +1,15 @@
 # juris-calculus 交接检查点
 
-## 当前检查点（2026-09-08，v5.0.0 已签名发布）
+## 当前检查点（2026-09-08，5.0.1 最终整改完成，JC 冻结）
+
+> **JC V5 数学→工程落实阶段冻结：六项最终整改（JC-FINAL-FIX-20260908）全部闭合并通过全量验收。后续主线转入 Legal Harness 改造及 JC 集成；JC 侧接口以 `compiler_core/harness_contract.py`（jc-harness-contract/1）与 `docs/contracts/HARNESS_INTEGRATION.md` 为准，不再进行独立集中施工。**
+
+- 5.0.1（源提交 `6d1a621`）：分支身份结构化编码、查询反驳 argument→conclusion→refutes 语义与结果合同、incomplete 全链 typed obligation、priority 登记策略参与 defeat / 未支持阻断完整性（不签发证书）、真增量 Horn 默认启用（父状态经密封审计包跨实例复用，solver/checker 工作量分别计量）、程序四路公开可达（授权仅由 trust 校验的存档法律签章产生）；新增封闭 Harness 集成合同与三份可运行样本（`examples/harness/`）。
+- 本地全量验收：Python 3.11.9 与 3.12.10（Windows）各 **1770 passed, 0 failed**；CI run 34171706216 四矩阵（Windows/Ubuntu × 3.11/3.12）+ A-B build/installed wheel/release evidence 全绿；installed-wheel E2E 67 用例 0 失败（本地 3.11 与 CI 各一份）；独立 profile oracle 复跑 PASS（531 图 × 4 语义 2,124 次对拍 0 不一致、16,660 次错误族注入全部拒绝）。
+- CI 候选 wheel `juris_calculus-5.0.1-py3-none-any.whl`：sha256 `802d045a548c9101c0425cccda306cfc467832698e0b4e11b82c7071c2e32d99`（A/B 字节一致；本地 Windows 构建因行尾归一化仅 dist-info 三文件与 CI 差异，payload 43 文件逐字节相同——与 v5.0.0 已关闭的平台差异同类）。tag `v5.0.0` 未动；生产采用仍是宿主的显式决定。
+- 生产激活待宿主条件不变（见 [V5 发布流程](docs/operations/RELEASE_V5.md)）。
+
+## 上一检查点（2026-09-07，v5.0.0 已签名发布）
 
 - v5.0.0（公共协议 jc/5.0）已完成签名发布：tag `v5.0.0` 触发 CI run 34150936429 全绿，promote 任务以生产密钥（protected release environment，生产 Ed25519 key）完成签名并创建 GitHub Release；provenance 为 `BYTE_IDENTICAL_REBUILD`，绑定源提交 `12d4ddd`（PR #5 已合入 main）。签名与公开发布是工程事实；`production_release_claimed=false`、`promotion_status=PENDING_TAG_VERIFICATION`——远程生产发布尚未执行，生产采用（部署激活）是宿主的显式决定。
 - V5 一次性升级（JC-UPGRADE-20260906-01）全部验收完成；完整工程证据（含 2026-09-07 独立核查三项阻断的修复）见归档报告 [docs/archive/FINAL_UPGRADE_REPORT.md](docs/archive/FINAL_UPGRADE_REPORT.md)。
