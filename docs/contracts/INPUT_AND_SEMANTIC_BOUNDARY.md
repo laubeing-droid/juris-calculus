@@ -35,4 +35,5 @@ Report the command, result, affected boundary, remaining risk, and any upstream-
 - [Formal runtime conformance](FORMAL_RUNTIME_CONFORMANCE.md)
 - [Rule packs](RULE_PACKS.md)
 - [External protocol](EXTERNAL_PROTOCOL.md)
+- [JC ↔ Legal Harness integration](HARNESS_INTEGRATION.md)
 - [Documentation index](../INDEX.md)

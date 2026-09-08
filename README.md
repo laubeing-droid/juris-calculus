@@ -36,9 +36,10 @@ jc evaluate --input case-input-bundle.json --json   # 评估一个结构化案�
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-- **合同面**：100 个封闭合同类型（含 25 个 V5 对象组），`schemas/jc-v5.schema.json` 由代码确定性生成、禁止手改；MCP 侧是四工具 stdio 服务（`mcp_manifest.json`）。CLI、Python（`JCClient`）与 MCP 三个入口共用同一个 application service，语义完全一致。
-- **状态空间**：六轴终态分类器把全部 6720 种组合收敛到 115 个可达终态，杜绝"看似成功"的模糊输出。
+- **合同面**：105 个封闭合同类型（含 30 个 V5 对象组），`schemas/jc-v5.schema.json` 由代码确定性生成、禁止手改；MCP 侧是四工具 stdio 服务（`mcp_manifest.json`）。CLI、Python（`JCClient`）与 MCP 三个入口共用同一个 application service，语义完全一致。
+- **状态空间**：六轴终态分类器把全部 6720 种组合收敛到 124 个可达终态，杜绝"看似成功"的模糊输出。
 - **证明绑定**：91 个运行时模块对 452 条上游 Lean 声明的处置登记在 `proofs/` 目录；运行时实现的保证等级是 crossCheckOnly（交叉核验），不是 kernelVerified。
+- **推理特性（5.0.1）**：同案件 add-only 后续请求默认复用密封的父 Horn 状态做真增量（非单调变化自动回退全量并留痕）；已准入优先关系要么按登记策略参与击败判定，要么正式阻断该问题的完整性声明（不签发证书）；程序四路结论（裁定/程序处置/待法律判断/求解未完成）全部由公开输入驱动；预算耗尽以类型化未决义务传播，不变成工程错误。
 
 ## 边界
 
@@ -56,6 +57,7 @@ LLM proposes -> verification gates decide -> formal kernel reasons
 
 - 想先跑起来 → [中文说明](docs/guides/README_CN.md)：安装、配置宿主材料、第一次评估与常见边界。
 - 想集成到产品 → [CLI 参考](docs/guides/CLI.md) 与 [外仓协议](docs/contracts/EXTERNAL_PROTOCOL.md)：命令、退出码和三个公共入口的消费方式。
+- 想接 Legal Harness → [JC ↔ Legal Harness 集成合同](docs/contracts/HARNESS_INTEGRATION.md)：如何发请求、追加材料走增量、读结论与未决事项，附三份可运行样本（`examples/harness/`）。
 - 想理解系统 → [运行路径清单](docs/architecture/runtime-path-inventory.md)：从公共入口到审计包的正式运行链。
 - 想审计结果 → [审计包与重放](docs/contracts/AUDIT_BUNDLE.md)：审计包里有什么、重放如何校验。
 - 维护与发布 → [V5 发布流程](docs/operations/RELEASE_V5.md) 与 [交接检查点](HANDOFF.md)：当前做到哪、还欠什么。

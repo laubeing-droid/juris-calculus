@@ -2,7 +2,7 @@
 
 ## 当前边界
 
-- JC 当前只维护 V5（公共协议 jc/5.0，版本 5.0.0，已签名发布）：结构化请求 -> 确定性准入 -> application service -> canonical result、certificate、audit bundle、graph 和 replay。
+- JC 当前只维护 V5（公共协议 jc/5.0，版本 5.0.1）：结构化请求 -> 确定性准入 -> application service -> canonical result、certificate、audit bundle、graph 和 replay。5.0.1 完成 JC-FINAL-FIX-20260908 六项最终整改（分支身份、查询反驳、typed incomplete、priority 登记/阻断、真增量默认启用、程序四路）并冻结：后续主线是 Legal Harness 集成，JC 侧读写接口是 `compiler_core/harness_contract.py`（jc-harness-contract/1）与 `docs/contracts/HARNESS_INTEGRATION.md`，不再做 JC 独立集中施工。
 - CLI、Python 与四工具 stdio MCP 共用同一合同和 application service。
 - 私有案件、律师工作流、诉讼策略、OCR/模型流水线、生产密钥和专有规则包均在仓库外。
 - 仓库内测试、wheel 和 test-only provenance 只能证明候选产物可复现，不能证明法律结论正确或生产已经部署。

@@ -1,11 +1,11 @@
 # V5 对象与状态矩阵
 
-权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（V5 升级后 100 个类型条目，其中 25 个 `*V5` 对象组）。
+权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（5.0.1 整改后 105 个类型条目，其中 30 个 `*V5` 对象组）。
 
 ## 版本决定
 
 - 公共协议：`jc/5.0`（`SCHEMA_VERSION_V5`）。正式引擎版本正则锁定 major 5；`jc/4.0` 输入与 4.x 引擎版本在准入处被拒绝，不做宽松读取。
-- 引擎版本：`5.0.0`（`compiler_core/version.py` 是唯一版本源）。
+- 引擎版本：`5.0.1`（`compiler_core/version.py` 是唯一版本源）。
 - 生成出版物：`schemas/jc-v5.schema.json`、`mcp_manifest.json` 由 `compiler_core.mcp` 的确定性 emitter 产出，字节级校验。
 
 ## 六轴状态空间（继承 V4，不收敛为一个“大成功”）
@@ -19,7 +19,7 @@
 | certificate | none, formal_verified, conflict_verified |
 | transport | success, error |
 
-笛卡尔组合 6720；可达终态组合 115（由 fixture `decision_constraints` 与 `tests/differential/test_self_contained_v4.py` 自动校验）。
+笛卡尔组合 6720；可达终态组合 124（由 fixture `decision_constraints` 与 `tests/differential/test_self_contained_v4.py` 自动校验）。5.0.1 起 `accepted_formal_result` 允许 `completeness=partial` 且证书集为 `{formal_verified, none}`：当请求携带的 V5 查询存在未闭合的语义映射（如未登记策略的优先关系）或求解覆盖未完成时，结果降级为 partial 且**不签发证书**（证书门要求完整无污染的正式执行）。
 
 ## V5 强制不变量
 
@@ -44,5 +44,8 @@
 | 组合/精确 | ExactQuantityV5, ExactExpressionV5, CompositionCandidateV5, CompositionPolicyV5, CompositionChoiceV5 |
 | 保证 | NotApplicableEvidenceV5, AssuranceEnvelopeV5 |
 | 增量/经验 | HornDeltaV5, EmpiricalResultV5 |
+| 查询侧公开输入（5.0.1） | ClaimRefutationV5, QueryGateRequestV5 |
+| 程序公开输入（5.0.1） | BurdenRuleOutcomeWireV5, ProceduralInputV5 |
+| 增量父引用（5.0.1） | IncrementalParentV5 |
 
 每一组到 ULM 证明模块的映射见 `proofs/runtime-obligation-map.json`；该映射是工程义务登记，不是运行时已被 Lean 证明的声明。

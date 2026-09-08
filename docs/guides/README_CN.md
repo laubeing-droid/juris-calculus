@@ -18,7 +18,7 @@ LLM 提议 -> 验证门禁决定 -> 形式内核推理
 
 ```powershell
 python -m pip install .
-jc --version   # 应输出 jc 5.0.0
+jc --version   # 应输出 jc 5.0.1
 ```
 
 执行正式推理前，运行宿主需要提供三份本机材料——仓库不内置任何生产部署状态或私有材料，这是刻意设计：内核本身不携带信任，信任由宿主的配置和签名材料决定。
@@ -62,7 +62,7 @@ jc render --input artifact-handle.json --format markdown --audience agent --json
 - `UNKNOWN`、`DISPUTED`、`USER_ASSUMED` 只生成缺失事实清单、仅限复核的分支或假设结果，拿不到正式证书。
 - 本机限定范围使用 `cn-official-local`；这不等于公共 `cn-official` 已完成远程晋级。legacy 规则包已从当前运行时删除，不能检索、训练或回退使用。
 - 本地验收与 CI 通过不等于生产可用，更不是法律正确性认证。
-- 当前版本 5.0.0 的版本权威是 `compiler_core/version.py`；正式 wheel 只能从干净 `git archive` 构建并由发布门禁核验。
+- 当前版本 5.0.1 的版本权威是 `compiler_core/version.py`；正式 wheel 只能从干净 `git archive` 构建并由发布门禁核验。
 
 ## 从 jc/4.0 输入迁移
 
