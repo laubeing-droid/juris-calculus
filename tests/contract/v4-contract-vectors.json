@@ -97,6 +97,33 @@
    "revocation_ref": null,
    "signature": "signature-value"
   },
+  "LocalRecordV4": {
+   "algorithm": "LOCAL-RECORD",
+   "issuer": "issuer-value",
+   "role": "role-value",
+   "scope": "scope-value",
+   "kind": "kind-value",
+   "schema_version": "jc/5.0",
+   "subject_digest": "sha256:a68828e12ba702b03df87ba33c4358e33fe97125d3080e59cec984126e9fae91",
+   "run_identity_ref": null,
+   "status": "LOCAL-RECORDED",
+   "issued_at": {
+    "wire": "2026-08-22T08:00:00Z"
+   },
+   "expires_at": {
+    "wire": "2026-08-23T08:00:00Z"
+   },
+   "nonce": "nonce-value",
+   "evidence_refs": [
+    {
+     "kind": "localrecord-evidence-refs",
+     "digest": "sha256:adac202261d087ad64ef2b957318fd6c7f76d9d27a27fe21da3ea9772244d5aa"
+    }
+   ],
+   "payload_digest": "sha256:00309c9084978ffe8f5600f6bcdca36f3a842da15d60821db8e7a669cac4a438",
+   "policy_digest": "sha256:620e84836609ea86fc61da6976fbdcfb4db4f4a85aabc31e0a10294b760ae059",
+   "revocation_ref": null
+  },
   "TrustPolicyV4": {
    "policy_id": "policy_id-value",
    "allowed_algorithms": [
@@ -4295,6 +4322,24 @@
    "parent_state_ref",
    "parent_subject_digest",
    "mode"
+  ],
+  "LocalRecordV4": [
+   "algorithm",
+   "issuer",
+   "role",
+   "scope",
+   "kind",
+   "schema_version",
+   "subject_digest",
+   "run_identity_ref",
+   "status",
+   "issued_at",
+   "expires_at",
+   "nonce",
+   "evidence_refs",
+   "payload_digest",
+   "policy_digest",
+   "revocation_ref"
   ]
  }
 }

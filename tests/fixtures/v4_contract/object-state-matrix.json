@@ -44,6 +44,13 @@
    "additional_properties": false
   },
   {
+   "id": "LocalRecordV4",
+   "layer": "trust",
+   "schema_kind": "object",
+   "formal": true,
+   "additional_properties": false
+  },
+  {
    "id": "TrustPolicyV4",
    "layer": "trust",
    "schema_kind": "object",

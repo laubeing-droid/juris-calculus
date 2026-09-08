@@ -153,9 +153,17 @@ def _annotation_schema(annotation: object) -> dict[str, object]:
     if origin in (Union, UnionType):
         choices = get_args(annotation)
         non_null = tuple(choice for choice in choices if choice is not type(None))
-        if len(non_null) != 1 or type(None) not in choices:
-            raise TypeError(f"unsupported V4 schema union {annotation!r}")
-        return {"anyOf": [_annotation_schema(non_null[0]), {"type": "null"}]}
+        if len(non_null) == 1 and type(None) in choices:
+            return {"anyOf": [_annotation_schema(non_null[0]), {"type": "null"}]}
+        if len(non_null) >= 2 and all(
+            isinstance(choice, type) and issubclass(choice, V4Contract)
+            for choice in non_null
+        ):
+            branches = [_annotation_schema(choice) for choice in non_null]
+            if type(None) in choices:
+                branches.append({"type": "null"})
+            return {"anyOf": branches}
+        raise TypeError(f"unsupported V4 schema union {annotation!r}")
     if origin is tuple:
         args = get_args(annotation)
         if len(args) != 2 or args[1] is not Ellipsis:

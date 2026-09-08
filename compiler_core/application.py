@@ -86,6 +86,7 @@ from compiler_core.contracts import (
     RunIdentityV4,
     RuntimeProfileV4,
     SemanticResultV4,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     SourceBundleV4,
     TransportOutcomeV4,
@@ -152,7 +153,7 @@ from compiler_core.source_service import (
     source_snapshot_ref,
 )
 from compiler_core.storage import StorageV4Error
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 
 
 ReceiptSignerV4 = Callable[
@@ -504,7 +505,7 @@ class ApplicationV4:
             )
         if (
             type(resolver) is not ArtifactResolverV4
-            or type(trust) is not TrustVerifierV4
+            or type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
             or type(source_service) is not SourceServiceV4
             or type(fact_service) is not FactAdmissionServiceV4
             or type(pack_verifier) is not RulePackVerifierV4
@@ -2230,7 +2231,7 @@ class ApplicationV4:
             run_identity_ref,
             now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             raise ContractV4Error("APPLICATION_PROOF_SIGNATURE", "proof signer returned a wrong type")
         proof = ProofReceiptV4.from_dict({**body, "signature": signature.to_dict()})
         return self._register_contract("proof-receipt-v4", proof)

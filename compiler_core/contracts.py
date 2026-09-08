@@ -327,9 +327,24 @@ def _decode_wire(annotation: object, value: object, path: str) -> object:
         if value is None and type(None) in choices:
             return None
         non_null = tuple(choice for choice in choices if choice is not type(None))
-        if len(non_null) != 1:
+        if len(non_null) == 1:
+            return _decode_wire(non_null[0], value, path)
+        if type(value) is not dict or len(non_null) < 2:
             _fail("TYPE_AUTHORITY", f"{path} has an unsupported union")
-        return _decode_wire(non_null[0], value, path)
+        # Multi-contract union: dispatch by document shape. The first choice
+        # that decodes exactly wins; a value that matches no choice is never
+        # coerced, and the first candidate's error is re-raised.
+        first_error: ContractV4Error | None = None
+        for choice in non_null:
+            if not (isinstance(choice, type) and issubclass(choice, V4Contract)):
+                _fail("TYPE_AUTHORITY", f"{path} has an unsupported union")
+            try:
+                return choice.from_dict(value)
+            except ContractV4Error as exc:
+                if first_error is None:
+                    first_error = exc
+        assert first_error is not None
+        raise first_error
     if origin is tuple:
         if type(value) is not list:
             _fail("ARRAY_REQUIRED", f"{path} must be a JSON array")
@@ -372,9 +387,12 @@ def _freeze_internal(annotation: object, value: object, path: str) -> object:
         if value is None and type(None) in choices:
             return None
         non_null = tuple(choice for choice in choices if choice is not type(None))
-        if len(non_null) != 1:
-            _fail("TYPE_AUTHORITY", f"{path} has an unsupported union")
-        return _freeze_internal(non_null[0], value, path)
+        if len(non_null) == 1:
+            return _freeze_internal(non_null[0], value, path)
+        for choice in non_null:
+            if isinstance(choice, type) and type(value) is choice:
+                return _freeze_internal(choice, value, path)
+        _fail("TYPE_AUTHORITY", f"{path} has an unsupported union")
     if origin is tuple:
         if type(value) is not tuple:
             _fail("ARRAY_TYPE", f"{path} constructor value must be a tuple")
@@ -687,7 +705,7 @@ class ArtifactHandleV4(V4Contract):
     size_bytes: int
     expires_at: CanonicalTimeV4
     max_bytes: int
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
     def _validate(self) -> None:
         for field_name in ("artifact_id", "kind", "scope", "media_type"):
@@ -750,6 +768,58 @@ class SignatureEnvelopeV4(V4Contract):
             _fail("SIGNATURE_TIME_ORDER", "expires_at must follow issued_at")
 
 
+LOCAL_RECORD_ALGORITHM_V4 = "LOCAL-RECORD"
+LOCAL_RECORD_STATUS_V4 = "LOCAL-RECORDED"
+
+
+@dataclass(frozen=True, slots=True)
+class LocalRecordV4(V4Contract):
+    """Honest keyless local provenance record over one canonical payload.
+
+    A local record binds exactly the content fields a signature envelope
+    binds (subject, payload digest, evidence, nonce, time window, trust
+    policy) but carries no ``key_id`` and no ``signature`` bytes and claims
+    no external signer: ``algorithm`` is fixed to ``LOCAL-RECORD``. It says
+    "the local runtime recorded this admission", never "an external key
+    holder approved this".
+    """
+
+    algorithm: str
+    issuer: str
+    role: str
+    scope: str
+    kind: str
+    schema_version: str
+    subject_digest: DigestV4
+    run_identity_ref: ContentRefV4 | None
+    status: str
+    issued_at: CanonicalTimeV4
+    expires_at: CanonicalTimeV4 | None
+    nonce: str
+    evidence_refs: tuple[ContentRefV4, ...]
+    payload_digest: DigestV4
+    policy_digest: DigestV4
+    revocation_ref: ContentRefV4 | None
+
+    def _validate(self) -> None:
+        if self.algorithm != LOCAL_RECORD_ALGORITHM_V4:
+            _fail(
+                "LOCAL_RECORD_ALGORITHM",
+                f"algorithm must be exactly {LOCAL_RECORD_ALGORITHM_V4}",
+            )
+        for field_name in ("issuer", "role", "scope", "kind", "status", "nonce"):
+            _nonempty(getattr(self, field_name), f"LocalRecordV4.{field_name}")
+        if self.schema_version != SCHEMA_VERSION_V5:
+            _fail("SCHEMA_VERSION", f"schema_version must be exactly {SCHEMA_VERSION_V5}")
+        if self.status != LOCAL_RECORD_STATUS_V4:
+            _fail(
+                "LOCAL_RECORD_STATUS",
+                f"status must be exactly {LOCAL_RECORD_STATUS_V4}",
+            )
+        if self.expires_at is not None and not self.issued_at < self.expires_at:
+            _fail("SIGNATURE_TIME_ORDER", "expires_at must follow issued_at")
+
+
 @dataclass(frozen=True, slots=True)
 class TrustPolicyV4(V4Contract):
     policy_id: str
@@ -771,11 +841,15 @@ class TrustPolicyV4(V4Contract):
     def _validate(self) -> None:
         _nonempty(self.policy_id, "TrustPolicyV4.policy_id")
         for field_name in (
-            "allowed_algorithms", "trusted_key_ids", "allowed_issuers", "allowed_roles",
+            "allowed_algorithms", "allowed_issuers", "allowed_roles",
             "allowed_scopes", "allowed_artifact_kinds",
         ):
             if not getattr(self, field_name):
                 _fail("TRUST_POLICY_EMPTY", f"TrustPolicyV4.{field_name} must not be empty")
+        if not self.trusted_key_ids and self.allowed_algorithms != (LOCAL_RECORD_ALGORITHM_V4,):
+            # A local-record policy has no trusted keys by definition; every
+            # key-based policy must name at least one trusted key.
+            _fail("TRUST_POLICY_EMPTY", "TrustPolicyV4.trusted_key_ids must not be empty")
         if set(self.trusted_key_ids) & set(self.revoked_key_ids):
             _fail("TRUST_KEY_STATE", "a trusted key cannot also be revoked")
         if self.valid_to is not None and not self.valid_from < self.valid_to:
@@ -1314,7 +1388,7 @@ class FactAttestationV4(V4Contract):
     nonce: str
     replay_policy_ref: ContentRefV4
     revocation_ref: ContentRefV4 | None
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
     def _validate(self) -> None:
         for field_name in (
@@ -1395,7 +1469,7 @@ class PackManifestV4(V4Contract):
 @dataclass(frozen=True, slots=True)
 class PackSignatureV4(V4Contract):
     manifest_ref: ContentRefV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
 
 @dataclass(frozen=True, slots=True)
@@ -1562,7 +1636,7 @@ class FactAdmissionReceiptV4(V4Contract):
     fact_ref: ContentRefV4
     issued_at: CanonicalTimeV4
     issuer: str
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
     def _validate(self) -> None:
         for field_name in ("receipt_id", "case_scope", "status", "issuer"):
@@ -1577,7 +1651,7 @@ class RulePromotionReceiptV4(V4Contract):
     engineering_review_ref: ContentRefV4
     status: str
     issued_at: CanonicalTimeV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
 
 @dataclass(frozen=True, slots=True)
@@ -1597,7 +1671,7 @@ class TranslationReceiptV4(V4Contract):
     proof_obligation_refs: tuple[ContentRefV4, ...]
     status: str
     issued_at: CanonicalTimeV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
     def _validate(self) -> None:
         for field_name in ("receipt_id", "hop", "status"):
@@ -1615,7 +1689,7 @@ class SolverReceiptV4(V4Contract):
     model_or_core_ref: ContentRefV4 | None
     proof_ref: ContentRefV4 | None
     issued_at: CanonicalTimeV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
 
 @dataclass(frozen=True, slots=True)
@@ -1632,7 +1706,7 @@ class CheckerReceiptV4(V4Contract):
     witness_refs: tuple[ContentRefV4, ...]
     status: str
     issued_at: CanonicalTimeV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
 
 @dataclass(frozen=True, slots=True)
@@ -1647,7 +1721,7 @@ class ProofReceiptV4(V4Contract):
     trusted_computing_base_refs: tuple[ContentRefV4, ...]
     status: str
     issued_at: CanonicalTimeV4
-    signature: SignatureEnvelopeV4
+    signature: SignatureEnvelopeV4 | LocalRecordV4
 
 
 class ExecutionStatusV4(_V4StringEnum):
@@ -1979,7 +2053,7 @@ class CertificateEnvelopeV4(V4Contract):
     kind: CertificateKindV4
     formal: FormalCertificateV4 | None
     conflict: ConflictCertificateV4 | None
-    service_signature: SignatureEnvelopeV4 | None
+    service_signature: SignatureEnvelopeV4 | LocalRecordV4 | None
 
     def _validate(self) -> None:
         certificate: FormalCertificateV4 | ConflictCertificateV4 | None
@@ -3350,6 +3424,7 @@ _REGISTRY_TYPES = (
     ArtifactHandleV4,
     ErrorV4,
     SignatureEnvelopeV4,
+    LocalRecordV4,
     TrustPolicyV4,
     StorageCapabilityV4,
     ObservabilityEnvelopeV4,

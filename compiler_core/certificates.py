@@ -41,6 +41,7 @@ from compiler_core.contracts import (
     RuleV4,
     RunIdentityV4,
     SemanticResultV4,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     SolverReceiptV4,
     SourceBundleV4,
@@ -49,7 +50,7 @@ from compiler_core.contracts import (
 from compiler_core.fact_admission import case_request_binding_ref
 from compiler_core.rule_packs import RulePackVerifierV4
 from compiler_core.source_service import SourceServiceV4
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 
 
 SERVICE_ROLE_V4 = "service_signer"
@@ -334,7 +335,10 @@ class CertificateVerifierV4:
         *,
         current_engine_build_digest: DigestV4,
     ) -> None:
-        if type(trust) is not TrustVerifierV4 or type(current_engine_build_digest) is not DigestV4:
+        if (
+            type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
+            or type(current_engine_build_digest) is not DigestV4
+        ):
             _fail("CERTIFICATE_VERIFIER_CONFIG", "verifier requires exact trust and build identity")
         self._trust = trust
         self._current_engine_build_digest = current_engine_build_digest
@@ -362,7 +366,7 @@ class CertificateVerifierV4:
         now: CanonicalTimeV4,
     ) -> None:
         signature = getattr(receipt, "signature", None)
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("CERTIFICATE_RECEIPT_SIGNATURE", "receipt has no V4 service signature")
         if signature.run_identity_ref != run_ref:
             _fail("CERTIFICATE_RECEIPT_RUN", "receipt signature binds the wrong run")
@@ -374,7 +378,7 @@ class CertificateVerifierV4:
                 required_role=SERVICE_ROLE_V4,
                 required_scope=SERVICE_SCOPE_V4,
                 required_artifact_kind=SERVICE_KIND_V4,
-                expected_status="APPROVED",
+                expected_status=trust.expected_status,
                 now=now,
                 separation_from_principals=(),
             )
@@ -897,7 +901,7 @@ class CertificateVerifierV4:
                 required_role=SERVICE_ROLE_V4,
                 required_scope=SERVICE_SCOPE_V4,
                 required_artifact_kind=SERVICE_KIND_V4,
-                expected_status="APPROVED",
+                expected_status=verified_trust.expected_status,
                 now=context.now,
                 separation_from_principals=(),
             )
@@ -916,7 +920,7 @@ CertificateSignerV4 = Callable[
         ContentRefV4,
         CanonicalTimeV4,
     ],
-    SignatureEnvelopeV4,
+    "SignatureEnvelopeV4 | LocalRecordV4",
 ]
 
 
@@ -953,7 +957,7 @@ class CertificateIssuerV4:
             certificate.run_identity_ref,
             context.now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("CERTIFICATE_SIGNER", "signer returned a non-V4 envelope")
         envelope = CertificateEnvelopeV4(
             unsigned.kind,

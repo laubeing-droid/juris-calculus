@@ -33,6 +33,7 @@ from compiler_core.contracts import (
     LegalIVLV4,
     ResourceLimitsV4,
     RunIdentityV4,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     SolverReceiptV4,
 )
@@ -1004,13 +1005,13 @@ class BackendRouterV4:
         signature = receipt.signature
         payload_digest = digest_value(receipt.signature_body())
         if (
-            type(signature) is not SignatureEnvelopeV4
+            type(signature) not in (SignatureEnvelopeV4, LocalRecordV4)
             or signature.subject_digest != receipt.backend_result_ref.digest
             or signature.payload_digest != payload_digest
             or signature.evidence_refs != evidence_refs
             or signature.run_identity_ref != receipt.run_identity_ref
             or signature.issued_at != receipt.issued_at
-            or signature.status != "APPROVED"
+            or signature.status != self._trust.expected_status
         ):
             _fail("BACKEND_RECEIPT_SIGNATURE", "solver receipt signature shape differs")
         self._trust._fresh_without_replay().verify(
@@ -1020,7 +1021,7 @@ class BackendRouterV4:
             required_role="service_signer",
             required_scope="service-certificate",
             required_artifact_kind="service-certificate",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -1123,7 +1124,7 @@ class BackendRouterV4:
             run_identity_ref,
             now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("BACKEND_RECEIPT_SIGNATURE", "receipt signer returned the wrong type")
         receipt = SolverReceiptV4.from_dict({
             **receipt_body,

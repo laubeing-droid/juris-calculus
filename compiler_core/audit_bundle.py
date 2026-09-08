@@ -69,7 +69,7 @@ from compiler_core.storage import (
     _verify_security,
     _write_all,
 )
-from compiler_core.trust import TrustKeyV4, TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustKeyV4, TrustVerifierV4
 
 
 BUNDLE_SCHEMA_V4 = "jc/audit-bundle/4.0"
@@ -278,7 +278,7 @@ class AuditTrustMaterialV4:
             _fail("AUDIT_TRUST", "trust keys must be an exact tuple")
         if tuple(sorted(self.keys, key=lambda key: key.key_id)) != self.keys:
             _fail("AUDIT_TRUST_ORDER", "trust keys must be sorted by key_id")
-        if self.target_environment not in {"test", "production"}:
+        if self.target_environment not in {"test", "production", "local"}:
             _fail("AUDIT_TRUST", "target environment is invalid")
         if type(self.revoked_subject_digests) is not tuple or any(
             type(item) is not DigestV4 for item in self.revoked_subject_digests
@@ -289,7 +289,13 @@ class AuditTrustMaterialV4:
         ):
             _fail("AUDIT_TRUST", "revoked nonces must be non-empty strings")
 
-    def verifier(self) -> TrustVerifierV4:
+    def verifier(self) -> TrustVerifierV4 | LocalRecordTrustV4:
+        if self.target_environment == "local":
+            return LocalRecordTrustV4(
+                policy=self.policy,
+                revoked_subject_digests=self.revoked_subject_digests,
+                revoked_nonces=self.revoked_nonces,
+            )
         return TrustVerifierV4(
             policy=self.policy,
             keys=self.keys,
@@ -854,7 +860,7 @@ class AuditBundleStoreV4:
                     required_role="service_signer",
                     required_scope="service-certificate",
                     required_artifact_kind="service-certificate",
-                    expected_status="APPROVED",
+                    expected_status=self._trust_material.verifier().expected_status,
                     now=now,
                     separation_from_principals=(),
                 )

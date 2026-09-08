@@ -18,11 +18,12 @@ from compiler_core.contracts import (
     CanonicalTimeV4,
     ContentRefV4,
     ContractV4Error,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     SourceBundleV4,
     SourceSnapshotV4,
 )
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 
 
 SOURCE_NORMALIZATION_PROFILE = "nfc-collapse-whitespace"
@@ -121,8 +122,11 @@ def source_version_receipt_ref(
 class SourceServiceV4:
     """Admit signed source snapshots and resolve one applicable connected version."""
 
-    def __init__(self, resolver: ArtifactResolverV4, trust: TrustVerifierV4) -> None:
-        if type(resolver) is not ArtifactResolverV4 or type(trust) is not TrustVerifierV4:
+    def __init__(self, resolver: ArtifactResolverV4, trust: TrustVerifierV4 | LocalRecordTrustV4) -> None:
+        if (
+            type(resolver) is not ArtifactResolverV4
+            or type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
+        ):
             _fail("SOURCE_INPUT_TYPE", "resolver and trust must be exact V4 services")
         self._resolver = resolver
         self._trust = trust
@@ -153,8 +157,9 @@ class SourceServiceV4:
             type[SourceSnapshotV4]
             | type[SourceBundleV4]
             | type[SignatureEnvelopeV4]
+            | type[LocalRecordV4]
         ),
-    ) -> SourceSnapshotV4 | SourceBundleV4 | SignatureEnvelopeV4:
+    ) -> SourceSnapshotV4 | SourceBundleV4 | SignatureEnvelopeV4 | LocalRecordV4:
         if type(reference) is not ContentRefV4 or reference.kind != kind:
             _fail("SOURCE_REF_KIND", f"expected {kind} content reference")
         raw = self._resolver.resolve_content(
@@ -224,6 +229,29 @@ class SourceServiceV4:
                 "normalized bytes do not match raw source bytes",
             )
         return raw_ref, normalized_ref
+
+    def _resolve_endorsement(
+        self,
+        reference: ContentRefV4,
+    ) -> SignatureEnvelopeV4 | LocalRecordV4:
+        """Resolve one authenticity endorsement; signed and local records both bind."""
+
+        first_error: ContractV4Error | None = None
+        for contract in (SignatureEnvelopeV4, LocalRecordV4):
+            try:
+                value = self._resolve_json_contract(
+                    reference,
+                    kind=SOURCE_AUTHENTICITY_RECEIPT_KIND,
+                    scope="source-authenticity",
+                    contract=contract,
+                )
+            except ContractV4Error as exc:
+                if first_error is None:
+                    first_error = exc
+                continue
+            return value
+        assert first_error is not None
+        raise first_error
 
     def admit_snapshot(
         self,
@@ -304,13 +332,8 @@ class SourceServiceV4:
                 expected_scope="source-provenance",
                 max_bytes=self._resolver.max_artifact_bytes,
             )
-        envelope = self._resolve_json_contract(
-            snapshot.authenticity_receipt_ref,
-            kind=SOURCE_AUTHENTICITY_RECEIPT_KIND,
-            scope="source-authenticity",
-            contract=SignatureEnvelopeV4,
-        )
-        if type(envelope) is not SignatureEnvelopeV4:
+        envelope = self._resolve_endorsement(snapshot.authenticity_receipt_ref)
+        if type(envelope) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("SOURCE_CONTRACT_TYPE", "resolved signature envelope has the wrong type")
         if envelope.issued_at < snapshot.retrieved_at:
             _fail(
@@ -344,7 +367,7 @@ class SourceServiceV4:
             required_role="source_attestor",
             required_scope="source-authenticity",
             required_artifact_kind=SOURCE_SNAPSHOT_KIND,
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -352,7 +375,9 @@ class SourceServiceV4:
         if prior is not None and prior != snapshot_ref:
             if verification_trust is self._trust:
                 with self._trust._nonce_lock:
-                    self._trust._seen_nonces.discard((envelope.key_id, envelope.nonce))
+                    self._trust._seen_nonces.discard(
+                        (getattr(envelope, "key_id", ""), envelope.nonce)
+                    )
             _fail("SOURCE_ID_COLLISION", "source_id cannot be rebound to different snapshot bytes")
         self._verified[snapshot_ref] = snapshot
         if envelope.expires_at is None:

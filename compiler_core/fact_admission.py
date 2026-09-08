@@ -21,6 +21,7 @@ from compiler_core.contracts import (
     FactAdmissionReceiptV4,
     FactAttestationV4,
     FactCandidateV4,
+    LocalRecordV4,
     RunIdentityV4,
     SignatureEnvelopeV4,
     SourceBundleV4,
@@ -31,7 +32,7 @@ from compiler_core.source_service import (
     SourceServiceV4,
     source_snapshot_ref,
 )
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 
 
 CASE_REQUEST_KIND = "case-request"
@@ -78,8 +79,12 @@ ReceiptSignerV4 = Callable[
         ContentRefV4,
         CanonicalTimeV4,
     ],
-    SignatureEnvelopeV4,
+    "SignatureEnvelopeV4 | LocalRecordV4",
 ]
+
+
+def _is_endorsement(value: object) -> bool:
+    return type(value) in (SignatureEnvelopeV4, LocalRecordV4)
 
 
 def _fail(code: str, detail: str) -> None:
@@ -155,7 +160,7 @@ class FactAdmissionServiceV4:
         self,
         resolver: ArtifactResolverV4,
         source_service: SourceServiceV4,
-        trust: TrustVerifierV4,
+        trust: TrustVerifierV4 | LocalRecordTrustV4,
         *,
         receipt_issuer: str,
         receipt_signer: ReceiptSignerV4,
@@ -163,7 +168,7 @@ class FactAdmissionServiceV4:
         if (
             type(resolver) is not ArtifactResolverV4
             or type(source_service) is not SourceServiceV4
-            or type(trust) is not TrustVerifierV4
+            or type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
             or source_service._resolver is not resolver
             or source_service._trust is not trust
             or type(receipt_issuer) is not str
@@ -582,7 +587,7 @@ class FactAdmissionServiceV4:
             required_role="legal_reviewer",
             required_scope="legal-approval",
             required_artifact_kind="legal-approval",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -779,7 +784,7 @@ class FactAdmissionServiceV4:
             run_identity_ref,
             now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if not _is_endorsement(signature):
             _fail("FACT_RECEIPT_SIGNATURE", "receipt signer returned the wrong contract")
         if (
             signature.issuer != self._receipt_issuer
@@ -798,7 +803,7 @@ class FactAdmissionServiceV4:
             required_role="service_signer",
             required_scope="service-certificate",
             required_artifact_kind="service-certificate",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(legal_principal,),
         )
@@ -1046,7 +1051,7 @@ class FactAdmissionServiceV4:
             required_role="service_signer",
             required_scope="service-certificate",
             required_artifact_kind="service-certificate",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(legal_principal,),
         )

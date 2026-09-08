@@ -43,6 +43,7 @@ from compiler_core.contracts import (
     RulePromotionReceiptV4,
     RuleV4,
     RunIdentityV4,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     SolverReceiptV4,
     SourceBundleV4,
@@ -50,7 +51,7 @@ from compiler_core.contracts import (
     TranslationReceiptV4,
     validate_rational_v4,
 )
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 
 
 CHECKER_SCOPE = "independent-checker"
@@ -148,8 +149,30 @@ CheckerSignerV4 = Callable[
         ContentRefV4,
         CanonicalTimeV4,
     ],
-    SignatureEnvelopeV4,
+    "SignatureEnvelopeV4 | LocalRecordV4",
 ]
+
+
+def _reader_endorsement(
+    reader: "_Reader",
+    reference: ContentRefV4,
+) -> SignatureEnvelopeV4 | LocalRecordV4:
+    """Resolve one endorsement via a reader; signed and local records both bind."""
+
+    first_error: Exception | None = None
+    for contract in (SignatureEnvelopeV4, LocalRecordV4):
+        try:
+            return reader.contract(
+                reference,
+                kind=SOURCE_AUTHENTICITY_RECEIPT_KIND,
+                scope=SOURCE_AUTHENTICITY_SCOPE,
+                contract=contract,
+            )
+        except Exception as exc:
+            if first_error is None:
+                first_error = exc
+    assert first_error is not None
+    raise first_error
 
 
 class IndependentCheckerV4Error(ValueError):
@@ -1040,7 +1063,7 @@ class IndependentCheckerV4:
     ) -> None:
         if (
             type(resolver) is not ArtifactResolverV4
-            or type(trust) is not TrustVerifierV4
+            or type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
             or type(receipt_issuer) is not str
             or not receipt_issuer
             or not callable(receipt_signer)
@@ -1053,7 +1076,7 @@ class IndependentCheckerV4:
 
     def _service_signature(
         self,
-        envelope: SignatureEnvelopeV4,
+        envelope: SignatureEnvelopeV4 | LocalRecordV4,
         *,
         subject: DigestV4,
         payload: DigestV4,
@@ -1063,13 +1086,13 @@ class IndependentCheckerV4:
         issuer: str | None = None,
     ) -> None:
         if (
-            type(envelope) is not SignatureEnvelopeV4
+            type(envelope) not in (SignatureEnvelopeV4, LocalRecordV4)
             or (issuer is not None and envelope.issuer != issuer)
             or envelope.run_identity_ref != run_ref
             or envelope.subject_digest != subject
             or envelope.payload_digest != payload
             or envelope.evidence_refs != evidence
-            or envelope.status != "APPROVED"
+            or envelope.status != self._trust.expected_status
         ):
             _fail("CHECKER_SIGNATURE_BINDING", "service signature context differs")
         self._trust._fresh_without_replay().verify(
@@ -1079,7 +1102,7 @@ class IndependentCheckerV4:
             required_role="service_signer",
             required_scope="service-certificate",
             required_artifact_kind="service-certificate",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -1099,11 +1122,9 @@ class IndependentCheckerV4:
         )
         if DigestV4.from_bytes(snapshot.canonical_bytes()) != reference.digest:
             _fail("CHECKER_SOURCE_BINDING", "source snapshot reference differs from bytes")
-        envelope = reader.contract(
+        envelope = _reader_endorsement(
+            reader,
             snapshot.authenticity_receipt_ref,
-            kind=SOURCE_AUTHENTICITY_RECEIPT_KIND,
-            scope=SOURCE_AUTHENTICITY_SCOPE,
-            contract=SignatureEnvelopeV4,
         )
         payload = snapshot.to_dict()
         del payload["authenticity_receipt_ref"]
@@ -1139,7 +1160,7 @@ class IndependentCheckerV4:
             required_role="source_attestor",
             required_scope=SOURCE_AUTHENTICITY_SCOPE,
             required_artifact_kind=SOURCE_SNAPSHOT_KIND,
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -1200,7 +1221,7 @@ class IndependentCheckerV4:
             required_role="pack_releaser",
             required_scope="pack-release",
             required_artifact_kind="rule-pack",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -1471,7 +1492,7 @@ class IndependentCheckerV4:
                 required_role="legal_reviewer",
                 required_scope="legal-approval",
                 required_artifact_kind="legal-approval",
-                expected_status="APPROVED",
+                expected_status=self._trust.expected_status,
                 now=now,
                 separation_from_principals=(),
             )
@@ -2369,7 +2390,7 @@ class IndependentCheckerV4:
             material.run_ref,
             now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("CHECKER_SIGNATURE_BINDING", "checker signer returned the wrong type")
         receipt = CheckerReceiptV4.from_dict({**body, "signature": signature.to_dict()})
         self._verify_receipt_value(receipt, material=material, now=now)

@@ -311,6 +311,22 @@ def evaluate_for_harness(
     """
 
     envelope = application.evaluate(request_ref, run_ref, case_scope=case_scope)
+    return project_harness_result(application, request, envelope=envelope)
+
+
+def project_harness_result(
+    application: ApplicationV4,
+    request: HarnessRunRequest,
+    *,
+    envelope: EvaluationEnvelopeV4,
+) -> HarnessRunResultV5:
+    """Project one already-evaluated envelope into the closed result contract.
+
+    The evaluation half lives in :func:`evaluate_for_harness` (or any caller
+    that already holds an envelope); this half reads only sealed artifacts so
+    a projection never re-evaluates.
+    """
+
     stage, horn = _stage_documents(application, envelope)
     issues: list[HarnessIssueResultV5] = []
     procedure_kinds: tuple[str, ...] = ()
@@ -420,4 +436,5 @@ __all__ = [
     "HarnessRunRequest",
     "HarnessRunResultV5",
     "evaluate_for_harness",
+    "project_harness_result",
 ]

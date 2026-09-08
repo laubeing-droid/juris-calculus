@@ -21,6 +21,7 @@ from compiler_core.contracts import (
     RulePromotionReceiptV4,
     RuleV4,
     RunIdentityV4,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     TranslationReceiptV4,
 )
@@ -280,6 +281,24 @@ class LegalIRCompilerV4:
             _fail("IR_NONCANONICAL_JSON", f"{kind} must use canonical contract bytes")
         return value
 
+    def _resolve_endorsement(self, reference: ContentRefV4) -> SignatureEnvelopeV4 | LocalRecordV4:
+        """Resolve one rule review endorsement; signed and local records both bind."""
+
+        first_error: ContractV4Error | None = None
+        for contract in (SignatureEnvelopeV4, LocalRecordV4):
+            try:
+                return self._resolve_contract(
+                    reference,
+                    kind=LEGAL_APPROVAL_KIND,
+                    scope=LEGAL_APPROVAL_SCOPE,
+                    contract=contract,
+                )
+            except ContractV4Error as exc:
+                if first_error is None:
+                    first_error = exc
+        assert first_error is not None
+        raise first_error
+
     def _resolve_self_digest(
         self,
         reference: ContentRefV4,
@@ -377,13 +396,10 @@ class LegalIRCompilerV4:
             or promotion.signature.issued_at != promotion.issued_at
         ):
             _fail("IR_PROMOTION_BINDING", "promotion does not approve the exact rule")
-        legal = self._resolve_contract(
+        legal = self._resolve_endorsement(
             promotion.legal_review_ref,
-            kind=LEGAL_APPROVAL_KIND,
-            scope=LEGAL_APPROVAL_SCOPE,
-            contract=SignatureEnvelopeV4,
         )
-        if type(legal) is not SignatureEnvelopeV4 or legal.run_identity_ref is not None:
+        if legal.run_identity_ref is not None:
             _fail("IR_INTERPRETATION_APPROVAL", "legal approval has the wrong envelope")
         expected_evidence = rule_review_evidence_refs(
             rule,
@@ -403,7 +419,7 @@ class LegalIRCompilerV4:
             required_role="legal_reviewer",
             required_scope=LEGAL_APPROVAL_SCOPE,
             required_artifact_kind=LEGAL_APPROVAL_KIND,
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(),
         )
@@ -728,7 +744,7 @@ class LegalIRCompilerV4:
             run_identity_ref,
             now,
         )
-        if type(signature) is not SignatureEnvelopeV4:
+        if type(signature) not in (SignatureEnvelopeV4, LocalRecordV4):
             _fail("IR_RECEIPT_SIGNATURE", "receipt signer returned the wrong contract")
         receipt = TranslationReceiptV4.from_dict({**body, "signature": signature.to_dict()})
         reference = ContentRefV4(
@@ -796,7 +812,7 @@ class LegalIRCompilerV4:
             required_role="service_signer",
             required_scope="service-certificate",
             required_artifact_kind="service-certificate",
-            expected_status="APPROVED",
+            expected_status=self._trust.expected_status,
             now=now,
             separation_from_principals=(legal_principal,),
         )

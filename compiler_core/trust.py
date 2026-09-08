@@ -13,8 +13,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from compiler_core.canonical_serialization import DigestV4, canonical_bytes
 from compiler_core.contracts import (
+    LOCAL_RECORD_ALGORITHM_V4,
+    LOCAL_RECORD_STATUS_V4,
     CanonicalTimeV4,
     ContractV4Error,
+    LocalRecordV4,
     SignatureEnvelopeV4,
     TrustPolicyV4,
 )
@@ -28,6 +31,8 @@ TRUST_PROFILES_V4 = MappingProxyType({
     "service-certificate": ("service_signer", "service-certificate"),
     "build-attestation": ("build_attestor", "build-attestation"),
 })
+
+TRUST_ENVIRONMENTS_V4 = frozenset({"test", "production", "local"})
 
 
 def _fail(code: str, detail: str) -> None:
@@ -83,6 +88,8 @@ class TrustKeyV4:
 class TrustVerifierV4:
     """Verify signed envelopes without filesystem, network, or private-key authority."""
 
+    expected_status = "APPROVED"
+
     def __init__(
         self,
         *,
@@ -123,12 +130,40 @@ class TrustVerifierV4:
     def _fresh_without_replay(self) -> "TrustVerifierV4":
         """Copy current trust configuration without reusing the live nonce ledger."""
 
+        return self.fresh_copy()
+
+    def fresh_copy(self) -> "TrustVerifierV4":
+        """Polymorphic copy without the live nonce ledger."""
+
         return TrustVerifierV4(
             policy=self.policy,
             keys=tuple(key for _, key in sorted(self._keys.items())),
             target_environment=self.target_environment,
             revoked_subject_digests=tuple(sorted(self._revoked_subjects, key=str)),
             revoked_nonces=tuple(sorted(self._revoked_nonces)),
+        )
+
+    def state_fingerprint(self) -> tuple[object, ...]:
+        """Comparable snapshot of this authority's configuration."""
+
+        return (
+            self.target_environment,
+            self.policy.canonical_bytes(),
+            tuple(
+                (
+                    key_id,
+                    key.issuer,
+                    key.principal_id,
+                    key.roles,
+                    key.scopes,
+                    key.artifact_kinds,
+                    key.public_key,
+                    key.production_allowed,
+                )
+                for key_id, key in sorted(self._keys.items())
+            ),
+            tuple(sorted(str(digest) for digest in self._revoked_subjects)),
+            tuple(sorted(self._revoked_nonces)),
         )
 
     def verify(
@@ -239,3 +274,142 @@ class TrustVerifierV4:
                 _fail("TRUST_REPLAY", "signature nonce was already consumed")
             self._seen_nonces.add(nonce_key)
         return key.principal_id
+
+
+class LocalRecordTrustV4:
+    """Local-record trust authority: content binding without any key material.
+
+    This is the explicit local provenance mode. It verifies exactly the same
+    structural bindings as :class:`TrustVerifierV4` (subject, payload,
+    evidence, role, scope, kind, status, time windows, policy, revocation,
+    replay, separation of duties) over :class:`LocalRecordV4` documents —
+    but it verifies no signature, holds no keys, and asserts no external
+    principal. A signed envelope reaching this authority is a hard error so
+    the old key-based procedure can never silently run in local mode.
+    """
+
+    expected_status = LOCAL_RECORD_STATUS_V4
+
+    def __init__(
+        self,
+        *,
+        policy: TrustPolicyV4,
+        revoked_subject_digests: tuple[DigestV4, ...] = (),
+        revoked_nonces: tuple[str, ...] = (),
+    ) -> None:
+        if type(policy) is not TrustPolicyV4:
+            _fail("TRUST_INPUT_TYPE", "policy must be TrustPolicyV4")
+        if type(revoked_subject_digests) is not tuple or any(
+            type(item) is not DigestV4 for item in revoked_subject_digests
+        ):
+            _fail("TRUST_REVOCATION_CONFIG", "revoked subjects must be DigestV4 values")
+        if type(revoked_nonces) is not tuple or any(
+            type(item) is not str or not item for item in revoked_nonces
+        ):
+            _fail("TRUST_REVOCATION_CONFIG", "revoked nonces must be non-empty strings")
+        self.policy = policy
+        self.target_environment = "local"
+        self._keys: dict[str, TrustKeyV4] = {}
+        self._revoked_subjects = frozenset(revoked_subject_digests)
+        self._revoked_nonces = frozenset(revoked_nonces)
+        self._seen_nonces: set[tuple[str, str]] = set()
+        self._nonce_lock = Lock()
+
+    def _fresh_without_replay(self) -> "LocalRecordTrustV4":
+        return self.fresh_copy()
+
+    def fresh_copy(self) -> "LocalRecordTrustV4":
+        return LocalRecordTrustV4(
+            policy=self.policy,
+            revoked_subject_digests=tuple(sorted(self._revoked_subjects, key=str)),
+            revoked_nonces=tuple(sorted(self._revoked_nonces)),
+        )
+
+    def state_fingerprint(self) -> tuple[object, ...]:
+        return (
+            self.target_environment,
+            self.policy.canonical_bytes(),
+            (),
+            tuple(sorted(str(digest) for digest in self._revoked_subjects)),
+            tuple(sorted(self._revoked_nonces)),
+        )
+
+    def verify(
+        self,
+        record: LocalRecordV4,
+        *,
+        expected_subject_digest: DigestV4,
+        expected_payload_digest: DigestV4,
+        required_role: str,
+        required_scope: str,
+        required_artifact_kind: str,
+        expected_status: str,
+        now: CanonicalTimeV4,
+        separation_from_principals: tuple[str, ...],
+    ) -> str:
+        if type(record) is not LocalRecordV4:
+            _fail(
+                "TRUST_INPUT_TYPE",
+                "local trust verifies only LocalRecordV4 records; "
+                "signed envelopes are not part of the local path",
+            )
+        if type(expected_subject_digest) is not DigestV4 or type(expected_payload_digest) is not DigestV4:
+            _fail("TRUST_INPUT_TYPE", "expected digests must be DigestV4")
+        if type(now) is not CanonicalTimeV4:
+            _fail("TRUST_INPUT_TYPE", "now must be CanonicalTimeV4")
+        required_role = _nonempty(required_role, "required_role")
+        required_scope = _nonempty(required_scope, "required_scope")
+        required_artifact_kind = _nonempty(required_artifact_kind, "required_artifact_kind")
+        expected_status = _nonempty(expected_status, "expected_status")
+        if type(separation_from_principals) is not tuple or any(
+            type(item) is not str for item in separation_from_principals
+        ):
+            _fail("TRUST_INPUT_TYPE", "separation principals must be non-empty strings")
+
+        profile = TRUST_PROFILES_V4.get(required_scope)
+        if profile != (required_role, required_artifact_kind):
+            _fail("TRUST_PROFILE_MISMATCH", "required scope, role, and artifact kind disagree")
+        policy = self.policy
+        if now < policy.valid_from or (policy.valid_to is not None and not now < policy.valid_to):
+            _fail("TRUST_POLICY_INACTIVE", "trust policy is not active at the verification time")
+        if record.policy_digest != policy.policy_digest:
+            _fail("TRUST_POLICY_MISMATCH", "record does not bind the active trust policy")
+        if record.subject_digest != expected_subject_digest:
+            _fail("TRUST_SUBJECT_MISMATCH", "record subject does not match expectation")
+        if record.payload_digest != expected_payload_digest:
+            _fail("TRUST_PAYLOAD_MISMATCH", "record payload does not match expectation")
+        if record.role != required_role:
+            _fail("TRUST_ROLE_MISMATCH", "record role does not match expectation")
+        if record.scope != required_scope:
+            _fail("TRUST_SCOPE_MISMATCH", "record scope does not match expectation")
+        if record.kind != required_artifact_kind:
+            _fail("TRUST_KIND_MISMATCH", "record artifact kind does not match expectation")
+        if record.status != expected_status:
+            _fail("TRUST_STATUS_MISMATCH", "record status does not match expectation")
+        if record.issuer not in policy.allowed_issuers:
+            _fail("TRUST_ISSUER_MISMATCH", "record issuer is not allowed by the policy")
+        if required_role not in policy.allowed_roles:
+            _fail("TRUST_ROLE_MISMATCH", "record role is outside the policy scope")
+        if required_scope not in policy.allowed_scopes:
+            _fail("TRUST_SCOPE_MISMATCH", "record scope is outside the policy scope")
+        if required_artifact_kind not in policy.allowed_artifact_kinds:
+            _fail("TRUST_KIND_MISMATCH", "artifact kind is outside the policy scope")
+        if record.revocation_ref != policy.revocation_policy_ref:
+            _fail("TRUST_REVOCATION_POLICY", "record does not bind the revocation policy")
+        if record.issued_at < policy.valid_from or now < record.issued_at:
+            _fail("TRUST_ISSUED_TIME", "record issued time is outside the valid interval")
+        if record.expires_at is None or not now < record.expires_at:
+            _fail("TRUST_SIGNATURE_EXPIRED", "record is expired or has no expiry")
+        if policy.valid_to is not None and policy.valid_to < record.expires_at:
+            _fail("TRUST_SIGNATURE_EXPIRY", "record outlives the trust policy")
+        if record.subject_digest in self._revoked_subjects or record.nonce in self._revoked_nonces:
+            _fail("TRUST_SIGNATURE_REVOKED", "record subject or nonce is revoked")
+        if record.issuer in separation_from_principals:
+            _fail("TRUST_SEPARATION_OF_DUTIES", "record issuer violates separation of duties")
+
+        nonce_key = (record.issuer, record.nonce)
+        with self._nonce_lock:
+            if nonce_key in self._seen_nonces:
+                _fail("TRUST_REPLAY", "record nonce was already consumed")
+            self._seen_nonces.add(nonce_key)
+        return record.issuer

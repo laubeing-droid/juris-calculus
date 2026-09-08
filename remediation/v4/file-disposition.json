@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 275,
+  "count": 278,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -282,6 +282,11 @@
       "production_wheel": false
     },
     {
+      "path": "compiler_core/local_runtime.py",
+      "authority_class": "PUBLIC_ADAPTER",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/mcp.py",
       "authority_class": "PUBLIC_ADAPTER",
       "production_wheel": true
@@ -453,6 +458,11 @@
     },
     {
       "path": "examples/harness/sample_incremental.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "examples/harness/sample_local.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -833,6 +843,11 @@
     },
     {
       "path": "tests/integration/test_trust_chain.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/local/test_local_runtime.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },

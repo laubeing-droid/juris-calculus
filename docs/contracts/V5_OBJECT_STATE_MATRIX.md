@@ -1,6 +1,6 @@
 # V5 对象与状态矩阵
 
-权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（5.0.1 整改后 105 个类型条目，其中 30 个 `*V5` 对象组）。
+权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（5.0.1 整改后 105 个类型条目，其中 30 个 `*V5` 对象组；SPLIT-LOCAL-3 起新增第 106 个：本机记录背书 `LocalRecordV4`，layer=trust）。
 
 ## 版本决定
 

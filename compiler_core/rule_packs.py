@@ -31,6 +31,7 @@ from compiler_core.contracts import (
     PackManifestV4,
     PackSignatureV4,
     RulePromotionReceiptV4,
+    LocalRecordV4,
     RuleV4,
     SignatureEnvelopeV4,
     SourceSnapshotV4,
@@ -43,7 +44,7 @@ from compiler_core.source_service import (
     SourceServiceV4,
     source_authenticity_payload_digest,
 )
-from compiler_core.trust import TrustVerifierV4
+from compiler_core.trust import LocalRecordTrustV4, TrustVerifierV4
 PACK_SCHEMA_VERSION = "1.0"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _ALLOWED_MODALITIES = {"OBLIGATION", "PROHIBITION", "PERMISSION", "CONSTITUTIVE", "UNKNOWN", ""}
@@ -303,7 +304,7 @@ class RulePackVerifierV4:
         self,
         resolver: ArtifactResolverV4,
         source_service: SourceServiceV4,
-        trust: TrustVerifierV4,
+        trust: TrustVerifierV4 | LocalRecordTrustV4,
         *,
         expected_engine_api: str,
         expected_compiler_build_digest: DigestV4,
@@ -313,7 +314,7 @@ class RulePackVerifierV4:
         if (
             type(resolver) is not ArtifactResolverV4
             or type(source_service) is not SourceServiceV4
-            or type(trust) is not TrustVerifierV4
+            or type(trust) not in (TrustVerifierV4, LocalRecordTrustV4)
             or source_service._resolver is not resolver
             or source_service._trust is not trust
             or type(expected_engine_api) is not str
@@ -333,7 +334,7 @@ class RulePackVerifierV4:
         self._signature_principals: dict[tuple[object, ...], str] = {}
         self._verified: dict[ContentRefV4, VerifiedRulePackV4] = {}
         self._verify_lock = RLock()
-        self._active_trust: ContextVar[TrustVerifierV4 | None] = ContextVar(
+        self._active_trust: ContextVar[TrustVerifierV4 | LocalRecordTrustV4 | None] = ContextVar(
             f"rule-pack-trust-v4-{id(self)}", default=None
         )
         self._active_source_service: ContextVar[SourceServiceV4 | None] = ContextVar(
@@ -343,43 +344,19 @@ class RulePackVerifierV4:
             frozenset[ContentRefV4] | None
         ] = ContextVar(f"rule-pack-preadmitted-sources-v4-{id(self)}", default=None)
 
-    def _trust_verifier(self) -> TrustVerifierV4:
+    def _trust_verifier(self) -> TrustVerifierV4 | LocalRecordTrustV4:
         return self._active_trust.get() or self._trust
 
     @staticmethod
-    def _copy_trust(trust: TrustVerifierV4) -> TrustVerifierV4:
-        return TrustVerifierV4(
-            policy=trust.policy,
-            keys=tuple(key for _, key in sorted(trust._keys.items())),
-            target_environment=trust.target_environment,
-            revoked_subject_digests=tuple(sorted(trust._revoked_subjects, key=str)),
-            revoked_nonces=tuple(sorted(trust._revoked_nonces)),
-        )
+    def _copy_trust(trust: TrustVerifierV4 | LocalRecordTrustV4) -> Any:
+        return trust.fresh_copy()
 
     def _trust_state(
         self,
-        trust: TrustVerifierV4 | None = None,
+        trust: TrustVerifierV4 | LocalRecordTrustV4 | None = None,
     ) -> tuple[object, ...]:
         selected = self._trust_verifier() if trust is None else trust
-        return (
-            selected.target_environment,
-            selected.policy.canonical_bytes(),
-            tuple(
-                (
-                    key_id,
-                    key.issuer,
-                    key.principal_id,
-                    key.roles,
-                    key.scopes,
-                    key.artifact_kinds,
-                    key.public_key,
-                    key.production_allowed,
-                )
-                for key_id, key in sorted(selected._keys.items())
-            ),
-            tuple(sorted(str(digest) for digest in selected._revoked_subjects)),
-            tuple(sorted(selected._revoked_nonces)),
-        )
+        return selected.state_fingerprint()
 
     def _resolve_json(
         self,
@@ -440,9 +417,30 @@ class RulePackVerifierV4:
     def _resolve_component(self, reference: ContentRefV4, *, kind: str) -> None:
         self._resolve_json(reference, kind=kind, scope=RULE_COMPONENT_SCOPE)
 
+    def _resolve_endorsement(
+        self,
+        reference: ContentRefV4,
+        *,
+        kind: str,
+        scope: str,
+    ) -> SignatureEnvelopeV4 | LocalRecordV4:
+        """Resolve one endorsement document; signed and local records both bind."""
+
+        first_error: ContractV4Error | None = None
+        for contract in (SignatureEnvelopeV4, LocalRecordV4):
+            try:
+                return self._resolve_contract(
+                    reference, kind=kind, scope=scope, contract=contract,
+                )
+            except ContractV4Error as exc:
+                if first_error is None:
+                    first_error = exc
+        assert first_error is not None
+        raise first_error
+
     def _ensure_cached_signature_active(
         self,
-        envelope: SignatureEnvelopeV4,
+        envelope: SignatureEnvelopeV4 | LocalRecordV4,
         *,
         now: CanonicalTimeV4,
         principal: str,
@@ -463,7 +461,7 @@ class RulePackVerifierV4:
     def _verify_signature(
         self,
         reference: ContentRefV4,
-        envelope: SignatureEnvelopeV4,
+        envelope: SignatureEnvelopeV4 | LocalRecordV4,
         *,
         expected_subject: DigestV4,
         expected_payload: DigestV4,
@@ -509,7 +507,9 @@ class RulePackVerifierV4:
         return principal
 
     @staticmethod
-    def _signature_without_run(envelope: SignatureEnvelopeV4, *, detail: str) -> None:
+    def _signature_without_run(
+        envelope: SignatureEnvelopeV4 | LocalRecordV4, *, detail: str
+    ) -> None:
         if envelope.run_identity_ref is not None:
             _v4_fail("PACK_SIGNATURE_RUN", f"{detail} must precede a run identity")
 
@@ -529,20 +529,20 @@ class RulePackVerifierV4:
         )
         if type(value) is not SourceSnapshotV4:
             _v4_fail("PACK_SOURCE_TYPE", "source reference is not SourceSnapshotV4")
-        envelope_value = self._resolve_contract(
+        envelope = self._resolve_endorsement(
             value.authenticity_receipt_ref,
             kind=SOURCE_AUTHENTICITY_RECEIPT_KIND,
             scope="source-authenticity",
-            contract=SignatureEnvelopeV4,
         )
-        if type(envelope_value) is not SignatureEnvelopeV4:
-            _v4_fail("PACK_SOURCE_TYPE", "source receipt is not a signature envelope")
-        envelope = envelope_value
+        verifier = self._trust_verifier()
         if reference in (self._active_preadmitted_sources.get() or ()):
-            key = self._trust_verifier()._keys.get(envelope.key_id)
-            if key is None:
-                _v4_fail("PACK_SOURCE_KEY", "verified source key is absent from trust snapshot")
-            principal = key.principal_id
+            if type(verifier) is LocalRecordTrustV4:
+                principal = envelope.issuer
+            else:
+                key = verifier._keys.get(envelope.key_id)
+                if key is None:
+                    _v4_fail("PACK_SOURCE_KEY", "verified source key is absent from trust snapshot")
+                principal = key.principal_id
         else:
             principal = self._verify_signature(
                 value.authenticity_receipt_ref,
@@ -552,7 +552,7 @@ class RulePackVerifierV4:
                 role="source_attestor",
                 scope="source-authenticity",
                 artifact_kind=SOURCE_SNAPSHOT_KIND,
-                status="APPROVED",
+                status=verifier.expected_status,
                 now=now,
                 separation=(),
             )
@@ -641,22 +641,16 @@ class RulePackVerifierV4:
             or receipt.signature.issued_at != receipt.issued_at
         ):
             _v4_fail("PACK_PROMOTION_BINDING", "promotion receipt does not approve this rule")
-        legal_value = self._resolve_contract(
+        legal = self._resolve_endorsement(
             receipt.legal_review_ref,
             kind=LEGAL_APPROVAL_KIND,
             scope=LEGAL_APPROVAL_SCOPE,
-            contract=SignatureEnvelopeV4,
         )
-        engineering_value = self._resolve_contract(
+        engineering = self._resolve_endorsement(
             receipt.engineering_review_ref,
             kind=ENGINEERING_APPROVAL_KIND,
             scope=ENGINEERING_APPROVAL_SCOPE,
-            contract=SignatureEnvelopeV4,
         )
-        if type(legal_value) is not SignatureEnvelopeV4 or type(engineering_value) is not SignatureEnvelopeV4:
-            _v4_fail("PACK_REVIEW_TYPE", "promotion reviews must be signature envelopes")
-        legal = legal_value
-        engineering = engineering_value
         for envelope, detail in ((legal, "legal review"), (engineering, "engineering review")):
             self._signature_without_run(envelope, detail=detail)
         replay_ref = self._trust_verifier().policy.replay_policy_ref
@@ -666,6 +660,7 @@ class RulePackVerifierV4:
         )
         if legal.evidence_refs != legal_evidence or engineering.evidence_refs != engineering_evidence:
             _v4_fail("PACK_REVIEW_EVIDENCE", "rule review evidence is incomplete or reordered")
+        expected_status = self._trust_verifier().expected_status
         legal_principal = self._verify_signature(
             receipt.legal_review_ref,
             legal,
@@ -674,7 +669,7 @@ class RulePackVerifierV4:
             role="legal_reviewer",
             scope=LEGAL_APPROVAL_SCOPE,
             artifact_kind=LEGAL_APPROVAL_KIND,
-            status="APPROVED",
+            status=expected_status,
             now=now,
             separation=(),
         )
@@ -686,7 +681,7 @@ class RulePackVerifierV4:
             role="engineering_reviewer",
             scope=ENGINEERING_APPROVAL_SCOPE,
             artifact_kind=ENGINEERING_APPROVAL_KIND,
-            status="APPROVED",
+            status=expected_status,
             now=now,
             separation=(legal_principal,),
         )
@@ -719,7 +714,7 @@ class RulePackVerifierV4:
             role="service_signer",
             scope="service-certificate",
             artifact_kind="service-certificate",
-            status="APPROVED",
+            status=expected_status,
             now=now,
             separation=(legal_principal, engineering_principal),
         )
@@ -954,15 +949,11 @@ class RulePackVerifierV4:
             seen_principals.update(role_principals)
 
         build_ref = build_refs[0]
-        build_value = self._resolve_contract(
+        build = self._resolve_endorsement(
             build_ref,
             kind=BUILD_ATTESTATION_KIND,
             scope=BUILD_ATTESTATION_SCOPE,
-            contract=SignatureEnvelopeV4,
         )
-        if type(build_value) is not SignatureEnvelopeV4:
-            _v4_fail("PACK_BUILD_TYPE", "build attestation must be a signature envelope")
-        build = build_value
         build_subject = build_subject_ref(manifest)
         stored_build_subject = self._resolver.resolve_content(
             build_subject,
@@ -990,7 +981,7 @@ class RulePackVerifierV4:
             role="build_attestor",
             scope=BUILD_ATTESTATION_SCOPE,
             artifact_kind=BUILD_ATTESTATION_KIND,
-            status="APPROVED",
+            status=self._trust_verifier().expected_status,
             now=now,
             separation=distinct_promoters,
         )
@@ -1023,7 +1014,7 @@ class RulePackVerifierV4:
             role="pack_releaser",
             scope="pack-release",
             artifact_kind="rule-pack",
-            status="APPROVED",
+            status=self._trust_verifier().expected_status,
             now=now,
             separation=(*distinct_promoters, build_principal),
         )

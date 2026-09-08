@@ -36,7 +36,7 @@ jc evaluate --input case-input-bundle.json --json   # 评估一个结构化案�
 LLM proposes -> verification gates decide -> formal kernel reasons
 ```
 
-- **合同面**：105 个封闭合同类型（含 30 个 V5 对象组），`schemas/jc-v5.schema.json` 由代码确定性生成、禁止手改；MCP 侧是四工具 stdio 服务（`mcp_manifest.json`）。CLI、Python（`JCClient`）与 MCP 三个入口共用同一个 application service，语义完全一致。
+- **合同面**：106 个封闭合同类型（含 30 个 V5 对象组与 1 个本机记录背书 `LocalRecordV4`），`schemas/jc-v5.schema.json` 由代码确定性生成、禁止手改；MCP 侧是四工具 stdio 服务（`mcp_manifest.json`）。CLI、Python（`JCClient`）与 MCP 三个入口共用同一个 application service，语义完全一致。
 - **状态空间**：六轴终态分类器把全部 6720 种组合收敛到 124 个可达终态，杜绝"看似成功"的模糊输出。
 - **证明绑定**：91 个运行时模块对 452 条上游 Lean 声明的处置登记在 `proofs/` 目录；运行时实现的保证等级是 crossCheckOnly（交叉核验），不是 kernelVerified。
 - **推理特性（5.0.1）**：同案件 add-only 后续请求默认复用密封的父 Horn 状态做真增量（非单调变化自动回退全量并留痕）；已准入优先关系要么按登记策略参与击败判定，要么正式阻断该问题的完整性声明（不签发证书）；程序四路结论（裁定/程序处置/待法律判断/求解未完成）全部由公开输入驱动；预算耗尽以类型化未决义务传播，不变成工程错误。
