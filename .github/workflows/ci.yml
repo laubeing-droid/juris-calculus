@@ -52,6 +52,12 @@ jobs:
       - name: Required current suites
         run: python -B tools/remediate_v4.py run --through V4-03-OFFICIAL-YAML --log work/required-run.json
 
+      - name: Business root acceptance (jc-business-root/1)
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: |
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/contract/test_business_root.py tests/local/test_business_root_local.py
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging/test_business_wheel_install.py
+
       - name: Preserve required run evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

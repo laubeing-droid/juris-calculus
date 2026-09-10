@@ -46,6 +46,7 @@ from compiler_core.contracts import (
     DEFAULT_RESOURCE_LIMITS_V4,
     HARD_MAX_RESOURCE_LIMITS_V4,
     LOCAL_RECORD_ALGORITHM_V4,
+    BusinessTaskV1,
     CanonicalLocatorV4,
     CanonicalTimeV4,
     CaseArtifactV4,
@@ -1138,14 +1139,20 @@ class LocalCaseInputsBuilderV4:
         composition_choice: Any | None = None,
         composition_expression: Any | None = None,
         composition_operands: tuple[Any, ...] = (),
+        business_tasks: tuple[Any, ...] = (),
         now: CanonicalTimeV4 | None = None,
     ) -> CaseInputBundleV4:
         if not case_id:
             raise LocalRuntimeError("case_id must not be empty")
-        if not queries:
+        if not queries and not business_tasks:
             raise LocalRuntimeError(
-                "a local case bundle needs at least one issue query"
+                "a local case bundle needs at least one issue query or "
+                "one typed jc-business-root/1 task"
             )
+        business_tasks = tuple(
+            task if isinstance(task, BusinessTaskV1) else BusinessTaskV1.from_dict(dict(task))
+            for task in business_tasks
+        )
         facts = tuple(
             fact if isinstance(fact, LocalFactInput)
             else LocalFactInput(**dict(fact))
@@ -1338,13 +1345,15 @@ class LocalCaseInputsBuilderV4:
             query_rows.append(_query_request_v5(
                 query.query_id, query.claim, query.profile, binding,
             ))
-        defeat_policy = DefeatPolicyV5(
-            policy_id="local-defeat-policy",
-            policy_version="1",
-            request_ref=binding.digest,
-            allowed_kinds=tuple(allowed_attack_kinds),
-            legal_evidence_ref=digest_value({"governance": "local-defeat-policy"}),
-        )
+        defeat_policy = None
+        if query_rows:
+            defeat_policy = DefeatPolicyV5(
+                policy_id="local-defeat-policy",
+                policy_version="1",
+                request_ref=binding.digest,
+                allowed_kinds=tuple(allowed_attack_kinds),
+                legal_evidence_ref=digest_value({"governance": "local-defeat-policy"}),
+            )
         request = CaseRequestV4(
             request_id_value,
             "jc/5.0",
@@ -1366,6 +1375,7 @@ class LocalCaseInputsBuilderV4:
             query_refutations_v5=tuple(query_refutations),
             query_gates_v5=tuple(query_gates),
             procedural_input_v5=procedural_input,
+            business_tasks_v1=business_tasks,
         )
         bundle_body = {
             "schema_version": "jc/case-input-bundle/1.0",

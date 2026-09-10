@@ -20,19 +20,34 @@ def _load(material: ProductionMaterial, **kwargs):
     )
 
 
+def _after(moment: CanonicalTimeV4) -> CanonicalTimeV4:
+    """One second after ``moment`` (CanonicalTimeV4 has second resolution)."""
+
+    from datetime import datetime, timedelta, timezone
+
+    parsed = datetime.strptime(moment.wire, "%Y-%m-%dT%H:%M:%SZ").replace(
+        tzinfo=timezone.utc,
+    )
+    return CanonicalTimeV4((parsed + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
 def test_real_local_pack_loads_six_formal_rules_at_current_time(
     production_material: ProductionMaterial,
 ) -> None:
-    loaded = _load(production_material)
-    assert loaded.formal_rule_ids == (
-        "PIPL-ART-013", "PIPL-ART-014", "PIPL-ART-015",
-        "PIPL-ART-016", "PIPL-ART-017", "PIPL-ART-018",
-    )
-    assert loaded.verified_at != CanonicalTimeV4.from_dict(
+    # Pass an explicit now one second after the stored verification_time so
+    # the assertion tests the loader's current-time stamping instead of
+    # second-resolution wall-clock collision luck.
+    stored = CanonicalTimeV4.from_dict(
         json.loads(production_material.trust_path.read_text("utf-8"))[
             "verification_time"
         ]
     )
+    loaded = _load(production_material, now=_after(stored))
+    assert loaded.formal_rule_ids == (
+        "PIPL-ART-013", "PIPL-ART-014", "PIPL-ART-015",
+        "PIPL-ART-016", "PIPL-ART-017", "PIPL-ART-018",
+    )
+    assert loaded.verified_at == _after(stored)
     trusted = next(key for key in loaded.keys if key.key_id == loaded.service_key.key_id)
     assert trusted.public_key == loaded.service_key.public_key
 

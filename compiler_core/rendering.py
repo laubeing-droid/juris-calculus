@@ -95,6 +95,20 @@ def _lines(verified: VerifiedAuditBundleV4, audience: str) -> list[str]:
     )
     if not result.claims:
         lines.append("- none")
+    lines.extend(["", "## business results", ""])
+    if not result.business_results_v1:
+        lines.append("- none")
+    for row in result.business_results_v1:
+        # Read-only projection of the sealed rows; no amounts are recomputed
+        # here and a conditional row is never shown as a court finding.
+        lines.append(
+            f"- `{row.task_id}` ({row.profile}): {row.completion.value}, "
+            f"evidence `{row.formal_evidence}`"
+        )
+        lines.extend(
+            f"  - obligation `{item.code}`: {item.detail}"
+            for item in row.open_obligations
+        )
     lines.extend(["", "## sources", ""])
     sources = sorted({_ref(ref) for claim in result.claims for ref in claim.source_refs})
     lines.extend(f"- `{value}`" for value in sources)

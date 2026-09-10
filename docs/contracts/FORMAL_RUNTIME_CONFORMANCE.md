@@ -14,6 +14,8 @@ JC does not claim that every Python path is machine-proved or that it supplies a
 | Finite SMT check | Bounded check, not a universal theorem. |
 | Upstream Lean theorem | Specification evidence from the upstream theorem. |
 | Heuristic/diagnostic | Task-specific empirical observation. |
+| `jc-business-root/1` checker (`jc-business-checker/1`) | Independent recomputation evidence for the executed scenario set; cross-validated general algorithm, kernel pending — never a kernel-checked theorem or a legal conclusion. |
+| `verify_business_delivery` | Byte-level readback evidence for the two delivered files against one sealed run; zero evaluations, no rewriting of sealed bundles. |
 
 Acceptance paths must not contain silent placeholders. An intentionally incomplete feature must be outside the acceptance path or fail closed; it must name its limitation and never be presented as a formal proof.
 

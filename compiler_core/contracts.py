@@ -18,8 +18,9 @@ from __future__ import annotations
 import base64
 import calendar
 from dataclasses import MISSING, dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
+from fractions import Fraction
 from functools import total_ordering
 from math import gcd
 import re
@@ -33,6 +34,7 @@ from compiler_core.canonical_serialization import (
     CanonicalizationError,
     DigestV4,
     canonical_bytes,
+    canonical_text,
     digest_value,
     parse_json_document,
 )
@@ -501,6 +503,15 @@ _SIGNED_SUBJECT_FIELDS_V4 = MappingProxyType({
     "CheckerReceiptV4": "subject_ref",
     "ProofReceiptV4": "subject_ref",
 })
+# Digest-stable optional extension fields: omitted from the canonical wire
+# form while empty. Only new business capabilities are listed here; the
+# historical V5 fields keep their original always-present serialization.
+_OMIT_EMPTY_EXTENSION_FIELDS_V5 = frozenset({
+    "business_tasks_v1",
+    "business_results_v1",
+    "error_code",
+    "error_stage",
+})
 
 
 class V4Contract:
@@ -596,7 +607,16 @@ class V4Contract:
         return cls(**values)
 
     def to_dict(self) -> dict[str, object]:
-        value = {item.name: _to_wire(getattr(self, item.name)) for item in fields(self)}
+        value: dict[str, object] = {}
+        for item in fields(self):
+            raw = getattr(self, item.name)
+            if item.name in _OMIT_EMPTY_EXTENSION_FIELDS_V5 and (
+                raw is None or raw == ()
+            ):
+                # Digest-stable optional extension: absent entirely while
+                # empty, so legacy canonical identities never change.
+                continue
+            value[item.name] = _to_wire(raw)
         _walk_wire(value)
         return value
 
@@ -1029,6 +1049,10 @@ class CaseRequestV4(V4Contract):
     # Optional V5 incremental Horn parent: a prior completed run of the same
     # case whose verified Horn state may be reused under the add-only contract.
     incremental_parent_v5: "IncrementalParentV5 | None" = None
+    # Optional jc-business-root/1 extension: typed conditional business tasks.
+    # Omitted from the canonical form entirely when empty, so every legacy
+    # request keeps its exact historical identity (digest-stable extension).
+    business_tasks_v1: "tuple[BusinessTaskV1, ...]" = ()
 
     def _validate(self) -> None:
         _nonempty(self.request_id, "CaseRequestV4.request_id")
@@ -1095,6 +1119,18 @@ class CaseRequestV4(V4Contract):
                 "V5_STAGE_PAIRING",
                 "composition_operands_v5 requires a composition expression",
             )
+        if len(self.business_tasks_v1) > 64:
+            _fail("BUSINESS_TASK_LIMIT", "business_tasks_v1 exceeds 64 tasks")
+        task_ids = [item.task_id for item in self.business_tasks_v1]
+        if len(task_ids) != len(set(task_ids)):
+            _fail("DUPLICATE_REFERENCE", "business_tasks_v1 repeats a task_id")
+        for task in self.business_tasks_v1:
+            overlapping = set(task.source_refs) & set(self.fact_attestation_refs)
+            if overlapping:
+                _fail(
+                    "BUSINESS_TASK_BINDING",
+                    "business_tasks_v1 source_refs reuse fact attestation references",
+                )
 
     @classmethod
     def from_json_bytes(
@@ -2206,6 +2242,8 @@ class SemanticResultV4(V4Contract):
     receipt_refs: tuple[ContentRefV4, ...]
     run_identity_ref: ContentRefV4
     result_digest: DigestV4
+    # Optional jc-business-root/1 rows; omitted while empty (digest-stable).
+    business_results_v1: "tuple[BusinessTaskResultV5, ...]" = ()
 
     def digest_body(self) -> dict[str, object]:
         """Project semantic identity without receipt issuance or observability metadata."""
@@ -2310,6 +2348,9 @@ class SemanticResultV4(V4Contract):
             )
         if self.decision_status is DecisionStatusV4.REVIEW_ONLY_RESULT and not self.review_state.unresolved_item_refs:
             _fail("REVIEW_ITEM_REQUIRED", "review-only result requires unresolved items")
+        row_ids = [item.task_id for item in self.business_results_v1]
+        if len(row_ids) != len(set(row_ids)):
+            _fail("DUPLICATE_REFERENCE", "business_results_v1 repeats a task_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -3417,6 +3458,596 @@ class EmpiricalResultV5(V4Contract):
             )
 
 
+# ---------------------------------------------------------------------------
+# jc-business-root/1 wire contracts. Field/structure authority for the
+# optional ``CaseRequestV4.business_tasks_v1`` extension and its results.
+# Exact rationals are canonical strings ("n" or "n/d"); floats and
+# bool-as-int are rejected by the shared codec and by validation below.
+# ---------------------------------------------------------------------------
+
+_BUSINESS_RATIONAL_RE = re.compile(r"-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?\Z")
+_BUSINESS_ISO_DATE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}\Z")
+_BUSINESS_FORMULA_OPS_V1 = frozenset({"true", "false", "atom", "not", "and", "or"})
+BUSINESS_ROOT_CAPABILITY_V1 = "jc-business-root/1"
+BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1 = "SYNTHETIC-CONDITIONAL-PRINCIPAL/1"
+BUSINESS_MODEL_BASIS_SETTLEMENT_GRID_V1 = "SYNTHETIC-SETTLEMENT-GRID/1"
+BUSINESS_REQUIREMENT_TWO_FILES_V1 = (
+    "SYNTHETIC_EXACT_PRINCIPAL_ANALYTICS_TWO_FILES/1"
+)
+BUSINESS_DELIVERY_FILES_V1 = (
+    "conditional_principal.txt",
+    "calculation.json",
+)
+
+
+def _business_rational(value: object, path: str) -> None:
+    if type(value) is not str or _BUSINESS_RATIONAL_RE.fullmatch(value) is None:
+        _fail("BUSINESS_RATIONAL", f"{path} must be a canonical rational string")
+    parsed = Fraction(value)
+    wire = str(parsed.numerator) if parsed.denominator == 1 else (
+        f"{parsed.numerator}/{parsed.denominator}"
+    )
+    if wire != value:
+        _fail("BUSINESS_RATIONAL", f"{path} is not a canonical rational string")
+
+
+def _business_date(value: object, path: str) -> None:
+    if type(value) is not str or _BUSINESS_ISO_DATE_RE.fullmatch(value) is None:
+        _fail("BUSINESS_DATE", f"{path} must be an ISO calendar date")
+    try:
+        date.fromisoformat(value)
+    except ValueError as exc:
+        raise ContractV4Error("BUSINESS_DATE", f"{path} is not a real date") from exc
+
+
+def _business_identity(value: object, path: str) -> str:
+    if type(value) is not str or not value:
+        _fail("BUSINESS_IDENTITY", f"{path} must be a nonempty string")
+    if any(
+        ord(ch) < 32 or ch in "\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069"
+        for ch in value
+    ):
+        _fail("BUSINESS_IDENTITY", f"{path} carries control or bidi-override characters")
+    return value
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessContextV1(V4Contract):
+    """The 20 semantic dimensions bound by every object of one business task."""
+
+    request: str
+    jurisdiction: str
+    event_time: str
+    decision_time: str
+    procedure: str
+    stage: str
+    party: str
+    issue: str
+    scenario: str
+    profile: str
+    law_version: str
+    interpretation: str
+    rulepack_version: str
+    engine_version: str
+    model_version: str
+    evidence_version: str
+    target: str
+    semantic_scope: str
+    assumptions: tuple[str, ...]
+    max_depth: int
+
+    def canonical_json(self) -> str:
+        return canonical_text(self.to_dict())
+
+    def _validate(self) -> None:
+        for item in fields(self):
+            if item.name in {"assumptions", "max_depth"}:
+                continue
+            _business_identity(
+                getattr(self, item.name), f"BusinessContextV1.{item.name}"
+            )
+        if type(self.max_depth) is not int or isinstance(self.max_depth, bool) or (
+            self.max_depth < 0
+        ):
+            _fail(
+                "BUSINESS_CONTEXT",
+                "BusinessContextV1.max_depth must be a nonnegative integer",
+            )
+        if not self.assumptions or len(set(self.assumptions)) != len(self.assumptions):
+            _fail(
+                "BUSINESS_CONTEXT",
+                "BusinessContextV1.assumptions must be unique nonempty strings",
+            )
+        if tuple(sorted(self.assumptions)) != self.assumptions:
+            _fail("BUSINESS_CONTEXT", "BusinessContextV1.assumptions must be sorted")
+        _business_date(self.event_time, "BusinessContextV1.event_time")
+        _business_date(self.decision_time, "BusinessContextV1.decision_time")
+
+    @classmethod
+    def from_json_text(cls, text: str) -> "BusinessContextV1":
+        value = parse_json_document(text)
+        if type(value) is not dict:
+            _fail("TYPE_MISMATCH", "BusinessContextV1 document must be an object")
+        return cls.from_dict(value)
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessFormulaV1(V4Contract):
+    """One finite propositional guard over declared fact atoms."""
+
+    op: str
+    atom: str = ""
+    children: tuple["BusinessFormulaV1", ...] = ()
+
+    def _validate(self) -> None:
+        if self.op not in _BUSINESS_FORMULA_OPS_V1:
+            _fail("BUSINESS_FORMULA", f"BusinessFormulaV1.op {self.op!r} is unknown")
+        if (self.op == "atom") != bool(self.atom):
+            _fail("BUSINESS_FORMULA", "BusinessFormulaV1 atom fields are inconsistent")
+        arity = len(self.children)
+        if (self.op in {"true", "false", "atom"} and arity) or (
+            self.op == "not" and arity != 1
+        ) or (self.op in {"and", "or"} and arity != 2):
+            _fail("BUSINESS_FORMULA", "BusinessFormulaV1 arity is wrong")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessAtomStateV1(V4Contract):
+    """One declared fact atom: fixed True/False, or open (observed=None)."""
+
+    atom: str
+    observed: bool | None
+
+    def _validate(self) -> None:
+        _business_identity(self.atom, "BusinessAtomStateV1.atom")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessSourceSpanV1(V4Contract):
+    """One declared in-input source span; binding is by content."""
+
+    source_id: str
+    version: str
+    body: str
+    start: int
+    end: int
+    quoted: str
+
+    def _validate(self) -> None:
+        _business_identity(self.source_id, "BusinessSourceSpanV1.source_id")
+        _business_identity(self.version, "BusinessSourceSpanV1.version")
+        _safe_integer(self.start, "BusinessSourceSpanV1.start")
+        _safe_integer(self.end, "BusinessSourceSpanV1.end")
+        if not (0 <= self.start < self.end <= len(self.body)):
+            _fail("BUSINESS_SOURCE", "BusinessSourceSpanV1 span is out of bounds")
+        if self.body[self.start:self.end] != self.quoted:
+            _fail(
+                "BUSINESS_SOURCE",
+                "BusinessSourceSpanV1 quoted text differs from its span",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessPaymentV1(V4Contract):
+    """One conditional payment with its recognition atom and basis."""
+
+    payment_id: str
+    amount: str
+    event_day: str
+    payer: str
+    recipient: str
+    debt_id: str
+    recognition_atom: str
+    source_id: str
+
+    def _validate(self) -> None:
+        _business_identity(self.payment_id, "BusinessPaymentV1.payment_id")
+        _business_rational(self.amount, "BusinessPaymentV1.amount")
+        _business_date(self.event_day, "BusinessPaymentV1.event_day")
+        for item in ("payer", "recipient", "debt_id", "recognition_atom", "source_id"):
+            _business_identity(getattr(self, item), f"BusinessPaymentV1.{item}")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessSpecV1(V4Contract):
+    """The conditional principal spec (context rides on the task input)."""
+
+    relation_id: str
+    creditor: str
+    debtor: str
+    debt_id: str
+    principal: str
+    due_day: str
+    asof_day: str
+    sources: tuple[BusinessSourceSpanV1, ...]
+    payments: tuple[BusinessPaymentV1, ...]
+    facts: tuple[BusinessAtomStateV1, ...]
+    constraint: BusinessFormulaV1
+    approved_policy: str
+
+    def _validate(self) -> None:
+        for item in ("relation_id", "creditor", "debtor", "debt_id"):
+            _business_identity(getattr(self, item), f"BusinessSpecV1.{item}")
+        if self.creditor == self.debtor:
+            _fail("BUSINESS_SPEC", "BusinessSpecV1 requires distinct parties")
+        _business_rational(self.principal, "BusinessSpecV1.principal")
+        _business_date(self.due_day, "BusinessSpecV1.due_day")
+        _business_date(self.asof_day, "BusinessSpecV1.asof_day")
+        if self.approved_policy != BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1:
+            _fail(
+                "BUSINESS_PROFILE",
+                f"BusinessSpecV1.approved_policy {self.approved_policy!r} is unsupported",
+            )
+        if not self.sources:
+            _fail("BUSINESS_SPEC", "BusinessSpecV1 requires at least one source span")
+        atoms = [row.atom for row in self.facts]
+        if len(atoms) != len(set(atoms)):
+            _fail("BUSINESS_SPEC", "BusinessSpecV1.facts repeats an atom")
+        source_ids = {row.source_id for row in self.sources}
+        if len(source_ids) != len(self.sources):
+            _fail("BUSINESS_SPEC", "BusinessSpecV1.sources repeats a source_id")
+        payment_ids = {row.payment_id for row in self.payments}
+        if len(payment_ids) != len(self.payments):
+            _fail("BUSINESS_SPEC", "BusinessSpecV1.payments repeats a payment_id")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessAtomPairV1(V4Contract):
+    """One bound atom value inside a world key."""
+
+    atom: str
+    value: bool
+
+    def _validate(self) -> None:
+        _business_identity(self.atom, "BusinessAtomPairV1.atom")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessWorldV1(V4Contract):
+    """One scenario world: every declared atom bound exactly once, sorted."""
+
+    atoms: tuple[BusinessAtomPairV1, ...]
+
+    def _validate(self) -> None:
+        names = [pair.atom for pair in self.atoms]
+        if len(names) != len(set(names)):
+            _fail("BUSINESS_WORLD", "BusinessWorldV1 repeats an atom")
+        if list(names) != sorted(names):
+            _fail("BUSINESS_WORLD", "BusinessWorldV1 atoms must be sorted by name")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessWorldWeightV1(V4Contract):
+    """One world weight of the declared conditional model."""
+
+    world: BusinessWorldV1
+    probability: str
+
+    def _validate(self) -> None:
+        _business_rational(self.probability, "BusinessWorldWeightV1.probability")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessModelInputsV1(V4Contract):
+    """The model half of I0: weights, threshold, costs, and the legal grid.
+
+    No expected answer lives here: claimed analytics are outputs of the run,
+    never inputs that the solver could confirm.
+    """
+
+    weights: tuple[BusinessWorldWeightV1, ...]
+    threshold: str
+    costs: tuple[str, ...]
+    legal_options: tuple[str, ...]
+    basis: str
+
+    def _validate(self) -> None:
+        if len(self.costs) != 4:
+            _fail("BUSINESS_MODEL", "BusinessModelInputsV1.costs must have four entries")
+        _business_rational(self.threshold, "BusinessModelInputsV1.threshold")
+        for index, cost in enumerate(self.costs):
+            _business_rational(cost, f"BusinessModelInputsV1.costs[{index}]")
+        for index, option in enumerate(self.legal_options):
+            _business_rational(option, f"BusinessModelInputsV1.legal_options[{index}]")
+        if len(set(self.legal_options)) != len(self.legal_options):
+            _fail("BUSINESS_MODEL", "BusinessModelInputsV1.legal_options repeats a value")
+        if self.basis != BUSINESS_MODEL_BASIS_SETTLEMENT_GRID_V1:
+            _fail(
+                "BUSINESS_MODEL",
+                f"BusinessModelInputsV1.basis {self.basis!r} is unsupported",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessTaskInputV1(V4Contract):
+    """The complete typed I0 payload of one business task.
+
+    ``solve_budget`` bounds how many scenarios the solver evaluates; when it
+    stops early the run reports a partial row with pending worlds instead of
+    pretending the scenario set was complete.
+    """
+
+    context: BusinessContextV1
+    spec: BusinessSpecV1
+    model: BusinessModelInputsV1 | None
+    solve_budget: int | None = None
+
+    def _validate(self) -> None:
+        if self.solve_budget is not None and (
+            isinstance(self.solve_budget, bool)
+            or type(self.solve_budget) is not int
+            or self.solve_budget <= 0
+        ):
+            _fail(
+                "BUSINESS_SCOPE",
+                "BusinessTaskInputV1.solve_budget must be a positive integer",
+            )
+        if self.context.scenario != "finite-conditional-completions" or (
+            not self.context.assumptions
+        ):
+            _fail(
+                "BUSINESS_SCOPE",
+                "the conditional principal profile requires declared scenario assumptions",
+            )
+        if self.context.event_time != self.spec.due_day or (
+            self.context.decision_time != self.spec.asof_day
+        ):
+            _fail("BUSINESS_SCOPE", "context anchors and spec dates disagree")
+        declared = {row.atom for row in self.spec.facts}
+
+        def _atoms(formula: BusinessFormulaV1) -> set[str]:
+            if formula.op == "atom":
+                return {formula.atom}
+            if not formula.children:
+                return set()
+            return set().union(*(_atoms(child) for child in formula.children))
+
+        if not _atoms(self.spec.constraint) <= declared:
+            _fail("BUSINESS_SCOPE", "constraint cites an undeclared atom")
+        for payment in self.spec.payments:
+            if payment.recognition_atom not in declared or (
+                payment.source_id not in {row.source_id for row in self.spec.sources}
+            ):
+                _fail("BUSINESS_SCOPE", "payment cites an unknown atom or source")
+            if payment.payer != self.spec.debtor or (
+                payment.recipient != self.spec.creditor
+            ) or payment.debt_id != self.spec.debt_id:
+                _fail("BUSINESS_SCOPE", "payment parties and debt do not bind the spec")
+        for source in self.spec.sources:
+            if (
+                source.body[source.start:source.end] != source.quoted
+                or source.source_id not in {row.source_id for row in self.spec.sources}
+            ):
+                _fail("BUSINESS_SCOPE", "a declared source span is inconsistent")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessTaskV1(V4Contract):
+    """One optional ``business_tasks_v1`` row of ``CaseRequestV4``.
+
+    ``selection_ref`` is the host-owned input revision digest (a binding
+    clue, never a third-party approval); ``input`` is the only complete
+    typed payload and carries no caller checker callback and no expected
+    answer.
+    """
+
+    task_id: str
+    issue_id: str
+    requirement_id: str
+    profile: str
+    selection_ref: DigestV4
+    input: BusinessTaskInputV1
+    source_refs: tuple[ContentRefV4, ...] = ()
+
+    def _validate(self) -> None:
+        _business_identity(self.task_id, "BusinessTaskV1.task_id")
+        _business_identity(self.issue_id, "BusinessTaskV1.issue_id")
+        if self.requirement_id != BUSINESS_REQUIREMENT_TWO_FILES_V1:
+            _fail(
+                "BUSINESS_REQUIREMENT",
+                f"BusinessTaskV1.requirement_id {self.requirement_id!r} is unsupported",
+            )
+        if self.profile != BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1:
+            _fail(
+                "BUSINESS_PROFILE",
+                f"BusinessTaskV1.profile {self.profile!r} is unsupported",
+            )
+
+
+class BusinessCompletionV5(_V4StringEnum):
+    """Per-task completion; empty results never merge distinct states."""
+
+    EXACT_FINITE_SCENARIOS = "exact_finite_scenarios"
+    PARTIAL_SCENARIOS = "partial_scenarios"
+    INCONSISTENT_ASSUMPTIONS = "inconsistent_assumptions"
+    FAILED = "failed"
+    UNSUPPORTED = "unsupported"
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessOutcomeRowV5(V4Contract):
+    """One solved scenario row: clipped balance and overpayment, exact."""
+
+    world: BusinessWorldV1
+    principal_balance: str
+    overpayment_residual: str
+
+    def _validate(self) -> None:
+        _business_rational(
+            self.principal_balance, "BusinessOutcomeRowV5.principal_balance"
+        )
+        _business_rational(
+            self.overpayment_residual, "BusinessOutcomeRowV5.overpayment_residual"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessAnalyticsV5(V4Contract):
+    """Exact scenario analytics over one solved Omega (conditional model)."""
+
+    weights: tuple[BusinessWorldWeightV1, ...]
+    threshold: str
+    expected_balance: str
+    expected_overpayment: str
+    expected_residual: str
+    event_probability: str
+    costs: tuple[str, ...]
+    lower: str
+    upper: str
+    legal_options: tuple[str, ...]
+    mutually_acceptable: tuple[str, ...]
+    selected: str | None
+    basis: str
+
+    def _validate(self) -> None:
+        for item in (
+            "threshold", "expected_balance", "expected_overpayment",
+            "expected_residual", "event_probability", "lower", "upper",
+        ):
+            _business_rational(getattr(self, item), f"BusinessAnalyticsV5.{item}")
+        if len(self.costs) != 4:
+            _fail("BUSINESS_MODEL", "BusinessAnalyticsV5.costs must have four entries")
+        for index, cost in enumerate(self.costs):
+            _business_rational(cost, f"BusinessAnalyticsV5.costs[{index}]")
+        for index, option in enumerate(self.legal_options):
+            _business_rational(option, f"BusinessAnalyticsV5.legal_options[{index}]")
+        for index, option in enumerate(self.mutually_acceptable):
+            _business_rational(
+                option, f"BusinessAnalyticsV5.mutually_acceptable[{index}]"
+            )
+        if self.selected is not None:
+            _business_rational(self.selected, "BusinessAnalyticsV5.selected")
+        if self.basis != BUSINESS_MODEL_BASIS_SETTLEMENT_GRID_V1:
+            _fail(
+                "BUSINESS_MODEL",
+                f"BusinessAnalyticsV5.basis {self.basis!r} is unsupported",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessTaskResultV5(V4Contract):
+    """The sealed, typed result of one business task inside a run.
+
+    Guarantee components stay separate: ``checker_version``/``formal_evidence``
+    never claim a kernel-proved case conclusion, ``legal_basis_status`` and
+    ``empirical_status`` stay honest about what was not reviewed or measured.
+    """
+
+    task_id: str
+    issue_id: str
+    requirement_id: str
+    profile: str
+    selection_ref: DigestV4
+    completion: BusinessCompletionV5
+    representation: str
+    context: BusinessContextV1
+    input_ref: ContentRefV4
+    witness_ref: ContentRefV4 | None
+    outcomes: tuple[BusinessOutcomeRowV5, ...]
+    pending_worlds: tuple[BusinessWorldV1, ...]
+    analytics: BusinessAnalyticsV5 | None
+    open_obligations: tuple[OpenObligationEntryV5, ...]
+    checker_version: str
+    formal_evidence: str
+    legal_basis_status: str
+    empirical_status: str
+    error_code: str | None = None
+    error_stage: str | None = None
+
+    def _validate(self) -> None:
+        if self.completion is BusinessCompletionV5.FAILED and self.error_code is None:
+            _fail(
+                "BUSINESS_RESULT", "a failed business row requires its typed error code"
+            )
+        if self.completion is BusinessCompletionV5.UNSUPPORTED and (
+            self.error_code is None
+        ):
+            _fail(
+                "BUSINESS_RESULT",
+                "an unsupported business row requires its typed reason",
+            )
+        if self.completion is BusinessCompletionV5.EXACT_FINITE_SCENARIOS and (
+            self.pending_worlds or self.analytics is None
+        ):
+            _fail(
+                "BUSINESS_RESULT",
+                "an exact business row carries no pending worlds and checked analytics",
+            )
+        if self.completion is BusinessCompletionV5.PARTIAL_SCENARIOS and (
+            not self.pending_worlds or self.analytics is not None
+        ):
+            _fail(
+                "BUSINESS_RESULT",
+                "a partial business row keeps pending worlds and no full analytics",
+            )
+        if self.completion is BusinessCompletionV5.INCONSISTENT_ASSUMPTIONS and (
+            self.outcomes or self.pending_worlds or self.analytics is not None
+        ):
+            _fail(
+                "BUSINESS_RESULT",
+                "an inconsistent business row stays empty instead of inventing results",
+            )
+        if (self.error_code is None) != (self.error_stage is None):
+            _fail("BUSINESS_RESULT", "error code and stage are all-or-nothing")
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessDeliveryBindingV5(V4Contract):
+    """Integrity locator of the exact delivered bytes (name, digest, size)."""
+
+    artifact_name: str
+    sha256: str
+    size_bytes: int
+
+    def _validate(self) -> None:
+        if self.artifact_name not in BUSINESS_DELIVERY_FILES_V1:
+            _fail(
+                "BUSINESS_DELIVERY",
+                f"BusinessDeliveryBindingV5.artifact_name {self.artifact_name!r} is unknown",
+            )
+        if (
+            type(self.sha256) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", self.sha256) is None
+        ):
+            _fail(
+                "BUSINESS_DELIVERY",
+                "BusinessDeliveryBindingV5.sha256 must be 64 lowercase hex characters",
+            )
+        _safe_integer(self.size_bytes, "BusinessDeliveryBindingV5.size_bytes")
+        if self.size_bytes < 0:
+            _fail(
+                "BUSINESS_DELIVERY",
+                "BusinessDeliveryBindingV5.size_bytes must be nonnegative",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class BusinessDeliveryVerificationV5(V4Contract):
+    """The verify-only delivery verdict; it references, never rewrites, a run."""
+
+    verification_record_ref: ContentRefV4
+    run_identity_ref: ContentRefV4
+    selection_ref: DigestV4
+    task_id: str
+    requirement_id: str
+    profile: str
+    status: str
+    reasons: tuple[str, ...]
+    artifact_bindings: tuple[BusinessDeliveryBindingV5, ...]
+    checker_version: str
+    formal_evidence: str
+
+    def _validate(self) -> None:
+        if self.status not in frozenset({"ACCEPTED", "REJECTED"}):
+            _fail(
+                "BUSINESS_DELIVERY",
+                f"BusinessDeliveryVerificationV5.status {self.status!r} is unknown",
+            )
+        if self.status == "REJECTED" and not self.reasons:
+            _fail("BUSINESS_DELIVERY", "a rejected delivery must carry typed reasons")
+        _business_identity(self.task_id, "BusinessDeliveryVerificationV5.task_id")
+
+
 _REGISTRY_TYPES = (
     DigestV4,
     CanonicalTimeV4,
@@ -3524,6 +4155,24 @@ _REGISTRY_TYPES = (
     BurdenRuleOutcomeWireV5,
     ProceduralInputV5,
     IncrementalParentV5,
+    BusinessContextV1,
+    BusinessFormulaV1,
+    BusinessAtomStateV1,
+    BusinessSourceSpanV1,
+    BusinessPaymentV1,
+    BusinessSpecV1,
+    BusinessAtomPairV1,
+    BusinessWorldV1,
+    BusinessWorldWeightV1,
+    BusinessModelInputsV1,
+    BusinessTaskInputV1,
+    BusinessTaskV1,
+    BusinessCompletionV5,
+    BusinessOutcomeRowV5,
+    BusinessAnalyticsV5,
+    BusinessTaskResultV5,
+    BusinessDeliveryBindingV5,
+    BusinessDeliveryVerificationV5,
 )
 V4_TYPE_REGISTRY = MappingProxyType({item.__name__: item for item in _REGISTRY_TYPES})
 V4_OBJECT_REGISTRY = MappingProxyType(

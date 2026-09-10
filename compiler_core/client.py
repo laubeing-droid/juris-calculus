@@ -330,6 +330,42 @@ class JCClient:
         handle = self._local()
         return handle.builder.build_bundle(**kwargs)
 
+    def business_capabilities(self) -> dict[str, Any]:
+        """Describe the installed jc-business-root/1 implementation.
+
+        The list is generated from the installed code, never from a candidate
+        manifest: profiles, requirement, schemas, checker version, delivery
+        file names, and the declared evidence scope.
+        """
+
+        from compiler_core.contracts import (
+            BUSINESS_DELIVERY_FILES_V1,
+        )
+        from compiler_core.business_root.codec import (
+            BUSINESS_CHECKER_VERSION,
+            BUSINESS_FORMAL_EVIDENCE_V1,
+            BUSINESS_MODEL_BASIS_V1,
+            BUSINESS_PROFILE_V1,
+            BUSINESS_REQUIREMENT_V1,
+            BUSINESS_ROOT_CAPABILITY,
+        )
+        from compiler_core.business_root.delivery_checker import SCOPE as DELIVERY_SCOPE
+
+        self._local()
+        return {
+            "capability": BUSINESS_ROOT_CAPABILITY,
+            "profiles": (BUSINESS_PROFILE_V1,),
+            "model_bases": (BUSINESS_MODEL_BASIS_V1,),
+            "requirements": (BUSINESS_REQUIREMENT_V1,),
+            "delivery_files": list(BUSINESS_DELIVERY_FILES_V1),
+            "checker_version": BUSINESS_CHECKER_VERSION,
+            "formal_evidence": BUSINESS_FORMAL_EVIDENCE_V1,
+            "semantic_scope": DELIVERY_SCOPE,
+            "request_extension": "business_tasks_v1",
+            "verify_method": "verify_business_delivery",
+            "verify_only": True,
+        }
+
     def evaluate_harness_bundle(
         self,
         case_bundle: CaseInputBundleV4 | Mapping[str, Any] | bytes | str,
@@ -472,7 +508,259 @@ class JCClient:
         payload["signature_status"] = "not_used"
         payload["evaluation_count"] = evaluations["count"]
         payload["run_identity_ref"] = run_ref.to_dict()
+        payload["business_results"] = [
+            row.to_dict() for row in envelope.result.business_results_v1
+        ]
         return payload
+
+    def verify_business_delivery(
+        self,
+        *,
+        run_identity_ref: Any,
+        business_task_id: str,
+        selected_input_ref: Any,
+        artifacts: Any,
+    ) -> dict[str, Any]:
+        """Verify-only two-file delivery check against one sealed business run.
+
+        Recovers the run's sealed I0, result, and witness through public
+        verification (never re-evaluating), checks the ``selected_input_ref``
+        binding clue, then strictly parses the actual txt/JSON bytes with the
+        closed delivery grammar. Sealed audit bundles are never modified; a
+        separate content-addressed delivery record is registered instead.
+        """
+
+        from hashlib import sha256
+
+        from compiler_core.application import BUSINESS_INPUT_KIND_V1
+        from compiler_core.business_root import wire as business_wire
+        from compiler_core.business_root.delivery_checker import (
+            FILES as DELIVERY_FILES,
+            check_business_bundle,
+        )
+        from compiler_core.contracts import (
+            BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1,
+            BUSINESS_REQUIREMENT_TWO_FILES_V1,
+            BusinessDeliveryBindingV5,
+            BusinessDeliveryVerificationV5,
+            BusinessTaskInputV1,
+        )
+        from compiler_core.business_root.codec import (
+            BUSINESS_CHECKER_VERSION,
+            BUSINESS_FORMAL_EVIDENCE_V1,
+        )
+
+        reference = _as_run_ref(run_identity_ref)
+        if type(business_task_id) is not str or not business_task_id:
+            raise ClientV4Error("INVALID_BUSINESS_TASK", "business_task_id must be a non-empty string")
+        if isinstance(selected_input_ref, Mapping):
+            raw_selection = selected_input_ref.get("digest")
+        elif isinstance(selected_input_ref, str):
+            raw_selection = str(selected_input_ref)
+        else:
+            raw_selection = None
+        if type(raw_selection) is not str or not raw_selection.startswith("sha256:"):
+            raise ClientV4Error(
+                "INVALID_SELECTION_REF", "selected_input_ref must be a sha256 digest string"
+            )
+        if not isinstance(artifacts, Mapping) or set(artifacts) != set(DELIVERY_FILES):
+            raise ClientV4Error(
+                "INVALID_DELIVERY_ARTIFACTS",
+                "artifacts must map exactly "
+                f"{sorted(DELIVERY_FILES)} to actual byte strings",
+            )
+        if any(type(payload) is not bytes for payload in artifacts.values()):
+            raise ClientV4Error(
+                "INVALID_DELIVERY_ARTIFACTS", "artifact values must be bytes"
+            )
+        if self._application is None:
+            raise ClientV4Error(
+                "RUNTIME_NOT_CONFIGURED",
+                "delivery verification needs the runtime application",
+                stage="runtime",
+            )
+
+        store = self._store()
+        verified = store.verify_run(store.capability_for(reference), now=self._now())
+        rows = verified.result.business_results_v1
+        row = next((item for item in rows if item.task_id == business_task_id), None)
+
+        def verdict_payload(
+            status: str, reasons: tuple[str, ...], bindings: tuple = ()
+        ) -> dict[str, Any]:
+            record_body: dict[str, Any] = {
+                "schema_version": "jc/business-delivery-record/1.0",
+                "run_identity_ref": reference.to_dict(),
+                "selection_ref": raw_selection,
+                "task_id": business_task_id,
+                "requirement_id": BUSINESS_REQUIREMENT_TWO_FILES_V1,
+                "profile": BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1,
+                "status": status,
+                "reasons": list(reasons),
+                "artifact_bindings": [
+                    binding.to_dict() if hasattr(binding, "to_dict") else dict(binding)
+                    for binding in bindings
+                ],
+                "checker_version": BUSINESS_CHECKER_VERSION,
+                "formal_evidence": BUSINESS_FORMAL_EVIDENCE_V1,
+                "verified_at": self._now().to_dict(),
+            }
+            record_ref = self._application.register_business_delivery_record(record_body)
+            verification = BusinessDeliveryVerificationV5(
+                verification_record_ref=record_ref,
+                run_identity_ref=reference,
+                selection_ref=DigestV4(raw_selection),
+                task_id=business_task_id,
+                requirement_id=BUSINESS_REQUIREMENT_TWO_FILES_V1,
+                profile=BUSINESS_PROFILE_SYNTHETIC_PRINCIPAL_V1,
+                status=status,
+                reasons=reasons,
+                artifact_bindings=bindings,
+                checker_version=BUSINESS_CHECKER_VERSION,
+                formal_evidence=BUSINESS_FORMAL_EVIDENCE_V1,
+            )
+            payload = verification.to_dict()
+            payload["verified_at"] = record_body["verified_at"]
+            return payload
+
+        if row is None:
+            return verdict_payload(
+                "REJECTED", ("BUSINESS_TASK_NOT_IN_RUN",)
+            )
+        if str(row.selection_ref) != raw_selection:
+            return verdict_payload("REJECTED", ("SELECTION_REF_MISMATCH",))
+        if row.completion.value != "exact_finite_scenarios":
+            return verdict_payload("REJECTED", ("BUSINESS_RUN_NOT_EXACT",))
+
+        document = self._find_sealed_artifact(verified, row.input_ref, BUSINESS_INPUT_KIND_V1)
+        if document is None:
+            return verdict_payload("REJECTED", ("BUSINESS_INPUT_NOT_SEALED",))
+        try:
+            stored_input = BusinessTaskInputV1.from_dict(document["input"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ClientV4Error(
+                "BUSINESS_INPUT_CORRUPT", "the sealed business input is not decodable"
+            ) from exc
+
+        from compiler_core.business_root.analytics import check_analytics
+        from compiler_core.business_root.checker import check as business_check
+
+        spec = business_wire.spec_of(stored_input)
+        model = business_wire.model_of(stored_input)
+        internal_result = business_wire.result_of(row, spec)
+        if not business_check(spec, internal_result):
+            return verdict_payload("REJECTED", ("SEALED_RESULT_FAILED_CHECK",))
+        internal_analytics = None
+        if row.analytics is not None and model is not None:
+            internal_analytics = business_wire.analytics_of(row.analytics, spec.context)
+            if not check_analytics(spec, internal_result, model, internal_analytics):
+                return verdict_payload("REJECTED", ("SEALED_ANALYTICS_FAILED_CHECK",))
+
+        verdict = check_business_bundle(
+            spec, internal_result, model, internal_analytics, dict(artifacts)
+        )
+        bindings = tuple(
+            BusinessDeliveryBindingV5(
+                name,
+                sha256(artifacts[name]).hexdigest(),
+                len(artifacts[name]),
+            )
+            for name in sorted(artifacts)
+        )
+        if not verdict.accepted:
+            return verdict_payload("REJECTED", (verdict.reason,), bindings)
+        return verdict_payload("ACCEPTED", (), bindings)
+
+    def business_delivery_documents(
+        self,
+        *,
+        run_identity_ref: Any,
+        business_task_id: str,
+    ) -> dict[str, bytes]:
+        """Read-only protected file view of one sealed exact business run.
+
+        Renders the two protected files from the run's sealed row and sealed
+        I0 — never by re-evaluating. The Harness writes these bytes to disk
+        and later verifies the actual files through
+        :meth:`verify_business_delivery`.
+        """
+
+        from compiler_core.application import BUSINESS_INPUT_KIND_V1
+        from compiler_core.business_root import wire as business_wire
+        from compiler_core.business_root.delivery_checker import (
+            FILES as DELIVERY_FILES,
+            render_calculation_json,
+            render_document,
+        )
+        from compiler_core.contracts import BusinessTaskInputV1
+
+        reference = _as_run_ref(run_identity_ref)
+        if type(business_task_id) is not str or not business_task_id:
+            raise ClientV4Error("INVALID_BUSINESS_TASK", "business_task_id must be a non-empty string")
+        store = self._store()
+        verified = store.verify_run(store.capability_for(reference), now=self._now())
+        row = next(
+            (item for item in verified.result.business_results_v1 if item.task_id == business_task_id),
+            None,
+        )
+        if row is None:
+            raise ClientV4Error(
+                "BUSINESS_TASK_NOT_IN_RUN",
+                "this sealed run has no such business task result",
+            )
+        if row.completion.value != "exact_finite_scenarios" or row.analytics is None:
+            raise ClientV4Error(
+                "BUSINESS_RUN_NOT_EXACT",
+                "the two-file view exists only for exact runs with analytics",
+            )
+        document = self._find_sealed_artifact(verified, row.input_ref, BUSINESS_INPUT_KIND_V1)
+        if document is None:
+            raise ClientV4Error(
+                "BUSINESS_INPUT_NOT_SEALED", "the run's business input is not sealed"
+            )
+        stored_input = BusinessTaskInputV1.from_dict(document["input"])
+        spec = business_wire.spec_of(stored_input)
+        model = business_wire.model_of(stored_input)
+        internal_result = business_wire.result_of(row, spec)
+        internal_analytics = business_wire.analytics_of(row.analytics, spec.context)
+        return {
+            DELIVERY_FILES[0]: render_document(spec, internal_result).encode("utf-8"),
+            DELIVERY_FILES[1]: render_calculation_json(
+                spec, internal_result, model, internal_analytics
+            ).encode("utf-8"),
+        }
+
+    @staticmethod
+    def _find_sealed_artifact(
+        verified: VerifiedAuditBundleV4,
+        content_ref: ContentRefV4,
+        artifact_kind: str,
+    ) -> dict[str, Any] | None:
+        """Recover one sealed artifact document from the verified bundle."""
+
+        from base64 import b64decode
+
+        from compiler_core.canonical_serialization import parse_json_document
+
+        for name in sorted(verified.files):
+            if not name.endswith(".json"):
+                continue
+            try:
+                payload = parse_json_document(verified.files[name])
+            except (TypeError, ValueError):
+                continue
+            if type(payload) is not dict or type(payload.get("artifacts")) is not list:
+                continue
+            for item in payload["artifacts"]:
+                if item.get("artifact_kind") != artifact_kind:
+                    continue
+                ref = item.get("content_ref") or {}
+                if ref.get("digest") != str(content_ref.digest):
+                    continue
+                return parse_json_document(
+                    b64decode(item["content_base64"], validate=True)
+                )
+        return None
 
     def local_read_run(self, run_identity_ref: Any) -> dict[str, Any]:
         """Read one sealed local run through public methods, no capability key."""

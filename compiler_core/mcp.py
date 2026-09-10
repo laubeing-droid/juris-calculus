@@ -209,6 +209,10 @@ def _field_schema(
         schema = {"type": "string", "const": _contracts.SCHEMA_VERSION_V5}
     elif contract_type is _contracts.CaseArtifactV4 and field_name == "content_base64":
         schema = {"type": "string", "maxLength": 1_398_104}
+    elif contract_type is _contracts.BusinessContextV1 and field_name == "engine_version":
+        # A free-form context dimension of the 20-dimension business context,
+        # not the JC engine identity the generic rule below pins.
+        schema = {"type": "string"}
     elif field_name == "engine_version" and annotation is str:
         schema = {
             "type": "string",

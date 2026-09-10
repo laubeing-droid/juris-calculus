@@ -229,7 +229,7 @@ def _mutate_first_nested_digest(value: object, *, skip_key: str) -> bool:
 def test_w0_public_type_set_is_exact_and_distinct() -> None:
     expected = {item["id"] for item in MATRIX["object_types"]}
     assert set(contracts.V4_TYPE_REGISTRY) == expected
-    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 106
+    assert len({id(value) for value in contracts.V4_TYPE_REGISTRY.values()}) == 124
     assert set(contracts.V4_TYPE_REGISTRY) == set(VECTORS["objects"])
     assert set(OBJECT_IDS) == set(VECTORS["field_authority"])
     assert dict(contracts._SELF_DIGEST_FIELDS_V4) == SELF_DIGEST_FIELDS
@@ -387,6 +387,7 @@ def test_case_request_fields_are_exact_and_external_only() -> None:
         "query_gates_v5",
         "procedural_input_v5",
         "incremental_parent_v5",
+        "business_tasks_v1",
     )
     for forbidden in VECTORS["case_request_forbidden_fields"]:
         payload = _case_payload()

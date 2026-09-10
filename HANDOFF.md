@@ -1,8 +1,12 @@
 # juris-calculus 交接检查点
 
-## 当前检查点（2026-09-08，5.0.1 最终整改完成，JC 冻结）
+## 当前检查点（2026-09-11，jc-business-root/1 第一批落地）
 
-> **JC V5 数学→工程落实阶段冻结：六项最终整改（JC-FINAL-FIX-20260908）全部闭合并通过全量验收。后续主线转入 Legal Harness 改造及 JC 集成；JC 侧接口以 `compiler_core/harness_contract.py`（jc-harness-contract/1）与 `docs/contracts/HARNESS_INTEGRATION.md` 为准，不再进行独立集中施工。**
+- 第一批业务能力已进入唯一正式主链：`compiler_core/business_root/`（solver/checker/analytics/delivery checker，独立校验）+ `CaseRequestV4.business_tasks_v1`（省空扩展，旧请求规范摘要逐字节不变）+ Application 业务阶段 + verify-only `verify_business_delivery`/`business_delivery_documents` + `business_capabilities()`。全部为条件模型分析，`formal_evidence` 如实为 kernel 待证；未关闭清单见 [docs/ulm-consolidated/IMPLEMENTATION_HANDOFF.md](docs/ulm-consolidated/IMPLEMENTATION_HANDOFF.md)。
+- 契约与样例：[docs/contracts/BUSINESS_ROOT.md](docs/contracts/BUSINESS_ROOT.md)、[examples/harness/sample_local_business.py](examples/harness/sample_local_business.py)；测试 `tests/contract/test_business_root.py`、`tests/local/test_business_root_local.py`、`tests/packaging/test_business_wheel_install.py`（BC12 仓外 wheel 安装）。
+- 数学权威仍在 LMM：BusinessRoot Lean 的 kernelChecked 证据以其 GitHub CI 为准，本批不取得（J00 基线登记见施工报告）。
+
+## 上一检查点（2026-09-08，5.0.1 最终整改完成）
 
 - 5.0.1（源提交 `6d1a621`）：分支身份结构化编码、查询反驳 argument→conclusion→refutes 语义与结果合同、incomplete 全链 typed obligation、priority 登记策略参与 defeat / 未支持阻断完整性（不签发证书）、真增量 Horn 默认启用（父状态经密封审计包跨实例复用，solver/checker 工作量分别计量）、程序四路公开可达（授权仅由 trust 校验的存档法律签章产生）；新增封闭 Harness 集成合同与三份可运行样本（`examples/harness/`）。
 - 本地全量验收：Python 3.11.9 与 3.12.10（Windows）各 **1770 passed, 0 failed**；CI run 34171706216 四矩阵（Windows/Ubuntu × 3.11/3.12）+ A-B build/installed wheel/release evidence 全绿；installed-wheel E2E 67 用例 0 失败（本地 3.11 与 CI 各一份）；独立 profile oracle 复跑 PASS（531 图 × 4 语义 2,124 次对拍 0 不一致、16,660 次错误族注入全部拒绝）。

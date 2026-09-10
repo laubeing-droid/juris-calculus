@@ -17,6 +17,7 @@
 - [V4 对象与状态矩阵（历史）](contracts/V4_OBJECT_STATE_MATRIX.md) — V4 时代 73 类型注册表的冻结记录，理解演进时对照用。
 - [规范身份、时间、数值与限制](contracts/V4_CANONICAL_TIME_NUMERIC_LIMITS.md) — 规范化字节、时间戳、金额与准入上限的精确规则。
 - [运行时声明与证据边界](contracts/FORMAL_RUNTIME_CONFORMANCE.md) — 每类证据能支撑什么声明、不能支撑什么，防止过度声称。
+- [jc-business-root/1 能力契约](contracts/BUSINESS_ROOT.md) — 条件本金业务的公共入口、verify-only 双文件核验与保证分解（已安装实现）。
 - [规则包与规则准入](contracts/RULE_PACKS.md) — 规则如何从语料变成推理可用，签名与晋级的边界在哪。
 - [审计包与重放](contracts/AUDIT_BUNDLE.md) — 一次评估留下哪些证据文件，重放如何逐字节校验。
 - [治理、训练与分析边界](operations/governance-training-analysis.md) — 哪些资产只是离线工具，不会成为已安装的 CLI 能力。

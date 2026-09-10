@@ -1,758 +1,15 @@
 {
- "schema_version": "jc/v4-object-state-matrix/1.0",
- "object_types": [
-  {
-   "id": "DigestV4",
-   "layer": "common",
-   "schema_kind": "string_pattern",
-   "formal": true,
-   "additional_properties": null
-  },
-  {
-   "id": "CanonicalTimeV4",
-   "layer": "common",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ContentRefV4",
-   "layer": "common",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ArtifactHandleV4",
-   "layer": "common",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ErrorV4",
-   "layer": "common",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SignatureEnvelopeV4",
-   "layer": "trust",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "LocalRecordV4",
-   "layer": "trust",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "TrustPolicyV4",
-   "layer": "trust",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "StorageCapabilityV4",
-   "layer": "storage",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ObservabilityEnvelopeV4",
-   "layer": "observability",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CaseRequestV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CaseArtifactV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CaseInputBundleV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "LegalContextV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "RequestedOutputV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ResourceLimitsV4",
-   "layer": "request",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SourceSnapshotV4",
-   "layer": "source",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CanonicalLocatorV4",
-   "layer": "source",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SourceVersionEdgeV4",
-   "layer": "source",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SourceBundleV4",
-   "layer": "source",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "EvidenceManifestV4",
-   "layer": "evidence",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "EvidenceItemV4",
-   "layer": "evidence",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ContradictionRefV4",
-   "layer": "evidence",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "FactCandidateV4",
-   "layer": "fact",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "FactAttestationV4",
-   "layer": "fact",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "RuleV4",
-   "layer": "rule",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "PackManifestV4",
-   "layer": "rule",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "PackSignatureV4",
-   "layer": "rule",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "LegalSpecV4",
-   "layer": "ir",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "LegalIVLV4",
-   "layer": "ir",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ArgumentV4",
-   "layer": "argument",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "AttackV4",
-   "layer": "argument",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "PriorityEdgeV4",
-   "layer": "argument",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "PermissionResolutionV4",
-   "layer": "argument",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ExceptionResolutionV4",
-   "layer": "argument",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "BackendInvocationV4",
-   "layer": "backend",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "FactAdmissionReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "RulePromotionReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "TranslationReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SolverReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CheckerReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ProofReceiptV4",
-   "layer": "receipt",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ExecutionStatusV4",
-   "layer": "state",
-   "schema_kind": "string_enum",
-   "formal": true,
-   "additional_properties": null
-  },
-  {
-   "id": "DecisionStatusV4",
-   "layer": "state",
-   "schema_kind": "string_enum",
-   "formal": true,
-   "additional_properties": null
-  },
-  {
-   "id": "ReviewStateV4",
-   "layer": "state",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CompletenessStateV4",
-   "layer": "state",
-   "schema_kind": "string_enum",
-   "formal": true,
-   "additional_properties": null
-  },
-  {
-   "id": "InterruptionStateV4",
-   "layer": "state",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CertificateKindV4",
-   "layer": "state",
-   "schema_kind": "string_enum",
-   "formal": true,
-   "additional_properties": null
-  },
-  {
-   "id": "TransportOutcomeV4",
-   "layer": "state",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "RuntimeProfileV4",
-   "layer": "state",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ClaimResultV4",
-   "layer": "result",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "BranchResultV4",
-   "layer": "result",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MissingFactRequirementV4",
-   "layer": "result",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SemanticResultV4",
-   "layer": "result",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "RunIdentityV4",
-   "layer": "run",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "FormalCertificateV4",
-   "layer": "certificate",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ConflictCertificateV4",
-   "layer": "certificate",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CertificateEnvelopeV4",
-   "layer": "certificate",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "AuditManifestV4",
-   "layer": "audit",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "AuditBundleIndexV4",
-   "layer": "audit",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "EvaluationEnvelopeV4",
-   "layer": "audit",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "VerificationResultV4",
-   "layer": "audit",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ReplayResultV4",
-   "layer": "audit",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPCapabilitiesInputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPCapabilitiesOutputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPCapabilitiesErrorV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPEvaluateInputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPEvaluateOutputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPEvaluateErrorV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPVerifyRunInputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPVerifyRunOutputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPVerifyRunErrorV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPReadArtifactInputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPReadArtifactOutputV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "MCPReadArtifactErrorV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ToolSpecV4",
-   "layer": "mcp",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "OpenObligationEntryV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ScenarioKeyV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "QueryRequestV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "PremiseTokenV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SupportHyperedgeV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "StructuredArgumentV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "TypedAttackV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "DefeatPolicyV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "DefeatEdgeV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ExtensionFamilyV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "EvalOutcomeV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "SemanticBranchV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "QueryWitnessV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "QueryResultV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ProcedureAuthorityV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ProcedureResultV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ExactQuantityV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ExactExpressionV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CompositionCandidateV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CompositionPolicyV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "CompositionChoiceV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "NotApplicableEvidenceV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "AssuranceEnvelopeV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "HornDeltaV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "EmpiricalResultV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ClaimRefutationV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "QueryGateRequestV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "BurdenRuleOutcomeWireV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "ProceduralInputV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  },
-  {
-   "id": "IncrementalParentV5",
-   "layer": "v5",
-   "schema_kind": "object",
-   "formal": true,
-   "additional_properties": false
-  }
- ],
  "axes": {
-  "execution": [
-   "completed",
-   "admission_blocked",
-   "interrupted",
-   "unsupported",
-   "resource_exhausted",
-   "cancelled",
-   "engine_error"
+  "certificate": [
+   "none",
+   "formal_verified",
+   "conflict_verified"
+  ],
+  "completeness": [
+   "complete",
+   "partial",
+   "truncated",
+   "interrupted"
   ],
   "decision": [
    "accepted_formal_result",
@@ -764,6 +21,15 @@
    "unknown",
    "engine_error"
   ],
+  "execution": [
+   "completed",
+   "admission_blocked",
+   "interrupted",
+   "unsupported",
+   "resource_exhausted",
+   "cancelled",
+   "engine_error"
+  ],
   "review": [
    "not_required",
    "required",
@@ -771,125 +37,41 @@
    "approved",
    "rejected"
   ],
-  "completeness": [
-   "complete",
-   "partial",
-   "truncated",
-   "interrupted"
-  ],
-  "certificate": [
-   "none",
-   "formal_verified",
-   "conflict_verified"
-  ],
   "transport": [
    "success",
    "error"
   ]
  },
  "cartesian_cardinality": 6720,
- "valid_combination_count": 124,
  "decision_constraints": {
   "accepted_formal_result": {
+   "certificate": [
+    "formal_verified",
+    "none"
+   ],
+   "completeness": [
+    "complete",
+    "partial"
+   ],
    "execution": [
     "completed"
    ],
    "review": [
     "not_required"
    ],
-   "completeness": [
-    "complete",
-    "partial"
-   ],
-   "certificate": [
-    "formal_verified",
-    "none"
-   ],
-   "transport": [
-    "success"
-   ]
-  },
-  "hypothetical_result": {
-   "execution": [
-    "completed"
-   ],
-   "review": [
-    "required",
-    "pending",
-    "approved"
-   ],
-   "completeness": [
-    "complete",
-    "partial"
-   ],
-   "certificate": [
-    "none"
-   ],
-   "transport": [
-    "success"
-   ]
-  },
-  "review_only_result": {
-   "execution": [
-    "completed"
-   ],
-   "review": [
-    "required",
-    "pending",
-    "approved",
-    "rejected"
-   ],
-   "completeness": [
-    "complete",
-    "partial"
-   ],
-   "certificate": [
-    "none"
-   ],
-   "transport": [
-    "success"
-   ]
-  },
-  "missing_required_fact": {
-   "execution": [
-    "completed"
-   ],
-   "review": [
-    "required",
-    "pending"
-   ],
-   "completeness": [
-    "partial"
-   ],
-   "certificate": [
-    "none"
-   ],
-   "transport": [
-    "success"
-   ]
-  },
-  "conflict_certificate": {
-   "execution": [
-    "completed"
-   ],
-   "review": [
-    "required",
-    "pending",
-    "approved"
-   ],
-   "completeness": [
-    "complete",
-    "partial"
-   ],
-   "certificate": [
-    "conflict_verified",
-    "none"
-   ],
    "transport": [
     "success"
    ]
   },
   "blocked": {
+   "certificate": [
+    "none"
+   ],
+   "completeness": [
+    "partial",
+    "truncated",
+    "interrupted"
+   ],
    "execution": [
     "admission_blocked",
     "interrupted",
@@ -904,19 +86,119 @@
     "approved",
     "rejected"
    ],
+   "transport": [
+    "error"
+   ]
+  },
+  "conflict_certificate": {
+   "certificate": [
+    "conflict_verified",
+    "none"
+   ],
+   "completeness": [
+    "complete",
+    "partial"
+   ],
+   "execution": [
+    "completed"
+   ],
+   "review": [
+    "required",
+    "pending",
+    "approved"
+   ],
+   "transport": [
+    "success"
+   ]
+  },
+  "engine_error": {
+   "certificate": [
+    "none"
+   ],
    "completeness": [
     "partial",
     "truncated",
     "interrupted"
    ],
-   "certificate": [
-    "none"
+   "execution": [
+    "engine_error"
+   ],
+   "review": [
+    "not_required",
+    "required",
+    "pending"
    ],
    "transport": [
     "error"
    ]
   },
+  "hypothetical_result": {
+   "certificate": [
+    "none"
+   ],
+   "completeness": [
+    "complete",
+    "partial"
+   ],
+   "execution": [
+    "completed"
+   ],
+   "review": [
+    "required",
+    "pending",
+    "approved"
+   ],
+   "transport": [
+    "success"
+   ]
+  },
+  "missing_required_fact": {
+   "certificate": [
+    "none"
+   ],
+   "completeness": [
+    "partial"
+   ],
+   "execution": [
+    "completed"
+   ],
+   "review": [
+    "required",
+    "pending"
+   ],
+   "transport": [
+    "success"
+   ]
+  },
+  "review_only_result": {
+   "certificate": [
+    "none"
+   ],
+   "completeness": [
+    "complete",
+    "partial"
+   ],
+   "execution": [
+    "completed"
+   ],
+   "review": [
+    "required",
+    "pending",
+    "approved",
+    "rejected"
+   ],
+   "transport": [
+    "success"
+   ]
+  },
   "unknown": {
+   "certificate": [
+    "none"
+   ],
+   "completeness": [
+    "complete",
+    "partial"
+   ],
    "execution": [
     "completed"
    ],
@@ -926,37 +208,881 @@
     "pending",
     "approved"
    ],
-   "completeness": [
-    "complete",
-    "partial"
-   ],
-   "certificate": [
-    "none"
-   ],
    "transport": [
     "success"
    ]
-  },
-  "engine_error": {
-   "execution": [
-    "engine_error"
-   ],
-   "review": [
-    "not_required",
-    "required",
-    "pending"
-   ],
-   "completeness": [
-    "partial",
-    "truncated",
-    "interrupted"
-   ],
-   "certificate": [
-    "none"
-   ],
-   "transport": [
-    "error"
-   ]
   }
- }
+ },
+ "object_types": [
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "DigestV4",
+   "layer": "common",
+   "schema_kind": "string_pattern"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CanonicalTimeV4",
+   "layer": "common",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ContentRefV4",
+   "layer": "common",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ArtifactHandleV4",
+   "layer": "common",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ErrorV4",
+   "layer": "common",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SignatureEnvelopeV4",
+   "layer": "trust",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "LocalRecordV4",
+   "layer": "trust",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "TrustPolicyV4",
+   "layer": "trust",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "StorageCapabilityV4",
+   "layer": "storage",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ObservabilityEnvelopeV4",
+   "layer": "observability",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CaseRequestV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CaseArtifactV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CaseInputBundleV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "LegalContextV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "RequestedOutputV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ResourceLimitsV4",
+   "layer": "request",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SourceSnapshotV4",
+   "layer": "source",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CanonicalLocatorV4",
+   "layer": "source",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SourceVersionEdgeV4",
+   "layer": "source",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SourceBundleV4",
+   "layer": "source",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "EvidenceManifestV4",
+   "layer": "evidence",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "EvidenceItemV4",
+   "layer": "evidence",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ContradictionRefV4",
+   "layer": "evidence",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "FactCandidateV4",
+   "layer": "fact",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "FactAttestationV4",
+   "layer": "fact",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "RuleV4",
+   "layer": "rule",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "PackManifestV4",
+   "layer": "rule",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "PackSignatureV4",
+   "layer": "rule",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "LegalSpecV4",
+   "layer": "ir",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "LegalIVLV4",
+   "layer": "ir",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ArgumentV4",
+   "layer": "argument",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "AttackV4",
+   "layer": "argument",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "PriorityEdgeV4",
+   "layer": "argument",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "PermissionResolutionV4",
+   "layer": "argument",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ExceptionResolutionV4",
+   "layer": "argument",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BackendInvocationV4",
+   "layer": "backend",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "FactAdmissionReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "RulePromotionReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "TranslationReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SolverReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CheckerReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ProofReceiptV4",
+   "layer": "receipt",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "ExecutionStatusV4",
+   "layer": "state",
+   "schema_kind": "string_enum"
+  },
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "DecisionStatusV4",
+   "layer": "state",
+   "schema_kind": "string_enum"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ReviewStateV4",
+   "layer": "state",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "CompletenessStateV4",
+   "layer": "state",
+   "schema_kind": "string_enum"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "InterruptionStateV4",
+   "layer": "state",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "CertificateKindV4",
+   "layer": "state",
+   "schema_kind": "string_enum"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "TransportOutcomeV4",
+   "layer": "state",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "RuntimeProfileV4",
+   "layer": "state",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ClaimResultV4",
+   "layer": "result",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BranchResultV4",
+   "layer": "result",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MissingFactRequirementV4",
+   "layer": "result",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SemanticResultV4",
+   "layer": "result",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "RunIdentityV4",
+   "layer": "run",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "FormalCertificateV4",
+   "layer": "certificate",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ConflictCertificateV4",
+   "layer": "certificate",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CertificateEnvelopeV4",
+   "layer": "certificate",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "AuditManifestV4",
+   "layer": "audit",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "AuditBundleIndexV4",
+   "layer": "audit",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "EvaluationEnvelopeV4",
+   "layer": "audit",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "VerificationResultV4",
+   "layer": "audit",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ReplayResultV4",
+   "layer": "audit",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPCapabilitiesInputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPCapabilitiesOutputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPCapabilitiesErrorV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPEvaluateInputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPEvaluateOutputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPEvaluateErrorV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPVerifyRunInputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPVerifyRunOutputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPVerifyRunErrorV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPReadArtifactInputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPReadArtifactOutputV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "MCPReadArtifactErrorV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ToolSpecV4",
+   "layer": "mcp",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "OpenObligationEntryV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ScenarioKeyV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "QueryRequestV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "PremiseTokenV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SupportHyperedgeV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "StructuredArgumentV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "TypedAttackV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "DefeatPolicyV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "DefeatEdgeV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ExtensionFamilyV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "EvalOutcomeV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "SemanticBranchV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "QueryWitnessV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "QueryResultV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ProcedureAuthorityV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ProcedureResultV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ExactQuantityV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ExactExpressionV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CompositionCandidateV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CompositionPolicyV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "CompositionChoiceV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "NotApplicableEvidenceV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "AssuranceEnvelopeV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "HornDeltaV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "EmpiricalResultV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ClaimRefutationV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "QueryGateRequestV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BurdenRuleOutcomeWireV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "ProceduralInputV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "IncrementalParentV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessContextV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessFormulaV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessAtomStateV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessSourceSpanV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessPaymentV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessSpecV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessAtomPairV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessWorldV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessWorldWeightV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessModelInputsV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessTaskInputV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessTaskV1",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": null,
+   "formal": true,
+   "id": "BusinessCompletionV5",
+   "layer": "v5",
+   "schema_kind": "string_enum"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessOutcomeRowV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessAnalyticsV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessTaskResultV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessDeliveryBindingV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  },
+  {
+   "additional_properties": false,
+   "formal": true,
+   "id": "BusinessDeliveryVerificationV5",
+   "layer": "v5",
+   "schema_kind": "object"
+  }
+ ],
+ "schema_version": "jc/v4-object-state-matrix/1.0",
+ "valid_combination_count": 124
 }

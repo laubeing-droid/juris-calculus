@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 278,
+  "count": 290,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -120,6 +120,46 @@
       "path": "compiler_core/burden_of_proof.py",
       "authority_class": "CANDIDATE_ASSET",
       "production_wheel": false
+    },
+    {
+      "path": "compiler_core/business_root/__init__.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/analytics.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/checker.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/codec.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/delivery_checker.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/solver.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/spec.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/business_root/wire.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/canonical_serialization.py",
@@ -467,6 +507,11 @@
       "production_wheel": false
     },
     {
+      "path": "examples/harness/sample_local_business.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "examples/harness/sample_normal.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -568,6 +613,11 @@
     },
     {
       "path": "tests/contract/test_backend_router.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_business_root.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -847,6 +897,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/local/test_business_root_local.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/local/test_local_runtime.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -858,6 +913,11 @@
     },
     {
       "path": "tests/mcp_protocol/w5_transport_red.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/packaging/test_business_wheel_install.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },

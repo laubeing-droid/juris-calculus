@@ -1,6 +1,6 @@
 # V5 对象与状态矩阵
 
-权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（5.0.1 整改后 105 个类型条目，其中 30 个 `*V5` 对象组；SPLIT-LOCAL-3 起新增第 106 个：本机记录背书 `LocalRecordV4`，layer=trust）。
+权威来源：`tests/fixtures/v4_contract/object-state-matrix.json`（fixture id `jc/v4-object-state-matrix/1.0`，V5 沿用同一 fixture 文件并在 `object_types` 中新增 `layer=v5` 条目）。Python 镜像：`compiler_core/contracts.py::_STATE_MATRIX`、`validate_state_matrix`。运行时注册表：`V4_TYPE_REGISTRY`（5.0.1 整改后 105 个类型条目；SPLIT-LOCAL-3 起新增 `LocalRecordV4`；jc-business-root/1 第一批（2026-09-11）新增 18 个 `Business*` 条目，共 124 个类型条目，其中对象 118、枚举 5、字符串模式 1）。
 
 ## 版本决定
 
@@ -47,5 +47,6 @@
 | 查询侧公开输入（5.0.1） | ClaimRefutationV5, QueryGateRequestV5 |
 | 程序公开输入（5.0.1） | BurdenRuleOutcomeWireV5, ProceduralInputV5 |
 | 增量父引用（5.0.1） | IncrementalParentV5 |
+| 业务条件计算（jc-business-root/1，2026-09-11） | BusinessContextV1, BusinessFormulaV1, BusinessAtomStateV1, BusinessSourceSpanV1, BusinessPaymentV1, BusinessSpecV1, BusinessAtomPairV1, BusinessWorldV1, BusinessWorldWeightV1, BusinessModelInputsV1, BusinessTaskInputV1, BusinessTaskV1, BusinessCompletionV5, BusinessOutcomeRowV5, BusinessAnalyticsV5, BusinessTaskResultV5, BusinessDeliveryBindingV5, BusinessDeliveryVerificationV5 |
 
 每一组到 ULM 证明模块的映射见 `proofs/runtime-obligation-map.json`；该映射是工程义务登记，不是运行时已被 Lean 证明的声明。

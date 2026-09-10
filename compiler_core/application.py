@@ -54,6 +54,11 @@ from compiler_core.contracts import (
     AttackV4,
     ATTACK_KIND_MIGRATION_V5,
     BranchResultV4,
+    BusinessCompletionV5,
+    BusinessOutcomeRowV5,
+    BusinessTaskResultV5,
+    BusinessTaskV1,
+    BusinessWorldV1,
     CanonicalTimeV4,
     CaseRequestV4,
     CertificateKindV4,
@@ -250,6 +255,21 @@ HORN_SUBJECT_STATE_KIND_V5 = "horn-subject-state-v5"
 HORN_SUBJECT_STATE_SCHEMA_V5 = "jc/horn-subject-state-v5/1.0"
 HORN_MAPPING_VERSION_V5 = "jc-horn-mapping-v5/1"
 HORN_SUBJECT_STATE_MAX_BYTES = 262_144
+
+BUSINESS_INPUT_KIND_V1 = "business-input-v1"
+BUSINESS_WITNESS_KIND_V1 = "business-witness-v1"
+BUSINESS_DELIVERY_RECORD_KIND_V1 = "business-delivery-record-v1"
+BUSINESS_ROOT_SCOPE_V1 = "business-root"
+BUSINESS_DELIVERY_SCOPE_V1 = "business-delivery"
+BUSINESS_INPUT_SCHEMA_V1 = "jc/business-input/1.0"
+BUSINESS_WITNESS_SCHEMA_V1 = "jc/business-witness/1.0"
+BUSINESS_DELIVERY_RECORD_SCHEMA_V1 = "jc/business-delivery-record/1.0"
+UNSUPPORTED_BUSINESS_CODES_V1 = frozenset({
+    "UNSUPPORTED_PROFILE",
+    "UNSUPPORTED_MODEL_BASIS",
+    "BUSINESS_REQUIREMENT",
+    "BUSINESS_PROFILE",
+})
 
 _V5_STAGE_ERRORS = (
     ArgumentationV4Error,
@@ -2447,6 +2467,362 @@ class ApplicationV4:
             for name, values in groups.items()
         }
 
+    # ------------------------------------------------------------------
+    # jc-business-root/1 stage: one application evaluation covers the
+    # business tasks of the request; delivery verification never lands here.
+    # ------------------------------------------------------------------
+
+    def _register_business_artifact(
+        self,
+        kind: str,
+        body: dict[str, object],
+        *,
+        scope: str,
+    ) -> ContentRefV4:
+        raw = canonical_bytes(body)
+        reference = ContentRefV4(kind, DigestV4.from_bytes(raw))
+        return self._resolver.register_bytes(
+            artifact_id=f"{kind}-{reference.digest.hex}",
+            content_ref=reference,
+            artifact_kind=kind,
+            media_type=JSON_MEDIA_TYPE,
+            scope=scope,
+            content=raw,
+        )
+
+    def _business_task_row(
+        self,
+        task: BusinessTaskV1,
+        run_identity_ref: ContentRefV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> BusinessTaskResultV5:
+        """Solve, independently check, and analyze one business task.
+
+        Any task-level failure becomes a typed row; it never aborts the
+        sibling tasks and never erases normative results of the same run.
+        """
+
+        from compiler_core.business_root import wire as business_wire
+        from compiler_core.business_root.analytics import (
+            check_analytics,
+            derive_analytics,
+        )
+        from compiler_core.business_root.checker import (
+            checker_worlds,
+            check as business_check,
+        )
+        from compiler_core.business_root.codec import (
+            BUSINESS_CHECKER_VERSION,
+            BUSINESS_EMPIRICAL_STATUS_V1,
+            BUSINESS_FORMAL_EVIDENCE_V1,
+            BUSINESS_LEGAL_BASIS_STATUS_V1,
+            BusinessRootError,
+        )
+        from compiler_core.business_root.solver import (
+            MODE_EXACT,
+            MODE_INCONSISTENT,
+            MODE_PARTIAL,
+            solve as business_solve,
+        )
+
+        input_body: dict[str, object] = {
+            "schema_version": BUSINESS_INPUT_SCHEMA_V1,
+            "capability": "jc-business-root/1",
+            "task_id": task.task_id,
+            "requirement_id": task.requirement_id,
+            "profile": task.profile,
+            "selection_ref": str(task.selection_ref),
+            "source_refs": [item.to_dict() for item in task.source_refs],
+            "input": task.input.to_dict(),
+        }
+        input_ref = self._register_business_artifact(
+            BUSINESS_INPUT_KIND_V1, input_body, scope=BUSINESS_ROOT_SCOPE_V1
+        )
+
+        def failure_row(
+            completion: BusinessCompletionV5, error: BusinessRootError | ContractV4Error
+        ) -> BusinessTaskResultV5:
+            return BusinessTaskResultV5(
+                task_id=task.task_id,
+                issue_id=task.issue_id,
+                requirement_id=task.requirement_id,
+                profile=task.profile,
+                selection_ref=task.selection_ref,
+                completion=completion,
+                representation="exact_finite_worlds",
+                context=task.input.context,
+                input_ref=input_ref,
+                witness_ref=None,
+                outcomes=(),
+                pending_worlds=(),
+                analytics=None,
+                open_obligations=(OpenObligationEntryV5(
+                    error.code,
+                    f"business task {task.task_id} stopped in stage "
+                    f"{getattr(error, 'stage', 'business')}",
+                ),),
+                checker_version=BUSINESS_CHECKER_VERSION,
+                formal_evidence=BUSINESS_FORMAL_EVIDENCE_V1,
+                legal_basis_status=BUSINESS_LEGAL_BASIS_STATUS_V1,
+                empirical_status=BUSINESS_EMPIRICAL_STATUS_V1,
+                error_code=error.code,
+                error_stage=getattr(error, "stage", "business"),
+            )
+
+        try:
+            spec = business_wire.spec_of(task.input)
+            model = business_wire.model_of(task.input)
+            if model is None:
+                raise BusinessRootError(
+                    "BUSINESS_MODEL_REQUIRED",
+                    "the two-file requirement needs a declared conditional model",
+                    stage="business",
+                )
+            result = business_solve(spec, task.input.solve_budget)
+            if not business_check(spec, result):
+                raise BusinessRootError(
+                    "BUSINESS_CHECKER_REJECT",
+                    "the solver report failed independent conservation or coverage checks",
+                    stage="checker",
+                )
+            solver_world_count = len(result.outcomes) + len(result.pending)
+            checker_world_count = len(checker_worlds(spec))
+            analytics = None
+            if result.mode == MODE_EXACT:
+                analytics_internal = derive_analytics(spec, result, model)
+                if not check_analytics(spec, result, model, analytics_internal):
+                    raise BusinessRootError(
+                        "BUSINESS_ANALYTICS_REJECT",
+                        "analytics failed independent recomputation",
+                        stage="analytics",
+                    )
+                analytics = business_wire.wire_of_analytics(
+                    analytics_internal,
+                    tuple(task.input.model.weights) if task.input.model else (),
+                )
+        except (BusinessRootError, ContractV4Error) as error:
+            completion = (
+                BusinessCompletionV5.UNSUPPORTED
+                if error.code in UNSUPPORTED_BUSINESS_CODES_V1
+                else BusinessCompletionV5.FAILED
+            )
+            return failure_row(completion, error)
+
+        obligations: tuple[OpenObligationEntryV5, ...] = (
+            OpenObligationEntryV5(
+                "BUSINESS_CONDITIONAL_SCOPE",
+                "conditional model analysis; not a court finding or a case win rate",
+            ),
+        )
+        if result.mode == MODE_INCONSISTENT:
+            completion = BusinessCompletionV5.INCONSISTENT_ASSUMPTIONS
+            outcome_rows: tuple[BusinessOutcomeRowV5, ...] = ()
+            pending_rows: tuple[BusinessWorldV1, ...] = ()
+            solver_world_count = 0
+            checker_world_count = 0
+        elif result.mode == MODE_EXACT:
+            completion = BusinessCompletionV5.EXACT_FINITE_SCENARIOS
+            outcome_rows = tuple(
+                business_wire.wire_of_outcome_row(
+                    outcome.world,
+                    outcome.principal_balance,
+                    outcome.overpayment_residual,
+                )
+                for outcome in result.outcomes
+            )
+            pending_rows = ()
+        else:
+            completion = BusinessCompletionV5.PARTIAL_SCENARIOS
+            outcome_rows = tuple(
+                business_wire.wire_of_outcome_row(
+                    outcome.world,
+                    outcome.principal_balance,
+                    outcome.overpayment_residual,
+                )
+                for outcome in result.outcomes
+            )
+            pending_rows = tuple(
+                business_wire.wire_of_world(world) for world in result.pending
+            )
+            obligations = obligations + (
+                OpenObligationEntryV5(
+                    "BUSINESS_PARTIAL_SCENARIOS",
+                    "the solve budget ended before every scenario was checked",
+                ),
+            )
+        witness_body: dict[str, object] = {
+            "schema_version": BUSINESS_WITNESS_SCHEMA_V1,
+            "checker_version": BUSINESS_CHECKER_VERSION,
+            "task_id": task.task_id,
+            "run_identity_ref": run_identity_ref.to_dict(),
+            "input_ref": input_ref.to_dict(),
+            "completion": completion.value,
+            "solver_world_count": solver_world_count,
+            "checker_world_count": checker_world_count,
+            "coverage_equal": solver_world_count == checker_world_count,
+            "conservation_rule": "C>=0; U>=0; C*U=0; C-U+recognized==principal",
+            "independent_paths": [
+                "solver_product_enumeration_with_stack_program",
+                "checker_bitmask_enumeration_with_structural_denotation",
+            ],
+            "formal_evidence": BUSINESS_FORMAL_EVIDENCE_V1,
+            "semantic_scope": "SYNTHETIC_CONDITIONAL_MODEL_NOT_LITIGATION_FORECAST",
+            "issued_at": now.to_dict(),
+        }
+        witness_ref = self._register_business_artifact(
+            BUSINESS_WITNESS_KIND_V1, witness_body, scope=BUSINESS_ROOT_SCOPE_V1
+        )
+        return BusinessTaskResultV5(
+            task_id=task.task_id,
+            issue_id=task.issue_id,
+            requirement_id=task.requirement_id,
+            profile=task.profile,
+            selection_ref=task.selection_ref,
+            completion=completion,
+            representation="exact_finite_worlds",
+            context=task.input.context,
+            input_ref=input_ref,
+            witness_ref=witness_ref,
+            outcomes=outcome_rows,
+            pending_worlds=pending_rows,
+            analytics=analytics,
+            open_obligations=obligations,
+            checker_version=BUSINESS_CHECKER_VERSION,
+            formal_evidence=BUSINESS_FORMAL_EVIDENCE_V1,
+            legal_basis_status=BUSINESS_LEGAL_BASIS_STATUS_V1,
+            empirical_status=BUSINESS_EMPIRICAL_STATUS_V1,
+        )
+
+    def _business_stage_v1(
+        self,
+        request: CaseRequestV4,
+        run_identity_ref: ContentRefV4,
+        *,
+        now: CanonicalTimeV4,
+    ) -> tuple[BusinessTaskResultV5, ...]:
+        return tuple(
+            self._business_task_row(task, run_identity_ref, now=now)
+            for task in request.business_tasks_v1
+        )
+
+    def _business_only_evaluate(
+        self,
+        request: CaseRequestV4,
+        run: RunIdentityV4,
+        run_identity_ref: ContentRefV4,
+        events: list[tuple[str, ContentRefV4]],
+        *,
+        now: CanonicalTimeV4,
+    ) -> EvaluationEnvelopeV4:
+        """Registered business-only route: no fake rules, no normative claims.
+
+        The result stays a conditional analysis (hypothetical, review-gated):
+        business rows never claim ``accepted_formal_result`` and never mix
+        with the normative issue semantics of other runs.
+        """
+
+        rows = self._business_stage_v1(request, run_identity_ref, now=now)
+        events.append(("business-root-v1", rows[0].input_ref))
+        open_items = tuple(row.input_ref for row in rows)
+        all_exact = all(
+            row.completion is BusinessCompletionV5.EXACT_FINITE_SCENARIOS
+            for row in rows
+        )
+        # One conditional branch per task: the declared I0 is the assumption.
+        branches = []
+        for row in rows:
+            branch_body = {
+                "branch_id": f"business-{row.task_id}",
+                "assumption_refs": [row.input_ref.to_dict()],
+                "claim_refs": [],
+                "decision_status": DecisionStatusV4.HYPOTHETICAL_RESULT.value,
+            }
+            branches.append(BranchResultV4.from_dict({
+                **branch_body,
+                "branch_digest": str(digest_value(branch_body)),
+            }))
+        result = self._result(
+            run.request_ref,
+            run_identity_ref,
+            self._runtime_profile(run, formal_kernel=False, execution=None),
+            execution=ExecutionStatusV4.COMPLETED,
+            decision=DecisionStatusV4.HYPOTHETICAL_RESULT,
+            review=self._review_state(open_items, open_items),
+            completeness=(
+                CompletenessStateV4.COMPLETE
+                if all_exact
+                else CompletenessStateV4.PARTIAL
+            ),
+            interruption=None,
+            certificate=CertificateKindV4.NONE,
+            branches=tuple(branches),
+            decision_reason_codes=("business_conditional_analysis",),
+            receipt_refs=(),
+        )
+        return self._finish(
+            request,
+            run,
+            run_identity_ref,
+            result,
+            events,
+            now=now,
+            failure=None,
+            business_results=rows,
+        )
+
+    @staticmethod
+    def _strip_semantic_digest_body(wire: dict[str, object]) -> dict[str, object]:
+        """Mirror ``SemanticResultV4.digest_body`` over a wire projection."""
+
+        from copy import deepcopy as _deepcopy
+
+        body = _deepcopy(wire)
+        del body["result_digest"]
+        runtime_profile = body["runtime_profile"]
+        if not isinstance(runtime_profile, dict):
+            raise ContractV4Error(
+                "TYPE_MISMATCH", "SemanticResultV4.runtime_profile is not an object"
+            )
+        del runtime_profile["backend_receipt_ref"]
+        claims = body["claims"]
+        if not isinstance(claims, list):
+            raise ContractV4Error("TYPE_MISMATCH", "SemanticResultV4.claims is not an array")
+        for claim in claims:
+            if not isinstance(claim, dict):
+                raise ContractV4Error(
+                    "TYPE_MISMATCH", "SemanticResultV4.claims contains a non-object"
+                )
+            del claim["proof_receipt_refs"]
+            del claim["checker_receipt_refs"]
+        del body["receipt_refs"]
+        return body
+
+    def _attach_business_results(
+        self,
+        result: SemanticResultV4,
+        rows: tuple[BusinessTaskResultV5, ...],
+    ) -> SemanticResultV4:
+        if not rows:
+            return result
+        wire = result.to_dict()
+        wire["business_results_v1"] = [row.to_dict() for row in rows]
+        body = self._strip_semantic_digest_body(wire)
+        wire["result_digest"] = str(digest_value(body))
+        return SemanticResultV4.from_dict(wire)
+
+    def register_business_delivery_record(
+        self,
+        body: dict[str, object],
+    ) -> ContentRefV4:
+        """Content-address one delivery verification record (no run rewrite)."""
+
+        return self._register_business_artifact(
+            BUSINESS_DELIVERY_RECORD_KIND_V1,
+            body,
+            scope=BUSINESS_DELIVERY_SCOPE_V1,
+        )
+
     def _finish(
         self,
         request: CaseRequestV4,
@@ -2457,7 +2833,9 @@ class ApplicationV4:
         *,
         now: CanonicalTimeV4,
         failure: _Failure | None,
+        business_results: tuple[BusinessTaskResultV5, ...] = (),
     ) -> EvaluationEnvelopeV4:
+        result = self._attach_business_results(result, business_results)
         result_ref = ContentRefV4("semantic-result", result.canonical_digest())
         events.append(("result", result_ref))
         roots = self._wire_references({
@@ -2635,6 +3013,18 @@ class ApplicationV4:
             )
         )
 
+        # Registered business-only route: typed conditional tasks without any
+        # normative query or case fact share the same identity, trust, source,
+        # evidence, and audit stages, but never invent rules or claims.
+        if (
+            request.business_tasks_v1
+            and not request.profile_queries_v5
+            and not request.fact_attestation_refs
+        ):
+            return self._business_only_evaluate(
+                request, run, run_identity_ref, events, now=now
+            )
+
         pack: VerifiedRulePackV4 | None = None
         try:
             pack = self._pack_verifier.verify(request.rule_pack_ref, now=now)
@@ -2665,6 +3055,16 @@ class ApplicationV4:
                 failure=failure,
             )
 
+        # Mixed requests: the business stage runs beside the formal chain.
+        # Its typed rows attach to whichever terminal result the run seals,
+        # so a business gap never erases normative results and vice versa.
+        business_rows: tuple[BusinessTaskResultV5, ...] = ()
+        if request.business_tasks_v1:
+            business_rows = self._business_stage_v1(
+                request, run_identity_ref, now=now
+            )
+            events.append(("business-root-v1", business_rows[0].input_ref))
+
         try:
             selected = self._select_rules(
                 request,
@@ -2683,7 +3083,8 @@ class ApplicationV4:
                 failure=failure,
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
 
         if facts.hypothetical or facts.review:
@@ -2719,7 +3120,8 @@ class ApplicationV4:
                 reasons=("nonformal_fact_input",),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=None
+                request, run, run_identity_ref, result, events, now=now, failure=None,
+                business_results=business_rows,
             )
 
         admitted_keys = frozenset(
@@ -2752,7 +3154,8 @@ class ApplicationV4:
                 reasons=("missing_required_fact",),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=None
+                request, run, run_identity_ref, result, events, now=now, failure=None,
+                business_results=business_rows,
             )
         if not selected:
             result = self._nonformal_result(
@@ -2767,7 +3170,8 @@ class ApplicationV4:
                 reasons=("no_applicable_rule",),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=None
+                request, run, run_identity_ref, result, events, now=now, failure=None,
+                business_results=business_rows,
             )
 
         try:
@@ -2794,7 +3198,8 @@ class ApplicationV4:
                 execution=ExecutionStatusV4.ENGINE_ERROR,
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
 
         try:
@@ -2836,7 +3241,8 @@ class ApplicationV4:
                 execution=execution_status,
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
         if not executions:
             failure = _Failure("backend", "BACKEND_NO_EXECUTION", False)
@@ -2844,7 +3250,8 @@ class ApplicationV4:
                 request, run, run_identity_ref, pack, facts, selected, failure=failure
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
         events.append(("backend", executions[-1].receipt_ref))
         failed = next((item for item in executions if not item.completed), None)
@@ -2887,7 +3294,8 @@ class ApplicationV4:
                 extra_receipts=(failed.receipt_ref,),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
         primary = self._primary_execution(executions)
         if primary is None:
@@ -2904,7 +3312,8 @@ class ApplicationV4:
                 extra_receipts=tuple(item.receipt_ref for item in executions),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=None
+                request, run, run_identity_ref, result, events, now=now, failure=None,
+                business_results=business_rows,
             )
         try:
             for execution_row in executions:
@@ -2942,7 +3351,8 @@ class ApplicationV4:
                 extra_receipts=(primary.receipt_ref,),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
         if argument.state in {"empty", "missing"}:
             reasons = [f"argument_{argument.state}"]
@@ -2962,7 +3372,8 @@ class ApplicationV4:
                 extra_receipts=(primary.receipt_ref, checked.receipt_ref),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=None
+                request, run, run_identity_ref, result, events, now=now, failure=None,
+                business_results=business_rows,
             )
         v5_stage: _V5StageOutcome | None = None
         if request.profile_queries_v5:
@@ -2983,7 +3394,8 @@ class ApplicationV4:
                     extra_receipts=(primary.receipt_ref, checked.receipt_ref),
                 )
                 return self._finish(
-                    request, run, run_identity_ref, result, events, now=now, failure=failure
+                    request, run, run_identity_ref, result, events, now=now, failure=failure,
+                    business_results=business_rows,
                 )
             events.append(("profile-v5", v5_stage.stage_ref))
         try:
@@ -3023,10 +3435,12 @@ class ApplicationV4:
                 extra_receipts=(primary.receipt_ref, checked.receipt_ref),
             )
             return self._finish(
-                request, run, run_identity_ref, result, events, now=now, failure=failure
+                request, run, run_identity_ref, result, events, now=now, failure=failure,
+                business_results=business_rows,
             )
         return self._finish(
-            request, run, run_identity_ref, result, events, now=now, failure=None
+            request, run, run_identity_ref, result, events, now=now, failure=None,
+            business_results=business_rows,
         )
 
 

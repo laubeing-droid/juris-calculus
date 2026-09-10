@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.0.1 — jc-business-root/1 first batch (ROUTE1, 2026-09-11)
+
+- 新增 `compiler_core/business_root/`（codec/spec/solver/checker/analytics/delivery_checker/wire）：有限情景条件本金的生产实现，solver/checker 双枚举双语义（栈机+位掩码）、逐情景守恒律 C≥0、U≥0、C·U=0、C−U+recognized==principal，analytics 独立重算 E[C]/E[U]/E[R]/阈值事件/合法格。移植自 LMM reference @88644bc（MIT），数学权威仍在 LMM，Lean kernelChecked 证据待其 CI。
+- 请求扩展 `CaseRequestV4.business_tasks_v1` 与结果扩展 `SemanticResultV4.business_results_v1`：省空序列化——为空时整体不出现在规范字节中，旧请求/旧密封 run 的规范摘要逐字节不变（向量钉扎）。
+- 业务类型入注册表（106→124）：BusinessContextV1 等 18 个封闭合同；schema/manifest/向量/状态矩阵再生成。
+- Application 业务阶段：business-only 注册路由（不造假规则/claim，decision=hypothetical_result、review 门控、无证书）；逐任务五态 completion（exact/partial/inconsistent/failed/unsupported）与 typed error_code/error_stage；I0 与见证工件随审计包密封；混合请求业务行附加终局结果、与规范结果互不冲销。
+- 公开 verify-only 面：`business_delivery_documents`（从已核 run 只读导出两份受保护文件字节）与 `verify_business_delivery`（恢复密封 I0/结果、校验 selection 绑定、严格解析实际 bytes、登记内容寻址交付记录；全程零求值）；`business_capabilities()` 能力查询。
+- 本地 runtime builder 接收 `business_tasks`；可运行样例 `examples/harness/sample_local_business.py`；wheel 打入业务实现（pyproject + module-authority FORMAL_CORE 登记）；CI 增加业务验收步（contract+local+仓外 wheel 安装）。
+- 验收：tests/contract/test_business_root.py（BC01-BC03/BC10/BC16）、tests/local/test_business_root_local.py（BC04/05/07/09/11/13-16/18/19/22-25/28/29/33/36）、tests/packaging/test_business_wheel_install.py（BC12）；施工报告与未关闭清单见 docs/ulm-consolidated/IMPLEMENTATION_HANDOFF.md。
+
 ## 5.0.1 — final remediation (JC-FINAL-FIX-20260908)
 
 - 分支身份改为结构化无分隔符编码：`compose_branch_key_v5` 返回排序数组组件并对规范化结构取摘要，`{"a","b"}` 与 `{"a|b"}`、`("x","y")` 与 `("x|y",)` 不再可能共享身份（FIX-01/B01–B03）。

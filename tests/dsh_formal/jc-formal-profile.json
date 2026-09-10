@@ -12,7 +12,7 @@
     "jc_verify_run",
     "jc_read_artifact"
   ],
-  "tools_list_digest": "sha256:7971c558ae277ee265fa10b755dd7065cc9bd952dc177587b19fdc7e252b7cff",
+  "tools_list_digest": "sha256:5b1f5fe9651f0eb1bd0ba7f5062e684e21fe0b37c7cbbe4b5d93f01780ac2aaa",
   "capability_pins": {
     "schema_version": "jc/5.0",
     "engine_version": "5.0.0rc1",

@@ -25,7 +25,7 @@ jc-formal = "compiler_core.formal_bridge:main"
 version = { attr = "compiler_core.version.__version__" }
 
 [tool.setuptools]
-packages = ["compiler_core", "compiler_core.backends", "configs", "schemas"]
+packages = ["compiler_core", "compiler_core.business_root", "compiler_core.backends", "configs", "schemas"]
 py-modules = ["mcp_server"]
 include-package-data = false
 

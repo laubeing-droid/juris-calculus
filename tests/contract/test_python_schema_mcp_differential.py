@@ -235,7 +235,7 @@ def test_toolspec_manifest_and_runtime_codec_are_one_authority() -> None:
 def test_complete_schema_is_closed_and_resource_limits_are_published() -> None:
     Draft202012Validator.check_schema(SCHEMA)
     assert set(SCHEMA["$defs"]) == set(contracts.V4_TYPE_REGISTRY)
-    assert len(SCHEMA["$defs"]) == 106
+    assert len(SCHEMA["$defs"]) == 124
     assert "contracts_v4" not in json.dumps(SCHEMA, sort_keys=True)
 
     for type_name, contract_type in contracts.V4_OBJECT_REGISTRY.items():
