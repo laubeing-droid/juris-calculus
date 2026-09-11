@@ -13,7 +13,7 @@
 
 ## 正式运行链
 
-`contracts.py` → `source_service.py` / `fact_admission.py` / `rule_packs.py` → **`incremental.py`（5.0.1 起：`horn-subject-state-v5` 阶段在编译前推导本运行的 Horn 主体闭包——合格 add-only 子请求经 `incremental_horn_closure` 复用父闭包，父状态密封于审计包可跨实例恢复）** → `legal_ir.py` → `backend_router.py` / `backends/__init__.py` / `argumentation.py`（5.0.1 起：优先关系经登记策略参与击败判定，未支持关系阻断完整性）→ `independent_checker.py` → **`query_semantics.py` / `procedure.py`（V5 查询、程序四路，在 `_profile_stage_v5` 内执行并密封 `profile-stage-v5` 工件）** → `certificates.py` → `audit.py` / `audit_bundle.py`。
+`contracts.py` → `source_service.py` / `fact_admission.py` / `rule_packs.py` → **`incremental.py`（5.0.1 起：`horn-subject-state-v5` 阶段在编译前推导本运行的 Horn 主体闭包——合格 add-only 子请求经 `incremental_horn_closure` 复用父闭包，父状态密封于审计包可跨实例恢复）** → `legal_ir.py` → `backend_router.py` / `backends/__init__.py` / `argumentation.py`（5.0.1 起：优先关系经登记策略参与击败判定，未支持关系阻断完整性）→ `independent_checker.py` → **`query_semantics.py` / `procedure.py`（V5 查询、程序四路，在 `_profile_stage_v5` 内执行并密封 `profile-stage-v5` 工件）** → **`business_root/`（jc-business-root/1 业务阶段：携带 `business_tasks_v1` 的请求在此逐任务求解、独立校验并密封 I0/见证工件；business-only 请求走注册路由，verify-only 交付核验不经过本链、从不求值）** → `certificates.py` → `audit.py` / `audit_bundle.py`。
 
 支撑模块为 `canonical_serialization.py`、`trust.py`、`artifact_store.py`、`storage.py`、`resources.py` 和 `version.py`。`rendering.py` 只消费 `VerifiedAuditBundleV4`，不得重新求值。
 
@@ -28,6 +28,7 @@
 ## 相关文档
 
 - [合同权威图](contract-authority-v4.md)
+- [jc-business-root/1 能力契约](../contracts/BUSINESS_ROOT.md)
 - [形式运行时一致性](../contracts/FORMAL_RUNTIME_CONFORMANCE.md)
 - [V5 发布流程](../operations/RELEASE_V5.md)
 - [文档索引](../INDEX.md)

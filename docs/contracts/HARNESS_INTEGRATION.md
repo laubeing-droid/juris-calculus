@@ -196,3 +196,18 @@ The rules in `examples/harness/sample_local.py` are engineering test
 material: they demonstrate the interface and none of it is a Chinese-law
 capability. Real capability requires real source-backed rule packs supplied
 through the same local directory format.
+
+## Conditional business capability (`jc-business-root/1`, 2026-09-11)
+
+`local_case_bundle` also accepts `business_tasks=(...)` (typed
+`BusinessTaskV1` rows on `CaseRequestV4.business_tasks_v1`), and
+`evaluate_harness_bundle` returns their sealed typed rows as
+`business_results[]` beside — never merged into — `issues[]`. The local
+surface gained three business-only methods: `business_capabilities()`
+(installed-implementation capability query), `business_delivery_documents()`
+(read-only protected two-file view of one sealed exact run) and
+`verify_business_delivery()` (verify-only actual-bytes checking; zero
+evaluations, sealed bundles are never rewritten). Their contract, error
+codes and guarantee decomposition live in
+[BUSINESS_ROOT.md](BUSINESS_ROOT.md); the runnable sample is
+`examples/harness/sample_local_business.py`.
