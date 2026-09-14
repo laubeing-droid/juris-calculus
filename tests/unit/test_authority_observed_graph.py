@@ -303,7 +303,18 @@ def test_production_wheel_policy_matches_real_wheel_inputs() -> None:
         rule["path"] for rule in policy["path_rules"]
         if policy["classes"][rule["class"]]["production_wheel"] is True
     }
+    prefixes = set()
+    for rule in policy["prefix_rules"]:
+        if policy["classes"][rule["class"]]["production_wheel"] is not True:
+            continue
+        base = REPO / Path(rule["prefix"])
+        prefixes.update(
+            path.relative_to(REPO).as_posix()
+            for path in sorted(base.rglob("*.py"))
+        )
     assert {
         name for name, row in policy["classes"].items() if row["production_wheel"]
     } == PRODUCTION_CLASSES
-    assert expected_payload_paths(REPO) == production | set(EXPLICIT_RESOURCE_PATHS)
+    assert expected_payload_paths(REPO) == (
+        production | prefixes | set(EXPLICIT_RESOURCE_PATHS)
+    )
