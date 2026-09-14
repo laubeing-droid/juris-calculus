@@ -524,7 +524,16 @@ def test_bc24_selection_ref_binding_is_enforced(tmp_path: Path) -> None:
 
 
 def test_bc28_sealed_run_stays_verifiable_after_delivery_checks(tmp_path: Path) -> None:
-    client = _client(tmp_path)
+    # The delivery record is content-addressed but carries verified_at, so
+    # the idempotency property below is asserted against a frozen clock:
+    # on a wall clock two identical checks that straddle a tick would
+    # legitimately produce different record digests.
+    from compiler_core.contracts import CanonicalTimeV4
+
+    client = create_local_client(
+        tmp_path / "state", _rule_root(tmp_path),
+        clock=lambda: CanonicalTimeV4("2026-09-11T12:00:00Z"),
+    )
     task = _task()
     result = _run_business(client, task)
     before = client.local_read_run(result["run_identity_ref"])
