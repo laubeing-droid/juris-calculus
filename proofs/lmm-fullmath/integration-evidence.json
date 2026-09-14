@@ -1,0 +1,780 @@
+{
+ "schema_version": "jc/c06-integration-evidence/1.0",
+ "generated_at_utc": "2026-09-14T16:53:16Z",
+ "juris_calculus": {
+  "commit": "d3a4369b5d3f012ec0d9f1548b037bbc757ff142",
+  "tree": "54daa0be3f4e491a7dcfb23ca837eda534600d9a",
+  "repository": "laubeing-droid/juris-calculus",
+  "engine_version": "5.0.1",
+  "runtime_ref_baseline_commit": "c79e03b8d0cfed85c43cc013bf8a0b50326bc858"
+ },
+ "legal_math_modeling": {
+  "repository": "laubeing-droid/legal-math-modeling",
+  "commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+  "tree": "184a766a2d22b1c4be31bb119e4b82b76f0be540",
+  "run_id": "34797682659",
+  "attempt": "1",
+  "lean_toolchain_sha256": "54727eec5cba149c18842e6deb5c41b369d66455c93ce135d7d5347c782b2325",
+  "lake_manifest_sha256": "7230ea7eeaf37899cdf17d1c878e853e3650d276e6ec6b7f1d2f4c841952963e",
+  "subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+  "scope": "ALL_DECLARED_FORMAL_PARTS_OF_ORIGINAL_PLAN",
+  "mandatory_registrations": 217
+ },
+ "contract": {
+  "status": "READY_FOR_LATER_INTEGRATION_DESIGN",
+  "required_interfaces": [
+   "formal_input_types",
+   "canonical_codec_and_proof",
+   "reference_checker_entry",
+   "exact_inner_outer_and_statistical_contracts",
+   "supported_grammar",
+   "scope_assumptions",
+   "certified_names_and_subject",
+   "law_policy_inputs",
+   "model_data_inputs",
+   "counterexamples",
+   "deferred_production_adapters"
+  ],
+  "interface_adapters": [
+   {
+    "name": "formal_input_types",
+    "status": "ADAPTED",
+    "jc_adapter": "compiler_core/contracts.py CaseInputBundleV4 intake; probe packs express the canonical rule/fact shapes"
+   },
+   {
+    "name": "canonical_codec_and_proof",
+    "status": "ADAPTED",
+    "jc_adapter": "compiler_core/canonical_serialization.py canonical bytes; witness input/result digests"
+   },
+   {
+    "name": "reference_checker_entry",
+    "status": "ADAPTED",
+    "jc_adapter": "compiler_core/math_export/checker_gateway.py subprocess gateway; tools/generate_c06_entry_receipts.py producer"
+   },
+   {
+    "name": "exact_inner_outer_and_statistical_contracts",
+    "status": "CARRIED_NOT_CONSUMED",
+    "jc_adapter": "no JC consumption route in this integration; statuses carried by the pinned mapping only"
+   },
+   {
+    "name": "supported_grammar",
+    "status": "PARTIAL_PROBE_ONLY",
+    "jc_adapter": "local rule-pack byte syntax for probe packs; delivery grammar remains a LMM-side contract"
+   },
+   {
+    "name": "scope_assumptions",
+    "status": "ADAPTED",
+    "jc_adapter": "compiler_core/math_export/subject.py validates scope fields; honesty boundaries carried verbatim"
+   },
+   {
+    "name": "certified_names_and_subject",
+    "status": "ADAPTED",
+    "jc_adapter": "proofs/lmm-fullmath/BINDINGS_EXTRACT.json bound rows; compiler_core/math_export/pins.py subject pin"
+   },
+   {
+    "name": "law_policy_inputs",
+    "status": "DEFERRED_EXTERNAL",
+    "jc_adapter": "probe packs are engineering-test material only; real family policies stay with B-LEGAL-REVIEW (open)"
+   },
+   {
+    "name": "model_data_inputs",
+    "status": "DEFERRED_EXTERNAL",
+    "jc_adapter": "no JC consumption route; E01 real data calibration remains open"
+   },
+   {
+    "name": "counterexamples",
+    "status": "PARTIAL_PROBE_ONLY",
+    "jc_adapter": "tampered-bundle probe exercises the fail-closed rejection direction; full negative suite stays in LMM"
+   },
+   {
+    "name": "deferred_production_adapters",
+    "status": "ADAPTED_C06_ONLY",
+    "jc_adapter": "this integration is the C06-PRODUCTION route; ROOT07, E01, B-LEGAL-REVIEW and X-EXTERNAL-TRUTH stay open"
+   }
+  ],
+  "math_completion_fingerprint": "sha256:4631a9495a19ed1c954ee1b05c9605a23b8573efc936a22d9d1aaf55c8ce0f7f",
+  "export_contract_fingerprint": "sha256:ab38a6450d85b4d64d2895afab58938bcc807cc3b7fc107f77e14a46532efa92",
+  "pinned_sha256": {
+   "MATH_COMPLETION.json": "4405301a48b99f1081fea2cc9e251ea2be0eea3474f1f50c8c5fcb6d7bd87157",
+   "EXPORT_CONTRACT.json": "b1e386cb49d722f3cc51bbe3d563b655ffb70c9990e652e32be57da3c386282b",
+   "BINDINGS_EXTRACT.json": "f2d23e4074350fbf0dfcd9a98767656f2a77e552c7dbefd2c9b7f5484594674e"
+  },
+  "c06_semantic_link": "JurisLean.FullMath.Composition.checker_correspondence",
+  "c06_claim": "checker acceptance of these run receipts implies the outcomes belong to the independent solutions of the pinned subject (Contracts.target_C06)"
+ },
+ "bindings": {
+  "source_sha256": "cfa1d39e38846f59eb87506a40b3f9548137337ebce67d40630de05b6239459d",
+  "binding_count": 217,
+  "bound_registrations": [
+   "EXT:EXT02",
+   "ROOT:ADMINISTRATIVE",
+   "ROOT:CIVIL",
+   "ROOT:CRIMINAL",
+   "ROOT:DOCUMENT_DELIVERY",
+   "ROOT:GENERIC_FINITE",
+   "ROOT:STATISTICAL_COMPOSITION",
+   "ROOT:SYMBOLIC_EXACT",
+   "TARGET:B07",
+   "TARGET:C06",
+   "TARGET:C07",
+   "TARGET:F02",
+   "TARGET:F05",
+   "TARGET:F08",
+   "TARGET:F09",
+   "TARGET:F10",
+   "TARGET:F12",
+   "TARGET:F14"
+  ]
+ },
+ "expected_fixtures_sha256": {
+  "contract_breach.expected.json": "c0c63f4ffc1f59f115935c16a04282652d3fb88b182f33f04243df1d542b6b94",
+  "fact_admission.expected.json": "b9b70d866246e6c54c0fb48fe938a6786ce39409942f6badae39f419ca7132bd",
+  "unknown_timeout.expected.json": "3bbf6190496c8a74c82f842b4a89d14213b8974a81c6c312fcd8e1021ae466bc"
+ },
+ "receipts_sha256": {
+  "contract_breach.actual.json": "2c0dd393f1a34db9a7bb1f4d5381d1736cb3bf1eec03140512168d2489a963de",
+  "fact_admission.actual.json": "34d17972ebb605977ee69c644af41984c7c65792f6e225aa09c332fb1bddec31",
+  "unknown_timeout.actual.json": "5661be0b62c0a874306af365de4633954a5a114448a56a0bc299e34a4b0870f5"
+ },
+ "witnesses": [
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "contract::plain",
+   "probe_semantics": "production chain: consent-based processing obligation accepted with a formal certificate; decided at envelope level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:9749803959de1bb16b9c141a40c1e825970a32629fa43e521880b9599ebee0f0",
+   "input_digest": "038f501f00f9f5a24d8c1042f48e5cc817d561fc1844dcc8caad065460d70071",
+   "result_digest": "sha256:4e1717df35ea0652a49e2a5f14384951396fd1a135dda9a1fe48a666f416b068",
+   "audit_manifest_digest": "sha256:96e258af4ca17f1586a0a7a0734e92c57af4afcf72236de747491cc65a73ffe1",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:686a08424f676d849ee897df801daf6d5c5fbb769ca1144e551ca99a99bfabf2"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "contract::plain",
+   "probe_semantics": "production chain: consent-based processing obligation accepted with a formal certificate; decided at envelope level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:5f5b4e7dcee0c736b2d3ca5274d0cea7865081a8e67d84368cada5f5e6d30f35",
+   "input_digest": "038f501f00f9f5a24d8c1042f48e5cc817d561fc1844dcc8caad065460d70071",
+   "result_digest": "sha256:3c14af5bd580b07025c3c8ea1b3b56b1a9dde39a8408440b45d13fec33561fe1",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:64ef241f6ac4ce01c47c62d5036cf7159efb4c5f2a9a125982bcb3ee4fcfcf4b"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "contract::plain",
+   "probe_semantics": "production chain: consent-based processing obligation accepted with a formal certificate; decided at envelope level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:d766126a3c2f3e1a53f65ed334b9a75d00a6fc85182fb00fbee52f5da0e1e445",
+   "input_digest": "038f501f00f9f5a24d8c1042f48e5cc817d561fc1844dcc8caad065460d70071",
+   "result_digest": "sha256:f03dea5ad91d1c5cf1891b303ee6ba143c44781660f6a255eaf4b8d3109c526c",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:e50ff30a1a66b13c40489e9fd15e0a5d4ce6d121d4e9a5de17758d295c3429ad"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "contract::force-majeure",
+   "probe_semantics": "keyless local harness: admitted exception rule with an admitted claim refutation defeats the base obligation; decided at issue level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "local:5.0.1"
+   },
+   "run_identity_digest": "sha256:0142334e83809439bec22a01be95b8c645741ced75f180fbd3fa88850cafa88b",
+   "input_digest": "04980b51863b32e4e430f52ab057205eeb029fa0beb5970ad95d5e35dd8a3481",
+   "result_digest": "0ea43d92cbe0be8102d1c7ceab5b07b9ecd95da363a305c2e3d3ca48f31429bf",
+   "audit_manifest_digest": "sha256:c8482faf6e45fbaed0441bfa0f28df82928e3f77345013d6f6502f1e2cec1c33",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": "base",
+   "status": "REFUTED",
+   "issues": {
+    "base": "REFUTED",
+    "exception": "PROVED"
+   },
+   "witness_digest": "sha256:a866d6d191c10d878e4461fce4a38212ffed1d7bd7f26db610b3f07d2cfc3711"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "contract::force-majeure",
+   "probe_semantics": "keyless local harness: admitted exception rule with an admitted claim refutation defeats the base obligation; decided at issue level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "local:5.0.1"
+   },
+   "run_identity_digest": "sha256:8b8a75e1f09cbe7ac0b17343c073e67aadec80b66ddd8a6f999c8c60941b0910",
+   "input_digest": "04980b51863b32e4e430f52ab057205eeb029fa0beb5970ad95d5e35dd8a3481",
+   "result_digest": "sha256:6c884d20b470b9ce29653d39fbabeb844716c552c45f9dba457424f33e64c698",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": "base",
+   "status": "REFUTED",
+   "issues": {
+    "base": "REFUTED",
+    "exception": "PROVED"
+   },
+   "witness_digest": "sha256:f41f94bb03de70d43409d99b321a7aa5a31abd1f53a4fcdbc983619c0b79e532"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "contract::malformed-certificate",
+   "probe_semantics": "tampered fact-value bytes: every public entry rejects the bundle at intake and never answers decisively",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "input_digest": "bc3d26618ac9a2b07e4015eff74a610d24568ca8ff8b255614e8c40a706f2a5f",
+   "result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "intake_rejected",
+   "intake_error_code": "ARTIFACT_DIGEST_MISMATCH",
+   "focus_issue": null,
+   "status": "TAINTED",
+   "issues": {},
+   "witness_digest": "sha256:0a296b0f8bb1da3d588cc8a182181ef96e93543fb6729f5d0330358e4584e600"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "contract::malformed-certificate",
+   "probe_semantics": "tampered fact-value bytes: every public entry rejects the bundle at intake and never answers decisively",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "input_digest": "bc3d26618ac9a2b07e4015eff74a610d24568ca8ff8b255614e8c40a706f2a5f",
+   "result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "intake_rejected",
+   "intake_error_code": "ARTIFACT_DIGEST_MISMATCH",
+   "focus_issue": null,
+   "status": "TAINTED",
+   "issues": {},
+   "witness_digest": "sha256:22697cd8b3a3620701536448155e361597b50231a81ad117aa7c6e816f58c2d6"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "contract::malformed-certificate",
+   "probe_semantics": "tampered fact-value bytes: every public entry rejects the bundle at intake and never answers decisively",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "input_digest": "bc3d26618ac9a2b07e4015eff74a610d24568ca8ff8b255614e8c40a706f2a5f",
+   "result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "intake_rejected",
+   "intake_error_code": "ARTIFACT_DIGEST_MISMATCH",
+   "focus_issue": null,
+   "status": "TAINTED",
+   "issues": {},
+   "witness_digest": "sha256:3483667cc2c92a61e0bd31f8fe5c96a19df66810c8bf1b1078cd44040c04c90d"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "admission::three-gates-pass",
+   "probe_semantics": "production chain: three-gate admitted fact reaches a formal result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:caee40fb3c7f6d299cc67ffcad5889d7f2e6f19ec8f7e329d21100ff8ea0b3e8",
+   "input_digest": "b4c28b3c183daf5aea67d32dab25b2e6083df4be66898bf28246b893f3725a64",
+   "result_digest": "sha256:96216cf26086f12a4922d7d3e8645ba54ccece174a9738407f8e7e27da8dcc6a",
+   "audit_manifest_digest": "sha256:b6878b8a6cb4a5d39c343c2d015dfb79dd7751378c40388ee799a3ba7b4b47ce",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:8f3cbf5a0083b74839c4b1305ce0b8a78fb4b280849f9b68f54184e2c3ee63ac"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "admission::three-gates-pass",
+   "probe_semantics": "production chain: three-gate admitted fact reaches a formal result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:d299cc19f5b9ec8c7b82d329eb694a07ede5d6594836e5a834ea7426cdfd4d73",
+   "input_digest": "b4c28b3c183daf5aea67d32dab25b2e6083df4be66898bf28246b893f3725a64",
+   "result_digest": "sha256:8a04608ce601814d068ef19235d8d88abfc10111bbbb32a3a9634782f3dfeaba",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:681493f3921b58938d7cb0f3057bbfefd60bca848209d1b46b33c992760e72f4"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "admission::three-gates-pass",
+   "probe_semantics": "production chain: three-gate admitted fact reaches a formal result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:3225caa89b90d01c68e883dac48e4fe203340ec4b90c8b269e836995b357250c",
+   "input_digest": "b4c28b3c183daf5aea67d32dab25b2e6083df4be66898bf28246b893f3725a64",
+   "result_digest": "sha256:7f29393af2542add5ba6caf410bcfb71d8d009ad9716edcd71f1cdf35e934de7",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "accepted_formal_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "PROVED",
+   "issues": {},
+   "witness_digest": "sha256:b9dbdeb3d2658acb143444fce317658bfd639e3cbce365b70ad92b2bc8d5057c"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "admission::disputed-fact",
+   "probe_semantics": "production chain: disputed fact stays review-only, never decisive",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:37b305c4136c3a802809b74ce589c174426d481184389d9b20f5f74192fa8283",
+   "input_digest": "d7073a32bc4201a2b8cf19e671616c59822bae66e8bf92fe245881abfe93fa3f",
+   "result_digest": "sha256:c18718414accb441d50d1992fa4bf01279ff00377382a45c24ca1800017882a3",
+   "audit_manifest_digest": "sha256:258392ae4b20802e1d8aac6305a055236b57d5b98a240a2fc306a295fec1aa9e",
+   "decision_status": "review_only_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:baec2bbe2f806ce1e84bcc74a1f61dd8b09bcaa14c1f1f11179a90e487e346f6"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "admission::disputed-fact",
+   "probe_semantics": "production chain: disputed fact stays review-only, never decisive",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:94d891e3e06fdc1ea77631e5c93200b7eb4a541419c0103b9f5d75d41a78ef38",
+   "input_digest": "d7073a32bc4201a2b8cf19e671616c59822bae66e8bf92fe245881abfe93fa3f",
+   "result_digest": "sha256:af96733940fb446152eb39c3b22f36e8dc36b7335a62872ebbcb351aec81a8ad",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "review_only_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:27c274aba675193c4d1c10c535e06ee4edff7803c9ca14784512bac71d2db67b"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "admission::disputed-fact",
+   "probe_semantics": "production chain: disputed fact stays review-only, never decisive",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:de21c1bdd47952fefa7b1275068ddc2c0f250509a4922b3cc29fa0a3189437e9",
+   "input_digest": "d7073a32bc4201a2b8cf19e671616c59822bae66e8bf92fe245881abfe93fa3f",
+   "result_digest": "sha256:8ff15ed0ca6e8661a7af03e69b3461285d6c8801488a0275d8e19b4d4cae118d",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "review_only_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:1fafc7799c248f7338c6b16a8eec9bf5207582c782877c9dc86c0eb7392cdf98"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "admission::revoked-attestation",
+   "probe_semantics": "production chain: without an admitted fact the run reports the missing requirement and stays undecided",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:c62ff9a2ac4e02f2a82318abb01781912cc149e88218603b7f16a9f291a02a7d",
+   "input_digest": "9a051ba71c3eec8d77b92644c67a947a039f5f7bcd24bb1dd59cb272318a94b9",
+   "result_digest": "sha256:70fd2b88a856e71b82bfed99d56504cc79f467f6ae9c00d75246762fe2bdc0a7",
+   "audit_manifest_digest": "sha256:e9e28d11d6eed5d284763c3ff57de6a4888ff0d7cd94db1023890742aaf38bc3",
+   "decision_status": "missing_required_fact",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:e34d7a74263fd06493e7e82eac47fcc7833859fba757e1c49423d4936d8d5a8b"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "admission::revoked-attestation",
+   "probe_semantics": "production chain: without an admitted fact the run reports the missing requirement and stays undecided",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:8eeaebc43c7656591b35792d663f1dae69ef527184c3e023ac4717b62fd446fe",
+   "input_digest": "9a051ba71c3eec8d77b92644c67a947a039f5f7bcd24bb1dd59cb272318a94b9",
+   "result_digest": "sha256:f616bf022b57807264ea41c8f91ba808a7926310dfe28e571d3392eb5e4ae1f8",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "missing_required_fact",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:bf485870959d06cf96839f42ccc39e1851d214a87182bea948e8c8ebbf53f639"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "admission::revoked-attestation",
+   "probe_semantics": "production chain: without an admitted fact the run reports the missing requirement and stays undecided",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:e748f7b2b08e8d6ae9359c781e3a1ac4df9f540e3b85a5b99855967b7f38fd6b",
+   "input_digest": "9a051ba71c3eec8d77b92644c67a947a039f5f7bcd24bb1dd59cb272318a94b9",
+   "result_digest": "sha256:8bc31c998c015769c78324005be87bb67f4efb6b6fae1e61744b25c85407c2bc",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "missing_required_fact",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:3220374ff042eed2cf2117385cba2b9855cba40959ad750ae3fc061c09491a75"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "backend::unknown-outcome",
+   "probe_semantics": "production chain: user-assumed fact yields a hypothetical, non-decisive result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:91c4dd85f6fe1651964d0b4f78fd9324bf661894c61dea111151d21cf463b15c",
+   "input_digest": "0ffdb67ec3d7fa94605c9d72d3f3354ea523cf5c281608ecd2426c0f2ab8c5db",
+   "result_digest": "sha256:eaa5b09720d4665c44c81e24ae749e55328bfee6bc0c2ab97d6f2ad0a6f720a0",
+   "audit_manifest_digest": "sha256:afa6ee297b07bdc5387fefcf2222d55fa72b942ef8513e6041e5c4b52d3ad6d1",
+   "decision_status": "hypothetical_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:bad368e343d73c402c6a4c443257d0e7d2a8ffc5e40e79c557fe5d251ff789e4"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "backend::unknown-outcome",
+   "probe_semantics": "production chain: user-assumed fact yields a hypothetical, non-decisive result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:289a92c52ddc78bf91b8fbe57bc3b4c54b0006345a16e29e7598dd53ecc8915d",
+   "input_digest": "0ffdb67ec3d7fa94605c9d72d3f3354ea523cf5c281608ecd2426c0f2ab8c5db",
+   "result_digest": "sha256:e182e98197444df65aea13d2823ced1ac20084fd6f2dc4dee831a661f1fa207d",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "hypothetical_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:1b33284b2f58e21972db4f2a09c37c8658437a1d9441c573e6328360abf63fc3"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "mcp",
+   "case_id": "backend::unknown-outcome",
+   "probe_semantics": "production chain: user-assumed fact yields a hypothetical, non-decisive result",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "sha256:12a832e7a9d81a19c3e497c24a756901a90717119e9efb2bc01b414fe3c66e67"
+   },
+   "run_identity_digest": "sha256:9da16cf8640f6a6f49cda6dda37b4e5ae8fd3062d617e67f925d6bca00dba71a",
+   "input_digest": "0ffdb67ec3d7fa94605c9d72d3f3354ea523cf5c281608ecd2426c0f2ab8c5db",
+   "result_digest": "sha256:902b99307224221af0c5bd310c295095ac1657c596efb0fac86ee47a5e94d897",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "hypothetical_result",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:8e1bfb0286a4500b4791f0f3cf32f5a3a734acbf7dedbc47506c56b67c4f6b82"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "jc_client",
+   "case_id": "backend::timeout-outcome",
+   "probe_semantics": "bounded local evaluation without decisive support reports unknown and never guesses; decided at envelope level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "local:5.0.1"
+   },
+   "run_identity_digest": "sha256:508754ff133c6c129b9320f2264cbf3c727cf95611342491f1974b1685d10943",
+   "input_digest": "23b23e74377dfbe81c7b9963d024beadc0f1cb01ee4f4bf506636e17992a8126",
+   "result_digest": "sha256:11f1fbf6e04d388670287954817904f3362173b1bfc683e0541dd51b05b8285c",
+   "audit_manifest_digest": "sha256:f7e4a38feb5b90a0ea81667cc55a51c57f18712ae6aca1a20e65475b9e99ccbf",
+   "decision_status": "unknown",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:5f3bbfb923a5edd6395f561fdfa32a3f15ed33d260c60b2e28ddd045b56c7052"
+  },
+  {
+   "schema_version": "jc/lmm-c06-witness/1.0",
+   "producer": "juris-calculus",
+   "entry": "cli",
+   "case_id": "backend::timeout-outcome",
+   "probe_semantics": "bounded local evaluation without decisive support reports unknown and never guesses; decided at envelope level",
+   "lmm_subject_fingerprint": "sha256:b0adbe07137ff54a5ab5df366ab2fa4f44b7890e901b86d72ffb3792519c5e84",
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "juris_calculus": {
+    "engine_version": "5.0.1",
+    "engine_build_digest": "local:5.0.1"
+   },
+   "run_identity_digest": "sha256:5917a588a093e100580b853aaa427475901a7bcb2ed2603dbf09123ffed023d0",
+   "input_digest": "23b23e74377dfbe81c7b9963d024beadc0f1cb01ee4f4bf506636e17992a8126",
+   "result_digest": "sha256:b61604c3c360d0a3175dc4dc038b1e2c1bb580010d130fc4a26b153f533446fc",
+   "audit_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "decision_status": "unknown",
+   "intake_error_code": null,
+   "focus_issue": null,
+   "status": "UNDECIDED",
+   "issues": {},
+   "witness_digest": "sha256:f8e1e9b3974c4512f658b7f09f9b782bfe3c78861bca2d49f96b44e83b30bad4"
+  }
+ ],
+ "cross_entry_consistency": {
+  "admission::disputed-fact": {
+   "status": "UNDECIDED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "admission::revoked-attestation": {
+   "status": "UNDECIDED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "admission::three-gates-pass": {
+   "status": "PROVED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "backend::unknown-outcome": {
+   "status": "UNDECIDED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "contract::malformed-certificate": {
+   "status": "TAINTED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "contract::plain": {
+   "status": "PROVED",
+   "entries": [
+    "cli",
+    "jc_client",
+    "mcp"
+   ],
+   "agreement": true
+  },
+  "backend::timeout-outcome": {
+   "status": "UNDECIDED",
+   "entries": [
+    "cli",
+    "jc_client"
+   ],
+   "agreement": true
+  },
+  "contract::force-majeure": {
+   "status": "REFUTED",
+   "entries": [
+    "cli",
+    "jc_client"
+   ],
+   "agreement": true
+  }
+ },
+ "checker_reports": [
+  {
+   "group": "contract_breach",
+   "passed": true,
+   "blocked": false,
+   "error_codes": [],
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "runtime_commit": "d3a4369b5d3f012ec0d9f1548b037bbc757ff142",
+   "runtime_build_id": "jc-c06-verification:1",
+   "fixture_digest": "e41a3d5b827d726620e7882cfca19b0e6831c18754f80b8ad9a212c0b1208fab"
+  },
+  {
+   "group": "fact_admission",
+   "passed": true,
+   "blocked": false,
+   "error_codes": [],
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "runtime_commit": "d3a4369b5d3f012ec0d9f1548b037bbc757ff142",
+   "runtime_build_id": "jc-c06-verification:1",
+   "fixture_digest": "5a7b7f2196c41e02926c8512f2bc681e19f6f799b547f7437aabe7476ab53005"
+  },
+  {
+   "group": "unknown_timeout",
+   "passed": true,
+   "blocked": false,
+   "error_codes": [],
+   "lmm_commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+   "runtime_commit": "d3a4369b5d3f012ec0d9f1548b037bbc757ff142",
+   "runtime_build_id": "jc-c06-verification:1",
+   "fixture_digest": "c105a21269ae15df164a2824863b19264690987b54a9ac9eb56eefc711ed9bb5"
+  }
+ ],
+ "verification": {
+  "independent_checker": "legal-math-modeling scripts/verify_runtime_refinement_receipt.py in its own process at the pinned subject",
+  "main_solver_isolation": "the checker never imports juris-calculus code and never calls the JC main solver",
+  "expected_regeneration": "byte-equal with the pinned copies",
+  "all_passed": true,
+  "changed_module_mode_used": false
+ },
+ "boundaries": {
+  "not_established": [
+   "actual_JC_Harness_integration",
+   "E01_real_data_validation",
+   "truth_of_external_facts",
+   "unrestricted_natural_language_or_entire_legal_system"
+  ],
+  "open_external_items": [
+   "C06-PRODUCTION",
+   "ROOT07-PRODUCTION",
+   "E01-EMPIRICAL",
+   "B-LEGAL-REVIEW",
+   "X-EXTERNAL-TRUTH"
+  ],
+  "claim": "JC integration claims checker correspondence and version invalidation only; it does not close E01 empirical validation, legal source review, or external factual truth."
+ }
+}

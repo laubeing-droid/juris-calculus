@@ -1,0 +1,295 @@
+{
+ "schema_version": "jc/lmm-fullmath-bindings-extract/1.0",
+ "subject": {
+  "commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+  "tree": "184a766a2d22b1c4be31bb119e4b82b76f0be540",
+  "repository": "laubeing-droid/legal-math-modeling",
+  "run_id": "34797682659",
+  "attempt": "1",
+  "lean_toolchain_sha256": "54727eec5cba149c18842e6deb5c41b369d66455c93ce135d7d5347c782b2325",
+  "lake_manifest_sha256": "7230ea7eeaf37899cdf17d1c878e853e3650d276e6ec6b7f1d2f4c841952963e",
+  "runtime_ref_commit": "c79e03b8d0cfed85c43cc013bf8a0b50326bc858"
+ },
+ "source": {
+  "path": "tools/full_math/spec/BINDINGS.json",
+  "sha256": "cfa1d39e38846f59eb87506a40b3f9548137337ebce67d40630de05b6239459d",
+  "binding_count": 217
+ },
+ "math_completion_sha256": "4405301a48b99f1081fea2cc9e251ea2be0eea3474f1f50c8c5fcb6d7bd87157",
+ "export_contract_sha256": "b1e386cb49d722f3cc51bbe3d563b655ffb70c9990e652e32be57da3c386282b",
+ "expected_fixtures_sha256": {
+  "contract_breach.expected.json": "c0c63f4ffc1f59f115935c16a04282652d3fb88b182f33f04243df1d542b6b94",
+  "fact_admission.expected.json": "b9b70d866246e6c54c0fb48fe938a6786ce39409942f6badae39f419ca7132bd",
+  "unknown_timeout.expected.json": "3bbf6190496c8a74c82f842b4a89d14213b8974a81c6c312fcd8e1021ae466bc"
+ },
+ "bound_registrations": {
+  "TARGET:C06": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_C06",
+   "contract": "JurisLean.FullMath.Contracts.target_C06",
+   "semantic_links": [
+    "JurisLean.FullMath.Composition.checker_correspondence"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Composition/CheckerCorrespondence.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "checker correspondence: JC public-entry witnesses are verified by the LMM independent checker"
+  },
+  "TARGET:C07": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_C07",
+   "contract": "JurisLean.FullMath.Contracts.target_C07",
+   "semantic_links": [
+    "JurisLean.FullMath.Composition.complete_requires_equality"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Composition/UnifiedCorrectness.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "unified correctness exit: all entry witnesses compose through the seven roots"
+  },
+  "TARGET:B07": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_B07",
+   "contract": "JurisLean.FullMath.Contracts.target_B07",
+   "semantic_links": [
+    "JurisLean.FullMath.Burden.version_change_invalidates"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Burden/SourceTime.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/burden_ref.py"
+   ],
+   "bound_because": "source/version invalidation: JC caches and certificates carry the LMM subject fingerprint"
+  },
+  "TARGET:F02": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F02",
+   "contract": "JurisLean.FullMath.Contracts.target_F02",
+   "semantic_links": [
+    "JurisLean.FullMath.Core.migrate_main_key"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Core/IdentityCodec.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "identity codec: canonical digest identity for witnesses"
+  },
+  "EXT:EXT02": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_EXT02",
+   "contract": "JurisLean.FullMath.Contracts.target_EXT02",
+   "semantic_links": [
+    "JurisLean.FullMath.Core.carries_binds_identity"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Core/IdentityCodec.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "codec extension: structured identity carries binds across versions"
+  },
+  "TARGET:F05": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F05",
+   "contract": "JurisLean.FullMath.Contracts.target_F05",
+   "semantic_links": [
+    "JurisLean.FullMath.Logic.cl_mono"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Logic/HornFixpoint.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "horn fixpoint: formal semantics of the probe rule packs"
+  },
+  "TARGET:F08": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F08",
+   "contract": "JurisLean.FullMath.Contracts.target_F08",
+   "semantic_links": [
+    "JurisLean.FullMath.Logic.edgeFuel_iff"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Logic/AttackCompilation.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "attack compilation: exception attack structure of the probes"
+  },
+  "TARGET:F09": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F09",
+   "contract": "JurisLean.FullMath.Contracts.target_F09",
+   "semantic_links": [
+    "JurisLean.FullMath.Logic.pending_edges_bound"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Logic/AttackCompilation.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "attack compilation edge fuel: bounded compiled checker of the probes"
+  },
+  "TARGET:F10": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F10",
+   "contract": "JurisLean.FullMath.Contracts.target_F10",
+   "semantic_links": [
+    "JurisLean.FullMath.Logic.grounded_least"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Logic/ExtensionProfiles.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "grounded extension profile: probe issue queries use profile=grounded"
+  },
+  "TARGET:F12": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F12",
+   "contract": "JurisLean.FullMath.Contracts.target_F12",
+   "semantic_links": [
+    "JurisLean.FullMath.Evidence.verified_requires_source_authority"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Evidence/Admission.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "admission discipline: only admitted facts and rules reach the probes"
+  },
+  "TARGET:F14": {
+   "theorem": "JurisLean.FullMath.Acceptance.target_F14",
+   "contract": "JurisLean.FullMath.Contracts.target_F14",
+   "semantic_links": [
+    "JurisLean.FullMath.Evidence.addOnly_matches_full_recompute"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Evidence/Withdrawal.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/horn_logic.py"
+   ],
+   "bound_because": "add-only reuse: incremental channel recorded on the local runs"
+  },
+  "ROOT:GENERIC_FINITE": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_GENERIC_FINITE",
+   "contract": "JurisLean.FullMath.Contracts.root_GENERIC_FINITE",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_GENERIC_FINITE"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root exercised by the finite probes"
+  },
+  "ROOT:SYMBOLIC_EXACT": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_SYMBOLIC_EXACT",
+   "contract": "JurisLean.FullMath.Contracts.root_SYMBOLIC_EXACT",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_SYMBOLIC_EXACT_box"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root cited by the exact status mapping"
+  },
+  "ROOT:STATISTICAL_COMPOSITION": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_STATISTICAL_COMPOSITION",
+   "contract": "JurisLean.FullMath.Contracts.root_STATISTICAL_COMPOSITION",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_STATISTICAL_COMPOSITION"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root retained by the unified exit"
+  },
+  "ROOT:CIVIL": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_CIVIL",
+   "contract": "JurisLean.FullMath.Contracts.root_CIVIL",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_CIVIL"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root for the civil contract probes"
+  },
+  "ROOT:CRIMINAL": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_CRIMINAL",
+   "contract": "JurisLean.FullMath.Contracts.root_CRIMINAL",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_CRIMINAL"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root declared by the unified exit"
+  },
+  "ROOT:ADMINISTRATIVE": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_ADMINISTRATIVE",
+   "contract": "JurisLean.FullMath.Contracts.root_ADMINISTRATIVE",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_ADMINISTRATIVE"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root declared by the unified exit"
+  },
+  "ROOT:DOCUMENT_DELIVERY": {
+   "theorem": "JurisLean.FullMath.Acceptance.root_DOCUMENT_DELIVERY",
+   "contract": "JurisLean.FullMath.Contracts.root_DOCUMENT_DELIVERY",
+   "semantic_links": [
+    "JurisLean.FullMath.Roots.root_DOCUMENT_DELIVERY"
+   ],
+   "proof_sources": [
+    "proofs/lean/juris_lean/JurisLean/FullMath/Roots/SevenRoots.lean"
+   ],
+   "implementation_sources": [
+    "tools/full_math/implementation/argumentation_ref.py"
+   ],
+   "bound_because": "C07 closure root for byte-syntax delivery of evidence"
+  }
+ },
+ "honest_boundaries": {
+  "not_established": [
+   "actual_JC_Harness_integration",
+   "E01_real_data_validation",
+   "truth_of_external_facts",
+   "unrestricted_natural_language_or_entire_legal_system"
+  ],
+  "open_external_items": [
+   "C06-PRODUCTION",
+   "ROOT07-PRODUCTION",
+   "E01-EMPIRICAL",
+   "B-LEGAL-REVIEW",
+   "X-EXTERNAL-TRUTH"
+  ],
+  "claim": "JC integration claims checker correspondence and version invalidation only; it does not close E01 empirical validation, legal source review, or external factual truth."
+ }
+}

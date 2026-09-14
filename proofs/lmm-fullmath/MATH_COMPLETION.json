@@ -1,0 +1,28 @@
+{
+  "status": "MATH_BUILD_COMPLETE",
+  "subject": {
+    "commit": "5084f25e69ae27332404dc9f341a61d46ef0fc53",
+    "tree": "184a766a2d22b1c4be31bb119e4b82b76f0be540",
+    "repository": "laubeing-droid/legal-math-modeling",
+    "run_id": "34797682659",
+    "attempt": "1",
+    "lean_toolchain_sha256": "54727eec5cba149c18842e6deb5c41b369d66455c93ce135d7d5347c782b2325",
+    "lake_manifest_sha256": "7230ea7eeaf37899cdf17d1c878e853e3650d276e6ec6b7f1d2f4c841952963e"
+  },
+  "scope": "ALL_DECLARED_FORMAL_PARTS_OF_ORIGINAL_PLAN",
+  "target_count": 57,
+  "extension_count": 9,
+  "business_requirement_count": 134,
+  "gap_formal_count": 10,
+  "general_roots": 7,
+  "mandatory_registrations": 217,
+  "not_established": [
+    "actual_JC_Harness_integration",
+    "E01_real_data_validation",
+    "truth_of_external_facts",
+    "unrestricted_natural_language_or_entire_legal_system"
+  ],
+  "original_external_tasks_status": "PRESERVED_NOT_CLOSED_BY_MATH",
+  "source_files": 70,
+  "evidence_type": "Lean kernel proofs of declared contracts plus current reference tests; not kernel proof of CPython"
+}
