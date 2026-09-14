@@ -158,6 +158,20 @@ def expected_payload_paths(source: Path) -> frozenset[str]:
             raise RuntimeError(f"unknown module-authority class: {class_name}")
         if classes[class_name].get("production_wheel") is True:
             selected.add(path)
+    for rule in policy.get("prefix_rules", []):
+        if not isinstance(rule, dict) or not isinstance(rule.get("prefix"), str):
+            raise RuntimeError("module-authority prefix rule is malformed")
+        class_name = rule.get("class")
+        if class_name not in classes:
+            raise RuntimeError(f"unknown module-authority class: {class_name}")
+        if classes[class_name].get("production_wheel") is not True:
+            continue
+        prefix = rule["prefix"].replace("\\", "/")
+        base = source / PurePosixPath(prefix)
+        if not base.is_dir():
+            raise RuntimeError(f"declared wheel prefix is missing: {prefix}")
+        for path in sorted(base.rglob("*.py")):
+            selected.add(path.relative_to(source).as_posix())
     for relative in sorted(selected):
         path = source / PurePosixPath(relative)
         if not path.is_file():
