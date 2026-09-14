@@ -6,6 +6,19 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      lmm_repository:
+        description: Math repository for the optional C06 cross-repo lane
+        required: false
+        type: string
+      lmm_ref:
+        description: Exact 40-character math subject SHA for the C06 cross-repo lane
+        required: false
+        type: string
+      runtime_ref:
+        description: Exact 40-char producer SHA bound in the receipt evidence
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -15,7 +28,22 @@ env:
   PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
 
 jobs:
+  c06-cross-repo:
+    name: Optional C06 cross-repo verification lane (dispatch only)
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.lmm_ref != ''
+      && inputs.lmm_repository != '' && inputs.runtime_ref != ''
+    uses: ./.github/workflows/cross-repo-verification.yml
+    with:
+      lmm_repository: ${{ inputs.lmm_repository }}
+      lmm_ref: ${{ inputs.lmm_ref }}
+      runtime_ref: ${{ inputs.runtime_ref }}
+    permissions:
+      contents: read
+
   required:
+    needs: c06-cross-repo
+    if: always() && !failure() && !cancelled()
     name: required / ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
