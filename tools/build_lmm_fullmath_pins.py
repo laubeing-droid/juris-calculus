@@ -49,8 +49,15 @@ BOUND_REGISTRATIONS: dict[str, str] = {
 }
 
 
+CRLF = b"\r\n"
+LF = b"\n"
+
+
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    """Digest over LF-normalized bytes: checkout line endings must not move
+    the identity of a pinned document."""
+
+    return hashlib.sha256(path.read_bytes().replace(CRLF, LF)).hexdigest()
 
 
 def git(args: list[str], cwd: Path) -> str:

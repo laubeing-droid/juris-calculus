@@ -59,8 +59,16 @@ class VerificationError(RuntimeError):
     """Raised when any verification step fails; no partial evidence."""
 
 
+CRLF = b"\r\n"
+LF = b"\n"
+
+
+def _normalized(path: Path) -> bytes:
+    return path.read_bytes().replace(CRLF, LF)
+
+
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(_normalized(path)).hexdigest()
 
 
 def _git(args: list[str], cwd: Path) -> str:
@@ -142,7 +150,7 @@ def step_expected(lmm_root: Path, work: Path) -> dict[str, str]:
         pinned = pins / path.name
         if not pinned.is_file():
             raise VerificationError(f"regenerated fixture has no pinned copy: {path.name}")
-        if path.read_bytes() != pinned.read_bytes():
+        if _normalized(path) != _normalized(pinned):
             raise VerificationError(f"regenerated fixture differs from the pin: {path.name}")
         digests[path.name] = _sha256(pinned)
     return digests
