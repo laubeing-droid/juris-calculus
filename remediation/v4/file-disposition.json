@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 290,
+  "count": 303,
   "paths": [
     {
       "path": "addons/__init__.py",
@@ -327,6 +327,41 @@
       "production_wheel": true
     },
     {
+      "path": "compiler_core/math_export/__init__.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/checker_gateway.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/consistency.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/fingerprint.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/pins.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/subject.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/math_export/witness.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/mcp.py",
       "authority_class": "PUBLIC_ADAPTER",
       "production_wheel": true
@@ -622,6 +657,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/contract/test_c06_math_export.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/contract/test_case_input_bundle.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -877,6 +917,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/integration/test_c06_entry_receipts.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/integration/test_production_pack_loader.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -918,6 +963,11 @@
     },
     {
       "path": "tests/packaging/test_business_wheel_install.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/packaging/test_c06_workflows.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -1352,6 +1402,11 @@
       "production_wheel": false
     },
     {
+      "path": "tools/build_lmm_fullmath_pins.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tools/build_local_production_pack.py",
       "authority_class": "BUILD_ONLY",
       "production_wheel": false
@@ -1374,6 +1429,11 @@
     {
       "path": "tools/fast_path_interceptor.py",
       "authority_class": "EXPERIMENT_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/generate_c06_entry_receipts.py",
+      "authority_class": "BUILD_ONLY",
       "production_wheel": false
     },
     {
@@ -1443,6 +1503,11 @@
     },
     {
       "path": "tools/supply_chain_gate.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/verify_c06_integration.py",
       "authority_class": "BUILD_ONLY",
       "production_wheel": false
     },

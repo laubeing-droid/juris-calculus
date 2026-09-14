@@ -58,6 +58,12 @@ jobs:
           python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/contract/test_business_root.py tests/local/test_business_root_local.py
           python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/packaging/test_business_wheel_install.py
 
+      - name: C06 math export contract (pinned subject)
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: |
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/contract/test_c06_math_export.py tests/packaging/test_c06_workflows.py
+          python -B -m pytest -c tests/pytest.ini -q -p no:cacheprovider tests/integration/test_c06_entry_receipts.py
+
       - name: Preserve required run evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

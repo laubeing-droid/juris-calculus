@@ -584,6 +584,21 @@
       "rationale": "Jurisdiction and federation addons are isolated repository experiments."
     },
     {
+      "prefix": "compiler_core/business_root/",
+      "class": "FORMAL_CORE",
+      "rationale": "jc-business-root/1 production capability: solver, independent checker, analytics, and verify-only delivery checking. Part of the sole formal kernel package and the production wheel; no second inference kernel."
+    },
+    {
+      "prefix": "compiler_core/math_export/",
+      "class": "FORMAL_CORE",
+      "rationale": "C06 math-export adapter over the pinned LMM subject: identity, fingerprints, witnesses, independent-checker gateway."
+    },
+    {
+      "prefix": "examples/",
+      "class": "TEST_ONLY",
+      "rationale": "Runnable integration samples over synthetic admission material; never enter the production wheel."
+    },
+    {
       "prefix": "pipeline/",
       "class": "SOURCE_TOOL",
       "rationale": "Offline proposal/extraction pipeline; no formal runtime imports."
@@ -597,16 +612,6 @@
       "prefix": "tools/",
       "class": "BUILD_ONLY",
       "rationale": "Build, audit, remediation, supply-chain, and wheel verification tooling."
-    },
-    {
-      "prefix": "examples/",
-      "class": "TEST_ONLY",
-      "rationale": "Runnable integration samples over synthetic admission material; never enter the production wheel."
-    },
-    {
-      "prefix": "compiler_core/business_root/",
-      "class": "FORMAL_CORE",
-      "rationale": "jc-business-root/1 production capability: solver, independent checker, analytics, and verify-only delivery checking. Part of the sole formal kernel package and the production wheel; no second inference kernel."
     }
   ],
   "entrypoints": [

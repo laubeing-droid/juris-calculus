@@ -16,8 +16,19 @@ permissions:
   contents: read
 
 jobs:
+  c06-cross-repo:
+    name: Cross-repo C06 verification against the pinned full-release subject
+    uses: ./.github/workflows/cross-repo-verification.yml
+    with:
+      lmm_repository: laubeing-droid/legal-math-modeling
+      lmm_ref: 5084f25e69ae27332404dc9f341a61d46ef0fc53
+      runtime_ref: c79e03b8d0cfed85c43cc013bf8a0b50326bc858
+    permissions:
+      contents: read
+
   promote:
     name: Promote exact tested wheel
+    needs: c06-cross-repo
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release

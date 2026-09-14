@@ -52,6 +52,7 @@ from compiler_core.contracts import (
     CaseArtifactV4,
     CaseInputBundleV4,
     CaseRequestV4,
+    ClaimRefutationV5,
     ContentRefV4,
     ContractV4Error,
     DefeatPolicyV5,
@@ -1354,6 +1355,15 @@ class LocalCaseInputsBuilderV4:
                 allowed_kinds=tuple(allowed_attack_kinds),
                 legal_evidence_ref=digest_value({"governance": "local-defeat-policy"}),
             )
+        claim_of_rule = {
+            row["rule_id"]: row["claim"] for row in self._pack.rule_claims
+        }
+        refutation_rows = tuple(
+            _local_claim_refutation(
+                row, binding, claim_of_rule, str(self._pack.pack_ref.digest),
+            )
+            for row in query_refutations
+        )
         request = CaseRequestV4(
             request_id_value,
             "jc/5.0",
@@ -1372,7 +1382,7 @@ class LocalCaseInputsBuilderV4:
             composition_expression_v5=composition_expression,
             composition_operands_v5=tuple(composition_operands),
             incremental_parent_v5=incremental_parent,
-            query_refutations_v5=tuple(query_refutations),
+            query_refutations_v5=refutation_rows,
             query_gates_v5=tuple(query_gates),
             procedural_input_v5=procedural_input,
             business_tasks_v1=business_tasks,
@@ -1466,6 +1476,54 @@ def _query_request_v5(query_id: str, claim: str, profile: str, binding: ContentR
         profile=profile,
         mapping_version=PROFILE_MAPPING_VERSION_V5,
         scenario_ref=_v5_scenario_ref(binding.digest, query_id),
+    )
+
+
+def _local_claim_refutation(
+    row: object,
+    binding: ContentRefV4,
+    claim_of_rule: dict[str, str],
+    pack_ref: str,
+):
+    """Admit one directed claim refutation for a local bundle.
+
+    Accepts a ready :class:`ClaimRefutationV5` or a
+    ``(refuter_rule_id, target_rule_id)`` pair over this pack's rules; the
+    legal basis is the refuting pack rule itself, so an admitted refutation
+    is always grounded in an admitted source of this pack.
+    """
+
+    if isinstance(row, ClaimRefutationV5):
+        return row
+    if (
+        isinstance(row, (tuple, list))
+        and len(row) == 2
+        and all(isinstance(item, str) and item for item in row)
+    ):
+        refuter_rule, target_rule = row
+        for rule_id in (refuter_rule, target_rule):
+            if rule_id not in claim_of_rule:
+                raise LocalRuntimeError(
+                    f"query_refutations entry cites rule {rule_id!r} "
+                    "that is not a rule of this pack"
+                )
+        if refuter_rule == target_rule:
+            raise LocalRuntimeError(
+                "query_refutations entry must name two different rules"
+            )
+        return ClaimRefutationV5(
+            refuter=claim_of_rule[refuter_rule],
+            target=claim_of_rule[target_rule],
+            request_ref=binding.digest,
+            basis_ref=digest_value({
+                "basis_kind": "local-pack-rule",
+                "rule_id": refuter_rule,
+                "pack_ref": pack_ref,
+            }),
+        )
+    raise LocalRuntimeError(
+        "query_refutations entries must be ClaimRefutationV5 or "
+        "(refuter_rule_id, target_rule_id) pairs over this pack"
     )
 
 
