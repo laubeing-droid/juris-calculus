@@ -78,8 +78,11 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
     payload = WHEEL_GATE.expected_payload_paths(ROOT)
     # 34 V4 modules + 5 V5 object-group modules (procedure,
     # domain_composition, assurance, incremental, query_semantics)
-    # + 1 local keyless composition root (local_runtime).
-    assert len(payload) == 41
+    # + 1 local keyless composition root (local_runtime)
+    # + 8 jc-business-root/1 modules and 7 C06 math-export modules via the
+    # production prefix rules (compiler_core/business_root/,
+    # compiler_core/math_export/).
+    assert len(payload) == 56
     for required in (
         "compiler_core/procedure.py",
         "compiler_core/domain_composition.py",
@@ -87,6 +90,8 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
         "compiler_core/incremental.py",
         "compiler_core/query_semantics.py",
         "compiler_core/local_runtime.py",
+        "compiler_core/business_root/codec.py",
+        "compiler_core/math_export/witness.py",
     ):
         assert required in payload
     assert "compiler_core/application.py" in payload
@@ -97,7 +102,7 @@ def test_payload_is_derived_from_the_manual_production_classes() -> None:
 
 def test_exact_synthetic_wheel_is_accepted(tmp_path: Path) -> None:
     report = WHEEL_GATE.validate_wheel(ROOT, _wheel(tmp_path))
-    assert report["entry_count"] == 47
+    assert report["entry_count"] == 62
 
 
 @pytest.mark.parametrize("mutation", ["extra", "missing", "duplicate", "unsafe", "record"])
