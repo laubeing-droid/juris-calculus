@@ -25,9 +25,10 @@
 ## 参考：集成与机器权威
 
 - [JC ↔ Legal Harness 集成合同](contracts/HARNESS_INTEGRATION.md) — Harness 如何发请求、追加材料走增量、读结果与优先关系状态；三份可运行样本的位置。
+- [C06 数学出口集成](contracts/C06_INTEGRATION.md) — juris-calculus 如何消费钉扎的 legal-math-modeling full-release 主体：公共入口见证、独立 checker 校验、版本失效指纹与保持打开的诚实边界。
 - [外仓协议](contracts/EXTERNAL_PROTOCOL.md) — Deli、Legal Harness、LMM 三类外仓各自允许和禁止的接入方式。
 - [Python 合同](../compiler_core/contracts.py) / [JSON Schema](../schemas/jc-v5.schema.json) / [MCP 工具清单](../mcp_manifest.json) — 字段与工具的机器权威，文档只解释不复制。
-- [证明绑定](../proofs/lmm-binding.json) 与 [运行时义务映射](../proofs/runtime-obligation-map.json) — 运行时模块与上游 Lean 声明的对应登记。
+- [证明绑定](../proofs/lmm-binding.json)、[full-math 钉扎](../proofs/lmm-fullmath/BINDINGS_EXTRACT.json) 与 [运行时义务映射](../proofs/runtime-obligation-map.json) — 运行时模块与上游 Lean 声明的对应登记。
 - [模块权威注册表](architecture/module-authority.json) — 每个模块的正式/非正式分类与依赖方向。
 
 ## 维护与历史

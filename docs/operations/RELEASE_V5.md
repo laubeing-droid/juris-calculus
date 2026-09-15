@@ -4,10 +4,10 @@
 
 ## 版本身份
 
-- 引擎版本：`5.0.0`（`compiler_core/version.py` 唯一版本源）。
+- 引擎版本：`5.0.1`（`compiler_core/version.py` 唯一版本源）；最后一个已签名发布 tag 为 `v5.0.0`（2026-09-07），此后版本（5.0.1）尚未打 tag 发布。
 - 公共协议：`jc/5.0`（`compiler_core/contracts.py::SCHEMA_VERSION_V5`）。
 - 正式输入拒绝 `jc/4.0` 与 4.x 引擎版本；迁移走 `tools/migrate_v4_bundle.py`（SOURCE_TOOL，不进 wheel）。
-- 证明依据：`proofs/lmm-binding.json`（LMM `23c5a310...`，CI run 33978186916）+ `proofs/runtime-obligation-map.json`（91 模块 / 452 声明处置）。
+- 证明依据：`proofs/lmm-binding.json`（LMM `23c5a310...`，CI run 33978186916）、`proofs/lmm-fullmath/`（full-math 主体 `5084f25e...`，full-release run `34797682659`）与 `proofs/runtime-obligation-map.json`（91 模块 / 452 声明处置）。
 
 ## 构建与验收（同一 artifact）
 
@@ -23,6 +23,8 @@ python -B tools\verify_upgrade.py --plan remediation/v5/tasks.v1.json --output w
 ## CI 闭环
 
 `.github/workflows/ci.yml` 的四个必需矩阵（Windows/Linux × 3.11/3.12）不被弱化；`Required current suites` 步骤无论成败上传 `work/required-run.json` 与 `work/required-run-failed-output/`。
+
+tag 发布走 `auto-release.yml`：promote 任务必须先通过 `c06-cross-repo` job（`.github/workflows/cross-repo-verification.yml`，以固定 ref 检出 legal-math-modeling full-release 主体，实跑 C06 跨仓一致性验证并上传 `c06-integration-evidence-*` 证据）。跨仓验证失败时发布被阻断；该 lane 也可按 [C06 集成契约](../contracts/C06_INTEGRATION.md) 的说明独立 dispatch 重跑。
 
 ## 宿主激活条件（未满足则不得激活）
 

@@ -1,5 +1,7 @@
 # C06 集成：出口契约差距清单与已装适配（jc/c06-integration/1）
 
+本页回答一个问题：juris-calculus 对钉扎的 legal-math-modeling full-release 主体装了哪些消费接口、哪些差距如实保留。面向集成者与维护者；逐条机器锚点在 `compiler_core/math_export/pins.py` 与 `proofs/lmm-fullmath/`，由 `tests/contract/test_c06_math_export.py` 守护。
+
 对端主体（固定，不得漂移）：legal-math-modeling full-release
 run `34797682659` attempt 1，commit `5084f25e69ae27332404dc9f341a61d46ef0fc53`，
 tree `184a766a2d22b1c4be31bb119e4b82b76f0be540`，
@@ -60,3 +62,10 @@ F02、EXT:EXT02、F05、F08、F09、F10、F12、F14 与 7 根）。
 X-EXTERNAL-TRUTH）维持原状。本集成不伪造任何审批、签章或密钥：生产链探针
 仅使用仓内声明为 test-only 的工程测试签名材料；无钥匙面全部
 `signature_status=not_used`。
+
+## 页面出口
+
+- 想复核"这批收据此刻是否仍被接受"：跑 `python -B tools/verify_c06_integration.py --lmm-root <legal-math-modeling 检出>`，或看 CI 的 `c06-cross-repo` lane 与 `c06-integration-evidence-*` artifact。
+- 想知道外仓边界的完整规则：读[外仓协议](EXTERNAL_PROTOCOL.md)，LMM 行的允许入口即本集成使用的三类通道。
+- 想知道发布时这个验证何时强制执行：读[V5 发布流程](../operations/RELEASE_V5.md)的"CI 闭环"（tag 发布先过 `c06-cross-repo`）。
+- 想改接口清单或钉扎主体：先读 `compiler_core/math_export/pins.py` 的守护测试——主体换钉是断代事件，不是编辑常量。

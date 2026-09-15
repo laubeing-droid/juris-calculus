@@ -1,6 +1,14 @@
 # juris-calculus 交接检查点
 
-## 当前检查点（2026-09-11，jc-business-root/1 第一批落地）
+## 当前检查点（2026-09-14，C06 数学出口集成落地）
+
+- 分支 `jc-c06-integration-20260914`（HEAD `9ce5acf`）完成 legal-math-modeling full-release 出口契约的消费侧：`compiler_core/math_export/`（钉扎身份/文档指纹/B07 版本失效指纹/公共入口见证/独立 checker 网关/跨入口一致性）+ `proofs/lmm-fullmath/` 钉扎与绑定提取 + 三个跨仓工具 + `.github/workflows/cross-repo-verification.yml`；`auto-release.yml` 的 promote 现在必须先过 `c06-cross-repo`。契约页与逐项差距清单见 [docs/contracts/C06_INTEGRATION.md](docs/contracts/C06_INTEGRATION.md)。
+- 验收事实：CI run 34877978619 全绿；跨仓 lane 以固定 ref（LMM `5084f25e`，full-release run `34797682659`）实跑——8 探针 × JCClient/CLI/MCP 三公共入口收据，LMM 独立 checker 三组全部 accepted，证据 artifact `c06-integration-evidence-34877978619-1`；非 changed-module。JC runtime_ref 基线 `c79e03b8` 未动。
+- 顺带修复：wheel_gate 按生产 prefix 规则展开（business_root/math_export 首次进 wheel，62 项）；`test_bc28` 冻结时钟去 flaky；wheel 输入不变量单测镜像。
+- 诚实边界：`not_established` 四项逐字保留，E01 真实数据、法源审核、外部事实真值仍未关闭；跨仓主张仅限 checker correspondence（C06）与版本失效（B07）。
+- 下一执行面：分支评审合入 main；打 tag 走 release（auto-release 会先跑跨仓 lane 再 promote）；main 合并后 `cross-repo-verification.yml` 可独立 workflow_dispatch 重跑。
+
+## 上一检查点（2026-09-11，jc-business-root/1 第一批落地）
 
 - 第一批业务能力已进入唯一正式主链：`compiler_core/business_root/`（solver/checker/analytics/delivery checker，独立校验）+ `CaseRequestV4.business_tasks_v1`（省空扩展，旧请求规范摘要逐字节不变）+ Application 业务阶段 + verify-only `verify_business_delivery`/`business_delivery_documents` + `business_capabilities()`。全部为条件模型分析，`formal_evidence` 如实为 kernel 待证；未关闭清单见 [docs/ulm-consolidated/IMPLEMENTATION_HANDOFF.md](docs/ulm-consolidated/IMPLEMENTATION_HANDOFF.md)。
 - 契约与样例：[docs/contracts/BUSINESS_ROOT.md](docs/contracts/BUSINESS_ROOT.md)、[examples/harness/sample_local_business.py](examples/harness/sample_local_business.py)；测试 `tests/contract/test_business_root.py`、`tests/local/test_business_root_local.py`、`tests/packaging/test_business_wheel_install.py`（BC12 仓外 wheel 安装）。

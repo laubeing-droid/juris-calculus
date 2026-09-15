@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.0.1 — C06 math-export integration (jc-c06-integration, 2026-09-14)
+
+- 消费侧落地 legal-math-modeling full-release 出口契约（固定主体 `5084f25e`，run `34797682659`，READY_FOR_LATER_INTEGRATION_DESIGN）：新增 `compiler_core/math_export/`（钉扎身份、完成文档校验与规范指纹、B07 版本失效指纹 commit+tree+toolchain+manifest、公共入口运行见证 `jc/lmm-c06-witness/1.0` 与保守状态映射、独立 checker 子进程网关、跨入口一致性断言），已进 wheel 并入 module-authority。
+- 钉扎与证据入库 `proofs/lmm-fullmath/`：MATH_COMPLETION/EXPORT_CONTRACT 字节拷贝、217 强制注册中 18 行绑定提取（C06/C07/B07/F02/EXT02/F05/F08/F09/F10/F12/F14 + 七根）、LMM materializer 期望 fixture、集成证据 JSON；`.gitignore` 为 `proofs/lmm-fullmath/*.json` 开白名单。
+- 跨仓验证可执行化：`tools/build_lmm_fullmath_pins.py`（钉扎生成）、`tools/generate_c06_entry_receipts.py`（8 探针 × JCClient/CLI/MCP 三入口 → 见证 + `spec-runtime-refinement-v2` 收据）、`tools/verify_c06_integration.py`（身份复现 → 期望再生成字节比对 → 收据生产 → LMM 独立 checker → 证据 JSON）；新增 `.github/workflows/cross-repo-verification.yml`（call/dispatch），`auto-release.yml` promote 前置 `c06-cross-repo`，`ci.yml` 增加 C06 合同/工作流/集成测试步骤与 dispatch 门控跨仓 lane。CI run 34877978619 全绿，跨仓 lane 以固定 ref 实跑通过（三组收据 passed=true、8 案跨入口一致、`changed_module_mode_used=false`），证据 artifact `c06-integration-evidence-34877978619-1`。
+- `local_runtime.build_bundle` 的 `query_refutations` 接受 `(refuter_rule_id, target_rule_id)` 规则对并构造 `ClaimRefutationV5`（basis=本包规则派生摘要）——已准入反驳关系首次经本地公共面可达（force-majeure REFUTED 探针）。
+- 修复三个既有缺陷：`tools/wheel_gate.py` 只展开 path_rules 导致 prefix 型生产包（business_root/math_export）从不进 wheel——package lane 首次实跑即挂，现按 production prefix 规则展开（wheel 62 项）；`test_bc28` 内容寻址记录含 `verified_at` 在慢 runner 跨秒 flaky——该测冻结时钟；wheel 输入不变量单测与 gate 保持镜像。
+- 诚实边界逐字保留：`actual_JC_Harness_integration`、`E01_real_data_validation`、`truth_of_external_facts`、`unrestricted_natural_language_or_entire_legal_system`；跨仓主张仅限 checker correspondence（C06）与版本失效（B07）；ROOT07/E01/B-LEGAL-REVIEW/X-EXTERNAL-TRUTH 维持原状。契约页见 `docs/contracts/C06_INTEGRATION.md`。
+
 ## 5.0.1 — jc-business-root/1 first batch (ROUTE1, 2026-09-11)
 
 - 新增 `compiler_core/business_root/`（codec/spec/solver/checker/analytics/delivery_checker/wire）：有限情景条件本金的生产实现，solver/checker 双枚举双语义（栈机+位掩码）、逐情景守恒律 C≥0、U≥0、C·U=0、C−U+recognized==principal，analytics 独立重算 E[C]/E[U]/E[R]/阈值事件/合法格。移植自 LMM reference @88644bc（MIT），数学权威仍在 LMM，Lean kernelChecked 证据待其 CI。
