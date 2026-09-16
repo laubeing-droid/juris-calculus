@@ -25,6 +25,42 @@ LAKE_MANIFEST_SHA256 = (
 # an unpinned producer SHA invalidates the bound receipt evidence.
 RUNTIME_REF_COMMIT = "c79e03b8d0cfed85c43cc013bf8a0b50326bc858"
 
+# B-01 (math-downstream 2026-09-17): the same mathematics subject
+# observed under a second GitHub Actions run. The semantic subject
+# four-tuple above is unchanged; this run is additional evidence for the
+# identical subject, never a repin. The original RUN_ID record and its
+# historical receipts keep their bytes untouched. The artifact archive
+# bytes were observed through the run/job APIs and logs, not
+# independently re-downloaded in the review that recorded them.
+LATEST_EVIDENCE_RUN_ID = "35124268367"
+LATEST_EVIDENCE = {
+    "repository": REPOSITORY,
+    "run_id": LATEST_EVIDENCE_RUN_ID,
+    "attempt": "1",
+    "completed_at_utc": "2026-09-16T16:56:34Z",
+    "completion_log": "MATH_BUILD_COMPLETE; errors=0",
+    "final_gate_log": (
+        "PASS: retained obligations + fixed typed seven-axis root. "
+        "Not production, legal, or empirical acceptance."
+    ),
+    "artifact": {
+        "name": "full-math-completion-35124268367-1",
+        "id": "10458606882",
+        "zip_sha256": (
+            "d6b571a8a538ed9f6b03813b107bab3d44b62a0a81c3a62cffe9486a"
+            "c745e3cf"
+        ),
+        "bytes_independently_downloaded": False,
+    },
+    "evidence_sources": (
+        "run API",
+        "job summaries",
+        "mathematics-completion job log",
+        "final-gate job log",
+    ),
+    "action": "record_new_evidence_separately_no_semantic_repin",
+}
+
 # EXPORT_CONTRACT.json /contract/required — the eleven export interfaces.
 REQUIRED_INTERFACES = (
     "formal_input_types",

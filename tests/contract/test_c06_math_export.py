@@ -16,12 +16,14 @@ import pytest
 from compiler_core.canonical_serialization import DigestV4, digest_value
 from compiler_core.math_export import (
     ATTEMPT,
+    DECISION_STATUS_MAPPING,
     LAKE_MANIFEST_SHA256,
     LEAN_TOOLCHAIN_SHA256,
     REPOSITORY,
     REQUIRED_INTERFACES,
     RUNTIME_REF_COMMIT,
     RUN_ID,
+    RUN_GLOBAL_FAILURE_DECISIONS,
     SUBJECT_COMMIT,
     SUBJECT_TREE,
     SubjectCacheKeyV1,
@@ -42,6 +44,8 @@ from compiler_core.math_export.consistency import CrossEntryInconsistency
 from compiler_core.math_export.pins import (
     DO_NOT_RUN_NOW,
     EXTERNAL_ITEM_IDS,
+    LATEST_EVIDENCE,
+    LATEST_EVIDENCE_RUN_ID,
     NOT_ESTABLISHED,
 )
 from compiler_core.math_export.subject import (
@@ -97,6 +101,26 @@ def test_pins_match_the_pinned_subject_documents() -> None:
     assert LAKE_MANIFEST_SHA256 == completion["subject"]["lake_manifest_sha256"]
 
 
+def test_latest_evidence_run_is_registered_without_repinning() -> None:
+    """B-01: run 35124268367 is separate evidence for the same subject."""
+
+    assert LATEST_EVIDENCE_RUN_ID == "35124268367"
+    assert LATEST_EVIDENCE_RUN_ID != RUN_ID
+    assert LATEST_EVIDENCE["repository"] == REPOSITORY
+    assert LATEST_EVIDENCE["run_id"] == LATEST_EVIDENCE_RUN_ID
+    assert LATEST_EVIDENCE["action"] == "record_new_evidence_separately_no_semantic_repin"
+    artifact = LATEST_EVIDENCE["artifact"]
+    assert artifact["name"] == f"full-math-completion-{LATEST_EVIDENCE_RUN_ID}-1"
+    assert len(artifact["zip_sha256"]) == 64
+    assert artifact["bytes_independently_downloaded"] is False
+    assert LATEST_EVIDENCE["evidence_sources"]
+    # the semantic subject pin is unchanged: the new run is evidence, not
+    # a new subject
+    completion = _load("MATH_COMPLETION.json")
+    assert completion["subject"]["run_id"] == RUN_ID
+    assert SUBJECT_COMMIT == "5084f25e69ae27332404dc9f341a61d46ef0fc53"
+
+
 def test_export_contract_carries_the_eleven_interfaces_and_guards() -> None:
     contract = _load("EXPORT_CONTRACT.json")
     completion = _load("MATH_COMPLETION.json")
@@ -140,14 +164,22 @@ def test_status_mapping_is_total_and_conservative() -> None:
         assert ISSUE_STATUS_MAPPING_V1[raw] == "UNDECIDED"
     assert ISSUE_STATUS_MAPPING_V1["inconsistent"] == "TAINTED"
     assert DECISION_STATUS_MAPPING_V1["accepted_formal_result"] == "PROVED"
+    # 1.1 tightening (JC-01): the historical v1.0 table read
+    # conflict_certificate as REFUTED at run level; the consumed mapping
+    # keeps that record but reads UNDECIDED because a verified conflict
+    # does not name the defeated claim — only an issue-level refuted
+    # row may read REFUTED.
     assert DECISION_STATUS_MAPPING_V1["conflict_certificate"] == "REFUTED"
+    assert DECISION_STATUS_MAPPING["conflict_certificate"] == "UNDECIDED"
+    assert DECISION_STATUS_MAPPING["accepted_formal_result"] == "PROVED"
     for raw in (
         "hypothetical_result", "review_only_result", "missing_required_fact",
         "unknown",
     ):
-        assert DECISION_STATUS_MAPPING_V1[raw] == "UNDECIDED"
+        assert DECISION_STATUS_MAPPING[raw] == "UNDECIDED"
     for raw in ("blocked", "engine_error"):
-        assert DECISION_STATUS_MAPPING_V1[raw] == "TAINTED"
+        assert DECISION_STATUS_MAPPING[raw] == "TAINTED"
+        assert raw in RUN_GLOBAL_FAILURE_DECISIONS
 
 
 def test_witness_rejected_input_maps_to_tainted() -> None:

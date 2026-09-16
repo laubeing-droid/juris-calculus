@@ -12,6 +12,7 @@ from typing import Any, Mapping, Sequence
 from compiler_core.math_export.witness import validate_witness
 
 _COMPARED_FIELDS = (
+    "schema_version",
     "status",
     "lmm_subject_fingerprint",
     "lmm_commit",
