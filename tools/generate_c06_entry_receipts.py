@@ -76,6 +76,56 @@ def canonical_digest(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _git(args: list[str]) -> str:
+    completed = sp.run(
+        ["git", *args], cwd=ROOT, check=True, capture_output=True, text=True,
+        shell=False,
+    )
+    return completed.stdout.strip()
+
+
+def resolve_runtime_identity(requested_commit: str | None) -> dict[str, Any]:
+    """JC-03 identity honesty: receipts cite the producer that ran.
+
+    A requested ``--runtime-commit`` that does not equal the checked-out
+    HEAD is a typed refusal: the receipts must never carry a borrowed
+    SHA. The recorded identity always includes the tree and whether the
+    working tree was dirty, because receipts produced by a dirty tree
+    are not receipts of the commit alone.
+    """
+
+    head = _git(["rev-parse", "HEAD"])
+    if requested_commit is None:
+        commit = head
+    else:
+        if SHA_PATTERN.fullmatch(requested_commit) is None:
+            raise SystemExit(
+                "RUNTIME_COMMIT_INVALID: runtime commit must be a lowercase "
+                "40-character Git SHA",
+            )
+        if requested_commit != head:
+            raise SystemExit(
+                f"RUNTIME_COMMIT_MISMATCH: --runtime-commit {requested_commit} "
+                f"does not match the checked-out HEAD {head}; receipts must "
+                "cite the producer that actually ran",
+            )
+        commit = requested_commit
+    tree = _git(["rev-parse", "HEAD^{tree}"])
+    status = sp.run(
+        ["git", "status", "--porcelain"], cwd=ROOT, check=True,
+        capture_output=True, text=True, shell=False,
+    ).stdout
+    dirty_entries = sorted(
+        line for line in status.splitlines() if line.strip()
+    )
+    return {
+        "commit": commit,
+        "tree": tree,
+        "worktree_dirty": bool(dirty_entries),
+        "dirty_entries": dirty_entries,
+    }
+
+
 LOCAL_RULE_PACK = {
     "schema_version": "jc/local-pack/1.0",
     "pack_version": "1.0.0",
@@ -601,6 +651,8 @@ def build_receipt(
     *,
     runtime_commit: str,
     runtime_build_id: str,
+    runtime_tree: str,
+    runtime_worktree_dirty: bool,
 ) -> dict[str, Any]:
     if expected.get("schema_version") != SCHEMA or expected.get("role") != "expected":
         raise ValueError("expected fixture has an unsupported schema or role")
@@ -640,6 +692,8 @@ def build_receipt(
         "producer": "juris-calculus",
         "lmm_commit": expected["lmm_commit"],
         "runtime_commit": runtime_commit,
+        "runtime_tree": runtime_tree,
+        "runtime_worktree_dirty": runtime_worktree_dirty,
         "runtime_build_id": runtime_build_id,
         "fixture_digest": expected["fixture_digest"],
         "runtime_fixture_digest": canonical_digest(fixture),
@@ -664,12 +718,8 @@ def main() -> int:
     parser.add_argument("--runtime-build-id", default="jc-c06-local:1")
     args = parser.parse_args()
 
-    runtime_commit = args.runtime_commit or sp.run(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True,
-        text=True, shell=False,
-    ).stdout.strip()
-    if SHA_PATTERN.fullmatch(runtime_commit) is None:
-        raise SystemExit("runtime commit must be a lowercase 40-character Git SHA")
+    identity = resolve_runtime_identity(args.runtime_commit)
+    runtime_commit = identity["commit"]
 
     pins = ROOT / "proofs" / "lmm-fullmath"
     completion = json.loads((pins / "MATH_COMPLETION.json").read_text(encoding="utf-8"))
@@ -711,6 +761,7 @@ def main() -> int:
     )
 
     probes = define_probes()
+    probe_by_case = {probe["case_id"]: probe for probe in probes}
     witnesses: list[dict[str, Any]] = []
     for probe in probes:
         if probe["route"] == "production":
@@ -721,7 +772,16 @@ def main() -> int:
         else:
             witnesses.extend(execute_local_probes([probe], subject, workspace))
     for witness in witnesses:
-        validate_witness(witness)
+        # JC-02 caller bindings: the producer validates every sealed
+        # witness against the probe table and the pinned subject it
+        # actually used; the payload never vouches for itself.
+        probe = probe_by_case[witness["case_id"]]
+        validate_witness(
+            witness,
+            expected_case_id=probe["case_id"],
+            expected_subject=subject,
+            expected_input_digest=probe["probe_digest"],
+        )
     production_cases = {
         probe["case_id"] for probe in probes if probe["route"] == "production"
     }
@@ -781,7 +841,10 @@ def main() -> int:
         }
         receipt = build_receipt(
             expected, fixture, status_by_case, group_digests,
-            runtime_commit=runtime_commit, runtime_build_id=args.runtime_build_id,
+            runtime_commit=runtime_commit,
+            runtime_build_id=args.runtime_build_id,
+            runtime_tree=identity["tree"],
+            runtime_worktree_dirty=identity["worktree_dirty"],
         )
         target = output / f"{group}.actual.json"
         target.write_text(
@@ -789,6 +852,14 @@ def main() -> int:
             encoding="utf-8",
         )
         print(f"wrote {target}")
+    (output / "runtime-identity.json").write_text(
+        json.dumps(identity, ensure_ascii=False, indent=1) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"runtime identity {runtime_commit[:12]} tree {identity['tree'][:12]} "
+        f"dirty={identity['worktree_dirty']}"
+    )
     print(f"cross-entry agreement for {len(summary)} cases")
     return 0
 
