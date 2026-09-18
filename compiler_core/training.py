@@ -14,7 +14,58 @@ from compiler_core.rule_packs import RulePackRegistry
 from compiler_core.types import build_rule_inventory, normalize_rule_admission
 
 
-__all__ = ("export_rules_as_jsonl", "export_corpus_pack", "generate_model_card")
+__all__ = (
+    "export_rules_as_jsonl",
+    "export_corpus_pack",
+    "generate_model_card",
+)
+
+
+def _split_by_position(items, train_frac, dev_frac):
+    total = len(items)
+    train_end = int(total * train_frac)
+    dev_end = train_end + int(total * dev_frac)
+    return items[:train_end], items[train_end:dev_end], items[dev_end:]
+
+
+def _split_by_group(items, train_frac, dev_frac, seed):
+    """Whole-pack split: every row of one source pack lands in the same side."""
+
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for row in items:
+        key = str(
+            row.get("jurisdiction")
+            or row.get("pack_id")
+            or row.get("id")
+        )
+        groups.setdefault(key, []).append(row)
+    keys = sorted(groups)
+    random.Random(seed).shuffle(keys)
+    total = len(items)
+    target_train = int(total * train_frac)
+    target_dev = int(total * dev_frac)
+    train: list[dict[str, Any]] = []
+    dev: list[dict[str, Any]] = []
+    test: list[dict[str, Any]] = []
+    for key in keys:
+        group = sorted(groups[key], key=lambda row: str(row.get("id")))
+        if len(train) < target_train or not train:
+            train.extend(group)
+        elif len(dev) < target_dev:
+            dev.extend(group)
+        else:
+            test.extend(group)
+    return train, dev, test
+
+
+def _split_by_time(items, train_frac, dev_frac):
+    """Chronological split by valid_from; rows without a date sort last."""
+
+    def sort_key(row):
+        return (str(row.get("valid_from") or "9999-12-31"), str(row.get("id")))
+
+    ordered = sorted(items, key=sort_key)
+    return _split_by_position(ordered, train_frac, dev_frac)
 
 
 def export_rules_as_jsonl(
@@ -76,12 +127,29 @@ def export_rules_as_jsonl(
             })
     # Seeded (non-secret) RNG is the determinism contract for reproducible
     # train/dev/test splits; never used for tokens, keys, or any secret.
-    rng = random.Random(seed)
-    rng.shuffle(items)
-    total = len(items)
-    train_end = int(total * split_train)
-    dev_end = train_end + int(total * split_dev)
-    splits = {"train": items[:train_end], "dev": items[train_end:dev_end], "test": items[dev_end:]}
+    # 03 card §4b fix: split_mode must actually control the split. "random"
+    # keeps the seeded shuffle; "group" splits whole packs; "time" splits
+    # chronologically by valid_from; anything else is rejected outright
+    # instead of silently randomizing.
+    if split_mode == "random":
+        rng = random.Random(seed)
+        rng.shuffle(items)
+        train_rows, dev_rows, test_rows = _split_by_position(
+            items, split_train, split_dev,
+        )
+    elif split_mode == "group":
+        train_rows, dev_rows, test_rows = _split_by_group(
+            items, split_train, split_dev, seed,
+        )
+    elif split_mode == "time":
+        train_rows, dev_rows, test_rows = _split_by_time(
+            items, split_train, split_dev,
+        )
+    else:
+        raise ValueError(
+            f"unsupported_split_mode:{split_mode} (supported: random|group|time)"
+        )
+    splits = {"train": train_rows, "dev": dev_rows, "test": test_rows}
     base = Path(out)
     base.parent.mkdir(parents=True, exist_ok=True)
     split_hashes: dict[str, str] = {}
@@ -96,7 +164,7 @@ def export_rules_as_jsonl(
     return {
         "schema_version": "1.0",
         "status": "PASS",
-        "total_items": total,
+        "total_items": len(items),
         **inventory,
         "splits": {name: len(value) for name, value in splits.items()},
         "split_seed": seed,

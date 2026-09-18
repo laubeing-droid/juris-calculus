@@ -1417,6 +1417,317 @@ class JCClient:
             "issueResultRefs": issue_result_refs,
         }
 
+    # ------------------------------------------------------------------
+    # Knowledge runtime surface (03 card §4b; frozen bridge methods
+    # jc.predict_outcome / jc.deviation_rank / jc.terminal_state_stats /
+    # jc.admit_verified_rule_pack). The case-side adapters stay on the
+    # case.* public read face — no vector store or corpus access here.
+    # ------------------------------------------------------------------
+
+    def predict_outcome(self, prediction_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``jc.predict_outcome`` provider.
+
+        Returns one calibrated ProbabilityPrediction computed from the
+        trained checkpoint registered under the models root (env
+        ``JC_PREDICTION_MODEL_ROOT`` or ``modelRoot`` in the input).
+        Without a matching checkpoint the named ``model_not_available``
+        error is the answer — never a fixed probability.
+        """
+
+        from compiler_core.prediction import MODEL_NOT_AVAILABLE, load_checkpoint, predict_from_checkpoint
+
+        if not isinstance(prediction_input, Mapping):
+            raise ClientV4Error("INVALID_PREDICTION_INPUT", "prediction input must be a mapping")
+        event_definition = prediction_input.get("eventDefinition")
+        if type(event_definition) is not str or not event_definition:
+            raise ClientV4Error("INVALID_PREDICTION_INPUT", "eventDefinition is required")
+        observation_point = str(prediction_input.get("observationPoint") or "")
+        if not observation_point:
+            raise ClientV4Error("INVALID_PREDICTION_INPUT", "observationPoint is required")
+        model_root = prediction_input.get("modelRoot") or os.environ.get("JC_PREDICTION_MODEL_ROOT")
+        if not model_root:
+            raise ClientV4Error(MODEL_NOT_AVAILABLE, "no prediction model root is configured")
+        try:
+            checkpoint = load_checkpoint(
+                Path(str(model_root)),
+                event_definition=event_definition,
+                model_version=prediction_input.get("modelVersion"),
+            )
+        except LookupError as exc:
+            raise ClientV4Error(
+                MODEL_NOT_AVAILABLE,
+                f"no trained checkpoint for event {event_definition!r}",
+            ) from exc
+        features = prediction_input.get("features") or {}
+        if not isinstance(features, Mapping) or not features:
+            raise ClientV4Error(
+                "INVALID_PREDICTION_INPUT",
+                "features (decimal-text values keyed by the checkpoint feature order) are required",
+            )
+        from compiler_core.pricing import decimal_text
+
+        try:
+            parsed_features = {
+                str(name): float(decimal_text(str(value)))
+                for name, value in features.items()
+            }
+        except ValueError as exc:
+            raise ClientV4Error("INVALID_PREDICTION_INPUT", str(exc)) from exc
+        return predict_from_checkpoint(
+            checkpoint, parsed_features, observation_point=observation_point,
+        )
+
+    def deviation_rank(self, rank_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``jc.deviation_rank`` provider over the case.* public read face.
+
+        ``structureReader`` maps one candidate locator dict to that case's
+        public structure DTO (``{"elements": [...], "numeric": {...}}``);
+        the reader is the only sanctioned case-side dependency. Without a
+        reader the frozen ``not_compiled`` status is returned — never a
+        fabricated deviation, and vector distances are never presented as
+        precise deviations (``measure`` stays null for structural atoms).
+        """
+
+        reader = rank_input.get("structureReader") if isinstance(rank_input, Mapping) else None
+        if not isinstance(rank_input, Mapping):
+            raise ClientV4Error("INVALID_RANK_INPUT", "rank input must be a mapping")
+        if not callable(reader):
+            return {
+                "items": [],
+                "ruleVersion": str(rank_input.get("baselineRuleVersion", "")),
+                "status": "not_compiled",
+            }
+        baseline_version = str(rank_input.get("baselineRuleVersion") or "")
+        if not baseline_version:
+            raise ClientV4Error("INVALID_RANK_INPUT", "baselineRuleVersion is required")
+        query_structure = rank_input.get("queryStructure") or {}
+        candidates = rank_input.get("candidates") or []
+        budget = int(rank_input.get("budget") or 0)
+        if not isinstance(candidates, list):
+            raise ClientV4Error("INVALID_RANK_INPUT", "candidates must be an array")
+        if budget and len(candidates) > budget:
+            return {"items": [], "ruleVersion": baseline_version, "status": "budget_exceeded"}
+        query_elements = set(str(item) for item in query_structure.get("elements", []))
+        query_numeric = {str(k): str(v) for k, v in (query_structure.get("numeric") or {}).items()}
+        items: list[dict[str, Any]] = []
+        for candidate in candidates:
+            locator = dict(candidate)
+            structure = reader(locator)
+            if structure is None:
+                continue
+            elements = set(str(item) for item in structure.get("elements", []))
+            numeric = {str(k): str(v) for k, v in (structure.get("numeric") or {}).items()}
+            deviations: list[dict[str, Any]] = []
+            for element in sorted(query_elements - elements):
+                deviations.append({"position": element, "measure": None,
+                                   "basis": "required element absent in candidate"})
+            for element in sorted(elements - query_elements):
+                deviations.append({"position": element, "measure": None,
+                                   "basis": "candidate element absent in query"})
+            for name in sorted(set(query_numeric) & set(numeric)):
+                if query_numeric[name] != numeric[name]:
+                    deviations.append({
+                        "position": name,
+                        "measure": numeric[name],
+                        "basis": "candidate numeric field differs from the query",
+                    })
+            items.append({
+                "locator": {
+                    "datasetVersion": locator.get("datasetVersion"),
+                    "canonicalDocId": locator.get("canonicalDocId"),
+                    "month": locator.get("month"),
+                    "locator": locator.get("locator"),
+                },
+                "deviations": deviations,
+            })
+        items.sort(key=lambda row: (len(row["deviations"]), str(row["locator"]["canonicalDocId"])))
+        return {"items": items, "ruleVersion": baseline_version, "status": "ok"}
+
+    def terminal_state_stats(self, stats_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``jc.terminal_state_stats`` provider over the case.* public read face.
+
+        ``statsReader(datasetVersion, filters, ruleVersion)`` is the sole
+        case-side dependency and must return the public stats DTO
+        (``{"distribution": [...], "counts": {...}, "range": ...}``).
+        Unknown dataset versions raise the frozen
+        ``dataset_version_not_found`` error; JC never reads corpus files.
+        """
+
+        reader = stats_input.get("statsReader") if isinstance(stats_input, Mapping) else None
+        dataset_version = stats_input.get("datasetVersion") if isinstance(stats_input, Mapping) else None
+        if not callable(reader):
+            raise ClientV4Error(
+                "dataset_version_not_found",
+                "no case statistics read face is connected for this client",
+            )
+        if not isinstance(stats_input, Mapping):
+            raise ClientV4Error("INVALID_STATS_INPUT", "stats input must be a mapping")
+        filters = stats_input.get("filters") or {}
+        if not isinstance(filters, Mapping):
+            raise ClientV4Error("INVALID_STATS_INPUT", "filters must be a mapping")
+        stats = reader(dataset_version, dict(filters), stats_input.get("ruleVersion"))
+        if stats is None:
+            raise ClientV4Error(
+                "dataset_version_not_found",
+                f"dataset version {dataset_version!r} is not registered",
+            )
+        distribution = []
+        for row in stats.get("distribution", []):
+            distribution.append({
+                "outcome": str(row["outcome"]),
+                "n": int(row["n"]),
+                "rate": None if row.get("rate") is None else str(row["rate"]),
+            })
+        return {
+            "distribution": distribution,
+            "counts": dict(stats.get("counts") or {}),
+            "range": str(stats.get("range") or ""),
+            "datasetVersion": dataset_version if dataset_version is None else str(dataset_version),
+            "ruleVersion": (
+                None if stats_input.get("ruleVersion") is None
+                else str(stats_input.get("ruleVersion"))
+            ),
+        }
+
+    def admit_verified_rule_pack(self, admit_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``jc.admit_verified_rule_pack`` thin provider over the real gates.
+
+        YAML manifest packs go through ``verify_pack_manifest`` (hashes,
+        uniqueness, counts, formal source admission); ``jc-local-pack.json``
+        records go through canonical structural validation. The machine
+        decision ref is recorded verbatim in the admission receipt — this
+        entry never fabricates a human actor and never switches on a failed
+        verification. Same payload replays return the same receipt.
+        """
+
+        import json as _json
+        import shutil as _shutil
+        from datetime import datetime as _datetime, timezone as _timezone
+
+        import yaml as _yaml
+
+        from compiler_core.canonical_serialization import canonical_bytes
+        from compiler_core.rule_packs import verify_pack_manifest
+
+        if not isinstance(admit_input, Mapping):
+            raise ClientV4Error("INVALID_ADMIT_INPUT", "admit input must be a mapping")
+        machine_decision_ref = admit_input.get("machineDecisionRef")
+        if not isinstance(machine_decision_ref, Mapping) or not machine_decision_ref.get("digest"):
+            raise ClientV4Error(
+                "INVALID_ADMIT_INPUT",
+                "a machineDecisionRef with a digest is required (actor=machine lives with 02)",
+            )
+        pack_uri = str(admit_input.get("packURI") or "")
+        path = Path(pack_uri)
+        if not path.is_file():
+            raise ClientV4Error("ref_not_found", f"packURI {pack_uri} is not a readable file")
+        expected_version = admit_input.get("expectedRuleVersion")
+        admitted_root = Path(
+            str(admit_input.get("admittedRoot") or (path.parent.parent / "admitted-packs"))
+        )
+
+        if path.suffix in {".yaml", ".yml"}:
+            verification = verify_pack_manifest(path, path.parent)
+            if verification.issues or not verification.integrity_valid:
+                raise ClientV4Error(
+                    "verification_failed",
+                    "; ".join(sorted(issue.get("code", "?") for issue in verification.issues))
+                    or "integrity invalid",
+                )
+            pack_id = verification.pack_id
+            new_version = verification.version
+            pack_digest = verification.content_digest
+            files = [path]
+            document = _yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for group in ("rule_files", "source_files", "config_files"):
+                for entry in document.get(group) or []:
+                    rel = entry.get("path") if isinstance(entry, Mapping) else None
+                    if rel:
+                        files.append(path.parent / str(rel))
+        else:
+            raw = path.read_bytes()
+            document = _json.loads(raw.decode("utf-8"))
+            if document.get("schema_version") != "jc/local-pack/1.0":
+                raise ClientV4Error("verification_failed", "pack schema is not jc/local-pack/1.0")
+            if not isinstance(document.get("rules"), list) or not document["rules"]:
+                raise ClientV4Error("verification_failed", "pack carries no rules")
+            if not isinstance(document.get("sources"), list) or not document["sources"]:
+                raise ClientV4Error("verification_failed", "pack carries no declared sources")
+            pack_id = str(document.get("pack_id") or path.stem)
+            new_version = str(document.get("pack_version") or "1")
+            digest = DigestV4.from_bytes(raw)
+            pack_digest = f"sha256:{digest.hex}"
+            files = [path]
+        if expected_version is not None and str(expected_version) != new_version:
+            raise ClientV4Error(
+                "revision_conflict",
+                f"expected version {expected_version!r} differs from pack version {new_version!r}",
+            )
+
+        current_path = admitted_root / pack_id / "CURRENT.json"
+        old_version: str | None = None
+        if current_path.is_file():
+            current = _json.loads(current_path.read_text(encoding="utf-8"))
+            old_version = current.get("version")
+            if current.get("packDigest") == pack_digest:
+                # Same payload: replay returns the sealed receipt unchanged.
+                return {
+                    "oldRuleVersion": current.get("oldRuleVersion"),
+                    "newRuleVersion": new_version,
+                    "admissionReceiptRef": current.get("admissionReceiptRef"),
+                    "replay": True,
+                }
+            if old_version == new_version:
+                raise ClientV4Error(
+                    "revision_conflict",
+                    "same version was already admitted with a different payload",
+                )
+
+        now = _datetime.now(_timezone.utc).isoformat()
+        receipt_payload = {
+            "schema_version": "jc-rule-admission/1",
+            "packId": pack_id,
+            "oldRuleVersion": old_version,
+            "newRuleVersion": new_version,
+            "packDigest": pack_digest,
+            "machineDecisionRef": dict(machine_decision_ref),
+            "sourceVerificationRef": admit_input.get("sourceVerificationRef"),
+            "admittedAt": now,
+        }
+        receipt_bytes = canonical_bytes(receipt_payload)
+        receipt_digest = DigestV4.from_bytes(receipt_bytes)
+        receipt_ref = {
+            "owner": "jc",
+            "kind": "rule-admission",
+            "id": receipt_digest.hex,
+            "version": "1",
+            "matterId": None,
+            "digest": f"sha256:{receipt_digest.hex}",
+        }
+        pack_dir = admitted_root / pack_id / new_version
+        pack_dir.mkdir(parents=True, exist_ok=True)
+        for source_file in files:
+            resolved = source_file.resolve()
+            if path.parent.resolve() not in resolved.parents and resolved != path.resolve():
+                raise ClientV4Error("verification_failed", "pack file escapes its config root")
+            target = pack_dir / source_file.relative_to(path.parent)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            _shutil.copyfile(resolved, target)
+        current_path.parent.mkdir(parents=True, exist_ok=True)
+        current_path.write_text(_json.dumps({
+            "version": new_version,
+            "packDigest": pack_digest,
+            "oldRuleVersion": old_version,
+            "admissionReceiptRef": receipt_ref,
+            "admittedAt": now,
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {
+            "oldRuleVersion": old_version,
+            "newRuleVersion": new_version,
+            "admissionReceiptRef": receipt_ref,
+            "replay": False,
+        }
+
 
 def _as_run_ref(value: object) -> ContentRefV4:
     """Coerce a run identity (ContentRefV4, digest string, or dict) to a ref."""

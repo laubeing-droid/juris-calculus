@@ -354,3 +354,84 @@ def test_calculate_deadlines_2027_boundary_reports_gap(client):
     row = result["deadlines"][0]
     assert row["dueDate"] is None
     assert "calendar_coverage_missing:true" in row["calculationSteps"]
+
+
+# ---------------------------------------------------------------------------
+# deviation_rank / terminal_state_stats（case.* 读面经注入 reader 的独立单测；
+# 集成态=未接读面时具名 not_compiled / dataset_version_not_found，
+# 见 tests/integration/test_knowledge_runtime.py）
+# ---------------------------------------------------------------------------
+
+
+def test_deviation_rank_ranks_structural_and_numeric_diffs(client):
+    structures = {
+        "doc-low": {"elements": ["contract", "delivery"], "numeric": {"amount": "100"}},
+        "doc-high": {"elements": ["contract", "delivery", "acceptance", "warranty"],
+                     "numeric": {"amount": "100"}},
+    }
+    reader = lambda locator: structures.get(locator["canonicalDocId"])  # noqa: E731
+    result = client.deviation_rank({
+        "baselineRuleVersion": "1",
+        "budget": 10,
+        "queryStructure": {"elements": ["contract", "delivery"], "numeric": {"amount": "100"}},
+        "candidates": [
+            {"datasetVersion": "v1", "canonicalDocId": "doc-low", "month": "2026-01",
+             "locator": {"sourceRow": 1, "recordHash": "h1"}},
+            {"datasetVersion": "v1", "canonicalDocId": "doc-high", "month": "2026-01",
+             "locator": {"sourceRow": 2, "recordHash": "h2"}},
+        ],
+        "structureReader": reader,
+    })
+    assert result["status"] == "ok"
+    assert result["items"][0]["locator"]["canonicalDocId"] == "doc-low"  # 偏离更小者在前
+    top = result["items"][0]["deviations"]
+    assert all(row["measure"] is None for row in top)  # 结构差异不标精确偏离度
+    bottom = result["items"][1]["deviations"]
+    numeric_row = [row for row in bottom if row["position"] == "amount"]
+    assert numeric_row == []  # 数值相同则无数值偏离行
+
+
+def test_deviation_rank_budget_exceeded(client):
+    result = client.deviation_rank({
+        "baselineRuleVersion": "1",
+        "budget": 1,
+        "queryStructure": {"elements": ["contract"]},
+        "candidates": [
+            {"datasetVersion": "v1", "canonicalDocId": f"doc-{i}", "month": "2026-01",
+             "locator": {"sourceRow": i, "recordHash": "h"}}
+            for i in range(3)
+        ],
+        "structureReader": lambda locator: {"elements": [], "numeric": {}},
+    })
+    assert result["status"] == "budget_exceeded"
+
+
+def test_terminal_state_stats_filters_via_public_reader(client):
+    def reader(dataset_version, filters, rule_version):
+        if dataset_version != "pub-1":
+            return None
+        outcome = filters.get("cause")
+        rows = [
+            {"outcome": "dismissed", "n": 30, "rate": "0.3"},
+            {"outcome": "supported", "n": 70, "rate": "0.7"},
+        ]
+        return {
+            "distribution": [r for r in rows if not outcome or r["outcome"] == outcome],
+            "counts": {"total": 100},
+            "range": "2015-01..2026-08",
+        }
+
+    result = client.terminal_state_stats({
+        "datasetVersion": "pub-1",
+        "filters": {"cause": "supported"},
+        "ruleVersion": "1",
+        "statsReader": reader,
+    })
+    assert result["distribution"] == [{"outcome": "supported", "n": 70, "rate": "0.7"}]
+    assert result["range"] == "2015-01..2026-08"
+    with pytest.raises(ClientV4Error) as error:
+        client.terminal_state_stats({
+            "datasetVersion": "unknown-version",
+            "statsReader": reader,
+        })
+    assert error.value.code == "dataset_version_not_found"
