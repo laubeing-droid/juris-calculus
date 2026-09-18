@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP, localcontext
+from typing import Any, Mapping
 
 D = Decimal
 
@@ -202,6 +203,20 @@ ALPHA_CLAMP_HIGH = D("2.0")
 INSUFFICIENT_SAMPLES_ALPHA = D("1.0")
 MIN_FIT_SAMPLES = 3
 
+# issue-human-residual/1 (03 card §4a; engineering initial values mirror
+# config/product-defaults.v1.json pricing.humanResidual). Editable local
+# settings, never market-fee inputs; zero history still quotes.
+HUMAN_RESIDUAL_MODEL_VERSION = "issue-human-residual/1"
+HUMAN_RESIDUAL_DEFAULT_ESTIMATES = {
+    "per_issue_material_gap_verification_hours": D("0.5"),
+    "per_issue_professional_verification_hours": D("0.25"),
+    "per_communication_hours": D("0.5"),
+    "scheduled_court_appearance_hours": D("4"),
+}
+HUMAN_RESIDUAL_DEFAULT_INTERNAL_COST_PER_HOUR_MINOR = 10000  # 100 CNY/h
+HUMAN_RESIDUAL_DEFAULT_RATE_PER_HOUR_MINOR = 30000  # 300 CNY/h
+HUMAN_RESIDUAL_DEFAULT_DIRECT_COST_MINOR = 0
+
 
 @dataclass(frozen=True)
 class CalibrationSample:
@@ -320,3 +335,97 @@ def fit_alpha(
             "guarantee_level": None,
             "delta": None,
         }
+
+
+# ---------------------------------------------------------------------------
+# issue-human-residual/1 (03 card §4a). Zero history quotes; AI-completed
+# mechanical execution counts 0 human hours; professional verification is
+# never deleted; shared actions count once; money is integer minor half-up
+# on the unrounded residual hours. Predicted hours never become actuals.
+# ---------------------------------------------------------------------------
+
+
+def _half_up_minor(hours: Decimal, minor_per_hour: int) -> int:
+    return int((hours * D(minor_per_hour)).quantize(D(1), rounding=ROUND_HALF_UP))
+
+
+def human_residual_quote(
+    *,
+    work_items: list[Mapping[str, Any]],
+    internal_cost_per_hour_minor: int,
+    rate_minor_per_hour: int,
+    direct_cost_minor: int,
+) -> dict[str, object]:
+    """One issue-human-residual/1 quote from deduplicated work items.
+
+    Frozen arithmetic:
+
+    - residual per item: AI-completed mechanical execution is 0, rework
+      demands the full item hours again, everything else contributes
+      ``requiredHumanHours``; a professional verification item is its own
+      work item (defaults live in ``HUMAN_RESIDUAL_DEFAULT_ESTIMATES``) so
+      verification hours are never folded into or erased by execution;
+    - items are unique by ``workItemId``; duplicate ids are rejected, and
+      ``shared`` items count once no matter how many issues they serve;
+    - ``quoteAmountMinor = half-up(residual × rate) + directCostMinor``,
+      with internal cost and margin shown alongside; changing the rate
+      changes only the quote;
+    - ``assumptions`` carries the human-readable basis, never a silent
+      formula switch.
+    """
+
+    if internal_cost_per_hour_minor < 0 or rate_minor_per_hour < 0 or direct_cost_minor < 0:
+        raise ValueError("human_residual_input_out_of_range")
+    seen_ids: set[str] = set()
+    residual = D(0)
+    assumptions: list[str] = []
+    for item in work_items:
+        work_item_id = str(item.get("workItemId", ""))
+        if not work_item_id:
+            raise ValueError("human_residual_work_item_id_missing")
+        if work_item_id in seen_ids:
+            raise ValueError(f"human_residual_work_item_duplicate:{work_item_id}")
+        seen_ids.add(work_item_id)
+        hours = decimal_text(str(item.get("requiredHumanHours", "0")))
+        if hours < 0:
+            raise ValueError("human_residual_hours_negative")
+        ai_completed = bool(item.get("aiCompleted", False))
+        verification = bool(item.get("humanVerificationRequired", False))
+        rework = bool(item.get("reworkRequired", False))
+        shared = bool(item.get("shared", False))
+        if rework:
+            residual += hours
+        elif ai_completed:
+            # AI finished the mechanical execution: the human hours drop.
+            if verification:
+                assumptions.append(
+                    f"{work_item_id}: ai-completed, professional verification "
+                    "is a separate required item and must not be deleted"
+                )
+        else:
+            residual += hours
+        if shared:
+            issue_ids = item.get("issueIds") or []
+            if len(issue_ids) > 1:
+                assumptions.append(
+                    f"{work_item_id}: shared across "
+                    f"{len(issue_ids)} issues, counted once"
+                )
+    with localcontext() as context:
+        context.prec = 40
+        quote_minor = _half_up_minor(residual, rate_minor_per_hour) + int(direct_cost_minor)
+        internal_cost_minor = _half_up_minor(residual, internal_cost_per_hour_minor)
+        margin_minor = quote_minor - int(direct_cost_minor) - internal_cost_minor
+    return {
+        "model_version": HUMAN_RESIDUAL_MODEL_VERSION,
+        "work_items": [dict(item) for item in work_items],
+        "residual_hours_unrounded": canonical_decimal_text(residual),
+        "internal_cost_per_hour_minor": int(internal_cost_per_hour_minor),
+        "rate_minor_per_hour": int(rate_minor_per_hour),
+        "direct_cost_minor": int(direct_cost_minor),
+        "quote_amount_minor": quote_minor,
+        "estimated_internal_cost_minor": internal_cost_minor,
+        "estimated_margin_minor": margin_minor,
+        "currency": "CNY",
+        "assumptions": assumptions,
+    }

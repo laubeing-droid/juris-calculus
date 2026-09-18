@@ -41,6 +41,12 @@ from compiler_core.canonical_serialization import (
 
 
 SCHEMA_VERSION_V5 = "jc/5.0"
+
+# Frozen 0b wire type mapping (03 freeze contribution, contracts v1.0.0):
+# ``DecimalText`` is realized JC-side as a canonical decimal string — plain
+# notation, no exponent, no trailing zeros, floats never. The authoritative
+# codec is compiler_core.pricing.canonical_decimal_text / decimal_text.
+DecimalText = str
 _ENGINE_VERSION_RE = re.compile(
     r"5\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:(?:a|b|rc)(?:0|[1-9][0-9]*))?\Z"
 )

@@ -1077,6 +1077,12 @@ class LocalCaseInputsBuilderV4:
         self._record_issuer = LocalRecordIssuerV4(policy)
         self._serial = 0
 
+    @property
+    def resolver(self) -> ArtifactResolverV4:
+        """The content-addressed artifact resolver of this local runtime."""
+
+        return self._resolver
+
     def source_bundle_ref(self, source_id: str | None = None) -> ContentRefV4:
         rows = self._pack.sources
         if source_id is None:

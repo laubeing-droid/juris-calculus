@@ -43,6 +43,11 @@ from compiler_core.rendering import RenderOutputV4, render_verified_bundle
 
 HARNESS_LOCAL_CONTRACT_VERSION = "jc-harness-local/1"
 
+CALCULATION_RECEIPT_SCHEMA_VERSION = "jc-calculation-receipt/1"
+PRICING_MODEL_VERSION = "Z-v1-default"
+SUPPORTED_ESTIMATOR_VERSIONS = ("theilsen-legacy-branches/1",)
+DEFAULT_DEADLINE_CONFIGS = Path(__file__).resolve().parent.parent / "configs"
+
 
 EvaluationContextV4 = Callable[
     [CaseInputBundleV4], AbstractContextManager[tuple[ContentRefV4, ContentRefV4, str]]
@@ -826,6 +831,591 @@ class JCClient:
             "LOCAL_HORN_STATE_MISSING",
             "this run has no sealed Horn subject state",
         )
+
+    # ------------------------------------------------------------------
+    # Computation surface (03 card steps 4/5a and 4a; mother plan §3.3.4,
+    # frozen bridge methods provider=jc). Deterministic pricing, calibration
+    # and deadline computation over the same local artifact store, with
+    # content-addressed calculation receipts that recompute byte-stable.
+    # ------------------------------------------------------------------
+
+    def _artifact_resolver(self):
+        handle = self._local()
+        return handle.builder.resolver
+
+    def _wire_ref(self, reference: ContentRefV4, *, matter_id: str) -> dict[str, Any]:
+        return {
+            "owner": "jc",
+            "kind": reference.kind,
+            "id": reference.digest.hex,
+            "version": "1",
+            "matterId": matter_id,
+            "digest": f"sha256:{reference.digest.hex}",
+        }
+
+    def _register_json(self, kind: str, payload: Mapping[str, Any], *, scope: str) -> ContentRefV4:
+        from compiler_core.canonical_serialization import canonical_bytes
+
+        raw = canonical_bytes(dict(payload))
+        reference = ContentRefV4(kind, DigestV4.from_bytes(raw))
+        resolver = self._artifact_resolver()
+        resolver.register_bytes(
+            artifact_id=f"jc-calc-{reference.digest.hex[:24]}",
+            content_ref=reference,
+            artifact_kind=kind,
+            media_type="application/json",
+            scope=scope,
+            content=raw,
+        )
+        return reference
+
+    def _resolve_json(self, ref_like: Any, *, kind: str, scope: str) -> dict[str, Any]:
+        reference = self._content_ref(ref_like, kind)
+        resolver = self._artifact_resolver()
+        try:
+            raw = resolver.resolve_content(
+                reference,
+                expected_artifact_kind=kind,
+                expected_media_type="application/json",
+                expected_scope=scope,
+                max_bytes=resolver.max_artifact_bytes,
+            )
+        except Exception as exc:  # noqa: BLE001 - typed public error below
+            raise ClientV4Error(
+                "ref_not_found",
+                f"no {kind} artifact for the supplied ref in this client's store",
+            ) from exc
+        document = parse_json_document(raw)
+        if type(document) is not dict:
+            raise ClientV4Error("ref_not_found", f"{kind} artifact payload is not an object")
+        return document
+
+    @staticmethod
+    def _content_ref(ref_like: Any, kind: str) -> ContentRefV4:
+        if type(ref_like) is ContentRefV4:
+            if ref_like.kind != kind:
+                raise ClientV4Error("ref_not_found", f"ref kind must be {kind}")
+            return ref_like
+        if isinstance(ref_like, Mapping):
+            digest = ref_like.get("digest") or ref_like.get("id")
+        else:
+            digest = ref_like
+        if type(digest) is not str or not digest:
+            raise ClientV4Error("ref_not_found", f"a {kind} ref dict or digest string is required")
+        text = digest if digest.startswith("sha256:") else f"sha256:{digest}"
+        try:
+            return ContentRefV4(kind, DigestV4.parse(text))
+        except Exception as exc:  # noqa: BLE001 - typed public error below
+            raise ClientV4Error("ref_not_found", f"unreadable {kind} digest") from exc
+
+    def calibrate(self, calibration_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``calibrate.fit`` provider: fit one alpha from a calibration dataset.
+
+        Accepts ``samples`` inline or a ``datasetRef`` registered in this
+        client's store (kind ``calibration-dataset``). Returns the frozen
+        IFC-3 CalibrationSnapshot with ``guaranteeLevel=None`` and
+        ``delta=None`` always.
+        """
+
+        from compiler_core.pricing import (
+            ESTIMATOR_VERSION,
+            CalibrationSample,
+            fit_alpha,
+        )
+
+        if not isinstance(calibration_input, Mapping):
+            raise ClientV4Error("INVALID_CALIBRATION_INPUT", "calibration input must be a mapping")
+        feature_version = calibration_input.get("featureDefinitionVersion")
+        if type(feature_version) is not str or not feature_version:
+            raise ClientV4Error("INVALID_CALIBRATION_INPUT", "featureDefinitionVersion is required")
+        estimator_version = str(calibration_input.get("estimatorVersion") or ESTIMATOR_VERSION)
+        if estimator_version not in SUPPORTED_ESTIMATOR_VERSIONS:
+            raise ClientV4Error("estimator_version_unknown", estimator_version)
+        matter_id = str(calibration_input.get("matterId") or "unscoped")
+
+        rows: list[CalibrationSample] = []
+        dataset_ref = None
+        if calibration_input.get("datasetRef") is not None:
+            dataset = self._resolve_json(
+                calibration_input["datasetRef"], kind="calibration-dataset", scope="pricing",
+            )
+            if dataset.get("schema_version") != "jc-calibration-dataset/1":
+                raise ClientV4Error("ref_not_found", "dataset payload schema is not jc-calibration-dataset/1")
+            raw_rows = dataset.get("samples", [])
+            dataset_ref = self._content_ref(calibration_input["datasetRef"], "calibration-dataset")
+        else:
+            raw_rows = calibration_input.get("samples") or []
+        if not isinstance(raw_rows, list) or not raw_rows:
+            raise ClientV4Error("insufficient_calibration_data", "no samples supplied")
+        for index, row in enumerate(raw_rows):
+            try:
+                rows.append(CalibrationSample(
+                    entry_ref=str(row["entryRef"]),
+                    feature_definition_version=str(row["featureDefinitionVersion"]),
+                    duration_seconds=int(row["durationSeconds"]),
+                    effective_nodes=int(row["effectiveNodes"]),
+                    attributed=bool(row.get("attributed", True)),
+                    source_resolution_seconds=int(row.get("sourceResolutionSeconds", 1)),
+                ))
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ClientV4Error(
+                    "INVALID_CALIBRATION_INPUT", f"samples[{index}] is not a usable observation",
+                ) from exc
+
+        fit = fit_alpha(rows, feature_definition_version=feature_version)
+        excluded = [
+            self._wire_ref(
+                ContentRefV4("time-entry", DigestV4.from_bytes(row["entryRef"].encode("utf-8"))),
+                matter_id=matter_id,
+            )
+            for row in fit["excluded"]
+        ]
+        snapshot = {
+            "ref": None,
+            "datasetRef": (
+                None if dataset_ref is None
+                else self._wire_ref(dataset_ref, matter_id=matter_id)
+            ),
+            "featureDefinitionVersion": fit["feature_definition_version"],
+            "estimatorVersion": fit["estimator_version"],
+            "alpha": fit["alpha"],
+            "status": fit["status"],
+            "samplesUsed": fit["samples_used"],
+            "excludedEntryRefs": excluded,
+            "guaranteeLevel": None,
+            "delta": None,
+        }
+        reference = self._register_json("calibration", snapshot, scope="pricing")
+        snapshot["ref"] = self._wire_ref(reference, matter_id=matter_id)
+        return snapshot
+
+    def price(self, pricing_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``pricing.estimate`` provider: one Z-v1-default QuoteSnapshot.
+
+        ``feature``/``alpha`` carry the resolved payloads inline (a ref dict
+        to a registered artifact works too). The calculation receipt is
+        content-addressed and self-contained so ``recompute_price`` is
+        byte-stable; amounts are integer minor, half-up on unrounded hours.
+        """
+
+        from compiler_core.pricing import estimate_default
+
+        if not isinstance(pricing_input, Mapping):
+            raise ClientV4Error("INVALID_PRICING_INPUT", "pricing input must be a mapping")
+        model_version = str(pricing_input.get("modelVersion") or PRICING_MODEL_VERSION)
+        if model_version != PRICING_MODEL_VERSION:
+            raise ClientV4Error("model_version_unknown", model_version)
+        matter_id = str(pricing_input.get("matterId") or "unscoped")
+        feature = self._payload_or_ref(pricing_input.get("feature"), "pricing-features")
+        alpha = self._payload_or_ref(pricing_input.get("alpha"), "calibration")
+        try:
+            effective_nodes = int(feature["effectiveNodes"])
+            batch_position = int(pricing_input["batchPosition"])
+            rate_minor = int(pricing_input["rateMinorPerHour"])
+            overhead_hours = str(pricing_input["overheadHours"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ClientV4Error("INVALID_PRICING_INPUT", "feature/batch/rate fields are incomplete") from exc
+        if feature.get("featureDefinitionVersion") == "legacy-dth-explicit/1" and feature.get("legacyDth") is None:
+            raise ClientV4Error("INVALID_PRICING_INPUT", "legacy features must carry legacyDth counts")
+        result = estimate_default(
+            effective_nodes=effective_nodes,
+            alpha=str(alpha["alpha"]),
+            location_factor=str(pricing_input.get("locationFactor", "1.3")),
+            stage_factor=str(pricing_input.get("stageFactor", "1.25")),
+            overhead_hours=overhead_hours,
+            batch_position=batch_position,
+            rate_minor=rate_minor,
+            alpha_status=str(alpha.get("status", "fitted")),
+            factor_set_version=str(pricing_input.get("factorSetVersion", "zh-default/1")),
+        )
+        echoed_input = {
+            "featureRef": feature.get("ref"),
+            "alphaRef": alpha.get("ref"),
+            "factorSetRef": pricing_input.get("factorSetRef"),
+            "modelVersion": model_version,
+            "batchGroupId": pricing_input.get("batchGroupId"),
+            "batchPosition": batch_position,
+            "rateMinorPerHour": rate_minor,
+            "overheadHours": overhead_hours,
+            "overheadPolicyRef": pricing_input.get("overheadPolicyRef"),
+            # self-contained recompute basis (canonical decimal texts)
+            "feature": {"effectiveNodes": effective_nodes},
+            "alpha": {"alpha": str(alpha["alpha"]), "status": str(alpha.get("status", "fitted"))},
+            "locationFactor": str(pricing_input.get("locationFactor", "1.3")),
+            "stageFactor": str(pricing_input.get("stageFactor", "1.25")),
+        }
+        return self._seal_quote(echoed_input, result, matter_id=matter_id)
+
+    def price_human_residual(self, price_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``jc.price`` provider: issue-human-residual/1 HumanResidualQuote.
+
+        Zero history still quotes. ``modelVersion`` is explicit: the frozen
+        default is ``issue-human-residual/1``; ``Z-v1-default`` must be
+        requested through :meth:`price` and is never substituted silently.
+        Params (rate/cost/direct cost) default to the frozen engineering
+        initial values and stay editable; changing the rate changes only
+        the quote.
+        """
+
+        from compiler_core.pricing import (
+            HUMAN_RESIDUAL_DEFAULT_DIRECT_COST_MINOR,
+            HUMAN_RESIDUAL_DEFAULT_INTERNAL_COST_PER_HOUR_MINOR,
+            HUMAN_RESIDUAL_DEFAULT_RATE_PER_HOUR_MINOR,
+            HUMAN_RESIDUAL_MODEL_VERSION,
+            human_residual_quote,
+        )
+
+        if not isinstance(price_input, Mapping):
+            raise ClientV4Error("INVALID_PRICING_INPUT", "price input must be a mapping")
+        model_version = str(price_input.get("modelVersion") or HUMAN_RESIDUAL_MODEL_VERSION)
+        if model_version == PRICING_MODEL_VERSION:
+            raise ClientV4Error(
+                "model_version_explicit_required",
+                "Z-v1-default quotes must use the price() entry, never a silent switch",
+            )
+        if model_version != HUMAN_RESIDUAL_MODEL_VERSION:
+            raise ClientV4Error("model_version_unknown", model_version)
+        work_items = price_input.get("workItems")
+        if not isinstance(work_items, list):
+            raise ClientV4Error("INVALID_PRICING_INPUT", "workItems must be an array")
+        params = price_input.get("params") or {}
+        matter_id = str(price_input.get("matterId") or "unscoped")
+        try:
+            quote = human_residual_quote(
+                work_items=[dict(item) for item in work_items],
+                internal_cost_per_hour_minor=int(
+                    params.get("internalCostPerHourMinor",
+                               HUMAN_RESIDUAL_DEFAULT_INTERNAL_COST_PER_HOUR_MINOR)
+                ),
+                rate_minor_per_hour=int(
+                    params.get("rateMinorPerHour", HUMAN_RESIDUAL_DEFAULT_RATE_PER_HOUR_MINOR)
+                ),
+                direct_cost_minor=int(
+                    params.get("directCostMinor", HUMAN_RESIDUAL_DEFAULT_DIRECT_COST_MINOR)
+                ),
+            )
+        except ValueError as exc:
+            raise ClientV4Error("INVALID_PRICING_INPUT", str(exc)) from exc
+        receipt = {
+            "schema_version": CALCULATION_RECEIPT_SCHEMA_VERSION,
+            "kind": "human-residual",
+            "input": {
+                "workItems": [dict(item) for item in work_items],
+                "internalCostPerHourMinor": quote["internal_cost_per_hour_minor"],
+                "rateMinorPerHour": quote["rate_minor_per_hour"],
+                "directCostMinor": quote["direct_cost_minor"],
+                "modelVersion": model_version,
+            },
+            "computed": quote,
+        }
+        receipt_ref = self._register_json("calculation-receipt", receipt, scope="pricing")
+        quote = dict(quote)
+        quote["calculationReceiptRef"] = self._wire_ref(receipt_ref, matter_id=matter_id)
+        return quote
+
+    def _payload_or_ref(self, value: Any, kind: str) -> dict[str, Any]:
+        if isinstance(value, Mapping) and (value.get("digest") or value.get("id")) and not value.get("payload"):
+            if kind in {"pricing-features", "calibration"} and set(value) <= {
+                "owner", "kind", "id", "version", "matterId", "digest",
+            }:
+                return self._resolve_json(value, kind=kind, scope="pricing")
+        if isinstance(value, Mapping):
+            return dict(value)
+        raise ClientV4Error("INVALID_PRICING_INPUT", f"{kind} payload or ref is required")
+
+    def _seal_quote(self, echoed_input: Mapping[str, Any], result: Mapping[str, Any], *, matter_id: str) -> dict[str, Any]:
+        quote_core = {
+            "variableHoursUnrounded": result["variable_hours_unrounded"],
+            "overheadHoursUnrounded": result["overhead_hours_unrounded"],
+            "totalHoursUnrounded": result["total_hours_unrounded"],
+            "displayHours": result["display_hours"],
+            "amountMinor": result["amount_minor"],
+            "currency": "CNY",
+        }
+        receipt = {
+            "schema_version": CALCULATION_RECEIPT_SCHEMA_VERSION,
+            "kind": "pricing",
+            "input": dict(echoed_input),
+            "computed": quote_core,
+        }
+        receipt_ref = self._register_json("calculation-receipt", receipt, scope="pricing")
+        quote_ref = self._register_json("quote", {**quote_core, "input": dict(echoed_input)}, scope="pricing")
+        return {
+            **quote_core,
+            "ref": self._wire_ref(quote_ref, matter_id=matter_id),
+            "input": dict(echoed_input),
+            "calculationReceiptRef": self._wire_ref(receipt_ref, matter_id=matter_id),
+        }
+
+    def recompute_price(
+        self,
+        calculation_receipt_ref: Any,
+        *,
+        model_version: str | None = None,
+    ) -> dict[str, Any]:
+        """``pricing.recompute`` / ``jc.recompute_price`` provider.
+
+        Recomputes from the self-contained receipt and compares canonical
+        payloads. Old receipts never change: an equal recomputation is the
+        expected outcome, and a digest the store cannot resolve raises
+        ``ref_not_found`` instead of guessing.
+        """
+
+        if isinstance(calculation_receipt_ref, Mapping) and "schema_version" in calculation_receipt_ref:
+            receipt = dict(calculation_receipt_ref)
+        else:
+            receipt = self._resolve_json(
+                calculation_receipt_ref, kind="calculation-receipt", scope="pricing",
+            )
+        if receipt.get("schema_version") != CALCULATION_RECEIPT_SCHEMA_VERSION:
+            raise ClientV4Error("ref_not_found", "unknown calculation receipt schema")
+        kind = str(receipt.get("kind"))
+        if kind == "pricing":
+            original = receipt["computed"]
+            from compiler_core.pricing import estimate_default
+
+            source = receipt["input"]
+            result = estimate_default(
+                effective_nodes=int(source["feature"]["effectiveNodes"]),
+                alpha=str(source["alpha"]["alpha"]),
+                location_factor=str(source["locationFactor"]),
+                stage_factor=str(source["stageFactor"]),
+                overhead_hours=str(source["overheadHours"]),
+                batch_position=int(source["batchPosition"]),
+                rate_minor=int(source["rateMinorPerHour"]),
+                alpha_status=str(source["alpha"]["status"]),
+            )
+            recomputed = {
+                "variableHoursUnrounded": result["variable_hours_unrounded"],
+                "overheadHoursUnrounded": result["overhead_hours_unrounded"],
+                "totalHoursUnrounded": result["total_hours_unrounded"],
+                "displayHours": result["display_hours"],
+                "amountMinor": result["amount_minor"],
+                "currency": "CNY",
+            }
+        elif kind == "human-residual":
+            from compiler_core.pricing import human_residual_quote
+
+            original = receipt["computed"]
+            recomputed = human_residual_quote(
+                work_items=receipt["input"]["workItems"],
+                internal_cost_per_hour_minor=int(receipt["input"]["internalCostPerHourMinor"]),
+                rate_minor_per_hour=int(receipt["input"]["rateMinorPerHour"]),
+                direct_cost_minor=int(receipt["input"]["directCostMinor"]),
+            )
+        else:
+            raise ClientV4Error("ref_not_found", f"unknown receipt kind {kind!r}")
+        equal = (
+            original == recomputed
+            and (model_version is None or str(receipt["input"].get("modelVersion")) == model_version)
+        )
+        return {"original": original, "recomputed": recomputed, "equal": equal}
+
+    def calculate_deadlines(self, deadline_input: Mapping[str, Any]) -> dict[str, Any]:
+        """``deadlines.calculate`` provider over the IFC-1 deadline chain.
+
+        Resolves the procedure event from this client's store, resolves
+        every rule binding against the versioned registry shipped in
+        ``configs/deadline_rules*.yaml``, and computes branch-correct
+        deadlines. An unreleased/ uncovered calendar surfaces the frozen
+        ``calendar_coverage_missing`` error; individual results that leave
+        the coverage window carry ``dueDate=null`` with the gap step.
+        """
+
+        from datetime import datetime, timezone as dt_timezone
+
+        from compiler_core.deadlines import (
+            CalendarSnapshot,
+            DeadlineError,
+            compute_deadline,
+            load_deadline_rules,
+        )
+
+        if not isinstance(deadline_input, Mapping):
+            raise ClientV4Error("INVALID_DEADLINE_INPUT", "deadline input must be a mapping")
+        matter_id = str(deadline_input.get("matterId") or "unscoped")
+        try:
+            event = self._resolve_json(
+                deadline_input["eventRef"], kind="procedure-event", scope="case",
+            )
+        except KeyError as exc:
+            raise ClientV4Error("INVALID_DEADLINE_INPUT", "eventRef is required") from exc
+        event_revision = int(deadline_input.get("eventRevision", 0) or 0)
+        if int(event.get("revision", 0)) != event_revision:
+            raise ClientV4Error("revision_conflict", "event revision drifted from the request")
+        if str(event.get("matterId", matter_id)) != matter_id:
+            raise ClientV4Error("ref_not_found", "event belongs to another matter")
+
+        rules = deadline_input.get("rules") or []
+        if not isinstance(rules, list):
+            raise ClientV4Error("INVALID_DEADLINE_INPUT", "rules must be an array")
+        configs_root = Path(str(deadline_input.get("configsRoot") or DEFAULT_DEADLINE_CONFIGS))
+        registry = load_deadline_rules(configs_root)
+
+        binding = deadline_input.get("calendar") or {}
+        overrides: dict[str, bool] = {}
+        if binding.get("ref") is not None:
+            try:
+                calendar_payload = self._resolve_json(binding["ref"], kind="calendar", scope="calendar")
+                overrides = {
+                    str(key): bool(value)
+                    for key, value in (calendar_payload.get("overrides") or {}).items()
+                }
+            except ClientV4Error:
+                overrides = {}
+        from datetime import date as date_cls
+
+        calendar = CalendarSnapshot(
+            version=str((binding.get("ref") or {}).get("id", "unversioned")),
+            coverage_start=date_cls.fromisoformat(str(binding["coverageStart"])),
+            coverage_end=date_cls.fromisoformat(str(binding["coverageEnd"])),
+            released=bool(binding.get("released", False)),
+            overrides=overrides,
+        )
+        if not calendar.released:
+            raise ClientV4Error(
+                "calendar_coverage_missing",
+                "the calendar binding is not released; no deadline may be computed",
+            )
+
+        now_raw = deadline_input.get("now")
+        now = (
+            datetime.fromisoformat(str(now_raw)) if now_raw
+            else datetime.now(dt_timezone.utc)
+        )
+
+        deadlines: list[dict[str, Any]] = []
+        uncovered = 0
+        for entry in rules:
+            rule_id = str(entry.get("ruleId"))
+            rule_version = str(entry.get("ruleVersion"))
+            rule = registry.get((rule_id, rule_version))
+            if rule is None:
+                raise ClientV4Error("ref_not_found", f"deadline rule {rule_id}@{rule_version} is unknown")
+            try:
+                computed = compute_deadline(
+                    rule=rule,
+                    event=event,
+                    calendar=calendar,
+                    matter_id=matter_id,
+                    event_id=str(event.get("id", "")),
+                    event_revision=event_revision,
+                    now=now,
+                )
+            except DeadlineError as error:
+                if error.code == "calendar_coverage_missing":
+                    raise ClientV4Error("calendar_coverage_missing", error.detail) from error
+                raise ClientV4Error(error.code, error.detail) from error
+            if computed["dueDate"] is None:
+                uncovered += 1
+            computed.pop("calculation", None)
+            deadlines.append(computed)
+        # 出覆盖边界的个别结果按冻结语义返回 dueDate=null + 缺口步骤；
+        # 日历整体未发布/不可用才在 compute_deadline 内升级为 typed 错误。
+        receipt_ref = deadlines[0]["calculationReceiptRef"] if deadlines else None
+        receipt = {
+            "ref": receipt_ref,
+            "scope": {"kind": "matter", "matterId": matter_id, "runId": None},
+            "inputRefs": [deadline_input["eventRef"]],
+            "outputRefs": [row["ref"] for row in deadlines],
+            "issuedAt": now.astimezone(dt_timezone.utc).isoformat(),
+        }
+        return {"deadlines": deadlines, "receipt": receipt}
+
+    def read_argument_graph(
+        self,
+        run_identity_ref: Any,
+        *,
+        case_id: str,
+        issue_ids: Any = (),
+        profile: str | None = None,
+    ) -> dict[str, Any]:
+        """``arguments.read`` provider: the sealed argument graph of one run.
+
+        Reads exactly what an external verifier reads (the verified audit
+        bundle); no re-evaluation. Horn-only runs have a trivial graph and
+        are reported as ``graphKind="horn"``.
+        """
+
+        from base64 import b64decode
+
+        from compiler_core.application import PROFILE_STAGE_KIND_V5
+
+        reference = _as_run_ref(run_identity_ref)
+        store = self._store()
+        capability = store.capability_for(reference)
+        verified = store.verify_run(capability, now=self._now())
+        graph_document = None
+        stage_document = None
+        try:
+            checker_payload = parse_json_document(verified.files["checker-receipts.json"])
+        except (KeyError, ValueError) as exc:
+            raise ClientV4Error("ref_not_found", "run has no checker receipts") from exc
+        for item in checker_payload.get("artifacts", []):
+            content_ref = item.get("content_ref") or {}
+            if content_ref.get("kind") == "argument-graph-v4" and graph_document is None:
+                graph_document = parse_json_document(
+                    b64decode(item["content_base64"], validate=True)
+                )
+            if content_ref.get("kind") == PROFILE_STAGE_KIND_V5 and stage_document is None:
+                stage_document = parse_json_document(
+                    b64decode(item["content_base64"], validate=True)
+                )
+        if graph_document is None:
+            raise ClientV4Error(
+                "ref_not_found",
+                "this run sealed no argument graph document",
+            )
+        matter_id = case_id
+        graph_ref = self._wire_ref(
+            ContentRefV4("argument-graph", reference.digest), matter_id=matter_id,
+        )
+        node_refs = [
+            self._wire_ref(
+                ContentRefV4(
+                    "argument-node",
+                    DigestV4.from_bytes(str(row.get("argument_id", index)).encode("utf-8")),
+                ),
+                matter_id=matter_id,
+            )
+            for index, row in enumerate(graph_document.get("arguments", []))
+        ]
+        edge_refs = [
+            self._wire_ref(
+                ContentRefV4(
+                    "argument-edge",
+                    DigestV4.from_bytes(
+                        f"{row.get('attacker', '')}->{row.get('defeated', '')}".encode("utf-8"),
+                    ),
+                ),
+                matter_id=matter_id,
+            )
+            for row in graph_document.get("attacks", [])
+        ]
+        issue_result_refs: list[dict[str, Any]] = []
+        if stage_document and issue_ids:
+            statuses = stage_document.get("queries") or stage_document.get("profile_queries") or {}
+            wanted = [str(issue) for issue in issue_ids]
+            for issue in wanted:
+                row = statuses.get(issue) if isinstance(statuses, dict) else None
+                if row is None:
+                    continue
+                issue_result_refs.append(
+                    self._wire_ref(
+                        ContentRefV4(
+                            "issue-result",
+                            DigestV4.from_bytes(f"{reference.digest.hex}:{issue}".encode("utf-8")),
+                        ),
+                        matter_id=matter_id,
+                    )
+                )
+        return {
+            "graphRef": graph_ref,
+            "nodeRefs": node_refs,
+            "edgeRefs": edge_refs,
+            "branchRefs": [],
+            "issueResultRefs": issue_result_refs,
+        }
 
 
 def _as_run_ref(value: object) -> ContentRefV4:
