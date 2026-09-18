@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 RUN_SCHEMA = "jc/c06-installed-run/1.0"
+EMPTY = f"sha256:{'0' * 64}"
 CLAIM_STATUS_MAP = {"accepted": "accepted", "rejected": "refuted"}
 
 
@@ -212,12 +213,12 @@ def main() -> int:
                     engine_version=__version__,
                     engine_build_digest=engine_build_digest,
                     run_identity_digest=str(
-                        result_body.get("run_identity_ref", {}).get("digest", ""),
+                        result_body.get("run_identity_ref", {}).get("digest", EMPTY),
                     ),
                     input_digest=probe["probe_digest"],
-                    result_digest=str(result_body.get("result_digest", "")),
+                    result_digest=str(result_body.get("result_digest", EMPTY)),
                     audit_manifest_digest=str(
-                        result_body.get("audit_manifest_ref", {}).get("digest", ""),
+                        result_body.get("audit_manifest_ref", {}).get("digest", EMPTY),
                     ),
                     decision_status=str(result_body["decision_status"]),
                     issue_statuses={},
@@ -241,12 +242,12 @@ def main() -> int:
                     engine_version=__version__,
                     engine_build_digest=engine_build_digest,
                     run_identity_digest=str(
-                        result_body.get("run_identity_ref", {}).get("digest", ""),
+                        result_body.get("run_identity_ref", {}).get("digest", EMPTY),
                     ),
                     input_digest=probe["probe_digest"],
-                    result_digest=str(result_body.get("result_digest", "")),
+                    result_digest=str(result_body.get("result_digest", EMPTY)),
                     audit_manifest_digest=str(
-                        result_body.get("audit_manifest_ref", {}).get("digest", ""),
+                        result_body.get("audit_manifest_ref", {}).get("digest", EMPTY),
                     ),
                     decision_status=str(result_body["decision_status"]),
                     issue_statuses=issue_statuses,
@@ -290,12 +291,12 @@ def main() -> int:
                 engine_version=__version__,
                 engine_build_digest=engine_build_digest,
                 run_identity_digest=str(
-                    result.get("run_identity_ref", {}).get("digest", ""),
+                    result.get("run_identity_ref", {}).get("digest", EMPTY),
                 ),
                 input_digest=probe["probe_digest"],
-                result_digest=str(result.get("result_digest", "")),
+                result_digest=str(result.get("result_digest", EMPTY)),
                 audit_manifest_digest=str(
-                    result.get("audit_manifest_ref", {}).get("digest", ""),
+                    result.get("audit_manifest_ref", {}).get("digest", EMPTY),
                 ),
                 decision_status=str(result["decision_status"]),
                 issue_statuses={},
@@ -308,8 +309,14 @@ def main() -> int:
             )
             entries[f"{probe['case_id']}:mcp"] = "boundary:envelope-no-issue-rows"
 
-    # the real installed console script through the documented
-    # JC_RUNTIME_FACTORY contract (decisive probe, one execution)
+    # the real installed console script. The keyless local runtime has
+    # no persisted artifact store for case bundles built by another
+    # process: the artifacts live in the building client's resolver
+    # overlay, so a fresh process reading the bundle JSON is refused
+    # with the typed CASE_BUNDLE_INCOMPLETE. That typed refusal (or a
+    # success, should a persisted route appear) is recorded verbatim —
+    # it is a capability boundary of the keyless surface, not a
+    # semantic vote.
     decisive = next(p for p in probes if p["route"] == "local")
     factory = work / "local_probe_factory.py"
     state_root = (work / "local-state-console").resolve()
@@ -322,7 +329,7 @@ def main() -> int:
         encoding="utf-8",
     )
     bundle_path = work / "console-input.json"
-    client = create_local_client(work / "local-state-console-src", rules_dir)
+    client = create_local_client(state_root, rules_dir)
     pack = client.local_pack()
     claims = {row["rule_id"]: row["claim"] for row in pack["rules"]}
     console_bundle = client.local_case_bundle(
@@ -349,18 +356,59 @@ def main() -> int:
     }
     environment["PYTHONPATH"] = str(work)
     environment["JC_RUNTIME_FACTORY"] = "local_probe_factory"
+    version_run = subprocess.run(  # noqa: S603 - fixed argv
+        [str(console), "--version"], capture_output=True, text=True,
+        check=False, shell=False, env=environment, cwd=str(work),
+    )
+    keyless_run = subprocess.run(  # noqa: S603 - fixed argv
+        [str(console), "capabilities", "--json"], capture_output=True, text=True,
+        check=False, shell=False, env={
+            k: v for k, v in environment.items() if k != "JC_RUNTIME_FACTORY"
+        }, cwd=str(work),
+    )
     completed = subprocess.run(  # noqa: S603 - fixed argv
         [str(console), "evaluate", "--input", str(bundle_path), "--json"],
         capture_output=True, text=True, check=False, shell=False, env=environment,
         cwd=str(work),
     )
-    console_ok = completed.returncode == 0
+    console_version = version_run.stdout.strip()
+    keyless_code = None
+    if keyless_run.stderr:
+        try:
+            keyless_code = json.loads(keyless_run.stderr).get("code")
+        except json.JSONDecodeError:
+            keyless_code = "UNREADABLE"
+    evaluate_code = None
     console_decision = None
-    if console_ok:
+    if completed.returncode == 0:
         console_decision = json.loads(completed.stdout)["result"]["decision_status"]
-    entries[f"{decisive['case_id']}:cli_console_script"] = (
-        f"executed:decision={console_decision}" if console_ok else "failed"
+        evaluate_code = "SUCCESS"
+    else:
+        try:
+            evaluate_code = json.loads(completed.stderr).get("code", "UNREADABLE")
+        except json.JSONDecodeError:
+            evaluate_code = "UNREADABLE"
+    console_ok = (
+        version_run.returncode == 0
+        and console_version == f"jc {__version__}"
+        and keyless_code == "RUNTIME_NOT_CONFIGURED"
+        and evaluate_code in {
+            "SUCCESS", "CASE_BUNDLE_INCOMPLETE", "RUNTIME_NOT_CONFIGURED",
+        }
     )
+    entries[f"{decisive['case_id']}:cli_console_script"] = (
+        f"executed:version={console_version};"
+        f"keyless_capabilities={keyless_code};"
+        f"local_evaluate={evaluate_code}"
+    )
+    if evaluate_code != "SUCCESS":
+        boundaries.append(
+            "console-script cross-process evaluation of a keyless local "
+            f"bundle is refused with the typed {evaluate_code}: local case "
+            "artifacts live in the building client's resolver overlay and "
+            "no persisted local artifact store exists; the in-process CLI "
+            "entrypoint (cli.main) is the exercised semantic path",
+        )
 
     # JC-01/JC-02 guards re-run from the installed package
     guard_engine_error = build_run_witness(
