@@ -1,0 +1,155 @@
+schema_version: deadline-rules/1
+note: >
+  版本化期限规则注册表（03 卡步骤 5）。分支持法分支表见
+  compiler_core.deadlines.BRANCH_TABLE；刑拘链按阶段拆分规则，
+  不写固定 37 日常数；保全上限按财产类型核对、倒计时按法院届满日；
+  续保申请不自动延长届满日。日历未覆盖年份（含 2027 公布前）
+  一律返回 calendar_coverage_missing，不猜节假日。
+rules:
+  # ---- 诉讼时效 / 举证 / 上诉 / 仲裁 ----
+  - ruleId: civil.limitation.general
+    version: "1"
+    branch: limitation_period
+    anchor: awareAt
+    durationDays: 3
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil-limitation-general
+    note: 民法典188条 自知道或应当知道权利受损之日起三年
+  - ruleId: civil.evidence.first_instance
+    version: "1"
+    branch: evidence_period
+    anchor: servedAt
+    durationDays: 30
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil-evidence-first-instance
+    note: 普通程序举证期限，法院指定日走 court_specified 分支
+  - ruleId: civil.appeal.judgment
+    version: "1"
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 15
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil-appeal-judgment
+  - ruleId: civil.appeal.ruling
+    version: "1"
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 10
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil-appeal-ruling
+  - ruleId: arbitration.set_aside.award
+    version: "1"
+    branch: arbitration_period
+    anchor: servedAt
+    durationDays: 6
+    durationUnit: months
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#arbitration-set-aside
+    note: 仲裁法59条 撤销裁决请求六个月内提出
+  # ---- 刑事拘留链（分阶段，禁止固定 37 日） ----
+  - ruleId: criminal.custody.detention
+    version: "1"
+    branch: criminal_custody
+    anchor: occurredAt
+    stage: detention
+    durationDays: 3
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: true
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal-custody-detention
+    note: 拘留后三日以内提请审查批准
+  - ruleId: criminal.custody.detention.extended
+    version: "1"
+    branch: criminal_custody
+    anchor: occurredAt
+    stage: detention_extended
+    durationDays: 4
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: true
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal-custody-extended
+    note: 特殊情况可延长一日至四日
+  - ruleId: criminal.custody.detention.major
+    version: "1"
+    branch: criminal_custody
+    anchor: occurredAt
+    stage: detention_major
+    durationDays: 30
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: true
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal-custody-major
+    note: 流窜/多次/结伙作案重大嫌疑分子提请时间可延长至三十日
+  - ruleId: criminal.custody.procuratorate.decision
+    version: "1"
+    branch: criminal_custody
+    anchor: servedAt
+    stage: procuratorate_decision
+    durationDays: 7
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: true
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal-custody-procuratorate
+    note: 检察院接到提请批准逮捕书后七日以内作出决定
+  # ---- 保全（上限核对 + 法院届满日倒计时） ----
+  - ruleId: preservation.bank_deposit.court
+    version: "1"
+    branch: preservation
+    anchor: occurredAt
+    propertyType: bank_deposit
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#preservation-bank-deposit
+    note: 冻结存款不得超过一年，上限核对
+  - ruleId: preservation.chattel.court
+    version: "1"
+    branch: preservation
+    anchor: occurredAt
+    propertyType: chattel
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#preservation-chattel
+    note: 查封动产不得超过两年，上限核对
+  - ruleId: preservation.real_estate.court
+    version: "1"
+    branch: preservation
+    anchor: occurredAt
+    propertyType: real_estate
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#preservation-real-estate
+    note: 查封不动产不得超过三年，上限核对
+  - ruleId: preservation.renewal.application
+    version: "1"
+    branch: preservation_renewal
+    anchor: occurredAt
+    windowDays: 30
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#preservation-renewal
+    note: 续保申请窗口，不自动延长届满日
+  - ruleId: pre_litigation.preservation.window
+    version: "1"
+    branch: pre_litigation_preservation
+    anchor: occurredAt
+    durationDays: 30
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: true
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#pre-litigation-preservation
+    note: 诉前保全采取措施后三十日内起诉或仲裁，否则解除
