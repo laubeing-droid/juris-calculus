@@ -277,6 +277,11 @@
       "rationale": "Advisory sentencing candidate awaiting governed rule assets."
     },
     {
+      "path": "compiler_core/deadlines.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Exact Gregorian calendar and statutory deadline arithmetic over the versioned rule registry (IFC-1); fail-closed calendar coverage. No admission, issuance, or orchestration authority."
+    },
+    {
       "path": "compiler_core/domain_composition.py",
       "class": "FORMAL_CORE",
       "rationale": "V5 same-branch composition gates and exact ULM13 arithmetic. No second admission, issuance, or orchestration authority."
@@ -390,6 +395,16 @@
       "path": "compiler_core/prc_collision_engine.py",
       "class": "EXPERIMENT_ONLY",
       "rationale": "TriRail/collision experiment component; excluded from production."
+    },
+    {
+      "path": "compiler_core/prediction.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Checkpoint-only probability prediction with named model_not_available absence; deterministic L2 logistic-regression math over compiler_core/pricing decimal helpers. Never returns a fixed probability; no second training platform."
+    },
+    {
+      "path": "compiler_core/pricing.py",
+      "class": "FORMAL_CORE",
+      "rationale": "Sole production pricing estimator core (Z-v1-default): deterministic multi-factor estimate and integer-minor money math over constants pinned from the v1.0.3 baseline; does not revive the old platform."
     },
     {
       "path": "compiler_core/procedure.py",
@@ -579,6 +594,11 @@
   ],
   "prefix_rules": [
     {
+      "prefix": ".local/pricing-baseline/",
+      "class": "SOURCE_TOOL",
+      "rationale": "Pinned v1.0.3 LegalOS pricing baseline extraction (tag c2acea3589d14f25f5b8285117ce01276e87860b, commit 5be9544): read-only historical constants and legacy-branch reference behind compiler_core/pricing.py; zero runtime consumers; never deployed or packaged."
+    },
+    {
       "prefix": "addons/",
       "class": "EXPERIMENT_ONLY",
       "rationale": "Jurisdiction and federation addons are isolated repository experiments."
@@ -629,7 +649,7 @@
   "declared_dynamic_edges": [
     {
       "importer": "compiler_core/client.py",
-      "line": 882,
+      "line": 1805,
       "kind": "dynamic_import",
       "target_pattern": "installed-runtime-host",
       "target_class": "PUBLIC_ADAPTER",
@@ -687,7 +707,8 @@
         "yaml"
       ],
       "PUBLIC_ADAPTER": [
-        "cryptography"
+        "cryptography",
+        "yaml"
       ],
       "RUNTIME_OUTPUT": [
         "yaml",

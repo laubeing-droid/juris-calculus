@@ -4,8 +4,18 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 303,
+  "count": 317,
   "paths": [
+    {
+      "path": ".local/pricing-baseline/c2acea3589d14f25f5b8285117ce01276e87860b/legalos_pricing.py",
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
+    },
+    {
+      "path": ".local/pricing-baseline/c2acea3589d14f25f5b8285117ce01276e87860b/peripheral_models.py",
+      "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
+    },
     {
       "path": "addons/__init__.py",
       "authority_class": "EXPERIMENT_ONLY",
@@ -227,6 +237,11 @@
       "production_wheel": false
     },
     {
+      "path": "compiler_core/deadlines.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
       "path": "compiler_core/domain_composition.py",
       "authority_class": "FORMAL_CORE",
       "production_wheel": true
@@ -375,6 +390,16 @@
       "path": "compiler_core/prc_collision_engine.py",
       "authority_class": "EXPERIMENT_ONLY",
       "production_wheel": false
+    },
+    {
+      "path": "compiler_core/prediction.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
+    },
+    {
+      "path": "compiler_core/pricing.py",
+      "authority_class": "FORMAL_CORE",
+      "production_wheel": true
     },
     {
       "path": "compiler_core/procedure.py",
@@ -662,6 +687,16 @@
       "production_wheel": false
     },
     {
+      "path": "tests/contract/test_c06_tool_identity.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/contract/test_c06_witness_guard.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/contract/test_case_input_bundle.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -918,6 +953,11 @@
     },
     {
       "path": "tests/integration/test_c06_entry_receipts.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/integration/test_knowledge_runtime.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -1222,6 +1262,11 @@
       "production_wheel": false
     },
     {
+      "path": "tests/unit/test_computation_surface.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tests/unit/test_conflict_of_laws.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
@@ -1243,6 +1288,11 @@
     },
     {
       "path": "tests/unit/test_ddl_modal_gate.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_deadlines_v1.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -1308,6 +1358,11 @@
     },
     {
       "path": "tests/unit/test_plugin_registry.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_pricing_v1.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
@@ -1497,12 +1552,22 @@
       "production_wheel": false
     },
     {
+      "path": "tools/run_installed_c06_probe.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
       "path": "tools/run_trirail_matrix.py",
       "authority_class": "EXPERIMENT_ONLY",
       "production_wheel": false
     },
     {
       "path": "tools/supply_chain_gate.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/train_and_evaluate.py",
       "authority_class": "BUILD_ONLY",
       "production_wheel": false
     },
@@ -1518,6 +1583,11 @@
     },
     {
       "path": "tools/wheel_gate.py",
+      "authority_class": "BUILD_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tools/write_dist_origin.py",
       "authority_class": "BUILD_ONLY",
       "production_wheel": false
     }
