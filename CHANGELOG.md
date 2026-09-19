@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.2 — procedure-event 公开登记口 (IF-05, 2026-09-19)
+
+- 闭合 U02 wire-gap：`JCClient.register_event` 公开方法（`compiler_core/client.py`）——轻校验（非空字符串 `id`/`matterId`、int≥1 的 `revision`，不满足抛 `schema_invalid`）后经既有 `_register_json("procedure-event", …, scope="case")` 规范登记，返回冻结 wire ref（owner=jc/kind/id=digest.hex/version=1/matterId/digest=sha256:…）。验收链自此走公开口，不再依赖客户端私有 `_register_json`；`_register_json` 本体未改（其余 kind 照旧）。
+- 对应 IF-05 合同 v1.2.0；聚焦单测见 `tests/unit/test_computation_surface.py`（wire ref 形状 + `_resolve_json` roundtrip + 缺 id/revision/matterId 各抛 schema_invalid）。
+
 ## 5.0.1 — C06 math-export integration (jc-c06-integration, 2026-09-14)
 
 - 消费侧落地 legal-math-modeling full-release 出口契约（固定主体 `5084f25e`，run `34797682659`，READY_FOR_LATER_INTEGRATION_DESIGN）：新增 `compiler_core/math_export/`（钉扎身份、完成文档校验与规范指纹、B07 版本失效指纹 commit+tree+toolchain+manifest、公共入口运行见证 `jc/lmm-c06-witness/1.0` 与保守状态映射、独立 checker 子进程网关、跨入口一致性断言），已进 wheel 并入 module-authority。

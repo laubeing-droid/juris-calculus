@@ -357,6 +357,82 @@ def test_calculate_deadlines_2027_boundary_reports_gap(client):
 
 
 # ---------------------------------------------------------------------------
+# events.register（公开登记口；闭合 U02 wire-gap——验收链不再走私有 _register_json）
+# ---------------------------------------------------------------------------
+
+
+def _synthetic_event(event_id, revision, matter_id):
+    # 合成材料，明确标注不构成法律依据；形状与既有 _register_event 合成事件一致。
+    return {
+        "id": event_id,
+        "revision": revision,
+        "matterId": matter_id,
+        "kind": "procedure-event",
+        "procedureType": "civil_first_instance",
+        "procedureStage": "judgment_service",
+        "servedAt": {"value": "2026-03-02", "precision": "date", "timezone": "Asia/Shanghai", "sourceRefs": []},
+        "occurredAt": {"value": None, "precision": "unknown", "timezone": None, "sourceRefs": []},
+        "awareAt": {"value": None, "precision": "unknown", "timezone": None, "sourceRefs": []},
+        "filedAt": {"value": None, "precision": "unknown", "timezone": None, "sourceRefs": []},
+        "hearingAt": {"value": None, "precision": "unknown", "timezone": None, "sourceRefs": []},
+    }
+
+
+def test_register_event_wire_ref_shape_and_roundtrip(client):
+    event = _synthetic_event("e-pub-1", 2, "m-pub")
+    wire_ref = client.register_event(event)
+    assert wire_ref["owner"] == "jc"
+    assert wire_ref["kind"] == "procedure-event"
+    assert wire_ref["version"] == "1"
+    assert wire_ref["matterId"] == "m-pub"
+    assert wire_ref["digest"] == f"sha256:{wire_ref['id']}"
+    assert len(wire_ref["id"]) == 64  # sha256 hex
+    # 公开回读：与 calculate_deadlines 同一消费链（_resolve_json），事件体逐字段一致
+    restored = client._resolve_json(wire_ref, kind="procedure-event", scope="case")
+    assert restored == event
+    # 公开登记的事件直接驱动 calculate_deadlines（端到端，不经私有口）
+    result = client.calculate_deadlines({
+        "matterId": "m-pub",
+        "eventRef": wire_ref,
+        "eventRevision": 2,
+        "rules": [{"ruleId": "civil.appeal.judgment", "ruleVersion": "1"}],
+        "calendar": _calendar_binding(),
+    })
+    assert result["deadlines"][0]["eventId"] == "e-pub-1"
+    assert result["deadlines"][0]["dueDate"] == "2026-03-17"
+
+
+_MISSING = object()
+
+
+@pytest.mark.parametrize("key, value", [
+    ("id", _MISSING),  # 缺 id
+    ("revision", _MISSING),  # 缺 revision
+    ("matterId", _MISSING),  # 缺 matterId
+    ("id", ""),  # 空 id
+    ("id", 7),  # id 非字符串
+    ("revision", 0),  # revision < 1
+    ("revision", "2"),  # revision 非整数
+    ("matterId", ""),  # 空 matterId
+])
+def test_register_event_schema_invalid(client, key, value):
+    event = _synthetic_event("e-pub-2", 1, "m-pub")
+    if value is _MISSING:
+        del event[key]
+    else:
+        event[key] = value
+    with pytest.raises(ClientV4Error) as error:
+        client.register_event(event)
+    assert error.value.code == "schema_invalid"
+
+
+def test_register_event_requires_mapping(client):
+    with pytest.raises(ClientV4Error) as error:
+        client.register_event(["not", "a", "mapping"])  # type: ignore[arg-type]
+    assert error.value.code == "schema_invalid"
+
+
+# ---------------------------------------------------------------------------
 # deviation_rank / terminal_state_stats（case.* 读面经注入 reader 的独立单测；
 # 集成态=未接读面时具名 not_compiled / dataset_version_not_found，
 # 见 tests/integration/test_knowledge_runtime.py）

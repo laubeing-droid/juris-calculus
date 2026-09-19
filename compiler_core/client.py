@@ -1322,6 +1322,28 @@ class JCClient:
         }
         return {"deadlines": deadlines, "receipt": receipt}
 
+    def register_event(self, event: Mapping[str, Any]) -> dict[str, Any]:
+        """``events.register`` provider: public registration of one procedure event.
+
+        Lightweight schema gate (non-empty ``id``/``matterId`` strings,
+        integer ``revision`` >= 1), then canonical registration in this
+        client's store under kind ``procedure-event`` (scope ``case``).
+        Returns the frozen wire ref that ``calculate_deadlines`` consumes
+        as ``eventRef``; acceptance chains go through this public surface,
+        not the private registration path.
+        """
+
+        if not isinstance(event, Mapping):
+            raise ClientV4Error("schema_invalid", "event must be a mapping")
+        if type(event.get("id")) is not str or not event["id"]:
+            raise ClientV4Error("schema_invalid", "event id must be a non-empty string")
+        if type(event.get("revision")) is not int or event["revision"] < 1:
+            raise ClientV4Error("schema_invalid", "event revision must be an integer >= 1")
+        if type(event.get("matterId")) is not str or not event["matterId"]:
+            raise ClientV4Error("schema_invalid", "event matterId must be a non-empty string")
+        reference = self._register_json("procedure-event", event, scope="case")
+        return self._wire_ref(reference, matter_id=str(event["matterId"]))
+
     def read_argument_graph(
         self,
         run_identity_ref: Any,
