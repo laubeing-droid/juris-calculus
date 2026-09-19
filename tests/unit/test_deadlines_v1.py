@@ -255,9 +255,18 @@ def test_renewal_application_does_not_extend(registry):
         calendar=_calendar(2026),
         matter_id="m-3", event_id="e-p3", event_revision=1, now=NOW,
     )
-    assert result["dueDate"] == "2026-12-01"  # 届满日前 30 日申请窗口
+    assert result["dueDate"] == "2026-12-24"  # 届满七日前申请（保全规定第十八条）
     steps = "\n".join(result["calculationSteps"])
     assert "no_auto_extension:true" in steps
+
+
+def test_renewal_window_days_is_seven_per_judicial_interpretation(registry):
+    rule = registry[("preservation.renewal.application", "1")]
+    assert int(rule["windowDays"]) == 7
+    authority = rule.get("authority") or {}
+    assert authority.get("article", "").startswith("第十八条")
+    assert "七日前" in authority.get("article", "")
+    assert str(authority.get("verifyReceipt", "")).startswith("lcver-")
 
 
 # ---------------------------------------------------------------------------
@@ -312,4 +321,53 @@ def test_limitation_suspension_extends_by_span(registry):
 def test_registry_branches_are_declared(registry):
     for (rule_id, version), rule in registry.items():
         assert rule["branch"] in BRANCH_TABLE, rule_id
-        assert version == "1"
+        assert version == "1" or version.isdigit()
+
+
+# ---------------------------------------------------------------------------
+# U02 规则数据修正：仲裁撤销三个月（2025 修订第七十二条）+ 旧版保留
+# ---------------------------------------------------------------------------
+
+
+def test_arbitration_set_aside_current_is_three_months(registry):
+    rule = registry[("arbitration.set_aside.award", "2")]
+    assert int(rule["durationDays"]) == 3
+    assert rule["durationUnit"] == "months"
+    assert rule["anchor"] == "servedAt"  # 自收到裁决书之日起
+    result = compute_deadline(
+        rule=rule,
+        event=_event("servedAt", "2026-04-10"),
+        calendar=_calendar(2026),
+        matter_id="m-6", event_id="e-a1", event_revision=1, now=NOW,
+    )
+    # 2026-04-10 + 3 个月 = 2026-07-10（起算日不计入）
+    assert result["dueDate"] == "2026-07-10"
+    steps = "\n".join(result["calculationSteps"])
+    assert "calendar_period:3months" in steps
+    authority = rule.get("authority") or {}
+    assert "三个月" in authority.get("article", "")
+    assert authority.get("verifyReceipt") == "lcver-8701db6a8153daaf"
+    assert authority.get("verification") == "verified"
+    assert rule["effectiveFrom"] == "2026-03-01"  # 2025 修订施行日
+
+
+def test_arbitration_set_aside_legacy_six_months_kept_as_historical(registry):
+    rule = registry[("arbitration.set_aside.award", "1")]
+    assert rule.get("status") == "historical"
+    assert rule.get("supersededBy") == "2"
+    assert int(rule["durationDays"]) == 6
+    result = compute_deadline(
+        rule=rule,
+        event=_event("servedAt", "2026-04-10"),
+        calendar=_calendar(2026),
+        matter_id="m-6", event_id="e-a2", event_revision=1, now=NOW,
+    )
+    # 历史版本可读回：六个月口径 2026-04-10 → 2026-10-10（周六顺延至 10-12）
+    assert result["dueDate"] == "2026-10-12"
+    assert rule["effectiveTo"] == "2026-02-28"
+
+
+def test_arbitration_versions_do_not_share_default(registry):
+    # 两版本并存且口径不同；新计算必须显式选择 version "2"
+    assert registry[("arbitration.set_aside.award", "2")]["durationDays"] != \
+        registry[("arbitration.set_aside.award", "1")]["durationDays"]

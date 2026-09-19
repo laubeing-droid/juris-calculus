@@ -4,6 +4,15 @@
 - 基线: 412c69c（集成检出）+ 带入探针修复 3cda281 ｜ 冻结: P 5a6aa99 contracts v1.0.0
 - 数学仓只读未触碰；向量库未引入；mock 仅限独立单测（computation_surface 的注入 reader 为单测层 seam，集成态断言具名 not_compiled）。
 
+## U02 规则数据修正（2026-09-19 追加，M5 后）
+
+| 项 | 修正 | 法源锚 | receipt（只读实跑，U02 镜像 tree 55ba1b1f） |
+|---|---|---|---|
+| 仲裁裁决撤销期 | `arbitration.set_aside.award` 新增 **v2=三个月**（effectiveFrom 2026-03-01）；v1 六个月保留为 historical（supersededBy=2，effectiveTo 2026-02-28） | 2025 修订仲裁法第七十二条，wjbs `…0100120250912000900000` | 绿 `lcver-8701db6a8153daaf`（三个月原文 verified）/ 红 `lcver-cd1d1eb6863a3d7c`（六个月 failed） |
+| 续行保全窗口 | `preservation.renewal.application` `windowDays 30→7`；cap_check 与法院指定日优先逻辑不变 | 保全案件规定第十八条，wjbs `…16102020122916960000` | 绿 `lcver-c5f24af601fa6938`（七日前 verified）/ 红 `lcver-b1d24076b5d37079`（三十日前 failed） |
+
+证据全文: `reports/u02-rule-corrections.md`。红绿测试: `tests/unit/test_deadlines_v1.py`（三个月计算样例 2026-04-10→2026-07-10、历史六个月读回 2026-10-12（周六顺延）、7 日窗口 2026-12-31→2026-12-24、锚/receipt 断言）。wheel 已重建（15 规则随包），仓外 venv 验证 v2 计算/历史读回/7 日窗口全过。
+
 ## 步骤完成度
 
 | 步骤 | 状态 | 提交 | 证据 |

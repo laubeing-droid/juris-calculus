@@ -50,16 +50,38 @@ rules:
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#civil-appeal-ruling
   - ruleId: arbitration.set_aside.award
+    version: "2"
+    branch: arbitration_period
+    anchor: servedAt
+    durationDays: 3
+    durationUnit: months
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#arbitration-set-aside
+    effectiveFrom: "2026-03-01"
+    authority:
+      title: 中华人民共和国仲裁法（2025修订）
+      wjbs: 1.2.156.3005.6-0100000000100120250912000900000
+      locator: lccc://55ba1b1f932fd1fdac58cfc144f12cdaffb3d6a9d9c73380a7d6f718bc2aa8eb/1.2.156.3005.6-0100000000100120250912000900000#art=72
+      article: 第七十二条 当事人申请撤销裁决的，应当自收到裁决书之日起三个月内提出。
+      verifyReceipt: lcver-8701db6a8153daaf
+      verification: verified
+    note: 2025修订仲裁法第七十二条（2026-03-01施行）撤销裁决申请期为三个月；receipt 与红绿证据见 reports/u02-rule-corrections.md
+  - ruleId: arbitration.set_aside.award
     version: "1"
     branch: arbitration_period
     anchor: servedAt
+    status: historical
+    supersededBy: "2"
     durationDays: 6
     durationUnit: months
     countingMode: CALENDAR_PERIODS
     boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#arbitration-set-aside
-    note: 仲裁法59条 撤销裁决请求六个月内提出
+    effectiveTo: "2026-02-28"
+    note: 旧法六个月口径（原仲裁法第五十九条），仅作历史账读回；未附现行法源锚，现行锚见 version "2"
   # ---- 刑事拘留链（分阶段，禁止固定 37 日） ----
   - ruleId: criminal.custody.detention
     version: "1"
@@ -138,10 +160,17 @@ rules:
     version: "1"
     branch: preservation_renewal
     anchor: occurredAt
-    windowDays: 30
+    windowDays: 7
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#preservation-renewal
-    note: 续保申请窗口，不自动延长届满日
+    authority:
+      title: 最高人民法院关于人民法院办理财产保全案件若干问题的规定（2020-12-29公布，2021-01-01施行）
+      wjbs: 1.2.156.3005.6-1100000000161020201229169600000
+      locator: lccc://55ba1b1f932fd1fdac58cfc144f12cdaffb3d6a9d9c73380a7d6f718bc2aa8eb/1.2.156.3005.6-1100000000161020201229169600000#art=18
+      article: 第十八条 申请保全人申请续行财产保全的，应当在保全期限届满七日前向人民法院提出
+      verifyReceipt: lcver-c5f24af601fa6938
+      verification: verified
+    note: 续行申请届满七日前提出（原30日初值系工程占位，已按司解第十八条修正）；cap_check 与法院指定日优先逻辑不变；receipt 见 reports/u02-rule-corrections.md
   - ruleId: pre_litigation.preservation.window
     version: "1"
     branch: pre_litigation_preservation
