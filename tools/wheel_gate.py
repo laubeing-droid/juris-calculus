@@ -23,6 +23,18 @@ import zipfile
 
 
 PRODUCTION_CLASSES = frozenset({"FORMAL_CORE", "PUBLIC_ADAPTER", "RUNTIME_OUTPUT"})
+
+_VERSION_RE = re.compile(r'^__version__\s*=\s*"([^"]+)"', re.MULTILINE)
+
+
+def _authority_version(source: Path) -> str:
+    """本工具不另存版本字面量；一切身份检查读 compiler_core/version.py 权威。"""
+    text = (source / "compiler_core" / "version.py").read_text(encoding="utf-8")
+    match = _VERSION_RE.search(text)
+    if match is None:
+        raise RuntimeError("source version authority is unreadable")
+    return match.group(1)
+
 EXPLICIT_RESOURCE_PATHS = frozenset({
     "configs/__init__.py",
     "configs/render_profiles/neutral.yaml",
@@ -210,12 +222,12 @@ def _normalized_names(archive: zipfile.ZipFile) -> list[str]:
     return names
 
 
-def _dist_info_prefix(names: list[str]) -> str:
+def _dist_info_prefix(names: list[str], expected: str) -> str:
     prefixes = {name.split("/", 1)[0] for name in names if ".dist-info/" in name}
     if len(prefixes) != 1:
         raise RuntimeError("wheel must contain exactly one dist-info directory")
     prefix = prefixes.pop()
-    if prefix != "juris_calculus-5.0.1.dist-info":
+    if prefix != expected:
         raise RuntimeError(f"wheel dist-info identity drifted: {prefix}")
     return prefix
 
@@ -248,7 +260,7 @@ def _validate_metadata(archive: zipfile.ZipFile, prefix: str, source: Path) -> N
     document = BytesParser().parsebytes(archive.read(f"{prefix}/METADATA"))
     if (
         document.get("Name") != "juris-calculus"
-        or document.get("Version") != "5.0.1"
+        or document.get("Version") != _authority_version(source)
         or document.get("Requires-Python") != "<3.13,>=3.11"
     ):
         raise RuntimeError("wheel METADATA identity drifted")
@@ -279,7 +291,7 @@ def validate_wheel(source: Path, wheel: Path) -> dict[str, object]:
     payload = expected_payload_paths(source)
     with zipfile.ZipFile(wheel) as archive:
         names = _normalized_names(archive)
-        prefix = _dist_info_prefix(names)
+        prefix = _dist_info_prefix(names, f"juris_calculus-{_authority_version(source)}.dist-info")
         expected = set(payload) | {f"{prefix}/{suffix}" for suffix in DIST_INFO_SUFFIXES}
         if set(names) != expected:
             missing = sorted(expected - set(names))
@@ -338,7 +350,7 @@ def _smoke_install(source: Path, wheel: Path) -> None:
             f"t=pathlib.Path({str(target)!r}).resolve();sys.path.insert(0,str(t));"
             "import compiler_core,mcp_server;"
             "from compiler_core.version import __version__;"
-            "assert __version__=='5.0.1';"
+            f"assert __version__=='{_authority_version(source)}';"
             "assert pathlib.Path(compiler_core.__file__).resolve().is_relative_to(t);"
             "assert pathlib.Path(mcp_server.__file__).resolve().is_relative_to(t);"
             "assert importlib.util.find_spec('compiler_core.analysis') is None;"
@@ -453,6 +465,7 @@ def _junit_summary(path: Path) -> dict[str, object]:
 def validate_installed_e2e_report(
     report: object,
     *,
+    version: str,
     wheel_digest: str,
     lock_digest: str,
 ) -> list[str]:
@@ -463,14 +476,14 @@ def validate_installed_e2e_report(
         "status": "PASS",
         "wheel_sha256": wheel_digest,
         "test_lock_sha256": lock_digest,
-        "installed_version": "5.0.1",
+        "installed_version": version,
         "source_tree_absent": True,
         "imports_from_fresh_environment": True,
         "network_disabled_during_install_and_execution": True,
         "rejected_imports": list(REJECTED_IMPORTS),
-        "cli_version": "jc 5.0.1",
+        "cli_version": f"jc {version}",
         "cli_capabilities_error": "RUNTIME_NOT_CONFIGURED",
-        "mcp_server_version": "5.0.1",
+        "mcp_server_version": version,
         "mcp_tools": [
             "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
         ],
@@ -540,7 +553,7 @@ def run_installed_e2e(
     if work_dir.exists() and any(work_dir.iterdir()):
         raise RuntimeError("installed E2E work directory is not empty")
     work_dir.mkdir(parents=True, exist_ok=True)
-    installable_wheel = work_dir / "juris_calculus-5.0.1-py3-none-any.whl"
+    installable_wheel = work_dir / f"juris_calculus-{_authority_version(source)}-py3-none-any.whl"
     shutil.copyfile(wheel, installable_wheel)
     validate_wheel(source, installable_wheel)
 
@@ -626,7 +639,7 @@ def run_installed_e2e(
     commands.append(summary)
     origin = json.loads(completed.stdout)
     if origin != {
-        "version": "5.0.1",
+        "version": _authority_version(source),
         "origins_in_environment": True,
         "rejected_imports": list(REJECTED_IMPORTS),
         "schema_sha256": hashlib.sha256((source / "schemas/jc-v5.schema.json").read_bytes()).hexdigest(),
@@ -639,7 +652,7 @@ def run_installed_e2e(
     )
     commands.append(summary)
     cli_version = completed.stdout.strip()
-    if cli_version != "jc 5.0.1":
+    if cli_version != f"jc {_authority_version(source)}":
         raise RuntimeError("installed CLI version drifted")
     completed, summary = _run_process(
         "cli-capabilities",
@@ -668,7 +681,9 @@ def run_installed_e2e(
     mcp_error = mcp[2]["result"]["structuredContent"]["error"]["code"]
     if (
         len(mcp) != 3
-        or mcp[0]["result"]["serverInfo"] != {"name": "juris-calculus", "version": "5.0.1"}
+        or mcp[0]["result"]["serverInfo"] != {
+            "name": "juris-calculus", "version": _authority_version(source),
+        }
         or mcp_tools != ["jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact"]
         or mcp[2]["result"]["isError"] is not True
         or mcp_error != "RUNTIME_NOT_CONFIGURED"
@@ -735,7 +750,8 @@ def run_installed_e2e(
         "commands": commands,
     }
     problems = validate_installed_e2e_report(
-        report, wheel_digest=wheel_digest, lock_digest=lock_digest,
+        report, version=_authority_version(source),
+        wheel_digest=wheel_digest, lock_digest=lock_digest,
     )
     if problems:
         raise RuntimeError("; ".join(problems))
