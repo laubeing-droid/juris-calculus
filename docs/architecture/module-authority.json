@@ -167,6 +167,16 @@
       "rationale": "Sole target ApplicationV4 orchestration sink."
     },
     {
+      "path": "compiler_core/applicable_law.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Stateless routing of reviewed legal premises; emits candidate or unverified only, with no formal acceptance authority."
+    },
+    {
+      "path": "compiler_core/fact_extraction.py",
+      "class": "CANDIDATE_ASSET",
+      "rationale": "Deterministic lexical proposals from admitted redacted text, bound to existing FactCandidateV4 references; never admits facts."
+    },
+    {
       "path": "compiler_core/arbitration_reasoning.py",
       "class": "CANDIDATE_ASSET",
       "rationale": "Advisory legal candidate code, not formal runtime."

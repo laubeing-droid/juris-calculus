@@ -1250,19 +1250,21 @@ class JCClient:
         if not isinstance(rules, list):
             raise ClientV4Error("INVALID_DEADLINE_INPUT", "rules must be an array")
         configs_root = Path(str(deadline_input.get("configsRoot") or DEFAULT_DEADLINE_CONFIGS))
-        registry = load_deadline_rules(configs_root)
+        try:
+            registry = load_deadline_rules(configs_root)
+        except DeadlineError as error:
+            raise ClientV4Error(error.code, error.detail) from error
 
         binding = deadline_input.get("calendar") or {}
         overrides: dict[str, bool] = {}
         if binding.get("ref") is not None:
-            try:
-                calendar_payload = self._resolve_json(binding["ref"], kind="calendar", scope="calendar")
-                overrides = {
-                    str(key): bool(value)
-                    for key, value in (calendar_payload.get("overrides") or {}).items()
-                }
-            except ClientV4Error:
-                overrides = {}
+            calendar_payload = self._resolve_json(binding["ref"], kind="calendar", scope="calendar")
+            overrides = {
+                str(key): value
+                for key, value in (calendar_payload.get("overrides") or {}).items()
+            }
+            if any(type(value) is not bool for value in overrides.values()):
+                raise ClientV4Error("calendar_coverage_missing", "calendar overrides must be booleans")
         from datetime import date as date_cls
 
         calendar = CalendarSnapshot(

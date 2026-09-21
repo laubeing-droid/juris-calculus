@@ -36,12 +36,99 @@ from typing import Any, Mapping
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import hashlib
 import json
+import re
 
 from compiler_core.canonical_serialization import canonical_bytes
 
 CALENDAR_COVERAGE_MISSING = "calendar_coverage_missing"
 
 EVENT_TIME_ANCHORS = ("occurredAt", "awareAt", "filedAt", "servedAt", "hearingAt")
+_MISSING = object()
+_RULE_OUTPUTS = {"anchor", "durationDays", "durationUnit", "countingMode",
+                 "boundaryInclusive", "startOffsetDays", "rollForwardEnd", "adjustmentPolicy"}
+
+
+def _field(event: Mapping[str, Any], path: str) -> Any:
+    value: Any = event
+    for name in path.split("."):
+        if not isinstance(value, Mapping) or name not in value:
+            return _MISSING
+        value = value[name]
+    return value
+
+
+def _validate_decision(rule: Mapping[str, Any]) -> None:
+    """Closed YAML vocabulary; unknown operators/outputs cannot be ignored."""
+    decision = rule.get("decision")
+    if decision is None:
+        return
+    if not isinstance(decision, Mapping) or set(decision) - {"require", "cases"}:
+        raise DeadlineError("deadline_rule_syntax_invalid", "decision")
+    conditions = list(decision.get("require", []))
+    for case in decision.get("cases", []):
+        if not isinstance(case, Mapping) or set(case) - {"when", "set", "stop"}:
+            raise DeadlineError("deadline_rule_syntax_invalid", "case")
+        if set(case.get("set", {})) - _RULE_OUTPUTS:
+            raise DeadlineError("deadline_rule_syntax_invalid", "case.set")
+        if case.get("stop") is not None and not isinstance(case["stop"], str):
+            raise DeadlineError("deadline_rule_syntax_invalid", "case.stop")
+        conditions.extend(case.get("when", []))
+    for condition in conditions:
+        if (not isinstance(condition, Mapping) or "field" not in condition
+                or set(condition) not in ({"field", "equals"}, {"field", "in"})
+                or not isinstance(condition["field"], str)
+                or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*", condition["field"])):
+            raise DeadlineError("deadline_rule_syntax_invalid", "condition")
+        if "in" in condition and not isinstance(condition["in"], list):
+            raise DeadlineError("deadline_rule_syntax_invalid", "condition.in")
+
+
+def _matches(conditions: list[Mapping[str, Any]], event: Mapping[str, Any]) -> bool | None:
+    unresolved = False
+    for condition in conditions:
+        value = _field(event, condition["field"])
+        if value is _MISSING or value is None:
+            unresolved = True
+        elif "equals" in condition:
+            if type(value) is not type(condition["equals"]) or value != condition["equals"]:
+                return False
+        elif not any(type(value) is type(candidate) and value == candidate for candidate in condition["in"]):
+            return False
+    return None if unresolved else True
+
+
+def _resolve_rule(rule: Mapping[str, Any], event: Mapping[str, Any]) -> dict[str, Any]:
+    _validate_decision(rule)
+    resolved = dict(rule)
+    decision = rule.get("decision", {})
+    if _matches(decision.get("require", []), event) is not True:
+        raise DeadlineError("deadline_legal_premise_unverified", "required legal premises not established")
+    cases = decision.get("cases", [])
+    if cases:
+        matches = [_matches(case.get("when", []), event) for case in cases]
+        if any(match is None for match in matches) or matches.count(True) != 1:
+            raise DeadlineError("deadline_legal_premise_unverified", "case inputs missing, overlap, or no supported case")
+        case = cases[matches.index(True)]
+        if case.get("stop"):
+            raise DeadlineError("deadline_legal_review_required", case["stop"])
+        resolved.update(case.get("set", {}))
+    if "durationFrom" in resolved:
+        duration = _field(event, str(resolved["durationFrom"]))
+        if type(duration) is not int or duration < 0:
+            raise DeadlineError("deadline_legal_premise_unverified", str(resolved["durationFrom"]))
+        resolved["durationDays"] = duration
+    if "adjustmentsFrom" in resolved:
+        adjustments = _field(event, str(resolved["adjustmentsFrom"]))
+        if adjustments is _MISSING or not isinstance(adjustments, list):
+            raise DeadlineError("deadline_legal_premise_unverified", str(resolved["adjustmentsFrom"]))
+        resolved["adjustments"] = adjustments
+    for name in ("durationDays", "startOffsetDays"):
+        if name in resolved and (type(resolved[name]) is not int or resolved[name] < 0):
+            raise DeadlineError("deadline_rule_syntax_invalid", name)
+    for name in ("boundaryInclusive", "rollForwardEnd"):
+        if name in resolved and type(resolved[name]) is not bool:
+            raise DeadlineError("deadline_rule_syntax_invalid", name)
+    return resolved
 
 
 class DeadlineError(ValueError):
@@ -198,6 +285,7 @@ def load_deadline_rules(configs_root: Any) -> dict[tuple[str, str], dict[str, An
         if not isinstance(document, dict) or document.get("schema_version") != "deadline-rules/1":
             raise DeadlineError("deadline_registry_schema_invalid", str(path))
         for rule in document.get("rules", []):
+            _validate_decision(rule)
             branch = str(rule.get("branch", ""))
             if branch not in BRANCH_TABLE:
                 raise DeadlineError("deadline_branch_unknown", f"{rule.get('ruleId')}:{branch}")
@@ -209,7 +297,7 @@ def load_deadline_rules(configs_root: Any) -> dict[tuple[str, str], dict[str, An
 
 
 def _event_time_value(event: Mapping[str, Any], anchor: str) -> tuple[str, str]:
-    field = event.get(anchor)
+    field = _field(event, anchor)
     if not isinstance(field, Mapping):
         raise DeadlineError(f"deadline_trigger_event_field_missing:{anchor}")
     value = field.get("value")
@@ -252,10 +340,11 @@ def compute_deadline(
     the calculation receipt folded in as ``calculation``.
     """
 
+    rule = _resolve_rule(rule, event)
     branch = str(rule["branch"])
     spec = BRANCH_TABLE[branch]
     anchor = str(rule.get("anchor", ""))
-    if anchor not in EVENT_TIME_ANCHORS:
+    if anchor not in EVENT_TIME_ANCHORS and not re.fullmatch(r"legalContext\.[A-Za-z][A-Za-z0-9_]*", anchor):
         raise DeadlineError("deadline_anchor_invalid", anchor)
     trigger_raw, precision = _event_time_value(event, anchor)
     try:
@@ -268,10 +357,13 @@ def compute_deadline(
         f"anchor:{anchor}",
         f"branch:{branch}",
     ]
+    if rule.get("legalReviewRequired"):
+        steps.append("legal_result:candidate_requires_lawyer_review")
     adjustments_used: list[str] = []
 
     date_origin = "calculated"
     due_date: date | None = None
+    calendar_gap = False
 
     if branch == "court_specified":
         court_day_raw = rule.get("courtSpecifiedDate") or event.get("hearingAt", {}).get("value")
@@ -347,46 +439,101 @@ def compute_deadline(
             raise DeadlineError("deadline_counting_mode_invalid", counting_mode)
 
         due_date = raw_expiry
-        if spec.get("roll_forward_end") and counting_mode != "BUSINESS_DAYS":
+        roll_end = bool(rule.get("rollForwardEnd", spec.get("roll_forward_end")))
+        if roll_end and counting_mode != "BUSINESS_DAYS":
             try:
                 rolled = roll_forward(due_date, calendar)
             except DeadlineError:
+                calendar_gap = True
                 rolled = due_date  # out-of-coverage end day: report the gap below
             if rolled != due_date:
                 steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
             due_date = rolled
 
-        # Adjustment effects: suspension extends by the suspended span,
-        # interruption restarts the whole period from the interrupting
-        # event, resumption restarts only the remaining span. These are
-        # distinct effects, never a uniform day shift.
-        for adjustment in rule.get("adjustments", []) or []:
+        # Legal adjustments require reviewed facts and an explicit policy.
+        # Civil Code art.194 and Labor Arbitration art.27 are distinct.
+        policy = str(rule.get("adjustmentPolicy", "none"))
+        if policy not in {"civil194", "labor27", "none"}:
+            raise DeadlineError("deadline_rule_syntax_invalid", "adjustmentPolicy")
+        previous_adjustment_at: date | None = None
+        adjustments = rule.get("adjustments", event.get("legalContext", {}).get("adjustments", []))
+        for adjustment in adjustments or []:
             kind = str(adjustment.get("kind"))
+            if policy == "none":
+                raise DeadlineError("deadline_adjustment_not_supported", branch)
+            try:
+                adjustment_at = date.fromisoformat(adjustment.get("from") or adjustment.get("at") or "")
+            except (TypeError, ValueError) as error:
+                raise DeadlineError("deadline_legal_premise_unverified", "adjustment date") from error
+            if previous_adjustment_at is not None and adjustment_at < previous_adjustment_at:
+                raise DeadlineError("deadline_adjustment_order_unverified")
+            previous_adjustment_at = adjustment_at
             if kind == "suspension":
-                span = (date.fromisoformat(adjustment["to"]) - date.fromisoformat(adjustment["from"])).days
-                due_date = due_date + timedelta(days=span)
-                steps.append(f"suspension:+{span}d")
+                start = date.fromisoformat(adjustment["from"])
+                try:
+                    end = date.fromisoformat(adjustment["to"])
+                except (KeyError, TypeError, ValueError) as error:
+                    raise DeadlineError("deadline_legal_premise_unverified", "obstacle removal date") from error
+                if end < start:
+                    raise DeadlineError("deadline_adjustment_time_invalid")
+                if adjustment.get("legalGroundConfirmed") is not True or adjustment.get("cannotExercise") is not True:
+                    raise DeadlineError("deadline_legal_premise_unverified", "suspension requires confirmed ground and inability")
+                if policy == "civil194":
+                    grounds = {"force_majeure", "no_legal_representative", "successor_or_estate_admin_undetermined",
+                               "controlled_by_obligor", "other_obstacle"}
+                    if adjustment.get("ground") not in grounds or (adjustment.get("ground") == "other_obstacle" and not adjustment.get("legalReviewRef")):
+                        raise DeadlineError("deadline_legal_premise_unverified", "civil194 ground")
+                    window = calendar_shift(due_date, -6, "months")
+                    if start > due_date or end < window:
+                        steps.append("suspension:not_in_effective_window")
+                    else:
+                        effective_from = max(start, window)
+                        due_date = max(due_date, calendar_shift(end, 6, "months"))
+                        steps.append(f"suspension:civil194:effective_from={effective_from.isoformat()},removed={end.isoformat()}")
+                else:
+                    if adjustment.get("ground") not in {"force_majeure", "other_justifiable_reason"}:
+                        raise DeadlineError("deadline_legal_premise_unverified", "labor27 ground")
+                    if start > due_date:
+                        steps.append("suspension:after_expiry_no_revival")
+                    else:
+                        span = (end - start).days
+                        due_date += timedelta(days=span)
+                        steps.append(f"suspension:labor27:continue_after={end.isoformat()},excluded_days={span}")
             elif kind == "interruption":
                 restart = date.fromisoformat(adjustment["at"])
+                if adjustment.get("legalGroundConfirmed") is not True:
+                    raise DeadlineError("deadline_legal_premise_unverified", "interruption ground")
+                if restart > due_date:
+                    raise DeadlineError("deadline_legal_review_required", "post_expiry_promise_is_not_automatic_interruption")
                 if duration_unit in {"months", "years"}:
                     due_date = calendar_shift(restart, duration, unit=duration_unit)
                 else:
                     due_date = restart + timedelta(days=duration - inclusive_adjustment)
                 steps.append(f"interruption:restart_from={restart.isoformat()}")
-            elif kind == "resumption":
-                resume = date.fromisoformat(adjustment["at"])
-                remaining = (due_date - resume).days
-                due_date = resume + timedelta(days=remaining)
-                steps.append(f"resumption:remaining={remaining}d")
             else:
                 raise DeadlineError("deadline_adjustment_kind_invalid", kind)
             adjustments_used.append(str(adjustment.get("eventRef", "")))
+
+        # Month-end clamping and holiday adjustment remain separate steps;
+        # apply the latter again after a suspension/interruption changes expiry.
+        if roll_end and counting_mode != "BUSINESS_DAYS":
+            try:
+                rolled = roll_forward(due_date, calendar)
+            except DeadlineError:
+                calendar_gap = True
+                rolled = due_date
+            if rolled != due_date:
+                steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
+            due_date = rolled
+
+        if rule.get("reviewOnExpiry") and not calendar_gap and due_date < now.date():
+            raise DeadlineError(str(rule["reviewOnExpiry"]), "threshold reached; no automatic extinction or court determination")
 
     if due_date is not None:
         steps.append(f"expires_on:{due_date.isoformat()}")
         try:
             calendar.is_business_day(due_date)
-            coverage_note = "covered"
+            coverage_note = "calendar_coverage_missing" if calendar_gap else "covered"
         except DeadlineError:
             coverage_note = "calendar_coverage_missing"
         if coverage_note == "calendar_coverage_missing":

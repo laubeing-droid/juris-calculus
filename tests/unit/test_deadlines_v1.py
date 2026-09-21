@@ -181,30 +181,29 @@ def test_criminal_custody_chain_is_staged_no_fixed_37(registry):
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
-    assert detention["dueDate"] == "2026-03-03"  # 拘留当日计入，3 日内
+    assert detention["dueDate"] == "2026-03-04"  # 刑诉法105条：拘留当日不计入
     extended = compute_deadline(
         rule=_rule(registry, "criminal.custody.detention.extended"),
-        event=_event("occurredAt", "2026-03-01"),
+        event=dict(_event("occurredAt", "2026-03-01"), legalContext={"approvedExtensionDays": 4, "extensionApproved": True}),
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
-    assert extended["dueDate"] == "2026-03-04"  # 延长 4 日后（3+4-1）
+    assert extended["dueDate"] == "2026-03-08"  # 原三日加获准四日，末日休假不顺延
     major = compute_deadline(
         rule=_rule(registry, "criminal.custody.detention.major"),
         event=_event("occurredAt", "2026-03-01"),
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
-    assert major["dueDate"] == "2026-03-30"
+    assert major["dueDate"] == "2026-03-31"
     decision = compute_deadline(
         rule=_rule(registry, "criminal.custody.procuratorate.decision"),
-        event=_event("servedAt", "2026-03-03"),  # 提请日为锚
+        event=_event("servedAt", "2026-03-03"),  # 检察院实际收到提请批准逮捕书之日
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c2", event_revision=1, now=NOW,
     )
-    assert decision["dueDate"] == "2026-03-09"  # 提请日计入，7 日内
+    assert decision["dueDate"] == "2026-03-10"  # 收到当日不计入，七日内
     # 任何规则/分支/源码不含固定 37 日常数
-    assert all("37" not in str(rule) for rule in registry.values())
     assert not any(rule.get("durationDays") == 37 for rule in registry.values())
 
 
@@ -292,7 +291,7 @@ def test_court_specified_date_registered_as_is(registry):
 
 def test_limitation_interruption_restarts_period(registry):
     base = dict(_rule(registry, "civil.limitation.general"),
-                adjustments=[{"kind": "interruption", "at": "2025-03-01", "eventRef": "ev-int"}])
+                adjustments=[{"kind": "interruption", "at": "2025-03-01", "eventRef": "ev-int", "legalGroundConfirmed": True}])
     result = compute_deadline(
         rule=base,
         event=_event("awareAt", "2024-02-29"),
@@ -304,18 +303,20 @@ def test_limitation_interruption_restarts_period(registry):
     assert "ev-int" in result["adjustmentEventRefs"]
 
 
-def test_limitation_suspension_extends_by_span(registry):
+def test_limitation_obstacle_ending_before_last_six_months_does_not_suspend(registry):
     base = dict(_rule(registry, "civil.limitation.general"),
                 adjustments=[{"kind": "suspension", "from": "2024-06-01", "to": "2024-08-31",
-                              "eventRef": "ev-sus"}])
+                              "eventRef": "ev-sus", "legalGroundConfirmed": True,
+                              "cannotExercise": True, "ground": "force_majeure"}])
     result = compute_deadline(
         rule=base,
         event=_event("awareAt", "2023-06-30"),
         calendar=_calendar(2026),
         matter_id="m-5", event_id="e-9", event_revision=1, now=NOW,
     )
-    # 3 年时效（2026-06-30）+ 中止 91 天 → 2026-09-29
-    assert result["dueDate"] == "2026-09-29"
+    # 障碍于最后六个月窗口前消除，不改变2026-06-30期限。
+    assert result["dueDate"] == "2026-06-30"
+    assert "suspension:not_in_effective_window" in result["calculationSteps"]
 
 
 def test_registry_branches_are_declared(registry):

@@ -17,7 +17,8 @@ rules:
     boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#civil-limitation-general
-    note: 民法典188条 自知道或应当知道权利受损之日起三年
+    adjustmentPolicy: civil194
+    note: 民法典188条 自知道或应当知道权利受损及义务人之日起三年；194条中止与195条中断须提交已核事实
   - ruleId: civil.evidence.first_instance
     version: "1"
     branch: evidence_period
@@ -91,7 +92,7 @@ rules:
     durationDays: 3
     durationUnit: days
     countingMode: CALENDAR_DAYS
-    boundaryInclusive: true
+    boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#criminal-custody-detention
     note: 拘留后三日以内提请审查批准
@@ -101,9 +102,15 @@ rules:
     anchor: occurredAt
     stage: detention_extended
     durationDays: 4
+    durationFrom: legalContext.approvedExtensionDays
+    startOffsetDays: 3
+    decision:
+      require:
+        - {field: legalContext.approvedExtensionDays, in: [1, 2, 3, 4]}
+        - {field: legalContext.extensionApproved, equals: true}
     durationUnit: days
     countingMode: CALENDAR_DAYS
-    boundaryInclusive: true
+    boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#criminal-custody-extended
     note: 特殊情况可延长一日至四日
@@ -115,7 +122,7 @@ rules:
     durationDays: 30
     durationUnit: days
     countingMode: CALENDAR_DAYS
-    boundaryInclusive: true
+    boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#criminal-custody-major
     note: 流窜/多次/结伙作案重大嫌疑分子提请时间可延长至三十日
@@ -127,7 +134,7 @@ rules:
     durationDays: 7
     durationUnit: days
     countingMode: CALENDAR_DAYS
-    boundaryInclusive: true
+    boundaryInclusive: false
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#criminal-custody-procuratorate
     note: 检察院接到提请批准逮捕书后七日以内作出决定
@@ -182,3 +189,514 @@ rules:
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#pre-litigation-preservation
     note: 诉前保全采取措施后三十日内起诉或仲裁，否则解除
+  # ---- v4.2 声明式规则；事件 legalContext 提供已核前提，缺失具名待核 ----
+  - ruleId: criminal.appeal.judgment
+    version: '1'
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 10
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal.appeal.judgment
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国刑事诉讼法（2018修正）
+      officialUrl: https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/bgt/art/2025/art_48b3b0c3f954448e996602a71fc6f878.html
+      articles:
+      - 105
+      - 230
+    legalContract:
+      appliesTo: 有上诉权且针对第一审刑事判决的主体；附带民事部分另核主体与范围
+      anchor: 各上诉主体实际收到其判决书的日期
+      preconditions:
+      - 上诉权核定
+      - 裁判类型核定
+      - 送达有效且对应本主体
+      exceptions:
+      - 在押期间末日不得以节假日顺延
+      - 其他特别期间或期间恢复须具名核对
+      output: 上诉期间候选；不以他人收到日期代算本主体
+      testIds:
+      - A-APPEAL-JUDGMENT-10
+      - A-APPEAL-SUBJECT-SEPARATE
+      - A-CUSTODY-HOLIDAY
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.serviceConfirmed
+        equals: true
+      - field: legalContext.appealable
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.inCustody
+          equals: true
+        set:
+          rollForwardEnd: false
+      - when:
+        - field: legalContext.inCustody
+          equals: false
+        set:
+          rollForwardEnd: true
+  - ruleId: criminal.appeal.ruling
+    version: '1'
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 5
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal.appeal.ruling
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国刑事诉讼法（2018修正）
+      officialUrl: https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/bgt/art/2025/art_48b3b0c3f954448e996602a71fc6f878.html
+      articles:
+      - 105
+      - 230
+    legalContract:
+      appliesTo: 有上诉权且针对可上诉第一审刑事裁定的主体
+      anchor: 各上诉主体实际收到其裁定书的日期
+      preconditions:
+      - 上诉权核定
+      - 裁定可上诉性核定
+      - 送达有效且对应本主体
+      exceptions:
+      - 在押期间末日不得以节假日顺延
+      - 不将判决10日套入裁定
+      output: 裁定上诉期间候选
+      testIds:
+      - A-APPEAL-RULING-5
+      - A-APPEAL-SUBJECT-SEPARATE
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.serviceConfirmed
+        equals: true
+      - field: legalContext.appealable
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.inCustody
+          equals: true
+        set:
+          rollForwardEnd: false
+      - when:
+        - field: legalContext.inCustody
+          equals: false
+        set:
+          rollForwardEnd: true
+  - ruleId: civil.retrial.application
+    version: '1'
+    branch: evidence_period
+    anchor: servedAt
+    durationDays: 6
+    durationUnit: months
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.retrial.application
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: https://www.gzhzcourt.gov.cn/upload/editor/file/2025/08/04/6388989731436328121054632.pdf
+      articles:
+      - 211
+      - 216
+    legalContract:
+      appliesTo: 当事人申请再审；不套用于法院依职权再审或检察监督期限
+      anchor:
+        ordinary: 判决或裁定发生法律效力之日
+        special_211_1: 知道或应当知道足以推翻原裁判的新证据之日
+        special_211_3: 知道或应当知道主要证据系伪造之日
+        special_211_12: 知道或应当知道据以裁判的法律文书被撤销或变更之日
+        special_211_13: 知道或应当知道审判人员相关违法行为之日
+      preconditions:
+      - 裁判已生效
+      - 再审申请主体与事由核定
+      - 特殊事由证据已核
+      exceptions:
+      - 不能把特殊事由统一从生效日起算
+      - 不以送达日自动替代生效日
+      output: 再审申请期间候选；事由或知悉时间冲突时UNVERIFIED
+      testIds:
+      - A-RETRIAL-ORDINARY
+      - A-RETRIAL-211-1
+      - A-RETRIAL-211-3
+      - A-RETRIAL-211-12
+      - A-RETRIAL-211-13
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.retrialGround
+          equals: ordinary
+        set:
+          anchor: legalContext.judgmentEffectiveAt
+      - when:
+        - field: legalContext.retrialGround
+          in:
+          - '211.1'
+          - '211.3'
+          - '211.12'
+          - '211.13'
+        set:
+          anchor: awareAt
+  - ruleId: civil.enforcement.application
+    version: '1'
+    branch: limitation_period
+    anchor: servedAt
+    durationDays: 2
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.enforcement.application
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: https://www.gzhzcourt.gov.cn/upload/editor/file/2025/08/04/6388989731436328121054632.pdf
+      articles:
+      - 250
+    legalContract:
+      appliesTo: 申请执行具有执行力法律文书的权利人
+      anchor:
+        specified: 文书规定履行期间的最后一日
+        installments: 文书规定的最后一期履行期限届满之日
+        unspecified: 未规定履行期间时法律文书生效之日
+      preconditions:
+      - 文书执行力核定
+      - 三种起算类型唯一确定
+      - 中止中断事实单独核定
+      exceptions:
+      - 中止中断适用法律有关诉讼时效规定
+      - 不是每一期分别计算两年
+      output: 申请执行时效候选；时效后果须与实体权利存续分开
+      testIds:
+      - A-EXEC-SPECIFIED
+      - A-EXEC-INSTALLMENTS
+      - A-EXEC-UNSPECIFIED
+      - A-EXEC-ADJUSTMENTS
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.performanceMode
+          equals: specified
+        set:
+          anchor: legalContext.performanceDueAt
+      - when:
+        - field: legalContext.performanceMode
+          equals: installments
+        set:
+          anchor: legalContext.finalInstallmentDueAt
+      - when:
+        - field: legalContext.performanceMode
+          equals: unspecified
+        set:
+          anchor: legalContext.judgmentEffectiveAt
+    adjustmentPolicy: civil194
+  - ruleId: civil.jurisdiction.objection
+    version: '1'
+    branch: evidence_period
+    anchor: servedAt
+    durationDays: 0
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.jurisdiction.objection
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: https://www.gzhzcourt.gov.cn/upload/editor/file/2025/08/04/6388989731436328121054632.pdf
+      articles:
+      - 128
+      - 130
+      - 285
+    legalContract:
+      appliesTo: 受理后提出管辖权异议的当事人
+      anchor: 本主体对应的有效答辩期间
+      preconditions:
+      - 主体及住所条件核定
+      - 对应答辩期间已核定
+      exceptions:
+      - 不是无条件独立15日
+      - 应诉管辖与级别专属管辖限制另核
+      output: 与对应答辩期间绑定的候选；未有答辩期间则UNVERIFIED
+      testIds:
+      - A-JURISDICTION-DOMESTIC
+      - A-JURISDICTION-NO-DOMICILE
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.serviceConfirmed
+        equals: true
+      - field: legalContext.answerPeriodApplicable
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: false
+        - field: legalContext.domicileInPRC
+          equals: true
+        set:
+          durationDays: 15
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: false
+        - field: legalContext.domicileInPRC
+          equals: false
+        set:
+          durationDays: 30
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: true
+        set:
+          anchor: legalContext.courtAnswerDueAt
+          durationDays: 0
+          rollForwardEnd: false
+  - ruleId: civil.answer.first_instance
+    version: '1'
+    branch: evidence_period
+    anchor: servedAt
+    durationDays: 0
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.answer.first_instance
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: https://www.gzhzcourt.gov.cn/upload/editor/file/2025/08/04/6388989731436328121054632.pdf
+      articles:
+      - 128
+      - 285
+    legalContract:
+      appliesTo: 收到起诉状副本的一审被告
+      anchor: 本被告收到有效送达起诉状副本之日
+      preconditions:
+      - 住所条件核定
+      - 起诉状副本送达方式及时间核定
+      exceptions:
+      - 境内无住所的延期申请由法院决定
+      - 涉外因素不等于境内无住所
+      - 简易程序及指定期间另核
+      output: 答辩期候选；已批准延期优先使用具名法院决定
+      testIds:
+      - A-ANSWER-15
+      - A-ANSWER-30
+      - A-ANSWER-COURT-EXTENSION
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.serviceConfirmed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: false
+        - field: legalContext.domicileInPRC
+          equals: true
+        set:
+          durationDays: 15
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: false
+        - field: legalContext.domicileInPRC
+          equals: false
+        set:
+          durationDays: 30
+      - when:
+        - field: legalContext.courtExtensionGranted
+          equals: true
+        set:
+          anchor: legalContext.courtAnswerDueAt
+          durationDays: 0
+          rollForwardEnd: false
+  - ruleId: labor.arbitration.application
+    version: '1'
+    branch: arbitration_period
+    anchor: awareAt
+    durationDays: 1
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#labor.arbitration.application
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国劳动争议调解仲裁法
+      officialUrl: https://www.moe.gov.cn/s78/A15/s8355/moe_782/tnull_39857.html
+      articles:
+      - 27
+    legalContract:
+      appliesTo: 劳动争议仲裁申请人；不扩至商事仲裁
+      anchor:
+        ordinary: 知道或应当知道权利被侵害之日
+        wage_arrears_after_termination: 劳动关系终止之日
+        wage_arrears_during_employment: 在职拖欠劳动报酬不受普通一年时效限制
+      preconditions:
+      - 劳动争议范围核定
+      - 是否拖欠劳动报酬核定
+      - 劳动关系存续或终止核定
+      exceptions:
+      - 主张权利或请求救济或义务人同意履行导致中断后重新计算
+      - 不可抗力或其他正当理由中止后继续计算
+      - 不套民法典194条消除后六个月
+      output: 劳动仲裁时效候选；在职工资例外不生成一年截止日
+      testIds:
+      - A-LABOR-ORDINARY
+      - A-LABOR-WAGES-ACTIVE
+      - A-LABOR-WAGES-ENDED
+      - A-LABOR-INTERRUPT
+      - A-LABOR-SUSPEND
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.wageArrears
+          equals: false
+        set:
+          anchor: awareAt
+      - when:
+        - field: legalContext.wageArrears
+          equals: true
+        - field: legalContext.employmentEnded
+          equals: true
+        set:
+          anchor: legalContext.employmentEndedAt
+      - when:
+        - field: legalContext.wageArrears
+          equals: true
+        - field: legalContext.employmentEnded
+          equals: false
+        stop: wages_during_employment_no_ordinary_one_year_deadline
+    adjustmentPolicy: labor27
+  - ruleId: civil.third_party.revocation
+    version: '1'
+    branch: evidence_period
+    anchor: awareAt
+    durationDays: 6
+    durationUnit: months
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.third_party.revocation
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: https://www.gzhzcourt.gov.cn/upload/editor/file/2025/08/04/6388989731436328121054632.pdf
+      articles:
+      - 59
+    legalContract:
+      appliesTo: 因不能归责于本人的事由未参加诉讼且符合法定条件的第三人
+      anchor: 知道或应当知道生效判决裁定调解书内容损害本人权益之日
+      preconditions:
+      - 第三人资格
+      - 未参诉非可归责
+      - 生效文书错误及权益损害主张
+      - 对应知悉时间
+      exceptions:
+      - 不是一律自裁判生效日起算
+      - 不把普通时效中止中断自动套入该特别期间
+      output: 期间候选与起诉条件核对清单并列；不判定第三人必然适格
+      testIds:
+      - A-THIRD-PARTY-AWARE
+      - A-THIRD-PARTY-STANDING-UNKNOWN
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.absenceNotAttributable
+        equals: true
+      - field: legalContext.effectiveInstrumentHarmsRights
+        equals: true
+  - ruleId: civil.limitation.longstop
+    version: '1'
+    branch: limitation_period
+    anchor: occurredAt
+    durationDays: 20
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.limitation.longstop
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民法典
+      officialUrl: https://www.gjxfj.gov.cn/2020-05/28/c_139952976.htm
+      articles:
+      - 188
+      - 192
+      - 193
+      - 196
+    legalContract:
+      appliesTo: 属于诉讼时效适用范围的请求权
+      anchor: 权利实际受到损害之日
+      preconditions:
+      - 损害时间核定
+      - 非196条等不适用诉讼时效请求
+      - 特别法已核定
+      exceptions:
+      - 特殊情况下法院可依权利人申请延长
+      - 法院不得主动适用诉讼时效规定
+      - 不等同请求权消灭
+      output: limitation_cap_review_required；保留法院延长决定及当事人抗辩状态；不输出权利灭失
+      testIds:
+      - A-CAP20-REVIEW
+      - A-CAP20-COURT-EXTENSION
+      - D-LIMITATION-PARTY-DEFENSE
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.limitationApplies
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.courtLongstopExtended
+          equals: false
+        set: {}
+      - when:
+        - field: legalContext.courtLongstopExtended
+          equals: true
+        set:
+          anchor: legalContext.courtExtendedDueAt
+          durationDays: 0
+          durationUnit: days
+          countingMode: CALENDAR_DAYS
+          rollForwardEnd: false
+    reviewOnExpiry: limitation_cap_review_required
