@@ -66,7 +66,7 @@
 
 ## 7. 数学仓只读核验（只读，未修改，未跑 Lean/构建）
 
-`D:\Codex\1.法律工作区\legal-math-modeling工作区\legal-math-modeling`：
+数学仓 `legal-math-modeling`（工作区同级只读检出；原文写机器绝对路径，按machine-paths门改为具名引用，2026-09-22用户授权）：
 
 | 文件 | 可读 | 条目 |
 |---|---|---|
