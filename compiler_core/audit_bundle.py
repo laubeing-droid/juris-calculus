@@ -1132,7 +1132,7 @@ class AuditBundleStoreV4:
     ) -> VerifiedAuditBundleV4:
         self._verify_audit_layout_locked()
         target = self._store.root / "audit-bundles" / capability.token
-        if not target.is_dir():
+        if not os.path.isdir(_nt_long(target)):
             _fail("AUDIT_NOT_FOUND", "run capability has no completed bundle")
         verified = self._decode_files(
             self._directory_bytes(target, require_complete=True),
