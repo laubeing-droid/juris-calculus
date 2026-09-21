@@ -245,3 +245,30 @@ def test_RT17_yaml_companion_graph_rejects_cycle_and_unknown(client, tmp_path, t
     (tmp_path / "deadline_rules_synthetic.yaml").write_text(yaml.safe_dump(document), encoding="utf-8")
     with raises_code(code):
         calculate(client, rule["ruleId"], configs=tmp_path)
+
+
+def test_RT18_victim_protest_is_five_days_and_separate_from_defendant_appeal(client):
+    # 刑诉法229：被害人及其法定代理人不服一审判决，自收到判决书后五日以内请求抗诉；
+    # 与230条被告人上诉判决十日分开。收到日2026-03-02，起算日不计入→原始2026-03-07（周六）；
+    # 被害人非在押，105条第2款节假日顺延→2026-03-09（周一）。
+    protest = calculate(client, "criminal.appeal.victim_protest", served="2026-03-02",
+                        context={"instrumentIsJudgment": True})
+    assert protest["dueDate"] == "2026-03-09"
+    assert "roll_forward:2026-03-07->2026-03-09" in protest["calculationSteps"]
+    assert "legal_result:candidate_requires_lawyer_review" in protest["calculationSteps"]
+    appeal = calculate(client, "criminal.appeal.judgment", served="2026-03-02")
+    assert appeal["dueDate"] == "2026-03-12"
+    # 缺"判决书"前提或对象是裁定：229只允许对判决请求抗诉，具名拒绝而非默认适用。
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "criminal.appeal.victim_protest", served="2026-03-02")
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "criminal.appeal.victim_protest", served="2026-03-02",
+                  context={"instrumentIsJudgment": False})
+
+
+def test_RT19_registry_counts_are_recorded_not_padded(client):
+    document = yaml.safe_load((ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
+    top_level = [item["ruleId"] for item in document["rules"]]
+    assert len(top_level) == 25  # 版本记录数
+    assert len(set(top_level)) == 24  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
+    assert "criminal.appeal.victim_protest" in set(top_level)

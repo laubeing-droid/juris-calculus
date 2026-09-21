@@ -298,6 +298,49 @@ rules:
           equals: false
         set:
           rollForwardEnd: true
+  - ruleId: criminal.appeal.victim_protest
+    version: '1'
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 5
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal.appeal.victim_protest
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国刑事诉讼法（2018修正）
+      officialUrl: https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/bgt/art/2025/art_48b3b0c3f954448e996602a71fc6f878.html
+      articles:
+      - 105
+      - 229
+    legalContract:
+      appliesTo: 被害人及其法定代理人对地方各级人民法院第一审判决请求抗诉；不是上诉权，不适用于被告人
+      anchor: 本请求主体实际收到判决书之日
+      preconditions:
+      - 请求主体为被害人或其法定代理人
+      - 不服对象为第一审判决（裁定不能依本条请求抗诉）
+      - 判决书送达有效且对应本主体
+      exceptions:
+      - 与第二百三十条被告人上诉判决十日分开计算，不得混用
+      - 检察院收到请求后五日内决定并答复是检察机关的独立期间，不并入本请求期
+      - 被害人非在押犯罪嫌疑人/被告人/罪犯，期间末日节假日顺延按第一百零五条一般规则
+      output: 请求抗诉期间候选；是否抗诉由人民检察院决定（第二百二十八条另行核对）
+      testIds:
+      - A-VICTIM-PROTEST-5
+      - A-VICTIM-PROTEST-JUDGMENT-ONLY
+      - A-APPEAL-SUBJECT-SEPARATE
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.serviceConfirmed
+        equals: true
+      - field: legalContext.instrumentIsJudgment
+        equals: true
   - ruleId: civil.retrial.application
     version: '1'
     branch: evidence_period
