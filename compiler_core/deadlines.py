@@ -398,6 +398,7 @@ def compute_deadline(
 
     date_origin = "calculated"
     due_date: date | None = None
+    starts_on: str | None = None
     calendar_gap = False
 
     if branch == "court_specified":
@@ -452,6 +453,7 @@ def compute_deadline(
         starts_date = trigger_day + timedelta(days=offset)
         steps.append(f"start_offset_days:{offset}")
         starts_date_str = starts_date.isoformat()
+        starts_on = starts_date_str
         steps.append(f"starts_on:{starts_date_str}")
         inclusive_adjustment = 1 if boundary_inclusive else 0
         if duration_unit in {"months", "years"}:
@@ -561,7 +563,8 @@ def compute_deadline(
                 steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
             due_date = rolled
 
-        if rule.get("reviewOnExpiry") and not calendar_gap and due_date < now.date():
+        if (rule.get("reviewOnExpiry") and not calendar_gap
+                and due_date < now.astimezone(ZoneInfo(str(rule.get("timezone", "Asia/Shanghai")))).date()):
             raise DeadlineError(str(rule["reviewOnExpiry"]), "threshold reached; no automatic extinction or court determination")
 
     earliest_expiry = due_date
@@ -681,7 +684,7 @@ def compute_deadline(
             "receipt_id": f"deadline-{digest[:24]}",
             "calculation_hash": digest,
             "trigger_at": trigger_raw,
-            "starts_on": steps[4] if len(steps) > 4 else None,
+            "starts_on": starts_on,
             "expires_at": due_at,
             "timezone": zone,
             "branch": branch,

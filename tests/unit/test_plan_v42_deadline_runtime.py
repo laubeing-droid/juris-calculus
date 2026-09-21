@@ -152,6 +152,9 @@ def test_RT08_longstop_is_review_not_extinction_and_keeps_court_extension(client
         "courtLongstopExtended": True, "courtExtendedDueAt": time_value("2026-04-10")})["dueDate"] == "2026-04-10"
     with raises_code("deadline_legal_premise_unverified"):
         calculate(client, "civil.limitation.longstop", context={"limitationApplies": False})
+    # UTC March 2 16:00 is already March 3 in the configured China timezone.
+    with raises_code("limitation_cap_review_required"):
+        calculate(client, "civil.limitation.longstop", occurred="2006-03-02", now="2026-03-02T16:00:00+00:00")
 
 
 @pytest.mark.parametrize("count,expected", [(1, "2026-03-05"), (2, "2026-03-06"), (3, "2026-03-07"), (4, "2026-03-08")])
