@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 317,
+  "count": 321,
   "paths": [
     {
       "path": ".local/pricing-baseline/c2acea3589d14f25f5b8285117ce01276e87860b/legalos_pricing.py",
@@ -79,6 +79,11 @@
     {
       "path": "compiler_core/analysis.py",
       "authority_class": "SOURCE_TOOL",
+      "production_wheel": false
+    },
+    {
+      "path": "compiler_core/applicable_law.py",
+      "authority_class": "CANDIDATE_ASSET",
       "production_wheel": false
     },
     {
@@ -275,6 +280,11 @@
       "path": "compiler_core/fact_admission.py",
       "authority_class": "FORMAL_CORE",
       "production_wheel": true
+    },
+    {
+      "path": "compiler_core/fact_extraction.py",
+      "authority_class": "CANDIDATE_ASSET",
+      "production_wheel": false
     },
     {
       "path": "compiler_core/fact_trust_envelope.py",
@@ -1353,6 +1363,16 @@
     },
     {
       "path": "tests/unit/test_phase6_cli.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_plan_v42_deadline_runtime.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_plan_v42_legal_adapters.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
