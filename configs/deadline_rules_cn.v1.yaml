@@ -18,6 +18,9 @@ rules:
     timezone: Asia/Shanghai
     locator: deadline-rules/cn#civil-limitation-general
     adjustmentPolicy: civil194
+    requiredCompanions:
+      - {ruleId: civil.limitation.longstop, ruleVersion: "1"}
+    limitByCompanions: true
     note: 民法典188条 自知道或应当知道权利受损及义务人之日起三年；194条中止与195条中断须提交已核事实
   - ruleId: civil.evidence.first_instance
     version: "1"
@@ -644,6 +647,7 @@ rules:
         equals: true
   - ruleId: civil.limitation.longstop
     version: '1'
+    adjustments: []
     branch: limitation_period
     anchor: occurredAt
     durationDays: 20

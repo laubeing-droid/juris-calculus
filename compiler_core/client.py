@@ -1229,6 +1229,7 @@ class JCClient:
             DeadlineError,
             compute_deadline,
             load_deadline_rules,
+            order_deadline_rules,
         )
 
         if not isinstance(deadline_input, Mapping):
@@ -1287,10 +1288,17 @@ class JCClient:
         )
 
         deadlines: list[dict[str, Any]] = []
+        computed_by_rule: dict[tuple[str, str], dict[str, Any]] = {}
         uncovered = 0
-        for entry in rules:
-            rule_id = str(entry.get("ruleId"))
-            rule_version = str(entry.get("ruleVersion"))
+        requested = [(str(entry.get("ruleId")), str(entry.get("ruleVersion"))) for entry in rules]
+        for key in requested:
+            if key not in registry:
+                raise ClientV4Error("ref_not_found", f"deadline rule {key[0]}@{key[1]} is unknown")
+        try:
+            execution_order = order_deadline_rules(registry, requested)
+        except DeadlineError as error:
+            raise ClientV4Error(error.code, error.detail) from error
+        for rule_id, rule_version in execution_order:
             rule = registry.get((rule_id, rule_version))
             if rule is None:
                 raise ClientV4Error("ref_not_found", f"deadline rule {rule_id}@{rule_version} is unknown")
@@ -1303,6 +1311,10 @@ class JCClient:
                     event_id=str(event.get("id", "")),
                     event_revision=event_revision,
                     now=now,
+                    upper_bounds=tuple(
+                        computed_by_rule[(str(companion["ruleId"]), str(companion["ruleVersion"]))]
+                        for companion in rule.get("requiredCompanions", [])
+                    ) if rule.get("limitByCompanions") is True else (),
                 )
             except DeadlineError as error:
                 if error.code == "calendar_coverage_missing":
@@ -1310,8 +1322,8 @@ class JCClient:
                 raise ClientV4Error(error.code, error.detail) from error
             if computed["dueDate"] is None:
                 uncovered += 1
-            computed.pop("calculation", None)
-            deadlines.append(computed)
+            computed_by_rule[(rule_id, rule_version)] = computed
+            deadlines.append({key: value for key, value in computed.items() if key != "calculation"})
         # 出覆盖边界的个别结果按冻结语义返回 dueDate=null + 缺口步骤；
         # 日历整体未发布/不可用才在 compute_deadline 内升级为 typed 错误。
         receipt_ref = deadlines[0]["calculationReceiptRef"] if deadlines else None

@@ -293,7 +293,41 @@ def load_deadline_rules(configs_root: Any) -> dict[tuple[str, str], dict[str, An
             if key in registry:
                 raise DeadlineError("deadline_rule_duplicate", str(key))
             registry[key] = rule
+    order_deadline_rules(registry, list(registry))
     return registry
+
+
+def order_deadline_rules(
+    registry: Mapping[tuple[str, str], Mapping[str, Any]],
+    requested: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Expand YAML-declared companions before consumers; reject bad graphs."""
+    ordered: list[tuple[str, str]] = []
+    visiting: set[tuple[str, str]] = set()
+    visited: set[tuple[str, str]] = set()
+
+    def visit(key: tuple[str, str]) -> None:
+        if key not in registry:
+            raise DeadlineError("deadline_companion_unknown", f"{key[0]}@{key[1]}")
+        if key in visiting:
+            raise DeadlineError("deadline_companion_cycle", f"{key[0]}@{key[1]}")
+        if key in visited:
+            return
+        visiting.add(key)
+        companions = registry[key].get("requiredCompanions", [])
+        if not isinstance(companions, list):
+            raise DeadlineError("deadline_rule_syntax_invalid", "requiredCompanions")
+        for binding in companions:
+            if not isinstance(binding, Mapping) or set(binding) != {"ruleId", "ruleVersion"}:
+                raise DeadlineError("deadline_rule_syntax_invalid", "companion binding")
+            visit((str(binding["ruleId"]), str(binding["ruleVersion"])))
+        visiting.remove(key)
+        visited.add(key)
+        ordered.append(key)
+
+    for key in requested:
+        visit(key)
+    return ordered
 
 
 def _event_time_value(event: Mapping[str, Any], anchor: str) -> tuple[str, str]:
@@ -332,6 +366,7 @@ def compute_deadline(
     event_id: str,
     event_revision: int,
     now: datetime,
+    upper_bounds: tuple[Mapping[str, Any], ...] = (),
 ) -> dict[str, Any]:
     """Compute one deadline per the extracted Harness algorithm.
 
@@ -529,6 +564,7 @@ def compute_deadline(
         if rule.get("reviewOnExpiry") and not calendar_gap and due_date < now.date():
             raise DeadlineError(str(rule["reviewOnExpiry"]), "threshold reached; no automatic extinction or court determination")
 
+    earliest_expiry = due_date
     if due_date is not None:
         steps.append(f"expires_on:{due_date.isoformat()}")
         try:
@@ -541,6 +577,20 @@ def compute_deadline(
             # gap is reported honestly, no holiday is guessed.
             due_date = None
             steps.append("calendar_coverage_missing:true")
+
+    for bound in upper_bounds:
+        if bound["dueDate"] is None:
+            lower_bound = bound.get("calculation", {}).get("earliestExpiryDate")
+            if due_date is not None and lower_bound and due_date <= date.fromisoformat(lower_bound):
+                steps.append(f"companion_lower_bound_not_binding:{bound['rule']['ruleId']}:{lower_bound}")
+            else:
+                due_date = None
+                steps.append("companion_calendar_coverage_missing:true")
+        elif due_date is not None:
+            bound_date = date.fromisoformat(bound["dueDate"])
+            if due_date > bound_date:
+                due_date = bound_date
+                steps.append(f"companion_limit:{bound['rule']['ruleId']}:{bound_date.isoformat()}")
 
     zone = str(rule.get("timezone", "Asia/Shanghai"))
     try:
@@ -627,6 +677,7 @@ def compute_deadline(
         "current": True,
         "supersedesRevision": None,
         "calculation": {
+            "earliestExpiryDate": earliest_expiry.isoformat() if earliest_expiry else None,
             "receipt_id": f"deadline-{digest[:24]}",
             "calculation_hash": digest,
             "trigger_at": trigger_raw,

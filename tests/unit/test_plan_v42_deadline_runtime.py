@@ -37,7 +37,7 @@ def time_value(day):
     return {"value": day, "precision": "date", "timezone": "Asia/Shanghai", "sourceRefs": []}
 
 
-def calculate(client, rule_id, *, context=None, occurred="2026-03-02", aware="2026-03-02",
+def calculate(client, rule_id, *, context=None, occurred=None, aware="2026-03-02",
               served="2026-03-02", now="2026-03-02T00:00:00+00:00", configs=None,
               coverage_end="2050-12-31"):
     legal_context = {
@@ -53,7 +53,7 @@ def calculate(client, rule_id, *, context=None, occurred="2026-03-02", aware="20
     legal_context.update(context or {})
     event_ref = client.register_event({
         "id": "synthetic-event", "revision": 1, "matterId": "synthetic-matter",
-        "occurredAt": time_value(occurred), "awareAt": time_value(aware), "servedAt": time_value(served),
+        "occurredAt": time_value(occurred or aware), "awareAt": time_value(aware), "servedAt": time_value(served),
         "legalContext": legal_context,
     })
     request = {"matterId": "synthetic-matter", "eventRef": event_ref, "eventRevision": 1,
@@ -62,7 +62,7 @@ def calculate(client, rule_id, *, context=None, occurred="2026-03-02", aware="20
                             "released": True, "sourceRefs": [], "checkedAt": now}}
     if configs:
         request["configsRoot"] = str(configs)
-    return client.calculate_deadlines(request)["deadlines"][0]
+    return next(row for row in client.calculate_deadlines(request)["deadlines"] if row["rule"]["ruleId"] == rule_id)
 
 
 @pytest.mark.parametrize("rule_id,expected", [
@@ -217,3 +217,28 @@ def test_RT15_labor_suspension_continues_without_civil_six_month_reset(client):
     assert calculate(client, "labor.arbitration.application", aware="2025-06-30", context={
         "adjustments": [suspension("2026-01-01", "2026-01-11")]
     })["dueDate"] == "2026-07-10"
+
+
+def test_RT16_general_limitation_expands_yaml_companion_without_caller_reminder(client):
+    with raises_code("limitation_cap_review_required"):
+        calculate(client, "civil.limitation.general", occurred="2000-03-02", aware="2026-03-02")
+    result = calculate(client, "civil.limitation.general", occurred="2008-03-02", aware="2026-03-02")
+    assert result["dueDate"] == "2028-03-02"
+    assert "companion_limit:civil.limitation.longstop:2028-03-02" in result["calculationSteps"]
+    assert calculate(client, "civil.answer.first_instance", occurred="2000-03-02")["dueDate"] == "2026-03-17"
+    assert calculate(client, "labor.arbitration.application", occurred="2000-03-02")["dueDate"] == "2027-03-02"
+    # A much later cap has a provable raw lower bound; an unavailable far-future
+    # holiday calendar must not erase a current earlier ordinary expiry.
+    assert calculate(client, "civil.limitation.general", occurred="2023-06-30", aware="2023-06-30",
+                     coverage_end="2026-12-31")["dueDate"] == "2026-06-30"
+
+
+@pytest.mark.parametrize("target,code", [("civil.limitation.general", "deadline_companion_cycle"),
+                                       ("synthetic.missing", "deadline_companion_unknown")])
+def test_RT17_yaml_companion_graph_rejects_cycle_and_unknown(client, tmp_path, target, code):
+    document = yaml.safe_load((ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
+    rule = next(item for item in document["rules"] if item["ruleId"] == "civil.limitation.general")
+    rule["requiredCompanions"] = [{"ruleId": target, "ruleVersion": "1"}]
+    (tmp_path / "deadline_rules_synthetic.yaml").write_text(yaml.safe_dump(document), encoding="utf-8")
+    with raises_code(code):
+        calculate(client, rule["ruleId"], configs=tmp_path)
