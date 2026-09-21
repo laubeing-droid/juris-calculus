@@ -7,9 +7,6 @@ from pathlib import Path
 import pytest
 
 
-from compiler_core.version import __version__
-
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -45,14 +42,14 @@ def _report() -> dict[str, object]:
         "test_lock_sha256": DIGEST,
         "wheelhouse": {"file_count": 12, "manifest_sha256": DIGEST},
         "installed_distributions": {"count": 14, "sha256": DIGEST},
-        "installed_version": __version__,
+        "installed_version": W6_01_TESTS.__version__,
         "source_tree_absent": True,
         "imports_from_fresh_environment": True,
         "network_disabled_during_install_and_execution": True,
         "rejected_imports": list(WHEEL_GATE.REJECTED_IMPORTS),
-        "cli_version": f"jc {__version__}",
+        "cli_version": f"jc {W6_01_TESTS.__version__}",
         "cli_capabilities_error": "RUNTIME_NOT_CONFIGURED",
-        "mcp_server_version": __version__,
+        "mcp_server_version": W6_01_TESTS.__version__,
         "mcp_tools": [
             "jc_capabilities", "jc_evaluate", "jc_verify_run", "jc_read_artifact",
         ],
@@ -124,7 +121,7 @@ def test_installed_harness_contains_only_tests_fixtures_and_builder() -> None:
 
 def test_complete_installed_wheel_report_is_accepted() -> None:
     assert WHEEL_GATE.validate_installed_e2e_report(
-        _report(), version=__version__, wheel_digest=DIGEST, lock_digest=DIGEST,
+        _report(), version=W6_01_TESTS.__version__, wheel_digest=DIGEST, lock_digest=DIGEST,
     ) == []
 
 
@@ -145,5 +142,5 @@ def test_installed_wheel_evidence_mutations_fail_closed(mutation: str) -> None:
     else:
         report["commands"][-1]["return_code"] = 1
     assert WHEEL_GATE.validate_installed_e2e_report(
-        report, version=__version__, wheel_digest=DIGEST, lock_digest=DIGEST,
+        report, version=W6_01_TESTS.__version__, wheel_digest=DIGEST, lock_digest=DIGEST,
     )
