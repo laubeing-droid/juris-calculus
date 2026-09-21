@@ -659,7 +659,7 @@
   "declared_dynamic_edges": [
     {
       "importer": "compiler_core/client.py",
-      "line": 1805,
+      "line": 1807,
       "kind": "dynamic_import",
       "target_pattern": "installed-runtime-host",
       "target_class": "PUBLIC_ADAPTER",
