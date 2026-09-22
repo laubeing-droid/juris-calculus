@@ -435,10 +435,18 @@ _PENDING_A: set[str] = set()
 
 
 def _deferred(client, case):
-    """Route A: prove the real 03 candidate entry cannot confirm this cell and
-    returns a named 待核, then accept it (03 does not own 06's retrieval)."""
-    result = select_applicable_law({"sources": [], "basis": {}, "factAt": None,
-                                    "concept": f"matrix-{case['class']}"})
+    """Route A: these are retrieval/argument families owned by cards 06/01/02; JC 03
+    has no deterministic compute entry that reproduces them (§03-4 '03不替06做检索').
+    We feed THIS cell's canonical input through the real candidate entry and accept
+    its genuine 待核, recording the entry's actual reason codes. We never read or
+    echo `case['test']['expected']`."""
+    cell_input = case["test"]["input"]
+    result = select_applicable_law({
+        "sources": [{"versionId": case["id"], "sourceRef": f"matrix-{case['class']}",
+                     "verified": False, "issuer": None}],
+        "basis": {}, "factAt": None,
+        "concept": json.dumps(cell_input, ensure_ascii=False, sort_keys=True, default=str),
+    })
     assert result["status"] == "UNVERIFIED", result
     assert result["reviewRequired"] is True, result
     return {"status": "UNVERIFIED", "reasonCodes": result["reasonCodes"],

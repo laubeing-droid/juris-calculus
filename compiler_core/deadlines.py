@@ -642,9 +642,6 @@ def compute_deadline(
     business_cutoff = rule.get("businessCutoff")
     if business_cutoff is not None:
         legal_result["cutoff"] = str(business_cutoff)
-    for _name in ("remedy", "noGeneralOneYearLimit"):
-        if _name in rule:
-            legal_result[_name] = rule[_name]
 
     due_at = None
     if due_date is not None:
