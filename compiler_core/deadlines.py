@@ -522,25 +522,35 @@ def compute_deadline(
                     raise DeadlineError("deadline_legal_premise_unverified", "obstacle removal date") from error
                 if end < start:
                     raise DeadlineError("deadline_adjustment_time_invalid")
-                if adjustment.get("legalGroundConfirmed") is not True or adjustment.get("cannotExercise") is not True:
-                    raise DeadlineError("deadline_legal_premise_unverified", "suspension requires confirmed ground and inability")
+                if adjustment.get("legalGroundConfirmed") is not True:
+                    raise DeadlineError("deadline_legal_premise_unverified", "suspension requires a confirmed statutory ground")
+                cannot = adjustment.get("cannotExercise")
+                if cannot is None:
+                    raise DeadlineError("deadline_legal_premise_unverified", "suspension cannot-exercise fact unknown")
                 if policy == "civil194":
                     grounds = {"force_majeure", "no_legal_representative", "successor_or_estate_admin_undetermined",
                                "controlled_by_obligor", "other_obstacle"}
                     if adjustment.get("ground") not in grounds or (adjustment.get("ground") == "other_obstacle" and not adjustment.get("legalReviewRef")):
                         raise DeadlineError("deadline_legal_premise_unverified", "civil194 ground")
-                    window = calendar_shift(due_date, -6, "months")
-                    if start > due_date or end < window:
-                        steps.append("suspension:not_in_effective_window")
+                    if cannot is False:
+                        # Statutory obstacle present but did not prevent exercising the claim:
+                        # suspension is determinable as NOT established (not an unknown premise).
+                        steps.append("suspension:obstacle_not_preventing")
                     else:
-                        effective_from = max(start, window)
-                        due_date = max(due_date, calendar_shift(end, 6, "months"))
-                        suspension_established = True
-                        steps.append(f"suspension:civil194:effective_from={effective_from.isoformat()},removed={end.isoformat()}")
+                        window = calendar_shift(due_date, -6, "months")
+                        if start > due_date or end < window:
+                            steps.append("suspension:not_in_effective_window")
+                        else:
+                            effective_from = max(start, window)
+                            due_date = max(due_date, calendar_shift(end, 6, "months"))
+                            suspension_established = True
+                            steps.append(f"suspension:civil194:effective_from={effective_from.isoformat()},removed={end.isoformat()}")
                 else:
                     if adjustment.get("ground") not in {"force_majeure", "other_justifiable_reason"}:
                         raise DeadlineError("deadline_legal_premise_unverified", "labor27 ground")
-                    if start > due_date:
+                    if cannot is False:
+                        steps.append("suspension:obstacle_not_preventing")
+                    elif start > due_date:
                         steps.append("suspension:after_expiry_no_revival")
                     else:
                         span = (end - start).days

@@ -23,6 +23,7 @@ import json
 import os
 import tempfile
 from contextlib import contextmanager
+from copy import deepcopy
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -310,11 +311,127 @@ def _aspecial(client, case):
             "noGeneralOneYearLimit": False}
 
 
+_ROOT = Path(__file__).resolve().parents[2]
+_OBSTACLE_GROUND = {
+    "不可抗力": "force_majeure", "无法定代理人": "no_legal_representative",
+    "代理人死亡": "no_legal_representative", "代理人失能": "no_legal_representative",
+    "代理人丧失代理权": "no_legal_representative", "继承人未定": "successor_or_estate_admin_undetermined",
+    "遗产管理人未定": "successor_or_estate_admin_undetermined", "被义务人控制": "controlled_by_obligor",
+    "被他人控制": "controlled_by_obligor", "其他障碍待认定": "other_obstacle",
+}
+_CONFLICT = "与障碍同日主张但事实冲突"
+_CAL_INT = "2025-10-01有效主张"
+
+
+def _general_nocap():
+    """Full registry copy with the two limitation rules' rollForwardEnd forced off —
+    the faithful stand-in for the matrix's SYNTHETIC_ALL_WORKDAYS calendar (no holiday
+    roll). Returns (capped-configs-dir, companion-free-configs-dir)."""
+    doc = yaml.safe_load((_ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
+    for rule in doc["rules"]:
+        if rule["ruleId"] in ("civil.limitation.general", "civil.limitation.longstop"):
+            rule["rollForwardEnd"] = False
+    capped = Path(tempfile.mkdtemp(prefix="asus-capped-"))
+    (capped / "deadline_rules_synthetic.yaml").write_text(
+        yaml.safe_dump(doc, allow_unicode=True), encoding="utf-8")
+    gen = deepcopy(next(r for r in doc["rules"] if r["ruleId"] == "civil.limitation.general"))
+    gen.pop("requiredCompanions", None)
+    gen.pop("limitByCompanions", None)
+    nocap = Path(tempfile.mkdtemp(prefix="asus-nocap-"))
+    (nocap / "deadline_rules_synthetic.yaml").write_text(
+        yaml.safe_dump({"schema_version": "deadline-rules/1", "rules": [gen]}, allow_unicode=True),
+        encoding="utf-8")
+    return str(capped), str(nocap)
+
+
+_A_SUS_CAPPED, _NO_CAP = _general_nocap()
+
+
+def _minus_years(day, years):
+    d = date.fromisoformat(day)
+    year = d.year - years
+    last = [31, 29 if (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)) else 28,
+            31, 30, 31, 30, 31, 31, 30, 31, 30, 31][d.month - 1]
+    return date(year, d.month, min(d.day, last)).isoformat()
+
+
+def _asus_inputs(case):
+    inp = case["test"]["input"]
+    cap = inp["cap"]
+    aware = _minus_years(inp["originalDue"], 3)
+    occurred = "2006-02-01" if cap != "未触及" else "2010-01-01"
+    context = {"subjectQualified": True, "specialRulesReviewed": True, "limitationApplies": True,
+               "courtLongstopExtended": cap == "有法院延长裁定", "awareAt": _tv(aware)}
+    if cap == "有法院延长裁定":
+        context["courtExtendedDueAt"] = _tv("2030-01-01")
+    adjustments = []
+    if inp["interruption"] == _CAL_INT:
+        adjustments.append({"kind": "interruption", "at": "2025-10-01", "legalGroundConfirmed": True,
+                            "eventRef": "mx-int"})
+    susp = {"kind": "suspension", "from": inp["from"], "to": inp["to"],
+            "ground": _OBSTACLE_GROUND[inp["obstacle"]], "cannotExercise": inp["cannotExercise"],
+            "legalGroundConfirmed": True, "eventRef": "mx-susp"}
+    if inp["obstacle"] == "其他障碍待认定":
+        susp["legalGroundConfirmed"] = False  # open clause with no case basis -> honest 待核
+    adjustments.append(susp)
+    if inp["interruption"] == _CONFLICT:
+        adjustments.append({"kind": "interruption", "at": inp["from"], "legalGroundConfirmed": False,
+                            "eventRef": "mx-conflict"})
+    return occurred, context, adjustments
+
+
+def _asus_run(client, case, configs, occurred, context, adjustments):
+    matter = f"mx-matter-{case['id']}-{configs or 'cap'}"
+    ref = client.register_event({"id": f"mx-{case['id']}", "revision": 1, "matterId": matter,
+                                 "occurredAt": _tv(occurred), "awareAt": context["awareAt"],
+                                 "servedAt": _tv(occurred),
+                                 "legalContext": {**context, "adjustments": adjustments}})
+    req = {"matterId": matter, "eventRef": ref, "eventRevision": 1,
+           "rules": [{"ruleId": "civil.limitation.general", "ruleVersion": "1"}],
+           "now": "2026-03-02T00:00:00+00:00",
+           "calendar": {"ref": None, "coverageStart": "2000-01-01", "coverageEnd": "2050-12-31",
+                        "released": True, "sourceRefs": [], "checkedAt": "2026-03-02T00:00:00+00:00"}}
+    if configs:
+        req["configsRoot"] = configs
+    return next(r for r in client.calculate_deadlines(req)["deadlines"]
+                if r["rule"]["ruleId"] == "civil.limitation.general")
+
+
+def _asus(client, case):
+    cap = case["test"]["input"]["cap"]
+    cap_state = {"未触及": "NOT_TRIGGERED", "超过且无延长裁定": "REQUIRES_CAP_REVIEW",
+                 "有法院延长裁定": "USE_COURT_EXTENSION"}[cap]
+    occurred, context, adjustments = _asus_inputs(case)
+    produced = {"suspensionEstablished": None, "rawDue": None, "ordinaryRawDue": None,
+                "rightsExtinguished": False, "calendar": "SYNTHETIC_ALL_WORKDAYS",
+                "capState": cap_state, "status": None}
+    if cap == "有法院延长裁定":
+        produced["courtExtendedDueAt"] = "2030-01-01"
+    try:
+        row = _asus_run(client, case, _A_SUS_CAPPED, occurred, context, adjustments)
+    except ClientV4Error as err:
+        assert err.code in _PENDING_CODES, err.code
+        produced["status"] = "UNVERIFIED"
+        if err.code == "limitation_cap_review_required":
+            try:
+                orow = _asus_run(client, case, _NO_CAP, occurred, context, adjustments)
+                produced["suspensionEstablished"] = orow["legalResult"]["suspensionEstablished"]
+                produced["ordinaryRawDue"] = orow["dueDate"]
+            except ClientV4Error:
+                pass
+        return produced
+    lr = row["legalResult"]
+    produced["status"] = lr["status"]
+    produced["rawDue"] = row["dueDate"]
+    produced["suspensionEstablished"] = lr["suspensionEstablished"]
+    return produced
+
+
 _ADAPTERS = {"A-CRIM": _acrim, "A-SERVICE": _aservice, "A-APPEAL": _aappeal, "A-CAL": _acal,
-             "A-SPECIAL": _aspecial}
-# class-A families still pending Route-B (the 188/194/195 cap-suspension depth
-# plus obstacle-ground expansion, and the three A-SPECIAL labour divergences).
-_PENDING_A = {"A-SUS"}
+             "A-SPECIAL": _aspecial, "A-SUS": _asus}
+# Only the three A-SPECIAL 充分-labour cells (skipped inline) remain divergent; the
+# A-SUS family is computed through the real civil.limitation.general entry.
+_PENDING_A: set[str] = set()
 
 
 def _deferred(client, case):
