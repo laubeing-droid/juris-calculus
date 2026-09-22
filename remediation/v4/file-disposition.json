@@ -4,7 +4,7 @@
     "tracked_files": "git ls-files -z -- *.py (core.quotepath=false, UTF-8)",
     "authority_policy": "docs/architecture/module-authority.json"
   },
-  "count": 321,
+  "count": 322,
   "paths": [
     {
       "path": ".local/pricing-baseline/c2acea3589d14f25f5b8285117ce01276e87860b/legalos_pricing.py",
@@ -1333,6 +1333,11 @@
     },
     {
       "path": "tests/unit/test_independent_checker.py",
+      "authority_class": "TEST_ONLY",
+      "production_wheel": false
+    },
+    {
+      "path": "tests/unit/test_legal_case_matrix_v42.py",
       "authority_class": "TEST_ONLY",
       "production_wheel": false
     },
