@@ -92,6 +92,9 @@ rules:
     branch: criminal_custody
     anchor: occurredAt
     stage: detention
+    decision:
+      require:
+        - {field: legalContext.authorityEvidence, equals: true}
     durationDays: 3
     durationUnit: days
     countingMode: CALENDAR_DAYS
@@ -109,6 +112,7 @@ rules:
     startOffsetDays: 3
     decision:
       require:
+        - {field: legalContext.authorityEvidence, equals: true}
         - {field: legalContext.approvedExtensionDays, in: [1, 2, 3, 4]}
         - {field: legalContext.extensionApproved, equals: true}
     durationUnit: days
@@ -122,6 +126,9 @@ rules:
     branch: criminal_custody
     anchor: occurredAt
     stage: detention_major
+    decision:
+      require:
+        - {field: legalContext.authorityEvidence, equals: true}
     durationDays: 30
     durationUnit: days
     countingMode: CALENDAR_DAYS
@@ -134,6 +141,9 @@ rules:
     branch: criminal_custody
     anchor: servedAt
     stage: procuratorate_decision
+    decision:
+      require:
+        - {field: legalContext.authorityEvidence, equals: true}
     durationDays: 7
     durationUnit: days
     countingMode: CALENDAR_DAYS
@@ -747,3 +757,72 @@ rules:
           countingMode: CALENDAR_DAYS
           rollForwardEnd: false
     reviewOnExpiry: limitation_cap_review_required
+  # ---- 行政（复议60日 / 起诉6个月，官方原文已核，见 work/plan-v42/step2-sources.md）----
+  - ruleId: administrative.reconsideration.application
+    version: '1'
+    branch: evidence_period
+    anchor: awareAt
+    durationDays: 60
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    legalReviewRequired: true
+    locator: deadline-rules/cn#administrative.reconsideration.application
+    authority:
+      title: 中华人民共和国行政复议法（2023修订，2024-01-01施行）
+      officialUrl: https://www.gxhx.gov.cn/zt/rdzt/xzfy/t6353364.html
+      articles:
+      - 20
+    legalContract:
+      appliesTo: 认为行政行为侵犯其合法权益的公民、法人或其他组织
+      anchor: 知道或者应当知道该行政行为之日
+      preconditions:
+      - 申请人资格已核
+      - 知道或应当知道行政行为之日已核定
+      exceptions:
+      - 法律规定申请期限超过六十日的除外
+      - 不可抗力等正当理由自障碍消除之日起继续计算
+      output: 复议申请期限候选；起算点须由已采纳事实核定
+      testIds:
+      - A-ADMIN-RECONSIDERATION-60D
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+  - ruleId: administrative.litigation.filing
+    version: '1'
+    branch: evidence_period
+    anchor: awareAt
+    durationDays: 6
+    durationUnit: months
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    legalReviewRequired: true
+    locator: deadline-rules/cn#administrative.litigation.filing
+    authority:
+      title: 中华人民共和国行政诉讼法（2017修正）
+      officialUrl: https://zrzy.jl.gov.cn/hdjl/myztc/jbxx/202305/t20230518_8711212.html
+      articles:
+      - 46
+    legalContract:
+      appliesTo: 直接向人民法院提起行政诉讼的公民、法人或其他组织
+      anchor: 知道或者应当知道作出行政行为之日
+      preconditions:
+      - 原告资格已核
+      - 知道或应当知道作出行政行为之日已核定
+      exceptions:
+      - 法律另有规定的除外
+      - 不动产自行为作出之日起超过二十年、其他超过五年不予受理（最长保护期另设）
+      output: 起诉期限候选；最长保护期与实体不予受理由法院核定
+      testIds:
+      - A-ADMIN-LITIGATION-6M
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true

@@ -400,6 +400,13 @@ def compute_deadline(
     due_date: date | None = None
     starts_on: str | None = None
     calendar_gap = False
+    # Additive result projection signals. These never change ``due_date``,
+    # the branch/status decisions, or any raised error; they only record what
+    # the computation already decided so the wire carries named legal-fact
+    # fields instead of forcing consumers to re-parse ``calculationSteps``.
+    raw_expiry_date: date | None = None
+    suspension_established = False
+    holiday_extended = False
 
     if branch == "court_specified":
         court_day_raw = rule.get("courtSpecifiedDate") or event.get("hearingAt", {}).get("value")
@@ -475,6 +482,7 @@ def compute_deadline(
         else:
             raise DeadlineError("deadline_counting_mode_invalid", counting_mode)
 
+        raw_expiry_date = raw_expiry
         due_date = raw_expiry
         roll_end = bool(rule.get("rollForwardEnd", spec.get("roll_forward_end")))
         if roll_end and counting_mode != "BUSINESS_DAYS":
@@ -484,6 +492,7 @@ def compute_deadline(
                 calendar_gap = True
                 rolled = due_date  # out-of-coverage end day: report the gap below
             if rolled != due_date:
+                holiday_extended = True
                 steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
             due_date = rolled
 
@@ -526,6 +535,7 @@ def compute_deadline(
                     else:
                         effective_from = max(start, window)
                         due_date = max(due_date, calendar_shift(end, 6, "months"))
+                        suspension_established = True
                         steps.append(f"suspension:civil194:effective_from={effective_from.isoformat()},removed={end.isoformat()}")
                 else:
                     if adjustment.get("ground") not in {"force_majeure", "other_justifiable_reason"}:
@@ -535,6 +545,7 @@ def compute_deadline(
                     else:
                         span = (end - start).days
                         due_date += timedelta(days=span)
+                        suspension_established = True
                         steps.append(f"suspension:labor27:continue_after={end.isoformat()},excluded_days={span}")
             elif kind == "interruption":
                 restart = date.fromisoformat(adjustment["at"])
@@ -560,6 +571,7 @@ def compute_deadline(
                 calendar_gap = True
                 rolled = due_date
             if rolled != due_date:
+                holiday_extended = True
                 steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
             due_date = rolled
 
@@ -601,9 +613,38 @@ def compute_deadline(
     except ZoneInfoNotFoundError as error:
         raise DeadlineError("deadline_rule_timezone_invalid", zone) from error
 
+    # Project the facts the computation already decided. Every value below is
+    # read from ``steps``/``due_date``/``rule`` produced above — never from an
+    # external expectation. These fields are additive wire annotations and do
+    # not feed back into ``due_date``, status, or any raised error.
+    cap_state = "CAPPED_BY_COMPANION" if any(s.startswith("companion_limit:") for s in steps) else "NOT_TRIGGERED"
+    coverage_gap = any(s in ("calendar_coverage_missing:true", "companion_calendar_coverage_missing:true") for s in steps)
+    legal_result: dict[str, Any] = {
+        "rawDue": raw_expiry_date.isoformat() if raw_expiry_date else None,
+        "due": due_date.isoformat() if due_date else None,
+        "status": "CANDIDATE" if due_date is not None and not coverage_gap else "UNVERIFIED",
+        "holidayExtended": holiday_extended,
+        "suspensionEstablished": suspension_established,
+        "rightsExtinguished": False,  # JC never decides substantive extinction (03 §03-2/03-4)
+        "capState": cap_state,
+        "error": CALENDAR_COVERAGE_MISSING if coverage_gap else None,
+    }
+    business_cutoff = rule.get("businessCutoff")
+    if business_cutoff is not None:
+        legal_result["cutoff"] = str(business_cutoff)
+    for _name in ("remedy", "noGeneralOneYearLimit"):
+        if _name in rule:
+            legal_result[_name] = rule[_name]
+
     due_at = None
     if due_date is not None:
-        due_at = datetime.combine(due_date, time(23, 59, 59), ZoneInfo(zone)).isoformat()
+        cutoff_time = time(23, 59, 59)
+        if business_cutoff is not None:
+            parts = str(business_cutoff).split(":")
+            if len(parts) < 2 or not all(p.isdigit() for p in parts[:2]):
+                raise DeadlineError("deadline_rule_syntax_invalid", "businessCutoff")
+            cutoff_time = time(int(parts[0]), int(parts[1]))
+        due_at = datetime.combine(due_date, cutoff_time, ZoneInfo(zone)).isoformat()
 
     rule_id = str(rule["ruleId"])
     rule_version = str(rule["version"])
@@ -671,6 +712,7 @@ def compute_deadline(
         "dateOrigin": date_origin,
         "dueDate": due_date.isoformat() if due_date else None,
         "dueAt": due_at,
+        "legalResult": legal_result,
         "parentDeadlineId": None,
         "manualOverrideRef": None,
         "adjustmentEventRefs": adjustments_used,

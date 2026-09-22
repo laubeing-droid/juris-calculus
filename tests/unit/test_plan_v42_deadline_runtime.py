@@ -48,7 +48,7 @@ def calculate(client, rule_id, *, context=None, occurred=None, aware="2026-03-02
         "finalInstallmentDueAt": time_value("2026-03-02"),
         "domicileInPRC": True, "courtExtensionGranted": False, "answerPeriodApplicable": True,
         "wageArrears": False, "absenceNotAttributable": True, "effectiveInstrumentHarmsRights": True,
-        "limitationApplies": True, "courtLongstopExtended": False,
+        "limitationApplies": True, "courtLongstopExtended": False, "authorityEvidence": True,
     }
     legal_context.update(context or {})
     event_ref = client.register_event({
@@ -269,6 +269,22 @@ def test_RT18_victim_protest_is_five_days_and_separate_from_defendant_appeal(cli
 def test_RT19_registry_counts_are_recorded_not_padded(client):
     document = yaml.safe_load((ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
     top_level = [item["ruleId"] for item in document["rules"]]
-    assert len(top_level) == 25  # 版本记录数
-    assert len(set(top_level)) == 24  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
+    assert len(top_level) == 27  # 版本记录数（含行政复议/行政诉讼两族）
+    assert len(set(top_level)) == 26  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
     assert "criminal.appeal.victim_protest" in set(top_level)
+
+
+@pytest.mark.parametrize("rule_id,expected", [
+    ("administrative.reconsideration.application", "2026-04-30"),  # 复议法20条：知道之日起60日
+    ("administrative.litigation.filing", "2026-09-01"),  # 行诉法46条：知道之日起6个月
+])
+def test_RT20_administrative_families_execute_through_real_entry(client, rule_id, expected):
+    result = calculate(client, rule_id, aware="2026-03-01")
+    assert result["dueDate"] == expected
+    assert "legal_result:candidate_requires_lawyer_review" in result["calculationSteps"]
+
+
+def test_RT21_administrative_rules_fail_closed_without_reviewed_premise(client):
+    for rule_id in ("administrative.reconsideration.application", "administrative.litigation.filing"):
+        with raises_code("deadline_legal_premise_unverified"):
+            calculate(client, rule_id, aware="2026-03-01", context={"subjectQualified": False})

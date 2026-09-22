@@ -177,28 +177,28 @@ def test_unknown_precision_and_missing_anchor(registry):
 def test_criminal_custody_chain_is_staged_no_fixed_37(registry):
     detention = compute_deadline(
         rule=_rule(registry, "criminal.custody.detention"),
-        event=_event("occurredAt", "2026-03-01"),
+        event=dict(_event("occurredAt", "2026-03-01"), legalContext={"authorityEvidence": True}),
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
     assert detention["dueDate"] == "2026-03-04"  # 刑诉法105条：拘留当日不计入
     extended = compute_deadline(
         rule=_rule(registry, "criminal.custody.detention.extended"),
-        event=dict(_event("occurredAt", "2026-03-01"), legalContext={"approvedExtensionDays": 4, "extensionApproved": True}),
+        event=dict(_event("occurredAt", "2026-03-01"), legalContext={"approvedExtensionDays": 4, "extensionApproved": True, "authorityEvidence": True}),
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
     assert extended["dueDate"] == "2026-03-08"  # 原三日加获准四日，末日休假不顺延
     major = compute_deadline(
         rule=_rule(registry, "criminal.custody.detention.major"),
-        event=_event("occurredAt", "2026-03-01"),
+        event=dict(_event("occurredAt", "2026-03-01"), legalContext={"authorityEvidence": True}),
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c1", event_revision=1, now=NOW,
     )
     assert major["dueDate"] == "2026-03-31"
     decision = compute_deadline(
         rule=_rule(registry, "criminal.custody.procuratorate.decision"),
-        event=_event("servedAt", "2026-03-03"),  # 检察院实际收到提请批准逮捕书之日
+        event=dict(_event("servedAt", "2026-03-03"), legalContext={"authorityEvidence": True}),  # 检察院实际收到提请批准逮捕书之日
         calendar=_calendar(2026),
         matter_id="m-2", event_id="e-c2", event_revision=1, now=NOW,
     )
