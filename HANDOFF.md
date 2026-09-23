@@ -1,6 +1,13 @@
 # juris-calculus 交接检查点
 
-## 当前检查点（2026-09-14，C06 数学出口集成落地）
+## 当前检查点（2026-09-23，plan-v4.2 03 卡期限计算落地并清零矩阵）
+
+- plan-v4.2 施工单 03 卡（J 期限执行、事实候选与适用规则评估）在 main 完成：期限引擎 `legalResult` 附加投影与 `businessCutoff`（不进计算摘要 seed）；民法典194/劳动27 中止事实细化；行政复议60日、行政诉讼6月、刑法87/89追诉时效四档、民诉95/283公告送达、民诉286涉外上诉共五族规则经 .gov.cn 官方原文逐字钉扎进 `configs/deadline_rules_cn.v1.yaml`（注册表 31 版本记录 / 29 唯一 ID，RT19 活口钉扎）；`labor.arbitration.application` v2 以 noDeadline 具名结果表达"在职欠薪无普通一年截止"（27条4款确定结论；v1 保留为可选历史版本）；矩阵适配器 `tests/unit/test_legal_case_matrix_v42.py` 全 3085 格经真实 JCClient 逐字段比对，零 skip。
+- 验收事实：全仓 `pytest tests` **2122 passed / 1 具名 skip / 0 failed**（唯一 skip 为矩阵模块环境缺省）；focused V4-03 准入 PASS；generated / doc-links / machine-paths / 权威图 / MCP 冒烟全 exit0；wheel 以当前版本机制构建（版本权威 `compiler_core/version.py` = 5.0.2；v5.0.0 之后 5.0.1/5.0.2 均未打 tag，按纪律发版前才升修订号）。上游主仓矩阵结构校验 `--self-test --check-card-bindings` STRUCTURE_PASS。
+- 法源核验：刑法87/88/89（修正案十二全文核对未变动）、民诉85/95/283/286（2023修正，最高法公报官网）已登记主仓 `sources-and-engineering.md` 2026-09-23 增量；flk 数据库改版不可用，恢复后建议补核。yongning/gongbao 两来源 URL 尚未纳入 04 巡检白名单（04 卡范围，已留总控知悉）。
+- 剩余：发版流程（升修订号→wheel+干净环境复验→经授权打 tag）；生产激活条件不变（宿主决定）。
+
+## 上一检查点（2026-09-14，C06 数学出口集成落地）
 
 - 分支 `jc-c06-integration-20260914`（HEAD `9ce5acf`）完成 legal-math-modeling full-release 出口契约的消费侧：`compiler_core/math_export/`（钉扎身份/文档指纹/B07 版本失效指纹/公共入口见证/独立 checker 网关/跨入口一致性）+ `proofs/lmm-fullmath/` 钉扎与绑定提取 + 三个跨仓工具 + `.github/workflows/cross-repo-verification.yml`；`auto-release.yml` 的 promote 现在必须先过 `c06-cross-repo`。契约页与逐项差距清单见 [docs/contracts/C06_INTEGRATION.md](docs/contracts/C06_INTEGRATION.md)。
 - 验收事实：CI run 34877978619 全绿；跨仓 lane 以固定 ref（LMM `5084f25e`，full-release run `34797682659`）实跑——8 探针 × JCClient/CLI/MCP 三公共入口收据，LMM 独立 checker 三组全部 accepted，证据 artifact `c06-integration-evidence-34877978619-1`；非 changed-module。JC runtime_ref 基线 `c79e03b8` 未动。

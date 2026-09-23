@@ -4,7 +4,7 @@
 
 ## 版本身份
 
-- 引擎版本：`5.0.1`（`compiler_core/version.py` 唯一版本源）；最后一个已签名发布 tag 为 `v5.0.0`（2026-09-07），此后版本（5.0.1）尚未打 tag 发布。
+- 引擎版本：`5.0.2`（`compiler_core/version.py` 唯一版本源）；最后一个已签名发布 tag 为 `v5.0.0`（2026-09-07），此后版本（5.0.1、5.0.2）尚未打 tag 发布。
 - 公共协议：`jc/5.0`（`compiler_core/contracts.py::SCHEMA_VERSION_V5`）。
 - 正式输入拒绝 `jc/4.0` 与 4.x 引擎版本；迁移走 `tools/migrate_v4_bundle.py`（SOURCE_TOOL，不进 wheel）。
 - 证明依据：`proofs/lmm-binding.json`（LMM `23c5a310...`，CI run 33978186916）、`proofs/lmm-fullmath/`（full-math 主体 `5084f25e...`，full-release run `34797682659`）与 `proofs/runtime-obligation-map.json`（91 模块 / 452 声明处置）。

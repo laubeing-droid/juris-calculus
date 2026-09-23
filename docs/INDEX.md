@@ -1,6 +1,6 @@
 # 文档索引
 
-本页按读者意图组织 juris-calculus 的全部当前文档，每条附一句"读了能得到什么"。项目定位先读根目录 [README](../README.md)。当前版本 5.0.1（公共协议 jc/5.0），版本权威是 `compiler_core/version.py`。
+本页按读者意图组织 juris-calculus 的全部当前文档，每条附一句"读了能得到什么"。项目定位先读根目录 [README](../README.md)。当前版本 5.0.2（公共协议 jc/5.0），版本权威是 `compiler_core/version.py`。
 
 ## 入门：先跑起来、看懂项目
 

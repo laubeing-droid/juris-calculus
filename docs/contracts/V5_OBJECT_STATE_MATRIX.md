@@ -5,7 +5,7 @@
 ## 版本决定
 
 - 公共协议：`jc/5.0`（`SCHEMA_VERSION_V5`）。正式引擎版本正则锁定 major 5；`jc/4.0` 输入与 4.x 引擎版本在准入处被拒绝，不做宽松读取。
-- 引擎版本：`5.0.1`（`compiler_core/version.py` 是唯一版本源）。
+- 引擎版本：`5.0.2`（`compiler_core/version.py` 是唯一版本源）。
 - 生成出版物：`schemas/jc-v5.schema.json`、`mcp_manifest.json` 由 `compiler_core.mcp` 的确定性 emitter 产出，字节级校验。
 
 ## 六轴状态空间（继承 V4，不收敛为一个“大成功”）

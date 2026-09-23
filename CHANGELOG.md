@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — plan-v4.2 03 卡期限计算（2026-09-22/23）
+
+- 期限引擎（`compiler_core/deadlines.py`）：`legalResult` 附加投影（rawDue/due/status/capState 等，不进计算摘要 seed）与 `businessCutoff`；民法典194/劳动27 中止分支区分"显式不能行使=False→不成立"与"未知→具名待核"；decision 分支新增闭合词表字段 `noDeadline`/`noDeadlineReason`，输出"确定无普通截止日"的具名候选（有截止日期才 CANDIDATE 的旧词表不变，无截止候选同标 CANDIDATE、不造日期）。
+- 规则注册表（`configs/deadline_rules_cn.v1.yaml`，27记录/26ID → 31记录/29唯一ID，RT19 活口钉扎）：行政复议60日、行政诉讼6月、刑法87/89追诉时效四档（`statutoryMaxPenalty` 分档，期限已过 `limitation_cap_review_required`，不输出"不再追诉"实体判定）、民诉95/283公告送达（境内30日/涉外60日）、民诉286涉外上诉（判决裁定均30日）；`labor.arbitration.application` v2 以 noDeadline 表达 27条4款"在职欠薪无普通一年截止"（v1 保留为可选历史版本）。全部经 .gov.cn 官方原文逐字钉扎（登记于上游 jusbench-repo `sources-and-engineering.md` 2026-09-23 增量）。
+- 矩阵验收（`tests/unit/test_legal_case_matrix_v42.py`，环境变量 `JUS_LEGAL_MATRIX` 指向上游 `matrix-vectors.json`）：3085 格全经真实 JCClient 逐字段比对、零 skip；适配器只调真实入口，不回填 `test.expected`；`noGeneralOneYearLimit` 等按评审约定为格子维度前提/路由标签。
+- 单测：RT07 改钉两版并存行为，RT22–RT24 新增三族规则正算/具名待核/顺延/拒绝适用断言；全仓回归 2122 passed / 1 具名 skip / 0 failed。
+
 ## 5.0.2 — procedure-event 公开登记口 (IF-05, 2026-09-19)
 
 - 闭合 U02 wire-gap：`JCClient.register_event` 公开方法（`compiler_core/client.py`）——轻校验（非空字符串 `id`/`matterId`、int≥1 的 `revision`，不满足抛 `schema_invalid`）后经既有 `_register_json("procedure-event", …, scope="case")` 规范登记，返回冻结 wire ref（owner=jc/kind/id=digest.hex/version=1/matterId/digest=sha256:…）。验收链自此走公开口，不再依赖客户端私有 `_register_json`；`_register_json` 本体未改（其余 kind 照旧）。
