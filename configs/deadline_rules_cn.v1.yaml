@@ -826,3 +826,159 @@ rules:
         equals: true
       - field: legalContext.specialRulesReviewed
         equals: true
+  # ---- 刑事追诉时效 / 公告送达期间 / 涉外上诉（2026-09-23 .gov.cn 官方原文逐字钉扎，
+  #      证据 work/plan-v42/step3-gov-sources.md）----
+  - ruleId: criminal.limitation.prosecution
+    version: "1"
+    branch: limitation_period
+    anchor: occurredAt
+    durationDays: 0
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    rollForwardEnd: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#criminal.limitation.prosecution
+    legalReviewRequired: true
+    reviewOnExpiry: limitation_cap_review_required
+    authority:
+      title: 中华人民共和国刑法（根据刑法修正案(十一)修正；87-89条经修正案(十二)全文核对未变动）
+      officialUrl: http://yongning.gov.cn/zz/gonganynfj/fggz_8154/t4674515.html
+      articles:
+      - 87
+      - 89
+    legalContract:
+      appliesTo: 刑法总则第四章第八节追诉期限的计算；不判定应否追诉的实体决定
+      anchor: 犯罪之日（89条：连续或继续状态自行为终了之日起算，由调用方按已核事实选锚）
+      preconditions:
+      - 所涉罪名法定最高刑档位已核
+      - 犯罪之日或行为终了之日已核
+      - 不存在88条立案后逃避侦查审判、被害人控告应立案未立案等不受期限限制情形
+      exceptions:
+      - 87条第四档二十年：二十年后认为必须追诉的须报请最高人民检察院核准
+      - 89条第二款追诉期限内又犯罪自犯后罪之日起算；本版未建调整分支，调整项一律具名拒绝
+      - 追诉时效为实体法期间，届满日不因节假日顺延
+      output: 追诉期限届满日候选；期限已过输出limitation_cap_review_required，不输出不再追诉的实体判定
+      testIds:
+      - RT22-PROSECUTION-TIERS
+      - RT22-PROSECUTION-EXPIRED-REVIEW
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.statutoryMaxPenalty
+          equals: below_five_years
+        set:
+          durationDays: 5
+          durationUnit: years
+      - when:
+        - field: legalContext.statutoryMaxPenalty
+          equals: five_to_below_ten_years
+        set:
+          durationDays: 10
+          durationUnit: years
+      - when:
+        - field: legalContext.statutoryMaxPenalty
+          equals: ten_years_or_above
+        set:
+          durationDays: 15
+          durationUnit: years
+      - when:
+        - field: legalContext.statutoryMaxPenalty
+          equals: life_or_death
+        set:
+          durationDays: 20
+          durationUnit: years
+  - ruleId: civil.service.publication
+    version: "1"
+    branch: evidence_period
+    anchor: occurredAt
+    durationDays: 0
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.service.publication
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: http://gongbao.court.gov.cn/Details/886331ece0f6611a370642e89f08c6.html
+      articles:
+      - 85
+      - 95
+      - 283
+    legalContract:
+      appliesTo: 受送达人下落不明或其他方式无法送达时的公告送达；输出视为送达日，非行为截止日
+      anchor: 公告发出之日
+      preconditions:
+      - 下落不明或已用尽其他送达方式的事实已核
+      - 公告发出之日已核
+      - 受送达人住所地在境内或境外已核
+      exceptions:
+      - 公告送达应当在案卷中记明原因和经过（95条第二款）
+      - 涉外公告60日（283条）；域外邮寄满三个月的视为送达路径另设，不并入本条
+      - 期间末日为法定休假日顺延（85条第三款）
+      output: 公告期满视为送达日候选；案卷记录与送达效力争议由法院核定
+      testIds:
+      - RT23-PUBLICATION-30
+      - RT23-PUBLICATION-60
+      - RT23-PUBLICATION-ROLL
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.domicileInPRC
+          equals: true
+        set:
+          durationDays: 30
+      - when:
+        - field: legalContext.domicileInPRC
+          equals: false
+        set:
+          durationDays: 60
+  - ruleId: civil.appeal.foreign
+    version: "1"
+    branch: appeal_period
+    anchor: servedAt
+    durationDays: 30
+    durationUnit: days
+    countingMode: CALENDAR_DAYS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#civil.appeal.foreign
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国民事诉讼法（2023修正，2024-01-01施行）
+      officialUrl: http://gongbao.court.gov.cn/Details/34dde9559bbdcdf7ef2dc0d716f5a8.html
+      articles:
+      - 85
+      - 286
+    legalContract:
+      appliesTo: 在中华人民共和国领域内没有住所的当事人不服一审判决、裁定的上诉（判决、裁定均为三十日）
+      anchor: 判决书、裁定书送达之日
+      preconditions:
+      - 当事人境内无住所已核
+      - 裁判书有效送达之日已核
+      exceptions:
+      - 申请延期是否准许由人民法院决定（286条末款）
+      - 境内有住所当事人的国内上诉期未在本轮钉扎，不适用本规则
+      - 被上诉人收到上诉状副本后三十日答辩状期间锚点不同，本版未并入
+      output: 涉外上诉期候选；延期申请由法院决定
+      testIds:
+      - RT24-FOREIGN-APPEAL-30
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      - field: legalContext.domicileInPRC
+        equals: false

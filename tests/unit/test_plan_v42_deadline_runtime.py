@@ -269,9 +269,12 @@ def test_RT18_victim_protest_is_five_days_and_separate_from_defendant_appeal(cli
 def test_RT19_registry_counts_are_recorded_not_padded(client):
     document = yaml.safe_load((ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
     top_level = [item["ruleId"] for item in document["rules"]]
-    assert len(top_level) == 27  # 版本记录数（含行政复议/行政诉讼两族）
-    assert len(set(top_level)) == 26  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
+    assert len(top_level) == 30  # 版本记录数（含行政复议/行政诉讼与追诉时效/公告送达/涉外上诉族）
+    assert len(set(top_level)) == 29  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
     assert "criminal.appeal.victim_protest" in set(top_level)
+    assert "criminal.limitation.prosecution" in set(top_level)
+    assert "civil.service.publication" in set(top_level)
+    assert "civil.appeal.foreign" in set(top_level)
 
 
 @pytest.mark.parametrize("rule_id,expected", [
@@ -288,3 +291,73 @@ def test_RT21_administrative_rules_fail_closed_without_reviewed_premise(client):
     for rule_id in ("administrative.reconsideration.application", "administrative.litigation.filing"):
         with raises_code("deadline_legal_premise_unverified"):
             calculate(client, rule_id, aware="2026-03-01", context={"subjectQualified": False})
+
+
+# 2026-09-23 官方原文钉扎（证据 work/plan-v42/step3-gov-sources.md）。
+@pytest.mark.parametrize("tier,expected", [
+    ("below_five_years", "2029-03-02"),          # 刑法87(一)：法定最高刑不满五年，经过五年
+    ("five_to_below_ten_years", "2034-03-02"),   # 87(二)：五年以上不满十年，经过十年
+    ("ten_years_or_above", "2039-03-02"),        # 87(三)：十年以上，经过十五年
+    ("life_or_death", "2044-03-02"),             # 87(四)：无期/死刑，经过二十年
+])
+def test_RT22_prosecution_tiers_execute_through_real_entry(client, tier, expected):
+    # 89条：追诉期限自犯罪之日起算（锚 occurredAt）；届满为实体状态转换，不因节假日顺延。
+    result = calculate(client, "criminal.limitation.prosecution", occurred="2024-03-02",
+                       context={"statutoryMaxPenalty": tier})
+    assert result["dueDate"] == expected
+    assert "legal_result:candidate_requires_lawyer_review" in result["calculationSteps"]
+
+
+def test_RT22_prosecution_expired_threshold_is_named_review_not_extinction(client):
+    # 87条：期限已过不再追诉，但88条不受限制情形与87(四)最高检核准须人工核定——
+    # 引擎只给具名复核，绝不输出"不再追诉"的实体判定。
+    with raises_code("limitation_cap_review_required"):
+        calculate(client, "criminal.limitation.prosecution", occurred="2019-03-02",
+                  context={"statutoryMaxPenalty": "below_five_years"})
+
+
+def test_RT22_prosecution_missing_tier_and_adjustments_fail_closed(client):
+    # 法定最高刑档位未核：不默认适用任何档（四档必须显式成立其一）。
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "criminal.limitation.prosecution", occurred="2024-03-02")
+    # 89条第二款中断（又犯罪重算）本版未建调整分支：具名拒绝而非套用民事/劳动语义。
+    with raises_code("deadline_adjustment_not_supported"):
+        calculate(client, "criminal.limitation.prosecution", occurred="2024-03-02",
+                  context={"statutoryMaxPenalty": "below_five_years",
+                           "adjustments": [{"kind": "interruption", "at": "2025-03-01",
+                                            "legalGroundConfirmed": True, "eventRef": "s"}]})
+
+
+@pytest.mark.parametrize("domicile,expected", [
+    (True, "2026-03-31"),   # 民诉法95条：公告发出之日起经过三十日视为送达（不是60日）
+    (False, "2026-04-30"),  # 283条：涉外公告经过六十日视为送达
+])
+def test_RT23_publication_periods_by_domicile(client, domicile, expected):
+    # 锚=公告发出之日（occurredAt 2026-03-01），起算日不计入。
+    result = calculate(client, "civil.service.publication", occurred="2026-03-01",
+                       context={"domicileInPRC": domicile})
+    assert result["dueDate"] == expected
+    assert "legal_result:candidate_requires_lawyer_review" in result["calculationSteps"]
+
+
+def test_RT23_publication_rolls_holiday_expiry_and_requires_domicile(client):
+    # 85条第三款：公告期满日 2026-04-04（周六）顺延至 2026-04-06（周一）。
+    result = calculate(client, "civil.service.publication", occurred="2026-03-05",
+                       context={"domicileInPRC": True})
+    assert result["dueDate"] == "2026-04-06"
+    assert "roll_forward:2026-04-04->2026-04-06" in result["calculationSteps"]
+    # 住所地未核：不默认境内30日，具名待核。
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "civil.service.publication", occurred="2026-03-01",
+                  context={"domicileInPRC": None})
+
+
+def test_RT24_foreign_appeal_thirty_days_regardless_of_instrument_type(client):
+    # 民诉法286条：境内无住所当事人不服一审判决、裁定的上诉均为送达之日起三十日——
+    # 与国内判决15日/裁定10日的双档不同，故本规则无裁判类型分支。
+    assert calculate(client, "civil.appeal.foreign", served="2026-03-02",
+                     context={"domicileInPRC": False})["dueDate"] == "2026-04-01"
+    # 境内有住所当事人不适用286条：国内上诉期未钉扎，具名拒绝而非套用30日。
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "civil.appeal.foreign", served="2026-03-02",
+                  context={"domicileInPRC": True})
