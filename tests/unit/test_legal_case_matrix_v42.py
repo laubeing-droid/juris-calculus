@@ -279,9 +279,15 @@ _SPECIAL_CLEAN = {
     "劳动离职欠薪": ("labor.arbitration.application", "employmentEndedAt",
                  {"wageArrears": True, "employmentEnded": True}),
 }
-# 充分-labour cells whose matrix semantics (candidate-null / suspensionCountedDays)
-# diverge from the engine's current named-failure behaviour -> honest skip.
-_SPECIAL_SKIP = {("劳动在职欠薪", "充分"), ("劳动中止", "充分"), ("劳动中断", "充分")}
+# Remaining 充分-labour skips, each blocked on a named upstream decision:
+# - 劳动在职欠薪: the matrix wants candidate-null (due=null, ordinary one-year
+#   limit inapplicable) while the engine's YAML `stop` branch raises a named
+#   review failure (RT07) -> pending the engine-semantics decision.
+# - 劳动中止: the cell expects 原届满2026-12-31+10 计时日 while its machine
+#   input (anchor 2026-03-01 -> ordinary expiry 2027-03-01) contradicts that
+#   and carries no obstacle window from/to -> un-feedable without inventing
+#   inputs; needs a matrix-side input repair.
+_SPECIAL_SKIP = {("劳动在职欠薪", "充分"), ("劳动中止", "充分")}
 # 缺要件 versions of those three rules still route to the labour rule, where the
 # unmet subject premise short-circuits to UNVERIFIED before the divergence case.
 _SPECIAL_DIVERGENT = {
@@ -302,6 +308,14 @@ def _aspecial(client, case):
     context.update(extra)
     if anchor_field:
         context[anchor_field] = _tv(anchor)
+    if (inp["rule"], inp["facts"]) == ("劳动中断", "充分"):
+        # The cell's own derivation is "中断后重新计算" with facts=充分, i.e. an
+        # effective interruption established at the anchor; feed the real
+        # labor27 restart branch. The date comes from the engine, never from
+        # the cell's expected value.
+        context["adjustments"] = [{"kind": "interruption", "at": anchor,
+                                   "legalGroundConfirmed": True,
+                                   "eventRef": f"mx-int-{case['id']}"}]
     try:
         row = _row(client, case["id"], rule_id, occurred=anchor, served=anchor, context=context)
     except ClientV4Error as err:
