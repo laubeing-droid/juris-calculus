@@ -308,7 +308,8 @@ def test_RT21_administrative_rules_fail_closed_without_reviewed_premise(client):
             calculate(client, rule_id, aware="2026-03-01", context={"subjectQualified": False})
 
 
-# 2026-09-23 官方原文钉扎（证据 work/plan-v42/step3-gov-sources.md）。
+# 2026-09-23 官方原文钉扎（刑法87/88/89、民诉85/95/283/286；登记于 jusbench-repo
+# specs/construction/plan-v4/sources-and-engineering.md 2026-09-23增量）。
 @pytest.mark.parametrize("tier,expected", [
     ("below_five_years", "2029-03-02"),          # 刑法87(一)：法定最高刑不满五年，经过五年
     ("five_to_below_ten_years", "2034-03-02"),   # 87(二)：五年以上不满十年，经过十年

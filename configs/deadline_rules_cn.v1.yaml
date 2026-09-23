@@ -894,7 +894,7 @@ rules:
       - field: legalContext.specialRulesReviewed
         equals: true
   # ---- 刑事追诉时效 / 公告送达期间 / 涉外上诉（2026-09-23 .gov.cn 官方原文逐字钉扎，
-  #      证据 work/plan-v42/step3-gov-sources.md）----
+  #      登记于 jusbench-repo specs/construction/plan-v4/sources-and-engineering.md 2026-09-23增量）----
   - ruleId: criminal.limitation.prosecution
     version: "1"
     branch: limitation_period
