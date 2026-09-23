@@ -80,7 +80,8 @@ def _calendar():
             "released": True, "sourceRefs": [], "checkedAt": "2026-03-02T00:00:00+00:00"}
 
 
-def _row(client, case_id, rule_id, *, occurred=None, served=None, context=None, duration_ctx=None):
+def _row(client, case_id, rule_id, *, occurred=None, served=None, context=None, duration_ctx=None,
+         configs=None, version="1"):
     """Register a synthetic event and run ONE rule; return the matching row.
 
     Raises ``ClientV4Error`` (a named 待核) when a premise fails, exactly as
@@ -100,11 +101,14 @@ def _row(client, case_id, rule_id, *, occurred=None, served=None, context=None, 
         "occurredAt": _tv(occurred or "2026-03-01"), "awareAt": _tv(occurred or "2026-03-01"),
         "servedAt": _tv(served or occurred or "2026-03-01"), "legalContext": legal,
     })
-    result = client.calculate_deadlines({
+    request = {
         "matterId": f"mx-matter-{case_id}", "eventRef": ref, "eventRevision": 1,
-        "rules": [{"ruleId": rule_id, "ruleVersion": "1"}], "now": "2026-03-02T00:00:00+00:00",
+        "rules": [{"ruleId": rule_id, "ruleVersion": version}], "now": "2026-03-02T00:00:00+00:00",
         "calendar": _calendar(),
-    })
+    }
+    if configs:
+        request["configsRoot"] = str(configs)
+    result = client.calculate_deadlines(request)
     return next(r for r in result["deadlines"] if r["rule"]["ruleId"] == rule_id)
 
 
@@ -279,28 +283,23 @@ _SPECIAL_CLEAN = {
     "劳动离职欠薪": ("labor.arbitration.application", "employmentEndedAt",
                  {"wageArrears": True, "employmentEnded": True}),
 }
-# Remaining 充分-labour skips, each blocked on a named upstream decision:
-# - 劳动在职欠薪: the matrix wants candidate-null (due=null, ordinary one-year
-#   limit inapplicable) while the engine's YAML `stop` branch raises a named
-#   review failure (RT07) -> pending the engine-semantics decision.
-# - 劳动中止: the cell expects 原届满2026-12-31+10 计时日 while its machine
-#   input (anchor 2026-03-01 -> ordinary expiry 2027-03-01) contradicts that
-#   and carries no obstacle window from/to -> un-feedable without inventing
-#   inputs; needs a matrix-side input repair.
-_SPECIAL_SKIP = {("劳动在职欠薪", "充分"), ("劳动中止", "充分")}
-# 缺要件 versions of those three rules still route to the labour rule, where the
-# unmet subject premise short-circuits to UNVERIFIED before the divergence case.
+# 充分-labour cells route through the same labour rule (version 2 since
+# 2026-09-23, whose in-service branch emits the determinate noDeadline
+# candidate); the two former honest skips were cleared that day:
+# - 劳动在职欠薪/充分 via the engine v2 noDeadline candidate (RT07 pins it),
+# - 劳动中止/充分 via the repaired matrix cell (original-due anchor + obstacle
+#   window inputs) fed to the real labor27 suspension branch.
 _SPECIAL_DIVERGENT = {
     "劳动在职欠薪": ("labor.arbitration.application", None, {"wageArrears": True, "employmentEnded": False}),
     "劳动中止": ("labor.arbitration.application", None, {}),
     "劳动中断": ("labor.arbitration.application", None, {}),
 }
+# 缺要件 versions still route to the labour rule, where the unmet subject
+# premise short-circuits to UNVERIFIED before any case divergence.
 
 
 def _aspecial(client, case):
     inp = case["test"]["input"]
-    if (inp["rule"], inp["facts"]) in _SPECIAL_SKIP:
-        pytest.skip(f"A-SPECIAL {inp['rule']}/{inp['facts']}: pending engine-vs-matrix decision")
     table = _SPECIAL_CLEAN if inp["rule"] in _SPECIAL_CLEAN else _SPECIAL_DIVERGENT
     rule_id, anchor_field, extra = table[inp["rule"]]
     anchor = inp["anchor"]
@@ -308,6 +307,8 @@ def _aspecial(client, case):
     context.update(extra)
     if anchor_field:
         context[anchor_field] = _tv(anchor)
+    occurred = anchor
+    configs = None
     if (inp["rule"], inp["facts"]) == ("劳动中断", "充分"):
         # The cell's own derivation is "中断后重新计算" with facts=充分, i.e. an
         # effective interruption established at the anchor; feed the real
@@ -316,13 +317,32 @@ def _aspecial(client, case):
         context["adjustments"] = [{"kind": "interruption", "at": anchor,
                                    "legalGroundConfirmed": True,
                                    "eventRef": f"mx-int-{case['id']}"}]
+    elif inp["rule"] == "劳动中止" and inp["facts"] == "充分":
+        # Repaired cell: the input carries the original-due anchor and the
+        # obstacle window. Feed the real labor27 suspension branch; the window
+        # span must equal the cell's declared counted days, and the
+        # SYNTHETIC_ALL_WORKDAYS calendar is simulated by disabling roll.
+        assert ((date.fromisoformat(inp["suspensionWindowTo"])
+                 - date.fromisoformat(inp["suspensionWindowFrom"])).days
+                == inp["suspensionCountedDays"]), case["id"]
+        context["adjustments"] = [{
+            "kind": "suspension", "from": inp["suspensionWindowFrom"],
+            "to": inp["suspensionWindowTo"], "ground": "force_majeure",
+            "cannotExercise": True, "legalGroundConfirmed": True,
+            "eventRef": f"mx-sus-{case['id']}"}]
+        occurred = inp["suspensionAwareAt"]
+        configs = _LABOR_NO_ROLL
+    version = "2" if rule_id == "labor.arbitration.application" else "1"
     try:
-        row = _row(client, case["id"], rule_id, occurred=anchor, served=anchor, context=context)
+        row = _row(client, case["id"], rule_id, occurred=occurred, served=occurred,
+                   context=context, configs=configs, version=version)
     except ClientV4Error as err:
         assert err.code in _PENDING_CODES, err.code
         return {"status": "UNVERIFIED", "due": None, "noGeneralOneYearLimit": False}
+    # noGeneralOneYearLimit is a premise/route label taken from the cell's own
+    # input dimension (review-noted convention), never an engine-computed value.
     return {"status": row["legalResult"]["status"], "due": row["dueDate"],
-            "noGeneralOneYearLimit": False}
+            "noGeneralOneYearLimit": inp["rule"] == "劳动在职欠薪"}
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -359,6 +379,24 @@ def _general_nocap():
 
 
 _A_SUS_CAPPED, _NO_CAP = _general_nocap()
+
+
+def _labor_no_roll():
+    """Full registry copy with labor.arbitration.application's rollForwardEnd
+    forced off — the faithful stand-in for the matrix's SYNTHETIC_ALL_WORKDAYS
+    calendar (no holiday roll) for the suspension cell. Never a production
+    config change."""
+    doc = yaml.safe_load((_ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
+    for rule in doc["rules"]:
+        if rule["ruleId"] == "labor.arbitration.application":
+            rule["rollForwardEnd"] = False
+    root = Path(tempfile.mkdtemp(prefix="aspecial-labor-"))
+    (root / "deadline_rules_synthetic.yaml").write_text(
+        yaml.safe_dump(doc, allow_unicode=True), encoding="utf-8")
+    return str(root)
+
+
+_LABOR_NO_ROLL = _labor_no_roll()
 
 
 def _minus_years(day, years):
@@ -443,8 +481,10 @@ def _asus(client, case):
 
 _ADAPTERS = {"A-CRIM": _acrim, "A-SERVICE": _aservice, "A-APPEAL": _aappeal, "A-CAL": _acal,
              "A-SPECIAL": _aspecial, "A-SUS": _asus}
-# Only the three A-SPECIAL 充分-labour cells (skipped inline) remain divergent; the
-# A-SUS family is computed through the real civil.limitation.general entry.
+# All 28 LC-A-SPECIAL cells are wired through the real deadline entry; the two
+# former inline skips were cleared 2026-09-23 (engine v2 noDeadline candidate;
+# repaired matrix cell + real labor27 suspension branch). The A-SUS family is
+# computed through the real civil.limitation.general entry.
 _PENDING_A: set[str] = set()
 
 

@@ -39,7 +39,7 @@ def time_value(day):
 
 def calculate(client, rule_id, *, context=None, occurred=None, aware="2026-03-02",
               served="2026-03-02", now="2026-03-02T00:00:00+00:00", configs=None,
-              coverage_end="2050-12-31"):
+              coverage_end="2050-12-31", version="1"):
     legal_context = {
         "subjectQualified": True, "specialRulesReviewed": True, "serviceConfirmed": True,
         "appealable": True, "inCustody": True, "retrialGround": "ordinary",
@@ -57,7 +57,7 @@ def calculate(client, rule_id, *, context=None, occurred=None, aware="2026-03-02
         "legalContext": legal_context,
     })
     request = {"matterId": "synthetic-matter", "eventRef": event_ref, "eventRevision": 1,
-               "rules": [{"ruleId": rule_id, "ruleVersion": "1"}], "now": now,
+               "rules": [{"ruleId": rule_id, "ruleVersion": version}], "now": now,
                "calendar": {"ref": None, "coverageStart": "2000-01-01", "coverageEnd": coverage_end,
                             "released": True, "sourceRefs": [], "checkedAt": now}}
     if configs:
@@ -139,9 +139,24 @@ def test_RT06_domicile_and_court_extension_are_yaml_cases(client, rule_id):
 
 
 def test_RT07_labor_wage_exception_is_not_a_one_year_deadline(client):
+    # v2（2026-09-23）：27条4款为确定法律结论——前提已核时"在职欠薪无普通一年截止"是
+    # 具名候选（无截止日生成），不再是待核；未知前提仍走 decision.require 具名拒绝。
+    row = calculate(client, "labor.arbitration.application", version="2",
+                    context={"wageArrears": True, "employmentEnded": False})
+    assert row["dueDate"] is None
+    assert row["legalResult"]["status"] == "CANDIDATE"
+    assert row["legalResult"]["error"] is None
+    assert ("no_ordinary_deadline:wages_during_employment_no_ordinary_one_year_deadline"
+            in row["calculationSteps"])
+    # 前提未核时照旧具名待核：noDeadline 不绕过 decision.require 门。
+    with raises_code("deadline_legal_premise_unverified"):
+        calculate(client, "labor.arbitration.application", version="2",
+                  context={"wageArrears": True, "employmentEnded": False, "subjectQualified": False})
+    # v1 保留为可选历史版本：同输入仍输出具名复核，两版并存可审计。
     with raises_code("deadline_legal_review_required"):
         calculate(client, "labor.arbitration.application", context={"wageArrears": True, "employmentEnded": False})
-    assert calculate(client, "labor.arbitration.application", context={"wageArrears": True,
+    # 离职欠薪锚分支两版一致：自劳动关系终止之日起一年。
+    assert calculate(client, "labor.arbitration.application", version="2", context={"wageArrears": True,
         "employmentEnded": True, "employmentEndedAt": time_value("2026-04-02")})["dueDate"] == "2027-04-02"
 
 
@@ -269,8 +284,8 @@ def test_RT18_victim_protest_is_five_days_and_separate_from_defendant_appeal(cli
 def test_RT19_registry_counts_are_recorded_not_padded(client):
     document = yaml.safe_load((ROOT / "configs/deadline_rules_cn.v1.yaml").read_text(encoding="utf-8"))
     top_level = [item["ruleId"] for item in document["rules"]]
-    assert len(top_level) == 30  # 版本记录数（含行政复议/行政诉讼与追诉时效/公告送达/涉外上诉族）
-    assert len(set(top_level)) == 29  # 不同规则ID数（arbitration.set_aside.award 两个合法历史版本）
+    assert len(top_level) == 31  # 版本记录数（labor.arbitration.application 与 set_aside.award 各两合法版本）
+    assert len(set(top_level)) == 29  # 不同规则ID数
     assert "criminal.appeal.victim_protest" in set(top_level)
     assert "criminal.limitation.prosecution" in set(top_level)
     assert "civil.service.publication" in set(top_level)

@@ -657,6 +657,73 @@ rules:
           equals: false
         stop: wages_during_employment_no_ordinary_one_year_deadline
     adjustmentPolicy: labor27
+    note: v1历史版本；在职欠薪第三分支输出具名复核（2026-09-23起由v2承载27条4款确定结论）
+  - ruleId: labor.arbitration.application
+    version: '2'
+    branch: arbitration_period
+    anchor: awareAt
+    durationDays: 1
+    durationUnit: years
+    countingMode: CALENDAR_PERIODS
+    boundaryInclusive: false
+    timezone: Asia/Shanghai
+    locator: deadline-rules/cn#labor.arbitration.application
+    legalReviewRequired: true
+    authority:
+      title: 中华人民共和国劳动争议调解仲裁法
+      officialUrl: https://www.moe.gov.cn/s78/A15/s8355/moe_782/tnull_39857.html
+      articles:
+      - 27
+    legalContract:
+      appliesTo: 劳动争议仲裁申请人；不扩至商事仲裁
+      anchor:
+        ordinary: 知道或应当知道权利被侵害之日
+        wage_arrears_after_termination: 劳动关系终止之日
+        wage_arrears_during_employment: 在职拖欠劳动报酬不受普通一年时效限制
+      preconditions:
+      - 劳动争议范围核定
+      - 是否拖欠劳动报酬核定
+      - 劳动关系存续或终止核定
+      exceptions:
+      - 主张权利或请求救济或义务人同意履行导致中断后重新计算
+      - 不可抗力或其他正当理由中止后继续计算
+      - 不套民法典194条消除后六个月
+      output: 劳动仲裁时效候选；在职工资例外为27条4款确定结论，输出具名无普通截止日候选而非待核
+      testIds:
+      - A-LABOR-ORDINARY
+      - A-LABOR-WAGES-ACTIVE
+      - A-LABOR-WAGES-ENDED
+      - A-LABOR-INTERRUPT
+      - A-LABOR-SUSPEND
+    decision:
+      require:
+      - field: legalContext.subjectQualified
+        equals: true
+      - field: legalContext.specialRulesReviewed
+        equals: true
+      cases:
+      - when:
+        - field: legalContext.wageArrears
+          equals: false
+        set:
+          anchor: awareAt
+      - when:
+        - field: legalContext.wageArrears
+          equals: true
+        - field: legalContext.employmentEnded
+          equals: true
+        set:
+          anchor: legalContext.employmentEndedAt
+      - when:
+        - field: legalContext.wageArrears
+          equals: true
+        - field: legalContext.employmentEnded
+          equals: false
+        set:
+          noDeadline: true
+          noDeadlineReason: wages_during_employment_no_ordinary_one_year_deadline
+    adjustmentPolicy: labor27
+    note: v2(2026-09-23)在职欠薪第三分支由stop改为noDeadline具名无截止候选，不弱化fail-closed（无日期生成、前提门不变）
   - ruleId: civil.third_party.revocation
     version: '1'
     branch: evidence_period

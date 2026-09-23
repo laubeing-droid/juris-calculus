@@ -45,7 +45,8 @@ CALENDAR_COVERAGE_MISSING = "calendar_coverage_missing"
 EVENT_TIME_ANCHORS = ("occurredAt", "awareAt", "filedAt", "servedAt", "hearingAt")
 _MISSING = object()
 _RULE_OUTPUTS = {"anchor", "durationDays", "durationUnit", "countingMode",
-                 "boundaryInclusive", "startOffsetDays", "rollForwardEnd", "adjustmentPolicy"}
+                 "boundaryInclusive", "startOffsetDays", "rollForwardEnd", "adjustmentPolicy",
+                 "noDeadline", "noDeadlineReason"}
 
 
 def _field(event: Mapping[str, Any], path: str) -> Any:
@@ -125,9 +126,11 @@ def _resolve_rule(rule: Mapping[str, Any], event: Mapping[str, Any]) -> dict[str
     for name in ("durationDays", "startOffsetDays"):
         if name in resolved and (type(resolved[name]) is not int or resolved[name] < 0):
             raise DeadlineError("deadline_rule_syntax_invalid", name)
-    for name in ("boundaryInclusive", "rollForwardEnd"):
+    for name in ("boundaryInclusive", "rollForwardEnd", "noDeadline"):
         if name in resolved and type(resolved[name]) is not bool:
             raise DeadlineError("deadline_rule_syntax_invalid", name)
+    if "noDeadlineReason" in resolved and not isinstance(resolved["noDeadlineReason"], str):
+        raise DeadlineError("deadline_rule_syntax_invalid", "noDeadlineReason")
     return resolved
 
 
@@ -408,7 +411,21 @@ def compute_deadline(
     suspension_established = False
     holiday_extended = False
 
-    if branch == "court_specified":
+    no_deadline_reason: str | None = None
+    if rule.get("noDeadline") is True:
+        # A determinate statutory conclusion that no ordinary deadline exists
+        # (e.g. labor arbitration art.27(4): in-service wage arrears claims are
+        # not subject to the one-year limitation). The outcome is a named
+        # candidate with no date - not an unknown premise, not an invented
+        # due date. Adjustments cannot attach to a non-existent deadline.
+        reason = rule.get("noDeadlineReason")
+        if not isinstance(reason, str) or not reason:
+            raise DeadlineError("deadline_rule_syntax_invalid", "noDeadlineReason")
+        if rule.get("adjustments") or event.get("legalContext", {}).get("adjustments"):
+            raise DeadlineError("deadline_adjustment_not_supported", "no_deadline_outcome")
+        no_deadline_reason = reason
+        steps.append(f"no_ordinary_deadline:{reason}")
+    elif branch == "court_specified":
         court_day_raw = rule.get("courtSpecifiedDate") or event.get("hearingAt", {}).get("value")
         if not court_day_raw:
             raise DeadlineError("deadline_court_date_missing")
@@ -585,7 +602,7 @@ def compute_deadline(
                 steps.append(f"roll_forward:{due_date.isoformat()}->{rolled.isoformat()}")
             due_date = rolled
 
-        if (rule.get("reviewOnExpiry") and not calendar_gap
+        if (rule.get("reviewOnExpiry") and due_date is not None and not calendar_gap
                 and due_date < now.astimezone(ZoneInfo(str(rule.get("timezone", "Asia/Shanghai")))).date()):
             raise DeadlineError(str(rule["reviewOnExpiry"]), "threshold reached; no automatic extinction or court determination")
 
@@ -632,7 +649,8 @@ def compute_deadline(
     legal_result: dict[str, Any] = {
         "rawDue": raw_expiry_date.isoformat() if raw_expiry_date else None,
         "due": due_date.isoformat() if due_date else None,
-        "status": "CANDIDATE" if due_date is not None and not coverage_gap else "UNVERIFIED",
+        "status": ("CANDIDATE" if (due_date is not None or no_deadline_reason is not None)
+                   and not coverage_gap else "UNVERIFIED"),
         "holidayExtended": holiday_extended,
         "suspensionEstablished": suspension_established,
         "rightsExtinguished": False,  # JC never decides substantive extinction (03 §03-2/03-4)
